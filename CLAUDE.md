@@ -11,6 +11,8 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - Progress log: `docs/PROGRESS.md` (update at the end of every session)
 - Old demo audit and function map: `docs/reference/`
 - `vossie-audit/` is a local, untracked copy of the audit, kept out of git at Lama's request. Never add it to git, move it or delete it.
+- `.superpowers/` holds untracked brainstorm session files. Leave it alone.
+- Accessibility target: WCAG 2.2 AA (spec section 10). Performance budget for a first visit: 150 KB JS, 60 KB fonts, 350 KB in total (spec section 11).
 
 ## Stack
 - Next.js 16.4 App Router with Cache Components, React 19.3, TypeScript, Tailwind CSS 4.3 (`@tailwindcss/turbopack`)
@@ -23,7 +25,7 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - `pnpm test` · `pnpm e2e` · `pnpm lint` · `pnpm typecheck` · `pnpm build`
 
 ## Brand (Eduvos)
-- Navy `#15305D`, sky `#29ABE2`, sky-dark `#1E7BA8`, panel `#F3F3F3`, pale `#E1F0F7`, ink `#373F41`, muted `#5B6577`, idle `#B9C0CC`.
+- Navy `#15305D`, sky `#29ABE2`, sky-dark `#1E7BA8`, panel `#F3F3F3`, pale `#E1F0F7`, ink `#373F41` (the spec's `text` token), muted `#5B6577`, idle `#B9C0CC`.
 - Sky never carries text, icons or thin borders on white. Navy on sky and sky on navy are fine. Links on white use sky-dark.
 - Fonts only through `font-display`, `font-text` and `font-accent` (or `var(--vos-font-*)` in CSS). Never a font name in a component.
 - The crest comes only from `assets/brand/` until Eduvos sends the official SVG.
@@ -33,8 +35,18 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - Server Components by default. `"use client"` only where there is interaction.
 - Device preferences (campus cookie `vossie_campus`, saved items, recent searches, data saver) go through the stores in `lib/` and `useSyncExternalStore`.
 - Never read `cookies()`, `headers()` or `searchParams` outside `<Suspense>`.
+- No `Date.now()`, `new Date()` or `Math.random()` while prerendering.
+- Client hooks that suspend while Next builds App Shells (`usePathname()`, `useParams()`) are read only inside `<Suspense>` in shared layout code (see `components/ui/NavLink.tsx`).
+- Dynamic routes:
+  - `generateStaticParams` returns at least one value.
+  - `params` is awaited inside `<Suspense>`.
+  - Unknown values call `notFound()`.
+  - Never export `dynamicParams`; it fails the build with Cache Components.
 - The React Compiler lint rules are on: no `setState` directly in an effect body, no `ref.current` during render.
-- Motion: animate only `transform` and `opacity`. Respect `prefers-reduced-motion` and data saver (`html[data-low-data]`).
+- Breakpoints:
+  - The phone-to-tablet switch is the custom `wide:` variant: Tailwind's `md` width (48rem) plus a 30rem minimum height, so landscape phones keep the phone layout (spec section 5).
+  - Write `wide:` in class names and `@media (min-width: 48rem) and (min-height: 30rem)` in CSS, never `md:`. `lg:` (64rem) is fine for desktop-only extras.
+- Motion: animate only `transform` and `opacity` (the CSS `translate`, `scale` and `rotate` properties count as transform). Respect `prefers-reduced-motion` and data saver (`html[data-low-data]`).
 - Touch targets are at least 44px. No hover-only features.
 
 ## Privacy (POPIA)
