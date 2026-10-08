@@ -1,0 +1,521 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Gothic+Condensed+One&family=Geist:wght@400;500;600;700&display=swap">
+<style>
+  .option .content{min-width:0}
+  .rhythm{font-size:.82rem;color:var(--text-secondary);margin:-.6rem 0 1.2rem;line-height:1.6;max-width:90ch}
+  .rhythm b{color:var(--text-primary);font-weight:600}
+  .pair{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:18px;align-items:start}
+  @media (max-width:760px){.pair{grid-template-columns:1fr}}
+  .pair > div{min-width:0}
+  .pair > div:last-child{max-width:390px;width:100%;justify-self:center}
+  .vx-host{min-width:0;border-radius:10px;overflow:hidden;box-shadow:0 0 0 1px rgba(21,48,93,.10),0 8px 24px rgba(21,48,93,.10);background:#fff}
+  .vx-cap{font-size:.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;margin:0 0 6px}
+  .notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:1.6rem}
+  .notes .n{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+  .notes .n i{font-style:normal;width:26px;height:26px;border-radius:50%;background:#29ABE2;color:#15305D;display:grid;place-items:center;font-weight:700;font-size:13px}
+  .notes .n b{display:block;font-size:.88rem}
+  .notes .n span{display:block;font-size:.79rem;color:var(--text-secondary);line-height:1.45}
+  .notes .n em{font-style:normal;color:var(--text-primary);font-weight:500}
+  .ask{margin-top:2rem}
+
+  /* ===== shared atoms ===== */
+  .cv{--navy:#15305D;--sky:#29ABE2;--skydk:#1E7BA8;--page:#FFFFFF;--panel:#F3F3F3;--pale:#E1F0F7;--line:rgba(21,48,93,.14);--grey:#B9C0CC;--muted:#5B6577;
+      position:relative;overflow:hidden;background:var(--page);color:var(--navy);font-family:'Geist',system-ui,sans-serif}
+  .cv *{box-sizing:border-box}
+  .cv p,.cv h1,.cv h3,.cv h4,.cv h5,.cv h6,.cv ul{margin:0;padding:0}
+  .cv li{list-style:none}
+  .disp{font-family:'Special Gothic Condensed One','Arial Narrow',sans-serif;text-transform:uppercase;font-weight:400;letter-spacing:0}
+  .stars{background-color:var(--navy);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg fill='%2329ABE2' fill-opacity='0.13'%3E%3Cpath d='M30 18 Q32 28 42 30 Q32 32 30 42 Q28 32 18 30 Q28 28 30 18Z'/%3E%3Cpath d='M120 52 Q121.2 58.8 128 60 Q121.2 61.2 120 68 Q118.8 61.2 112 60 Q118.8 58.8 120 52Z'/%3E%3Cpath d='M80 112 Q82.5 125.5 96 128 Q82.5 130.5 80 144 Q77.5 130.5 64 128 Q77.5 125.5 80 112Z'/%3E%3Cpath d='M152 144 Q153 151 160 152 Q153 153 152 160 Q151 153 144 152 Q151 151 152 144Z'/%3E%3C/g%3E%3C/svg%3E")}
+  .ph{position:relative;overflow:hidden;background:linear-gradient(150deg,#1d3a68,#2c6197 55%,#7cbadc)}
+  .ph.b{background:linear-gradient(160deg,#173563,#3d77a8)}
+  .ph.c{background:linear-gradient(160deg,#2a4f80,#8cc6e4)}
+  .ph::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 16px)}
+  .ph .lbl{position:absolute;left:10px;top:10px;z-index:2;background:rgba(255,255,255,.92);color:var(--navy);font-size:9.5px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;padding:5px 8px;border-radius:999px}
+  .ico{width:20px;height:20px;stroke:var(--navy);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .sx{position:relative}
+  .num{position:absolute;left:8px;top:8px;z-index:30;width:28px;height:28px;border-radius:50%;background:var(--sky);color:var(--navy);display:grid;place-items:center;font:700 14px/1 'Geist',sans-serif;box-shadow:0 0 0 3px #fff}
+  .eb{color:var(--skydk);font-size:18px;letter-spacing:1px}
+  .eb.lt{color:var(--sky)} .eb.nv{color:var(--navy)} .eb.c{text-align:center}
+  .h2{font-size:46px;line-height:1;margin-top:6px}
+  .shead{display:flex;align-items:flex-end;justify-content:space-between;gap:20px}
+  .sh-r{display:flex;align-items:center;gap:18px}
+  .link{font-size:12px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;border-bottom:1.5px solid currentColor;padding-bottom:2px;white-space:nowrap}
+  .btn{height:46px;padding:0 24px;border-radius:999px;display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;letter-spacing:1.3px;text-transform:uppercase;white-space:nowrap}
+  .btn.sky{background:var(--sky);color:var(--navy)}
+  .btn.navy{background:var(--navy);color:#fff}
+  .btn.ghost{border:1.5px solid rgba(255,255,255,.7);color:#fff}
+  .arrows{display:flex;gap:10px}
+  .arrows span{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--navy);display:grid;place-items:center}
+  .arrows svg{width:18px;height:18px;stroke:var(--navy);fill:none;stroke-width:2}
+  .prog{height:3px;background:var(--line);border-radius:2px;position:relative}
+  .prog::after{content:"";position:absolute;left:0;top:0;height:3px;width:24%;background:var(--navy);border-radius:2px}
+  .chip{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 18px;border-radius:999px;border:1.5px solid var(--navy);font-size:11.5px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;white-space:nowrap}
+  .chip.fill{background:var(--navy);color:#fff}
+  .seg{display:inline-flex;border:1.5px solid var(--navy);border-radius:999px;padding:3px;gap:3px}
+  .seg span{height:32px;padding:0 14px;border-radius:999px;display:grid;place-items:center;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+  .seg span.on{background:var(--navy);color:#fff}
+  .stamp{position:absolute;left:10px;top:10px;z-index:2;transform:rotate(-6deg);font-family:'Special Gothic Condensed One',sans-serif;text-transform:uppercase;font-size:20px;line-height:1;padding:4px 10px;border:2px solid currentColor;border-radius:6px;background:#fff}
+  .stamp.free{color:var(--navy)} .stamp.swap{color:var(--skydk)}
+  .seal{width:18px;height:18px;border-radius:50%;background:var(--navy);display:grid;place-items:center;flex:none}
+  .seal svg{width:10px;height:10px;stroke:#fff;fill:none;stroke-width:3}
+  .heart{position:absolute;right:10px;top:10px;z-index:3;width:36px;height:36px;border-radius:50%;background:#fff;display:grid;place-items:center}
+  .heart svg{width:18px;height:18px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--sky);display:inline-block;flex:none}
+
+  /* pennant badge */
+  .bdg{--w:86px;--h:106px;--pt:13px;--ih:60px;--bx:7px;--by:14px;position:absolute;left:50%;transform:translateX(-50%);top:0;width:var(--w);height:var(--h)}
+  .bdg .pen,.bdg .back{position:absolute;clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%)}
+  .bdg .back{inset:0 calc(var(--bx)*-1) calc(var(--by)*-1) calc(var(--bx)*-1);background:#fff}
+  .bdg .pen{inset:0;background:var(--navy);display:flex;justify-content:center;padding-top:var(--pt)}
+  .bdg .pen img{height:var(--ih)}
+  .mini{width:30px;height:37px;background:#fff;clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%);display:flex;justify-content:center;padding-top:5px;flex:none}
+  .mini img{height:22px}
+
+  /* ===== DESKTOP (1200) ===== */
+  .cv-d{width:1200px}
+  .cv-d .ann{margin:0 40px;height:42px;background:var(--navy);border-radius:0 0 12px 12px;display:flex;align-items:center;justify-content:center;gap:12px;color:#fff;font-size:11.5px;letter-spacing:1.3px;text-transform:uppercase;font-weight:500}
+  .ann .tag{background:var(--sky);color:var(--navy);padding:4px 10px;border-radius:4px;font-weight:600}
+  .ann svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.5}
+  .cv-d .ql{height:46px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line)}
+  .cv-d .ql a{font-family:'Special Gothic Condensed One',sans-serif;text-transform:uppercase;font-size:18px;padding:0 34px}
+  .cv-d .ql i{width:1px;height:18px;background:var(--line)}
+  .hd{position:relative;display:grid;align-items:center}
+  .cv-d .hd{height:78px;grid-template-columns:1fr 120px 1fr;padding:0 40px}
+  .hd-l,.hd-r{display:flex;align-items:center;gap:22px}
+  .hd-r{justify-content:flex-end}
+  .menu,.saved{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:600;letter-spacing:1.3px}
+  .pill{display:flex;align-items:center;gap:8px;height:34px;padding:0 14px;border:1.5px solid var(--navy);border-radius:999px;font-size:11px;font-weight:600;letter-spacing:1.1px;text-transform:uppercase}
+  .pill.on{background:var(--navy);color:#fff}
+  .pill svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+  .hd-c{position:relative;height:100%}
+
+  .cv-d .hero{margin:0 24px;height:480px;border-radius:16px;overflow:hidden;display:grid;grid-template-columns:38% 62%}
+  .hero-l{color:#fff;display:flex;flex-direction:column}
+  .cv-d .hero-l{padding:52px 46px}
+  .hero h1{color:#fff}
+  .hero h1 span{color:var(--sky)}
+  .cv-d .hero h1{font-size:64px;line-height:.97;margin-top:24px}
+  .hb{color:rgba(255,255,255,.86);line-height:1.6}
+  .cv-d .hb{margin-top:auto;font-size:16px;max-width:34ch}
+  .ctas{display:flex;gap:12px;margin-top:24px}
+  .hero .ph .lbl{top:auto;bottom:24px;left:22px;font-size:11px;padding:7px 12px}
+  .sl{position:absolute;right:20px;bottom:20px;z-index:3;display:flex;align-items:center;gap:8px;padding:8px;background:rgba(9,20,42,.72);border-radius:10px}
+  .sl i{width:48px;height:48px;border-radius:6px;background:linear-gradient(135deg,#35598a,#8cc6e4)}
+  .sl i:first-child{outline:2px solid var(--sky);outline-offset:1px}
+  .sl svg{width:30px;height:30px;fill:#fff;margin:0 6px}
+
+  .cv-d .slot{margin:16px 24px 0;display:grid;gap:10px}
+  .strip{display:flex;align-items:center;gap:24px;height:56px;border-radius:12px;padding:0 18px;font-size:13px}
+  .strip.trust{border:1.5px solid var(--line)}
+  .strip.act{background:var(--navy);color:#fff}
+  .strip .k{font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 8px;border-radius:4px;background:var(--pale);color:var(--navy);white-space:nowrap}
+  .strip.act .k{background:var(--sky)}
+  .strip .i{display:flex;align-items:center;gap:8px;white-space:nowrap}
+  .strip .i svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+  .strip.trust .i svg{stroke:var(--skydk)}
+  .strip .go{margin-left:auto;font-weight:600;font-size:11.5px;letter-spacing:1px;text-transform:uppercase;border-bottom:1.5px solid currentColor;white-space:nowrap}
+  .rv{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:11px;color:rgba(255,255,255,.75)}
+  .rv i{width:34px;height:34px;border-radius:6px}
+
+  .cv-d .cats{padding:64px 24px 0}
+  .cv-d .cats .shead,.cv-d .cats .budget{padding:0 16px}
+  .tiles{display:flex;gap:16px}
+  .cv-d .tiles{margin-top:22px}
+  .tile{position:relative;flex:none;border-radius:14px}
+  .cv-d .tile{width:172px;height:172px}
+  .tile b{position:absolute;left:14px;top:12px;z-index:2;color:#fff;font-size:24px;line-height:.95}
+  .tile .cut{position:absolute;right:-6px;bottom:-6px;z-index:3;width:52px;height:52px;border-radius:50%;background:var(--page);display:grid;place-items:center}
+  .tile .cut span{width:34px;height:34px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px var(--line);display:grid;place-items:center}
+  .tile .cut svg{width:14px;height:14px;stroke:var(--navy);fill:none;stroke-width:2.2}
+  .cv-d .cats .prog{margin:22px 16px 0}
+  .budget{display:flex;align-items:center;gap:10px;margin-top:22px}
+  .budget .lab{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-right:4px;white-space:nowrap}
+  .bchip{height:40px;padding:0 18px;border-radius:999px;border:1.5px solid var(--navy);display:inline-flex;align-items:center;font-size:12.5px;font-weight:600;white-space:nowrap}
+
+  .cv-d .coll{margin:76px 24px 0;background:var(--panel);border-radius:16px;padding:60px 56px;display:grid;grid-template-columns:330px 1fr;gap:72px;align-items:center}
+  .stack{position:relative}
+  .cv-d .stack{height:320px}
+  .stack .ph{position:absolute;inset:0;border-radius:16px}
+  .stack .s1{background:#cfe6f3;transform:rotate(-6deg) translate(-12px,8px)}
+  .stack .s2{background:#9fd1ec;transform:rotate(4deg) translate(10px,2px)}
+  .stack .s1::before,.stack .s2::before{display:none}
+  .clist .ci{padding:14px 0;border-bottom:1px solid var(--line)}
+  .clist .ci:last-child{border-bottom:0}
+  .clist .e{color:var(--skydk);font-size:15px;letter-spacing:.8px}
+  .clist .t{font-size:40px;line-height:1;margin-top:2px;color:var(--grey);display:flex;align-items:center;gap:14px}
+  .clist .on .t{color:var(--navy)}
+  .clist .t svg{width:26px;height:26px;stroke:var(--navy);fill:none;stroke-width:2}
+
+  .cv-d .sbc{padding:92px 40px 0;display:grid;grid-template-columns:1fr 300px 1fr;gap:36px;align-items:center}
+  .cv-d .sbc .eb,.cv-d .sbc .foot,.cv-d .sbc .cap{grid-column:1/-1}
+  .names{display:flex;flex-direction:column;gap:3px;font-size:40px;line-height:1.02;color:var(--grey)}
+  .names.l{align-items:flex-end;text-align:right}
+  .names span{position:relative;display:inline-block}
+  .names sup{font-family:'Geist',sans-serif;font-size:11px;font-weight:600;color:var(--grey);margin-left:5px;position:relative;top:-14px}
+  .names span.on{color:var(--navy)}
+  .names span.on sup{color:var(--skydk)}
+  .names span.on::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:3px;background:var(--sky);border-radius:2px}
+  .cv-d .sbc .photo{width:300px;height:300px;border-radius:16px}
+  .pbar{position:absolute;left:14px;right:14px;bottom:14px;height:3px;background:rgba(255,255,255,.35);border-radius:2px;z-index:2}
+  .pbar::after{content:"";position:absolute;left:0;top:0;bottom:0;width:62%;background:#fff;border-radius:2px}
+  .sbc .foot{display:flex;justify-content:center;gap:12px}
+  .sbc .cap{text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8790a0;margin-top:-18px}
+
+  .cv-d .jl{padding:92px 40px 0}
+  .lgrid{display:grid;gap:18px}
+  .cv-d .lgrid{grid-template-columns:repeat(5,1fr);margin-top:24px}
+  .lc{position:relative}
+  .lc .im{border-radius:14px}
+  .cv-d .lc .im{height:206px}
+  .lc .t{margin-top:12px;font-size:14px;font-weight:500;line-height:1.35;min-height:38px}
+  .lc .p{font-size:28px;line-height:1;margin-top:6px}
+  .lc .m{font-size:12px;color:var(--muted);margin-top:6px}
+  .lc .bd{display:inline-flex;margin-top:8px;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--navy);color:#fff}
+
+  .cv-d .how{padding:88px 40px 0}
+  .hgrid{display:grid;gap:20px}
+  .cv-d .hgrid{grid-template-columns:1fr 1fr;margin-top:26px}
+  .hcol{border-radius:16px;padding:30px 30px 26px}
+  .hcol.buy{background:var(--panel)}
+  .hcol.sell{color:#fff}
+  .hcol h5{font-size:30px;line-height:1}
+  .steps{display:grid;gap:14px;margin-top:20px}
+  .st{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:start}
+  .st i{font-style:normal;width:40px;height:40px;border-radius:50%;border:1.5px solid currentColor;display:grid;place-items:center;font-family:'Special Gothic Condensed One',sans-serif;font-size:20px}
+  .st b{display:block;font-size:15px}
+  .st span{display:block;font-size:13px;line-height:1.45;opacity:.82}
+  .hcol .btn{margin-top:22px}
+  .safe{display:flex;justify-content:center;flex-wrap:wrap;gap:12px 34px;margin-top:22px;font-size:12.5px;color:var(--muted)}
+  .safe span{display:flex;align-items:center;gap:8px}
+  .safe svg{width:16px;height:16px;stroke:var(--skydk);fill:none;stroke-width:2}
+
+  .cv-d .ft{padding:88px 40px 0}
+  .fgrid{display:grid;gap:18px}
+  .cv-d .fgrid{grid-template-columns:repeat(4,1fr);margin-top:24px}
+  .fc{border:1.5px solid var(--line);border-radius:16px;overflow:hidden;background:#fff;flex:none}
+  .fc .im{height:190px}
+  .fc .tag{position:absolute;left:10px;top:10px;z-index:2;background:var(--sky);color:var(--navy);font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:4px 8px;border-radius:4px}
+  .fc .bdy{padding:14px 16px 16px}
+  .fc .nm{font-size:24px;line-height:1}
+  .fc .tg{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.4}
+  .fc .mt{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11.5px;color:var(--muted)}
+
+  .lf{background:var(--sky);color:var(--navy)}
+  .cv-d .lf{margin:92px 24px 0;border-radius:16px;padding:48px;display:grid;grid-template-columns:1.1fr 1fr;gap:44px;align-items:center}
+  .lf h4{line-height:.96}
+  .cv-d .lf h4{font-size:58px;margin-top:8px}
+  .lf p{font-size:15px;line-height:1.55;margin-top:14px;max-width:44ch}
+  .lf .btn{margin-top:22px}
+  .reqs{display:grid;gap:10px}
+  .req{background:#fff;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .req b{display:block;font-size:14px;font-weight:600}
+  .req small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+  .req svg{width:18px;height:18px;stroke:var(--navy);fill:none;stroke-width:2;flex:none}
+
+  .fs{background:var(--pale)}
+  .cv-d .fs{margin:80px 24px 0;border-radius:16px;padding:44px 40px 40px}
+  .frow{display:flex;gap:16px}
+  .cv-d .frow{margin-top:22px}
+  .fcard{flex:none;background:#fff;border-radius:14px;overflow:hidden}
+  .cv-d .fcard{width:204px}
+  .fcard .im{height:150px}
+  .fcard .t{padding:12px 14px 4px;font-size:13.5px;font-weight:500;line-height:1.35}
+  .fcard .m{padding:0 14px 14px;font-size:12px;color:var(--muted)}
+
+  .hub{color:#fff}
+  .hub::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(9,20,42,.85),rgba(9,20,42,.4))}
+  .cv-d .hub{margin-top:92px;height:440px;border-radius:16px 16px 0 0}
+  .hub .in{position:absolute;inset:0;z-index:2;display:grid;align-items:end}
+  .cv-d .hub .in{padding:48px 56px;grid-template-columns:1fr 410px;gap:56px}
+  .hub .lab{display:block;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;font-weight:600;margin-bottom:16px;opacity:.9}
+  .hub h4{line-height:.98}
+  .cv-d .hub h4{font-size:58px}
+  .hub .hp{font-size:14px;line-height:1.6;color:rgba(255,255,255,.88);margin-top:14px;max-width:46ch}
+  .hub .btn{margin-top:20px}
+  .wo{background:#fff;color:var(--navy);border-radius:14px;padding:16px 18px 6px}
+  .wo .wh{font-size:20px;letter-spacing:.6px;margin-bottom:6px}
+  .ev{display:grid;grid-template-columns:50px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+  .ev .dt{font-family:'Special Gothic Condensed One',sans-serif;text-transform:uppercase;line-height:.85;text-align:center;font-size:28px}
+  .ev .dt small{display:block;font-size:12px;color:var(--skydk);margin-top:2px}
+  .ev b{display:block;font-size:13.5px;font-weight:600}
+  .ev span{display:block;font-size:12px;color:var(--muted)}
+  .ev .rs{font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:1.5px solid var(--navy);border-radius:999px;padding:6px 10px}
+
+  .ftr{color:#fff}
+  .cv-d .ftr{padding:0 56px}
+  .ftr .cta{display:grid;border-bottom:1px solid rgba(255,255,255,.18)}
+  .cv-d .ftr .cta{grid-template-columns:1fr 1fr}
+  .ftr .cta a{display:flex;align-items:center;justify-content:space-between;color:#fff}
+  .cv-d .ftr .cta a{padding:46px 0;font-size:86px;line-height:.9}
+  .cv-d .ftr .cta a+a{border-left:1px solid rgba(255,255,255,.18);padding-left:42px}
+  .cv-d .ftr .cta a:first-child{padding-right:42px}
+  .ftr .cta svg{stroke:var(--sky);stroke-width:2;fill:none;flex:none}
+  .cv-d .ftr .cta svg{width:58px;height:58px}
+  .cv-d .ftr .cols{display:grid;grid-template-columns:1.35fr .8fr .8fr .8fr 1.45fr;gap:34px;padding:46px 0 38px}
+  .ftr h6{font-size:19px;color:var(--sky);margin-bottom:14px;letter-spacing:.5px}
+  .ftr p,.ftr li{font-size:13.5px;color:rgba(255,255,255,.86);line-height:1.95}
+  .ftr .em{display:flex;align-items:center;justify-content:space-between;height:46px;background:#fff;color:#8790a0;border-radius:10px;padding:0 14px;font-size:13px;margin-top:12px}
+  .ftr .small{font-size:12px;color:rgba(255,255,255,.7);margin-top:8px;line-height:1.5}
+  .ftr .inst{display:inline-flex;align-items:center;gap:10px;height:44px;padding:0 18px;border-radius:999px;background:var(--sky);color:var(--navy);font-size:11.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-top:16px;white-space:nowrap}
+  .ftr .inst svg{width:16px;height:16px;stroke:var(--navy);fill:none;stroke-width:2}
+  .ftr .camps{columns:2;column-gap:20px}
+  .ftr .legal{display:flex;justify-content:space-between;align-items:center;gap:20px;border-top:1px solid rgba(255,255,255,.18);padding:18px 0;font-size:12px;color:rgba(255,255,255,.72)}
+  .ftr .lock{display:flex;align-items:center;gap:10px;color:#fff;font-weight:600;letter-spacing:.3px}
+  .ftr .mark{display:inline-block;color:#fff;line-height:.8;white-space:nowrap;font-size:300px;margin:8px 0 -0.13em;letter-spacing:-.01em;vertical-align:top}
+
+  /* ===== PHONE (390) ===== */
+  .cv-m{width:390px}
+  .cv-m .num{width:24px;height:24px;font-size:12px;left:6px;top:6px}
+  .cv-m .ann{margin:0 10px;padding:9px 14px;border-radius:0 0 10px 10px;background:var(--navy);color:#fff;font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:500;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px 8px;text-align:center;line-height:1.4}
+  .cv-m .hd{height:64px;grid-template-columns:1fr 90px 1fr;padding:0 16px}
+  .cv-m .hd-l,.cv-m .hd-r{gap:16px}
+  .cv-m .bdg{--w:64px;--h:79px;--pt:10px;--ih:44px;--bx:5px;--by:10px}
+  .cv-m .hero{margin:0 10px;border-radius:14px;overflow:hidden}
+  .cv-m .hero .ph{height:250px}
+  .cv-m .hero .ph .lbl{left:12px;bottom:auto;top:56px;font-size:9.5px}
+  .cv-m .sl{right:12px;bottom:12px;padding:6px;gap:6px}
+  .cv-m .sl i{width:36px;height:36px}
+  .cv-m .sl svg{width:22px;height:22px;margin:0 3px}
+  .cv-m .hero-l{padding:22px 20px 26px}
+  .mchip{align-self:flex-start;display:flex;align-items:center;gap:6px;height:30px;padding:0 12px;border:1.5px solid rgba(255,255,255,.6);border-radius:999px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#fff;margin-bottom:16px}
+  .mchip svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2}
+  .cv-m .eb{font-size:15px}
+  .cv-m .hero h1{font-size:44px;line-height:.96;margin-top:10px}
+  .cv-m .hb{font-size:14.5px;margin-top:14px}
+  .cv-m .ctas{margin-top:18px;gap:10px}
+  .cv-m .btn{height:42px;padding:0 18px;font-size:10.5px}
+  .cv-m .mslot{margin:12px 10px 0;display:grid;gap:8px}
+  .tchips{display:flex;gap:8px;overflow:hidden}
+  .tchips span{display:flex;align-items:center;gap:6px;height:36px;padding:0 12px;border:1.5px solid var(--line);border-radius:999px;font-size:11.5px;white-space:nowrap}
+  .tchips svg{width:14px;height:14px;stroke:var(--skydk);fill:none;stroke-width:2}
+  .mact{background:var(--navy);color:#fff;border-radius:12px;padding:12px 14px}
+  .mact .r1{display:flex;align-items:center;justify-content:space-between;font-size:12.5px}
+  .mact .r1 b{font-weight:600}
+  .mact .r2{display:flex;gap:14px;margin-top:8px;font-size:12px;color:rgba(255,255,255,.88)}
+  .mact .r2 span{display:flex;align-items:center;gap:6px}
+  .mact .r3{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:10.5px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.8px}
+  .mact .r3 i{width:30px;height:30px;border-radius:6px}
+  .cv-m .h2{font-size:34px}
+  .cv-m .msec{padding:52px 16px 0}
+  .cv-m .tiles{margin-top:16px;gap:12px}
+  .cv-m .tile{width:150px;height:150px}
+  .cv-m .tile b{font-size:21px}
+  .cv-m .prog{margin-top:16px}
+  .cv-m .budget{overflow:hidden;margin-top:16px;gap:8px}
+  .cv-m .bchip{height:36px;padding:0 14px;font-size:12px}
+  .cv-m .mcoll{margin:56px 10px 0;background:var(--panel);border-radius:14px;padding:22px 16px 6px}
+  .mrow{display:grid;grid-template-columns:64px 1fr 22px;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+  .mrow:last-child{border-bottom:0}
+  .mrow i{width:64px;height:64px;border-radius:10px}
+  .mrow .e{color:var(--skydk);font-size:13px;letter-spacing:.6px}
+  .mrow .t{font-size:24px;line-height:1;margin-top:2px}
+  .mrow svg{width:20px;height:20px;stroke:var(--navy);fill:none;stroke-width:2}
+  .mcards{display:flex;gap:12px;margin-top:16px}
+  .mcc{position:relative;flex:none;width:200px;height:250px;border-radius:14px;overflow:hidden}
+  .mcc.on{box-shadow:0 0 0 3px var(--sky)}
+  .mcc b{position:absolute;left:14px;bottom:38px;z-index:2;color:#fff;font-size:28px;line-height:.95}
+  .mcc em{position:absolute;left:14px;bottom:16px;z-index:2;color:rgba(255,255,255,.85);font-style:normal;font-size:11.5px}
+  .cv-m .mfoot{display:flex;gap:10px;margin-top:16px}
+  .cv-m .chip{height:36px;padding:0 14px;font-size:10.5px}
+  .cv-m .seg span{height:30px;padding:0 12px;font-size:10px}
+  .cv-m .lgrid{grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+  .cv-m .lc .im{height:160px}
+  .cv-m .lc .p{font-size:24px}
+  .cv-m .hgrid{margin-top:18px;gap:12px}
+  .cv-m .hcol{padding:20px 18px}
+  .cv-m .hcol h5{font-size:26px}
+  .cv-m .steps{gap:10px;margin-top:14px}
+  .cv-m .st{grid-template-columns:34px 1fr;gap:10px}
+  .cv-m .st i{width:34px;height:34px;font-size:17px}
+  .cv-m .st b{font-size:13.5px}
+  .cv-m .st span{font-size:12px}
+  .cv-m .safe{justify-content:flex-start;gap:8px 16px;font-size:11.5px}
+  .cv-m .frow2{display:flex;gap:12px;margin-top:16px}
+  .cv-m .fc{width:250px}
+  .cv-m .fc .im{height:160px}
+  .cv-m .lf{margin:56px 10px 0;border-radius:14px;padding:26px 20px}
+  .cv-m .lf h4{font-size:40px;margin-top:6px}
+  .cv-m .lf p{font-size:13.5px}
+  .cv-m .reqs{margin-top:16px}
+  .cv-m .req{padding:12px 14px}
+  .cv-m .req b{font-size:13px}
+  .cv-m .fs{margin:52px 10px 0;border-radius:14px;padding:24px 16px}
+  .cv-m .frow{margin-top:16px;gap:12px}
+  .cv-m .fcard{width:170px}
+  .cv-m .fcard .im{height:130px}
+  .cv-m .mhub{margin-top:56px;border-radius:14px 14px 0 0;overflow:hidden;color:#fff}
+  .cv-m .mhub .top{height:300px}
+  .cv-m .mhub .top .in{position:absolute;inset:0;z-index:2;padding:24px 20px;display:flex;flex-direction:column;justify-content:flex-end}
+  .cv-m .mhub h4{font-size:38px;line-height:.98}
+  .cv-m .mhub .hp{font-size:13px;margin-top:10px}
+  .cv-m .mhub .wo{margin:0;border-radius:0;padding:14px 20px 4px}
+  .cv-m .ftr{padding:0 18px}
+  .cv-m .ftr .cta a{padding:24px 0;font-size:54px;line-height:.9;border-bottom:1px solid rgba(255,255,255,.18)}
+  .cv-m .ftr .cta a:last-child{border-bottom:0}
+  .cv-m .ftr .cta svg{width:38px;height:38px}
+  .cv-m .ftr .news{padding:26px 0 8px}
+  .acc{display:flex;justify-content:space-between;align-items:center;height:54px;border-bottom:1px solid rgba(255,255,255,.18);font-family:'Special Gothic Condensed One',sans-serif;text-transform:uppercase;font-size:22px;color:#fff}
+  .acc svg{width:18px;height:18px;stroke:var(--sky);fill:none;stroke-width:2.2}
+  .cv-m .ftr .legal{flex-direction:column;align-items:flex-start;gap:10px;margin-top:18px}
+  .cv-m .ftr .mark{font-size:120px}
+</style>
+
+<h2>Home page, second draft</h2>
+<p class="subtitle">Your changes are in: all eight extras, "Shop by campus" in Brigade's "Shop by brand" style, a bolder footer, and no two neighbouring blocks that look alike. It's shown as if Midrand is your chosen campus. Desktop on the left, phone on the right.</p>
+<p class="rhythm"><b>Rhythm, top to bottom:</b> split hero &rarr; slim strip &rarr; photo tiles &rarr; grey list panel &rarr; type-led campus block &rarr; product grid &rarr; two-tone steps &rarr; seller cards &rarr; sky band &rarr; pale card row &rarr; photo banner &rarr; bold footer. Every block differs from the one before it.</p>
+
+<div class="pair">
+  <div><p class="vx-cap">Desktop</p><div class="vx-host" id="pd"></div></div>
+  <div><p class="vx-cap">Phone</p><div class="vx-host" id="pm"></div></div>
+</div>
+
+<div class="notes">
+  <div class="n"><i>1</i><div><b>Announcement bar</b><span>One useful line at a time: launch news, a safety tip, a market day.</span></div></div>
+  <div class="n"><i>2</i><div><b>Header</b><span>Pennant crest, campus pill (now showing Midrand), search, account, Saved. <em>Phone:</em> the campus chip moves into the hero.</span></div></div>
+  <div class="n"><i>3</i><div><b>Hero slider</b><span>Fixed headline, one changing word per slide (Textbooks, Tech, Services); each slide opens its category. Thumbnails plus pause.</span></div></div>
+  <div class="n"><i>4</i><div><b>Strip under the hero</b><span>Changes with the visitor. First visit: the trust strip. Signed in: messages, sales to confirm, and recently viewed items.</span></div></div>
+  <div class="n"><i>5</i><div><b>Shop by category + budget</b><span>The first carousel. Proposed school categories: Textbooks &amp; notes, Tech, Res &amp; living, Fashion &amp; thrift, Food, Hair &amp; beauty, Tutoring, Services, Tickets &amp; events, Stationery. Budget buttons underneath.</span></div></div>
+  <div class="n"><i>6</i><div><b>Collections</b><span>The "something different" after the carousel: Brigade's grey panel with a photo stack and a hover list, curated by the Hub for the season. <em>Phone:</em> rows with thumbnails.</span></div></div>
+  <div class="n"><i>7</i><div><b>Shop by campus</b><span>Brigade's "Shop by brand": campus names around one photo, small numbers for live listings, cycling through campuses. <em>Phone:</em> your swipeable campus card carousel.</span></div></div>
+  <div class="n"><i>8</i><div><b>Just listed</b><span>Newest at your campus, with a Midrand / All campuses switch: tailored, never locked. <em>Phone:</em> two-column grid.</span></div></div>
+  <div class="n"><i>9</i><div><b>How it works</b><span>Buying and selling in three steps each, with the safety rules underneath.</span></div></div>
+  <div class="n"><i>10</i><div><b>Featured today</b><span>The demo's fair daily seller draw, now with faces. <em>Phone:</em> swipe row.</span></div></div>
+  <div class="n"><i>11</i><div><b>Looking For band</b><span>A bold sky-blue band: post what you need and see open requests from your campus.</span></div></div>
+  <div class="n"><i>12</i><div><b>Free &amp; swaps</b><span>Giveaways and swap-only listings with FREE and SWAP stamps, on a pale sky panel so it doesn't echo "Just listed".</span></div></div>
+  <div class="n"><i>13</i><div><b>Hub banner + What's on</b><span>Who runs Vossie, plus the next Hub events with RSVP. Sits on the footer the way Brigade's About banner does.</span></div></div>
+  <div class="n"><i>14</i><div><b>Bold footer</b><span>Two giant links, campus updates sign-up, all 12 campuses, Add to home screen, and a full-width VOSSIE wordmark. <em>Phone:</em> link groups fold into accordions.</span></div></div>
+</div>
+
+<div class="ask">
+  <h3>Does this page structure work?</h3>
+  <p class="subtitle">If it does, I'll lock it and move on to the details (category list, photos, motion and loading states).</p>
+  <div class="options">
+    <div class="option" data-choice="approve" onclick="toggleSelect(this)"><div class="letter">A</div><div class="content"><h3>Yes, lock the structure</h3><p>Order, sections and footer are right. Move on to the details.</p></div></div>
+    <div class="option" data-choice="changes" onclick="toggleSelect(this)"><div class="letter">B</div><div class="content"><h3>Close, but I want changes</h3><p>Tell me what to move, cut or add in the terminal.</p></div></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var I={
+    menu:'<svg class="ico" viewBox="0 0 24 24"><path d="M3 8h18M3 16h12"/></svg>',
+    search:'<svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>',
+    user:'<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
+    heart:'<svg class="ico" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/></svg>',
+    pin:'<svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+    chev:'<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>',
+    chevR:'<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
+    left:'<svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>',
+    right:'<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
+    arrow:'<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+    plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+    pause:'<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
+    tick:'<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>',
+    shield:'<svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>',
+    pinS:'<svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/></svg>',
+    flag:'<svg viewBox="0 0 24 24"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>',
+    phone:'<svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg>'
+  };
+  var badge='<div class="bdg"><span class="back"></span><span class="pen"><img src="/files/crest-white-sm.png" alt="Eduvos crest"></span></div>';
+  function sec(n,inner,style){return '<section class="sx"'+(style?' style="'+style+'"':'')+'><span class="num">'+n+'</span>'+inner+'</section>';}
+  var L=['Bedfordview','Bloemfontein','Cape Town Mowbray','Cape Town Tyger Valley','Durban Umhlanga','East London'];
+  var R=['Mbombela','Midrand','Nelson Mandela Bay','Potchefstroom','Pretoria','Vanderbijlpark'];
+  var CNT={'Bedfordview':18,'Bloemfontein':24,'Cape Town Mowbray':31,'Cape Town Tyger Valley':27,'Durban Umhlanga':45,'East London':12,'Mbombela':9,'Midrand':52,'Nelson Mandela Bay':21,'Potchefstroom':16,'Pretoria':48,'Vanderbijlpark':14};
+  var cats=['Textbooks & notes','Tech','Res & living','Fashion & thrift','Food','Hair & beauty','Tutoring','Services','Tickets & events','Stationery'];
+  var budget=['Under R50','Under R100','Under R250','Free','Swaps'];
+  var listings=[['Casio fx-991ZA Plus calculator','R250','Responsive'],['Intro to Financial Accounting, 4th edition','R300','New seller'],['Bar fridge, 90 litres','R1,200','Trusted'],['Box braids, shoulder length','From R400','Trusted'],['Statistics 1 exam prep, one hour','R120','Responsive']];
+  var sellers=[['Hair studio','Braids, cornrows and wash days on campus.','Beauty'],['Maths tutor','Exam prep that sticks, one hour at a time.','Tutoring'],['Home bakery','Cupcakes and cookie boxes for any occasion.','Food'],['Design studio','Logos and posters for student hustles.','Design']];
+  var reqs=[['Accounting 1 tutor this week','Midrand &middot; 2 offers'],['Graphic calculator to borrow for exams','Pretoria &middot; 1 offer'],['Birthday cake for Friday','Midrand &middot; 3 offers']];
+  var free=[['free','Business Management 1 notes','Midrand'],['swap','Desk lamp, swap for a kettle','Pretoria'],['free','Res curtains, two panels','Midrand'],['swap','Logo design for a photo shoot','Online'],['free','Hangers, bag of 20','Bedfordview']];
+  var events=[['12','Oct','Pitch night','All campuses','RSVP'],['15','Oct','Office hours: pricing your hustle','Midrand','Book'],['20','Oct','Market day on the lawn','Pretoria','RSVP']];
+  var colls=[['Start of semester','Back-to-campus essentials'],['Exam season','Notes, tutors & cram snacks'],['Moving in','Res setup under R500'],['Skills for hire','Book a student']];
+  var shade=['','b','c'];
+  function esc(s){return s.replace(/&(?!\w+;)/g,'&amp;');}
+  function tile(c,i){return '<div class="tile ph '+shade[i%3]+'"><b class="disp">'+esc(c)+'</b><span class="cut"><span>'+I.arrow+'</span></span></div>';}
+  function names(arr,side,on){return '<div class="names '+side+' disp">'+arr.map(function(n){return '<span'+(n===on?' class="on"':'')+'>'+n+'<sup>'+CNT[n]+'</sup></span>';}).join('')+'</div>';}
+  function lc(l,i){return '<div class="lc"><div class="im ph '+shade[i%3]+'"><span class="heart">'+I.heart+'</span></div><div class="t">'+l[0]+'</div><div class="p disp">'+l[1]+'</div><div class="m">Midrand campus</div><span class="bd">'+l[2]+'</span></div>';}
+  function fc(s,i){return '<div class="fc"><div class="im ph '+['b','','c','b'][i]+'"><span class="tag">Featured</span></div><div class="bdy"><div class="nm disp">'+s[0]+'</div><div class="tg">'+s[1]+'</div><div class="mt"><span class="seal">'+I.tick+'</span>'+s[2]+' &middot; Midrand</div></div></div>';}
+  function req(r){return '<div class="req"><div><b>'+r[0]+'</b><small>'+r[1]+'</small></div>'+I.arrow+'</div>';}
+  function fcard(f,i){return '<div class="fcard"><div class="im ph '+shade[(i+1)%3]+'"><span class="stamp '+f[0]+'">'+f[0]+'</span></div><div class="t">'+f[1]+'</div><div class="m">'+f[2]+'</div></div>';}
+  function ev(e){return '<div class="ev"><div class="dt">'+e[0]+'<small>'+e[1]+'</small></div><div><b>'+e[2]+'</b><span>'+e[3]+'</span></div><span class="rs">'+e[4]+'</span></div>';}
+  var how='<div class="hcol buy"><h5 class="disp">Buying</h5><div class="steps"><div class="st"><i>1</i><div><b>Find it on your campus</b><span>Search, browse categories, or shop every campus.</span></div></div><div class="st"><i>2</i><div><b>Message the seller</b><span>Chat in Vossie or on WhatsApp. Offer a swap if they accept one.</span></div></div><div class="st"><i>3</i><div><b>Meet at a pickup point</b><span>See it first, then pay or swap on the spot.</span></div></div></div><span class="btn navy">Start shopping</span></div>'+
+          '<div class="hcol sell stars"><h5 class="disp">Selling</h5><div class="steps"><div class="st"><i>1</i><div><b>Set up your shop</b><span>About three minutes, from your phone.</span></div></div><div class="st"><i>2</i><div><b>Get approved by the Hub</b><span>The Incubation Hub checks every new seller.</span></div></div><div class="st"><i>3</i><div><b>List, chat, hand over</b><span>Earn badges as buyers confirm your sales.</span></div></div></div><span class="btn sky">Start selling</span></div>';
+  var safe='<div class="safe"><span>'+I.shield+'Verified sellers</span><span>'+I.pinS+'Approved pickup points</span><span>'+I.flag+'Never pay before you see it</span></div>';
+  var collList=colls.map(function(c,i){return '<div class="ci'+(i===0?' on':'')+'"><div class="e disp">'+c[0]+'</div><div class="t disp">'+esc(c[1])+(i===0?I.arrow:'')+'</div></div>';}).join('');
+  var hubText='<span class="lab">The Eduvos Incubation Hub</span><h4 class="disp">Built for student hustles, backed by the Hub</h4><p class="hp">Vossie is run by the Eduvos Incubation Hub. Mentors help sellers grow, and the Hub runs pitch nights, workshops and office hours on every campus.</p>';
+  var wo='<div class="wo"><p class="wh disp">What&rsquo;s on</p>'+events.map(ev).join('')+'</div>';
+  var ALL=L.concat(R);
+
+  /* ---------- desktop ---------- */
+  var d='<div class="cv cv-d" data-canvas="1200">';
+  d+=sec(1,'<div class="ann"><span class="tag">New</span><span>Live on all 12 Eduvos campuses &middot; Free to list</span>'+I.chevR+'</div>');
+  d+=sec(2,'<div class="ql"><a>Shop</a><i></i><a>Sell</a><i></i><a>Campuses</a><i></i><a>Hub</a><i></i><a>How it works</a><i></i><a>Safety</a></div>'+
+    '<div class="hd"><div class="hd-l"><span class="menu">'+I.menu+'MENU</span><span class="pill on">'+I.pin+'Midrand'+I.chev+'</span></div><div class="hd-c">'+badge+'</div><div class="hd-r">'+I.search+I.user+'<span class="saved">'+I.heart+'SAVED (3)</span></div></div>','z-index:6');
+  d+=sec(3,'<div class="hero"><div class="hero-l stars"><p class="eb lt disp">Eduvos student marketplace</p><h1 class="disp">Buy &amp; sell <span>textbooks</span> on campus</h1><p class="hb">Set books and notes from students who aced the module, handed over at a campus pickup point.</p><div class="ctas"><span class="btn sky">Shop textbooks</span><span class="btn ghost">Start selling</span></div></div>'+
+    '<div class="ph"><span class="lbl">Photo: student with textbooks</span><div class="sl"><i></i><i></i><i></i>'+I.pause+'</div></div></div>');
+  d+=sec(4,'<div class="slot"><div class="strip trust"><span class="k">First visit</span><span class="i">'+I.shield+'Verified Incubation Hub sellers</span><span class="i">'+I.pinS+'Approved campus pickup points</span><span class="i">'+I.flag+'Never pay before you see it</span><span class="go">How trust works</span></div>'+
+    '<div class="strip act"><span class="k">Signed in</span><span class="i"><b>Welcome back</b></span><span class="i"><span class="dot"></span>2 new messages</span><span class="i"><span class="dot"></span>1 sale to confirm</span><span class="rv">Recently viewed<i class="ph"></i><i class="ph b"></i><i class="ph c"></i><i class="ph"></i></span><span class="go" style="margin-left:6px">Open inbox</span></div></div>');
+  d+=sec(5,'<div class="cats"><div class="shead"><p class="eb disp">Shop by category</p><div class="sh-r"><span class="link">All categories</span><div class="arrows"><span>'+I.left+'</span><span>'+I.right+'</span></div></div></div>'+
+    '<div class="tiles">'+cats.slice(0,7).map(tile).join('')+'</div><div class="prog"></div>'+
+    '<div class="budget"><span class="lab">Shop by budget</span>'+budget.map(function(b){return '<span class="bchip">'+b+'</span>';}).join('')+'</div></div>');
+  d+=sec(6,'<div class="coll"><div class="stack"><div class="ph s1"></div><div class="ph s2"></div><div class="ph"><span class="lbl">Collection photo</span></div></div><div class="clist">'+collList+'</div></div>');
+  d+=sec(7,'<div class="sbc"><p class="eb disp c">Shop by campus</p>'+names(L,'l','')+'<div class="photo ph"><span class="lbl">Photo: Midrand campus</span><span class="pbar"></span></div>'+names(R,'r','Midrand')+
+    '<div class="foot"><span class="chip fill">All campuses</span><span class="chip">Eduvos Online</span></div><p class="cap">Small numbers show live listings &middot; cycles every 4 seconds, pauses on hover</p></div>');
+  d+=sec(8,'<div class="jl"><div class="shead"><div><p class="eb disp">Just listed</p><h3 class="h2 disp">New at Midrand</h3></div><div class="sh-r"><div class="seg"><span class="on">Midrand</span><span>All campuses</span></div><span class="link">See all</span></div></div><div class="lgrid">'+listings.map(lc).join('')+'</div></div>');
+  d+=sec(9,'<div class="how"><p class="eb disp c">How Vossie works</p><h3 class="h2 disp" style="text-align:center">Safe, simple, on campus</h3><div class="hgrid">'+how+'</div>'+safe+'</div>');
+  d+=sec(10,'<div class="ft"><div class="shead"><div><p class="eb disp">Featured today</p><h3 class="h2 disp">Hustles at Midrand</h3></div><span class="link">How we pick</span></div><div class="fgrid">'+sellers.map(fc).join('')+'</div></div>');
+  d+=sec(11,'<div class="lf"><div><p class="eb disp nv">Looking For</p><h4 class="disp">Can&rsquo;t find it? Ask for it.</h4><p>Post what you need and sellers on your campus come to you with offers.</p><span class="btn navy">Post a request</span></div><div class="reqs">'+reqs.map(req).join('')+'</div></div>');
+  d+=sec(12,'<div class="fs"><div class="shead"><div><p class="eb disp nv">Free &amp; swaps</p><h3 class="h2 disp">Pass it on</h3></div><span class="link">See all</span></div><div class="frow">'+free.map(fcard).join('')+'</div></div>');
+  d+=sec(13,'<div class="hub ph"><div class="in"><div>'+hubText+'<span class="btn sky">Our story</span></div>'+wo+'</div></div>');
+  d+=sec(14,'<footer class="ftr stars"><div class="cta"><a class="disp">Shop your campus'+I.arrow+'</a><a class="disp">Start selling'+I.arrow+'</a></div>'+
+    '<div class="cols"><div><h6 class="disp">Get campus updates</h6><p>New sellers, market days and drops on your campus.</p><div class="em">Your email<span>&rarr;</span></div><p class="small">Or follow the Vossie WhatsApp channel.</p><span class="inst">'+I.phone+'Add Vossie to your home screen</span></div>'+
+    '<div><h6 class="disp">Shop</h6><ul><li>All campuses</li><li>Categories</li><li>Just listed</li><li>Free &amp; swaps</li><li>Looking For</li></ul></div>'+
+    '<div><h6 class="disp">Sell</h6><ul><li>Start selling</li><li>Seller guidelines</li><li>How trust works</li><li>Incubation Hub</li></ul></div>'+
+    '<div><h6 class="disp">Help</h6><ul><li>How it works</li><li>Safety</li><li>Privacy (POPIA)</li><li>Contact</li></ul></div>'+
+    '<div><h6 class="disp">Campuses</h6><ul class="camps">'+ALL.map(function(c){return '<li>'+c+'</li>';}).join('')+'<li>Eduvos Online</li></ul></div></div>'+
+    '<div class="legal"><span class="lock"><span class="mini"><img src="/files/crest-navy-sm.png" alt="Eduvos crest"></span>An Eduvos Incubation Hub project</span><span>&copy; 2026 Eduvos Incubation Hub &middot; Privacy (POPIA) &middot; Terms &middot; Seller guidelines</span><span>Instagram &middot; TikTok &middot; WhatsApp</span></div>'+
+    '<div class="mark disp">Vossie</div></footer>');
+  d+='</div>';
+
+  /* ---------- phone ---------- */
+  var m='<div class="cv cv-m" data-canvas="390">';
+  m+=sec(1,'<div class="ann"><span class="tag">New</span><span>Live on all 12 Eduvos campuses</span></div>');
+  m+=sec(2,'<div class="hd"><div class="hd-l">'+I.menu+I.search+'</div><div class="hd-c">'+badge+'</div><div class="hd-r">'+I.user+I.heart+'</div></div>','z-index:6');
+  m+=sec(3,'<div class="hero"><div class="ph"><span class="lbl">Photo needed</span><div class="sl"><i></i><i></i><i></i>'+I.pause+'</div></div><div class="hero-l stars"><span class="mchip">'+I.pin+'Shopping at Midrand'+I.chev+'</span><p class="eb lt disp">Eduvos student marketplace</p><h1 class="disp">Buy &amp; sell <span>textbooks</span> on campus</h1><p class="hb">Set books and notes from students who aced the module.</p><div class="ctas"><span class="btn sky">Shop textbooks</span><span class="btn ghost">Sell</span></div></div></div>');
+  m+=sec(4,'<div class="mslot"><div class="tchips"><span>'+I.shield+'Verified sellers</span><span>'+I.pinS+'Pickup points</span><span>'+I.flag+'See it, then pay</span></div>'+
+    '<div class="mact"><div class="r1"><b>Welcome back</b><span class="link">Inbox</span></div><div class="r2"><span><span class="dot"></span>2 new messages</span><span><span class="dot"></span>1 sale to confirm</span></div><div class="r3">Recently viewed<i class="ph"></i><i class="ph b"></i><i class="ph c"></i><i class="ph"></i></div></div></div>');
+  m+=sec(5,'<div class="msec"><div class="shead"><p class="eb disp">Shop by category</p><span class="link">All</span></div><div class="tiles">'+cats.slice(0,3).map(tile).join('')+'</div><div class="prog"></div>'+
+    '<div class="budget">'+budget.map(function(b){return '<span class="bchip">'+b+'</span>';}).join('')+'</div></div>');
+  m+=sec(6,'<div class="mcoll">'+colls.map(function(c,i){return '<div class="mrow"><i class="ph '+shade[i%3]+'"></i><div><div class="e disp">'+c[0]+'</div><div class="t disp">'+esc(c[1])+'</div></div>'+I.arrow+'</div>';}).join('')+'</div>');
+  m+=sec(7,'<div class="msec"><p class="eb disp c">Shop by campus</p><div class="mcards"><div class="mcc stars"><b class="disp">All<br>campuses</b><em>Every Eduvos campus</em></div><div class="mcc ph on"><span class="lbl">Campus photo</span><b class="disp">Midrand</b><em>52 live listings</em></div><div class="mcc ph b"><b class="disp">Pretoria</b><em>48 live listings</em></div></div><div class="prog" style="margin-top:16px"></div><div class="mfoot"><span class="chip fill">All campuses</span><span class="chip">Eduvos Online</span></div></div>');
+  m+=sec(8,'<div class="msec"><p class="eb disp">Just listed</p><div class="shead" style="margin-top:4px"><h3 class="h2 disp">New at Midrand</h3></div><div class="seg" style="margin-top:12px"><span class="on">Midrand</span><span>All campuses</span></div><div class="lgrid">'+listings.slice(0,4).map(lc).join('')+'</div></div>');
+  m+=sec(9,'<div class="msec"><p class="eb disp">How Vossie works</p><h3 class="h2 disp">Safe, simple, on campus</h3><div class="hgrid">'+how+'</div>'+safe+'</div>');
+  m+=sec(10,'<div class="msec"><div class="shead"><div><p class="eb disp">Featured today</p><h3 class="h2 disp">Hustles at Midrand</h3></div></div><div class="frow2">'+sellers.slice(0,2).map(fc).join('')+'</div></div>');
+  m+=sec(11,'<div class="lf"><p class="eb disp nv">Looking For</p><h4 class="disp">Can&rsquo;t find it? Ask for it.</h4><p>Post what you need and sellers on your campus come to you.</p><div class="reqs">'+reqs.slice(0,2).map(req).join('')+'</div><span class="btn navy">Post a request</span></div>');
+  m+=sec(12,'<div class="fs"><div class="shead"><div><p class="eb disp nv">Free &amp; swaps</p><h3 class="h2 disp">Pass it on</h3></div><span class="link">All</span></div><div class="frow">'+free.slice(0,3).map(fcard).join('')+'</div></div>');
+  m+=sec(13,'<div class="mhub"><div class="top hub ph"><div class="in">'+hubText+'</div></div>'+wo+'</div>');
+  m+=sec(14,'<footer class="ftr stars"><div class="cta"><a class="disp">Shop your campus'+I.arrow+'</a><a class="disp">Start selling'+I.arrow+'</a></div>'+
+    '<div class="news"><h6 class="disp">Get campus updates</h6><div class="em">Your email<span>&rarr;</span></div><span class="inst">'+I.phone+'Add to home screen</span></div>'+
+    ['Shop','Sell','Help','Campuses'].map(function(a){return '<div class="acc">'+a+I.plus+'</div>';}).join('')+
+    '<div class="legal"><span class="lock"><span class="mini"><img src="/files/crest-navy-sm.png" alt="Eduvos crest"></span>An Eduvos Incubation Hub project</span><span>&copy; 2026 Eduvos Incubation Hub &middot; Privacy (POPIA)</span></div>'+
+    '<div class="mark disp">Vossie</div></footer>');
+  m+='</div>';
+
+  document.getElementById('pd').innerHTML=d;
+  document.getElementById('pm').innerHTML=m;
+
+  function fitMarks(){
+    document.querySelectorAll('.ftr .mark').forEach(function(el){
+      el.style.fontSize='300px';
+      var target=el.parentElement.clientWidth-parseFloat(getComputedStyle(el.parentElement).paddingLeft)-parseFloat(getComputedStyle(el.parentElement).paddingRight);
+      var w=el.scrollWidth||1;
+      el.style.fontSize=(300*target/w*0.995).toFixed(1)+'px';
+    });
+  }
+  function fit(){document.querySelectorAll('[data-canvas]').forEach(function(c){c.style.zoom=(c.parentElement.clientWidth/+c.getAttribute('data-canvas')).toFixed(4);});}
+  function all(){fitMarks();fit();}
+  window.addEventListener('resize',fit);
+  all(); setTimeout(all,300);
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(all);}
+})();
+</script>

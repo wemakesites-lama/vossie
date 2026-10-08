@@ -1,0 +1,210 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Gothic+Condensed+One&family=Geist:wght@400;500;600&display=swap">
+<style>
+  .option .content{min-width:0}
+  .vx-note{font-size:.85rem;color:var(--text-secondary);margin:-.75rem 0 1.25rem;max-width:72ch}
+  .vx-row{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr);gap:14px;margin-top:12px;align-items:start}
+  @media (max-width:760px){.vx-row{grid-template-columns:1fr}}
+  .vx-host{min-width:0;border-radius:10px;overflow:hidden;box-shadow:0 0 0 1px rgba(21,48,93,.10),0 8px 24px rgba(21,48,93,.10);background:#fff}
+  .vx-cap{font-size:.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;margin-top:6px}
+  .vx-pc{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-size:.82rem;color:var(--text-secondary)}
+  .vx-pc b{color:var(--text-primary);font-weight:600}
+
+  .cv{--navy:#15305D;--sky:#29ABE2;--skydk:#1E7BA8;--page:#FFFFFF;--panel:#F3F3F3;--line:rgba(21,48,93,.14);--grey:#B9C0CC;--bs:1;
+      position:relative;overflow:hidden;background:var(--page);color:var(--navy);font-family:'Geist',system-ui,sans-serif}
+  .cv *{box-sizing:border-box}
+  .cv-d{width:1200px;height:700px}
+  .cv-m{width:390px;height:760px;--bs:.74}
+  .disp{font-family:'Special Gothic Condensed One','Arial Narrow',sans-serif;text-transform:uppercase;font-weight:400}
+  .stars{background-color:var(--navy);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg fill='%2329ABE2' fill-opacity='0.13'%3E%3Cpath d='M30 18 Q32 28 42 30 Q32 32 30 42 Q28 32 18 30 Q28 28 30 18Z'/%3E%3Cpath d='M120 52 Q121.2 58.8 128 60 Q121.2 61.2 120 68 Q118.8 61.2 112 60 Q118.8 58.8 120 52Z'/%3E%3Cpath d='M80 112 Q82.5 125.5 96 128 Q82.5 130.5 80 144 Q77.5 130.5 64 128 Q77.5 125.5 80 112Z'/%3E%3Cpath d='M152 144 Q153 151 160 152 Q153 153 152 160 Q151 153 144 152 Q151 151 152 144Z'/%3E%3C/g%3E%3C/svg%3E")}
+  .ico{width:20px;height:20px;stroke:var(--navy);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+  /* header with pennant badge (choice from screen 1) */
+  .hd{position:relative;z-index:5;height:78px;display:grid;grid-template-columns:1fr 120px 1fr;align-items:center;padding:0 40px;border-bottom:1px solid var(--line)}
+  .hd-l,.hd-r{display:flex;align-items:center;gap:22px}
+  .hd-r{justify-content:flex-end}
+  .menu{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:600;letter-spacing:1.3px}
+  .pill{display:flex;align-items:center;gap:8px;height:34px;padding:0 14px;border:1.5px solid var(--navy);border-radius:999px;font-size:11px;font-weight:600;letter-spacing:1.1px;text-transform:uppercase}
+  .pill.on{background:var(--navy);color:#fff}
+  .pill svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+  .saved{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:1.3px}
+  .hd-c{position:relative;height:78px}
+  .bdg{position:absolute;left:50%;transform:translateX(-50%);top:0;width:calc(86px*var(--bs));height:calc(106px*var(--bs))}
+  .bdg .pen,.bdg .back{position:absolute;clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%)}
+  .bdg .back{inset:0 calc(-7px*var(--bs)) calc(-14px*var(--bs)) calc(-7px*var(--bs));background:#fff}
+  .bdg .pen{inset:0;background:var(--navy);display:flex;justify-content:center;padding-top:calc(13px*var(--bs))}
+  .bdg .pen img{height:calc(60px*var(--bs))}
+  .cv-m .hd{height:64px;grid-template-columns:1fr 90px 1fr;padding:0 16px}
+  .cv-m .hd-c{height:64px}
+  .cv-m .hd-l,.cv-m .hd-r{gap:16px}
+
+  .eyebrow{color:var(--skydk);font-size:18px;letter-spacing:1px}
+
+  /* A: typographic list around a photo (Brigade "shop by brand") */
+  .sbc{display:grid;grid-template-columns:1fr 270px 1fr;gap:34px;align-items:center;padding:70px 40px 0}
+  .sbc h4{grid-column:1/-1;text-align:center;margin:0 0 6px}
+  .names{display:flex;flex-direction:column;gap:2px;font-size:38px;line-height:1.02;color:var(--grey)}
+  .names.l{text-align:right}
+  .names span.on{color:var(--navy);position:relative}
+  .names span.on::after{content:"";position:absolute;bottom:-3px;height:3px;width:60%;background:var(--sky);border-radius:2px}
+  .names.l span.on::after{right:0}
+  .names.r span.on::after{left:0}
+  .photo{position:relative;width:270px;height:300px;border-radius:16px;background:linear-gradient(150deg,#1d3a68,#2c6197 55%,#7cbadc);overflow:hidden}
+  .photo::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 16px)}
+  .photo .lbl{position:absolute;left:12px;bottom:12px;background:rgba(255,255,255,.92);font-size:10.5px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;padding:6px 10px;border-radius:999px}
+  .photo .back2{position:absolute;inset:0;transform:rotate(-5deg) translate(-14px,6px);border-radius:16px;background:#cfe6f3;z-index:-1}
+  .sbc .stack{position:relative;z-index:0}
+  .sbc .stack::before{content:"";position:absolute;inset:0;border-radius:16px;background:#d9ecf7;transform:rotate(-6deg) translate(-12px,8px)}
+  .sbc .stack::after{content:"";position:absolute;inset:0;border-radius:16px;background:#a9d6ee;transform:rotate(4deg) translate(10px,4px)}
+  .sbc .stack .photo{z-index:2}
+  .sbc .foot{grid-column:1/-1;display:flex;justify-content:center;gap:14px;margin-top:26px}
+  .chip{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 18px;border-radius:999px;border:1.5px solid var(--navy);font-size:11.5px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase}
+  .chip.fill{background:var(--navy);color:#fff}
+  .autoplay{grid-column:1/-1;text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8790a0;margin-top:12px}
+
+  /* phone sheet */
+  .dim{position:absolute;inset:64px 0 0 0;background:rgba(9,20,42,.45)}
+  .sheet{position:absolute;left:0;right:0;bottom:0;height:560px;background:#fff;border-radius:18px 18px 0 0;padding:10px 18px 0}
+  .grab{width:44px;height:5px;border-radius:3px;background:#d3d8e0;margin:0 auto 14px}
+  .sheet h5{margin:0;font-size:30px;line-height:1}
+  .sheet .sub{font-size:13px;color:#5b6577;margin:6px 0 12px}
+  .find{display:flex;align-items:center;gap:8px;height:44px;border:1.5px solid var(--line);border-radius:12px;padding:0 12px;font-size:14px;color:#8790a0}
+  .rows{margin-top:10px}
+  .rowi{display:flex;align-items:center;justify-content:space-between;height:46px;border-bottom:1px solid var(--line);font-size:15px}
+  .rowi small{display:block;font-size:11.5px;color:#7a8396}
+  .rowi.on{font-weight:600}
+  .tick{width:22px;height:22px;border-radius:50%;background:var(--sky);display:grid;place-items:center}
+  .tick svg{width:12px;height:12px;stroke:var(--navy);fill:none;stroke-width:3}
+
+  /* B: campus card carousel */
+  .car{padding:56px 40px 0}
+  .car-h{display:flex;align-items:flex-end;justify-content:space-between}
+  .car-h h4{margin:6px 0 0;font-size:46px;line-height:1}
+  .arrows{display:flex;gap:10px}
+  .arrows span{width:46px;height:46px;border-radius:50%;border:1.5px solid var(--navy);display:grid;place-items:center}
+  .arrows svg{width:18px;height:18px;stroke:var(--navy);fill:none;stroke-width:2}
+  .cards{display:flex;gap:16px;margin-top:26px}
+  .cc{position:relative;flex:none;width:228px;height:300px;border-radius:16px;overflow:hidden;background:linear-gradient(160deg,#2a4f80,#78b4d6)}
+  .cc:nth-child(odd){background:linear-gradient(160deg,#173563,#3d77a8)}
+  .cc.all{background-color:var(--navy)}
+  .cc b{position:absolute;left:16px;bottom:44px;color:#fff;font-size:34px;line-height:.95}
+  .cc i{position:absolute;left:16px;bottom:18px;color:rgba(255,255,255,.82);font-style:normal;font-size:12px;letter-spacing:.6px}
+  .cc .lbl{position:absolute;left:12px;top:12px;background:rgba(255,255,255,.9);font-size:9.5px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;padding:5px 8px;border-radius:999px}
+  .prog{height:3px;background:var(--line);border-radius:2px;margin:24px 0 0;position:relative}
+  .prog::after{content:"";position:absolute;left:0;top:0;height:3px;width:22%;background:var(--navy);border-radius:2px}
+  .cv-m .car{padding:30px 16px 0}
+  .cv-m .car-h h4{font-size:34px}
+  .cv-m .arrows{display:none}
+  .cv-m .cards{gap:12px;margin-top:18px}
+  .cv-m .cc{width:250px;height:330px}
+  .hero-stub{margin:0 24px;height:150px;border-radius:0 0 16px 16px;background:linear-gradient(90deg,var(--navy) 37%,#2c6197 37%,#7cbadc)}
+  .cv-m .hero-stub{margin:0 10px;height:120px;border-radius:0 0 14px 14px;background:var(--navy)}
+
+  /* C: first-visit picker */
+  .welcome{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:40px}
+  .welcome img{height:96px}
+  .welcome h4{margin:22px 0 0;font-size:70px;line-height:.95}
+  .welcome p{margin:12px 0 0;font-size:16px;color:rgba(255,255,255,.85);max-width:46ch}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:30px;width:920px}
+  .g{height:46px;border-radius:999px;border:1.5px solid rgba(255,255,255,.55);display:grid;place-items:center;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
+  .g.all{background:var(--sky);color:var(--navy);border-color:var(--sky)}
+  .skip{margin-top:22px;font-size:13px;text-decoration:underline;color:rgba(255,255,255,.85)}
+  .cv-m .welcome{justify-content:flex-start;padding:46px 20px 20px}
+  .cv-m .welcome img{height:64px}
+  .cv-m .welcome h4{font-size:46px;margin-top:16px}
+  .cv-m .welcome p{font-size:14px}
+  .cv-m .grid{grid-template-columns:1fr 1fr;width:100%;gap:8px;margin-top:20px}
+  .cv-m .g{height:40px;font-size:10.5px}
+</style>
+
+<h2>How should people choose their campus?</h2>
+<p class="subtitle">In all three, picking a campus puts that campus first everywhere on the site, and "All campuses" stays one tap away, so nobody is ever locked to one campus. The header now uses the pennant you picked.</p>
+<p class="vx-note">Campus names are the 12 on eduvos.com plus Eduvos Online. Blue boxes are where campus photos would go. My recommendation is A: it borrows Brigade's "Shop by brand" section and makes it slowly cycle through campuses, so you still get your animated carousel, but cleaner.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Campus switcher + "Shop by campus" list</h3>
+      <p>A campus pill in the header opens a picker (a bottom sheet on phones) with "All campuses" pinned on top and a search box. On the home page, campus names sit left and right of one photo, Brigade-style; the highlight moves to the next campus every few seconds and the photo swaps, pausing when you hover or tap.</p>
+      <div class="vx-row"><div><div class="vx-host" id="d-a"></div><div class="vx-cap">Desktop: home page section</div></div><div><div class="vx-host" id="m-a"></div><div class="vx-cap">Phone: switcher sheet</div></div></div>
+      <div class="vx-pc"><span><b>For:</b> cleanest and closest to Brigade; the same pill works on every page; type-led, so it stays light on mobile data.</span><span><b>Against:</b> needs one photo per campus; the hover swap is a desktop moment (phones get a tap-to-swap list).</span></div>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Campus card carousel</h3>
+      <p>Your original idea: a swipeable row of campus cards under the hero, starting with "All campuses", drifting slowly until someone touches it. Tapping a card opens that campus's home. The same header pill handles switching later.</p>
+      <div class="vx-row"><div><div class="vx-host" id="d-b"></div><div class="vx-cap">Desktop</div></div><div><div class="vx-host" id="m-b"></div><div class="vx-cap">Phone</div></div></div>
+      <div class="vx-pc"><span><b>For:</b> the most visual and playful; every campus gets its own card.</span><span><b>Against:</b> needs 12 strong campus photos; auto-moving rows are often skipped; heavier on data.</span></div>
+    </div>
+  </div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Ask on first visit</h3>
+      <p>The first time someone arrives, a full-screen "Where do you study?" picker appears before the home page. It's remembered after that, and the header pill changes it.</p>
+      <div class="vx-row"><div><div class="vx-host" id="d-c"></div><div class="vx-cap">Desktop</div></div><div><div class="vx-host" id="m-c"></div><div class="vx-cap">Phone</div></div></div>
+      <div class="vx-pc"><span><b>For:</b> every page is tailored from the first second; no campus photos needed.</span><span><b>Against:</b> an extra step before anyone sees a listing, which costs visitors; awkward for people who just want to browse everywhere.</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var I={
+    menu:'<svg class="ico" viewBox="0 0 24 24"><path d="M3 8h18M3 16h12"/></svg>',
+    search:'<svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>',
+    user:'<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
+    heart:'<svg class="ico" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/></svg>',
+    pin:'<svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+    chev:'<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>',
+    left:'<svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>',
+    right:'<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
+    tick:'<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>'
+  };
+  var L=['Bedfordview','Bloemfontein','Cape Town Mowbray','Cape Town Tyger Valley','Durban Umhlanga','East London'];
+  var R=['Mbombela','Midrand','Nelson Mandela Bay','Potchefstroom','Pretoria','Vanderbijlpark'];
+  var ALL=L.concat(R);
+  var badge='<div class="bdg"><span class="back"></span><span class="pen"><img src="/files/crest-white-sm.png" alt="Eduvos crest"></span></div>';
+  function header(pillText,pillOn,phone){
+    if(phone) return '<div class="hd"><div class="hd-l">'+I.menu+I.search+'</div><div class="hd-c">'+badge+'</div><div class="hd-r">'+I.user+I.heart+'</div></div>';
+    return '<div class="hd"><div class="hd-l"><span class="menu">'+I.menu+'MENU</span><span class="pill'+(pillOn?' on':'')+'">'+I.pin+pillText+I.chev+'</span></div><div class="hd-c">'+badge+'</div><div class="hd-r">'+I.search+I.user+'<span class="saved">'+I.heart+'SAVED (0)</span></div></div>';
+  }
+  function names(arr,cls,on){return '<div class="names '+cls+' disp">'+arr.map(function(n){return '<span'+(n===on?' class="on"':'')+'>'+n+'</span>';}).join('')+'</div>';}
+
+  /* A */
+  document.getElementById('d-a').innerHTML='<div class="cv cv-d" data-canvas="1200">'+header('All campuses')+
+    '<div class="sbc"><h4 class="eyebrow disp">Shop by campus</h4>'+names(L,'l','')+
+    '<div class="stack"><div class="photo"><span class="lbl">Photo: Midrand campus</span></div></div>'+names(R,'r','Midrand')+
+    '<div class="foot"><span class="chip fill">'+'All campuses'+'</span><span class="chip">Eduvos Online</span></div>'+
+    '<div class="autoplay">Highlight moves to the next campus every 4 seconds &middot; pauses on hover</div></div></div>';
+  document.getElementById('m-a').innerHTML='<div class="cv cv-m" data-canvas="390">'+header('',false,true)+'<div class="dim"></div>'+
+    '<div class="sheet"><div class="grab"></div><h5 class="disp">Choose your campus</h5><p class="sub">We’ll show it first. You can still shop every campus.</p>'+
+    '<div class="find">'+I.search.replace('class="ico"','class="ico" style="stroke:#8790a0"')+'Find your campus</div><div class="rows">'+
+    '<div class="rowi on">All campuses<span class="tick">'+I.tick+'</span></div>'+
+    ['Bedfordview|Gauteng','Bloemfontein|Free State','Cape Town Mowbray|Western Cape','Cape Town Tyger Valley|Western Cape','Durban Umhlanga|KwaZulu-Natal','East London|Eastern Cape','Mbombela|Mpumalanga','Midrand|Gauteng'].map(function(x){var p=x.split('|');return '<div class="rowi"><span>'+p[0]+'<small>'+p[1]+'</small></span></div>';}).join('')+
+    '</div></div></div>';
+
+  /* B */
+  function cards(n,phone){
+    var out='<div class="cc all stars"><b class="disp">All<br>campuses</b><i>Every Eduvos campus</i></div>';
+    ALL.slice(0,n).forEach(function(c){out+='<div class="cc"><span class="lbl">Campus photo</span><b class="disp">'+c.replace(' ','<br>')+'</b><i>Shop this campus</i></div>';});
+    return out;
+  }
+  document.getElementById('d-b').innerHTML='<div class="cv cv-d" data-canvas="1200">'+header('All campuses')+'<div class="hero-stub"></div>'+
+    '<div class="car"><div class="car-h"><div><p class="eyebrow disp" style="margin:0">Shop your campus</p><h4 class="disp">Pick a campus, see it first</h4></div><div class="arrows"><span>'+I.left+'</span><span>'+I.right+'</span></div></div>'+
+    '<div class="cards">'+cards(5)+'</div><div class="prog"></div></div></div>';
+  document.getElementById('m-b').innerHTML='<div class="cv cv-m" data-canvas="390">'+header('',false,true)+'<div class="hero-stub"></div>'+
+    '<div class="car"><p class="eyebrow disp" style="margin:0">Shop your campus</p><div class="car-h"><h4 class="disp">Pick a campus</h4></div><div class="cards">'+cards(2,true)+'</div><div class="prog"></div></div></div>';
+
+  /* C */
+  function grid(){return '<div class="grid"><span class="g all">All campuses</span>'+ALL.map(function(c){return '<span class="g">'+c+'</span>';}).join('')+'<span class="g">Eduvos Online</span></div>';}
+  document.getElementById('d-c').innerHTML='<div class="cv cv-d stars" data-canvas="1200"><div class="welcome"><img src="/files/crest-white-sm.png" alt="Eduvos crest"><h4 class="disp">Where do you study?</h4><p>We’ll show your campus first. You can still shop every Eduvos campus.</p>'+grid()+'<span class="skip">Skip for now</span></div></div>';
+  document.getElementById('m-c').innerHTML='<div class="cv cv-m stars" data-canvas="390"><div class="welcome"><img src="/files/crest-white-sm.png" alt="Eduvos crest"><h4 class="disp">Where do you study?</h4><p>We’ll show your campus first. You can still shop every campus.</p>'+grid()+'<span class="skip">Skip for now</span></div></div>';
+
+  function fit(){document.querySelectorAll('[data-canvas]').forEach(function(c){c.style.zoom=(c.parentElement.clientWidth/+c.getAttribute('data-canvas')).toFixed(4);});}
+  window.addEventListener('resize',fit); fit(); setTimeout(fit,250); setTimeout(fit,1200);
+})();
+</script>

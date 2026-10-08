@@ -1,0 +1,192 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Gothic+Condensed+One&family=Geist:wght@400;500;600&display=swap">
+<style>
+  .option .content{min-width:0}
+  .vx-note{font-size:.85rem;color:var(--text-secondary);margin:-.75rem 0 1.25rem;max-width:70ch}
+  .vx-row{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr);gap:14px;margin-top:12px;align-items:start}
+  @media (max-width:760px){.vx-row{grid-template-columns:1fr}}
+  .vx-host{min-width:0;border-radius:10px;overflow:hidden;box-shadow:0 0 0 1px rgba(21,48,93,.10),0 8px 24px rgba(21,48,93,.10);background:#fff}
+  .vx-cap{font-size:.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;margin-top:6px}
+  .vx-pc{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:8px;font-size:.82rem;color:var(--text-secondary)}
+  .vx-pc b{color:var(--text-primary);font-weight:600}
+
+  /* ---- Mockup canvas (designed at fixed px, scaled with zoom) ---- */
+  .cv{--navy:#15305D;--sky:#29ABE2;--page:#FFFFFF;--panel:#F3F3F3;--ink:#373F41;--line:rgba(21,48,93,.14);--bs:1;
+      position:relative;overflow:hidden;background:var(--page);color:var(--navy);font-family:'Geist',system-ui,sans-serif}
+  .cv-d{width:1200px;height:820px}
+  .cv-m{width:390px;height:800px;--bs:.74}
+  .cv *{box-sizing:border-box}
+  .disp{font-family:'Special Gothic Condensed One','Arial Narrow',sans-serif;text-transform:uppercase;font-weight:400;letter-spacing:0}
+
+  .ann{margin:0 40px;height:42px;background:var(--navy);border-radius:0 0 12px 12px;display:flex;align-items:center;justify-content:center;gap:12px;color:#fff;font-size:11.5px;letter-spacing:1.3px;text-transform:uppercase;font-weight:500}
+  .ann .tag{background:var(--sky);color:var(--navy);padding:4px 10px;border-radius:4px;font-weight:600}
+  .ann svg{width:10px;height:10px}
+  .ql{height:46px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line)}
+  .ql a{font-family:'Special Gothic Condensed One','Arial Narrow',sans-serif;text-transform:uppercase;font-size:18px;color:var(--navy);padding:0 34px;text-decoration:none}
+  .ql i{width:1px;height:18px;background:var(--line)}
+
+  .hd{position:relative;z-index:5;height:78px;display:grid;grid-template-columns:1fr 120px 1fr;align-items:center;padding:0 40px}
+  .hd-l,.hd-r{display:flex;align-items:center;gap:22px}
+  .hd-r{justify-content:flex-end}
+  .menu{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:600;letter-spacing:1.3px}
+  .menu svg,.ico{width:20px;height:20px;stroke:var(--navy);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .pill{display:flex;align-items:center;gap:8px;height:34px;padding:0 14px;border:1.5px solid var(--navy);border-radius:999px;font-size:11px;font-weight:600;letter-spacing:1.1px;text-transform:uppercase}
+  .pill svg{width:14px;height:14px;stroke:var(--navy);fill:none;stroke-width:2}
+  .saved{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:1.3px}
+  .hd-c{position:relative;height:78px}
+
+  /* Badge A: crest + white crest-shaped tab */
+  .bdg{position:absolute;left:50%;transform:translateX(-50%)}
+  .bdg-a{top:calc(9px*var(--bs));width:calc(56px*var(--bs))}
+  .bdg-a .crest{display:block;width:100%;position:relative}
+  .bdg-a .tab{position:absolute;left:-2.762%;top:-1.642%;width:105.39%;transform:translateY(calc(13px*var(--bs)))}
+  /* Badge B: navy pennant with white crest */
+  .bdg-b{top:0;width:calc(86px*var(--bs));height:calc(106px*var(--bs))}
+  .bdg-b .pen,.bdg-b .back{position:absolute;clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%)}
+  .bdg-b .back{inset:0 calc(-7px*var(--bs)) calc(-14px*var(--bs)) calc(-7px*var(--bs));background:#fff}
+  .bdg-b .pen{inset:0;background:var(--navy);display:flex;justify-content:center;padding-top:calc(13px*var(--bs))}
+  .bdg-b .pen img{height:calc(60px*var(--bs))}
+  /* Badge C: navy seal with white crest */
+  .bdg-c{top:calc(6px*var(--bs));width:calc(94px*var(--bs));height:calc(94px*var(--bs))}
+  .bdg-c .back{position:absolute;left:calc(-6px*var(--bs));top:calc(-6px*var(--bs));width:calc(106px*var(--bs));height:calc(106px*var(--bs));border-radius:50%;background:#fff;transform:translateY(calc(10px*var(--bs)))}
+  .bdg-c .seal{position:absolute;inset:0;border-radius:50%;background:var(--navy);display:grid;place-items:center}
+  .bdg-c .seal img{height:calc(58px*var(--bs))}
+
+  .hero{position:relative;z-index:1;margin:0 24px;height:470px;border-radius:16px;overflow:hidden;display:grid;grid-template-columns:37% 63%}
+  .hero-l{background-color:var(--navy);color:#fff;padding:52px 46px;display:flex;flex-direction:column;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg fill='%2329ABE2' fill-opacity='0.13'%3E%3Cpath d='M30 18 Q32 28 42 30 Q32 32 30 42 Q28 32 18 30 Q28 28 30 18Z'/%3E%3Cpath d='M120 52 Q121.2 58.8 128 60 Q121.2 61.2 120 68 Q118.8 61.2 112 60 Q118.8 58.8 120 52Z'/%3E%3Cpath d='M80 112 Q82.5 125.5 96 128 Q82.5 130.5 80 144 Q77.5 130.5 64 128 Q77.5 125.5 80 112Z'/%3E%3Cpath d='M152 144 Q153 151 160 152 Q153 153 152 160 Q151 153 144 152 Q151 151 152 144Z'/%3E%3C/g%3E%3C/svg%3E")}
+  .eyebrow{color:var(--sky);font-size:19px;letter-spacing:1px}
+  .hero h1{margin:26px 0 0;font-size:64px;line-height:.98;color:#fff}
+  .hero-b{margin-top:auto;font-size:16px;line-height:1.6;color:rgba(255,255,255,.86);max-width:34ch}
+  .ctas{display:flex;gap:12px;margin-top:24px}
+  .btn{height:46px;padding:0 24px;border-radius:999px;display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;letter-spacing:1.3px;text-transform:uppercase}
+  .btn.sky{background:var(--sky);color:var(--navy)}
+  .btn.ghost{border:1.5px solid rgba(255,255,255,.7);color:#fff}
+  .hero-r{position:relative;background:linear-gradient(135deg,#1d3a68 0%,#2c6197 52%,#7cbadc 100%)}
+  .hero-r::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 16px)}
+  .ph{position:absolute;left:26px;bottom:26px;background:rgba(255,255,255,.92);color:var(--navy);font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:7px 12px;border-radius:999px}
+  .sl{position:absolute;right:20px;bottom:20px;display:flex;align-items:center;gap:8px;padding:8px;background:rgba(9,20,42,.72);border-radius:10px}
+  .sl i{width:48px;height:48px;border-radius:6px;background:linear-gradient(135deg,#35598a,#8cc6e4)}
+  .sl i:first-child{outline:2px solid var(--sky);outline-offset:1px}
+  .sl svg{width:30px;height:30px;fill:#fff;margin:0 6px}
+
+  .tiles{display:flex;gap:16px;margin:30px 24px 0}
+  .tile{position:relative;width:180px;height:180px;flex:none;border-radius:14px;background:linear-gradient(160deg,#2a4f80,#78b4d6)}
+  .tile:nth-child(2n){background:linear-gradient(160deg,#173563,#3d77a8)}
+  .tile b{position:absolute;left:14px;top:12px;color:#fff;font-size:24px}
+  .tile .cut{position:absolute;right:-6px;bottom:-6px;width:52px;height:52px;border-radius:50%;background:var(--page);display:grid;place-items:center}
+  .tile .cut span{width:34px;height:34px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px var(--line);display:grid;place-items:center}
+  .tile .cut svg{width:14px;height:14px;stroke:var(--navy);fill:none;stroke-width:2.2}
+
+  /* phone */
+  .cv-m .ann{margin:0 10px;height:38px;font-size:10px;letter-spacing:1px;gap:8px;border-radius:0 0 10px 10px}
+  .cv-m .hd{height:64px;grid-template-columns:1fr 90px 1fr;padding:0 16px}
+  .cv-m .hd-c{height:64px}
+  .cv-m .hd-l,.cv-m .hd-r{gap:16px}
+  .cv-m .hero{display:block;height:auto;margin:0 10px;border-radius:14px}
+  .cv-m .hero-r{height:250px}
+  .cv-m .hero-l{padding:24px 22px 26px}
+  .cv-m .chip{align-self:flex-start;display:flex;align-items:center;gap:6px;height:30px;padding:0 12px;border:1.5px solid rgba(255,255,255,.6);border-radius:999px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#fff;margin-bottom:18px}
+  .cv-m .chip svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2}
+  .cv-m .eyebrow{font-size:16px}
+  .cv-m .hero h1{font-size:44px;margin-top:12px}
+  .cv-m .hero-b{margin-top:16px;font-size:14.5px}
+  .cv-m .ctas{margin-top:18px}
+  .cv-m .btn{height:42px;padding:0 18px;font-size:10.5px}
+  .cv-m .sl{right:12px;bottom:12px;padding:6px;gap:6px}
+  .cv-m .sl i{width:36px;height:36px}
+  .cv-m .sl svg{width:22px;height:22px;margin:0 3px}
+  .cv-m .ph{left:12px;bottom:auto;top:62px;font-size:9.5px}
+</style>
+
+<h2>How should the Eduvos crest hang from the header?</h2>
+<p class="subtitle">Same idea as Brigade's badge: the logo sits in the sticky header and cuts into the hero below it. Only the badge changes between these three. Copy, type, photos and categories are placeholders for now.</p>
+<p class="vx-note">The crest is the one you sent, cleaned up and recoloured to exact Eduvos navy (#15305D). For the real build we'll need Eduvos's official SVG. My recommendation is A.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Crest tab</h3>
+      <p>The navy crest sits straight on the white header. A white tab in the crest's own outline drops into the hero, so the header looks like it bleeds into the page.</p>
+      <div class="vx-row"><div><div class="vx-host" id="d-a"></div><div class="vx-cap">Desktop</div></div><div><div class="vx-host" id="m-a"></div><div class="vx-cap">Phone</div></div></div>
+      <div class="vx-pc"><span><b>For:</b> uses the logo exactly as Eduvos draws it; closest to Brigade; the crest's pointed base does the "indent" by itself.</span><span><b>Against:</b> the quietest of the three over busy photos.</span></div>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Varsity pennant</h3>
+      <p>A white crest inside a navy pennant, like a hanging varsity banner, with a white edge where it meets the hero.</p>
+      <div class="vx-row"><div><div class="vx-host" id="d-b"></div><div class="vx-cap">Desktop</div></div><div><div class="vx-host" id="m-b"></div><div class="vx-cap">Phone</div></div></div>
+      <div class="vx-pc"><span><b>For:</b> strongest presence over any photo; feels collegiate.</span><span><b>Against:</b> puts the crest inside a second shape, which Eduvos's brand rules may not allow; bulkiest on phones.</span></div>
+    </div>
+  </div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Round seal</h3>
+      <p>A white crest inside a navy circle, like a university seal, with a white ring that drops into the hero.</p>
+      <div class="vx-row"><div><div class="vx-host" id="d-c"></div><div class="vx-cap">Desktop</div></div><div><div class="vx-host" id="m-c"></div><div class="vx-cap">Phone</div></div></div>
+      <div class="vx-pc"><span><b>For:</b> compact and tidy on phones.</span><span><b>Against:</b> least like Brigade; reads more "official certificate" than "marketplace"; same logo-in-a-shape question as B.</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var I={
+    menu:'<svg viewBox="0 0 24 24"><path d="M3 8h18M3 16h12"/></svg>',
+    search:'<svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>',
+    user:'<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
+    heart:'<svg class="ico" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/></svg>',
+    pin:'<svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+    chev:'<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>',
+    right:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M9 5l7 7-7 7"/></svg>',
+    arrow:'<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+    pause:'<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>'
+  };
+  function badge(v){
+    if(v==='a') return '<div class="bdg bdg-a"><img class="tab" src="/files/crest-tab.png" alt=""><img class="crest" src="/files/crest-navy-sm.png" alt="Eduvos crest"></div>';
+    if(v==='b') return '<div class="bdg bdg-b"><span class="back"></span><span class="pen"><img src="/files/crest-white-sm.png" alt="Eduvos crest"></span></div>';
+    return '<div class="bdg bdg-c"><span class="back"></span><span class="seal"><img src="/files/crest-white-sm.png" alt="Eduvos crest"></span></div>';
+  }
+  var tiles=['Textbooks','Tech','Res living','Fashion','Food','Services'].map(function(t){
+    return '<div class="tile"><b class="disp">'+t+'</b><span class="cut"><span>'+I.arrow+'</span></span></div>';}).join('');
+  function desk(v){
+    return '<div class="cv cv-d" data-canvas="1200">'+
+      '<div class="ann"><span class="tag">New</span><span>Live on all 12 Eduvos campuses &middot; Free to list</span>'+I.right+'</div>'+
+      '<div class="ql"><a>Shop</a><i></i><a>Sell</a><i></i><a>Campuses</a><i></i><a>Hub</a><i></i><a>How it works</a><i></i><a>Safety</a></div>'+
+      '<div class="hd"><div class="hd-l"><span class="menu">'+I.menu+'MENU</span><span class="pill">'+I.pin+'All campuses'+I.chev+'</span></div>'+
+      '<div class="hd-c">'+badge(v)+'</div>'+
+      '<div class="hd-r">'+I.search+I.user+'<span class="saved">'+I.heart+'SAVED (0)</span></div></div>'+
+      '<div class="hero"><div class="hero-l"><p class="eyebrow disp">Eduvos student marketplace</p><h1 class="disp">Everything your campus sells</h1>'+
+      '<p class="hero-b">Textbooks, tech, food, braids and tutoring from Eduvos students. Shop your campus or all twelve.</p>'+
+      '<div class="ctas"><span class="btn sky">Shop now</span><span class="btn ghost">Start selling</span></div></div>'+
+      '<div class="hero-r"><span class="ph">Photo needed: students trading on campus</span><div class="sl"><i></i><i></i><i></i>'+I.pause+'</div></div></div>'+
+      '<div class="tiles">'+tiles+'</div></div>';
+  }
+  function phone(v){
+    return '<div class="cv cv-m" data-canvas="390">'+
+      '<div class="ann"><span class="tag">New</span><span>Live on all 12 campuses</span></div>'+
+      '<div class="hd"><div class="hd-l"><span class="menu">'+I.menu+'</span>'+I.search+'</div>'+
+      '<div class="hd-c">'+badge(v)+'</div>'+
+      '<div class="hd-r">'+I.user+I.heart+'</div></div>'+
+      '<div class="hero"><div class="hero-r"><span class="ph">Photo needed</span><div class="sl"><i></i><i></i><i></i>'+I.pause+'</div></div>'+
+      '<div class="hero-l"><span class="chip">'+I.pin.replace('<svg','<svg')+'All campuses'+I.chev+'</span><p class="eyebrow disp">Eduvos student marketplace</p><h1 class="disp">Everything your campus sells</h1>'+
+      '<p class="hero-b">Textbooks, tech, food, braids and tutoring from Eduvos students.</p>'+
+      '<div class="ctas"><span class="btn sky">Shop now</span><span class="btn ghost">Sell</span></div></div></div></div>';
+  }
+  ['a','b','c'].forEach(function(v){
+    document.getElementById('d-'+v).innerHTML=desk(v);
+    document.getElementById('m-'+v).innerHTML=phone(v);
+  });
+  function fit(){
+    document.querySelectorAll('[data-canvas]').forEach(function(c){
+      var w=+c.getAttribute('data-canvas'), host=c.parentElement;
+      c.style.zoom=(host.clientWidth/w).toFixed(4);
+    });
+  }
+  window.addEventListener('resize',fit); fit(); setTimeout(fit,250); setTimeout(fit,1200);
+})();
+</script>
