@@ -419,20 +419,24 @@ Run these one at a time, checking each result before the next:
 Tell Lama this adds Vitest, Vite, jsdom and Testing Library as dev dependencies. It also updates `@types/node` to the Node 24 types, because Vitest 5 expects `^22 || >=24`. Then run:
 
 ```bash
-pnpm add -D vitest@^5.0.3 vite@^8.3.4 @vitejs/plugin-react@^6.1.2 vite-tsconfig-paths@^6.1.1 jsdom@^30.1.2 @testing-library/react@^16.3.3 @testing-library/dom@^10.4.2 @testing-library/jest-dom@^7.0.1 @testing-library/user-event@^14.6.7 @types/node@^24
+pnpm add -D vitest@^5.0.3 vite@^8.3.4 @vitejs/plugin-react@^6.1.2 jsdom@^30.1.2 @testing-library/react@^16.3.3 @testing-library/dom@^10.4.2 @testing-library/jest-dom@^7.0.1 @testing-library/user-event@^14.6.7 @types/node@^24
 ```
 
 Expected: no peer dependency errors.
 
 - [ ] **Step 2: Write `vitest.config.mts`**
 
+Vite 8 resolves the `@/*` paths from `tsconfig.json` itself (`resolve.tsconfigPaths`), so no paths plugin is needed. (Updated 2026-10-09: the first draft used `vite-tsconfig-paths`, which Vite 8 reports as redundant.)
+
 ```ts
 import react from "@vitejs/plugin-react";
-import tsconfigPaths from "vite-tsconfig-paths";
 import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
-  plugins: [tsconfigPaths(), react()],
+  plugins: [react()],
+  resolve: {
+    tsconfigPaths: true,
+  },
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
