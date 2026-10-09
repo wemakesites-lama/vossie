@@ -302,3 +302,78 @@
     translate: 0 8px;
   }
 }
+
+/* --- Pennant (Task 10) ---------------------------------------------------- */
+@layer components {
+  .pennant {
+    --pen-w: 64px;
+    --pen-h: 79px;
+    --pen-pt: 10px;
+    --crest-h: 44px;
+    --edge-x: 5px;
+    --edge-y: 10px;
+    position: relative;
+    display: block;
+    width: var(--pen-w);
+    height: var(--pen-h);
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .pennant {
+      --pen-w: 86px;
+      --pen-h: 106px;
+      --pen-pt: 13px;
+      --crest-h: 60px;
+      --edge-x: 7px;
+      --edge-y: 14px;
+    }
+  }
+
+  /* After the media query, so the small size wins at every width. */
+  .pennant--small {
+    --pen-w: 34px;
+    --pen-h: 42px;
+    --pen-pt: 5px;
+    --crest-h: 24px;
+    --edge-x: 3px;
+    --edge-y: 6px;
+  }
+
+  /* Flat top, straight sides, V-shaped base. */
+  .pennant-shape {
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(0 0, 100% 0, 100% 72%, 50% 100%, 0 72%);
+  }
+
+  /* The white edge: wider and deeper than the navy, so it shows round the sides and the point. */
+  .pennant-back {
+    inset: 0 calc(var(--edge-x) * -1) calc(var(--edge-y) * -1);
+    background: var(--color-white);
+  }
+
+  .pennant-pen {
+    display: flex;
+    justify-content: center;
+    padding-top: var(--pen-pt);
+    background: var(--color-navy);
+  }
+
+  .pennant-crest {
+    width: auto;
+    height: var(--crest-h);
+  }
+
+  /* Soft shadow, shown only while the pennant is pinned on its own (header crest-only mode). */
+  .pennant-shadow {
+    position: absolute;
+    inset: 0 calc(var(--edge-x) * -1) calc(var(--edge-y) * -1);
+    filter: drop-shadow(0 6px 12px rgb(21 48 93 / 0.28));
+    opacity: 0;
+    transition: opacity var(--dur-base) var(--ease-out);
+  }
+
+  .pennant-shadow > .pennant-shape {
+    background: var(--color-white);
+  }
+}
