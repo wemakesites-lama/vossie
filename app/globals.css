@@ -1,26 +1,222 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* Reference material is not app code: keep it out of Tailwind's class scan. */
+@source not "../docs";
+@source not "../vossie-audit";
+@source not "../.superpowers";
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* "wide" = tablet and up, but only when the screen is also tall enough.
+   Landscape phones (e.g. 844 × 390) keep the phone layout (spec section 5).
+   Use wide: in class names instead of md:, and the same media query in CSS. */
+@custom-variant wide {
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    @slot;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ---------------------------------------------------------------------------
+   Brand tokens (spec section 4). Each becomes Tailwind utilities,
+   e.g. --color-navy gives bg-navy, text-navy, border-navy.
+   --------------------------------------------------------------------------- */
+@theme {
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-navy: #15305d;
+  --color-sky: #29abe2;
+  --color-sky-dark: #1e7ba8;
+  --color-panel: #f3f3f3;
+  --color-pale: #e1f0f7;
+  --color-ink: #373f41; /* the spec's "text" token: long body copy */
+  --color-muted: #5b6577;
+  --color-line: rgb(21 48 93 / 0.14);
+  --color-idle: #b9c0cc;
+  --color-danger: #b42318;
+
+  --text-hero: clamp(2.75rem, 2.1rem + 2.8vw, 4rem);
+  --text-hero--line-height: 0.96;
+  --text-section: clamp(2.125rem, 1.75rem + 1.6vw, 2.875rem);
+  --text-section--line-height: 1;
+  --text-eyebrow: clamp(0.9375rem, 0.875rem + 0.25vw, 1.125rem);
+  --text-eyebrow--line-height: 1.1;
+  --text-eyebrow--letter-spacing: 1px;
+  --text-list: clamp(1.5rem, 0.95rem + 2.3vw, 2.5rem);
+  --text-list--line-height: 1.05;
+  --text-body: clamp(0.9375rem, 0.9rem + 0.12vw, 1rem);
+  --text-body--line-height: 1.55;
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.4;
+
+  --radius-panel: 16px;
+  --radius-card: 14px;
+  --radius-strip: 12px;
+
+  --container-page: 75rem;
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Font families go through switchable variables, so the Eduvos set can replace the interim set. */
+@theme inline {
+  --font-display: var(--vos-font-display);
+  --font-text: var(--vos-font-text);
+  --font-accent: var(--vos-font-accent);
+}
+
+:root {
+  --vos-font-display: var(--font-sgc), "Arial Narrow", sans-serif;
+  --vos-font-text: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --vos-font-accent: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 400ms;
+
+  /* Four-point stars from the crest, 13% sky, for navy surfaces only. */
+  --stars: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg fill='%2329ABE2' fill-opacity='0.13'%3E%3Cpath d='M30 18 Q32 28 42 30 Q32 32 30 42 Q28 32 18 30 Q28 28 30 18Z'/%3E%3Cpath d='M120 52 Q121.2 58.8 128 60 Q121.2 61.2 120 68 Q118.8 61.2 112 60 Q118.8 58.8 120 52Z'/%3E%3Cpath d='M80 112 Q82.5 125.5 96 128 Q82.5 130.5 80 144 Q77.5 130.5 64 128 Q77.5 125.5 80 112Z'/%3E%3Cpath d='M152 144 Q153 151 160 152 Q153 153 152 160 Q151 153 144 152 Q151 151 152 144Z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+@layer base {
+  html {
+    scrollbar-gutter: stable;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* An open modal dialog locks the page behind it. */
+  html:has(dialog[open]:modal) {
+    overflow: hidden;
+  }
+
+  body {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-white);
+    color: var(--color-ink);
+    font-family: var(--vos-font-text);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    outline: 2.5px solid var(--focus-ring, var(--color-navy));
+    outline-offset: 3px;
+  }
+
+  /* The skip link moves focus to <main>; the landmark itself needs no ring. */
+  #main:focus {
+    outline: none;
+  }
+
+  ::selection {
+    background: var(--color-sky);
+    color: var(--color-navy);
+  }
+
+  /* 16px minimum stops iPhones zooming into form fields. */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
+@utility surface-navy {
+  background-color: var(--color-navy);
+  color: var(--color-white);
+  --focus-ring: var(--color-sky);
+}
+
+@utility texture-stars {
+  background-image: var(--stars);
+  background-size: 180px 180px;
+}
+
+@layer components {
+  .skip-link {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    z-index: 100;
+    translate: 0 -200%;
+    padding: 12px 18px;
+    border-radius: 999px;
+    background: var(--color-navy);
+    color: var(--color-white);
+    font-weight: 600;
+  }
+
+  .skip-link:focus {
+    translate: 0 0;
+  }
+
+  .eyebrow {
+    font-family: var(--vos-font-display);
+    font-size: var(--text-eyebrow);
+    line-height: 1.1;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--color-sky-dark);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 22px;
+    border-radius: 999px;
+    font-family: var(--vos-font-text);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+
+  .btn:active {
+    transform: scale(0.97);
+  }
+
+  .btn-primary {
+    background: var(--color-navy);
+    color: var(--color-white);
+  }
+
+  .btn-sky {
+    background: var(--color-sky);
+    color: var(--color-navy);
+  }
+
+  .btn-outline {
+    border: 1.5px solid currentColor;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Motion off switches (spec section 8): reduced motion and data saver.
+   Unlayered with !important so they beat every component transition.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:root[data-low-data] *,
+:root[data-low-data] *::before,
+:root[data-low-data] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+  transition-delay: 0s !important;
+  scroll-behavior: auto !important;
 }
