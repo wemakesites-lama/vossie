@@ -23,3 +23,32 @@ test("brand colours, fonts and language are applied", async ({ page }) => {
   expect(styles.bodyFont).toMatch(/Geist/);
   expect(styles.lang).toBe("en-ZA");
 });
+
+test("the brand fonts actually load", async ({ page }) => {
+  await page.goto("/");
+  const loaded = await page.evaluate(async () => {
+    await document.fonts.ready;
+    return {
+      display: document.fonts.check('16px "Special Gothic Condensed One"'),
+      text: document.fonts.check('16px "Geist"'),
+    };
+  });
+  expect(loaded).toEqual({ display: true, text: true });
+});
+
+test("data saver collapses transitions", async ({ page }) => {
+  await page.goto("/");
+  const bodyTransition = () => page.evaluate(() => getComputedStyle(document.body).transitionDuration);
+  expect(await bodyTransition()).toBe("0s");
+  await page.evaluate(() => document.documentElement.setAttribute("data-low-data", ""));
+  expect(await bodyTransition()).toBe("0.001s");
+});
+
+test.describe("with reduced motion", () => {
+  test.use({ reducedMotion: "reduce" });
+
+  test("transitions collapse", async ({ page }) => {
+    await page.goto("/");
+    expect(await page.evaluate(() => getComputedStyle(document.body).transitionDuration)).toBe("0.001s");
+  });
+});
