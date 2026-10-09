@@ -73,7 +73,7 @@
   - The phone-to-tablet switch is the custom `wide:` variant (defined in Task 5), never `md:`.
   - In CSS it's written `@media (min-width: 48rem) and (min-height: 30rem)`, so landscape phones keep the phone layout (spec section 5).
   - The desktop step is the custom `desk:` variant: 64rem with the same height guard, added in Task 5 after its code review. Use it instead of `lg:`. Tailwind emits its built-in `lg:` rules before custom variants, so a `wide:` value would beat an `lg:` value on desktop.
-  - Component CSS may use `@media (min-width: 64rem)` directly.
+  - In component CSS, write the desktop step as `@media (min-width: 64rem) and (min-height: 30rem)`. It carries the same height guard as `desk:`, so a wide but very short window never mixes desktop and phone layouts. (Updated 2026-10-09.)
 - **Effects.**
   - Never call `setState` directly in an effect body. Use an external store with `useSyncExternalStore`, or set state inside an event or subscription callback.
   - Only read or write `ref.current` in effects and event handlers.
@@ -3615,7 +3615,7 @@ Append to `app/globals.css`:
     }
   }
 
-  @media (min-width: 64rem) {
+  @media (min-width: 64rem) and (min-height: 30rem) {
     .site-header {
       --ql-h: 44px;
     }
@@ -3635,7 +3635,7 @@ Append to `app/globals.css`:
     transition: translate 300ms var(--ease-out), opacity 300ms var(--ease-out), visibility 0s;
   }
 
-  @media (min-width: 64rem) {
+  @media (min-width: 64rem) and (min-height: 30rem) {
     .hdr-quick {
       display: block;
     }
@@ -6661,7 +6661,7 @@ Append to `app/globals.css`:
     }
   }
 
-  @media (min-width: 64rem) {
+  @media (min-width: 64rem) and (min-height: 30rem) {
     .footer-grid {
       grid-template-columns: 1.6fr repeat(3, minmax(0, 1fr)) 1.3fr;
     }
@@ -8087,6 +8087,9 @@ Part 2 must add:
   - The default `.eyebrow` colour (sky-dark) passes only on white. It fails on `panel` (4.25:1) and `pale` (4.04:1), so eyebrows there should be navy.
   - Small sky text over the 13% star texture dips to about 4.0:1 where a star crosses a letter. Either keep small sky text off textured areas, or lighten the stars to about 6%.
 - **Tap feedback.** The tap highlight is off globally, and only `.btn` has a pressed state. Give new tappable links, icon buttons and cards their own `:active` feedback.
+
+**Layout**
+- **Full-width bands.** `#main` carries the safe-area insets as side padding. In landscape on notched iPhones, a full-width band placed inside `<main>` therefore stops at the inset, leaving thin white strips. For edge-to-edge bands, give the band its own `margin-inline` that cancels the inset (`calc(env(safe-area-inset-left) * -1)`) and put matching padding back inside it.
 
 **Testing**
 - **`next/navigation` mock.** The mock in `vitest.setup.ts` can't be asserted on: `useRouter()` returns new spies on every call, and `usePathname()` is always "/". A test that needs either should mock `next/navigation` in its own file with `vi.hoisted` singletons.

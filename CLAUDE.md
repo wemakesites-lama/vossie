@@ -46,7 +46,7 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - Breakpoints:
   - The phone-to-tablet switch is the custom `wide:` variant: Tailwind's `md` width (48rem) plus a 30rem minimum height, so landscape phones keep the phone layout (spec section 5).
   - Write `wide:` in class names and `@media (min-width: 48rem) and (min-height: 30rem)` in CSS, never `md:`.
-  - The desktop step is the custom `desk:` variant (64rem, same height guard). Use it instead of `lg:`: Tailwind emits its built-in `lg:` rules before custom variants, so a `wide:` value would beat an `lg:` value on desktop. Component CSS may use `@media (min-width: 64rem)` directly.
+  - The desktop step is the custom `desk:` variant (64rem, same height guard). Use it instead of `lg:`: Tailwind emits its built-in `lg:` rules before custom variants, so a `wide:` value would beat an `lg:` value on desktop. In component CSS, write the desktop step as `@media (min-width: 64rem) and (min-height: 30rem)`.
 - Motion: animate only `transform` and `opacity` (the CSS `translate`, `scale` and `rotate` properties count as transform). Respect `prefers-reduced-motion` and data saver (`html[data-low-data]`).
 - Touch targets are at least 44px. No hover-only features.
 
