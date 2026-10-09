@@ -700,12 +700,24 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = 3200;
 const baseURL = `http://localhost:${PORT}`;
 
+// Device setup per project:
+// - Phones: mobile emulation, touch and 2x pixels.
+// - Tablet: touch only.
+// - Laptop and desktop: mouse.
+// Every project sends the Desktop Chrome user agent, so user-agent checks (such as the iPhone
+// install help) are covered by unit tests rather than here.
 const phone = (width: number, height: number) => ({
   ...devices["Desktop Chrome"],
   viewport: { width, height },
+  screen: { width, height },
   deviceScaleFactor: 2,
   isMobile: true,
   hasTouch: true,
+});
+
+const desktop = (width: number, height: number) => ({
+  ...devices["Desktop Chrome"],
+  viewport: { width, height },
 });
 
 export default defineConfig({
@@ -716,25 +728,32 @@ export default defineConfig({
   reporter: [["list"]],
   use: {
     baseURL,
+    locale: "en-ZA",
+    timezoneId: "Africa/Johannesburg",
     trace: "retain-on-failure",
   },
   webServer: {
     command: `pnpm build && pnpm start --port ${PORT}`,
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    // Always build and start a fresh server, so tests never run against stale code.
+    // E2E_REUSE_SERVER=1 reuses a server you started yourself on port 3200.
+    reuseExistingServer: process.env.E2E_REUSE_SERVER === "1",
     timeout: 240_000,
   },
   projects: [
     { name: "phone-360", use: phone(360, 780) },
     { name: "phone-390", use: phone(390, 844) },
-    { name: "tablet-768", use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 }, hasTouch: true } },
-    { name: "laptop-1024", use: { ...devices["Desktop Chrome"], viewport: { width: 1024, height: 768 } } },
-    { name: "desktop-1440", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
+    { name: "tablet-768", use: { ...desktop(768, 1024), screen: { width: 768, height: 1024 }, hasTouch: true } },
+    { name: "laptop-1024", use: desktop(1024, 768) },
+    { name: "desktop-1440", use: desktop(1440, 900) },
   ],
 });
 ```
 
-`reuseExistingServer` reuses anything already listening on port 3200. If you left an old `pnpm start` running there, stop it first; it's idle, so that's safe. Otherwise the tests run against stale code.
+Updated 2026-10-09 from the Task 4 code review:
+- **Fresh server every run.** Playwright now builds and starts its own server, and fails loudly if something is already listening on port 3200. Before, it silently reused whatever was answering there.
+- **Locale and time zone.** Tests run in South African English with SAST, matching the project's time rule.
+- **Screen sizes.** The phones and the tablet report screen sizes that match their viewports.
 
 - [ ] **Step 4: Write `tests/e2e/smoke.spec.ts`**
 
@@ -7364,10 +7383,12 @@ test.describe("header", () => {
     await expect(menu).toBeHidden();
     const pennant = page.getByRole("button", { name: "Show navigation" });
     await expect(pennant).toBeVisible();
-    expect((await pennant.boundingBox())?.y ?? 99).toBeLessThanOrEqual(1);
+    await expect.poll(async () => (await pennant.boundingBox())?.y ?? 99).toBeLessThanOrEqual(1);
 
     const scrollBefore = await page.evaluate(() => window.scrollY);
-    await pennant.click();
+    // A real tap on touch screens (the spec says "tap"), a click elsewhere.
+    if (test.info().project.use.hasTouch) await pennant.tap();
+    else await pennant.click();
     await expect(menu).toBeVisible();
     await expect(page.getByRole("link", { name: "Vossie home" })).toBeVisible();
     expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
@@ -7377,6 +7398,19 @@ test.describe("header", () => {
 
     await page.evaluate(() => window.scrollTo(0, 0));
     await expect(menu).toBeVisible();
+  });
+
+  test.describe("on a landscape phone", () => {
+    test.use({ viewport: { width: 844, height: 390 }, screen: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
+
+    test("keeps the phone layout (the wide: variant needs 30rem of height)", async ({ page }) => {
+      test.skip(test.info().project.name !== "phone-390", "Checked once, in the phone project");
+      await page.goto("/");
+      const pill = page.locator(".site-header .campus-pill");
+      await expect(pill).toHaveCount(1);
+      await expect(pill).toBeHidden();
+      await expect(page.getByRole("button", { name: "Search" })).toBeVisible();
+    });
   });
 
   test("the home pennant scrolls back to the top on the homepage", async ({ page }) => {
@@ -7528,17 +7562,24 @@ test.describe("footer", () => {
 ```ts
 import { expect, test } from "@playwright/test";
 
-const WIDTHS = [360, 390, 430, 768, 1024, 1280, 1440];
+// The projects cover 360, 390, 768, 1024 and 1440 (phones with mobile emulation).
+// These are the spec's other test widths.
+const EXTRA_WIDTHS = [430, 1280];
 
-test("no sideways scrolling at any test width", async ({ page }) => {
-  test.skip(test.info().project.name !== "desktop-1440", "This test walks every width itself");
-  for (const width of WIDTHS) {
+const sidewaysOverflow = () =>
+  document.documentElement.scrollWidth - document.documentElement.clientWidth;
+
+test("no sideways scrolling at this project's size", async ({ page }) => {
+  await page.goto("/");
+  expect(await page.evaluate(sidewaysOverflow)).toBeLessThanOrEqual(0);
+});
+
+test("no sideways scrolling at the in-between widths", async ({ page }) => {
+  test.skip(test.info().project.name !== "desktop-1440", "This test walks the extra widths itself");
+  for (const width of EXTRA_WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/");
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    );
-    expect(overflow, `sideways overflow at ${width}px`).toBeLessThanOrEqual(0);
+    expect(await page.evaluate(sidewaysOverflow), `sideways overflow at ${width}px`).toBeLessThanOrEqual(0);
   }
 });
 
