@@ -261,3 +261,44 @@
   transition-delay: 0s !important;
   scroll-behavior: auto !important;
 }
+
+/* --- Toasts (Task 9) ------------------------------------------------------ */
+@layer components {
+  .toast-pop {
+    position: fixed;
+    inset: auto auto max(16px, env(safe-area-inset-bottom)) 50%;
+    translate: -50% 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    pointer-events: none;
+  }
+
+  .toast {
+    padding: 12px 18px;
+    border-radius: 999px;
+    background: var(--color-navy);
+    color: var(--color-white);
+    font-size: 14px;
+    font-weight: 600;
+    animation: toast-in var(--dur-base) var(--ease-out);
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .toast-pop {
+      inset: auto auto 24px 24px;
+      translate: 0 0;
+    }
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}

@@ -2,6 +2,9 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import type { FormEvent, ReactNode } from "react";
 import { afterEach, vi } from "vitest";
+import { CAMPUS_COOKIE } from "./lib/campus";
+import { LOW_DATA_ATTR } from "./lib/low-data";
+import { dismissToast } from "./lib/toast";
 import { createMediaQueryList } from "./tests/helpers/dom";
 
 // --- Next.js modules that need the App Router at runtime -------------------
@@ -85,31 +88,33 @@ if (typeof window.ResizeObserver === "undefined") {
 
 Object.defineProperty(window, "scrollTo", { configurable: true, writable: true, value: vi.fn() });
 
-// jsdom's <dialog> has no behaviour. Give it the parts our overlays use.
+// jsdom's <dialog> has no behaviour, so give it the parts our overlays use (jsdom already reflects `open`).
+// Deliberately simpler than a browser:
+// - `close` fires synchronously.
+// - Nothing throws InvalidStateError.
+// - There's no focus move, inert background, Esc handling, returnValue or :modal.
+// The Playwright tests (Task 21) cover real dialog behaviour.
 Object.defineProperties(HTMLDialogElement.prototype, {
-  open: {
-    configurable: true,
-    get(this: HTMLDialogElement) {
-      return this.hasAttribute("open");
-    },
-    set(this: HTMLDialogElement, value: boolean) {
-      this.toggleAttribute("open", value);
-    },
-  },
   show: {
     configurable: true,
+    writable: true,
+    enumerable: true,
     value(this: HTMLDialogElement) {
       this.setAttribute("open", "");
     },
   },
   showModal: {
     configurable: true,
+    writable: true,
+    enumerable: true,
     value(this: HTMLDialogElement) {
       this.setAttribute("open", "");
     },
   },
   close: {
     configurable: true,
+    writable: true,
+    enumerable: true,
     value(this: HTMLDialogElement) {
       if (!this.hasAttribute("open")) return;
       this.removeAttribute("open");
@@ -120,12 +125,21 @@ Object.defineProperties(HTMLDialogElement.prototype, {
 
 // --- Reset shared browser state between tests -------------------------------
 
+// Testing Library sets this itself only when Vitest globals are on. With it, React flushes updates inside act().
+(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
 afterEach(() => {
-  cleanup();
-  vi.useRealTimers();
-  vi.restoreAllMocks();
-  localStorage.clear();
-  document.cookie = "vossie_campus=; Path=/; Max-Age=0";
-  document.documentElement.removeAttribute("data-low-data");
-  Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
+  try {
+    cleanup();
+  } finally {
+    // After unmounting, so no component reacts to these resets. Runs even if unmounting threw.
+    dismissToast();
+    vi.useRealTimers();
+    // Undoes vi.spyOn spies made inside tests. A spy made at module level or in beforeAll is undone after the first test.
+    vi.restoreAllMocks();
+    localStorage.clear();
+    document.cookie = `${CAMPUS_COOKIE}=; Path=/; Max-Age=0`;
+    document.documentElement.removeAttribute(LOW_DATA_ATTR);
+    Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
+  }
 });
