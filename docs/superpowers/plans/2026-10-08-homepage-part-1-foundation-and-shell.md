@@ -2226,7 +2226,7 @@ Message: `feat: add campus, saved, data saver and motion preference stores`
 
 **Files:**
 - Create: `lib/overlays.ts`, `lib/overlays.test.ts`, `lib/toast.ts`, `lib/toast.test.ts`, `components/ui/ToastRegion.tsx`, `components/ui/ToastRegion.test.tsx`, `components/ui/useOverlayDialog.ts`, `components/ui/useOverlayDialog.test.tsx`
-- Modify: `vitest.setup.ts` (reset toasts), `app/globals.css` (toast styles)
+- Modify: `vitest.setup.ts` (harden the reset, reset toasts), `app/globals.css` (toast styles)
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2557,15 +2557,89 @@ export function useOverlayDialog(
 }
 ```
 
-- [ ] **Step 7: Reset toasts between tests**
+- [ ] **Step 7: Harden the shared test setup and reset toasts between tests**
 
-In `vitest.setup.ts`, add this import below the other imports:
+Updated 2026-10-09 from the Task 3 code review. This step makes four changes:
+- **Reset even after a failure.** The reset now runs even if unmounting throws.
+- **Toast reset order.** Toasts reset after unmounting, so no component hears it.
+- **Act environment.** React's act environment is switched on. Testing Library only does this itself when Vitest globals are on.
+- **`<dialog>` patch.**
+  - It no longer overrides `open`, which jsdom already reflects correctly.
+  - Its methods are writable like a real browser's.
+  - A comment records how it differs from a real browser.
+
+**Change 1: imports.** In `vitest.setup.ts`, replace the import block at the top with:
 
 ```ts
+import "@testing-library/jest-dom/vitest";
+import { cleanup } from "@testing-library/react";
+import type { FormEvent, ReactNode } from "react";
+import { afterEach, vi } from "vitest";
+import { CAMPUS_COOKIE } from "./lib/campus";
+import { LOW_DATA_ATTR } from "./lib/low-data";
 import { dismissToast } from "./lib/toast";
+import { createMediaQueryList } from "./tests/helpers/dom";
 ```
 
-and add `dismissToast();` as the first line inside the `afterEach(() => { … })` callback.
+**Change 2: the dialog patch and the reset.** Replace everything from the line `// jsdom's <dialog> has no behaviour. Give it the parts our overlays use.` to the end of the file with:
+
+```ts
+// jsdom's <dialog> has no behaviour, so give it the parts our overlays use (jsdom already reflects `open`).
+// Deliberately simpler than a browser:
+// - `close` fires synchronously.
+// - Nothing throws InvalidStateError.
+// - There's no focus move, inert background, Esc handling, returnValue or :modal.
+// The Playwright tests (Task 21) cover real dialog behaviour.
+Object.defineProperties(HTMLDialogElement.prototype, {
+  show: {
+    configurable: true,
+    writable: true,
+    enumerable: true,
+    value(this: HTMLDialogElement) {
+      this.setAttribute("open", "");
+    },
+  },
+  showModal: {
+    configurable: true,
+    writable: true,
+    enumerable: true,
+    value(this: HTMLDialogElement) {
+      this.setAttribute("open", "");
+    },
+  },
+  close: {
+    configurable: true,
+    writable: true,
+    enumerable: true,
+    value(this: HTMLDialogElement) {
+      if (!this.hasAttribute("open")) return;
+      this.removeAttribute("open");
+      this.dispatchEvent(new Event("close"));
+    },
+  },
+});
+
+// --- Reset shared browser state between tests -------------------------------
+
+// Testing Library sets this itself only when Vitest globals are on. With it, React flushes updates inside act().
+(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+afterEach(() => {
+  try {
+    cleanup();
+  } finally {
+    // After unmounting, so no component reacts to these resets. Runs even if unmounting threw.
+    dismissToast();
+    vi.useRealTimers();
+    // Undoes vi.spyOn spies made inside tests. A spy made at module level or in beforeAll is undone after the first test.
+    vi.restoreAllMocks();
+    localStorage.clear();
+    document.cookie = `${CAMPUS_COOKIE}=; Path=/; Max-Age=0`;
+    document.documentElement.removeAttribute(LOW_DATA_ATTR);
+    Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
+  }
+});
+```
 
 - [ ] **Step 8: Add the toast styles**
 
@@ -3325,7 +3399,8 @@ export function CampusPill({ campuses, className, style }: CampusPillProps) {
       style={style}
     >
       <MapPinIcon className="size-[18px] shrink-0" />
-      <span className="sr-only">Shopping at </span>
+      {/* The space sits outside the hidden span: accessible-name tools trim each element's own text. */}
+      <span className="sr-only">Shopping at</span>{" "}
       <span className="truncate">{campusLabel(choice, campuses)}</span>
       <ChevronDownIcon className="size-4 shrink-0" />
     </button>
@@ -4089,7 +4164,7 @@ function CampusOption({ label, detail, current, onChoose }: CampusOptionProps) {
     >
       <span className="flex min-w-0 flex-col items-start">
         <span className="font-semibold text-navy">{label}</span>
-        <span className="sr-only">, </span>
+        <span className="sr-only">,</span>{" "}
         <span className="text-meta text-muted">{detail}</span>
       </span>
       {current && <CheckIcon className="size-5 shrink-0 text-sky-dark" />}
@@ -4471,7 +4546,7 @@ export function MenuDrawer({ campuses, categories }: MenuDrawerProps) {
             <span className="min-w-0 truncate">
               Shopping at <strong>{campusLabel(choice, campuses)}</strong>
             </span>
-            <span className="sr-only">. </span>
+            <span className="sr-only">.</span>{" "}
             <span className="menu-campus-change">Change</span>
           </button>
         </div>
@@ -4560,7 +4635,7 @@ export function MenuDrawer({ campuses, categories }: MenuDrawerProps) {
                 <li key={campus.slug}>
                   <NavLink href={`/c/${campus.slug}`}>
                     {campus.name}
-                    <span className="sr-only">, </span>
+                    <span className="sr-only">,</span>{" "}
                     <span className="menu-sublink-detail">{campus.region}</span>
                   </NavLink>
                 </li>
@@ -5545,7 +5620,7 @@ export function AnnouncementBar({ messages }: { messages: readonly Announcement[
               data-active={position === index ? "" : undefined}
               inert={position !== index}
             >
-              <span className="announce-tag">{message.tag}</span>
+              <span className="announce-tag">{message.tag}</span>{" "}
               <span className="announce-text">{message.text}</span>
             </Link>
           ))}
