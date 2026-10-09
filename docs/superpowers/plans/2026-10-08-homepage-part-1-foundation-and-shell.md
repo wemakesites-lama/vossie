@@ -8088,6 +8088,24 @@ Part 2 must add:
   - Small sky text over the 13% star texture dips to about 4.0:1 where a star crosses a letter. Either keep small sky text off textured areas, or lighten the stars to about 6%.
 - **Tap feedback.** The tap highlight is off globally, and only `.btn` has a pressed state. Give new tappable links, icon buttons and cards their own `:active` feedback.
 
+**Data layer and the Supabase switch** (from the Task 7 review)
+- **Cache lifetime.**
+  - The root layout awaits `getCampuses()` and friends outside `<Suspense>`, so their cache profile must keep `stale` ≥ 300s, `expire` ≥ 300s and `revalidate` > 0. Otherwise the whole site becomes a blocking route.
+  - Prefer an explicit `cacheLife` preset over the implicit default, whose `stale` sits exactly on that 300s boundary.
+- **Auth inside `"use cache"`.** A cached function can't read cookies or headers. Use a cookie-less anon Supabase client with public-read row-level security, not the usual server client.
+- **Tests.** When adding `cacheLife()` or `cacheTag()`, add `vi.mock("next/cache", …)` to the data test in the same change; they throw outside Next's transform. Also mark `lib/data` as `server-only`.
+- **Table shape.**
+  - Store display order in a `position` column. Eduvos Online must come last, and the categories have a confirmed order.
+  - `liveListings` changes much faster than the rest of a campus, so give it its own tag or a short lifetime.
+  - A `kind` flag marks Eduvos Online, instead of matching on its slug.
+- **Trending searches.** If they ever come from search logs, aggregate them with a minimum count, or curate them. Raw queries can hold personal information (POPIA).
+- **Test hardening for live data:**
+  - every trending list is non-empty, with no blank or duplicate terms (an empty array is truthy, so it would render an empty section);
+  - announcement ids are unique;
+  - `liveListings` is an integer ≥ 0;
+  - image paths aren't pinned to the placeholder folder;
+  - decorative tile images get `alt: ""`.
+
 **Layout**
 - **Full-width bands.** `#main` carries the safe-area insets as side padding. In landscape on notched iPhones, a full-width band placed inside `<main>` therefore stops at the inset, leaving thin white strips. For edge-to-edge bands, give the band its own `margin-inline` that cancels the inset (`calc(env(safe-area-inset-left) * -1)`) and put matching padding back inside it.
 

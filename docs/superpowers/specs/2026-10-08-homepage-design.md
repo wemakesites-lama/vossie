@@ -464,6 +464,8 @@ Types live in `lib/types.ts`. The homepage only calls these functions, which rea
 | `getFreeAndSwaps({ campus })` | FreeSwapItem: `id`, `kind` (free, swap), `title`, `campusSlug`, `image` |
 | `getHubEvents({ campus })` | HubEvent: `id`, `date`, `title`, `campusSlug` or all, `action` (rsvp, book) |
 | `getViewerContext()` | Viewer: chosen `campus`, `signedIn`, sample `activity` |
+| `getAnnouncements()` | Announcement: `id`, `tag`, `text`, `href` (the announcement bar, 6.1; added in the build plan) |
+| `getTrendingSearches()` | Trending terms keyed by campus slug, plus `all` (the search overlay, 6.5; added in the build plan) |
 
 - **Fixture realism.** Fixtures cover all 12 campuses plus Online, so campus switching and empty states can be tested. At least one campus has no new listings.
 - **Content.** Names are generic ("Hair studio", "Maths tutor"), not the demo's sellers.
