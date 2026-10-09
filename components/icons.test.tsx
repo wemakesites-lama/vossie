@@ -32,10 +32,26 @@ describe("icons", () => {
     expect(svg).toHaveAttribute("focusable", "false");
     expect(svg).toHaveAttribute("viewBox", "0 0 24 24");
     expect(svg).toHaveAttribute("stroke-width", "1.8");
+    expect(svg).toHaveAttribute("width", "24");
+    expect(svg).toHaveAttribute("stroke", "currentColor");
+    expect(svg).toHaveAttribute("fill", "none");
+    expect(svg?.querySelector("path, circle, rect")).not.toBeNull();
   });
 
   it("passes extra props through", () => {
     const { container } = render(<icons.HeartIcon className="size-5" />);
     expect(container.querySelector("svg")).toHaveClass("size-5");
+  });
+
+  it("stays hidden from screen readers even if a caller tries to un-hide it", () => {
+    const { container } = render(<icons.HeartIcon {...({ "aria-hidden": false, focusable: "true" } as object)} />);
+    const svg = container.querySelector("svg");
+    expect(svg).toHaveAttribute("aria-hidden", "true");
+    expect(svg).toHaveAttribute("focusable", "false");
+  });
+
+  it("lets callers change the size", () => {
+    const { container } = render(<icons.HeartIcon width={16} height={16} />);
+    expect(container.querySelector("svg")).toHaveAttribute("width", "16");
   });
 });

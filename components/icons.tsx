@@ -1,7 +1,12 @@
 import type { ReactNode, SVGProps } from "react";
 
-export type IconProps = Omit<SVGProps<SVGSVGElement>, "children">;
+export type IconProps = Omit<SVGProps<SVGSVGElement>, "children" | "aria-hidden" | "focusable">;
 
+/**
+ * Shared frame for every icon. Icons are decorative: the button or link around one carries the
+ * accessible name. Size them with a size-* class. To pass an icon from a Server Component into a
+ * Client Component prop, pass the element (icon={<HeartIcon />}), not the component.
+ */
 function Svg({ children, ...props }: IconProps & { children: ReactNode }) {
   return (
     <svg
@@ -13,9 +18,9 @@ function Svg({ children, ...props }: IconProps & { children: ReactNode }) {
       strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
+      {...props}
       aria-hidden="true"
       focusable="false"
-      {...props}
     >
       {children}
     </svg>
