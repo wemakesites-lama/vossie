@@ -55,8 +55,11 @@ const listeners = new Set<() => void>();
 
 export function subscribeCampus(listener: () => void): () => void {
   listeners.add(listener);
+  // Another tab may have changed the cookie: re-check when this tab comes back into view.
+  document.addEventListener("visibilitychange", listener);
   return () => {
     listeners.delete(listener);
+    document.removeEventListener("visibilitychange", listener);
   };
 }
 

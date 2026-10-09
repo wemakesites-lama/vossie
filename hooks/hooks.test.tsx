@@ -1,4 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { setCampusChoice } from "@/lib/campus";
 import { setLowData } from "@/lib/low-data";
@@ -11,6 +12,15 @@ import { useReducedMotion } from "./useReducedMotion";
 import { useSavedCount } from "./useSavedCount";
 
 const campuses = [{ slug: "midrand" }, { slug: "pretoria" }];
+
+function ServerValues() {
+  const campus = useCampusChoice(campuses);
+  const saved = useSavedCount();
+  const lowData = useLowData();
+  const reduced = useReducedMotion();
+  const motion = useMotionAllowed();
+  return <output>{`${campus}|${saved}|${lowData}|${reduced}|${motion}`}</output>;
+}
 
 describe("device preference hooks", () => {
   it("useCampusChoice defaults to all campuses and follows the cookie", () => {
@@ -56,5 +66,12 @@ describe("device preference hooks", () => {
     });
     expect(result.current).toBe(false);
     expect(isMotionAllowedNow()).toBe(false);
+  });
+
+  it("renders safe defaults on the server, whatever the device has stored", () => {
+    setCampusChoice("pretoria");
+    localStorage.setItem(SAVED_KEY, JSON.stringify(["a"]));
+    setLowData(true);
+    expect(renderToString(<ServerValues />)).toContain("null|0|false|true|false");
   });
 });

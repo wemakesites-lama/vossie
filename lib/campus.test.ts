@@ -55,4 +55,14 @@ describe("campus choice", () => {
     setCampusChoice("pretoria");
     expect(listener).toHaveBeenCalledTimes(1);
   });
+
+  it("re-checks the cookie when the tab comes back into view", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeCampus(listener);
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
 });

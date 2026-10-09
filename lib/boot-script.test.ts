@@ -37,6 +37,15 @@ describe("boot script", () => {
     expect(document.documentElement.hasAttribute(LOW_DATA_ATTR)).toBe(false);
   });
 
+  it("still follows the browser's Save-Data setting when storage is blocked", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("Blocked", "SecurityError");
+    });
+    setSaveData(true);
+    runBootScript();
+    expect(document.documentElement.hasAttribute(LOW_DATA_ATTR)).toBe(true);
+  });
+
   it("keeps the browser's install prompt for the footer button", () => {
     runBootScript();
     const announced = vi.fn();

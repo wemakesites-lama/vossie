@@ -10,7 +10,7 @@ describe("saved items on this device", () => {
 
   it("toggles an id, newest first, and tells subscribers", () => {
     const listener = vi.fn();
-    subscribeSaved(listener);
+    const unsubscribe = subscribeSaved(listener);
     expect(toggleSaved("a")).toBe(true);
     expect(toggleSaved("b")).toBe(true);
     expect(readSavedIds()).toEqual(["b", "a"]);
@@ -18,6 +18,19 @@ describe("saved items on this device", () => {
     expect(toggleSaved("a")).toBe(false);
     expect(readSavedIds()).toEqual(["b"]);
     expect(listener).toHaveBeenCalledTimes(3);
+    unsubscribe();
+  });
+
+  it("throws when storage is blocked, changing nothing and telling no one", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeSaved(listener);
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("Blocked", "SecurityError");
+    });
+    expect(() => toggleSaved("a")).toThrow();
+    expect(readSavedIds()).toEqual([]);
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
   });
 
   it("hears saves made in another tab", () => {
@@ -25,7 +38,8 @@ describe("saved items on this device", () => {
     const unsubscribe = subscribeSaved(listener);
     window.dispatchEvent(new StorageEvent("storage", { key: SAVED_KEY }));
     window.dispatchEvent(new StorageEvent("storage", { key: "something_else" }));
-    expect(listener).toHaveBeenCalledTimes(1);
+    window.dispatchEvent(new StorageEvent("storage", { key: null }));
+    expect(listener).toHaveBeenCalledTimes(2);
     unsubscribe();
   });
 });

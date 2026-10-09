@@ -41,7 +41,8 @@ export function toggleSaved(id: string): boolean {
 export function subscribeSaved(listener: () => void): () => void {
   listeners.add(listener);
   const onStorage = (event: StorageEvent) => {
-    if (event.key === SAVED_KEY) listener();
+    // A null key means another tab cleared all storage.
+    if (event.key === SAVED_KEY || event.key === null) listener();
   };
   window.addEventListener("storage", onStorage);
   return () => {
