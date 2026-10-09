@@ -1180,6 +1180,16 @@ In `next.config.ts`, add `images` below `partialPrefetching`:
   },
 ```
 
+Added during the build (2026-10-09, commit `2acc063`): after `images`, `next.config.ts` turns off Turbopack's build cache, because a cached build once kept serving stale Tailwind CSS after `globals.css` changed:
+
+```ts
+  // Always build from scratch. Once, a cached build kept serving stale Tailwind CSS after
+  // globals.css changed, and the end-to-end tests build before every run.
+  experimental: {
+    turbopackFileSystemCacheForBuild: false,
+  },
+```
+
 - [ ] **Step 8: Run the tests**
 
 Run: `pnpm e2e tests/e2e/brand.spec.ts tests/e2e/smoke.spec.ts`
@@ -7571,6 +7581,7 @@ const sidewaysOverflow = () =>
 
 test("no sideways scrolling at this project's size", async ({ page }) => {
   await page.goto("/");
+  await page.evaluate(() => document.fonts.ready); // measure after the web fonts swap in
   expect(await page.evaluate(sidewaysOverflow)).toBeLessThanOrEqual(0);
 });
 
@@ -7579,6 +7590,7 @@ test("no sideways scrolling at the in-between widths", async ({ page }) => {
   for (const width of EXTRA_WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/");
+    await page.evaluate(() => document.fonts.ready);
     expect(await page.evaluate(sidewaysOverflow), `sideways overflow at ${width}px`).toBeLessThanOrEqual(0);
   }
 });
