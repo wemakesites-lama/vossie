@@ -12,7 +12,7 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - Old demo audit and function map: `docs/reference/`
 - `vossie-audit/` is a local, untracked copy of the audit, kept out of git at Lama's request. Never add it to git, move it or delete it.
 - `.superpowers/` holds untracked brainstorm session files. Leave it alone.
-- Accessibility target: WCAG 2.2 AA (spec section 10). Performance budget for a first visit: 150 KB JS, 60 KB fonts, 350 KB in total (spec section 11).
+- Accessibility target: WCAG 2.2 AA (spec section 10). Performance budget for a first visit: 150 KB compressed JS, 60 KB fonts, 350 KB before below-the-fold photos (spec section 11).
 
 ## Stack
 - Next.js 16.4 App Router with Cache Components, React 19.3, TypeScript, Tailwind CSS 4.3 (`@tailwindcss/turbopack`)
@@ -45,7 +45,8 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - The React Compiler lint rules are on: no `setState` directly in an effect body, no `ref.current` during render.
 - Breakpoints:
   - The phone-to-tablet switch is the custom `wide:` variant: Tailwind's `md` width (48rem) plus a 30rem minimum height, so landscape phones keep the phone layout (spec section 5).
-  - Write `wide:` in class names and `@media (min-width: 48rem) and (min-height: 30rem)` in CSS, never `md:`. `lg:` (64rem) is fine for desktop-only extras.
+  - Write `wide:` in class names and `@media (min-width: 48rem) and (min-height: 30rem)` in CSS, never `md:`.
+  - The desktop step is the custom `desk:` variant (64rem, same height guard). Use it instead of `lg:`: Tailwind emits its built-in `lg:` rules before custom variants, so a `wide:` value would beat an `lg:` value on desktop. Component CSS may use `@media (min-width: 64rem)` directly.
 - Motion: animate only `transform` and `opacity` (the CSS `translate`, `scale` and `rotate` properties count as transform). Respect `prefers-reduced-motion` and data saver (`html[data-low-data]`).
 - Touch targets are at least 44px. No hover-only features.
 

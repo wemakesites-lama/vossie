@@ -72,7 +72,8 @@
 - **Breakpoints.**
   - The phone-to-tablet switch is the custom `wide:` variant (defined in Task 5), never `md:`.
   - In CSS it's written `@media (min-width: 48rem) and (min-height: 30rem)`, so landscape phones keep the phone layout (spec section 5).
-  - `lg` (64rem) is used as normal for desktop-only extras.
+  - The desktop step is the custom `desk:` variant: 64rem with the same height guard, added in Task 5 after its code review. Use it instead of `lg:`. Tailwind emits its built-in `lg:` rules before custom variants, so a `wide:` value would beat an `lg:` value on desktop.
+  - Component CSS may use `@media (min-width: 64rem)` directly.
 - **Effects.**
   - Never call `setState` directly in an effect body. Use an external store with `useSyncExternalStore`, or set state inside an event or subscription callback.
   - Only read or write `ref.current` in effects and event handlers.
@@ -1180,7 +1181,17 @@ In `next.config.ts`, add `images` below `partialPrefetching`:
   },
 ```
 
-Added during the build (2026-10-09, commit `2acc063`): after `images`, `next.config.ts` turns off Turbopack's build cache, because a cached build once kept serving stale Tailwind CSS after `globals.css` changed:
+**Added during the build (2026-10-09).**
+
+From the Task 5 code review, `globals.css` also gained the following. The exact code is in the commit after `2acc063`.
+- **A `desk` variant** (64rem with the height guard), declared after `wide`.
+- **Desktop type details** from spec section 4, at 80rem: hero line-height 0.97, body line-height 1.6, button labels 11.5px.
+- **Safe-area padding** on `#main` and the skip link, so content clears the iPhone notch in landscape.
+- **The navy focus halo** from spec section 10, through a `--focus-halo` variable set by `surface-navy` and the skip link.
+- **Motion off-switches** that also cover `::backdrop` and reset `animation-delay`.
+- **The brand test** now checks that the fonts really load and that both off-switches collapse transitions.
+
+Commit `2acc063`: after `images`, `next.config.ts` turns off Turbopack's build cache, because a cached build once kept serving stale Tailwind CSS after `globals.css` changed:
 
 ```ts
   // Always build from scratch. Once, a cached build kept serving stale Tailwind CSS after
@@ -8060,4 +8071,26 @@ Part 2 must add:
 7. **Before calling the homepage done:**
    - The Lighthouse mobile check (spec section 11).
    - Screenshots compared with `docs/reference/mockups/home-v2.html`.
+
+### Notes from the Part 1 reviews (2026-10-09)
+
+**Decisions for Lama**
+- **Display-font layout shift.**
+  - Special Gothic Condensed One has no fallback metrics in `next/font`, so the swap from the fallback can move content. One rough measurement on the placeholder page gave CLS 0.156 at 360px with a plain sans-serif fallback; the budget is 0.05.
+  - Decide with the real hero and the final fonts:
+    - Option 1: `display: "optional"` for the display face.
+    - Option 2: keep `swap` and add a CLS check that delays `**/*.woff2` and sums the layout shifts.
+  - `next/font/local` (the Eduvos fonts) computes fallback metrics itself.
+
+**Accessibility cautions**
+- **Contrast.**
+  - The default `.eyebrow` colour (sky-dark) passes only on white. It fails on `panel` (4.25:1) and `pale` (4.04:1), so eyebrows there should be navy.
+  - Small sky text over the 13% star texture dips to about 4.0:1 where a star crosses a letter. Either keep small sky text off textured areas, or lighten the stars to about 6%.
+- **Tap feedback.** The tap highlight is off globally, and only `.btn` has a pressed state. Give new tappable links, icon buttons and cards their own `:active` feedback.
+
+**Testing**
+- **`next/navigation` mock.** The mock in `vitest.setup.ts` can't be asserted on: `useRouter()` returns new spies on every call, and `usePathname()` is always "/". A test that needs either should mock `next/navigation` in its own file with `vi.hoisted` singletons.
+- **Other test helpers.**
+  - `createMediaQueryList` is static, so `change` events never fire.
+  - The `next/image` and `next/form` mocks drop props that aren't on their short lists.
 
