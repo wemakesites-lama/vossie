@@ -26,14 +26,16 @@ test("brand colours, fonts and language are applied", async ({ page }) => {
 
 test("the brand fonts actually load", async ({ page }) => {
   await page.goto("/");
-  const loaded = await page.evaluate(async () => {
+  const result = await page.evaluate(async () => {
     await document.fonts.ready;
+    const families = new Set([...document.fonts].map((face) => face.family.replace(/^["']|["']$/g, "")));
     return {
+      declared: ["Special Gothic Condensed One", "Geist"].every((name) => families.has(name)),
       display: document.fonts.check('16px "Special Gothic Condensed One"'),
       text: document.fonts.check('16px "Geist"'),
     };
   });
-  expect(loaded).toEqual({ display: true, text: true });
+  expect(result).toEqual({ declared: true, display: true, text: true });
 });
 
 test("data saver collapses transitions", async ({ page }) => {

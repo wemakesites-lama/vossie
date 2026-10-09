@@ -166,7 +166,8 @@
     left: max(12px, env(safe-area-inset-left));
     top: max(12px, env(safe-area-inset-top));
     z-index: 100;
-    translate: 0 -200%;
+    /* Hidden: slide up by its own height plus its top offset (and 4px), so it also clears the notch inset. */
+    translate: 0 calc(-100% - max(12px, env(safe-area-inset-top)) - 4px);
     padding: 12px 18px;
     border-radius: 999px;
     background: var(--color-navy);
