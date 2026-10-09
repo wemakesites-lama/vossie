@@ -13,11 +13,16 @@ export function parseCampusChoice(
   return campuses.some((campus) => campus.slug === raw) ? raw : ALL_CAMPUSES;
 }
 
-/** Read the campus cookie out of a `document.cookie`-style string. */
+/** Read the campus cookie out of a `document.cookie`-style string. A malformed value counts as no choice. */
 export function readCampusCookie(cookieString: string): string | null {
   for (const part of cookieString.split(";")) {
     const [name, ...rest] = part.trim().split("=");
-    if (name === CAMPUS_COOKIE) return decodeURIComponent(rest.join("="));
+    if (name !== CAMPUS_COOKIE) continue;
+    try {
+      return decodeURIComponent(rest.join("="));
+    } catch {
+      return null;
+    }
   }
   return null;
 }

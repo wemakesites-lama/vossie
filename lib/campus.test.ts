@@ -28,6 +28,10 @@ describe("campus choice", () => {
     expect(readCampusCookie("theme=dark")).toBeNull();
   });
 
+  it("treats a malformed campus cookie as no choice instead of throwing", () => {
+    expect(readCampusCookie(`${CAMPUS_COOKIE}=%E0%A4%A`)).toBeNull();
+  });
+
   it("builds a one-year Lax cookie, adding Secure only on https", () => {
     expect(campusCookieString("midrand", false)).toBe(
       "vossie_campus=midrand; Path=/; Max-Age=31536000; SameSite=Lax",
