@@ -451,6 +451,8 @@
   .hdr-quick button {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    min-width: 44px;
     min-height: 44px;
     letter-spacing: inherit;
     text-transform: inherit;
@@ -496,7 +498,7 @@
   .hdr-group {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 8px;
     min-width: 0;
     transition: translate 300ms var(--ease-out), visibility 0s;
   }
