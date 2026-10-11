@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { SiteHeader } from "@/components/header/SiteHeader";
+import { getCampuses } from "@/lib/data";
 import { fontVariables } from "./fonts";
 import "./globals.css";
 
@@ -18,13 +20,15 @@ export const viewport: Viewport = {
   themeColor: "#15305D",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const campuses = await getCampuses();
   return (
     <html lang="en-ZA" className={`${fontVariables} antialiased`} suppressHydrationWarning>
       <body>
         <a href="#main" className="skip-link">
           Skip to content
         </a>
+        <SiteHeader campuses={campuses} />
         <main id="main" tabIndex={-1} className="flex-1">
           {children}
         </main>
