@@ -115,16 +115,17 @@ type CampusOptionProps = {
 };
 
 function CampusOption({ label, detail, current, onChoose }: CampusOptionProps) {
+  // Chromium puts a space between the blockified flex children ("Midrand , Gauteng"), so the label fixes the name.
   return (
     <button
       type="button"
       onClick={onChoose}
       aria-current={current ? "true" : undefined}
+      aria-label={`${label}, ${detail}`}
       className="picker-option"
     >
       <span className="flex min-w-0 flex-col items-start">
         <span className="font-semibold text-navy">{label}</span>
-        <span className="sr-only">,</span>{" "}
         <span className="text-meta text-muted">{detail}</span>
       </span>
       {current && <CheckIcon className="size-5 shrink-0 text-sky-dark" />}
