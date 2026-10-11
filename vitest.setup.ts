@@ -2,6 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import type { FormEvent, ReactNode } from "react";
 import { afterEach, vi } from "vitest";
+// These app modules load before every test file. If a test needs vi.mock for one of them, check that the mock takes effect.
 import { CAMPUS_COOKIE } from "./lib/campus";
 import { LOW_DATA_ATTR } from "./lib/low-data";
 import { dismissToast } from "./lib/toast";

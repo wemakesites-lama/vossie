@@ -54,9 +54,20 @@ describe("useOverlayDialog", () => {
     render(<TestDialog />);
     act(() => openOverlay("search"));
     const dialog = screen.getByRole("dialog", { name: "Test dialog" });
+    fireEvent.pointerDown(screen.getByText("Content"));
     fireEvent.click(screen.getByText("Content"));
     expect(dialog).toHaveAttribute("open");
+    fireEvent.pointerDown(dialog);
     fireEvent.click(dialog);
     expect(dialog).not.toHaveAttribute("open");
+  });
+
+  it("stays open when a press that started inside ends on the backdrop", () => {
+    render(<TestDialog />);
+    act(() => openOverlay("search"));
+    const dialog = screen.getByRole("dialog", { name: "Test dialog" });
+    fireEvent.pointerDown(screen.getByText("Content"));
+    fireEvent.click(dialog);
+    expect(dialog).toHaveAttribute("open");
   });
 });

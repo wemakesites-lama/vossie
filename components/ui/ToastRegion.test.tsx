@@ -17,6 +17,21 @@ describe("ToastRegion", () => {
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 
+  it("puts a repeated message in a fresh node, so screen readers announce it again", () => {
+    render(<ToastRegion />);
+    act(() => {
+      showToast("Saved");
+    });
+    const first = screen.getByRole("status").firstElementChild;
+    expect(first).toHaveTextContent("Saved");
+    act(() => {
+      showToast("Saved");
+    });
+    const second = screen.getByRole("status").firstElementChild;
+    expect(second).toHaveTextContent("Saved");
+    expect(second).not.toBe(first);
+  });
+
   it("gives a newer toast its own full time", () => {
     vi.useFakeTimers();
     render(<ToastRegion />);

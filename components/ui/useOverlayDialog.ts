@@ -5,6 +5,7 @@ import { onOverlayOpen, type OverlayName } from "@/lib/overlays";
  * Wires a native <dialog> to the overlay bus: opens it as a modal (so the browser traps focus
  * and Esc closes it), runs `onOpen` once it is open, and gives focus back to the trigger on close.
  * `onOpen` receives the dialog element, so callers never need their own ref to it.
+ * The dialog must render on the first commit and stay mounted, as the shell's overlays do.
  */
 export function useOverlayDialog(
   name: OverlayName,
@@ -12,6 +13,7 @@ export function useOverlayDialog(
 ) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const pressedOnBackdropRef = useRef(false);
   const handleOpen = useEffectEvent((trigger: HTMLElement | null, dialog: HTMLDialogElement) => {
     onOpen?.(trigger, dialog);
   });
@@ -34,17 +36,28 @@ export function useOverlayDialog(
       returnFocusRef.current = null;
       if (trigger?.isConnected) trigger.focus();
     };
+    const onPointerDown = (event: Event) => {
+      pressedOnBackdropRef.current = event.target === dialog;
+    };
     dialog.addEventListener("close", onClose);
-    return () => dialog.removeEventListener("close", onClose);
+    dialog.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      dialog.removeEventListener("close", onClose);
+      dialog.removeEventListener("pointerdown", onPointerDown);
+    };
   }, []);
 
   const close = useCallback(() => {
     dialogRef.current?.close();
   }, []);
 
-  /** Close when a click lands on the backdrop rather than the dialog's content. */
+  /**
+   * Close when a click both starts and ends on the backdrop. A drag that started inside (selecting
+   * text in a search box, say) and ends outside keeps it open. The <dialog> itself must have no
+   * padding: put padding on an inner wrapper, as the shell's dialogs do.
+   */
   const onBackdropClick = useCallback((event: MouseEvent<HTMLDialogElement>) => {
-    if (event.target === event.currentTarget) event.currentTarget.close();
+    if (event.target === event.currentTarget && pressedOnBackdropRef.current) event.currentTarget.close();
   }, []);
 
   return { dialogRef, close, onBackdropClick };
