@@ -73,6 +73,20 @@ describe("SiteHeader", () => {
     expect(header).toHaveAttribute("data-mode", "expanded");
   });
 
+  it("stays revealed while a header control has keyboard focus", async () => {
+    const user = userEvent.setup();
+    const header = renderHeader();
+    act(() => setScrollY(400));
+    // The keyboard, not user.click: after a pointer interaction jsdom stops reporting :focus-visible.
+    act(() => screen.getByRole("button", { name: "Show navigation" }).focus());
+    await user.keyboard("{Enter}");
+    act(() => setScrollY(570));
+    expect(header).toHaveAttribute("data-mode", "revealed");
+    act(() => (document.activeElement as HTMLElement).blur());
+    act(() => setScrollY(571));
+    expect(header).toHaveAttribute("data-mode", "crest");
+  });
+
   it("scrolls to the top instead of reloading when the home link is used on the homepage", async () => {
     const user = userEvent.setup();
     renderHeader();

@@ -45,4 +45,13 @@ describe("header state machine", () => {
     expect(headerOnScroll(revealed, EXPAND_ABOVE - 1).mode).toBe("expanded");
     expect(scrollThrough(initialHeaderState, 900, 20).mode).toBe("expanded");
   });
+
+  it("treats iOS overscroll above the top as the top", () => {
+    expect(headerOnScroll({ mode: "crest", anchorY: 0 }, -40).mode).toBe("expanded");
+  });
+
+  it("ignores a second tap while revealed", () => {
+    const revealed = headerOnReveal(scrollThrough(initialHeaderState, 900), 900);
+    expect(headerOnReveal(revealed, 500)).toBe(revealed);
+  });
 });

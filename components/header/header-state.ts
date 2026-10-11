@@ -6,7 +6,7 @@ export type HeaderState = {
   anchorY: number;
 };
 
-/** Above this scroll position the full header always shows (spec section 6.2). */
+/** While scrollY is below this, the full header always shows (spec section 6.2). */
 export const EXPAND_ABOVE = 120;
 
 /** Once revealed, scrolling this far down again goes back to crest only. */
