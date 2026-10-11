@@ -187,7 +187,7 @@ Every component uses three font variables, never a font name: `--font-display` (
 
 ### 6.3 Menu
 - **Panel.** Full-screen navy panel with the star texture and big condensed links: Shop, Sell, Campuses, Hub, How it works, Safety, Account. Arrows drill into Categories and Campuses.
-- **Campus switch** at the top of the menu.
+- **Campus switch** at the top of the menu. Tapping it closes the menu and opens the campus picker, so after choosing, the visitor is back on the page and the confirmation is seen and announced (Lama, 2026-10-12).
 - **Behaviour.** Opens with a 300ms slide and fade. Focus is trapped inside while open; Esc and the close button dismiss it, and focus returns to the Menu button.
 
 ### 6.4 Campus picker

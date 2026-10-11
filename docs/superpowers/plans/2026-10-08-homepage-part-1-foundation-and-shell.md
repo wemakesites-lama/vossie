@@ -2749,6 +2749,13 @@ Message: `feat: add overlay bus, toast region and shared dialog hook`
 - Create: `assets/brand/crest-white.png` (copied), `components/brand/Pennant.tsx`, `components/brand/Pennant.test.tsx`
 - Modify: `app/globals.css` (pennant styles)
 
+**Updated during the build (2026-10-12).** Lama chose to match the approved mockup (`home-v2.html`, `.mini`) for the `small` variant, which is the footer lockup:
+- a white pennant with the navy crest (`assets/brand/crest-navy.png`);
+- 30 × 37px with 5px top padding and a 22px crest;
+- no white edge and no shadow.
+
+The code below is the first version; the follow-up commit replaces the `small` variant. The `size="small"` API is unchanged.
+
 - [ ] **Step 1: Copy the cleaned crest into the app's assets**
 
 This is the white crest cleaned from Lama's screenshot (362 × 609 px). Replace it when Eduvos sends the official SVG.
@@ -4469,16 +4476,18 @@ describe("MenuDrawer", () => {
     expect(within(menu).getByRole("link", { name: "Midrand, Gauteng" })).toHaveAttribute("href", "/c/midrand");
   });
 
-  it("shows the current campus and opens the campus picker from it", async () => {
+  it("shows the current campus, then closes itself and opens the campus picker", async () => {
     const user = userEvent.setup();
     setCampusChoice("midrand");
     const picker = vi.fn();
     const unsubscribe = onOverlayOpen("campus", picker);
     renderMenu();
-    const { menu } = openMenu();
-    const campusSwitch = within(menu).getByRole("button", { name: /Shopping at Midrand/ });
-    await user.click(campusSwitch);
-    expect(picker).toHaveBeenCalledWith(campusSwitch);
+    const { menu, trigger } = openMenu();
+    await user.click(within(menu).getByRole("button", { name: /Shopping at Midrand/ }));
+    // The menu closes first, so the picker's confirmation isn't hidden behind it (Lama, 2026-10-12).
+    expect(menu).not.toHaveAttribute("open");
+    // Focus goes back to whatever opened the menu once the picker closes.
+    expect(picker).toHaveBeenCalledWith(trigger);
     unsubscribe();
   });
 
@@ -4543,9 +4552,24 @@ export function MenuDrawer({ campuses, categories }: MenuDrawerProps) {
   const backRef = useRef<HTMLButtonElement>(null);
   const shopDrillRef = useRef<HTMLButtonElement>(null);
   const campusesDrillRef = useRef<HTMLButtonElement>(null);
+  const openedByRef = useRef<HTMLElement | null>(null);
   const choice = useCampusChoice(campuses);
   const lowData = useLowData();
-  const { dialogRef, close } = useOverlayDialog("menu", () => setView("main"));
+  const { dialogRef, close } = useOverlayDialog("menu", (trigger) => {
+    openedByRef.current = trigger;
+    setView("main");
+  });
+
+  /**
+   * Change campus: close the menu first, then open the picker. With no modal left open behind it,
+   * the picker's confirmation ("Showing Midrand first") is seen and announced (Lama, 2026-10-12).
+   * When the picker closes, focus returns to whatever opened the menu.
+   */
+  function changeCampus() {
+    const openedBy = openedByRef.current;
+    close();
+    openOverlay("campus", openedBy);
+  }
 
   function drillInto(next: Exclude<View, "main">) {
     flushSync(() => setView(next));
@@ -4576,12 +4600,7 @@ export function MenuDrawer({ campuses, categories }: MenuDrawerProps) {
             <CloseIcon />
             <span>Close</span>
           </button>
-          <button
-            type="button"
-            aria-haspopup="dialog"
-            onClick={(event) => openOverlay("campus", event.currentTarget)}
-            className="menu-campus"
-          >
+          <button type="button" aria-haspopup="dialog" onClick={changeCampus} className="menu-campus">
             <MapPinIcon className="size-5 shrink-0" />
             <span className="min-w-0 truncate">
               Shopping at <strong>{campusLabel(choice, campuses)}</strong>
@@ -4972,7 +4991,7 @@ In `app/layout.tsx`:
 In the dev server, check each of these at 390px and 1280px:
 - **Opening:** Menu opens a full-screen navy panel with big condensed links, sliding and fading in over 300ms.
 - **Drill-downs:** the arrow next to Shop drills into categories, Back returns, and Campuses lists every campus.
-- **Campus switch:** "Shopping at … Change" opens the campus picker on top (a sheet at 390px). Choosing a campus updates the switch and shows the toast above the menu.
+- **Campus switch:** "Shopping at … Change" closes the menu and opens the campus picker (a sheet at 390px). Choosing a campus returns you to the page and shows the toast. Reopening the menu shows the new campus in the switch.
 - **Data saver:** the switch flips and survives a reload.
 - **Closing:** Esc closes the menu and focus returns to the Menu button. Following a link closes it too.
 
@@ -8083,6 +8102,9 @@ Part 2 must add:
   - `next/font/local` (the Eduvos fonts) computes fallback metrics itself.
 
 **Accessibility cautions**
+- **Toasts behind a modal.**
+  - While a modal dialog is open, the rest of the page is inert, so screen readers don't hear the toast region.
+  - Any flow that confirms with a toast must close its dialogs first, as the menu's campus switch does.
 - **Contrast.**
   - The default `.eyebrow` colour (sky-dark) passes only on white. It fails on `panel` (4.25:1) and `pale` (4.04:1), so eyebrows there should be navy.
   - Small sky text over the 13% star texture dips to about 4.0:1 where a star crosses a letter. Either keep small sky text off textured areas, or lighten the stars to about 6%.
