@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { SiteHeader } from "@/components/header/SiteHeader";
+import { CampusPicker } from "@/components/campus/CampusPicker";
+import { ToastRegion } from "@/components/ui/ToastRegion";
 import { getCampuses } from "@/lib/data";
 import { fontVariables } from "./fonts";
 import "./globals.css";
@@ -32,6 +34,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <main id="main" tabIndex={-1} className="flex-1">
           {children}
         </main>
+        <CampusPicker campuses={campuses} />
+        <ToastRegion />
       </body>
     </html>
   );

@@ -627,3 +627,148 @@
     translate: 0 var(--compact-shift);
   }
 }
+
+/* --- Sheets and the campus picker (Task 13, spec section 6.4) ---------------- */
+/* .sheet-*: a bottom sheet on phones, a popover from 768px. Also used by the iPhone install help (Task 17). */
+@layer components {
+  /* Phones: a bottom sheet. */
+  .sheet-dialog {
+    position: fixed;
+    inset: auto 0 0 0;
+    width: 100%;
+    max-width: none;
+    max-height: 85dvh;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 20px 20px 0 0;
+    background: var(--color-white);
+    color: var(--color-ink);
+    overflow: hidden;
+    translate: 0 100%;
+    transition-property: translate, opacity, overlay, display;
+    transition-duration: var(--dur-slow);
+    transition-timing-function: var(--ease-out);
+    transition-behavior: allow-discrete;
+  }
+
+  .sheet-dialog[open] {
+    translate: 0 0;
+  }
+
+  @starting-style {
+    .sheet-dialog[open] {
+      translate: 0 100%;
+    }
+  }
+
+  .sheet-dialog::backdrop {
+    background: rgb(21 48 93 / 0.4);
+  }
+
+  .sheet-inner {
+    display: flex;
+    flex-direction: column;
+    max-height: 85dvh;
+    padding: 4px 16px max(16px, env(safe-area-inset-bottom));
+  }
+
+  /* Short on height, only the list gives way (it scrolls). The handle, title and search box keep their size. */
+  .sheet-inner > :not(.picker-list) {
+    flex-shrink: 0;
+  }
+
+  .sheet-handle {
+    display: grid;
+    place-items: center;
+    height: 28px;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .sheet-handle > span {
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--color-idle);
+  }
+
+  .picker-search {
+    width: 100%;
+    height: 48px;
+    margin-top: 12px;
+    padding: 0 16px;
+    border: 1.5px solid var(--color-line);
+    border-radius: 999px;
+    color: var(--color-ink);
+  }
+
+  .picker-list {
+    margin-top: 8px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .picker-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-height: 52px;
+    padding: 6px 12px;
+    border-radius: 12px;
+    text-align: left;
+  }
+
+  .picker-option[aria-current="true"] {
+    background: var(--color-pale);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .picker-option:hover {
+      background: var(--color-panel);
+    }
+  }
+
+  /* Tablet and up: a popover under the button that opened it. */
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .sheet-dialog {
+      inset: auto;
+      top: var(--picker-top, 96px);
+      left: var(--picker-left, 24px);
+      width: 380px;
+      max-height: min(70vh, 560px);
+      border: 1.5px solid var(--color-line);
+      border-radius: 16px;
+      translate: 0 -8px;
+      opacity: 0;
+      transition-duration: var(--dur-base);
+    }
+
+    .sheet-dialog[open] {
+      translate: 0 0;
+      opacity: 1;
+    }
+
+    @starting-style {
+      .sheet-dialog[open] {
+        translate: 0 -8px;
+        opacity: 0;
+      }
+    }
+
+    .sheet-dialog::backdrop {
+      background: transparent;
+    }
+
+    .sheet-inner {
+      max-height: min(70vh, 560px);
+      padding: 16px;
+    }
+
+    .sheet-handle {
+      display: none;
+    }
+  }
+}
