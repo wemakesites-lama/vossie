@@ -316,6 +316,7 @@
     display: block;
     width: var(--pen-w);
     height: var(--pen-h);
+    forced-color-adjust: none;
   }
 
   @media (min-width: 48rem) and (min-height: 30rem) {
@@ -339,6 +340,7 @@
     padding-top: 5px;
     background: var(--color-white);
     clip-path: polygon(0 0, 100% 0, 100% 72%, 50% 100%, 0 72%);
+    forced-color-adjust: none;
   }
 
   .pennant-mini-crest {
@@ -371,7 +373,8 @@
     height: var(--crest-h);
   }
 
-  /* Soft shadow, shown only while the pennant is pinned on its own (header crest-only mode). */
+  /* Soft shadow, shown only while the pennant is pinned on its own (header crest-only mode).
+     The drop-shadow sits on this unclipped wrapper because clip-path would clip a shadow on the same element. */
   .pennant-shadow {
     position: absolute;
     inset: 0 calc(var(--edge-x) * -1) calc(var(--edge-y) * -1);

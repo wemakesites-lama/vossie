@@ -9,6 +9,8 @@ describe("Pennant", () => {
     expect(pennant).toHaveAttribute("aria-hidden", "true");
     expect(pennant).toHaveClass("pennant");
     expect(pennant.querySelector("img")).toHaveAttribute("alt", "");
+    expect(pennant).not.toHaveClass("pennant-mini");
+    expect(pennant.querySelector("img")).toHaveAttribute("loading", "eager");
   });
 
   it("has the footer lockup from the mockup: a white pennant with the navy crest", () => {
@@ -20,5 +22,13 @@ describe("Pennant", () => {
     const crest = lockup.querySelector("img");
     expect(crest).toHaveAttribute("alt", "");
     expect(crest?.getAttribute("src")).toMatch(/crest-navy/);
+    expect(crest).toHaveAttribute("loading", "lazy");
+  });
+
+  it("passes a class through on both sizes", () => {
+    const { container: header } = render(<Pennant className="extra" />);
+    expect(header.firstElementChild).toHaveClass("pennant", "extra");
+    const { container: footer } = render(<Pennant size="small" className="extra" />);
+    expect(footer.firstElementChild).toHaveClass("pennant-mini", "extra");
   });
 });

@@ -32,6 +32,7 @@ vi.mock("next/image", async () => {
       width?: number;
       height?: number;
       className?: string;
+      loading?: "eager" | "lazy";
     }) =>
       createElement("img", {
         src: typeof props.src === "string" ? props.src : props.src.src,
@@ -39,6 +40,7 @@ vi.mock("next/image", async () => {
         width: props.width,
         height: props.height,
         className: props.className,
+        loading: props.loading,
       }),
   };
 });

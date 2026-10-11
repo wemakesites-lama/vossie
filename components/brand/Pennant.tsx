@@ -30,6 +30,8 @@ export function Pennant({ size = "header", className }: PennantProps) {
       </span>
       <span className="pennant-shape pennant-back" />
       <span className="pennant-shape pennant-pen">
+        {/* 36 × 60 is the largest display size (the desktop crest is 60px tall), not the file's
+            intrinsic 362 × 609. It keeps the srcset to small 1x/2x files, so don't "correct" it. */}
         <Image
           src={crestWhite}
           alt=""
