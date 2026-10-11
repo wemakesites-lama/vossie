@@ -329,14 +329,21 @@
     }
   }
 
-  /* After the media query, so the small size wins at every width. */
-  .pennant--small {
-    --pen-w: 34px;
-    --pen-h: 42px;
-    --pen-pt: 5px;
-    --crest-h: 24px;
-    --edge-x: 3px;
-    --edge-y: 6px;
+  /* Footer lockup (approved mockup): a white pennant with the navy crest, no edge, no shadow. */
+  .pennant-mini {
+    display: flex;
+    flex: none;
+    justify-content: center;
+    width: 30px;
+    height: 37px;
+    padding-top: 5px;
+    background: var(--color-white);
+    clip-path: polygon(0 0, 100% 0, 100% 72%, 50% 100%, 0 72%);
+  }
+
+  .pennant-mini-crest {
+    width: auto;
+    height: 22px;
   }
 
   /* Flat top, straight sides, V-shaped base. */

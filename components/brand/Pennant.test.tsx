@@ -11,8 +11,14 @@ describe("Pennant", () => {
     expect(pennant.querySelector("img")).toHaveAttribute("alt", "");
   });
 
-  it("has a small variant for the footer", () => {
+  it("has the footer lockup from the mockup: a white pennant with the navy crest", () => {
     const { container } = render(<Pennant size="small" />);
-    expect(container.firstElementChild).toHaveClass("pennant", "pennant--small");
+    const lockup = container.firstElementChild!;
+    expect(lockup).toHaveAttribute("aria-hidden", "true");
+    expect(lockup).toHaveClass("pennant-mini");
+    expect(lockup).not.toHaveClass("pennant");
+    const crest = lockup.querySelector("img");
+    expect(crest).toHaveAttribute("alt", "");
+    expect(crest?.getAttribute("src")).toMatch(/crest-navy/);
   });
 });
