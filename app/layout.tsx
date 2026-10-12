@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { AnnouncementBar } from "@/components/announcement/AnnouncementBar";
 import { SiteHeader } from "@/components/header/SiteHeader";
 import { CampusPicker } from "@/components/campus/CampusPicker";
+import { SiteFooter } from "@/components/footer/SiteFooter";
 import { MenuDrawer } from "@/components/menu/MenuDrawer";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { ToastRegion } from "@/components/ui/ToastRegion";
@@ -43,6 +44,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <main id="main" tabIndex={-1} className="flex-1">
           {children}
         </main>
+        <SiteFooter campuses={campuses} />
         <MenuDrawer campuses={campuses} categories={categories} />
         <SearchOverlay campuses={campuses} categories={categories} trending={trending} />
         <CampusPicker campuses={campuses} />
