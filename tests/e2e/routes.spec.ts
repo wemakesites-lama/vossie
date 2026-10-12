@@ -18,6 +18,7 @@ const PLACEHOLDERS: Array<[path: string, title: string]> = [
   ["/collections/exam-season", "Notes, tutors & cram snacks"],
   ["/listings/l-001", "Casio fx-991ZA Plus calculator"],
   ["/listings/fs-002", "Desk lamp, swap for a kettle"],
+  ["/sellers/hair-studio", "Hair studio"],
 ];
 
 /** Routes don't change with width, so one phone and one desktop size are enough. */
@@ -39,7 +40,7 @@ test.describe("placeholder routes", () => {
     });
   }
 
-  test("unknown campus, category, listing and collection slugs show the 404 page", async ({ page }) => {
+  test("unknown campus, category, listing, collection and seller slugs show the 404 page", async ({ page }) => {
     onlyAtPhoneAndDesktop();
     await page.goto("/c/atlantis");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
@@ -51,6 +52,9 @@ test.describe("placeholder routes", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
     await expect(page).toHaveTitle("Page not found · Vossie");
     await page.goto("/collections/nope");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
+    await expect(page).toHaveTitle("Page not found · Vossie");
+    await page.goto("/sellers/nope");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
     await expect(page).toHaveTitle("Page not found · Vossie");
   });

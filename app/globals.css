@@ -3270,3 +3270,152 @@
     }
   }
 }
+
+/* --- Homepage: featured today (Part 2, Task 18, spec 7.10) --- */
+@layer components {
+  .featured-carousel {
+    --carousel-item: 64%;
+  }
+
+  .seller-card {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    border: 1.5px solid var(--color-line);
+    border-radius: var(--radius-panel);
+    background: var(--color-white);
+    transition: scale var(--dur-fast) var(--ease-out);
+  }
+
+  .seller-card:has(.seller-link:active) {
+    scale: 0.98;
+  }
+
+  .seller-media {
+    position: relative;
+    display: block;
+  }
+
+  /* Navy on solid sky: 5.0:1. */
+  .seller-tag {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--color-sky);
+    color: var(--color-navy);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  .seller-body {
+    padding: 14px 16px 16px;
+  }
+
+  .seller-name {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 24px;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  /* The name's link covers the whole card. Its ring is drawn inside the card, which the row would otherwise clip. */
+  .seller-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  /* Only where :has() works: elsewhere the link keeps its own ring. */
+  @supports selector(:has(*)) {
+    .seller-link:focus-visible {
+      outline: none;
+      box-shadow: none;
+    }
+
+    /* Drawn over the photo as a navy ring with a white edge inside it, so it shows on any picture (WCAG 1.4.11). */
+    .seller-card:has(.seller-link:focus-visible)::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      border-radius: inherit;
+      box-shadow:
+        inset 0 0 0 3px var(--color-navy),
+        inset 0 0 0 5px var(--color-white);
+      pointer-events: none;
+    }
+  }
+
+  .seller-tagline {
+    margin-top: 6px;
+    color: var(--color-muted);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .seller-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    color: var(--color-muted);
+    font-size: 11.5px;
+  }
+
+  .seller-seal {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: var(--color-navy);
+    color: var(--color-white);
+  }
+
+  .seller-skeleton-photo {
+    display: block;
+    aspect-ratio: 4 / 3;
+    border-radius: 0;
+  }
+
+  .seller-skeleton-name {
+    width: 60%;
+    height: 22px;
+  }
+
+  .seller-skeleton-line {
+    height: 12px;
+    margin-top: 8px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .featured-carousel {
+      --carousel-item: 40%;
+    }
+  }
+
+  /* Desktop: a grid of four, so the row has nothing to scroll and needs no arrows or bar (spec 7.10). */
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .featured-carousel .carousel-track {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      overflow: visible;
+    }
+
+    .featured-carousel .carousel-track > li {
+      width: auto;
+    }
+
+    .featured-carousel .carousel-arrows,
+    .featured-carousel .carousel-bar {
+      display: none;
+    }
+  }
+}
