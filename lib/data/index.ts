@@ -97,10 +97,11 @@ export async function getFreeAndSwaps({ campus, limit }: CampusQuery): Promise<r
 }
 
 /** The next Hub events for a campus: its own and the every-campus ones, soonest first (spec 7.13). */
-export async function getHubEvents({ campus, limit }: CampusQuery): Promise<readonly HubEvent[]> {
+export async function getHubEvents({ campus, limit, from }: CampusQuery & { from: string }): Promise<readonly HubEvent[]> {
   "use cache";
-  // The sample events are all upcoming. With live data, leave out past dates (SAST) in the query.
+  // `from` is today's SAST date (YYYY-MM-DD). It keeps past events out, and the cache keys on it, so it turns over each day.
   return hubEvents
+    .filter((event) => event.date >= from)
     .filter((event) => campus === ALL_CAMPUSES || event.campusSlug === ALL_CAMPUSES || event.campusSlug === campus)
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, limit);

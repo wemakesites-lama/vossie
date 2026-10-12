@@ -47,6 +47,12 @@ describe("Featured today (spec 7.10)", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Hustles on every campus" })).toBeInTheDocument();
   });
 
+  it("doesn't name the campus when some featured sellers come from elsewhere", async () => {
+    viewer.campus = "pretoria";
+    render(await FeaturedTodayContent());
+    expect(screen.getByRole("heading", { level: 2, name: "Hustles on every campus" })).toBeInTheDocument();
+  });
+
   it("hides when nobody is featured", async () => {
     featured.mode = "empty";
     const { container } = render(await FeaturedTodayContent());

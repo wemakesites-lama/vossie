@@ -43,8 +43,8 @@ export async function FeaturedTodayContent() {
   // Spec 7.10: with nobody to feature, the section hides.
   if (sellers.length === 0) return null;
   const names = new Map(campuses.map((item) => [item.slug, item.name]));
-  const fromCampus = campus !== ALL_CAMPUSES && sellers.some((seller) => seller.campusSlug === campus);
-  const title = fromCampus ? `Hustles at ${names.get(campus)}` : "Hustles on every campus";
+  const allFromCampus = campus !== ALL_CAMPUSES && sellers.every((seller) => seller.campusSlug === campus);
+  const title = allFromCampus ? `Hustles at ${names.get(campus)}` : "Hustles on every campus";
 
   return (
     <FeaturedFrame>
@@ -75,7 +75,7 @@ function SellerCard({ seller, campusName }: { seller: Seller; campusName: string
   return (
     <article className="seller-card">
       <span className="seller-media">
-        <Photo image={seller.image} ratio="4 / 3" sizes="(min-width: 64rem) and (min-height: 30rem) 270px, (min-width: 48rem) and (min-height: 30rem) 40vw, 64vw" />
+        <Photo image={seller.image} ratio="4 / 3" sizes="(orientation: landscape) and (max-height: 29.99rem) 32vw, (min-width: 64rem) and (min-height: 30rem) 270px, (min-width: 48rem) and (min-height: 30rem) 40vw, 64vw" />
         <span className="seller-tag">Featured</span>
       </span>
       <div className="seller-body">
@@ -116,6 +116,7 @@ export function FeaturedTodaySkeleton() {
                 <span className="skeleton seller-skeleton-name" />
                 <span className="skeleton seller-skeleton-line" />
                 <span className="skeleton seller-skeleton-line" />
+                <span className="skeleton seller-skeleton-meta" />
               </div>
             </div>
           </li>

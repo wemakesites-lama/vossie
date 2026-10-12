@@ -116,16 +116,25 @@ describe("homepage data", () => {
   });
 
   it("lists a campus's events with the every-campus ones, soonest first", async () => {
-    expect((await getHubEvents({ campus: "midrand", limit: 3 })).map((event) => event.id)).toEqual([
+    expect((await getHubEvents({ campus: "midrand", limit: 3, from: "2026-10-12" })).map((event) => event.id)).toEqual([
       "e-001",
       "e-002",
       "e-005",
     ]);
-    expect((await getHubEvents({ campus: "mbombela", limit: 3 })).map((event) => event.id)).toEqual(["e-001", "e-005"]);
-    expect((await getHubEvents({ campus: "all", limit: 3 })).map((event) => event.id)).toEqual([
+    expect((await getHubEvents({ campus: "mbombela", limit: 3, from: "2026-10-12" })).map((event) => event.id)).toEqual([
+      "e-001",
+      "e-005",
+    ]);
+    expect((await getHubEvents({ campus: "all", limit: 3, from: "2026-10-12" })).map((event) => event.id)).toEqual([
       "e-001",
       "e-002",
       "e-003",
+    ]);
+    // Events before `from` (today's SAST date) are left out.
+    expect((await getHubEvents({ campus: "all", limit: 3, from: "2026-10-15" })).map((event) => event.id)).toEqual([
+      "e-002",
+      "e-003",
+      "e-004",
     ]);
   });
 

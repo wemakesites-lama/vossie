@@ -183,7 +183,7 @@ export function CampusChooser({ campuses }: { campuses: readonly Campus[] }) {
               aria-current={choice === campus.slug ? "true" : undefined}
               className={cx("campus-card", choice === campus.slug && "campus-card-on")}
             >
-              <Photo image={{ src: campus.image.src, alt: "" }} sizes="60vw" className="campus-card-photo" />
+              <Photo image={{ src: campus.image.src, alt: "" }} sizes="(orientation: landscape) and (max-height: 29.99rem) 28vw, 60vw" className="campus-card-photo" />
               <span className="campus-card-name">{campus.name}</span>
               <span className="sr-only">,</span>{" "}
               <span className="campus-card-meta">{campus.liveListings} live listings</span>

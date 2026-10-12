@@ -1,14 +1,20 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { ALL_CAMPUSES } from "@/lib/campus";
 import { getCampuses, getHubEvents } from "@/lib/data";
 import { getViewerContext } from "@/lib/data/viewer";
 import { eventDate } from "@/lib/format";
+import { sastToday } from "@/lib/time";
 import { SectionError } from "./SectionError";
 
-/** The next three Hub events for the visitor's campus, every-campus events included (spec 7.13). */
+/** The next three upcoming Hub events for the visitor's campus, every-campus events included (spec 7.13). */
 export async function WhatsOnEvents() {
   const { campus } = await getViewerContext();
-  const data = await Promise.all([getHubEvents({ campus, limit: 3 }), getCampuses()]).catch(() => null);
+  // The cookie read isn't enough for Next to allow a clock read (it still logs "unstable value new Date()" with
+  // partial prefetching on). connection() defers the rest of this render to the request, as Next's docs ask.
+  await connection();
+  const today = sastToday();
+  const data = await Promise.all([getHubEvents({ campus, limit: 3, from: today }), getCampuses()]).catch(() => null);
   if (!data) return <SectionError id="whats-on" title="What’s on" />;
 
   const [events, campuses] = data;
@@ -29,7 +35,7 @@ export async function WhatsOnEvents() {
         return (
           <li key={event.id} className="event">
             <time dateTime={event.date} className="event-date">
-              <span className="event-day">{day}</span>
+              <span className="event-day">{day}</span>{" "}
               <span className="event-month">{month}</span>
             </time>
             <span className="event-text">

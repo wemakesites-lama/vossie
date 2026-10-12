@@ -9,6 +9,9 @@ vi.mock("@/lib/data/viewer", () => ({
   getViewerContext: async () => ({ campus: viewer.campus, signedIn: false, activity: null }),
 }));
 
+// connection() needs Next's request context, which tests don't have.
+vi.mock("next/server", () => ({ connection: async () => undefined }));
+
 vi.mock("@/lib/data", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/data")>();
   return {
@@ -22,10 +25,14 @@ vi.mock("@/lib/data", async (importOriginal) => {
 
 afterEach(() => {
   events.mode = "real";
+  vi.useRealTimers();
 });
 
 describe("WhatsOnEvents (spec 7.13)", () => {
   it("lists the campus's next three events with a date block and an action", async () => {
+    // Fake only the date, so today stays 12 October and the sample events stay upcoming.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-12T08:00:00Z"));
     viewer.campus = "midrand";
     const { container } = render(await WhatsOnEvents());
     const rows = screen.getAllByRole("listitem");
@@ -34,7 +41,7 @@ describe("WhatsOnEvents (spec 7.13)", () => {
     expect(within(rows[0]).getByText("All campuses")).toBeInTheDocument();
     expect(within(rows[1]).getByText("Midrand")).toBeInTheDocument();
     expect(container.querySelector("time")).toHaveAttribute("dateTime", "2026-10-14");
-    expect(container.querySelector("time")).toHaveTextContent("14Oct");
+    expect(container.querySelector("time")).toHaveTextContent("14 Oct");
     expect(within(rows[0]).getByRole("link", { name: "RSVP for Pitch night" })).toHaveAttribute("href", "/hub");
     expect(within(rows[1]).getByRole("link", { name: "Book for Office hours: pricing your hustle" })).toBeInTheDocument();
   });

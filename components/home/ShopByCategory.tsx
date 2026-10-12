@@ -31,7 +31,7 @@ export async function ShopByCategory() {
             <Link href={`/categories/${category.slug}`} className="category-tile">
               <Photo
                 image={{ src: category.image.src, alt: "" }}
-                sizes="(min-width: 64rem) and (min-height: 30rem) 172px, (min-width: 48rem) and (min-height: 30rem) 22vw, 42vw"
+                sizes="(orientation: landscape) and (max-height: 29.99rem) 21vw, (min-width: 64rem) and (min-height: 30rem) 172px, (min-width: 48rem) and (min-height: 30rem) 22vw, 42vw"
                 className="category-photo"
               />
               <span className="category-name">{category.name}</span>

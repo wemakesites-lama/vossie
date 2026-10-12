@@ -71,7 +71,7 @@ function FreeSwapCard({ item, campusName }: { item: FreeSwapItem; campusName: st
         <Photo
           image={{ src: item.image.src, alt: "" }}
           ratio="4 / 3"
-          sizes="(min-width: 64rem) and (min-height: 30rem) 204px, (min-width: 48rem) and (min-height: 30rem) 30vw, 46vw"
+          sizes="(orientation: landscape) and (max-height: 29.99rem) 23vw, (min-width: 64rem) and (min-height: 30rem) 204px, (min-width: 48rem) and (min-height: 30rem) 30vw, 46vw"
         />
         <span className={cx("free-stamp", item.kind === "swap" && "free-stamp-swap")}>
           {item.kind === "free" ? "Free" : "Swap"}
