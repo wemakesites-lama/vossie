@@ -1062,14 +1062,16 @@
   }
 
   /* Tablet and up. The big type takes the height left over, so the main view fits without scrolling
-     down to about 610px of height. The 305px reserved is the menu's other parts (padding, top bar, view
-     padding, data saver: 253px), plus six 8px gaps and 4px of slack. The 7 is the number of link rows.
-     If a row or block is added, the menu scrolls rather than breaks. */
+     down to about 620px of height. The 316px reserved is the menu's other parts (padding, top bar, view
+     padding, data saver: 253px), plus six 8px gaps, 8px because Shop's row is 52px tall (the height of its
+     arrow button) where the other rows are 44px, and 7px of slack. That leaves about 10px to spare at 657px
+     of height. The 7 is the number of link rows. If a row or block is added, the menu scrolls rather than
+     breaks. */
   @media (min-width: 48rem) and (min-height: 30rem) {
     .menu-links a,
     .menu-link-button {
       min-height: 44px;
-      font-size: clamp(2.5rem, min(1.6rem + 4.4vw, (100dvh - 305px) / 7), 4.5rem);
+      font-size: clamp(2.5rem, min(1.6rem + 4.4vw, (100dvh - 316px) / 7), 4.5rem);
     }
 
     /* Shop's drill-down arrow sits beside the word, as Campuses' chevron does, not at the far edge. */
@@ -1168,6 +1170,8 @@
   }
 
   .search-heading {
+    /* After Clear the Trending heading takes focus, and a block heading would draw its ring across the whole row. */
+    width: fit-content;
     color: var(--color-sky-dark);
     font-family: var(--vos-font-display);
     font-size: var(--text-eyebrow);
