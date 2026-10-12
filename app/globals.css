@@ -3419,3 +3419,134 @@
     }
   }
 }
+
+/* --- Homepage: looking for (Part 2, Task 19, spec 7.11) --- */
+@layer components {
+  /* Navy on sky is 5.0:1 at any size. */
+  .looking-for {
+    display: grid;
+    gap: 16px;
+    padding: 26px 20px;
+    background: var(--color-sky);
+    color: var(--color-navy);
+  }
+
+  .looking-for .section-title {
+    font-size: clamp(2.5rem, 1.75rem + 2.6vw, 3.625rem);
+    line-height: 0.96;
+    /* Even lines on phones, rather than "it." alone on the last one. */
+    text-wrap: balance;
+  }
+
+  .looking-for-copy {
+    max-width: 44ch;
+    margin-top: 12px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .looking-for-action {
+    justify-self: start;
+  }
+
+  .request-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  /* Two requests on phones (spec 7.11). */
+  .request-list > li:nth-child(n + 3) {
+    display: none;
+  }
+
+  .request-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    padding: 12px 14px;
+    border-radius: var(--radius-strip);
+    background: var(--color-white);
+    transition: scale var(--dur-fast) var(--ease-out);
+  }
+
+  .request-row:active {
+    scale: 0.98;
+  }
+
+  .request-text {
+    display: grid;
+  }
+
+  .request-title {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .request-meta {
+    margin-top: 2px;
+    color: var(--color-muted);
+    font-size: 12px;
+  }
+
+  .request-arrow {
+    flex: none;
+    width: 18px;
+    height: 18px;
+  }
+
+  .request-skeleton {
+    display: block;
+    height: 64px;
+    border-radius: var(--radius-strip);
+    background: rgb(255 255 255 / 0.5);
+  }
+
+  .looking-for-empty {
+    font-size: 14px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .looking-for {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      grid-template-areas:
+        "intro requests"
+        "action requests";
+      align-items: center;
+      gap: 22px 44px;
+      padding: 48px;
+      border-radius: var(--radius-panel);
+    }
+
+    .looking-for-intro {
+      grid-area: intro;
+      align-self: end;
+    }
+
+    .looking-for-requests {
+      grid-area: requests;
+    }
+
+    .looking-for-action {
+      grid-area: action;
+      align-self: start;
+    }
+
+    .request-list > li:nth-child(n + 3) {
+      display: list-item;
+    }
+
+    .request-row {
+      padding: 14px 16px;
+    }
+
+    .request-title {
+      font-size: 14px;
+    }
+
+    .looking-for-copy {
+      font-size: 15px;
+    }
+  }
+}
