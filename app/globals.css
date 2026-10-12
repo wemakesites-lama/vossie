@@ -1058,3 +1058,148 @@
     translate: 16px 0;
   }
 }
+
+/* --- Search overlay (Task 15, spec section 6.5) ------------------------------- */
+@layer components {
+  .search-dialog {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--color-white);
+    color: var(--color-ink);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    opacity: 0;
+    transition-property: opacity, overlay, display;
+    transition-duration: var(--dur-base);
+    transition-timing-function: var(--ease-out);
+    transition-behavior: allow-discrete;
+  }
+
+  .search-dialog[open] {
+    opacity: 1;
+  }
+
+  @starting-style {
+    .search-dialog[open] {
+      opacity: 0;
+    }
+  }
+
+  .search-dialog::backdrop {
+    background: transparent;
+  }
+
+  .search-inner {
+    max-width: 48rem;
+    margin-inline: auto;
+    padding: max(12px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom));
+  }
+
+  .search-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 60px;
+    padding: 0 6px 0 16px;
+    border: 1.5px solid var(--color-navy);
+    border-radius: 999px;
+  }
+
+  /* The whole field shows the focus ring, so the input itself doesn't need one. */
+  .search-form:focus-within {
+    outline: 2.5px solid var(--color-navy);
+    outline-offset: 3px;
+  }
+
+  .search-input {
+    flex: 1;
+    min-width: 0;
+    height: 56px;
+    background: transparent;
+    color: var(--color-ink);
+    font-size: 18px;
+    outline: none;
+  }
+
+  .search-section {
+    margin-top: 28px;
+  }
+
+  .search-heading {
+    color: var(--color-sky-dark);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-eyebrow);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .search-clear {
+    min-height: 44px;
+    padding: 0 8px;
+    color: var(--color-sky-dark);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .search-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .search-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 999px;
+    background: var(--color-panel);
+    color: var(--color-navy);
+    font-size: 14px;
+    font-weight: 600;
+    /* A long term with no spaces (a pasted link or email address) wraps inside the chip
+       instead of pushing the whole overlay sideways. */
+    overflow-wrap: anywhere;
+  }
+
+  .search-chip > svg {
+    flex-shrink: 0;
+  }
+
+  .search-categories {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .search-category {
+    display: flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 0 16px;
+    border: 1.5px solid var(--color-line);
+    border-radius: 14px;
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .search-inner {
+      padding: 32px;
+    }
+
+    .search-categories {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+}
