@@ -8349,8 +8349,8 @@ Part 2 must add:
 **From the final review**
 - **JS budget.**
   - **Measured:** a first visit at 390px loads 154,297 B of JavaScript gzipped, against a budget of 153,600 B. The framework is about 132 KB of that (react-dom 72 KB, the router 46 KB). The shell is about 15.5 KB, plus about 6.5 KB for `next/link`, `next/image` and `next/form`.
-  - **Decided 2026-10-12 (decision 13):** JS is measured as a host serves it, brotli at quality 5, and `performance.spec.ts` asserts that. The shell is 145.7 KB of the 150 KB.
-  - **Part 2's allowance is about 4 KB of brotli JS,** so:
+  - **Decided 2026-10-12 (decision 13):** JS is measured as a host serves it, brotli at quality 5, and `performance.spec.ts` asserts that. The shell is 145,671 B of the 153,600 B.
+  - **Part 2's allowance is 7,929 B (about 7.7 KB) of brotli JS,** so:
     - sections stay Server Components;
     - one small shared carousel controller;
     - the hearts as tiny client components.

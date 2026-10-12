@@ -26,7 +26,7 @@
 
 ## 2026-10-12: Lama's decisions applied
 These are decisions 13 to 19 in `docs/reference/LANDING-DECISIONS.md`.
-- **JS budget.** It's measured as a host serves it, brotli at quality 5. The shell uses 145.7 KB of the 150 KB, so the performance test passes. Part 2 has about 4 KB of JS to spend.
+- **JS budget.** It's measured as a host serves it, brotli at quality 5. The shell uses 145,671 bytes of the 153,600 (150 × 1,024), so the performance test passes. Part 2 has 7,929 bytes, about 7.7 KB, to spend. (An earlier version of this note said about 4 KB, which mixed up the units.)
 - **Contrast.** Small text on the star texture is now white: the footer headings, the menu's "Change" link and the current campus row. Sky stays for large text, icons, pills and the wordmark.
 - **Unchanged by choice:**
   - the footer wordmark stays sky;
@@ -35,8 +35,16 @@ These are decisions 13 to 19 in `docs/reference/LANDING-DECISIONS.md`.
 - **Dev server.** Tailwind now runs through PostCSS, and the Turbopack dev cache is off. `pnpm dev` shows `globals.css` edits in about 0.1s; before, they never showed. Production CSS is byte-identical.
 - **Checks:** 173 unit tests pass. End to end, 199 pass and 71 are skipped by design, with no failures.
 
+## 2026-10-12: Part 2 planned
+- Wrote Part 2 of the build plan (`docs/superpowers/plans/2026-10-12-homepage-part-2-sections.md`): 26 tasks covering spec 7.3 to 7.13, placeholder art, the end-to-end tests, the layout-shift check and Lighthouse.
+- The plan lists 19 decisions made while planning for Lama to confirm or veto. Among them:
+  - a darker idle grey that passes contrast;
+  - a pause button for the Shop by campus cycle;
+  - CSS-only scroll reveals.
+- It keeps a JS ledger against the 7,929 bytes left, and stops for Lama at 152,000.
+
 ## Next
-- Write Part 2 of the plan (the 14 homepage sections) against the real Part 1 code, then build it. The plan's "Handoff to Part 2" section lists what to use and what to add.
+- Lama reviews the Part 2 plan and its decisions, then approves the build (git commits, subagent-driven execution, and the one-off Lighthouse download).
 
 ## Waiting on
 - Eduvos font files and licence confirmation.
