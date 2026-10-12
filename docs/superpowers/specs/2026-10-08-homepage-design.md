@@ -163,7 +163,7 @@ Every component uses three font variables, never a font name: `--font-display` (
 
 | State | When | What it looks like |
 |---|---|---|
-| Expanded | Page is near the top (scrolled less than 120px) | The full header: announcement bar, quick-link row on large screens, the header bar with all its items (78px desktop, 64px phone), and the pennant at full size hanging about 28px into the hero with its white edge |
+| Expanded | Page is near the top (scrolled less than 120px) | The full header: announcement bar, quick-link row on large screens, the header bar with all its items (78px desktop, 64px phone), and the pennant at full size hanging into the hero with its white edge: about 28px of navy on desktop, about 15px on phones (25px with the white edge) |
 | Crest only | Scrolled down past 120px | Every header item slides up and fades out (250ms): the bar's background, Menu, campus pill, Search, Account, Saved and the quick links. The announcement bar scrolls away with the page. **Only the pennant stays**, pinned to the top centre of the screen at about 80% size, keeping its white edge plus a soft shadow so it reads over any content |
 | Revealed | The crest-only pennant is tapped or clicked | Everything pops back out at the current scroll position, crest included: the header bar slides down (300ms), its items fade in one after another (40ms apart) and the pennant springs back to full size (420ms, slight overshoot). The page does not move. The quick-link row returns on large screens; the announcement bar stays at the top of the page only |
 

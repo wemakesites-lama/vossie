@@ -3187,6 +3187,19 @@ Message: `feat: add the header crest-only and reveal state machine`
 
 ### Task 12: The site header
 
+**Updated during the build (2026-10-12).** The code below is the first version. Review follow-ups changed it, and the commits have the exact code:
+- **Touch targets** (spec section 5): the icon groups have an 8px gap. Quick links have `gap: 8px`, `padding-inline: 10px` and `min-width: 44px`, so the words stay 28px apart.
+- **The pennant stays mounted.** The link or button is an empty overlay (`.hdr-pennant`) that covers the pennant and its white edge, carries the name and draws the focus ring. The ring is sky with a navy halo, so it shows over the white bar and over the navy hero. The shadow now fades, and the crest image isn't re-created.
+- **Content clears the sticky header.** `scroll-margin-top` is set on `:is(main, footer)` and its descendants: 72px on phones, 86px from 48rem and 130px from 64rem, which is the header height plus 8px.
+  - It isn't `html { scroll-padding-top }`, because that made keyboard focus inside the header scroll the page.
+  - A Part 2 component with its own vertical scroller must reset `scroll-margin-top` inside it.
+- **`.hdr-bar-inner`** has `grid-template-rows: 100%`, so the bar items centre in the bar rather than on the taller hanging pennant.
+- **Reveal and the home link:**
+  - Revealing focuses with `preventScroll`.
+  - A modified click on the home link (new tab) passes through.
+  - The bar's `scale` is animated when the header hides.
+- **No top safe-area padding.** The app's iOS status bar style is `default` (Task 18), so iOS lays content out below the status bar. If it ever becomes `black-translucent`, add `env(safe-area-inset-top)` to the header.
+
 **Files:**
 - Create: `components/ui/NavLink.tsx`, `components/ui/NavLink.test.tsx`, `components/header/SavedLink.tsx`, `components/header/CampusPill.tsx`, `components/header/SiteHeader.tsx`, `components/header/SiteHeader.test.tsx`
 - Modify: `app/globals.css` (header styles), `app/layout.tsx` (render the header)
@@ -3907,6 +3920,17 @@ Message: `feat: add the site header with crest-only scroll mode and tap to revea
 ---
 
 ### Task 13: The campus picker
+
+**Updated during the build (2026-10-12).** Review follow-ups made these changes; the commits have the exact code:
+- **Option names.** `CampusOption` takes its name from `aria-label="{label}, {detail}"`. Chromium puts a space between blockified flex children, which would give "Midrand , Gauteng". Use the same approach for any composite name inside a flex layout.
+- **`.sheet-inner > :not(.picker-list) { flex-shrink: 0; }`.** Without it, the overflowing list squashed the search box and the drag handle.
+- **Option focus ring.** It's drawn inside the option (`outline-offset: -4px`), because the scrolling list clips rings drawn outside.
+- **The sheet pads its sides for the notch.**
+- **A stale popover position is cleared** when the picker opens with no trigger.
+- **Only the primary pointer drags the sheet.**
+- **Placeholders use the `muted` colour,** at about 5.9:1.
+- **New tests cover** the drag and the popover position.
+- **Search matches province too,** so "cape" finds four campuses (two Western Cape, two Eastern Cape), not two.
 
 **Files:**
 - Create: `components/campus/useSheetDrag.ts`, `components/campus/CampusPicker.tsx`, `components/campus/CampusPicker.test.tsx`
@@ -4992,7 +5016,7 @@ In the dev server, check each of these at 390px and 1280px:
 - **Opening:** Menu opens a full-screen navy panel with big condensed links, sliding and fading in over 300ms.
 - **Drill-downs:** the arrow next to Shop drills into categories, Back returns, and Campuses lists every campus.
 - **Campus switch:** "Shopping at … Change" closes the menu and opens the campus picker (a sheet at 390px). Choosing a campus returns you to the page and shows the toast. Reopening the menu shows the new campus in the switch.
-- **Data saver:** the switch flips and survives a reload.
+- **Data saver:** the switch flips and the choice is saved (`localStorage.vossie_low_data`). It only reapplies after a reload from Task 18 on, when the layout runs the boot script.
 - **Closing:** Esc closes the menu and focus returns to the Menu button. Following a link closes it too.
 
 - [ ] **Step 8: Commit**
