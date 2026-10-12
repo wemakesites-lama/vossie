@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Pennant } from "@/components/brand/Pennant";
 import { ArrowUpRightIcon, ChevronDownIcon } from "@/components/icons";
+import { cx } from "@/lib/cx";
 import type { Campus } from "@/lib/types";
 import { FitText } from "./FitText";
 import { InstallButton } from "./InstallButton";
@@ -8,7 +9,12 @@ import { NewsletterForm } from "./NewsletterForm";
 import { ShopYourCampusLink } from "./ShopYourCampusLink";
 
 type FooterLink = { href: string; label: string };
-type LinkGroup = { title: string; links: readonly FooterLink[] };
+type LinkGroup = {
+  title: string;
+  links: readonly FooterLink[];
+  /** Two columns from the desktop step (decision 17). */
+  columns?: boolean;
+};
 
 const LINK_GROUPS: readonly LinkGroup[] = [
   {
@@ -46,7 +52,11 @@ const LINK_GROUPS: readonly LinkGroup[] = [
 export function SiteFooter({ campuses }: { campuses: readonly Campus[] }) {
   const groups: readonly LinkGroup[] = [
     ...LINK_GROUPS,
-    { title: "Campuses", links: campuses.map((campus) => ({ href: `/c/${campus.slug}`, label: campus.name })) },
+    {
+      title: "Campuses",
+      columns: true,
+      links: campuses.map((campus) => ({ href: `/c/${campus.slug}`, label: campus.name })),
+    },
   ];
 
   return (
@@ -82,7 +92,7 @@ export function SiteFooter({ campuses }: { campuses: readonly Campus[] }) {
               </details>
               <div className="hidden wide:block">
                 <h3 className="footer-heading">{group.title}</h3>
-                <FooterLinks links={group.links} />
+                <FooterLinks links={group.links} columns={group.columns} />
               </div>
             </div>
           ))}
@@ -105,9 +115,9 @@ export function SiteFooter({ campuses }: { campuses: readonly Campus[] }) {
   );
 }
 
-function FooterLinks({ links }: { links: readonly FooterLink[] }) {
+function FooterLinks({ links, columns = false }: { links: readonly FooterLink[]; columns?: boolean }) {
   return (
-    <ul className="footer-links">
+    <ul className={cx("footer-links", columns && "footer-links-columns")}>
       {links.map((link) => (
         <li key={`${link.href}-${link.label}`}>
           <Link href={link.href}>{link.label}</Link>

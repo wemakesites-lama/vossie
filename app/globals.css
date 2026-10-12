@@ -1684,11 +1684,36 @@
 
   @media (min-width: 64rem) and (min-height: 30rem) {
     .footer-grid {
-      grid-template-columns: 1.6fr repeat(3, minmax(0, 1fr)) 1.3fr;
+      grid-template-columns: 1.35fr repeat(3, minmax(0, 0.8fr)) 1.45fr;
     }
 
     .footer-updates {
       grid-column: auto;
+    }
+
+    /* Two columns of campuses, as in the mockup (decision 17). Columns need a block list, not the grid the other
+       lists use, so each row keeps its 8px gap with a margin instead. */
+    .footer-links-columns {
+      display: block;
+      columns: 2;
+      column-gap: 20px;
+    }
+
+    .footer-links-columns li {
+      margin-bottom: 8px;
+      break-inside: avoid;
+    }
+
+    /* The narrower sign-up column: the email field above its button. The field keeps its 44px height, which a
+       column flex item with flex: 1 would otherwise lose. */
+    .footer-signup-row {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .footer-signup-row .footer-input {
+      flex: none;
+      width: 100%;
     }
   }
 }

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { setCampusChoice } from "@/lib/campus";
 import type { Campus } from "@/lib/types";
@@ -33,5 +33,13 @@ describe("SiteFooter", () => {
     const { container } = render(<SiteFooter campuses={campuses} />);
     expect(screen.getByText("An Eduvos Incubation Hub project")).toBeInTheDocument();
     expect(container.querySelector(".footer-wordmark")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("sets the campuses in two columns on desktop, but not in the phone's accordion (decision 17)", () => {
+    const { container } = render(<SiteFooter campuses={campuses} />);
+    const columns = container.querySelectorAll<HTMLElement>(".footer-links-columns");
+    expect(columns).toHaveLength(1);
+    expect(columns[0].closest("details")).toBeNull();
+    expect(within(columns[0]).getAllByRole("link")).toHaveLength(campuses.length);
   });
 });
