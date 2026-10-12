@@ -2,6 +2,13 @@ import type { Campus, CampusChoice } from "./types";
 
 export const CAMPUS_COOKIE = "vossie_campus";
 export const ALL_CAMPUSES = "all";
+/** Eduvos Online is listed with the campuses but shown apart from the 12 physical ones. */
+export const ONLINE_CAMPUS = "online";
+
+export function isOnlineCampus(campus: Pick<Campus, "slug">): boolean {
+  return campus.slug === ONLINE_CAMPUS;
+}
+
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
 /** Turn a raw cookie value into a valid choice. Unknown or missing values mean all campuses. */

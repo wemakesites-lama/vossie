@@ -5,6 +5,7 @@ import {
   campusCookieString,
   campusLabel,
   getCampusCookieValue,
+  isOnlineCampus,
   parseCampusChoice,
   readCampusCookie,
   setCampusChoice,
@@ -64,5 +65,12 @@ describe("campus choice", () => {
     unsubscribe();
     document.dispatchEvent(new Event("visibilitychange"));
     expect(listener).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("isOnlineCampus", () => {
+  it("is true only for Eduvos Online", () => {
+    expect(isOnlineCampus({ slug: "online" })).toBe(true);
+    expect(isOnlineCampus({ slug: "midrand" })).toBe(false);
   });
 });
