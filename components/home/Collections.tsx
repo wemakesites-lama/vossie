@@ -29,7 +29,8 @@ export async function Collections() {
       <ul className="collections-list">
         {collections.map((collection) => (
           <li key={collection.slug} className="collections-item">
-            <Link href={`/collections/${collection.slug}`} className="collections-link">
+            {/* No prefetch: a row of cards would fetch every page as it scrolls past (mobile data). */}
+            <Link href={`/collections/${collection.slug}`} prefetch={false} className="collections-link">
               <Photo
                 image={{ src: collection.image.src, alt: "" }}
                 ratio="1 / 1"

@@ -80,7 +80,8 @@ function SellerCard({ seller, campusName }: { seller: Seller; campusName: string
       </span>
       <div className="seller-body">
         <h3 className="seller-name">
-          <Link href={`/sellers/${seller.slug}`} className="seller-link">
+          {/* No prefetch: a row of cards would fetch every page as it scrolls past (mobile data). */}
+          <Link href={`/sellers/${seller.slug}`} prefetch={false} className="seller-link">
             {seller.name}
           </Link>
         </h3>

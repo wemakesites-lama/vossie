@@ -4,7 +4,7 @@ import { JustListedContent, JustListedSkeleton } from "./JustListed";
 import { JustListedViews } from "./JustListedViews";
 
 const viewer = vi.hoisted(() => ({ campus: "midrand" }));
-const listings = vi.hoisted(() => ({ failing: false }));
+const listings = vi.hoisted(() => ({ mode: "ok" as "ok" | "failing" | "empty" }));
 
 vi.mock("@/lib/data/viewer", () => ({
   getViewerContext: async () => ({ campus: viewer.campus, signedIn: false, activity: null }),
@@ -15,14 +15,14 @@ vi.mock("@/lib/data", async (importOriginal) => {
   return {
     ...actual,
     getJustListed: async (query: Parameters<typeof actual.getJustListed>[0]) => {
-      if (listings.failing) throw new Error("The listings didn't load");
-      return actual.getJustListed(query);
+      if (listings.mode === "failing") throw new Error("The listings didn't load");
+      return listings.mode === "empty" ? [] : actual.getJustListed(query);
     },
   };
 });
 
 afterEach(() => {
-  listings.failing = false;
+  listings.mode = "ok";
 });
 
 const heading = () => screen.getByRole("heading", { level: 2 });
@@ -89,11 +89,20 @@ describe("Just listed (spec 7.8)", () => {
 
   it("shows its own error state when the listings don't load", async () => {
     viewer.campus = "midrand";
-    listings.failing = true;
+    listings.mode = "failing";
     render(await JustListedContent());
     expect(heading()).toHaveTextContent("New listings");
     expect(screen.getByText("Just listed didn't load.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Try again" })).toHaveAttribute("href", "/?retry=just-listed#just-listed");
+  });
+
+  it("says so when nothing is new on any campus, instead of an empty grid", async () => {
+    viewer.campus = "all";
+    listings.mode = "empty";
+    render(await JustListedContent());
+    expect(heading()).toHaveTextContent("New on all campuses");
+    expect(screen.getByText("No new listings yet. Check back soon.")).toBeInTheDocument();
+    expect(screen.queryByRole("article")).not.toBeInTheDocument();
   });
 
   it("keeps its heading and card shapes while it streams in", () => {

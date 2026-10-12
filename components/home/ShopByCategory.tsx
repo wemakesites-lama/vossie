@@ -28,7 +28,8 @@ export async function ShopByCategory() {
       >
         {categories.map((category) => (
           <li key={category.slug}>
-            <Link href={`/categories/${category.slug}`} className="category-tile">
+            {/* No prefetch: a row of cards would fetch every page as it scrolls past (mobile data). */}
+            <Link href={`/categories/${category.slug}`} prefetch={false} className="category-tile">
               <Photo
                 image={{ src: category.image.src, alt: "" }}
                 sizes="(orientation: landscape) and (max-height: 29.99rem) 21vw, (min-width: 64rem) and (min-height: 30rem) 172px, (min-width: 48rem) and (min-height: 30rem) 22vw, 42vw"

@@ -13,7 +13,9 @@ import { getCampuses } from "./index";
  * with sample activity, in development only.
  */
 export const getViewerContext = cache(async (): Promise<Viewer> => {
-  const [store, campuses] = await Promise.all([cookies(), getCampuses()]);
+  // Every section awaits the viewer before its own error handling, so a failed campus lookup must not escape here.
+  // With no campuses the choice reads as "all campuses", which is what a first visit sees.
+  const [store, campuses] = await Promise.all([cookies(), getCampuses().catch(() => [])]);
   const campus = parseCampusChoice(store.get(CAMPUS_COOKIE)?.value, campuses);
   const signedIn = process.env.NODE_ENV !== "production" && process.env.VOSSIE_SAMPLE_SIGNED_IN === "1";
   return { campus, signedIn, activity: signedIn ? sampleActivity : null };

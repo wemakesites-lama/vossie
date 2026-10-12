@@ -124,6 +124,7 @@ describe("homepage data", () => {
     expect((await getHubEvents({ campus: "mbombela", limit: 3, from: "2026-10-12" })).map((event) => event.id)).toEqual([
       "e-001",
       "e-005",
+      "e-006",
     ]);
     expect((await getHubEvents({ campus: "all", limit: 3, from: "2026-10-12" })).map((event) => event.id)).toEqual([
       "e-001",

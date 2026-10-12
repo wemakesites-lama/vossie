@@ -15,7 +15,8 @@ export function ListingCard({ listing, campusName }: { listing: Listing; campusN
         className="listing-photo"
       />
       <h3 className="listing-title">
-        <Link href={`/listings/${listing.id}`} className="listing-link">
+        {/* No prefetch: a row of cards would fetch every page as it scrolls past (mobile data). */}
+        <Link href={`/listings/${listing.id}`} prefetch={false} className="listing-link">
           {listing.title}
         </Link>
       </h3>

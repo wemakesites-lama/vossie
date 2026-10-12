@@ -47,15 +47,20 @@ export async function JustListedContent() {
   }
 
   const names = new Map(data.campuses.map((item) => [item.slug, item.name]));
-  const grid = (items: readonly Listing[]) => (
-    <ul className="listing-grid">
-      {items.map((listing) => (
-        <li key={listing.id}>
-          <ListingCard listing={listing} campusName={names.get(listing.campusSlug) ?? ""} />
-        </li>
-      ))}
-    </ul>
-  );
+  // An empty list says so, rather than leaving a bare grid. In practice this is the "All campuses" view when nothing
+  // is new anywhere: the campus view's own empty state comes from the client, which shows it when campusCount is 0.
+  const grid = (items: readonly Listing[]) =>
+    items.length === 0 ? (
+      <p className="just-listed-none">No new listings yet. Check back soon.</p>
+    ) : (
+      <ul className="listing-grid">
+        {items.map((listing) => (
+          <li key={listing.id}>
+            <ListingCard listing={listing} campusName={names.get(listing.campusSlug) ?? ""} />
+          </li>
+        ))}
+      </ul>
+    );
 
   return (
     <>

@@ -1690,8 +1690,11 @@
   }
 
   @media (min-width: 64rem) and (min-height: 30rem) {
+    /* Measured at 1280px and wider (the page is 1200px wide there): with this split no campus name wraps in its two
+       columns, and no Shop, Sell or Help link wraps. The widest labels have about 5px to spare, so measure again when
+       the Eduvos fonts arrive. */
     .footer-grid {
-      grid-template-columns: 1.35fr repeat(3, minmax(0, 0.8fr)) 1.45fr;
+      grid-template-columns: 1.1fr repeat(3, minmax(0, 0.75fr)) 2fr;
     }
 
     .footer-updates {
@@ -2753,8 +2756,11 @@
       display: none;
     }
 
+    /* The arrow follows the title, as in the approved mockup, rather than sitting at the row's far right. */
     .collections-link {
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, auto) auto;
+      justify-content: start;
+      column-gap: 14px;
       padding-block: 14px;
     }
 
@@ -2773,27 +2779,55 @@
     }
 
     /* The active collection is the first, until another title is hovered or focused. Then that one is navy, shows its
-       arrow and deals its photo onto the stack. On touch screens a tap follows the link, so a hover never lingers. */
-    .collections:not(:has(.collections-link:is(:hover, :focus-visible))) .collections-item:first-child .collections-title,
-    .collections-link:is(:hover, :focus-visible) .collections-title {
-      color: var(--color-navy);
+       arrow and deals its photo onto the stack. Hover counts only for a mouse (hover: hover and pointer: fine): on a
+       touch screen a tap can leave a sticky hover behind after coming back from a collection page, so there only
+       keyboard focus moves the stack. The two blocks below are the same three rules, one with hover, one without. */
+    @media (hover: hover) and (pointer: fine) {
+      .collections:not(:has(.collections-link:is(:hover, :focus-visible))) .collections-item:first-child .collections-title,
+      .collections-link:is(:hover, :focus-visible) .collections-title {
+        color: var(--color-navy);
+      }
+
+      .collections:not(:has(.collections-link:is(:hover, :focus-visible))) .collections-item:first-child .collections-arrow,
+      .collections-link:is(:hover, :focus-visible) .collections-arrow {
+        opacity: 1;
+        translate: 0 0;
+      }
+
+      .collections:not(:has(.collections-link:is(:hover, :focus-visible))) .collections-photo:nth-child(1 of .collections-photo),
+      .collections:has(.collections-item:nth-child(1) .collections-link:is(:hover, :focus-visible)) .collections-photo:nth-child(1 of .collections-photo),
+      .collections:has(.collections-item:nth-child(2) .collections-link:is(:hover, :focus-visible)) .collections-photo:nth-child(2 of .collections-photo),
+      .collections:has(.collections-item:nth-child(3) .collections-link:is(:hover, :focus-visible)) .collections-photo:nth-child(3 of .collections-photo),
+      .collections:has(.collections-item:nth-child(4) .collections-link:is(:hover, :focus-visible)) .collections-photo:nth-child(4 of .collections-photo) {
+        z-index: 1;
+        opacity: 1;
+        scale: 1;
+        rotate: 0deg;
+      }
     }
 
-    .collections:not(:has(.collections-link:is(:hover, :focus-visible))) .collections-item:first-child .collections-arrow,
-    .collections-link:is(:hover, :focus-visible) .collections-arrow {
-      opacity: 1;
-      translate: 0 0;
-    }
+    @media not ((hover: hover) and (pointer: fine)) {
+      .collections:not(:has(.collections-link:focus-visible)) .collections-item:first-child .collections-title,
+      .collections-link:focus-visible .collections-title {
+        color: var(--color-navy);
+      }
 
-    .collections:not(:has(.collections-link:is(:hover, :focus-visible))) .collections-photo:nth-child(1 of .collections-photo),
-    .collections:has(.collections-item:nth-child(1) .collections-link:is(:hover, :focus-visible)) .collections-photo:nth-child(1 of .collections-photo),
-    .collections:has(.collections-item:nth-child(2) .collections-link:is(:hover, :focus-visible)) .collections-photo:nth-child(2 of .collections-photo),
-    .collections:has(.collections-item:nth-child(3) .collections-link:is(:hover, :focus-visible)) .collections-photo:nth-child(3 of .collections-photo),
-    .collections:has(.collections-item:nth-child(4) .collections-link:is(:hover, :focus-visible)) .collections-photo:nth-child(4 of .collections-photo) {
-      z-index: 1;
-      opacity: 1;
-      scale: 1;
-      rotate: 0deg;
+      .collections:not(:has(.collections-link:focus-visible)) .collections-item:first-child .collections-arrow,
+      .collections-link:focus-visible .collections-arrow {
+        opacity: 1;
+        translate: 0 0;
+      }
+
+      .collections:not(:has(.collections-link:focus-visible)) .collections-photo:nth-child(1 of .collections-photo),
+      .collections:has(.collections-item:nth-child(1) .collections-link:focus-visible) .collections-photo:nth-child(1 of .collections-photo),
+      .collections:has(.collections-item:nth-child(2) .collections-link:focus-visible) .collections-photo:nth-child(2 of .collections-photo),
+      .collections:has(.collections-item:nth-child(3) .collections-link:focus-visible) .collections-photo:nth-child(3 of .collections-photo),
+      .collections:has(.collections-item:nth-child(4) .collections-link:focus-visible) .collections-photo:nth-child(4 of .collections-photo) {
+        z-index: 1;
+        opacity: 1;
+        scale: 1;
+        rotate: 0deg;
+      }
     }
   }
 }
@@ -2903,7 +2937,7 @@
 
     .campus-names {
       display: grid;
-      gap: 3px;
+      gap: 8px;
     }
 
     .campus-names-start {
@@ -3142,6 +3176,11 @@
     font-size: 24px;
     line-height: 1;
     text-transform: uppercase;
+  }
+
+  .just-listed-none {
+    margin-top: 16px;
+    color: var(--color-muted);
   }
 
   .just-listed-note {
@@ -3503,8 +3542,9 @@
     line-height: 1.55;
   }
 
+  /* Under the copy, inside the intro. .btn is inline-flex, so it stays at the left edge. */
   .looking-for-action {
-    justify-self: start;
+    margin-top: 18px;
   }
 
   .request-list {
@@ -3568,18 +3608,16 @@
   @media (min-width: 48rem) and (min-height: 30rem) {
     .looking-for {
       grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-      grid-template-areas:
-        "intro requests"
-        "action requests";
+      grid-template-areas: "intro requests";
       align-items: center;
       gap: 22px 44px;
       padding: 48px;
       border-radius: var(--radius-panel);
     }
 
+    /* Centred beside the requests, as the intro and button were together before the button moved inside. */
     .looking-for-intro {
       grid-area: intro;
-      align-self: end;
     }
 
     .looking-for-requests {
@@ -3587,8 +3625,7 @@
     }
 
     .looking-for-action {
-      grid-area: action;
-      align-self: start;
+      margin-top: 22px;
     }
 
     .request-list > li:nth-child(n + 3) {
@@ -4056,4 +4093,20 @@
     opacity: 0;
     translate: 0 16px;
   }
+}
+
+/* --- Homepage: data saver (Lama's open points, spec section 5) ---
+   With data saver on, card and tile photos below the hero aren't loaded at all: hidden lazy images are never
+   requested. The boxes keep their size, so nothing moves. Tiles and campus cards drop the whole photo box, so
+   their white words sit on navy. */
+:root[data-low-data] :is(.listing-card, .seller-card, .free-card, .collections, .campus-chooser-wide, .context-thumbs) .photo-img {
+  display: none;
+}
+
+:root[data-low-data] :is(.category-tile, .campus-card) .photo {
+  display: none;
+}
+
+:root[data-low-data] .category-tile {
+  background: var(--color-navy);
 }

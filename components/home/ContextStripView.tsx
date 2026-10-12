@@ -95,7 +95,8 @@ function ViewedThumbs({ viewed }: { viewed: readonly ViewedItem[] }) {
     <ul className="context-row context-thumbs">
       {viewed.map((item) => (
         <li key={item.id}>
-          <Link href={`/listings/${item.id}`} className="context-thumb">
+          {/* No prefetch: a row of thumbnails would fetch every page as it scrolls past (mobile data). */}
+          <Link href={`/listings/${item.id}`} prefetch={false} className="context-thumb">
             <Photo image={{ src: item.image.src, alt: "" }} sizes="44px" className="context-thumb-img" />
             <span className="sr-only">{item.title}</span>
           </Link>

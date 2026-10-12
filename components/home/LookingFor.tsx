@@ -10,15 +10,16 @@ export function LookingFor() {
       <div className="looking-for-intro">
         <SectionHeader id="looking-for" eyebrow="Looking For" title="Can’t find it? Ask for it." tone="navy" />
         <p className="looking-for-copy">Post what you need and sellers on your campus come to you with offers.</p>
+        {/* Inside the intro, so the tab order matches the layout: the button sits under the copy at every size. */}
+        <Link href="/looking-for" className="btn btn-primary looking-for-action">
+          Post a request
+        </Link>
       </div>
       <div className="looking-for-requests">
         <Suspense fallback={<RequestsSkeleton />}>
           <LookingForRequests />
         </Suspense>
       </div>
-      <Link href="/looking-for" className="btn btn-primary looking-for-action">
-        Post a request
-      </Link>
     </section>
   );
 }

@@ -78,7 +78,8 @@ function FreeSwapCard({ item, campusName }: { item: FreeSwapItem; campusName: st
         </span>
       </span>
       <h3 className="free-card-title">
-        <Link href={`/listings/${item.id}`} className="free-card-link">
+        {/* No prefetch: a row of cards would fetch every page as it scrolls past (mobile data). */}
+        <Link href={`/listings/${item.id}`} prefetch={false} className="free-card-link">
           {item.title}
         </Link>
       </h3>

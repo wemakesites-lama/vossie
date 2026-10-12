@@ -105,6 +105,23 @@ test.describe("data saver (plan decision 8)", () => {
     expect(requested).not.toContain("/placeholders/hub/banner.svg");
   });
 
+  // Spec section 5: below the hero, photos are loaded only when tapped. Hidden lazy images are never requested.
+  test("loads no card photos below the hero", async ({ page }) => {
+    onlyAt("phone-390");
+    await page.addInitScript(() => localStorage.setItem("vossie_low_data", "1"));
+    const requested: string[] = [];
+    page.on("request", (request) => requested.push(new URL(request.url()).pathname));
+    await page.goto("/", { waitUntil: "networkidle" });
+    await scrollToTheEnd(page);
+    // Absence can't be polled for (see above), so give a lazy request two seconds to show up.
+    await page
+      .waitForRequest((request) => new URL(request.url()).pathname.startsWith("/placeholders/listing/"), { timeout: 2000 })
+      .catch(() => undefined);
+    expect(requested.filter((path) => path.startsWith("/placeholders/listing/"))).toEqual([]);
+    // The requests are being recorded, and the hero's first photo is not held back.
+    expect(requested.some((path) => path.startsWith("/placeholders/hero/"))).toBe(true);
+  });
+
   test("without it, the Hub banner photo loads as it comes near", async ({ page }) => {
     onlyAt("phone-390");
     const requested: string[] = [];
