@@ -6,8 +6,8 @@ test("brand colours, fonts and language are applied", async ({ page }) => {
   await expect(heading).toContainText("on campus");
 
   const styles = await page.evaluate(() => {
-    const hero = document.querySelector("#hero-title")!.closest("section")!;
-    const word = document.querySelector("#hero-title span")!;
+    const hero = document.querySelector(".hero-panel")!;
+    const word = document.querySelector("#hero-title .hero-word[data-active]")!;
     return {
       heroBackground: getComputedStyle(hero).backgroundColor,
       wordColour: getComputedStyle(word).color,

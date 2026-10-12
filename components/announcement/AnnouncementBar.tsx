@@ -1,19 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore, type FocusEvent, type PointerEvent } from "react";
+import { useEffect, useState, type FocusEvent, type PointerEvent } from "react";
 import { PauseIcon, PlayIcon } from "@/components/icons";
 import { useMotionAllowed } from "@/hooks/useMotionAllowed";
+import { usePageHidden } from "@/hooks/usePageHidden";
 import type { Announcement } from "@/lib/types";
 
 const ROTATE_MS = 6000;
-
-function subscribeVisibility(listener: () => void) {
-  document.addEventListener("visibilitychange", listener);
-  return () => document.removeEventListener("visibilitychange", listener);
-}
-const isTabHidden = () => document.visibilityState === "hidden";
-const visibleOnServer = () => false;
 
 type PlayChoice = "auto" | "playing" | "paused";
 
@@ -25,7 +19,7 @@ export function AnnouncementBar({ messages }: { messages: readonly Announcement[
   // Two separate holds: a mouse over the bar (touch taps don't count), and keyboard focus on the message.
   const [mouseOver, setMouseOver] = useState(false);
   const [messageFocused, setMessageFocused] = useState(false);
-  const pageHidden = useSyncExternalStore(subscribeVisibility, isTabHidden, visibleOnServer);
+  const pageHidden = usePageHidden();
   const motionAllowed = useMotionAllowed();
   const playing = playChoice === "playing" || (playChoice === "auto" && motionAllowed);
   const rotating = items.length > 1 && playing && !mouseOver && !messageFocused && !pageHidden;
