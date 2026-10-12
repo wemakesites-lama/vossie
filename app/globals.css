@@ -2425,3 +2425,144 @@
     }
   }
 }
+
+/* --- Homepage: shop by category and budget (Part 2, Task 13, spec 7.5) --- */
+@layer components {
+  /* About 2.3 tiles on phones, 4 on tablets and 6.5 on desktop, each with a peek of the next. */
+  .category-carousel {
+    --carousel-item: calc((100% - 2 * 12px) / 2.3);
+  }
+
+  .category-tile {
+    position: relative;
+    display: block;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    transition: scale var(--dur-fast) var(--ease-out);
+  }
+
+  .category-tile:active {
+    scale: 0.98;
+  }
+
+  .category-photo {
+    position: absolute;
+    inset: 0;
+    transition: scale var(--dur-base) var(--ease-out);
+  }
+
+  /* A shade behind the label, so white text stays readable on any photo. */
+  .category-tile::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(180deg, rgb(9 20 42 / 0.55), transparent 55%);
+  }
+
+  .category-name {
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    right: 14px;
+    z-index: 2;
+    color: var(--color-white);
+    font-family: var(--vos-font-display);
+    font-size: clamp(1.3125rem, 1.15rem + 0.5vw, 1.5rem);
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  /* The round arrow in a cut-out corner: a page-coloured circle over the corner, clipped by the tile itself. */
+  .category-cut {
+    position: absolute;
+    right: -6px;
+    bottom: -6px;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 999px;
+    background: var(--color-white);
+  }
+
+  .category-cut > span {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    box-shadow: 0 0 0 1px var(--color-line);
+    color: var(--color-navy);
+    transition: translate var(--dur-fast) var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .category-tile:hover .category-photo {
+      scale: 1.04;
+    }
+
+    .category-tile:hover .category-cut > span {
+      translate: 2px 0;
+    }
+  }
+
+  .budget-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    margin-top: 16px;
+  }
+
+  .budget-label {
+    margin-right: 4px;
+    color: var(--color-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+
+  .budget-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .budget-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1.5px solid var(--color-navy);
+    border-radius: 999px;
+    color: var(--color-navy);
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: scale var(--dur-fast) var(--ease-out);
+  }
+
+  .budget-chip:active {
+    scale: 0.97;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .category-carousel {
+      --carousel-item: calc((100% - 4 * 12px) / 4.3);
+    }
+
+    .budget-row {
+      margin-top: 22px;
+    }
+  }
+
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .category-carousel {
+      --carousel-item: calc((100% - 6 * 16px) / 6.5);
+    }
+  }
+}

@@ -1,11 +1,11 @@
 import { ContextStrip } from "@/components/home/ContextStrip";
 import { Hero } from "@/components/home/hero/Hero";
+import { ShopByCategory } from "@/components/home/ShopByCategory";
 
 // Sections that haven't landed yet hold their place, so the page stays about as tall as the finished one and the
 // header's scroll tests keep their room. Each section's task swaps its slot comment for the section and takes its
 // name off this list. Task 21 removes the list.
 const COMING_IN_PART_2 = [
-  "Shop by category",
   "Collections",
   "Shop by campus",
   "Just listed",
@@ -22,7 +22,7 @@ export default function HomePage() {
       <div className="home">
         <Hero />
         <ContextStrip />
-        {/* Task 13: <ShopByCategory /> */}
+        <ShopByCategory />
         {/* Task 14: <Collections /> */}
         {/* Task 15: <ShopByCampus /> */}
         {/* Task 16: <JustListed /> */}
