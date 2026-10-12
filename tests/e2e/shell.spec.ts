@@ -250,6 +250,39 @@ test.describe("footer", () => {
     expect(await wordmarkSizes(page)).toHaveLength(1);
   });
 
+  test("the giant links' arrows sit at the right edge of their links", async ({ page }) => {
+    await page.goto("/");
+    // Wrapped or not, the words must never push an arrow off the edge or leave it short of it. The pointer is parked
+    // at the corner: hovering a link nudges its arrow 4px up and right on purpose.
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
+    await page.mouse.move(0, 0);
+    const gaps = await page.locator(".footer-giant").evaluateAll((links) =>
+      links.map(
+        (link) =>
+          link.getBoundingClientRect().right - link.querySelector(".footer-giant-arrow")!.getBoundingClientRect().right,
+      ),
+    );
+    expect(gaps).toHaveLength(2);
+    for (const gap of gaps) expect(Math.abs(gap)).toBeLessThanOrEqual(0.5);
+  });
+
+  test.describe("install pill on an iPhone", () => {
+    test.use({
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+    });
+
+    test("keeps its icon at full size when the label wraps on a 320px screen", async ({ page }) => {
+      test.skip(isTabletOrWider(page), "Phones only");
+      await page.setViewportSize({ width: 320, height: 700 });
+      await page.goto("/");
+      const icon = page.locator(".footer-install svg");
+      await expect(icon).toBeAttached();
+      // size-5 is 20px. Without flex-shrink: 0 the wrapping label squeezes it to about 18px.
+      expect(await icon.evaluate((svg) => svg.getBoundingClientRect().width)).toBeCloseTo(20, 1);
+    });
+  });
+
   test("link groups open as accordions on phones", async ({ page }) => {
     test.skip(isTabletOrWider(page), "Phones only");
     await page.goto("/");

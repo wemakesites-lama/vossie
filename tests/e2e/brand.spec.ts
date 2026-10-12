@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 test("brand colours, fonts and language are applied", async ({ page }) => {
   await page.goto("/");
@@ -38,12 +38,16 @@ test("the brand fonts actually load", async ({ page }) => {
   expect(result).toEqual({ declared: true, display: true, text: true });
 });
 
+// <body> has no transition, so it reads "0s" whatever the motion settings are and can't show them working. The menu
+// slides and fades in over 300ms, so its transition-duration is "0.3s" normally and "0s" once an off switch applies.
+const menuTransition = (page: Page) =>
+  page.evaluate(() => getComputedStyle(document.querySelector(".menu-dialog")!).transitionDuration);
+
 test("data saver collapses transitions", async ({ page }) => {
   await page.goto("/");
-  const bodyTransition = () => page.evaluate(() => getComputedStyle(document.body).transitionDuration);
-  expect(await bodyTransition()).toBe("0s");
+  expect(await menuTransition(page)).toBe("0.3s");
   await page.evaluate(() => document.documentElement.setAttribute("data-low-data", ""));
-  expect(await bodyTransition()).toBe("0s");
+  expect(await menuTransition(page)).toBe("0s");
 });
 
 test.describe("with reduced motion", () => {
@@ -51,6 +55,6 @@ test.describe("with reduced motion", () => {
 
   test("transitions collapse", async ({ page }) => {
     await page.goto("/");
-    expect(await page.evaluate(() => getComputedStyle(document.body).transitionDuration)).toBe("0s");
+    expect(await menuTransition(page)).toBe("0s");
   });
 });

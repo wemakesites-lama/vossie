@@ -1565,6 +1565,11 @@
     margin-top: 16px;
   }
 
+  /* On a narrow phone the label wraps to two lines. The icon must keep its size while it does, not squeeze (20px to 18px at 320px). */
+  .footer-install svg {
+    flex-shrink: 0;
+  }
+
   .install-steps {
     display: grid;
     gap: 12px;
