@@ -3126,3 +3126,147 @@
     }
   }
 }
+
+/* --- Homepage: how it works (Part 2, Task 17, spec 7.9) --- */
+@layer components {
+  .how-grid {
+    display: grid;
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .how-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px 18px;
+    border-radius: var(--radius-panel);
+  }
+
+  .how-card-grey {
+    background: var(--color-panel);
+    color: var(--color-navy);
+  }
+
+  .how-card-title {
+    font-family: var(--vos-font-display);
+    font-size: clamp(1.625rem, 1.45rem + 0.6vw, 1.875rem);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .how-steps {
+    display: grid;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .how-step {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+  }
+
+  .how-step-number {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1.5px solid currentColor;
+    border-radius: 999px;
+    font-family: var(--vos-font-display);
+    font-size: 17px;
+  }
+
+  .how-step-title {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+
+  .how-step-body {
+    display: block;
+    color: var(--color-muted);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  /* Small text on the star texture is white (decision 14). */
+  .how-card-navy .how-step-body {
+    color: rgb(255 255 255 / 0.85);
+  }
+
+  .how-card-action {
+    margin-top: 18px;
+  }
+
+  .safety-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-top: 18px;
+    color: var(--color-muted);
+    font-size: 11.5px;
+  }
+
+  .safety-row li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .safety-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    color: var(--color-sky-dark);
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .how-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+      margin-top: 26px;
+    }
+
+    .how-card {
+      padding: 30px 30px 26px;
+    }
+
+    .how-steps {
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .how-step {
+      grid-template-columns: 40px minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .how-step-number {
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+    }
+
+    .how-step-title {
+      font-size: 15px;
+    }
+
+    .how-step-body {
+      font-size: 13px;
+    }
+
+    .how-card-action {
+      margin-top: 22px;
+    }
+
+    .safety-row {
+      justify-content: center;
+      gap: 12px 34px;
+      margin-top: 22px;
+      font-size: 12.5px;
+    }
+  }
+}
