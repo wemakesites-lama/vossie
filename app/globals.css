@@ -1802,3 +1802,98 @@
     }
   }
 }
+
+/* --- Homepage: carousel (Part 2, Task 9, spec 7.5 and section 10) --- */
+@layer components {
+  .carousel-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px 20px;
+  }
+
+  .carousel-header {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Arrows are for desktop; phones and tablets swipe (spec 7.5). */
+  .carousel-arrows {
+    display: none;
+    gap: 10px;
+  }
+
+  .carousel-arrow {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1.5px solid var(--color-navy);
+    border-radius: 999px;
+    color: var(--color-navy);
+  }
+
+  .carousel-arrow[aria-disabled="true"] {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .carousel-track {
+    display: flex;
+    gap: var(--carousel-gap, 12px);
+    margin-top: 16px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .carousel-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .carousel-track > li {
+    flex: none;
+    width: var(--carousel-item, 70%);
+    scroll-snap-align: start;
+  }
+
+  /* The row clips anything outside it, so rings inside it are drawn just inside each slide. */
+  .carousel-track :focus-visible {
+    outline-offset: -3px;
+  }
+
+  .carousel-bar {
+    position: relative;
+    height: 3px;
+    margin-top: 16px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: var(--color-line);
+  }
+
+  /* The thumb is as wide as the share of the row on screen, and slides across as the row scrolls. */
+  .carousel-thumb {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: calc(var(--carousel-visible, 0.3) * 100%);
+    border-radius: 2px;
+    background: var(--color-navy);
+    translate: calc(var(--carousel-progress, 0) * (100% / var(--carousel-visible, 0.3) - 100%)) 0;
+  }
+
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .carousel-arrows {
+      display: flex;
+    }
+
+    .carousel-track {
+      --carousel-gap: 16px;
+      margin-top: 22px;
+    }
+
+    .carousel-bar {
+      margin-top: 22px;
+    }
+  }
+}
