@@ -70,22 +70,24 @@ These are decisions 13 to 19 in `docs/reference/LANDING-DECISIONS.md`.
 - Layout shift 0.0015 at 390 and 0.0036 at 1440. Lighthouse mobile (median of three): Performance 0.93, Accessibility 1.00.
 - Review screenshots: `docs/progress/part-2/`.
 
+## 2026-10-12: Lama's open points after Part 2
+Lama went with Claude's recommendations. They are decisions 27 to 34 in `docs/reference/LANDING-DECISIONS.md`.
+- **JavaScript.** The search overlay's `next/form` became a plain form with `router.push()`, saving 1,503 B. First visit JS is now 150,316 B brotli, 1,684 B under the stop line.
+- **Mobile data.** Repeated card and tile links no longer prefetch. With data saver on, card and tile photos below the hero never load.
+- **Shop by campus.** The cycle pauses off screen. On phones the chosen campus comes second, with its tick top-left. The header pill fills navy once a campus is chosen. Campus names have 8px gaps.
+- **Smaller changes:**
+  - Looking For's keyboard order matches its layout.
+  - Footer columns no longer wrap at 1280 or 1440.
+  - Sample events run to February 2027.
+  - Collections hover is for a mouse only, and its arrow follows the title.
+  - The viewer survives a failed campus lookup.
+  - Just listed has an "all quiet" message.
+- **Kept as built, with reasons in decision 33:** the hero's Play under reduced motion, the chip and pill wording, the scroll reveal's fade near the bottom edge, and the centred How it works heading.
+- **LCP** (3.3 s simulated, against the spec's 2.5 s) is revisited when real photos arrive (decision 34).
+- **Checks:** 310 unit tests. End to end, 283 pass, 142 are skipped by design and none fail.
+
 ## Next
-- Lama reviews the Part 2 screenshots in `docs/progress/part-2/` against the mockup.
-- Open for Lama:
-  - LCP of 3.3 s under Lighthouse's simulated slow 4G, against the spec's 2.5 s: revisit when real photos arrive;
-  - JS headroom of 295 B before the stop line: the next stage needs a saving first, such as replacing `next/form`;
-  - prefetching on mobile data (`prefetch={false}` on the card grids?);
-  - the data-saver scope compared with spec section 5;
-  - the campus highlight keeps cycling off-screen;
-  - under reduced motion, the hero offers Play but the campus cycle doesn't;
-  - the hero chip's "Shopping all campuses" against the pill's "All campuses";
-  - Looking For's tab order on wide screens;
-  - long campus names wrap in the two footer columns and on tablets in Shop by campus;
-  - the sample events run out after 28 October 2026;
-  - the scroll reveal fades out again in the bottom 120px when scrolling back up;
-  - Collections' hover isn't behind `(hover: hover)`;
-  - 3px gaps between the campus names and the switch segments.
+- Lama reviews the Part 2 screenshots in `docs/progress/part-2/` against the mockup. They were retaken after the open-point changes; to retake them again, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "homepage review screenshots"`.
 - Then the next stage of pages.
 
 ## Waiting on
