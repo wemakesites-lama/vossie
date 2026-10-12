@@ -1897,3 +1897,132 @@
     }
   }
 }
+
+/* --- Homepage: listing card and save heart (Part 2, Task 10, spec 7.8) --- */
+@layer components {
+  .listing-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    transition: scale var(--dur-fast) var(--ease-out);
+  }
+
+  .listing-photo {
+    border-radius: var(--radius-card);
+  }
+
+  .listing-title {
+    display: -webkit-box;
+    min-height: calc(2 * 1.35em);
+    margin-top: 12px;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: var(--color-navy);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+
+  /* The title's link covers the whole card, so the whole card is one target. The heart sits above it (z-index 2). */
+  .listing-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: var(--radius-card);
+  }
+
+  /* The ring goes round the whole card, not just the title. */
+  .listing-link:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .listing-card:has(.listing-link:focus-visible) {
+    border-radius: var(--radius-card);
+    outline: 2.5px solid var(--focus-ring, var(--color-navy));
+    outline-offset: 4px;
+  }
+
+  .listing-card:has(.listing-link:active) {
+    scale: 0.98;
+  }
+
+  .listing-price {
+    margin-top: 6px;
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: clamp(1.5rem, 1.35rem + 0.5vw, 1.75rem);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .listing-meta {
+    margin-top: 6px;
+    color: var(--color-muted);
+    font-size: 12px;
+  }
+
+  .listing-badge {
+    align-self: flex-start;
+    margin-top: 8px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--color-navy);
+    color: var(--color-white);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  .save-heart {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    background: var(--color-white);
+    color: var(--color-navy);
+  }
+
+  .save-heart[aria-pressed="true"] svg {
+    fill: currentColor;
+  }
+
+  .save-heart[data-pop] svg {
+    animation: heart-pop 420ms var(--ease-spring);
+  }
+
+  .listing-skeleton-photo {
+    aspect-ratio: 1 / 1;
+  }
+
+  .listing-skeleton-line {
+    height: 14px;
+    margin-top: 14px;
+  }
+
+  .listing-skeleton-price {
+    width: 45%;
+    height: 24px;
+    margin-top: 10px;
+  }
+
+  .listing-skeleton-meta {
+    width: 60%;
+    height: 12px;
+    margin-top: 8px;
+  }
+}
+
+@keyframes heart-pop {
+  40% {
+    scale: 1.3;
+  }
+}
