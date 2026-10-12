@@ -1,12 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type FocusEvent, type PointerEvent } from "react";
+import { useEffect, useState, useSyncExternalStore, type FocusEvent, type PointerEvent } from "react";
 import { PauseIcon, PlayIcon } from "@/components/icons";
 import { useMotionAllowed } from "@/hooks/useMotionAllowed";
 import type { Announcement } from "@/lib/types";
 
 const ROTATE_MS = 6000;
+
+function subscribeVisibility(listener: () => void) {
+  document.addEventListener("visibilitychange", listener);
+  return () => document.removeEventListener("visibilitychange", listener);
+}
+const isTabHidden = () => document.visibilityState === "hidden";
+const visibleOnServer = () => false;
 
 type PlayChoice = "auto" | "playing" | "paused";
 
@@ -18,16 +25,10 @@ export function AnnouncementBar({ messages }: { messages: readonly Announcement[
   // Two separate holds: a mouse over the bar (touch taps don't count), and keyboard focus on the message.
   const [mouseOver, setMouseOver] = useState(false);
   const [messageFocused, setMessageFocused] = useState(false);
-  const [pageHidden, setPageHidden] = useState(false);
+  const pageHidden = useSyncExternalStore(subscribeVisibility, isTabHidden, visibleOnServer);
   const motionAllowed = useMotionAllowed();
   const playing = playChoice === "playing" || (playChoice === "auto" && motionAllowed);
   const rotating = items.length > 1 && playing && !mouseOver && !messageFocused && !pageHidden;
-
-  useEffect(() => {
-    const onVisibility = () => setPageHidden(document.visibilityState === "hidden");
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, []);
 
   useEffect(() => {
     if (!rotating) return;
@@ -47,6 +48,8 @@ export function AnnouncementBar({ messages }: { messages: readonly Announcement[
 
   if (items.length === 0) return null;
 
+  const activeIndex = index % items.length;
+
   return (
     <section
       aria-label="Announcements"
@@ -61,8 +64,8 @@ export function AnnouncementBar({ messages }: { messages: readonly Announcement[
               key={message.id}
               href={message.href}
               className="announce-item"
-              data-active={position === index ? "" : undefined}
-              inert={position !== index}
+              data-active={position === activeIndex ? "" : undefined}
+              inert={position !== activeIndex}
             >
               <span className="announce-tag">{message.tag}</span>{" "}
               <span className="announce-text">{message.text}</span>

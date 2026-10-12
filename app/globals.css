@@ -1286,6 +1286,9 @@
   .announce-item:focus-visible,
   .announce-toggle:focus-visible {
     outline-offset: -4px;
+    /* The navy halo is for rings drawn outside the bar. This ring is inside it, and with a gap below the bar
+       the halo would show as a navy strip under the focused item. */
+    box-shadow: none;
   }
 
   .announce-tag {
@@ -1334,6 +1337,15 @@
     .announce-stack {
       flex: 0 1 auto;
       justify-items: center;
+    }
+  }
+
+  /* From the desktop step the quick-link row sits right under the bar and both have 44px targets, so leave
+     8px between them (spec section 5). The margin belongs to the bar, which scrolls away, so the sticky
+     header keeps its height. */
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .announce {
+      margin-bottom: 8px;
     }
   }
 }

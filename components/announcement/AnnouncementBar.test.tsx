@@ -13,6 +13,14 @@ const messages: Announcement[] = [
 const activeText = (container: HTMLElement) =>
   container.querySelector(".announce-item[data-active]")?.textContent;
 
+// jsdom can't hide a tab, so redefine the property the component reads and fire the event it listens for.
+function setTabVisibility(state: "hidden" | "visible") {
+  Object.defineProperty(document, "visibilityState", { configurable: true, get: () => state });
+  act(() => {
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+}
+
 describe("AnnouncementBar", () => {
   it("moves to the next message every six seconds and loops", () => {
     vi.useFakeTimers();
@@ -90,6 +98,60 @@ describe("AnnouncementBar", () => {
     expect(activeText(container)).toContain("First message");
   });
 
+  it("carries on once focus moves off the message", () => {
+    vi.useFakeTimers();
+    const { container } = render(<AnnouncementBar messages={messages} />);
+    act(() => screen.getByRole("link", { name: /First message/ }).focus());
+    act(() => {
+      vi.advanceTimersByTime(12000);
+    });
+    expect(activeText(container)).toContain("First message");
+    act(() => screen.getByRole("button", { name: "Pause announcements" }).focus());
+    act(() => {
+      vi.advanceTimersByTime(6000);
+    });
+    expect(activeText(container)).toContain("Second message");
+  });
+
+  it("holds still while the tab is hidden, and carries on when it is shown again", () => {
+    vi.useFakeTimers();
+    const { container } = render(<AnnouncementBar messages={messages} />);
+    try {
+      setTabVisibility("hidden");
+      act(() => {
+        vi.advanceTimersByTime(12000);
+      });
+      expect(activeText(container)).toContain("First message");
+      setTabVisibility("visible");
+      act(() => {
+        vi.advanceTimersByTime(6000);
+      });
+      expect(activeText(container)).toContain("Second message");
+    } finally {
+      // Back to jsdom's own getter on Document.prototype.
+      Reflect.deleteProperty(document, "visibilityState");
+    }
+  });
+
+  it("does not rotate in a tab that was already hidden when the page loaded", () => {
+    vi.useFakeTimers();
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+    try {
+      const { container } = render(<AnnouncementBar messages={messages} />);
+      act(() => {
+        vi.advanceTimersByTime(12000);
+      });
+      expect(activeText(container)).toContain("First message");
+      setTabVisibility("visible");
+      act(() => {
+        vi.advanceTimersByTime(6000);
+      });
+      expect(activeText(container)).toContain("Second message");
+    } finally {
+      Reflect.deleteProperty(document, "visibilityState");
+    }
+  });
+
   it("starts paused with reduced motion", () => {
     vi.useFakeTimers();
     mockMatchMedia((query) => query.includes("reduce"));
@@ -106,5 +168,16 @@ describe("AnnouncementBar", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     rerender(<AnnouncementBar messages={[]} />);
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it("keeps a message showing when the list gets shorter", () => {
+    vi.useFakeTimers();
+    const { container, rerender } = render(<AnnouncementBar messages={messages} />);
+    act(() => {
+      vi.advanceTimersByTime(12000);
+    });
+    expect(activeText(container)).toContain("Third message");
+    rerender(<AnnouncementBar messages={messages.slice(0, 2)} />);
+    expect(activeText(container)).toContain("First message");
   });
 });
