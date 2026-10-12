@@ -3026,3 +3026,103 @@
     scale: 1 1;
   }
 }
+
+/* --- Homepage: just listed (Part 2, Task 16, spec 7.8) --- */
+@layer components {
+  /* 2 columns and 4 cards on phones, 3 and 9 on tablets, 5 and 10 on desktop (plan decision 11). Hidden cards don't
+     load their photos. */
+  .listing-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 14px;
+    margin-top: 16px;
+  }
+
+  .listing-grid > li:nth-child(n + 5) {
+    display: none;
+  }
+
+  .scope-switch {
+    display: inline-flex;
+    max-width: 100%;
+    gap: 3px;
+    padding: 2px;
+    border: 1.5px solid var(--color-navy);
+    border-radius: 999px;
+  }
+
+  .scope-switch button {
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 999px;
+    color: var(--color-navy);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* A long campus name shortens rather than pushing the switch off a small screen. */
+  .scope-switch .scope-switch-campus {
+    min-width: 0;
+    max-width: 11rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .scope-switch [aria-pressed="true"] {
+    background: var(--color-navy);
+    color: var(--color-white);
+  }
+
+  .just-listed-empty {
+    display: grid;
+    justify-items: start;
+    gap: 14px;
+    margin-top: 16px;
+    padding: 28px 20px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+  }
+
+  .just-listed-empty-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 24px;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .just-listed-note {
+    margin-top: 18px;
+    color: var(--color-muted);
+    font-size: 12.5px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .listing-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 28px 18px;
+      margin-top: 24px;
+    }
+
+    .listing-grid > li:nth-child(n + 5) {
+      display: list-item;
+    }
+
+    .listing-grid > li:nth-child(n + 10) {
+      display: none;
+    }
+  }
+
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .listing-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .listing-grid > li:nth-child(n + 10) {
+      display: list-item;
+    }
+  }
+}
