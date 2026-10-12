@@ -2256,3 +2256,172 @@
     }
   }
 }
+
+/* --- Homepage: context strip (Part 2, Task 12, spec 7.4) --- */
+@layer components {
+  .context-section {
+    margin-top: 12px;
+  }
+
+  /* Every state is at least this tall, so the swap after hydration moves nothing below it. */
+  .context-strip {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+  }
+
+  /* Phones: one swipe row. The trust row ends with its link, so the row always holds something focusable. */
+  .context-row {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .context-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .context-chip {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 12px;
+    border: 1.5px solid var(--color-line);
+    border-radius: 999px;
+    color: var(--color-navy);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .context-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    color: var(--color-sky-dark);
+  }
+
+  .context-end {
+    flex: none;
+  }
+
+  .context-link {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: 4px;
+    color: var(--color-navy);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-decoration: underline 1.5px;
+    text-underline-offset: 4px;
+    white-space: nowrap;
+  }
+
+  .context-label {
+    flex: none;
+    max-width: 8.5rem;
+    color: var(--color-navy);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.3;
+    /* Two even lines on phones, not "off" alone on the second. */
+    text-wrap: balance;
+  }
+
+  .context-thumb {
+    position: relative;
+    display: block;
+    width: 44px;
+    height: 44px;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+
+  .context-thumb-img {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* Development only (plan decision 10). */
+  .context-signed-in {
+    flex-wrap: wrap;
+    padding: 12px 14px;
+    border-radius: var(--radius-strip);
+  }
+
+  .context-welcome {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .context-activity {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    font-size: 12px;
+  }
+
+  .context-activity li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .context-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--color-sky);
+  }
+
+  .context-signed-in .context-link {
+    color: var(--color-white);
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .context-section {
+      margin-top: 16px;
+    }
+
+    .context-strip {
+      min-height: 56px;
+    }
+
+    .context-outlined {
+      padding: 0 8px 0 18px;
+      border: 1.5px solid var(--color-line);
+      border-radius: var(--radius-strip);
+    }
+
+    .context-trust {
+      gap: 24px;
+      overflow: visible;
+    }
+
+    .context-trust .context-chip {
+      height: auto;
+      padding: 0;
+      border: 0;
+      font-size: 13px;
+    }
+
+    .context-end {
+      margin-left: auto;
+    }
+
+    .context-label {
+      max-width: none;
+      font-size: 13px;
+    }
+  }
+}
