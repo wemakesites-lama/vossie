@@ -43,6 +43,7 @@
   --color-line: rgb(21 48 93 / 0.14);
   --color-field: #7e8da6; /* input borders: navy mixed 55% with white, 3.4:1 on white (WCAG 1.4.11) */
   --color-idle: #b9c0cc;
+  --color-idle-text: #7e879a; /* inactive large display text: 3.6:1 on white, 3.25:1 on panel (plan decision 14) */
   --color-danger: #b42318;
 
   --text-hero: clamp(2.75rem, 2.1rem + 2.8vw, 4rem);
@@ -2591,6 +2592,161 @@
   @media (min-width: 64rem) and (min-height: 30rem) {
     .category-carousel {
       --carousel-item: calc((100% - 6 * 16px) / 6.5);
+    }
+  }
+}
+
+/* --- Homepage: collections (Part 2, Task 14, spec 7.6) --- */
+@layer components {
+  .home-panel {
+    border-radius: var(--radius-card);
+  }
+
+  .collections {
+    padding: 6px 16px;
+    background: var(--color-panel);
+  }
+
+  .collections-stack {
+    display: none;
+  }
+
+  /* Phones: rows with a 64px thumbnail. Rows in a hairline-divided list may touch (spec section 5). */
+  .collections-link {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) 22px;
+    align-items: center;
+    gap: 14px;
+    padding-block: 12px;
+    color: var(--color-navy);
+  }
+
+  /* The hairline belongs to the link, so moving the mouse between rows never crosses a pixel where no link is
+     hovered (which would flick the stack back to the first photo). */
+  .collections-item + .collections-item .collections-link {
+    border-top: 1px solid var(--color-line);
+  }
+
+  .collections-thumb {
+    border-radius: 10px;
+  }
+
+  .collections-text {
+    display: grid;
+  }
+
+  /* Navy, not sky-dark: sky-dark is 4.25:1 on the grey panel (plan decision 7). */
+  .collections-eyebrow {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-eyebrow);
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  .collections-title {
+    margin-top: 2px;
+    font-family: var(--vos-font-display);
+    font-size: var(--text-list);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .collections-arrow {
+    width: 20px;
+    height: 20px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .collections {
+      display: grid;
+      grid-template-columns: minmax(0, 330px) minmax(0, 1fr);
+      align-items: center;
+      gap: clamp(32px, 6vw, 72px);
+      padding: clamp(32px, 5vw, 60px) clamp(24px, 4.5vw, 56px);
+      border-radius: var(--radius-panel);
+    }
+
+    .collections-stack {
+      position: relative;
+      display: block;
+      aspect-ratio: 33 / 32;
+    }
+
+    .collections-fan,
+    .collections-photo {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius-panel);
+    }
+
+    .collections-fan-back {
+      background: #cfe6f3;
+      rotate: -6deg;
+      translate: -12px 8px;
+    }
+
+    .collections-fan-middle {
+      background: #9fd1ec;
+      rotate: 4deg;
+      translate: 10px 2px;
+    }
+
+    .collections-photo {
+      opacity: 0;
+      scale: 0.94;
+      rotate: -3deg;
+      transition:
+        opacity 350ms var(--ease-out),
+        scale 350ms var(--ease-out),
+        rotate 350ms var(--ease-out);
+    }
+
+    .collections-thumb {
+      display: none;
+    }
+
+    .collections-link {
+      grid-template-columns: minmax(0, 1fr) auto;
+      padding-block: 14px;
+    }
+
+    .collections-title {
+      color: var(--color-idle-text);
+    }
+
+    .collections-arrow {
+      width: 26px;
+      height: 26px;
+      opacity: 0;
+      translate: -6px 0;
+      transition:
+        opacity var(--dur-fast) var(--ease-out),
+        translate var(--dur-fast) var(--ease-out);
+    }
+
+    /* The active collection is the first, until another title is hovered or focused. Then that one is navy, shows its
+       arrow and deals its photo onto the stack. On touch screens a tap follows the link, so a hover never lingers. */
+    .collections:not(:has(.collections-link:is(:hover, :focus-visible))) .collections-item:first-child .collections-title,
+    .collections-link:is(:hover, :focus-visible) .collections-title {
+      color: var(--color-navy);
+    }
+
+    .collections:not(:has(.collections-link:is(:hover, :focus-visible))) .collections-item:first-child .collections-arrow,
+    .collections-link:is(:hover, :focus-visible) .collections-arrow {
+      opacity: 1;
+      translate: 0 0;
+    }
+
+    .collections:not(:has(.collections-link:is(:hover, :focus-visible))) .collections-photo:nth-child(1 of .collections-photo),
+    .collections:has(.collections-item:nth-child(1) .collections-link:is(:hover, :focus-visible)) .collections-photo:nth-child(1 of .collections-photo),
+    .collections:has(.collections-item:nth-child(2) .collections-link:is(:hover, :focus-visible)) .collections-photo:nth-child(2 of .collections-photo),
+    .collections:has(.collections-item:nth-child(3) .collections-link:is(:hover, :focus-visible)) .collections-photo:nth-child(3 of .collections-photo),
+    .collections:has(.collections-item:nth-child(4) .collections-link:is(:hover, :focus-visible)) .collections-photo:nth-child(4 of .collections-photo) {
+      z-index: 1;
+      opacity: 1;
+      scale: 1;
+      rotate: 0deg;
     }
   }
 }

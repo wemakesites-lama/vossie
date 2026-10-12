@@ -1,3 +1,4 @@
+import { Collections } from "@/components/home/Collections";
 import { ContextStrip } from "@/components/home/ContextStrip";
 import { Hero } from "@/components/home/hero/Hero";
 import { ShopByCategory } from "@/components/home/ShopByCategory";
@@ -6,7 +7,6 @@ import { ShopByCategory } from "@/components/home/ShopByCategory";
 // header's scroll tests keep their room. Each section's task swaps its slot comment for the section and takes its
 // name off this list. Task 21 removes the list.
 const COMING_IN_PART_2 = [
-  "Collections",
   "Shop by campus",
   "Just listed",
   "How it works",
@@ -23,7 +23,7 @@ export default function HomePage() {
         <Hero />
         <ContextStrip />
         <ShopByCategory />
-        {/* Task 14: <Collections /> */}
+        <Collections />
         {/* Task 15: <ShopByCampus /> */}
         {/* Task 16: <JustListed /> */}
         {/* Task 17: <HowItWorks /> */}
