@@ -100,26 +100,27 @@
     -webkit-text-size-adjust: 100%;
   }
 
-  /* Whatever is scrolled to (the skip link's target, keyboard focus) lands clear of the sticky header.
+  /* Whatever is scrolled to (the skip link's target, keyboard focus) lands clear of the sticky header, plus 8px
+     so focus rings aren't tucked under the bar.
      This is scroll-margin on the page content, not scroll-padding on html: padding would also apply to the
      header's own controls, and focusing one of them (Tab, Shift+Tab) threw the page back up the scroll.
      Overlays sit outside main and footer, so their own scrolling lists are left alone. */
   :is(main, footer),
   :is(main, footer) * {
-    scroll-margin-top: 64px;
+    scroll-margin-top: 72px;
   }
 
   @media (min-width: 48rem) and (min-height: 30rem) {
     :is(main, footer),
     :is(main, footer) * {
-      scroll-margin-top: 78px;
+      scroll-margin-top: 86px;
     }
   }
 
   @media (min-width: 64rem) and (min-height: 30rem) {
     :is(main, footer),
     :is(main, footer) * {
-      scroll-margin-top: 122px;
+      scroll-margin-top: 130px;
     }
   }
 
@@ -470,7 +471,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 0;
+    /* 8px between targets (spec section 5). With 10px of padding either side, the words stay 28px apart. */
+    gap: 8px;
     height: 100%;
     color: var(--color-navy);
     font-size: 12px;
@@ -486,7 +488,7 @@
     justify-content: center;
     min-width: 44px;
     min-height: 44px;
-    padding-inline: 14px;
+    padding-inline: 10px;
     letter-spacing: inherit;
     text-transform: inherit;
   }
