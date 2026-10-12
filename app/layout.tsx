@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { AnnouncementBar } from "@/components/announcement/AnnouncementBar";
-import { SiteHeader } from "@/components/header/SiteHeader";
 import { CampusPicker } from "@/components/campus/CampusPicker";
 import { SiteFooter } from "@/components/footer/SiteFooter";
+import { SiteHeader } from "@/components/header/SiteHeader";
 import { MenuDrawer } from "@/components/menu/MenuDrawer";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { ToastRegion } from "@/components/ui/ToastRegion";
+import { BOOT_SCRIPT } from "@/lib/boot-script";
 import { getAnnouncements, getCampuses, getCategories, getTrendingSearches } from "@/lib/data";
 import { fontVariables } from "./fonts";
 import "./globals.css";
@@ -17,6 +18,11 @@ export const metadata: Metadata = {
   },
   description: "Buy and sell textbooks, tech and services with students on your Eduvos campus.",
   applicationName: "Vossie",
+  appleWebApp: {
+    capable: true,
+    title: "Vossie",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
@@ -33,8 +39,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     getCategories(),
     getTrendingSearches(),
   ]);
+
   return (
     <html lang="en-ZA" className={`${fontVariables} antialiased`} suppressHydrationWarning>
+      <head>
+        {/* Before first paint: data saver and the install prompt (lib/boot-script.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
+      </head>
       <body>
         <a href="#main" className="skip-link">
           Skip to content
