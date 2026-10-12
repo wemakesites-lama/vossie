@@ -1,6 +1,5 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
-import type { FormEvent, ReactNode } from "react";
 import { afterEach, vi } from "vitest";
 // These app modules load before every test file. If a test needs vi.mock for one of them, check that the mock takes effect.
 import { CAMPUS_COOKIE } from "./lib/campus";
@@ -42,34 +41,6 @@ vi.mock("next/image", async () => {
         className: props.className,
         loading: props.loading,
       }),
-  };
-});
-
-vi.mock("next/form", async () => {
-  const { createElement } = await import("react");
-  type FormProps = {
-    action: string;
-    children?: ReactNode;
-    className?: string;
-    role?: string;
-    onSubmit?: (event: FormEvent<HTMLFormElement>) => void;
-  };
-  return {
-    // Like next/form after hydration: run onSubmit, then stop the browser's own navigation.
-    default: ({ action, children, className, role, onSubmit }: FormProps) =>
-      createElement(
-        "form",
-        {
-          action,
-          className,
-          role,
-          onSubmit: (event: FormEvent<HTMLFormElement>) => {
-            onSubmit?.(event);
-            event.preventDefault();
-          },
-        },
-        children,
-      ),
   };
 });
 

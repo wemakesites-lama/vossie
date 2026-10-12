@@ -1,11 +1,31 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { setCampusChoice } from "@/lib/campus";
 import { openOverlay } from "@/lib/overlays";
 import { addRecentSearch, getRecentSearches } from "@/lib/recent-searches";
 import type { Campus, Category, TrendingSearches } from "@/lib/types";
 import { SearchOverlay } from "./SearchOverlay";
+
+// The shared setup's router mock can't be asserted on, so this file has its own.
+const router = vi.hoisted(() => ({
+  push: vi.fn(),
+  replace: vi.fn(),
+  refresh: vi.fn(),
+  prefetch: vi.fn(),
+  back: vi.fn(),
+  forward: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => router,
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
+beforeEach(() => {
+  router.push.mockClear();
+});
 
 const campuses: Campus[] = [
   { slug: "midrand", name: "Midrand", region: "Gauteng", liveListings: 5, image: { src: "/p.svg", alt: "" } },
@@ -79,6 +99,15 @@ describe("SearchOverlay", () => {
     await user.type(within(dialog).getByRole("searchbox", { name: "Search Vossie" }), "  calculator {enter}");
     expect(getRecentSearches()).toEqual(["calculator"]);
     expect(dialog).not.toHaveAttribute("open");
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith("/browse?q=calculator");
+  });
+
+  it("encodes the submitted term in the address it goes to", async () => {
+    const user = userEvent.setup();
+    const dialog = openSearch();
+    await user.type(within(dialog).getByRole("searchbox", { name: "Search Vossie" }), "desk lamp & chair{enter}");
+    expect(router.push).toHaveBeenCalledWith("/browse?q=desk%20lamp%20%26%20chair");
   });
 
   it("ignores an empty search", async () => {
@@ -87,6 +116,7 @@ describe("SearchOverlay", () => {
     await user.type(within(dialog).getByRole("searchbox", { name: "Search Vossie" }), "   {enter}");
     expect(getRecentSearches()).toEqual([]);
     expect(dialog).toHaveAttribute("open");
+    expect(router.push).not.toHaveBeenCalled();
   });
 
   it("lists recent searches and clears them", async () => {

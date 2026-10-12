@@ -1,7 +1,7 @@
 "use client";
 
-import Form from "next/form";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useId, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { ClockIcon, CloseIcon, SearchIcon, TrendingIcon } from "@/components/icons";
 import { useOverlayDialog } from "@/components/ui/useOverlayDialog";
@@ -22,6 +22,7 @@ const browseHref = (term: string) => `/browse?q=${encodeURIComponent(term)}`;
 /** Full-screen search (spec section 6.5). Submitting goes to /browse?q=… */
 export function SearchOverlay({ campuses, categories, trending }: SearchOverlayProps) {
   const id = useId();
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const trendingHeadingRef = useRef<HTMLHeadingElement>(null);
   const [recent, setRecent] = useState<string[]>([]);
@@ -39,13 +40,13 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
   const trendingTerms = (trendingCampus ? campusTerms : trending.all) ?? [];
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
+    // After hydration React handles the submit: no full page load. Before it, the plain form still submits to /browse.
+    event.preventDefault();
     const term = String(new FormData(event.currentTarget).get("q") ?? "").trim();
-    if (!term) {
-      event.preventDefault();
-      return;
-    }
+    if (!term) return;
     addRecentSearch(term);
     close();
+    router.push(browseHref(term));
   }
 
   /** Following any link closes the overlay and remembers a search-term link, unless the click opens a new tab. */
@@ -61,7 +62,7 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
   return (
     <dialog ref={dialogRef} aria-label="Search Vossie" onClick={onLinkClick} className="search-dialog">
       <div className="search-inner">
-        <Form action="/browse" onSubmit={onSubmit} role="search" className="search-form">
+        <form action="/browse" onSubmit={onSubmit} role="search" className="search-form">
           <label htmlFor={`${id}-q`} className="sr-only">
             Search Vossie
           </label>
@@ -80,7 +81,7 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
           <button type="button" onClick={close} aria-label="Close search" className="icon-btn shrink-0">
             <CloseIcon />
           </button>
-        </Form>
+        </form>
 
         {recent.length > 0 && (
           <section aria-labelledby={`${id}-recent`} className="search-section">

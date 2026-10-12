@@ -153,8 +153,7 @@ test.describe("search", () => {
     const dialog = page.getByRole("dialog", { name: "Search Vossie" });
     const box = dialog.getByRole("searchbox", { name: "Search Vossie" });
     await expect(box).toBeFocused();
-    // An empty search goes nowhere and keeps the overlay open. The unit tests can't show this, because their
-    // next/form mock always prevents the default.
+    // An empty search goes nowhere and keeps the overlay open.
     await box.press("Enter");
     await expect(page).toHaveURL(/\/$/);
     await expect(dialog).toBeVisible();
