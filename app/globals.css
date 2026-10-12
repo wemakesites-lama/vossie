@@ -2750,3 +2750,279 @@
     }
   }
 }
+
+/* --- Homepage: shop by campus (Part 2, Task 15, spec 7.7) --- */
+@layer components {
+  .campus-chooser-wide {
+    display: none;
+  }
+
+  /* Phones: the card carousel. */
+  .campus-cards {
+    --carousel-item: 56%;
+  }
+
+  .campus-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    padding: 0 14px 16px;
+    border-radius: var(--radius-card);
+    background: var(--color-navy);
+    color: var(--color-white);
+    text-align: left;
+    transition: scale var(--dur-fast) var(--ease-out);
+  }
+
+  .campus-card:active {
+    scale: 0.98;
+  }
+
+  .campus-card-photo {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* A shade under the words, so white text stays readable on any photo. */
+  .campus-card:not(.campus-card-all)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(0deg, rgb(9 20 42 / 0.75), transparent 60%);
+  }
+
+  .campus-card-name,
+  .campus-card-meta {
+    position: relative;
+    z-index: 2;
+  }
+
+  .campus-card-name {
+    font-family: var(--vos-font-display);
+    font-size: 28px;
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  .campus-card-meta {
+    margin-top: 6px;
+    font-size: 12px;
+  }
+
+  /* The chosen card: a sky ring, plus a navy tick, because a sky ring alone is 2.6:1 on white (plan decision 19). */
+  .campus-card-on::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    border: 3px solid var(--color-sky);
+    border-radius: inherit;
+  }
+
+  .campus-card-tick {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 3;
+    width: 28px;
+    height: 28px;
+    padding: 6px;
+    border-radius: 999px;
+    background: var(--color-navy);
+    box-shadow: 0 0 0 2px var(--color-white);
+    color: var(--color-white);
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .campus-cards {
+      display: none;
+    }
+
+    /* The photo is 300px from 1250px wide. Below that it narrows (24vw) so the longest names and their counts keep
+       their room at 768 to 1024px, instead of the counts being pushed past the edge. */
+    .campus-chooser-wide {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(180px, min(300px, 24vw)) minmax(0, 1fr);
+      align-items: center;
+      gap: 24px clamp(20px, 3vw, 36px);
+      margin-top: 28px;
+    }
+
+    .campus-names {
+      display: grid;
+      gap: 3px;
+    }
+
+    .campus-names-start {
+      justify-items: end;
+      text-align: right;
+    }
+
+    .campus-names-end {
+      justify-items: start;
+    }
+
+    /* Idle names use the darker idle grey, which keeps 3:1 for large text (plan decision 14). */
+    .campus-name {
+      position: relative;
+      display: inline-flex;
+      align-items: flex-start;
+      min-height: 44px;
+      color: var(--color-idle-text);
+      font-family: var(--vos-font-display);
+      font-size: var(--text-list);
+      line-height: 1.02;
+      text-align: inherit;
+      text-transform: uppercase;
+    }
+
+    .campus-name-on {
+      color: var(--color-navy);
+    }
+
+    .campus-name-on::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--color-sky);
+    }
+
+    /* Small text, so muted (5.9:1), not idle grey. */
+    .campus-count {
+      margin-left: 5px;
+      color: var(--color-muted);
+      font-family: var(--vos-font-text);
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.6;
+    }
+
+    .campus-name-on .campus-count {
+      color: var(--color-sky-dark);
+    }
+
+    .campus-photo-box {
+      position: relative;
+      /* Keeps the photos' z-index values inside the box. */
+      isolation: isolate;
+      aspect-ratio: 1;
+      overflow: hidden;
+      border-radius: var(--radius-panel);
+      background: var(--color-pale);
+    }
+
+    /* The cross-fade, as in the hero: the new photo fades in on top while the old one stays put underneath, then
+       drops out, so the pale box never shows through half way. */
+    .campus-photo {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0s linear 500ms;
+    }
+
+    .campus-photo-active {
+      z-index: 1;
+      opacity: 1;
+      transition: opacity 500ms var(--ease-out);
+    }
+
+    .campus-photo-img {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* The bar and the button sit above the photo on show (z-index 1). */
+    .campus-progress {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      z-index: 2;
+      height: 3px;
+      overflow: hidden;
+      border-radius: 2px;
+      background: rgb(255 255 255 / 0.35);
+    }
+
+    .campus-progress::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: var(--color-white);
+      transform-origin: left;
+      scale: 0 1;
+      animation: campus-progress 4s linear forwards;
+      animation-play-state: paused;
+    }
+
+    .campus-progress[data-running]::after {
+      animation-play-state: running;
+    }
+
+    .campus-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      background: rgb(9 20 42 / 0.72);
+      color: var(--color-white);
+      --focus-ring: var(--color-sky);
+      --focus-halo: var(--color-navy);
+    }
+
+    .campus-chooser-foot {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .campus-choice {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border: 1.5px solid var(--color-navy);
+      border-radius: 999px;
+      color: var(--color-navy);
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+    }
+
+    .campus-choice-on {
+      background: var(--color-navy);
+      color: var(--color-white);
+    }
+
+    .campus-caption {
+      grid-column: 1 / -1;
+      margin-top: -8px;
+      color: var(--color-muted);
+      font-size: 12px;
+      text-align: center;
+    }
+  }
+}
+
+@keyframes campus-progress {
+  to {
+    scale: 1 1;
+  }
+}
