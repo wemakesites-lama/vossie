@@ -2098,7 +2098,13 @@ export function SectionHeader({ id, eyebrow, title, tone = "default", align = "s
           {link && (
             <Link href={link.href} className="section-link">
               {link.label}
-              {link.context && <span className="sr-only">{link.context}</span>}
+              {/* The space sits outside the span because name computation (jsdom's, at least) trims each element's own text. */}
+              {link.context && (
+                <>
+                  {" "}
+                  <span className="sr-only">{link.context.trimStart()}</span>
+                </>
+              )}
             </Link>
           )}
         </div>
@@ -2169,7 +2175,7 @@ export function SectionError({ id, title }: { id: string; title: string }) {
 - [ ] **Step 4: Run it and watch it pass**
 
 Run: `pnpm test components/home/shared.test.tsx`
-Expected: PASS (7 tests).
+Expected: PASS (6 tests).
 
 - [ ] **Step 5: Add the frame CSS**
 
@@ -5258,10 +5264,10 @@ export function CampusChooser({ campuses }: { campuses: readonly Campus[] }) {
         className={cx("campus-name", campus.slug === highlighted.slug && "campus-name-on")}
       >
         {campus.name}
+        {/* Spaces sit outside the hidden spans: name computation trims each element's own text. */}
+        <span className="sr-only">,</span>{" "}
         <span className="campus-count">
-          <span className="sr-only">, </span>
-          {campus.liveListings}
-          <span className="sr-only"> live listings</span>
+          {campus.liveListings} <span className="sr-only">live listings</span>
         </span>
       </button>
     </li>
@@ -5338,9 +5344,8 @@ export function CampusChooser({ campuses }: { campuses: readonly Campus[] }) {
             className={cx("campus-card campus-card-all surface-navy texture-stars", choice === ALL_CAMPUSES && "campus-card-on")}
           >
             <span className="campus-card-name">All campuses</span>
-            <span className="campus-card-meta">
-              <span className="sr-only">, </span>Every Eduvos campus
-            </span>
+            <span className="sr-only">,</span>{" "}
+            <span className="campus-card-meta">Every Eduvos campus</span>
             {choice === ALL_CAMPUSES && <CheckIcon className="campus-card-tick" />}
           </button>
         </li>
@@ -5354,10 +5359,8 @@ export function CampusChooser({ campuses }: { campuses: readonly Campus[] }) {
             >
               <Photo image={{ src: campus.image.src, alt: "" }} sizes="60vw" className="campus-card-photo" />
               <span className="campus-card-name">{campus.name}</span>
-              <span className="campus-card-meta">
-                <span className="sr-only">, </span>
-                {campus.liveListings} live listings
-              </span>
+              <span className="sr-only">,</span>{" "}
+              <span className="campus-card-meta">{campus.liveListings} live listings</span>
               {choice === campus.slug && <CheckIcon className="campus-card-tick" />}
             </button>
           </li>
@@ -7740,8 +7743,9 @@ export async function WhatsOnEvents() {
             </span>
             {/* The Hub page is a placeholder in this stage; RSVP and booking arrive with it. */}
             <Link href="/hub" className="event-action">
-              {action}
-              <span className="sr-only"> for {event.title}</span>
+              {/* The space sits outside the hidden span: name computation trims each element's own text. */}
+              {action}{" "}
+              <span className="sr-only">for {event.title}</span>
             </Link>
           </li>
         );
