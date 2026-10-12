@@ -4,7 +4,12 @@ import { Suspense } from "react";
 import { ComingSoon } from "@/components/ComingSoon";
 import { getCategories } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Category" };
+/** The tab reads "Tech · Vossie" (the layout adds the suffix). An unknown slug gets the 404's title. */
+export async function generateMetadata({ params }: PageProps<"/categories/[slug]">): Promise<Metadata> {
+  const { slug } = await params;
+  const category = (await getCategories()).find((item) => item.slug === slug);
+  return { title: category ? category.name : "Page not found" };
+}
 
 export async function generateStaticParams() {
   return (await getCategories()).map((category) => ({ slug: category.slug }));
@@ -12,7 +17,8 @@ export async function generateStaticParams() {
 
 export default function CategoryPage({ params }: PageProps<"/categories/[slug]">) {
   return (
-    <Suspense fallback={<ComingSoon title="Category" />}>
+    // Known categories are prerendered, so this fallback only shows for an unknown slug, until the 404 takes over.
+    <Suspense fallback={null}>
       <CategoryDetails params={params} />
     </Suspense>
   );

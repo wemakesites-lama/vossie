@@ -4,7 +4,12 @@ import { Suspense } from "react";
 import { ComingSoon } from "@/components/ComingSoon";
 import { getCampuses } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Campus" };
+/** The tab reads "Midrand · Vossie" (the layout adds the suffix). An unknown slug gets the 404's title. */
+export async function generateMetadata({ params }: PageProps<"/c/[campus]">): Promise<Metadata> {
+  const { campus: slug } = await params;
+  const campus = (await getCampuses()).find((item) => item.slug === slug);
+  return { title: campus ? campus.name : "Page not found" };
+}
 
 export async function generateStaticParams() {
   return (await getCampuses()).map((campus) => ({ campus: campus.slug }));
@@ -12,7 +17,8 @@ export async function generateStaticParams() {
 
 export default function CampusPage({ params }: PageProps<"/c/[campus]">) {
   return (
-    <Suspense fallback={<ComingSoon title="Campus" />}>
+    // Known campuses are prerendered, so this fallback only shows for an unknown slug, until the 404 takes over.
+    <Suspense fallback={null}>
       <CampusDetails params={params} />
     </Suspense>
   );

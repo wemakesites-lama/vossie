@@ -1,4 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+// The tab reads "Page not found · Vossie": the layout adds the suffix.
+export const metadata: Metadata = { title: "Page not found" };
 
 export default function NotFound() {
   return (
