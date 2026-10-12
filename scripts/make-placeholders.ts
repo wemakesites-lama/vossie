@@ -26,8 +26,9 @@ const SIZES: Record<string, [number, number]> = {
   listing: [800, 800],
 };
 
-// Tiles and cards print their own text over or beside these, so only the larger photos carry a label.
-const LABELLED = new Set(["hero", "campus", "collection", "hub", "seller"]);
+// Tiles and cards print their own text over or beside these, so only the larger photos carry a label. The Hub
+// banner's heading sits right over its photo, so it has none either.
+const LABELLED = new Set(["hero", "campus", "collection", "seller"]);
 
 const art = new Map<string, Art>();
 

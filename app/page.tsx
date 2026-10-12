@@ -4,18 +4,16 @@ import { FeaturedToday } from "@/components/home/FeaturedToday";
 import { FreeAndSwaps } from "@/components/home/FreeAndSwaps";
 import { Hero } from "@/components/home/hero/Hero";
 import { HowItWorks } from "@/components/home/HowItWorks";
+import { HubBanner } from "@/components/home/HubBanner";
 import { JustListed } from "@/components/home/JustListed";
 import { LookingFor } from "@/components/home/LookingFor";
 import { ShopByCampus } from "@/components/home/ShopByCampus";
 import { ShopByCategory } from "@/components/home/ShopByCategory";
 
-// Sections that haven't landed yet hold their place, so the page stays about as tall as the finished one and the
-// header's scroll tests keep their room. Each section's task swaps its slot comment for the section and takes its
-// name off this list. Task 21 removes the list.
-const COMING_IN_PART_2 = [
-  "Hub and What's on",
-];
-
+/**
+ * The homepage (spec section 7), in the approved order (decision 4). The campus-aware parts stream in behind
+ * skeletons; everything else is prerendered.
+ */
 export default function HomePage() {
   return (
     <>
@@ -30,18 +28,9 @@ export default function HomePage() {
         <FeaturedToday />
         <LookingFor />
         <FreeAndSwaps />
-        <ol aria-label="Homepage sections still to come" className="mt-12 grid gap-4">
-          {COMING_IN_PART_2.map((name) => (
-            <li
-              key={name}
-              className="grid min-h-[38vh] place-items-center rounded-panel border-[1.5px] border-dashed border-line text-muted"
-            >
-              {name}
-            </li>
-          ))}
-        </ol>
       </div>
-      {/* Task 21: <HubBanner /> */}
+      {/* Full width, sitting on the footer (spec 7.13). */}
+      <HubBanner />
     </>
   );
 }

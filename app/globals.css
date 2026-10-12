@@ -3733,3 +3733,227 @@
     }
   }
 }
+
+/* --- Homepage: hub banner and what's on (Part 2, Task 21, spec 7.13) --- */
+@layer components {
+  /* Edge to edge: #main pads itself for the iPhone notch, so the band cancels that padding and puts it back inside
+     (Part 1 handoff, "Full-width bands"). Without this, landscape iPhones show thin white strips at the sides. */
+  .hub-banner {
+    position: relative;
+    isolation: isolate;
+    margin-top: clamp(3.25rem, 2.6rem + 2.4vw, 5.75rem);
+    margin-inline: calc(env(safe-area-inset-left) * -1) calc(env(safe-area-inset-right) * -1);
+    padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+    overflow: hidden;
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
+    background: var(--color-navy);
+    color: var(--color-white);
+    --focus-ring: var(--color-sky);
+    --focus-halo: var(--color-navy);
+  }
+
+  /* The banner sits on the footer (spec 7.13), so the footer drops its usual gap. */
+  body:has(.hub-banner) .site-footer {
+    margin-top: 0;
+  }
+
+  .hub-banner-inner {
+    display: grid;
+    max-width: calc(var(--container-page) + 48px);
+    margin-inline: auto;
+  }
+
+  /* Phones: the photo behind the text, then the white events card underneath. */
+  .hub-banner-text {
+    position: relative;
+    z-index: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    min-height: 300px;
+    padding: 24px 20px;
+  }
+
+  .hub-banner-media {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+  }
+
+  /* Navy over the photo, so the white text reads on any picture. */
+  .hub-banner-media::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgb(9 20 42 / 0.9), rgb(9 20 42 / 0.35));
+  }
+
+  .hub-banner-photo {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* With data saver on, the photo is never requested: lazy images that aren't displayed don't load (plan decision 8). */
+  :root[data-low-data] .hub-banner-media {
+    display: none;
+  }
+
+  .hub-banner-label {
+    margin-bottom: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+  }
+
+  .hub-banner-title {
+    max-width: 16ch;
+    font-family: var(--vos-font-display);
+    font-size: clamp(2.375rem, 1.6rem + 2.6vw, 3.625rem);
+    line-height: 0.98;
+    text-transform: uppercase;
+  }
+
+  .hub-banner-copy {
+    max-width: 46ch;
+    margin-top: 12px;
+    color: rgb(255 255 255 / 0.88);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .hub-banner-action {
+    margin-top: 18px;
+  }
+
+  /* White card: back to the navy ring for white surfaces. */
+  .whats-on {
+    padding: 14px 20px 4px;
+    background: var(--color-white);
+    color: var(--color-navy);
+    --focus-ring: var(--color-navy);
+    --focus-halo: transparent;
+  }
+
+  .whats-on-title {
+    margin-bottom: 6px;
+    font-family: var(--vos-font-display);
+    font-size: 20px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  .event {
+    display: grid;
+    grid-template-columns: 50px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding-block: 10px;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .event-date {
+    display: grid;
+    justify-items: center;
+    font-family: var(--vos-font-display);
+    line-height: 0.85;
+    text-transform: uppercase;
+  }
+
+  .event-day {
+    font-size: 28px;
+  }
+
+  .event-month {
+    margin-top: 2px;
+    color: var(--color-sky-dark);
+    font-size: 12px;
+  }
+
+  .event-text {
+    display: grid;
+  }
+
+  .event-title {
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+
+  .event-where {
+    color: var(--color-muted);
+    font-size: 12px;
+  }
+
+  .event-action {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1.5px solid var(--color-navy);
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .event-skeleton-date {
+    width: 40px;
+    height: 40px;
+  }
+
+  .event-skeleton-text {
+    height: 32px;
+  }
+
+  .whats-on-empty {
+    padding: 12px 0 16px;
+    border-top: 1px solid var(--color-line);
+    font-size: 13.5px;
+  }
+
+  .whats-on-empty a {
+    color: var(--color-sky-dark);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .hub-banner {
+      border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+    }
+
+    .hub-banner-inner {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
+      align-items: end;
+      gap: 40px;
+      min-height: 440px;
+      padding: 48px clamp(24px, 4vw, 56px);
+    }
+
+    /* From the tablet step the photo fills the whole banner, so the text box stops being its frame. */
+    .hub-banner-text {
+      position: static;
+      min-height: 0;
+      padding: 0;
+    }
+
+    .hub-banner-media::after {
+      background: linear-gradient(90deg, rgb(9 20 42 / 0.85), rgb(9 20 42 / 0.4));
+    }
+
+    .whats-on {
+      position: relative;
+      padding: 16px 18px 6px;
+      border-radius: var(--radius-card);
+    }
+  }
+
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .hub-banner-inner {
+      grid-template-columns: minmax(0, 1fr) 410px;
+      gap: 56px;
+    }
+  }
+}

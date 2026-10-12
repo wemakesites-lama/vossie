@@ -26,7 +26,7 @@ test("no sideways scrolling at the in-between widths", async ({ page }) => {
 test("the main controls are reachable with the keyboard", async ({ page }) => {
   await page.goto("/");
   const reached = new Set<string>();
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < 250; i++) {
     await page.keyboard.press("Tab");
     const name = await page.evaluate(() => {
       const active = document.activeElement as HTMLElement | null;
