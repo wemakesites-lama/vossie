@@ -14,7 +14,7 @@ export function InstallButton() {
 
   if (kind === "prompt") {
     return (
-      <button type="button" onClick={() => void promptInstall()} className="footer-install">
+      <button type="button" onClick={() => void promptInstall()} className="btn btn-sky footer-install">
         <PlusSquareIcon className="size-5" />
         Add Vossie to your home screen
       </button>
@@ -28,7 +28,7 @@ export function InstallButton() {
           type="button"
           aria-haspopup="dialog"
           onClick={(event) => openOverlay("install-help", event.currentTarget)}
-          className="footer-install"
+          className="btn btn-sky footer-install"
         >
           <PlusSquareIcon className="size-5" />
           Add Vossie to your home screen

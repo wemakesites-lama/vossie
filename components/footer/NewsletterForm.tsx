@@ -6,6 +6,10 @@ import { useId, useState, type FormEvent } from "react";
 /**
  * Campus updates sign-up (spec section 6.6). There is no mailing list yet, so it only confirms
  * on screen: nothing is sent or stored (POPIA: don't collect what we can't use yet).
+ *
+ * Before JavaScript attaches, the browser would submit the form natively, which for a GET puts the address in
+ * the URL, the history and the server logs. So the input has no `name` (a nameless control is never submitted;
+ * `autoComplete` still drives autofill) and the form uses `method="dialog"`, which does nothing outside a <dialog>.
  */
 export function NewsletterForm() {
   const id = useId();
@@ -14,23 +18,21 @@ export function NewsletterForm() {
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
-    if (!form.checkValidity()) {
-      form.reportValidity();
-      return;
-    }
+    if (!form.reportValidity()) return;
     form.reset();
     setSent(true);
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="footer-signup">
+    // Typing again clears the confirmation, so the next sign-up changes the live region and is announced too.
+    // form.reset() fires no input event, so it doesn't clear the message it has just caused.
+    <form method="dialog" onSubmit={onSubmit} onInput={() => setSent(false)} noValidate className="footer-signup">
       <label htmlFor={`${id}-email`} className="footer-label">
         Email address
       </label>
       <div className="footer-signup-row">
         <input
           id={`${id}-email`}
-          name="email"
           type="email"
           required
           autoComplete="email"

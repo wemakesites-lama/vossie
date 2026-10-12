@@ -37,5 +37,9 @@ export async function promptInstall(): Promise<void> {
   if (!event) return;
   window.__vossieInstallPrompt = null;
   window.dispatchEvent(new Event(INSTALL_PROMPT_EVENT));
-  await event.prompt();
+  try {
+    await event.prompt();
+  } catch {
+    // The browser refused (the prompt was already used, say). The button has gone, so there's nothing to undo.
+  }
 }

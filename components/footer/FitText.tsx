@@ -23,13 +23,20 @@ export function FitText({ children, className }: { children: ReactNode; classNam
     };
 
     fit();
-    const observer = new ResizeObserver(fit);
+    // Refit on the next frame. The text's size sets the observed parent's height, so resizing it inside the
+    // callback would trip the browser's "ResizeObserver loop completed with undelivered notifications" warning.
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(fit);
+    });
     observer.observe(parent);
     void document.fonts?.ready.then(() => {
       if (active) fit();
     });
     return () => {
       active = false;
+      cancelAnimationFrame(frame);
       observer.disconnect();
     };
   }, []);

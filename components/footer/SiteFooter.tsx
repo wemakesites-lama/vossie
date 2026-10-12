@@ -89,8 +89,10 @@ export function SiteFooter({ campuses }: { campuses: readonly Campus[] }) {
         </div>
 
         <div className="footer-legal">
-          <Pennant size="small" />
-          <p>An Eduvos Incubation Hub project</p>
+          <div className="footer-lock">
+            <Pennant size="small" />
+            <p>An Eduvos Incubation Hub project</p>
+          </div>
           <p className="footer-legal-links">
             <Link href="/privacy">Privacy (POPIA)</Link> · <Link href="/safety">Safety</Link>
           </p>

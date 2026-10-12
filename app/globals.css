@@ -690,6 +690,9 @@
     border-radius: 20px 20px 0 0;
     background: var(--color-white);
     color: var(--color-ink);
+    /* A sheet is a white surface even when it opens from a navy one (the footer's install help). */
+    --focus-ring: var(--color-navy);
+    --focus-halo: transparent;
     overflow: hidden;
     translate: 0 100%;
     transition-property: translate, opacity, overlay, display;
@@ -1062,7 +1065,7 @@
   }
 
   /* Tablet and up. The big type takes the height left over, so the main view fits without scrolling
-     down to about 620px of height. The 316px reserved is the menu's other parts (padding, top bar, view
+     down to about 630px of height. The 316px reserved is the menu's other parts (padding, top bar, view
      padding, data saver: 253px), plus six 8px gaps, 8px because Shop's row is 52px tall (the height of its
      arrow button) where the other rows are 44px, and 7px of slack. That leaves about 10px to spare at 657px
      of height. The 7 is the number of link rows. If a row or block is added, the menu scrolls rather than
@@ -1374,9 +1377,11 @@
     border-bottom: 1px solid rgb(255 255 255 / 0.15);
   }
 
+  /* As in the approved mockup, the arrow always sits at the right edge of its column, whether the words wrap or not. */
   .footer-giant {
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 0.2em;
     min-height: 44px;
     font-family: var(--vos-font-display);
@@ -1405,7 +1410,8 @@
        sign-up row (the input's own width plus the button): wider than the content of a 360px screen. */
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
-    padding-block: 32px;
+    /* No padding below on phones: the legal row's own hairline is the one that closes the accordions. */
+    padding-block: 32px 0;
   }
 
   .footer-updates {
@@ -1449,6 +1455,11 @@
 
   .footer-accordion {
     border-bottom: 1px solid rgb(255 255 255 / 0.15);
+  }
+
+  /* The legal row's top border sits right under the last accordion, so it supplies that hairline. */
+  .footer-group:last-child .footer-accordion {
+    border-bottom: 0;
   }
 
   .footer-summary {
@@ -1522,14 +1533,9 @@
     font-size: 14px;
   }
 
+  /* The mockup's sky pill: .btn and .btn-sky supply the shape, size and colours (navy on solid sky is 4.97:1). */
   .footer-install {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 44px;
     margin-top: 16px;
-    color: var(--color-sky);
-    font-weight: 600;
   }
 
   .install-steps {
@@ -1549,10 +1555,12 @@
     color: var(--color-sky-dark);
   }
 
+  /* Phones, as in the approved mockup: a left-aligned column, the lockup first and the links under it. */
   .footer-legal {
     display: flex;
+    flex-direction: column;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px 16px;
     padding-top: 24px;
     border-top: 1px solid rgb(255 255 255 / 0.15);
@@ -1560,8 +1568,11 @@
     font-size: 13px;
   }
 
-  .footer-legal-links {
-    margin-left: auto;
+  /* The pennant beside the credit. */
+  .footer-lock {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
   /* The two legal links are standalone targets (the privacy notice link in the consent sentence is inline in text,
@@ -1576,16 +1587,23 @@
   /* Sized by FitText to the footer's width; the negative margin crops the letters slightly at the bottom. */
   .footer-wordmark {
     margin-top: 24px;
-    padding-inline: 8px;
+    padding-inline: max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-right));
     line-height: 0;
   }
 
   .footer-wordmark-text {
     display: inline-block;
+    /* Top-aligned: the line box is exactly the text box, so the margin below decides the crop. With baseline
+       alignment the line's strut set the bottom edge instead, a fixed few pixels at every size. */
+    vertical-align: top;
+    /* At line-height 0.8 the baseline sits 0.0445em above the box's bottom and the caps are 0.71em tall, so
+       -0.1em crops about 8% of the letters at every size (spec 6.6: "cropped slightly"). */
     margin-bottom: -0.1em;
     color: var(--color-sky);
     font-family: var(--vos-font-display);
-    font-size: 24vw; /* first paint, before FitText measures */
+    /* First paint, before FitText measures. VOSSIE is 2.34em wide in Special Gothic Condensed One, so this is
+       within about 1% of the fitted size. Recheck the ratio when the Eduvos fonts arrive. */
+    font-size: calc((100vw - 16px) / 2.34);
     line-height: 0.8;
     white-space: nowrap;
   }
@@ -1610,6 +1628,13 @@
     .footer-updates {
       grid-column: 1 / -1;
       max-width: 32rem;
+    }
+
+    /* The lockup on the left, the links on the right. */
+    .footer-legal {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
     }
 
     /* The install help opens from the foot of the page, so from 768px it's centred, not anchored to its button. */
