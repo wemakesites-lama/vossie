@@ -3957,3 +3957,26 @@
     }
   }
 }
+
+/* --- Homepage: scroll reveals (Part 2, Task 22, spec 8) ---
+   Each section rises 16px and fades in as it enters the screen. CSS only (scroll-driven animations): it costs no
+   JavaScript, and browsers without support simply show the content (plan decision 16). It never runs with
+   reduced motion or data saver, so the off switches above never have to stop it. It's done within the first 120px
+   of a section entering, so anything you can read is fully shown. The hero, the strip under it and the Hub banner
+   aren't sections of this kind, so they never animate. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([data-low-data]) :is(.home-section, .home-panel) {
+      animation: section-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 120px;
+    }
+  }
+}
+
+@keyframes section-reveal {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+  }
+}
