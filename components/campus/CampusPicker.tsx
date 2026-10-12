@@ -100,11 +100,9 @@ export function CampusPicker({ campuses }: { campuses: readonly Campus[] }) {
             </li>
           ))}
         </ul>
-        {matches.length === 0 && (
-          <p role="status" className="px-3 py-4 text-muted">
-            No campus matches “{query.trim()}”.
-          </p>
-        )}
+        <p role="status" className="picker-status">
+          {matches.length === 0 ? `No campus matches “${query.trim()}”.` : null}
+        </p>
       </div>
     </dialog>
   );

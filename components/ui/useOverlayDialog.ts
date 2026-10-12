@@ -34,6 +34,9 @@ export function useOverlayDialog(
     const onClose = () => {
       const trigger = returnFocusRef.current;
       returnFocusRef.current = null;
+      // Another overlay opened as this one closed (the menu hands over to the campus picker). That overlay
+      // owns focus now, and gives it back when it closes.
+      if (document.querySelector("dialog[open]")) return;
       if (trigger?.isConnected) trigger.focus();
     };
     const onPointerDown = (event: Event) => {

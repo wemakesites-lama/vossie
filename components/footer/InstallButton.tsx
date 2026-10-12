@@ -14,7 +14,15 @@ export function InstallButton() {
 
   if (kind === "prompt") {
     return (
-      <button type="button" onClick={() => void promptInstall()} className="btn btn-sky footer-install">
+      <button
+        type="button"
+        onClick={() => {
+          // The button disappears once the prompt is used, so give focus a stable home first.
+          document.getElementById("footer-updates-title")?.focus();
+          void promptInstall();
+        }}
+        className="btn btn-sky footer-install"
+      >
         <PlusSquareIcon className="size-5" />
         Add Vossie to your home screen
       </button>

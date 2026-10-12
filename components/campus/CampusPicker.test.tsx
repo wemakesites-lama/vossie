@@ -53,6 +53,21 @@ describe("CampusPicker", () => {
     expect(within(dialog).getByRole("status")).toHaveTextContent("No campus matches “zzz”.");
   });
 
+  it("keeps its status region mounted and empty until nothing matches, so the message is announced", async () => {
+    const user = userEvent.setup();
+    render(<CampusPicker campuses={campuses} />);
+    const dialog = openPicker();
+    const search = within(dialog).getByRole("searchbox", { name: "Find your campus" });
+    const status = within(dialog).getByRole("status");
+    expect(status).toBeEmptyDOMElement();
+    await user.type(search, "zzz");
+    // The same element, now holding text: a region mounted with its text already in it often isn't announced.
+    expect(within(dialog).getByRole("status")).toBe(status);
+    expect(status).toHaveTextContent("No campus matches “zzz”.");
+    await user.clear(search);
+    expect(status).toBeEmptyDOMElement();
+  });
+
   it("saves the choice, closes and confirms it", async () => {
     const user = userEvent.setup();
     render(
@@ -120,33 +135,41 @@ describe("CampusPicker", () => {
   it("opens under its trigger on a larger screen, and forgets that spot when opened without one", async () => {
     const user = userEvent.setup();
     mockMatchMedia((query) => query === "(min-width: 48rem) and (min-height: 30rem)");
-    render(
-      <>
-        <button type="button">Open picker</button>
-        <CampusPicker campuses={campuses} />
-      </>,
-    );
-    const trigger = screen.getByRole("button", { name: "Open picker" });
-    // jsdom has no layout: say where the trigger is. The popover sits 8px below it, level with its left edge.
-    vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue({
-      x: 200,
-      y: 60,
-      left: 200,
-      top: 60,
-      right: 360,
-      bottom: 104,
-      width: 160,
-      height: 44,
-      toJSON: () => ({}),
-    });
-    const dialog = openPicker(trigger);
-    expect(dialog.style.getPropertyValue("--picker-top")).toBe("112px");
-    expect(dialog.style.getPropertyValue("--picker-left")).toBe("200px");
+    // The popover keeps clear of the bottom edge, so where it sits depends on the window height. jsdom's default is
+    // 768; set it here so the numbers below don't rest on that default.
+    const originalHeight = window.innerHeight;
+    Object.defineProperty(window, "innerHeight", { configurable: true, value: 768 });
+    try {
+      render(
+        <>
+          <button type="button">Open picker</button>
+          <CampusPicker campuses={campuses} />
+        </>,
+      );
+      const trigger = screen.getByRole("button", { name: "Open picker" });
+      // jsdom has no layout: say where the trigger is. The popover sits 8px below it, level with its left edge.
+      vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue({
+        x: 200,
+        y: 60,
+        left: 200,
+        top: 60,
+        right: 360,
+        bottom: 104,
+        width: 160,
+        height: 44,
+        toJSON: () => ({}),
+      });
+      const dialog = openPicker(trigger);
+      expect(dialog.style.getPropertyValue("--picker-top")).toBe("112px");
+      expect(dialog.style.getPropertyValue("--picker-left")).toBe("200px");
 
-    await user.click(within(dialog).getByRole("button", { name: "Close" }));
-    openPicker();
-    expect(dialog.style.getPropertyValue("--picker-top")).toBe("");
-    expect(dialog.style.getPropertyValue("--picker-left")).toBe("");
+      await user.click(within(dialog).getByRole("button", { name: "Close" }));
+      openPicker();
+      expect(dialog.style.getPropertyValue("--picker-top")).toBe("");
+      expect(dialog.style.getPropertyValue("--picker-left")).toBe("");
+    } finally {
+      Object.defineProperty(window, "innerHeight", { configurable: true, value: originalHeight });
+    }
   });
 
   it("closes when its handle is dragged down more than 80px", () => {

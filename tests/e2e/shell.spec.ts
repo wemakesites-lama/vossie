@@ -101,6 +101,22 @@ test.describe("menu", () => {
     await expect(menu).toBeHidden();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Start selling");
   });
+
+  test("hands focus back through the menu-to-picker chain", async ({ page }) => {
+    await page.goto("/");
+    const menuButton = page.getByRole("button", { name: "Menu", exact: true });
+    await menuButton.focus();
+    await page.keyboard.press("Enter");
+    const menu = page.getByRole("dialog", { name: "Menu" });
+    await expect(menu).toBeVisible();
+    await menu.getByRole("button", { name: /^Shopping at/ }).press("Enter");
+    const picker = page.getByRole("dialog", { name: "Choose your campus" });
+    await expect(picker).toBeVisible();
+    await expect(menu).toBeHidden();
+    await page.keyboard.press("Escape");
+    await expect(picker).toBeHidden();
+    await expect(menuButton).toBeFocused();
+  });
 });
 
 test.describe("campus picker", () => {

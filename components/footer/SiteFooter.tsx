@@ -63,7 +63,7 @@ export function SiteFooter({ campuses }: { campuses: readonly Campus[] }) {
 
         <div className="footer-grid">
           <section aria-labelledby="footer-updates-title" className="footer-updates">
-            <h3 id="footer-updates-title" className="footer-heading">
+            <h3 id="footer-updates-title" tabIndex={-1} className="footer-heading">
               Campus updates
             </h3>
             <p className="footer-copy">New listings, Hub events and safety tips from your campus, once a week.</p>

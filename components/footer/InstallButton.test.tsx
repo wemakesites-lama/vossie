@@ -24,10 +24,19 @@ describe("InstallButton", () => {
       prompt,
       userChoice: Promise.resolve({ outcome: "accepted" as const }),
     });
-    render(<InstallButton />);
+    render(
+      <>
+        <h3 id="footer-updates-title" tabIndex={-1}>
+          Campus updates
+        </h3>
+        <InstallButton />
+      </>,
+    );
     await user.click(screen.getByRole("button", { name: "Add Vossie to your home screen" }));
     expect(prompt).toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: "Add Vossie to your home screen" })).not.toBeInTheDocument();
+    // The button is gone, so focus sits on the footer's heading rather than dropping to <body>.
+    expect(screen.getByRole("heading", { name: "Campus updates" })).toHaveFocus();
   });
 
   it("copes with the browser refusing the install prompt", async () => {

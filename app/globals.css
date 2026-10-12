@@ -39,6 +39,7 @@
   --color-ink: #373f41; /* the spec's "text" token: long body copy */
   --color-muted: #5b6577;
   --color-line: rgb(21 48 93 / 0.14);
+  --color-field: #7e8da6; /* input borders: navy mixed 55% with white, 3.4:1 on white (WCAG 1.4.11) */
   --color-idle: #b9c0cc;
   --color-danger: #b42318;
 
@@ -672,6 +673,18 @@
   .site-header[data-mode="revealed"] .hdr-group {
     translate: 0 var(--compact-shift);
   }
+
+  /* In revealed mode the bar's background shrinks, but the header's box doesn't. That leaves an invisible strip
+     below the bar (8px on phones, 14px from wide:) that swallows taps on the content showing through. So the
+     header ignores the pointer, and the parts you can see take it back. The bar's background is scaled, and so
+     is its hit area: it covers the visible bar and not the strip. */
+  .site-header[data-mode="revealed"] {
+    pointer-events: none;
+  }
+
+  .site-header[data-mode="revealed"] :is(.hdr-quick, .hdr-bar-bg, .hdr-group, .hdr-pennant-slot) {
+    pointer-events: auto;
+  }
 }
 
 /* --- Sheets and the campus picker (Task 13, spec section 6.4) ---------------- */
@@ -748,7 +761,7 @@
     height: 48px;
     margin-top: 12px;
     padding: 0 16px;
-    border: 1.5px solid var(--color-line);
+    border: 1.5px solid var(--color-field);
     border-radius: 999px;
     color: var(--color-ink);
   }
@@ -757,6 +770,11 @@
     margin-top: 8px;
     overflow-y: auto;
     overscroll-behavior: contain;
+  }
+
+  .picker-status:not(:empty) {
+    padding: 16px 12px;
+    color: var(--color-muted);
   }
 
   .picker-option {
