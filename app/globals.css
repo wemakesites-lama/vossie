@@ -3603,3 +3603,133 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* --- Homepage: free and swaps (Part 2, Task 20, spec 7.12) --- */
+@layer components {
+  .free-swaps {
+    padding: 24px 16px;
+    background: var(--color-pale);
+  }
+
+  .free-swaps-carousel {
+    --carousel-item: 46%;
+  }
+
+  .free-card {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    background: var(--color-white);
+    transition: scale var(--dur-fast) var(--ease-out);
+  }
+
+  .free-card:has(.free-card-link:active) {
+    scale: 0.98;
+  }
+
+  .free-card-media {
+    position: relative;
+    display: block;
+  }
+
+  /* Navy (FREE) and sky-dark (SWAP) on white: 13:1 and 4.7:1. */
+  .free-stamp {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 4px 10px;
+    border: 2px solid currentColor;
+    border-radius: 6px;
+    background: var(--color-white);
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 20px;
+    line-height: 1;
+    text-transform: uppercase;
+    rotate: -6deg;
+  }
+
+  .free-stamp-swap {
+    color: var(--color-sky-dark);
+  }
+
+  .free-card-title {
+    padding: 12px 14px 4px;
+    color: var(--color-navy);
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+
+  /* The title's link covers the whole card. Its ring is drawn inside the card, which the row would otherwise clip. */
+  .free-card-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  /* Only where :has() works: elsewhere the link keeps its own ring. */
+  @supports selector(:has(*)) {
+    .free-card-link:focus-visible {
+      outline: none;
+      box-shadow: none;
+    }
+
+    /* Drawn over the photo as a navy ring with a white edge inside it, so it shows on any picture (WCAG 1.4.11). */
+    .free-card:has(.free-card-link:focus-visible)::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      border-radius: inherit;
+      box-shadow:
+        inset 0 0 0 3px var(--color-navy),
+        inset 0 0 0 5px var(--color-white);
+      pointer-events: none;
+    }
+  }
+
+  .free-card-meta {
+    padding: 0 14px 14px;
+    color: var(--color-muted);
+    font-size: 12px;
+  }
+
+  .free-skeleton-photo {
+    display: block;
+    aspect-ratio: 4 / 3;
+    border-radius: 0;
+  }
+
+  .free-skeleton-line {
+    display: block;
+    height: 14px;
+    margin: 14px 14px 0;
+  }
+
+  .free-skeleton-meta {
+    display: block;
+    width: 50%;
+    height: 12px;
+    margin: 8px 14px 14px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .free-swaps {
+      padding: 44px 40px 40px;
+      border-radius: var(--radius-panel);
+    }
+
+    .free-swaps-carousel {
+      --carousel-item: 30%;
+    }
+  }
+
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .free-swaps-carousel {
+      --carousel-item: calc((100% - 4 * 16px) / 5.4);
+    }
+  }
+}

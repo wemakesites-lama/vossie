@@ -1,6 +1,7 @@
 import { Collections } from "@/components/home/Collections";
 import { ContextStrip } from "@/components/home/ContextStrip";
 import { FeaturedToday } from "@/components/home/FeaturedToday";
+import { FreeAndSwaps } from "@/components/home/FreeAndSwaps";
 import { Hero } from "@/components/home/hero/Hero";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { JustListed } from "@/components/home/JustListed";
@@ -12,7 +13,6 @@ import { ShopByCategory } from "@/components/home/ShopByCategory";
 // header's scroll tests keep their room. Each section's task swaps its slot comment for the section and takes its
 // name off this list. Task 21 removes the list.
 const COMING_IN_PART_2 = [
-  "Free & swaps",
   "Hub and What's on",
 ];
 
@@ -29,7 +29,7 @@ export default function HomePage() {
         <HowItWorks />
         <FeaturedToday />
         <LookingFor />
-        {/* Task 20: <FreeAndSwaps /> */}
+        <FreeAndSwaps />
         <ol aria-label="Homepage sections still to come" className="mt-12 grid gap-4">
           {COMING_IN_PART_2.map((name) => (
             <li
