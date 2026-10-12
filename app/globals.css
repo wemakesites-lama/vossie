@@ -1127,7 +1127,8 @@
   .search-inner {
     max-width: 48rem;
     margin-inline: auto;
-    padding: max(12px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom));
+    padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+      max(32px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   }
 
   .search-form {
@@ -1141,7 +1142,7 @@
   }
 
   /* The whole field shows the focus ring, so the input itself doesn't need one. */
-  .search-form:focus-within {
+  .search-form:has(.search-input:focus) {
     outline: 2.5px solid var(--color-navy);
     outline-offset: 3px;
   }
@@ -1154,6 +1155,12 @@
     color: var(--color-ink);
     font-size: 18px;
     outline: none;
+  }
+
+  /* Chromium and WebKit draw their own clear (x) in a search box. Beside our Close (x) that is two crosses
+     with different jobs. Esc still clears the box in Chromium. */
+  .search-input::-webkit-search-cancel-button {
+    display: none;
   }
 
   .search-section {
@@ -1214,7 +1221,7 @@
     display: flex;
     align-items: center;
     min-height: 52px;
-    padding: 0 16px;
+    padding: 8px 16px;
     border: 1.5px solid var(--color-line);
     border-radius: 14px;
     color: var(--color-navy);

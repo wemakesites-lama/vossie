@@ -22,15 +22,18 @@ const browseHref = (term: string) => `/browse?q=${encodeURIComponent(term)}`;
 export function SearchOverlay({ campuses, categories, trending }: SearchOverlayProps) {
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const trendingHeadingRef = useRef<HTMLHeadingElement>(null);
   const [recent, setRecent] = useState<string[]>([]);
   const choice = useCampusChoice(campuses);
   const { dialogRef, close } = useOverlayDialog("search", () => {
     setRecent(getRecentSearches());
     inputRef.current?.focus();
+    inputRef.current?.select(); // a query kept from last time is selected, so typing replaces it
   });
 
   const campus = choice && choice !== ALL_CAMPUSES ? campuses.find((c) => c.slug === choice) : undefined;
-  const trendingTerms = (campus && trending[campus.slug]) || trending.all || [];
+  const campusTerms = campus ? trending[campus.slug] : undefined;
+  const trendingTerms = campusTerms?.length ? campusTerms : (trending.all ?? []);
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     const term = String(new FormData(event.currentTarget).get("q") ?? "").trim();
@@ -42,8 +45,10 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
     close();
   }
 
-  /** Following any link closes the overlay; search-term links are remembered too. */
+  /** Following any link closes the overlay and remembers a search-term link, unless the click opens a new tab. */
   function onLinkClick(event: MouseEvent<HTMLDialogElement>) {
+    // A click that opens a new tab leaves the overlay open and remembers nothing.
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
     const link = (event.target as HTMLElement).closest("a");
     if (!link) return;
     if (link.dataset.term) addRecentSearch(link.dataset.term);
@@ -66,6 +71,7 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
             placeholder="Textbooks, tech, braids…"
             autoComplete="off"
             enterKeyHint="search"
+            maxLength={100}
             className="search-input"
           />
           <button type="button" onClick={close} aria-label="Close search" className="hdr-icon-btn shrink-0">
@@ -84,6 +90,7 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
                 onClick={() => {
                   clearRecentSearches();
                   setRecent([]);
+                  trendingHeadingRef.current?.focus(); // the Clear button is about to unmount
                 }}
                 className="search-clear"
               >
@@ -104,7 +111,7 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
         )}
 
         <section aria-labelledby={`${id}-trending`} className="search-section">
-          <h2 id={`${id}-trending`} className="search-heading">
+          <h2 ref={trendingHeadingRef} tabIndex={-1} id={`${id}-trending`} className="search-heading">
             {campus ? `Trending at ${campus.name}` : "Trending on Vossie"}
           </h2>
           <ul className="search-chips">
