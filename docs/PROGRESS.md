@@ -24,22 +24,19 @@
 - Every task was reviewed, and a final review of the whole of Part 1 found nothing that needed restructuring.
 - Review screenshots: `docs/progress/part-1/`.
 
+## 2026-10-12: Lama's decisions applied
+These are decisions 13 to 19 in `docs/reference/LANDING-DECISIONS.md`.
+- **JS budget.** It's measured as a host serves it, brotli at quality 5. The shell uses 145.7 KB of the 150 KB, so the performance test passes. Part 2 has about 4 KB of JS to spend.
+- **Contrast.** Small text on the star texture is now white: the footer headings, the menu's "Change" link and the current campus row. Sky stays for large text, icons, pills and the wordmark.
+- **Unchanged by choice:**
+  - the footer wordmark stays sky;
+  - the announcement bar stays flush on the header on phones;
+  - the footer's campuses go into two columns in Part 2.
+- **Dev server.** Tailwind now runs through PostCSS, and the Turbopack dev cache is off. `pnpm dev` shows `globals.css` edits in about 0.1s; before, they never showed. Production CSS is byte-identical.
+- **Checks:** 173 unit tests pass. End to end, 199 pass and 71 are skipped by design, with no failures.
+
 ## Next
-- Lama reviews the Part 1 screenshots and settles the decisions below.
 - Write Part 2 of the plan (the 14 homepage sections) against the real Part 1 code, then build it. The plan's "Handoff to Part 2" section lists what to use and what to add.
-
-## Decisions for Lama
-- **JS budget.** Do we measure JS as the host serves it (brotli, about 146 KB) or as `next start` serves it (gzip, over budget)? Either way, Part 2 needs its own JS allowance.
-- **Small sky text on the star texture** (the footer headings and the menu's "Change" link). It is 4.97:1 on plain navy, but about 4.0:1 where a star sits behind a letter.
-- **Footer wordmark colour:** white in the mockup, sky in the build.
-- **Announcement bar on phones and tablets.** It sits flush on the header, so the pennant hangs from it, as in the mockup. Its tap target therefore touches the pennant's.
-- **Footer height.** It is about 1620px at 1280. Should the campuses go into two columns in Part 2?
-
-## Known issue: the dev server and CSS
-- **Live edits.** While `pnpm dev` runs, edits to `app/globals.css` don't reach the page. Restart the dev server to see them.
-- **Restarts.** Turbopack's dev cache (`.next/dev/cache`) can bring back stale CSS even after a restart. Setting `turbopackFileSystemCacheForDev: false` in `next.config.ts` stops that (tested), at the cost of slower dev starts.
-- **Likely cause.** Live edits are missed with the cache off too, so the likely cause is the `@tailwindcss/turbopack` loader. Next's documented PostCSS setup (`@tailwindcss/postcss`) is the likely fix, but this isn't tested.
-- **Production builds aren't affected.** That covers `pnpm build` and every end-to-end run. All CSS in Part 1 was checked on production builds.
 
 ## Waiting on
 - Eduvos font files and licence confirmation.

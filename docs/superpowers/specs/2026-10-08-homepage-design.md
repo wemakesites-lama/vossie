@@ -121,6 +121,9 @@ Every component uses three font variables, never a font name: `--font-display` (
 - **Spacing:** 4px base. Sections are 72-92px apart on desktop and 52-56px on phones. Page gutters are 24-40px on desktop and 10-16px on phones. Content max width is 1200px.
 - **Borders:** 1.5px. Mostly flat, with no drop shadows except the soft shadow under the pinned crest-only pennant.
 - **Texture:** a four-point-star pattern taken from the crest, as an inline SVG, used only on navy surfaces at 13% sky.
+  - Small text on the texture is white.
+  - Sky is used there only for large text (24px+, or 18.66px+ bold), icons and arrows, solid sky pills, and the decorative wordmark.
+  - The reason: small sky text drops to about 4.0:1 where a star sits behind a letter (decision 14, 2026-10-12).
 - **Pennant:** flat top, straight sides, V-shaped base (`polygon(0 0,100% 0,100% 72%,50% 100%,0 72%)`) with a white edge 7px wide and 14px deeper underneath.
 
 ---
@@ -414,7 +417,7 @@ Measured on a mid-range Android over 4G, matching the audit findings (the demo's
 
 | Measure | Target |
 |---|---|
-| JavaScript on first load | 150KB compressed or less |
+| JavaScript on first load | 150KB or less, brotli-compressed as a host serves it (quality 5; decision 13) |
 | Fonts | 60KB or less (two Latin-subset files) |
 | Whole homepage, first visit | 350KB or less before below-the-fold photos |
 | Largest Contentful Paint | 2.5s or less |

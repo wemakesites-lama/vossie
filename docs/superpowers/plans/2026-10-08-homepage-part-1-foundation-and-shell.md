@@ -8341,15 +8341,16 @@ Part 2 must add:
 - **Install button after hydration.** The button only appears after hydration, and pushes what's below it down by about 60px. That's harmless while the footer sits at the foot of a long page.
 - **Landmark.** The footer's link groups have no `<nav aria-label="Footer">`, because the sign-up shares their grid. Add one when the footer is restructured.
 - **Install pill at 320px.** The label wraps to two lines and the icon narrows slightly. If that matters, give the icon `flex-shrink: 0`.
-- **Colour and contrast (Lama's call).** The mockup's footer headings are sky, and so is the menu's "Change" link. Small sky text measures 4.97:1 on plain navy, but about 4.0:1 where a star of the texture sits behind a letter. The mockup's wordmark is white; the plan and build use sky.
+- **Colour and contrast (decided 2026-10-12, decisions 14 and 15).**
+  - Small text on the star texture is white.
+  - Sky stays for large text, icons, solid sky pills and the wordmark, which stays sky.
+  - Part 2 follows the same rule: for example the Looking For band, the textured cards and any eyebrows on navy.
 
 **From the final review**
 - **JS budget.**
   - **Measured:** a first visit at 390px loads 154,297 B of JavaScript gzipped, against a budget of 153,600 B. The framework is about 132 KB of that (react-dom 72 KB, the router 46 KB). The shell is about 15.5 KB, plus about 6.5 KB for `next/link`, `next/image` and `next/form`.
-  - **How to measure it** is Lama's decision:
-    - as the host serves it, in brotli, where it's about 146 KB at quality 5 and 132 KB at quality 11;
-    - or as `next start` serves it, in gzip.
-  - **Either way, give Part 2 an explicit JS allowance:**
+  - **Decided 2026-10-12 (decision 13):** JS is measured as a host serves it, brotli at quality 5, and `performance.spec.ts` asserts that. The shell is 145.7 KB of the 150 KB.
+  - **Part 2's allowance is about 4 KB of brotli JS,** so:
     - sections stay Server Components;
     - one small shared carousel controller;
     - the hearts as tiny client components.

@@ -15,7 +15,7 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - Accessibility target: WCAG 2.2 AA (spec section 10). Performance budget for a first visit: 150 KB compressed JS, 60 KB fonts, 350 KB before below-the-fold photos (spec section 11).
 
 ## Stack
-- Next.js 16.4 App Router with Cache Components, React 19.3, TypeScript, Tailwind CSS 4.3 (`@tailwindcss/turbopack`)
+- Next.js 16.4 App Router with Cache Components, React 19.3, TypeScript, Tailwind CSS 4.3 through PostCSS (`@tailwindcss/postcss`, pinned to the same version as `tailwindcss`: bump the two together)
 - pnpm 10 only (never npm or yarn)
 - Vitest 5 + Testing Library (unit, next to the code), Playwright + axe (`tests/e2e/`)
 - Next.js docs for the installed version are in `node_modules/next/dist/docs/`. Read them before using a Next API.
@@ -27,6 +27,10 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 ## Brand (Eduvos)
 - Navy `#15305D`, sky `#29ABE2`, sky-dark `#1E7BA8`, panel `#F3F3F3`, pale `#E1F0F7`, ink `#373F41` (the spec's `text` token), muted `#5B6577`, idle `#B9C0CC`.
 - Sky never carries text, icons or thin borders on white. Navy on sky and sky on navy are fine. Links on white use sky-dark.
+- **On the star texture** (`texture-stars`):
+  - Small text is white.
+  - Sky is only for large text (24px+, or 18.66px+ bold), icons and arrows, solid sky pills, and the wordmark.
+  - The reason: a star behind a letter drops small sky text to about 4.0:1.
 - Fonts only through `font-display`, `font-text` and `font-accent` (or `var(--vos-font-*)` in CSS). Never a font name in a component.
 - The crest comes only from `assets/brand/` until Eduvos sends the official SVG.
 - Icons only from `components/icons.tsx`. No emoji as icons.

@@ -20,6 +20,13 @@ The approved mockup screens are in `docs/reference/mockups/` (`home-v2.html` is 
 | 10 | 2026-10-08 | Crest | **Eduvos approved the crest inside the pennant.** Use the current cleaned artwork until the official SVG arrives | Lama |
 | 11 | 2026-10-08 | Photos | **Supplied by Lama after the homepage is built**; placeholders at final sizes until then | Lama |
 | 12 | 2026-10-08 | Package manager | **pnpm** | Lama |
+| 13 | 2026-10-12 | How is the JavaScript budget measured? | **As a host serves it: brotli at quality 5.** The gzip figure from `next start` is logged for comparison. | Part 1 uses 145.7 KB of the 150 KB, and about 132 KB of that is the framework. Part 2 has about 4 KB of JS to spend, so sections stay Server Components. Lama, on Claude's recommendation |
+| 14 | 2026-10-12 | Small sky text on the star texture | **White.** On textured navy, small text is white. Sky stays for large text, icons and arrows, solid sky pills, and the wordmark. | Sky text measured 4.97:1 on plain navy but about 4.0:1 where a star sat behind a letter (WCAG 1.4.3). This changes the footer headings, the menu's "Change" link and the current campus row. Lama, on Claude's recommendation |
+| 15 | 2026-10-12 | Footer wordmark colour | **Sky** (the mockup has white) | With the headings now white, the wordmark carries the footer's sky accent. It's decorative, so contrast rules don't apply. Lama, on Claude's recommendation |
+| 16 | 2026-10-12 | Announcement bar on phones and tablets | **Flush on the header**, so the pennant hangs from it as in the mockup | The two tap targets touch (WCAG 2.5.8 still passes). From the desktop step there is an 8px gap above the quick links. Lama, on Claude's recommendation |
+| 17 | 2026-10-12 | Tall footer (about 1620px at 1280) | **Campuses in two columns, in Part 2** | First narrow the sign-up column, then use `columns: 2` as the mockup does. Lama, on Claude's recommendation |
+| 18 | 2026-10-12 | Tailwind and the dev server | **Tailwind through PostCSS (`@tailwindcss/postcss`), and no Turbopack dev cache** | With the `@tailwindcss/turbopack` loader, `pnpm dev` never showed `globals.css` edits. PostCSS shows them in about 0.1s, and the production CSS is byte-identical. Lama, on Claude's recommendation |
+| 19 | 2026-10-12 | Footer arrows' hover nudge | **Kept** | Mouse only (`hover: hover` and `pointer: fine`). It looked like a 4px misalignment in a desktop screenshot, but it's the hover state. |
 
 ## Still open
 
