@@ -213,6 +213,43 @@ test.describe("footer", () => {
       .toBeLessThanOrEqual(2);
   });
 
+  // FitText refits the wordmark by writing a font size and reading the width straight back. If a transition runs on
+  // font-size, that read sees the old size and the text flips between two sizes on every frame. So the motion off
+  // switches (reduced motion and data saver) must make transitions instant, not just short.
+  async function wordmarkSizes(page: Page) {
+    const wordmark = page.locator(".footer-wordmark-text");
+    // FitText writes an inline font size on its first fit, so this waits for hydration.
+    await expect.poll(() => wordmark.evaluate((element) => element.style.fontSize)).not.toBe("");
+    // Not scrollIntoViewIfNeeded: it waits for the element to hold still, and holding still is what is under test.
+    await wordmark.evaluate((element) => element.scrollIntoView());
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
+    // The computed font size on 30 frames in a row.
+    return wordmark.evaluate(async (element) => {
+      const sizes = new Set<string>();
+      for (let frame = 0; frame < 30; frame += 1) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        sizes.add(getComputedStyle(element).fontSize);
+      }
+      return [...sizes];
+    });
+  }
+
+  test.describe("with reduced motion", () => {
+    test.use({ reducedMotion: "reduce" });
+
+    test("the VOSSIE wordmark holds one size", async ({ page }) => {
+      await page.goto("/");
+      expect(await wordmarkSizes(page)).toHaveLength(1);
+    });
+  });
+
+  test("the VOSSIE wordmark holds one size with data saver on", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("vossie_low_data", "1"));
+    await page.goto("/");
+    await expect(page.locator("html")).toHaveAttribute("data-low-data", "");
+    expect(await wordmarkSizes(page)).toHaveLength(1);
+  });
+
   test("link groups open as accordions on phones", async ({ page }) => {
     test.skip(isTabletOrWider(page), "Phones only");
     await page.goto("/");

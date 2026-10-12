@@ -278,6 +278,9 @@
    Motion off switches (spec section 8): reduced motion and data saver.
    These win because they are !important. Never put !important on a transition or
    animation property anywhere else: an !important declaration inside a layer would beat them.
+   Transitions are 0s, not a tiny duration. transition-property defaults to "all", so any non-zero
+   duration would give every element a transition on every property, and code that measures
+   straight after a style change (FitText) would read the old value.
    --------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -287,7 +290,7 @@
     animation-duration: 1ms !important;
     animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 1ms !important;
+    transition-duration: 0s !important;
     transition-delay: 0s !important;
     scroll-behavior: auto !important;
   }
@@ -300,7 +303,7 @@
   animation-duration: 1ms !important;
   animation-delay: 0s !important;
   animation-iteration-count: 1 !important;
-  transition-duration: 1ms !important;
+  transition-duration: 0s !important;
   transition-delay: 0s !important;
   scroll-behavior: auto !important;
 }

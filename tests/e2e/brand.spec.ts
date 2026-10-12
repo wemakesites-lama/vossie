@@ -43,7 +43,7 @@ test("data saver collapses transitions", async ({ page }) => {
   const bodyTransition = () => page.evaluate(() => getComputedStyle(document.body).transitionDuration);
   expect(await bodyTransition()).toBe("0s");
   await page.evaluate(() => document.documentElement.setAttribute("data-low-data", ""));
-  expect(await bodyTransition()).toBe("0.001s");
+  expect(await bodyTransition()).toBe("0s");
 });
 
 test.describe("with reduced motion", () => {
@@ -51,6 +51,6 @@ test.describe("with reduced motion", () => {
 
   test("transitions collapse", async ({ page }) => {
     await page.goto("/");
-    expect(await page.evaluate(() => getComputedStyle(document.body).transitionDuration)).toBe("0.001s");
+    expect(await page.evaluate(() => getComputedStyle(document.body).transitionDuration)).toBe("0s");
   });
 });
