@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import { ChevronDownIcon, MapPinIcon } from "@/components/icons";
 import { useCampusChoice } from "@/hooks/useCampusChoice";
-import { campusLabel } from "@/lib/campus";
+import { ALL_CAMPUSES, campusLabel } from "@/lib/campus";
 import { cx } from "@/lib/cx";
 import { openOverlay } from "@/lib/overlays";
 import type { Campus } from "@/lib/types";
@@ -21,6 +21,7 @@ export function CampusPill({ campuses, className, style }: CampusPillProps) {
     <button
       type="button"
       aria-haspopup="dialog"
+      data-chosen={choice && choice !== ALL_CAMPUSES ? "" : undefined}
       onClick={(event) => openOverlay("campus", event.currentTarget)}
       className={cx("campus-pill", className)}
       style={style}

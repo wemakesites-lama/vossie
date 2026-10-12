@@ -614,6 +614,13 @@
     font-weight: 600;
   }
 
+  /* A chosen campus fills the pill (the approved mockup's "pill on"). */
+  .campus-pill[data-chosen] {
+    border-color: var(--color-navy);
+    background: var(--color-navy);
+    color: var(--color-white);
+  }
+
   .hdr-pennant-slot {
     position: relative;
     z-index: 2;
@@ -2864,10 +2871,11 @@
     border-radius: inherit;
   }
 
+  /* Top-left, so it's in view on the second card, which only partly shows on phones. */
   .campus-card-tick {
     position: absolute;
     top: 10px;
-    right: 10px;
+    left: 10px;
     z-index: 3;
     width: 28px;
     height: 28px;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, type FocusEvent, type PointerEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type FocusEvent, type PointerEvent } from "react";
 import { CheckIcon, PauseIcon, PlayIcon } from "@/components/icons";
 import { useCampusChoice } from "@/hooks/useCampusChoice";
 import { useChooseCampus } from "@/hooks/useChooseCampus";
@@ -36,13 +36,23 @@ export function CampusChooser({ campuses }: { campuses: readonly Campus[] }) {
   // Two holds, as in the hero: a mouse over the layout, and keyboard focus inside it.
   const [mouseOver, setMouseOver] = useState(false);
   const [focusInside, setFocusInside] = useState(false);
+  // The cycle only runs while the section is on screen, so it never loads photos nobody sees.
+  const wideRef = useRef<HTMLDivElement>(null);
+  const [onScreen, setOnScreen] = useState(false);
+  useEffect(() => {
+    const element = wideRef.current;
+    if (!element) return;
+    const observer = new IntersectionObserver(([entry]) => setOnScreen(entry.isIntersecting));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   const physical = campuses.filter((campus) => !isOnlineCampus(campus));
   const online = campuses.find(isOnlineCampus);
   // Until the cookie has been read (server render and hydration), behave as "all campuses".
   const allChosen = choice === null || choice === ALL_CAMPUSES;
   const canCycle = allChosen && motionAllowed && wide && physical.length > 1;
-  const cycling = canCycle && !paused && !mouseOver && !focusInside && !pageHidden;
+  const cycling = canCycle && onScreen && !paused && !mouseOver && !focusInside && !pageHidden;
 
   useEffect(() => {
     if (!cycling) return;
@@ -54,6 +64,9 @@ export function CampusChooser({ campuses }: { campuses: readonly Campus[] }) {
   const highlighted = allChosen ? near(0) : (campuses.find((campus) => campus.slug === choice) ?? near(0));
   // Only the photo on show and its neighbours mount: the one fading out, and the next one, so it's ready in time.
   const mounted = new Set([highlighted.slug, ...(canCycle ? [near(-1).slug, near(1).slug] : [])]);
+  // The chosen campus comes straight after "All campuses", so its ring is in view without scrolling.
+  const chosen = campuses.find((campus) => campus.slug === choice);
+  const cardOrder = chosen ? [chosen, ...campuses.filter((campus) => campus !== chosen)] : campuses;
 
   function choose(next: CampusChoice) {
     setPaused(true);
@@ -102,6 +115,7 @@ export function CampusChooser({ campuses }: { campuses: readonly Campus[] }) {
   return (
     <>
       <div
+        ref={wideRef}
         className="campus-chooser-wide"
         onPointerEnter={onPointerEnter}
         onPointerLeave={onPointerLeave}
@@ -175,13 +189,13 @@ export function CampusChooser({ campuses }: { campuses: readonly Campus[] }) {
             {choice === ALL_CAMPUSES && <CheckIcon className="campus-card-tick" />}
           </button>
         </li>
-        {campuses.map((campus) => (
+        {cardOrder.map((campus) => (
           <li key={campus.slug}>
             <button
               type="button"
               onClick={() => choose(campus.slug)}
               aria-current={choice === campus.slug ? "true" : undefined}
-              className={cx("campus-card", choice === campus.slug && "campus-card-on")}
+              className={cx("campus-card",choice === campus.slug && "campus-card-on")}
             >
               <Photo image={{ src: campus.image.src, alt: "" }} sizes="(orientation: landscape) and (max-height: 29.99rem) 28vw, 60vw" className="campus-card-photo" />
               <span className="campus-card-name">{campus.name}</span>

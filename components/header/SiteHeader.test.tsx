@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { setCampusChoice } from "@/lib/campus";
+import { ALL_CAMPUSES, setCampusChoice } from "@/lib/campus";
 import { onOverlayOpen } from "@/lib/overlays";
 import { SAVED_KEY } from "@/lib/saved";
 import type { Campus } from "@/lib/types";
@@ -124,6 +124,21 @@ describe("SiteHeader", () => {
     renderHeader();
     expect(screen.getByRole("button", { name: "Shopping at Pretoria" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Saved, 2 items" })).toBeInTheDocument();
+  });
+
+  it("marks the campus pill once a campus is chosen, so it can be filled", () => {
+    setCampusChoice("midrand");
+    renderHeader();
+    expect(screen.getByRole("button", { name: "Shopping at Midrand" })).toHaveAttribute("data-chosen");
+  });
+
+  it("leaves the campus pill plain with no choice, or with All campuses", () => {
+    const { unmount } = render(<SiteHeader campuses={campuses} />);
+    expect(screen.getByRole("button", { name: /^Shopping at/ })).not.toHaveAttribute("data-chosen");
+    unmount();
+    setCampusChoice(ALL_CAMPUSES);
+    render(<SiteHeader campuses={campuses} />);
+    expect(screen.getByRole("button", { name: "Shopping at All campuses" })).not.toHaveAttribute("data-chosen");
   });
 
   it("lets a modified click on the home link through, so it can open a new tab", () => {
