@@ -55,7 +55,7 @@ No other installs are needed.
 | Fixture images | `campuses.ts` and `categories.ts` point at `/placeholders/…svg` files that don't exist yet. Task 5 creates them |
 | CSS in dev | Tailwind runs through PostCSS, so `pnpm dev` shows `globals.css` edits within a second |
 | `next/image` | A `src` ending in `.svg` is served unoptimized automatically (docs). `fill` needs a positioned parent. Use `fetchPriority`/`loading`, not the deprecated `priority` |
-| `cookies()` | It must be awaited inside `<Suspense>` for the page to stay prerendered. After awaiting it, a component renders per request and may read the clock (docs: Caching → "Random values and timestamps") |
+| `cookies()` | It must be awaited inside `<Suspense>` for the page to stay prerendered. **Corrected during the build:** awaiting it is not enough to read the clock. With partial prefetching on, Next still logs "unstable value new Date()" on every request, so call `await connection()` from `next/server` before the clock read (docs: Caching → "Random values and timestamps") |
 | `catchError` | Stable in Next 16.3+ for component error boundaries, but it ships client JavaScript. Part 2 catches data errors on the server instead (plan decision 6 below) |
 | React `cache()` | Exported in both the server build and the client build that Vitest uses (it passes through there) |
 | Test setup | `vitest.setup.ts` mocks `next/navigation` (its spies can't be asserted on), `next/image` (it drops `fill`, `sizes` and `fetchPriority`) and `next/form`. A test that asserts on the router mocks `next/navigation` in its own file with `vi.hoisted` spies |
@@ -146,6 +146,54 @@ In this plan, "plan decision N" means this list. "Decision N" on its own means a
 - **Recording.** Tasks marked **JS ledger** (11, 12, 13, 15, 16 and 25) end by running `pnpm e2e tests/e2e/performance.spec.ts` and reporting the logged `scriptBrotli` value. Client code written in earlier tasks only reaches the homepage when a section uses it, so the first entry is Task 11's.
 - **The stop rule.** If `scriptBrotli` passes **152,000 B** (1.6 KB left), stop after that task's commit and report. Don't cut features to fit; that's Lama's decision.
 - **First saving to propose:** the search overlay's `next/form` replaced by a plain `<form>` plus `router.push()`. Measure it before proposing it.
+
+**As built** (recorded in each commit message):
+
+| Task | `scriptBrotli` | Added |
+|---|---|---|
+| Start | 145,671 B | |
+| 11, hero | 147,972 B | +2,301 B |
+| 12, context strip | 149,115 B | +1,143 B |
+| 13, Shop by category (carousel) | 149,697 B | +582 B |
+| Review fixes, Tasks 8 to 11 | 149,774 B | +77 B |
+| 15, Shop by campus | 150,809 B | +1,035 B |
+| 16, Just listed | 151,661 B | +852 B |
+| Review fixes, Tasks 12 to 21 | 151,705 B | +44 B |
+
+The final figure is 1,895 B under the limit and 295 B under the stop line, so the stop rule never fired. The estimate of about 4.5 KB came in at 6.0 KB.
+
+## Changes made during the build (2026-10-12)
+
+The tasks below were built as written, except for these. Every change is in a commit message.
+
+- **Who commits.** The auto-mode permission check blocked an implementer's commit at Task 6. From then on implementers left their work uncommitted, and the controller checked it and committed it (Lama's choice).
+- **Reviews.** Lama asked for one combined reviewer per task. In the build, implementers' code was checked against the plan by the controller after each task, and three reviewers covered Tasks 8 to 11, 12 to 16 and 17 to 21. Their fixes are commits f8b20ab, 859adf8 and fff5239:
+  - **Hero:**
+    - Play works while the toggle has focus.
+    - Landscape phones cap the photo.
+    - The cross-fade keeps the old photo underneath.
+    - Reduced motion still preloads the photos.
+  - **Carousels, tiles and cards:**
+    - The carousel re-measures when its slides change.
+    - Focus rings on photo tiles and cards are drawn above the photo, with a high-contrast fallback.
+    - The strip's scroll row no longer clips rings.
+    - Landscape phones halve the carousel items, use four-card rows and get image `sizes` to match.
+  - **Section content:**
+    - Just listed resets to the campus view on every campus change.
+    - Featured only names a campus when every seller is from it.
+    - What's on shows upcoming events only.
+  - **Hub banner:** its gradient keeps the label at 4.5:1, and it handles the notch.
+  - **Skeletons:** they match their content's height.
+- **Plan bugs found by implementers:**
+  - Name computation trims each element's own text, so spaces sit outside screen-reader spans (Tasks 8, 15, 21).
+  - `pnpm lint` rejects a plain `<a>` to an app route (Task 9's test).
+  - The clock needs `connection()`; see the `cookies()` row above (Tasks 18, 21).
+  - Chromium names the campus buttons "Midrand , 214 live listings", so the e2e test uses a pattern (Task 24).
+- **Small polish:**
+  - `text-wrap: balance` on the strip label, the Looking For heading and wrapped campus names.
+  - The Collections divider moved onto the link, so hover doesn't flicker.
+  - The Hub banner's placeholder art has no label.
+  - The footer at 1280 went from 1,597px to 1,292px.
 
 ## Conventions for every task
 
@@ -6586,7 +6634,9 @@ export function FeaturedToday() {
 
 export async function FeaturedTodayContent() {
   const { campus } = await getViewerContext();
-  // The cookie read above makes this a per-request render, where reading the clock is allowed.
+  // The cookie read isn't enough for Next to allow a clock read (it still logs "unstable value new Date()" with
+  // partial prefetching on). connection() defers the rest of this render to the request, as Next's docs ask.
+  await connection();
   const day = sastToday();
   const data = await Promise.all([getFeatured({ campus, day }), getCampuses()]).catch(() => null);
   if (!data) {
@@ -6798,9 +6848,17 @@ Append to `app/globals.css`:
       box-shadow: none;
     }
 
-    .seller-card:has(.seller-link:focus-visible) {
-      outline: 2.5px solid var(--focus-ring, var(--color-navy));
-      outline-offset: -4px;
+    /* Drawn over the photo as a navy ring with a white edge inside it, so it shows on any picture (WCAG 1.4.11). */
+    .seller-card:has(.seller-link:focus-visible)::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      border-radius: inherit;
+      box-shadow:
+        inset 0 0 0 3px var(--color-navy),
+        inset 0 0 0 5px var(--color-white);
+      pointer-events: none;
     }
   }
 
@@ -7520,9 +7578,17 @@ Append to `app/globals.css`:
       box-shadow: none;
     }
 
-    .free-card:has(.free-card-link:focus-visible) {
-      outline: 2.5px solid var(--focus-ring, var(--color-navy));
-      outline-offset: -4px;
+    /* Drawn over the photo as a navy ring with a white edge inside it, so it shows on any picture (WCAG 1.4.11). */
+    .free-card:has(.free-card-link:focus-visible)::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      border-radius: inherit;
+      box-shadow:
+        inset 0 0 0 3px var(--color-navy),
+        inset 0 0 0 5px var(--color-white);
+      pointer-events: none;
     }
   }
 
