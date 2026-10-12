@@ -29,6 +29,7 @@ test.describe("placeholder routes", () => {
       const response = await page.goto(path);
       expect(response?.status()).toBe(200);
       await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
+      await expect(page).toHaveTitle(`${title} · Vossie`);
       await expect(page.getByText("Coming in the next stage")).toBeVisible();
       await expect(page.getByRole("banner")).toBeVisible();
       await expect(page.getByRole("contentinfo")).toBeAttached();
@@ -39,8 +40,10 @@ test.describe("placeholder routes", () => {
     onlyAtPhoneAndDesktop();
     await page.goto("/c/atlantis");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
+    await expect(page).toHaveTitle("Page not found · Vossie");
     await page.goto("/categories/spaceships");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
+    await expect(page).toHaveTitle("Page not found · Vossie");
   });
 
   test("a made-up path is a real 404", async ({ page }) => {
@@ -48,5 +51,6 @@ test.describe("placeholder routes", () => {
     const response = await page.goto("/definitely-not-a-page");
     expect(response?.status()).toBe(404);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
+    await expect(page).toHaveTitle("Page not found · Vossie");
   });
 });
