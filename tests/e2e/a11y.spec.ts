@@ -58,3 +58,23 @@ test("a placeholder page", async ({ page }) => {
   await page.goto("/privacy");
   expect(await seriousIssues(page)).toEqual([]);
 });
+
+test("the homepage with a campus that has nothing new", async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: "vossie_campus", value: "mbombela", url: baseURL! }]);
+  await page.goto("/");
+  await expect(page.getByText("Nothing new at Mbombela yet")).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("the homepage for a returning visitor", async ({ page }) => {
+  await page.goto("/listings/l-001");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("vossie_recently_viewed"))).not.toBeNull();
+  await page.goto("/");
+  await expect(page.getByRole("region", { name: "Pick up where you left off" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("a listing page", async ({ page }) => {
+  await page.goto("/listings/l-001");
+  expect(await seriousIssues(page)).toEqual([]);
+});
