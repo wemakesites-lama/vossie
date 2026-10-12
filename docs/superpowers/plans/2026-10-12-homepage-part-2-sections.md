@@ -6791,14 +6791,17 @@ Append to `app/globals.css`:
     z-index: 1;
   }
 
-  .seller-link:focus-visible {
-    outline: none;
-    box-shadow: none;
-  }
+  /* Only where :has() works: elsewhere the link keeps its own ring. */
+  @supports selector(:has(*)) {
+    .seller-link:focus-visible {
+      outline: none;
+      box-shadow: none;
+    }
 
-  .seller-card:has(.seller-link:focus-visible) {
-    outline: 2.5px solid var(--focus-ring, var(--color-navy));
-    outline-offset: -4px;
+    .seller-card:has(.seller-link:focus-visible) {
+      outline: 2.5px solid var(--focus-ring, var(--color-navy));
+      outline-offset: -4px;
+    }
   }
 
   .seller-tagline {
@@ -7510,14 +7513,17 @@ Append to `app/globals.css`:
     z-index: 1;
   }
 
-  .free-card-link:focus-visible {
-    outline: none;
-    box-shadow: none;
-  }
+  /* Only where :has() works: elsewhere the link keeps its own ring. */
+  @supports selector(:has(*)) {
+    .free-card-link:focus-visible {
+      outline: none;
+      box-shadow: none;
+    }
 
-  .free-card:has(.free-card-link:focus-visible) {
-    outline: 2.5px solid var(--focus-ring, var(--color-navy));
-    outline-offset: -4px;
+    .free-card:has(.free-card-link:focus-visible) {
+      outline: 2.5px solid var(--focus-ring, var(--color-navy));
+      outline-offset: -4px;
+    }
   }
 
   .free-card-meta {
