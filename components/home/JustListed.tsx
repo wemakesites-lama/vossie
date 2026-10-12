@@ -40,7 +40,7 @@ export async function JustListedContent() {
   if (!data) {
     return (
       <>
-        <SectionHeader id="just-listed" eyebrow="Just listed" title="New listings" />
+        <SectionHeader id="just-listed" eyebrow="Just listed" title="New listings" link={SEE_ALL} />
         <SectionError id="just-listed" title="Just listed" />
       </>
     );

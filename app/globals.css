@@ -1717,7 +1717,7 @@
   .section-head {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-end;
+    align-items: last baseline;
     justify-content: space-between;
     gap: 12px 20px;
   }
@@ -2309,6 +2309,9 @@
     min-width: 0;
     overflow-x: auto;
     scrollbar-width: none;
+    /* Room for focus rings inside the scroll row, which clips on both axes; the margin gives the space back. */
+    padding: 8px;
+    margin: -8px;
   }
 
   .context-row::-webkit-scrollbar {
@@ -2870,14 +2873,15 @@
     /* Idle names use the darker idle grey, which keeps 3:1 for large text (plan decision 14). */
     .campus-name {
       position: relative;
-      display: inline-flex;
-      align-items: flex-start;
+      display: inline-block;
       min-height: 44px;
       color: var(--color-idle-text);
       font-family: var(--vos-font-display);
       font-size: var(--text-list);
       line-height: 1.02;
       text-align: inherit;
+      /* A name that fits on one line but not with its count would leave the count alone on the next line. */
+      text-wrap: balance;
       text-transform: uppercase;
     }
 
@@ -2898,12 +2902,13 @@
 
     /* Small text, so muted (5.9:1), not idle grey. */
     .campus-count {
-      margin-left: 5px;
+      /* No margin: the space before the count is a real space now that the name is not a flex container. */
       color: var(--color-muted);
       font-family: var(--vos-font-text);
       font-size: 11px;
       font-weight: 600;
       line-height: 1.6;
+      vertical-align: top;
     }
 
     .campus-name-on .campus-count {
@@ -3548,5 +3553,53 @@
     .looking-for-copy {
       font-size: 15px;
     }
+  }
+}
+
+/* --- Homepage: focus rings over photos (review of Tasks 12 to 16) --- */
+@layer components {
+  /* Tiles and cards whose whole face is a link or button: the ring is drawn above the photo and its shade, as a
+     white line inside a navy one, so it shows on any picture (WCAG 2.4.7 and 1.4.11). */
+  .category-tile:focus-visible,
+  .campus-card:focus-visible {
+    outline: none;
+  }
+
+  .category-tile:focus-visible::after,
+  .campus-card:focus-visible::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    border-radius: inherit;
+    box-shadow:
+      inset 0 0 0 2.5px var(--color-white),
+      inset 0 0 0 5px var(--color-navy);
+    pointer-events: none;
+  }
+
+  /* High-contrast modes drop box-shadows, so these rings (and the cards' over-photo rings) become a system-colour
+     border there instead. */
+  @media (forced-colors: active) {
+    .category-tile:focus-visible::after,
+    .campus-card:focus-visible::after,
+    .seller-card:has(.seller-link:focus-visible)::after,
+    .free-card:has(.free-card-link:focus-visible)::after {
+      border: 3px solid CanvasText;
+    }
+  }
+}
+
+/* --- Homepage: landscape phones (review of Tasks 12 to 16) ---
+   Landscape phones keep the phone layout (spec section 5), but the phone sizes are shares of the width, so on a
+   wide, short screen every card would be taller than the screen. Halve the carousel items and put four cards in
+   a row. */
+@media (orientation: landscape) and (max-height: 29.99rem) {
+  .carousel-track > li {
+    width: calc(var(--carousel-item, 70%) * 0.5);
+  }
+
+  .listing-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

@@ -11,7 +11,7 @@ export function ListingCard({ listing, campusName }: { listing: Listing; campusN
       <Photo
         image={{ src: listing.image.src, alt: "" }}
         ratio="1 / 1"
-        sizes="(min-width: 64rem) 220px, (min-width: 48rem) 30vw, 46vw"
+        sizes="(min-width: 64rem) and (min-height: 30rem) 220px, (min-width: 48rem) and (min-height: 30rem) 30vw, 46vw"
         className="listing-photo"
       />
       <h3 className="listing-title">

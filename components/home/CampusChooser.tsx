@@ -122,8 +122,8 @@ export function CampusChooser({ campuses }: { campuses: readonly Campus[] }) {
               ) : null,
             )}
             {canCycle && (
-              // A new key restarts the bar's 4-second fill at each step.
-              <span key={step} className="campus-progress" data-running={cycling ? "" : undefined} />
+              // A new key restarts the bar's 4-second fill at each step, and again when a hold ends, in step with the timer.
+              <span key={cycling ? step : `held-${step}`} className="campus-progress" data-running={cycling ? "" : undefined} />
             )}
           </div>
           {canCycle && (

@@ -162,7 +162,7 @@ export function HeroRotator({ slides, sentence, chip }: HeroRotatorProps) {
             <div key={slide.id} className={cx("hero-photo", n === index && "hero-photo-active")} inert={n !== index}>
               <Photo
                 image={slide.image}
-                sizes="(min-width: 75rem) 744px, (min-width: 48rem) 62vw, 100vw"
+                sizes="(min-width: 75rem) and (min-height: 30rem) 744px, (min-width: 48rem) and (min-height: 30rem) 62vw, 100vw"
                 priority={n === 0}
                 className="hero-photo-img"
               />

@@ -33,7 +33,7 @@ export async function FeaturedTodayContent() {
   if (!data) {
     return (
       <FeaturedFrame>
-        <SectionHeader id="featured" eyebrow="Featured today" title="Hustles on campus" />
+        <SectionHeader id="featured" eyebrow="Featured today" title="Hustles on campus" link={HOW_WE_PICK} />
         <SectionError id="featured" title="Featured today" />
       </FeaturedFrame>
     );
@@ -75,7 +75,7 @@ function SellerCard({ seller, campusName }: { seller: Seller; campusName: string
   return (
     <article className="seller-card">
       <span className="seller-media">
-        <Photo image={seller.image} ratio="4 / 3" sizes="(min-width: 64rem) 270px, (min-width: 48rem) 40vw, 64vw" />
+        <Photo image={seller.image} ratio="4 / 3" sizes="(min-width: 64rem) and (min-height: 30rem) 270px, (min-width: 48rem) and (min-height: 30rem) 40vw, 64vw" />
         <span className="seller-tag">Featured</span>
       </span>
       <div className="seller-body">

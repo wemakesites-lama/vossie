@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { JustListedContent, JustListedSkeleton } from "./JustListed";
+import { JustListedViews } from "./JustListedViews";
 
 const viewer = vi.hoisted(() => ({ campus: "midrand" }));
 const listings = vi.hoisted(() => ({ failing: false }));
@@ -61,6 +62,23 @@ describe("Just listed (spec 7.8)", () => {
     expect(heading()).toHaveTextContent("New on all campuses");
     expect(heading()).toHaveFocus();
     expect(screen.getAllByRole("article")).toHaveLength(10);
+  });
+
+  it("goes back to the campus view whenever the campus changes, even back to an earlier one", () => {
+    const campusView = <p>Campus grid</p>;
+    const allView = <p>All grid</p>;
+    const link = { href: "/browse", label: "See all" };
+    const views = (campusName: string) => (
+      <JustListedViews campusName={campusName} campusCount={1} campusView={campusView} allView={allView} link={link} />
+    );
+    const { rerender } = render(views("Midrand"));
+    fireEvent.click(screen.getByRole("button", { name: "All campuses" }));
+    expect(screen.getByText("All grid")).toBeInTheDocument();
+    rerender(views("Pretoria"));
+    expect(screen.getByText("Campus grid")).toBeInTheDocument();
+    rerender(views("Midrand"));
+    expect(screen.getByText("Campus grid")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("New at Midrand");
   });
 
   it("says saves stay on this device for now", async () => {

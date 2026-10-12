@@ -17,20 +17,19 @@ type JustListedViewsProps = {
 
 /** Just listed's heading, the [Campus | All campuses] switch and the grid on show (spec 7.8). */
 export function JustListedViews({ campusName, campusCount, campusView, allView, link }: JustListedViewsProps) {
-  // Back to the campus view whenever the campus changes. Derived, not keyed: remounting would drop the heading,
+  // Back to the campus view whenever the campus changes, including back to an earlier one. Reset during render
+  // (React's "storing information from previous renders"), not by remounting: a remount would drop the heading,
   // which has keyboard focus after a choice in Shop by campus.
-  const [picked, setPicked] = useState<{ campusName: string | null; scope: Scope }>({
-    campusName,
-    scope: "campus",
-  });
-  const scope: Scope = campusName === null ? "all" : picked.campusName === campusName ? picked.scope : "campus";
-
-  function choose(next: Scope) {
-    setPicked({ campusName, scope: next });
+  const [scopeChoice, setScopeChoice] = useState<Scope>("campus");
+  const [shownFor, setShownFor] = useState(campusName);
+  if (shownFor !== campusName) {
+    setShownFor(campusName);
+    setScopeChoice("campus");
   }
+  const scope: Scope = campusName === null ? "all" : scopeChoice;
 
   function showAllFromEmpty() {
-    choose("all");
+    setScopeChoice("all");
     // The button goes with the empty state, so focus moves to the heading rather than dropping to the page.
     document.getElementById("just-listed-title")?.focus();
   }
@@ -63,12 +62,12 @@ export function JustListedViews({ campusName, campusCount, campusView, allView, 
             <button
               type="button"
               aria-pressed={scope === "campus"}
-              onClick={() => choose("campus")}
+              onClick={() => setScopeChoice("campus")}
               className="scope-switch-campus"
             >
               {campusName}
             </button>
-            <button type="button" aria-pressed={scope === "all"} onClick={() => choose("all")}>
+            <button type="button" aria-pressed={scope === "all"} onClick={() => setScopeChoice("all")}>
               All campuses
             </button>
           </div>
