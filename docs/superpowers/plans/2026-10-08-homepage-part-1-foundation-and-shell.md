@@ -7524,6 +7524,13 @@ These cover spec section 15 for the shell: header states at every size, keyboard
 - **Status regions.** Never query `getByRole("status")` at page level. The toast region and the footer sign-up each have one.
 - **Esc in a search box.** In a search field that has text, Chromium's first Esc clears the text and the second closes the overlay.
 - **Tab cycling.** Tabbing out of a modal stops once on `document.body`, where focus goes to the browser's own UI. A focus-trap check must allow `body` and only fail on an element outside the dialog, as the menu test does.
+- **Recent, scoped.** In the search test, "calculator" also matches the trending chip "Scientific calculator". So the committed test looks for the Recent chip inside the Recent region, with an exact name.
+- **Added after the final review:**
+  - a privacy test: no `/browse?q=` request in the two seconds after search opens;
+  - a menu-to-picker focus-chain test;
+  - tab-title checks on every placeholder page and on the 404s.
+
+  The committed spec files are the source of truth.
 
 **Files:**
 - Create: `tests/e2e/shell.spec.ts`, `tests/e2e/responsive.spec.ts`, `tests/e2e/a11y.spec.ts`, `tests/e2e/performance.spec.ts`, `tests/e2e/screenshots.spec.ts`
@@ -8231,6 +8238,10 @@ Part 2 builds the homepage sections (spec section 7.3 to 7.13) on top of this sh
 - **Components:**
   - `Pennant`, `NavLink`, the icon set and the `.sheet-dialog` sheet/popover styles.
   - The tokens (`text-hero`, `text-section`, `eyebrow`, `btn`, `surface-navy`, `texture-stars`, `rounded-panel`/`card`/`strip`).
+  - `.icon-btn` (the 44px round icon button) and `--color-field` (input borders, 3.4:1 on white).
+- **Helpers:**
+  - `isPlainClick(event)` (`lib/click.ts`) for any handler that must leave modified clicks alone.
+  - `WIDE_QUERY` and `DESK_QUERY` (`lib/breakpoints.ts`) for `matchMedia`. Keep them in step with the `wide:` and `desk:` variants.
 
 Part 2 must add:
 
@@ -8305,10 +8316,9 @@ Part 2 must add:
   - The overlay submits the raw field value, limited by `maxLength={100}`, while Recent stores the tidied term.
   - If `/browse` ever records terms from its URL, cap them in `addRecentSearch` too.
 
-**Announcement bar, once messages come from data**
-- **Keep the active index in range.** Clamp it (`index % items.length`) or reset it when the list of messages changes.
-- **Hidden tabs.** `pageHidden` starts false, so a tab opened in the background keeps its throttled timer until the first visibility change. A `useSyncExternalStore` on `visibilitychange` would start it right.
+**Announcement bar**
 - **Before hydration.** The server HTML shows "Play announcements" until hydration flips it to "Pause", because `useMotionAllowed()` has a "not allowed" server snapshot.
+- **Already handled.** The active index is clamped when the list gets shorter, and a tab hidden at load doesn't rotate (Task 16 fixes).
 
 **Navigation**
 - **`aria-current` on 404 URLs.**
@@ -8332,4 +8342,27 @@ Part 2 must add:
 - **Landmark.** The footer's link groups have no `<nav aria-label="Footer">`, because the sign-up shares their grid. Add one when the footer is restructured.
 - **Install pill at 320px.** The label wraps to two lines and the icon narrows slightly. If that matters, give the icon `flex-shrink: 0`.
 - **Colour and contrast (Lama's call).** The mockup's footer headings are sky, and so is the menu's "Change" link. Small sky text measures 4.97:1 on plain navy, but about 4.0:1 where a star of the texture sits behind a letter. The mockup's wordmark is white; the plan and build use sky.
+
+**From the final review**
+- **JS budget.**
+  - **Measured:** a first visit at 390px loads 154,297 B of JavaScript gzipped, against a budget of 153,600 B. The framework is about 132 KB of that (react-dom 72 KB, the router 46 KB). The shell is about 15.5 KB, plus about 6.5 KB for `next/link`, `next/image` and `next/form`.
+  - **How to measure it** is Lama's decision:
+    - as the host serves it, in brotli, where it's about 146 KB at quality 5 and 132 KB at quality 11;
+    - or as `next start` serves it, in gzip.
+  - **Either way, give Part 2 an explicit JS allowance:**
+    - sections stay Server Components;
+    - one small shared carousel controller;
+    - the hearts as tiny client components.
+- **Error states.**
+  - Nothing yet: there's no `app/error.tsx` and no `app/global-error.tsx`. Spec section 9 asks for an error state per section, and Next 16.4 offers `catchError` from `next/error` for component-level boundaries.
+  - Once Supabase arrives, make the shell's data fail soft too. The layout awaits all four calls.
+- **Saved hearts.** Add `useIsSaved(id)` with a boolean snapshot. `readSavedIds()` returns a new array on every call, so `useSyncExternalStore` can't read it directly.
+- **Campus before hydration.** `CampusPill` and `ShopYourCampusLink` show their defaults until hydration. Part 2's above-the-fold hero chip should read the campus on the server, inside Suspense, to avoid a label swap (CLS) and wrong-link taps on slow connections.
+- **Scroll after navigation.** Next's post-navigation scroll check reads only `html { scroll-padding-top }`. With the accepted `scroll-margin` approach, a client navigation that starts within about 120px of the top can leave the new page's top under the sticky header. Check this against the Part 2 hero.
+- **Data saver and prefetching.** The App Router's prefetching ignores Save-Data. Decide whether data saver should turn it off too, for example `prefetch={false}` on the footer's link lists.
+- **"All campuses" cookie.** Choosing "All campuses" stores `vossie_campus=all` for a year.
+  - Keep it if Part 2 tells "never chose" apart from "chose all", for example for first-visit prompts.
+  - Otherwise clear the cookie instead, since no cookie already means all campuses.
+- **Unknown slugs on first visit.** The first request to an unknown campus or category slug returns 200, because `notFound()` streams after the shell. Repeats return 404, and both carry `noindex`. If a first-hit 404 matters for SEO, add a request-time check in Proxy.
+- **`app/page.tsx`** uses `sm:px-4`. Part 2 replaces this file, so don't carry `sm:` over.
 
