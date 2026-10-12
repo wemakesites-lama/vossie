@@ -9,16 +9,10 @@ const nextConfig: NextConfig = {
   },
   // Always build from scratch. Once, a cached build kept serving stale Tailwind CSS after
   // globals.css changed, and the end-to-end tests build before every run.
+  // The dev cache is off for the same reason: a cached dev session served stale CSS after globals.css changed.
   experimental: {
     turbopackFileSystemCacheForBuild: false,
-  },
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
+    turbopackFileSystemCacheForDev: false,
   },
 };
 
