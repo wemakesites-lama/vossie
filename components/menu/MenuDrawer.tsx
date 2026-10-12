@@ -9,6 +9,7 @@ import { useOverlayDialog } from "@/components/ui/useOverlayDialog";
 import { useCampusChoice } from "@/hooks/useCampusChoice";
 import { useLowData } from "@/hooks/useLowData";
 import { campusLabel } from "@/lib/campus";
+import { isPlainClick } from "@/lib/click";
 import { setLowData } from "@/lib/low-data";
 import { openOverlay } from "@/lib/overlays";
 import type { Campus, Category } from "@/lib/types";
@@ -58,7 +59,7 @@ export function MenuDrawer({ campuses, categories }: MenuDrawerProps) {
 
   /** Links navigate in place, so close the menu as soon as one is followed. A click that opens a new tab leaves it open. */
   function closeOnLink(event: MouseEvent<HTMLDialogElement>) {
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    if (!isPlainClick(event)) return;
     if ((event.target as HTMLElement).closest("a")) close();
   }
 

@@ -7,6 +7,7 @@ import { Pennant } from "@/components/brand/Pennant";
 import { MenuIcon, SearchIcon, UserIcon } from "@/components/icons";
 import { NavLink } from "@/components/ui/NavLink";
 import { isMotionAllowedNow } from "@/hooks/useMotionAllowed";
+import { isPlainClick } from "@/lib/click";
 import { openOverlay } from "@/lib/overlays";
 import type { Campus } from "@/lib/types";
 import { CampusPill } from "./CampusPill";
@@ -29,7 +30,7 @@ export function SiteHeader({ campuses }: { campuses: readonly Campus[] }) {
 
   function goHome(event: MouseEvent<HTMLAnchorElement>) {
     // Let modified clicks (new tab, new window) behave as usual.
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    if (!isPlainClick(event)) return;
     if (window.location.pathname !== "/") return;
     event.preventDefault();
     window.scrollTo({ top: 0, behavior: isMotionAllowedNow() ? "smooth" : "auto" });
@@ -82,7 +83,7 @@ export function SiteHeader({ campuses }: { campuses: readonly Campus[] }) {
               aria-label="Search"
               aria-haspopup="dialog"
               onClick={(event) => openOverlay("search", event.currentTarget)}
-              className="hdr-item hdr-icon-btn wide:hidden"
+              className="hdr-item icon-btn wide:hidden"
               style={stagger(1)}
             >
               <SearchIcon />
@@ -114,12 +115,12 @@ export function SiteHeader({ campuses }: { campuses: readonly Campus[] }) {
               aria-label="Search"
               aria-haspopup="dialog"
               onClick={(event) => openOverlay("search", event.currentTarget)}
-              className="hdr-item hdr-icon-btn hidden wide:inline-grid"
+              className="hdr-item icon-btn hidden wide:inline-grid"
               style={stagger(2)}
             >
               <SearchIcon />
             </button>
-            <Link href="/account" aria-label="Account" className="hdr-item hdr-icon-btn" style={stagger(3)}>
+            <Link href="/account" aria-label="Account" className="hdr-item icon-btn" style={stagger(3)}>
               <UserIcon />
             </Link>
             <SavedLink className="hdr-item" style={stagger(4)} />

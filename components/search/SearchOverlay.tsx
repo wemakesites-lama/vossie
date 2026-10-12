@@ -7,6 +7,7 @@ import { ClockIcon, CloseIcon, SearchIcon, TrendingIcon } from "@/components/ico
 import { useOverlayDialog } from "@/components/ui/useOverlayDialog";
 import { useCampusChoice } from "@/hooks/useCampusChoice";
 import { ALL_CAMPUSES } from "@/lib/campus";
+import { isPlainClick } from "@/lib/click";
 import { addRecentSearch, clearRecentSearches, getRecentSearches } from "@/lib/recent-searches";
 import type { Campus, Category, TrendingSearches } from "@/lib/types";
 
@@ -50,7 +51,7 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
   /** Following any link closes the overlay and remembers a search-term link, unless the click opens a new tab. */
   function onLinkClick(event: MouseEvent<HTMLDialogElement>) {
     // A click that opens a new tab leaves the overlay open and remembers nothing.
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    if (!isPlainClick(event)) return;
     const link = (event.target as HTMLElement).closest("a");
     if (!link) return;
     if (link.dataset.term) addRecentSearch(link.dataset.term);
@@ -76,7 +77,7 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
             maxLength={100}
             className="search-input"
           />
-          <button type="button" onClick={close} aria-label="Close search" className="hdr-icon-btn shrink-0">
+          <button type="button" onClick={close} aria-label="Close search" className="icon-btn shrink-0">
             <CloseIcon />
           </button>
         </Form>

@@ -7,7 +7,8 @@
 
 /* "wide" = tablet and up, but only when the screen is also tall enough.
    Landscape phones (e.g. 844 × 390) keep the phone layout (spec section 5).
-   Use wide: in class names instead of md:, and the same media query in CSS. */
+   Use wide: in class names instead of md:, and the same media query in CSS.
+   Code that asks matchMedia uses WIDE_QUERY in lib/breakpoints.ts: keep the two in step. */
 @custom-variant wide {
   @media (min-width: 48rem) and (min-height: 30rem) {
     @slot;
@@ -17,7 +18,8 @@
 /* "desk" = desktop (64rem and up), with the same height guard as "wide".
    Declared after "wide", so desk: rules come later in the CSS and win over wide: ones.
    For the desktop value of anything that also has a wide: value, use desk:, never lg: —
-   Tailwind puts its built-in lg: rules before custom variants, so wide: would beat lg:. */
+   Tailwind puts its built-in lg: rules before custom variants, so wide: would beat lg:.
+   Code that asks matchMedia uses DESK_QUERY in lib/breakpoints.ts: keep the two in step. */
 @custom-variant desk {
   @media (min-width: 64rem) and (min-height: 30rem) {
     @slot;
@@ -259,6 +261,16 @@
 
   .btn-outline {
     border: 1.5px solid currentColor;
+  }
+
+  /* A round 44px icon button: the header, the search and campus sheets and the install help all use it. */
+  .icon-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    color: var(--color-navy);
   }
 }
 
@@ -550,15 +562,6 @@
     transition:
       opacity 250ms var(--ease-out) calc(var(--i, 0) * 40ms),
       translate 300ms var(--ease-out) calc(var(--i, 0) * 40ms);
-  }
-
-  .hdr-icon-btn {
-    display: inline-grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 999px;
-    color: var(--color-navy);
   }
 
   .hdr-menu-btn {

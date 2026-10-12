@@ -10,7 +10,7 @@ export function SavedLink({ className, style }: { className?: string; style?: CS
   const count = useSavedCount();
   const label = count === 0 ? "Saved" : `Saved, ${count} ${count === 1 ? "item" : "items"}`;
   return (
-    <Link href="/saved" aria-label={label} className={cx("hdr-icon-btn relative", className)} style={style}>
+    <Link href="/saved" aria-label={label} className={cx("icon-btn relative", className)} style={style}>
       <HeartIcon />
       {count > 0 && (
         <span className="hdr-badge" aria-hidden="true">

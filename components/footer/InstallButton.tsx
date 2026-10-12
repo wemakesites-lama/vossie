@@ -63,7 +63,7 @@ function IosInstallHelp() {
           <h2 id="install-help-title" className="font-display text-[1.75rem] uppercase leading-none text-navy">
             Add Vossie to your home screen
           </h2>
-          <button type="button" onClick={close} aria-label="Close" className="hdr-icon-btn -mr-2 -mt-2">
+          <button type="button" onClick={close} aria-label="Close" className="icon-btn -mr-2 -mt-2">
             <CloseIcon />
           </button>
         </div>

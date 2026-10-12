@@ -4,12 +4,12 @@ import { useId, useRef, useState } from "react";
 import { CheckIcon, CloseIcon } from "@/components/icons";
 import { useOverlayDialog } from "@/components/ui/useOverlayDialog";
 import { useCampusChoice } from "@/hooks/useCampusChoice";
+import { WIDE_QUERY } from "@/lib/breakpoints";
 import { ALL_CAMPUSES, setCampusChoice } from "@/lib/campus";
 import { showToast } from "@/lib/toast";
 import type { Campus, CampusChoice } from "@/lib/types";
 import { useSheetDrag } from "./useSheetDrag";
 
-const DESKTOP_QUERY = "(min-width: 48rem) and (min-height: 30rem)";
 const POPOVER_WIDTH = 380;
 const EDGE = 16;
 
@@ -23,7 +23,7 @@ export function CampusPicker({ campuses }: { campuses: readonly Campus[] }) {
 
   const { dialogRef, close, onBackdropClick } = useOverlayDialog("campus", (trigger, dialog) => {
     setQuery("");
-    if (!window.matchMedia(DESKTOP_QUERY).matches) return;
+    if (!window.matchMedia(WIDE_QUERY).matches) return;
     if (trigger) {
       const rect = trigger.getBoundingClientRect();
       const maxHeight = Math.min(560, window.innerHeight * 0.7);
@@ -61,7 +61,7 @@ export function CampusPicker({ campuses }: { campuses: readonly Campus[] }) {
           <h2 id={titleId} className="font-display text-[1.75rem] uppercase leading-none text-navy">
             Choose your campus
           </h2>
-          <button type="button" onClick={close} aria-label="Close" className="hdr-icon-btn -mr-2">
+          <button type="button" onClick={close} aria-label="Close" className="icon-btn -mr-2">
             <CloseIcon />
           </button>
         </div>
