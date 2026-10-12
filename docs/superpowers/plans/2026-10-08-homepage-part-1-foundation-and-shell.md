@@ -5028,6 +5028,8 @@ Message: `feat: add the full-screen menu with category and campus drill-downs an
 
 ### Task 15: The search overlay
 
+**Updated during the build.** At 360px, a recent search of more than about 35 characters with no spaces pushed the overlay sideways. So chips now wrap long words (`overflow-wrap: anywhere`) and keep their icon at full size.
+
 **Files:**
 - Create: `lib/recent-searches.ts`, `lib/recent-searches.test.ts`, `components/search/SearchOverlay.tsx`, `components/search/SearchOverlay.test.tsx`
 - Modify: `app/globals.css` (search styles), `app/layout.tsx` (render the overlay)
@@ -5467,6 +5469,13 @@ Append to `app/globals.css`:
     color: var(--color-navy);
     font-size: 14px;
     font-weight: 600;
+    /* A long term with no spaces (a pasted link or email address) wraps inside the chip
+       instead of pushing the whole overlay sideways. */
+    overflow-wrap: anywhere;
+  }
+
+  .search-chip > svg {
+    flex-shrink: 0;
   }
 
   .search-categories {
@@ -5539,6 +5548,10 @@ Message: `feat: add the search overlay with recent, trending and category shortc
 
 Spec section 6.1. It has one addition: a pause/play button. WCAG 2.2.2 needs a way to stop content that updates by itself, and pausing on hover or focus doesn't help touch users. With reduced motion or data saver it starts paused, and the button can still step it on.
 
+**Holding it still.** Two things hold the bar, and they are tracked separately:
+- **A mouse over the bar.** A touch tap doesn't count. A tap fires `mouseenter` with no `mouseleave` until the next tap somewhere else, so Play would seem to do nothing.
+- **Keyboard focus on the message.** This hold applies only while focus is on the message, so the focused link never fades out and goes inert under the user, even if a mouse passes over and leaves.
+
 **Files:**
 - Create: `components/announcement/AnnouncementBar.tsx`, `components/announcement/AnnouncementBar.test.tsx`
 - Modify: `app/globals.css` (announcement styles), `app/layout.tsx` (render the bar)
@@ -5599,20 +5612,43 @@ describe("AnnouncementBar", () => {
     expect(activeText(container)).toContain("Second message");
   });
 
-  it("holds still while the pointer is over it", () => {
+  it("holds still while a mouse is over it", () => {
     vi.useFakeTimers();
     const { container } = render(<AnnouncementBar messages={messages} />);
     const bar = screen.getByRole("region", { name: "Announcements" });
-    fireEvent.mouseEnter(bar);
+    fireEvent.pointerEnter(bar, { pointerType: "mouse" });
     act(() => {
       vi.advanceTimersByTime(12000);
     });
     expect(activeText(container)).toContain("First message");
-    fireEvent.mouseLeave(bar);
+    fireEvent.pointerLeave(bar, { pointerType: "mouse" });
     act(() => {
       vi.advanceTimersByTime(6000);
     });
     expect(activeText(container)).toContain("Second message");
+  });
+
+  it("isn't held by a touch tap", () => {
+    vi.useFakeTimers();
+    const { container } = render(<AnnouncementBar messages={messages} />);
+    fireEvent.pointerEnter(screen.getByRole("region", { name: "Announcements" }), { pointerType: "touch" });
+    act(() => {
+      vi.advanceTimersByTime(6000);
+    });
+    expect(activeText(container)).toContain("Second message");
+  });
+
+  it("keeps a focused message in place, even when a mouse passes over and leaves", () => {
+    vi.useFakeTimers();
+    const { container } = render(<AnnouncementBar messages={messages} />);
+    const bar = screen.getByRole("region", { name: "Announcements" });
+    act(() => screen.getByRole("link", { name: /First message/ }).focus());
+    fireEvent.pointerEnter(bar, { pointerType: "mouse" });
+    fireEvent.pointerLeave(bar, { pointerType: "mouse" });
+    act(() => {
+      vi.advanceTimersByTime(12000);
+    });
+    expect(activeText(container)).toContain("First message");
   });
 
   it("starts paused with reduced motion", () => {
@@ -5646,7 +5682,7 @@ Expected: FAIL, because `./AnnouncementBar` can't be resolved.
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type FocusEvent } from "react";
+import { useEffect, useState, type FocusEvent, type PointerEvent } from "react";
 import { PauseIcon, PlayIcon } from "@/components/icons";
 import { useMotionAllowed } from "@/hooks/useMotionAllowed";
 import type { Announcement } from "@/lib/types";
@@ -5660,11 +5696,13 @@ export function AnnouncementBar({ messages }: { messages: readonly Announcement[
   const items = messages.slice(0, 3);
   const [index, setIndex] = useState(0);
   const [playChoice, setPlayChoice] = useState<PlayChoice>("auto");
-  const [holding, setHolding] = useState(false);
+  // Two separate holds: a mouse over the bar (touch taps don't count), and keyboard focus on the message.
+  const [mouseOver, setMouseOver] = useState(false);
+  const [messageFocused, setMessageFocused] = useState(false);
   const [pageHidden, setPageHidden] = useState(false);
   const motionAllowed = useMotionAllowed();
   const playing = playChoice === "playing" || (playChoice === "auto" && motionAllowed);
-  const rotating = items.length > 1 && playing && !holding && !pageHidden;
+  const rotating = items.length > 1 && playing && !mouseOver && !messageFocused && !pageHidden;
 
   useEffect(() => {
     const onVisibility = () => setPageHidden(document.visibilityState === "hidden");
@@ -5678,8 +5716,14 @@ export function AnnouncementBar({ messages }: { messages: readonly Announcement[
     return () => window.clearInterval(timer);
   }, [rotating, items.length]);
 
-  const onBlur = (event: FocusEvent<HTMLElement>) => {
-    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setHolding(false);
+  const onPointerEnter = (event: PointerEvent<HTMLElement>) => {
+    if (event.pointerType === "mouse") setMouseOver(true);
+  };
+  const onPointerLeave = (event: PointerEvent<HTMLElement>) => {
+    if (event.pointerType === "mouse") setMouseOver(false);
+  };
+  const onMessageBlur = (event: FocusEvent<HTMLElement>) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setMessageFocused(false);
   };
 
   if (items.length === 0) return null;
@@ -5688,13 +5732,11 @@ export function AnnouncementBar({ messages }: { messages: readonly Announcement[
     <section
       aria-label="Announcements"
       className="announce surface-navy"
-      onMouseEnter={() => setHolding(true)}
-      onMouseLeave={() => setHolding(false)}
-      onFocus={() => setHolding(true)}
-      onBlur={onBlur}
+      onPointerEnter={onPointerEnter}
+      onPointerLeave={onPointerLeave}
     >
       <div className="announce-inner">
-        <div className="announce-stack">
+        <div className="announce-stack" onFocus={() => setMessageFocused(true)} onBlur={onMessageBlur}>
           {items.map((message, position) => (
             <Link
               key={message.id}
@@ -5727,7 +5769,7 @@ export function AnnouncementBar({ messages }: { messages: readonly Announcement[
 - [ ] **Step 4: Run it and watch it pass**
 
 Run: `pnpm test components/announcement`
-Expected: PASS (6 tests).
+Expected: PASS (8 tests).
 
 - [ ] **Step 5: Add the announcement styles**
 
@@ -6278,7 +6320,12 @@ export function InstallButton() {
 function IosInstallHelp() {
   const { dialogRef, close, onBackdropClick } = useOverlayDialog("install-help");
   return (
-    <dialog ref={dialogRef} aria-labelledby="install-help-title" onClick={onBackdropClick} className="sheet-dialog">
+    <dialog
+      ref={dialogRef}
+      aria-labelledby="install-help-title"
+      onClick={onBackdropClick}
+      className="sheet-dialog sheet-centred"
+    >
       <div className="sheet-inner">
         <div className="flex items-start justify-between gap-3 pt-3">
           <h2 id="install-help-title" className="font-display text-[1.75rem] uppercase leading-none text-navy">
@@ -6702,6 +6749,17 @@ Append to `app/globals.css`:
       grid-column: 1 / -1;
       max-width: 32rem;
     }
+
+    /* The install help opens from the foot of the page, so from 768px it's centred, not anchored to its button. */
+    .sheet-dialog.sheet-centred {
+      inset: 0;
+      height: fit-content;
+      margin: auto;
+    }
+
+    .sheet-dialog.sheet-centred::backdrop {
+      background: rgb(21 48 93 / 0.4);
+    }
   }
 
   @media (min-width: 64rem) and (min-height: 30rem) {
@@ -6731,6 +6789,8 @@ In the dev server, check each of these at 360px, 390px, 768px and 1280px:
 - **Wordmark:** VOSSIE in sky fills the width edge to edge, slightly cropped at the bottom, with no sideways scrolling.
 - **Phones:** the link groups are accordions.
 - **Sign-up:** a valid address shows the "nothing was sent or saved" note.
+- **Install help, iPhone:** with an iPhone user agent at 390px, "Add Vossie to your home screen" opens a bottom sheet.
+- **Install help, iPad:** use a Macintosh user agent, with `navigator.maxTouchPoints` set to 5 in an init script. At 820x1180 and at 1280x800, the help opens centred over a dimmed page.
 
 - [ ] **Step 14: Commit**
 
@@ -6778,6 +6838,8 @@ Expected: the first two tests FAIL (nothing sets the attribute yet); the third p
 - [ ] **Step 3: Replace `app/layout.tsx` with its final version**
 
 The inline `<head>` script runs before first paint, so data saver users never see an animation start. It's the pattern the Next docs recommend for attributes on `<html>`, and it keeps the shell static. The overlays sit after the footer because they open as modals in the top layer, so their place in the page doesn't matter.
+
+Before replacing the file, compare the current `app/layout.tsx` with the version below. The only differences should be the boot script, `metadata`, `viewport` and the order of the elements. If the current file has anything else, such as something added by a review fix, keep it in the final version and report it.
 
 ```tsx
 import type { Metadata, Viewport } from "next";
@@ -6852,6 +6914,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
 
 Run: `pnpm e2e tests/e2e/boot.spec.ts tests/e2e/smoke.spec.ts tests/e2e/brand.spec.ts`
 Expected: PASS at all five sizes.
+
+Then confirm the attribute survives hydration in development too.
+1. Run `pnpm dev --port 3100`.
+2. In the browser, set `localStorage.vossie_low_data = "1"` and reload.
+3. Confirm `<html data-low-data>` is still there after hydration.
+
+If it's gone, report it and don't work around it.
 
 - [ ] **Step 5: Check the whole project**
 
@@ -7417,6 +7486,13 @@ Message: `feat: add placeholder pages for every shell link and a branded 404`
 
 These cover spec section 15 for the shell: header states at every size, keyboard and focus, overlays, campus choice, search, reduced motion, sideways scrolling, axe, the wordmark and the size budgets.
 
+**Updated during the build.** What Tasks 14 and 15 showed about Chromium and Playwright:
+- **Exact names.** Playwright matches a role's `name` as a case-insensitive substring unless you pass `exact: true`. "Search" would also match the search overlay's "Close search" while it fades out, which is a strict-mode failure. So every Menu and Search button lookup below is exact.
+- **Spaced names.** Chromium puts spaces between the blockified flex children of some controls. The menu's campus rows read "Midrand , Gauteng" and its campus switch reads "Shopping at Midrand . Change". Match those with a regular expression, as the tests below do. `CampusOption` in the picker has an `aria-label`, so "Midrand, Gauteng" works there.
+- **Status regions.** Never query `getByRole("status")` at page level. The toast region and the footer sign-up each have one.
+- **Esc in a search box.** In a search field that has text, Chromium's first Esc clears the text and the second closes the overlay.
+- **Tab cycling.** Tabbing out of a modal stops once on `document.body`, where focus goes to the browser's own UI. A focus-trap check must allow `body` and only fail on an element outside the dialog, as the menu test does.
+
 **Files:**
 - Create: `tests/e2e/shell.spec.ts`, `tests/e2e/responsive.spec.ts`, `tests/e2e/a11y.spec.ts`, `tests/e2e/performance.spec.ts`, `tests/e2e/screenshots.spec.ts`
 
@@ -7431,7 +7507,7 @@ async function openCampusPicker(page: Page) {
   if (isTabletOrWider(page)) {
     await page.getByRole("button", { name: /^Shopping at/ }).click();
   } else {
-    await page.getByRole("button", { name: "Menu" }).click();
+    await page.getByRole("button", { name: "Menu", exact: true }).click();
     await page.getByRole("dialog", { name: "Menu" }).getByRole("button", { name: /^Shopping at/ }).click();
   }
   return page.getByRole("dialog", { name: "Choose your campus" });
@@ -7440,7 +7516,7 @@ async function openCampusPicker(page: Page) {
 test.describe("header", () => {
   test("hides to the crest, pops back without moving the page, and hides again 160px later", async ({ page }) => {
     await page.goto("/");
-    const menu = page.getByRole("button", { name: "Menu" });
+    const menu = page.getByRole("button", { name: "Menu", exact: true });
     await expect(menu).toBeVisible();
 
     await page.evaluate(() => window.scrollTo(0, 700));
@@ -7473,7 +7549,7 @@ test.describe("header", () => {
       const pill = page.locator(".site-header .campus-pill");
       await expect(pill).toHaveCount(1);
       await expect(pill).toBeHidden();
-      await expect(page.getByRole("button", { name: "Search" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Search", exact: true })).toBeVisible();
     });
   });
 
@@ -7486,7 +7562,7 @@ test.describe("header", () => {
 
   test("never hides while a header control has keyboard focus", async ({ page }) => {
     await page.goto("/");
-    const menu = page.getByRole("button", { name: "Menu" });
+    const menu = page.getByRole("button", { name: "Menu", exact: true });
     for (let i = 0; i < 20 && !(await menu.evaluate((el) => el === document.activeElement)); i++) {
       await page.keyboard.press("Tab");
     }
@@ -7500,7 +7576,7 @@ test.describe("header", () => {
 test.describe("menu", () => {
   test("traps focus, closes on Escape and gives focus back", async ({ page }) => {
     await page.goto("/");
-    const menuButton = page.getByRole("button", { name: "Menu" });
+    const menuButton = page.getByRole("button", { name: "Menu", exact: true });
     await menuButton.click();
     const menu = page.getByRole("dialog", { name: "Menu" });
     await expect(menu).toBeVisible();
@@ -7519,7 +7595,7 @@ test.describe("menu", () => {
 
   test("closes when a link is followed", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "Menu" }).click();
+    await page.getByRole("button", { name: "Menu", exact: true }).click();
     const menu = page.getByRole("dialog", { name: "Menu" });
     await menu.getByRole("link", { name: "Sell" }).click();
     await expect(page).toHaveURL(/\/sell$/);
@@ -7537,6 +7613,8 @@ test.describe("campus picker", () => {
     await picker.getByRole("button", { name: "Midrand, Gauteng" }).click();
     await expect(picker).toBeHidden();
     await expect(page.locator(".toast")).toHaveText("Showing Midrand first");
+    // The visible toast is a manual popover in the top layer, so it would also show above an open dialog.
+    expect(await page.locator(".toast-pop").evaluate((element) => element.matches(":popover-open"))).toBe(true);
 
     const cookie = (await context.cookies()).find((c) => c.name === "vossie_campus");
     expect(cookie?.value).toBe("midrand");
@@ -7545,7 +7623,7 @@ test.describe("campus picker", () => {
     if (isTabletOrWider(page)) {
       await expect(page.getByRole("button", { name: "Shopping at Midrand" })).toBeVisible();
     } else {
-      await page.getByRole("button", { name: "Menu" }).click();
+      await page.getByRole("button", { name: "Menu", exact: true }).click();
       await expect(
         page.getByRole("dialog", { name: "Menu" }).getByRole("button", { name: /^Shopping at Midrand/ }),
       ).toBeVisible();
@@ -7556,7 +7634,7 @@ test.describe("campus picker", () => {
 test.describe("search", () => {
   test("submits to browse and remembers the search", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "Search" }).click();
+    await page.getByRole("button", { name: "Search", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Search Vossie" });
     const box = dialog.getByRole("searchbox", { name: "Search Vossie" });
     await expect(box).toBeFocused();
@@ -7565,7 +7643,7 @@ test.describe("search", () => {
     await expect(page).toHaveURL(/\/browse\?q=calculator$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Browse");
 
-    await page.getByRole("button", { name: "Search" }).click();
+    await page.getByRole("button", { name: "Search", exact: true }).click();
     await expect(dialog.getByRole("link", { name: "calculator" })).toBeVisible();
   });
 });
@@ -7704,14 +7782,14 @@ test("the homepage scrolled to crest only", async ({ page }) => {
 
 test("the menu", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Menu" }).click();
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Menu" })).toBeVisible();
   expect(await seriousIssues(page)).toEqual([]);
 });
 
 test("search", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: "Search", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Search Vossie" })).toBeVisible();
   expect(await seriousIssues(page)).toEqual([]);
 });
@@ -7721,7 +7799,7 @@ test("the campus picker", async ({ page }) => {
   if ((page.viewportSize()?.width ?? 0) >= 768) {
     await page.getByRole("button", { name: /^Shopping at/ }).click();
   } else {
-    await page.getByRole("button", { name: "Menu" }).click();
+    await page.getByRole("button", { name: "Menu", exact: true }).click();
     await page.getByRole("dialog", { name: "Menu" }).getByRole("button", { name: /^Shopping at/ }).click();
   }
   await expect(page.getByRole("dialog", { name: "Choose your campus" })).toBeVisible();
@@ -7793,11 +7871,11 @@ test("shell review screenshots", async ({ page }) => {
   await page.getByRole("button", { name: "Show navigation" }).click();
   await shot("03-revealed");
 
-  await page.getByRole("button", { name: "Menu" }).click();
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
   await shot("04-menu");
   await page.keyboard.press("Escape");
 
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: "Search", exact: true }).click();
   await shot("05-search");
   await page.keyboard.press("Escape");
 
@@ -7805,7 +7883,7 @@ test("shell review screenshots", async ({ page }) => {
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.getByRole("button", { name: /^Shopping at/ }).click();
   } else {
-    await page.getByRole("button", { name: "Menu" }).click();
+    await page.getByRole("button", { name: "Menu", exact: true }).click();
     await page.getByRole("dialog", { name: "Menu" }).getByRole("button", { name: /^Shopping at/ }).click();
   }
   await shot("06-campus-picker");
