@@ -940,8 +940,9 @@
     font-size: 14px;
   }
 
+  /* White, not sky: small text on the star texture drops to about 4.0:1 where a star sits behind a letter (WCAG 1.4.3). */
   .menu-campus-change {
-    color: var(--color-sky);
+    color: var(--color-white);
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 3px;
@@ -1031,8 +1032,9 @@
     font-weight: 600;
   }
 
+  /* 18px semibold is small text, so white (see .menu-campus-change); the 2px underline alone marks the current row. */
   .menu-sublinks [aria-current="page"] {
-    color: var(--color-sky);
+    color: var(--color-white);
     text-decoration: underline 2px;
     text-underline-offset: 4px;
   }
@@ -1442,9 +1444,10 @@
     padding-bottom: 16px;
   }
 
+  /* White, not sky: small text on the star texture (see .menu-campus-change). */
   .footer-heading {
     margin-bottom: 12px;
-    color: var(--color-sky);
+    color: var(--color-white);
     font-family: var(--vos-font-display);
     font-size: var(--text-eyebrow);
     letter-spacing: 1px;

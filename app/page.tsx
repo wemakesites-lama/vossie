@@ -17,7 +17,7 @@ export default function HomePage() {
         aria-labelledby="hero-title"
         className="surface-navy texture-stars rounded-panel px-5 pb-12 pt-14 wide:px-12 wide:pb-20 wide:pt-24"
       >
-        <p className="eyebrow text-sky">The Eduvos student marketplace</p>
+        <p className="eyebrow text-white">The Eduvos student marketplace</p>
         <h1 id="hero-title" className="mt-3 max-w-[14ch] font-display text-hero uppercase">
           Buy &amp; sell <span className="text-sky">textbooks</span> on campus
         </h1>
