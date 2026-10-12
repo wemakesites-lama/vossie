@@ -43,10 +43,52 @@ These are decisions 13 to 19 in `docs/reference/LANDING-DECISIONS.md`.
   - CSS-only scroll reveals.
 - It keeps a JS ledger against the 7,929 bytes left, and stops for Lama at 152,000.
 
+## 2026-10-12: Part 2 built (the homepage sections)
+- Every homepage section from spec 7.3 to 7.13 on sample data:
+  - hero slider;
+  - context strip;
+  - Shop by category and budget;
+  - collections;
+  - Shop by campus;
+  - Just listed;
+  - How it works;
+  - Featured today;
+  - Looking For;
+  - Free & swaps;
+  - Hub banner and What's on.
+- Placeholder pages for listings, sellers and collections, so every card goes somewhere. Labelled placeholder art at the final ratios (spec 12).
+- Campus-aware parts stream in behind skeletons; everything else is prerendered. Choosing a campus anywhere re-renders them.
+- Checks:
+  - lint and types are clean;
+  - 302 unit tests pass;
+  - end to end, 282 pass, 138 are skipped by design and none fail, across 360, 390, 768, 1024 and 1440px;
+  - axe finds no serious or critical issues.
+- First visit at 390px:
+  - JS 151,705 B brotli, against 153,600;
+  - fonts 46,212 B;
+  - in total 332,372 B.
+- Layout shift 0.0015 at 390 and 0.0036 at 1440. Lighthouse mobile (median of three): Performance 0.93, Accessibility 1.00.
+- Review screenshots: `docs/progress/part-2/`.
+
 ## Next
-- Lama reviews the Part 2 plan and its decisions, then approves the build (git commits, subagent-driven execution, and the one-off Lighthouse download).
+- Lama reviews the Part 2 screenshots in `docs/progress/part-2/` against the mockup.
+- Open for Lama:
+  - LCP of 3.3 s under Lighthouse's simulated slow 4G, against the spec's 2.5 s: revisit when real photos arrive;
+  - JS headroom of 295 B before the stop line: the next stage needs a saving first, such as replacing `next/form`;
+  - prefetching on mobile data (`prefetch={false}` on the card grids?);
+  - the data-saver scope compared with spec section 5;
+  - the campus highlight keeps cycling off-screen;
+  - under reduced motion, the hero offers Play but the campus cycle doesn't;
+  - the hero chip's "Shopping all campuses" against the pill's "All campuses";
+  - Looking For's tab order on wide screens;
+  - long campus names wrap in the two footer columns and on tablets in Shop by campus;
+  - the sample events run out after 28 October 2026;
+  - the scroll reveal fades out again in the bottom 120px when scrolling back up;
+  - Collections' hover isn't behind `(hover: hover)`;
+  - 3px gaps between the campus names and the switch segments.
+- Then the next stage of pages.
 
 ## Waiting on
 - Eduvos font files and licence confirmation.
 - The official crest SVG.
-- Photos (after the homepage is built).
+- Photos. The homepage is built, so each one is now a file drop plus one line in a fixture.

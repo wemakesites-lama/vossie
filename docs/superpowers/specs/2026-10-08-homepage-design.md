@@ -75,14 +75,15 @@ This stage delivers the homepage and shell on realistic sample data. Other pages
 | `text` | `#373F41` | Long body copy |
 | `muted` | `#5B6577` | Secondary text |
 | `line` | `rgba(21,48,93,.14)` | Hairlines and borders |
-| `idle` | `#B9C0CC` | Inactive large display text (campus names, collection titles) |
+| `idle` | `#B9C0CC` | Decorative only (the sheet handle) |
+| `idle-text` | `#7E879A` | Inactive large display text (campus names, collection titles); 3.6:1 on white |
 
 **Contrast rules (WCAG AA):**
 
 - Sky never carries text, icons or thin borders on white (2.6:1).
 - Navy on sky and sky on navy are fine for any text size (5.0:1).
 - Links on white use `sky-dark` (4.7:1). White on navy is 13:1.
-- `idle` grey is only for large display text that has a navy active state next to it, never for information on its own.
+- `idle-text` grey is only for large display text that has a navy active state next to it, never for information on its own.
 
 ### Typography
 
@@ -391,7 +392,7 @@ See 6.6.
 
 - **Rendering.** The page renders on the server. Data sections stream in behind skeletons with the exact final dimensions, so nothing jumps (layout shift budget 0.05).
 - **Skeletons** exist for the listing card, seller card, campus count, request row and event row.
-- **Photos** sit in fixed-ratio boxes with a blurred preview and a 250ms fade-in.
+- **Photos** sit in fixed-ratio boxes over a pale preview, so nothing moves while they load. There's no blur-up or fade-in: either would need JavaScript on every image (Part 2 plan decision 8).
 - **Buttons** that do something show a pending state ("Saving…") and confirm with a short toast.
 - **Errors.** Each data section has its own error state with a "Try again" button; one failing section never blanks the page.
 - **Empty states** as listed per section above.

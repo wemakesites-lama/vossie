@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Request } from "@playwright/test";
 
 test.skip(!process.env.SCREENSHOTS, "Run with SCREENSHOTS=1 to refresh the review screenshots");
 
@@ -56,4 +56,43 @@ test("shell review screenshots", async ({ page }) => {
     path: file("07-footer"),
     style: ".site-header { visibility: hidden !important; }",
   });
+});
+
+test("homepage review screenshots", async ({ page, context, baseURL }) => {
+  const project = test.info().project.name;
+  test.skip(!["phone-390", "desktop-1440"].includes(project), "Saved at 390 and 1440 only");
+  const file = (name: string) => `docs/progress/part-2/${project}-${name}.png`;
+
+  // The shots wait for photos, not for "networkidle": from the second visit in a browser context, Playwright counts
+  // Next's cached link prefetches as never finished, so the page never goes quiet. Only photo requests are tracked.
+  const photosInFlight = new Set<Request>();
+  page.on("request", (request) => {
+    if (request.resourceType() === "image") photosInFlight.add(request);
+  });
+  page.on("requestfinished", (request) => photosInFlight.delete(request));
+  page.on("requestfailed", (request) => photosInFlight.delete(request));
+
+  /** Scroll the whole page so every lazy photo loads, then come back to the top for a full-page shot. */
+  async function wholePage(name: string) {
+    await page.evaluate(async () => {
+      for (let y = 0; y < document.body.scrollHeight; y += 600) {
+        window.scrollTo(0, y);
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      window.scrollTo(0, 0);
+      await document.fonts.ready;
+    });
+    await expect.poll(() => photosInFlight.size).toBe(0);
+    await expect(page.locator(".site-header")).toHaveAttribute("data-mode", "expanded");
+    await page.screenshot({ path: file(name), fullPage: true });
+  }
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await page.screenshot({ path: file("01-first-screen") });
+  await wholePage("02-whole-page");
+
+  await context.addCookies([{ name: "vossie_campus", value: "midrand", url: baseURL! }]);
+  await page.goto("/");
+  await wholePage("03-whole-page-midrand");
 });

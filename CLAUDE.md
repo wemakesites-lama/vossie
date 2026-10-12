@@ -25,7 +25,7 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - `pnpm test` · `pnpm e2e` · `pnpm lint` · `pnpm typecheck` · `pnpm build`
 
 ## Brand (Eduvos)
-- Navy `#15305D`, sky `#29ABE2`, sky-dark `#1E7BA8`, panel `#F3F3F3`, pale `#E1F0F7`, ink `#373F41` (the spec's `text` token), muted `#5B6577`, idle `#B9C0CC`.
+- Navy `#15305D`, sky `#29ABE2`, sky-dark `#1E7BA8`, panel `#F3F3F3`, pale `#E1F0F7`, ink `#373F41` (the spec's `text` token), muted `#5B6577`, idle `#B9C0CC`, idle-text `#7E879A` (inactive large text).
 - Sky never carries text, icons or thin borders on white. Navy on sky and sky on navy are fine. Links on white use sky-dark.
 - **On the star texture** (`texture-stars`):
   - Small text is white.
