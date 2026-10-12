@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { SiteHeader } from "@/components/header/SiteHeader";
 import { CampusPicker } from "@/components/campus/CampusPicker";
+import { MenuDrawer } from "@/components/menu/MenuDrawer";
 import { ToastRegion } from "@/components/ui/ToastRegion";
-import { getCampuses } from "@/lib/data";
+import { getCampuses, getCategories } from "@/lib/data";
 import { fontVariables } from "./fonts";
 import "./globals.css";
 
@@ -23,7 +24,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const campuses = await getCampuses();
+  const [campuses, categories] = await Promise.all([getCampuses(), getCategories()]);
   return (
     <html lang="en-ZA" className={`${fontVariables} antialiased`} suppressHydrationWarning>
       <body>
@@ -34,6 +35,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <main id="main" tabIndex={-1} className="flex-1">
           {children}
         </main>
+        <MenuDrawer campuses={campuses} categories={categories} />
         <CampusPicker campuses={campuses} />
         <ToastRegion />
       </body>
