@@ -24,10 +24,12 @@ export function SiteHeader({ campuses }: { campuses: readonly Campus[] }) {
 
   function showNavigation() {
     flushSync(() => reveal());
-    menuButtonRef.current?.focus();
+    menuButtonRef.current?.focus({ preventScroll: true });
   }
 
   function goHome(event: MouseEvent<HTMLAnchorElement>) {
+    // Let modified clicks (new tab, new window) behave as usual.
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
     if (window.location.pathname !== "/") return;
     event.preventDefault();
     window.scrollTo({ top: 0, behavior: isMotionAllowedNow() ? "smooth" : "auto" });
@@ -89,6 +91,10 @@ export function SiteHeader({ campuses }: { campuses: readonly Campus[] }) {
           </div>
 
           <div className="hdr-pennant-slot">
+            {/* The pennant stays mounted while the header changes mode, so its shadow fades and the crest
+                image isn't re-created. The link or button on top carries the name and the focus ring,
+                sized to cover the pennant's white edge. */}
+            <Pennant />
             {hidden ? (
               <button
                 type="button"
@@ -96,13 +102,9 @@ export function SiteHeader({ campuses }: { campuses: readonly Campus[] }) {
                 aria-expanded={false}
                 onClick={showNavigation}
                 className="hdr-pennant"
-              >
-                <Pennant />
-              </button>
+              />
             ) : (
-              <Link href="/" aria-label="Vossie home" onClick={goHome} className="hdr-pennant">
-                <Pennant />
-              </Link>
+              <Link href="/" aria-label="Vossie home" onClick={goHome} className="hdr-pennant" />
             )}
           </div>
 

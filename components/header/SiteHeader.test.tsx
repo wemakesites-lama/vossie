@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { setCampusChoice } from "@/lib/campus";
@@ -6,6 +6,7 @@ import { onOverlayOpen } from "@/lib/overlays";
 import { SAVED_KEY } from "@/lib/saved";
 import type { Campus } from "@/lib/types";
 import { setScrollY } from "@/tests/helpers/dom";
+import { SavedLink } from "./SavedLink";
 import { SiteHeader } from "./SiteHeader";
 
 const campus = (slug: string, name: string): Campus => ({
@@ -58,6 +59,7 @@ describe("SiteHeader", () => {
     for (const group of header.querySelectorAll(".hdr-group")) {
       expect(group).not.toHaveAttribute("inert");
     }
+    expect(header.querySelector(".hdr-quick")).not.toHaveAttribute("inert");
   });
 
   it("hides again after another 160px down, and expands back near the top", async () => {
@@ -122,5 +124,28 @@ describe("SiteHeader", () => {
     renderHeader();
     expect(screen.getByRole("button", { name: "Shopping at Pretoria" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Saved, 2 items" })).toBeInTheDocument();
+  });
+
+  it("lets a modified click on the home link through, so it can open a new tab", () => {
+    renderHeader();
+    fireEvent.click(screen.getByRole("link", { name: "Vossie home" }), { metaKey: true });
+    expect(window.scrollTo).not.toHaveBeenCalled();
+  });
+
+  it("keeps the pennant mounted when the header changes mode", () => {
+    const header = renderHeader();
+    const crest = header.querySelector(".pennant img");
+    act(() => setScrollY(400));
+    expect(header.querySelector(".pennant img")).toBe(crest);
+  });
+
+  it("says 1 item in the singular and caps the badge at 99+", () => {
+    localStorage.setItem(SAVED_KEY, JSON.stringify(["a"]));
+    const { unmount } = render(<SavedLink />);
+    expect(screen.getByRole("link", { name: "Saved, 1 item" })).toBeInTheDocument();
+    unmount();
+    localStorage.setItem(SAVED_KEY, JSON.stringify(Array.from({ length: 120 }, (_, i) => `id${i}`)));
+    render(<SavedLink />);
+    expect(screen.getByRole("link", { name: "Saved, 120 items" })).toHaveTextContent("99+");
   });
 });

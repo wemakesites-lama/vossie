@@ -100,6 +100,29 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  /* Whatever is scrolled to (the skip link's target, keyboard focus) lands clear of the sticky header.
+     This is scroll-margin on the page content, not scroll-padding on html: padding would also apply to the
+     header's own controls, and focusing one of them (Tab, Shift+Tab) threw the page back up the scroll.
+     Overlays sit outside main and footer, so their own scrolling lists are left alone. */
+  :is(main, footer),
+  :is(main, footer) * {
+    scroll-margin-top: 64px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    :is(main, footer),
+    :is(main, footer) * {
+      scroll-margin-top: 78px;
+    }
+  }
+
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    :is(main, footer),
+    :is(main, footer) * {
+      scroll-margin-top: 122px;
+    }
+  }
+
   /* An open modal dialog locks the page behind it. */
   html:has(dialog[open]:modal) {
     overflow: hidden;
@@ -441,7 +464,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 28px;
+    gap: 0;
     height: 100%;
     color: var(--color-navy);
     font-size: 12px;
@@ -457,6 +480,7 @@
     justify-content: center;
     min-width: 44px;
     min-height: 44px;
+    padding-inline: 14px;
     letter-spacing: inherit;
     text-transform: inherit;
   }
@@ -580,9 +604,20 @@
     transition: scale 420ms var(--ease-spring), translate 300ms var(--ease-out);
   }
 
+  /* The link or button sits over the pennant and its white edge, and carries the focus ring:
+     a sky ring on a navy halo, so it shows over the white bar and over the navy hero (spec section 10). */
   .hdr-pennant {
-    display: block;
+    position: absolute;
+    inset: 0 -5px -10px;
     border-radius: 0 0 14px 14px;
+    --focus-ring: var(--color-sky);
+    --focus-halo: var(--color-navy);
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .hdr-pennant {
+      inset: 0 -7px -14px;
+    }
   }
 
   /* Crest only: everything slides up and fades out; the pennant pins to the top at ~80%. */
@@ -593,7 +628,7 @@
   }
 
   .site-header[data-mode="crest"] .hdr-bar-bg {
-    transition: translate 250ms var(--ease-out), opacity 250ms var(--ease-out);
+    transition: translate 250ms var(--ease-out), opacity 250ms var(--ease-out), scale 250ms var(--ease-out);
   }
 
   .site-header[data-mode="crest"] .hdr-quick,
