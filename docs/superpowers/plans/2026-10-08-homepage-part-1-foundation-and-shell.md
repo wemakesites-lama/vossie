@@ -5916,6 +5916,25 @@ Spec section 6.6:
 - The pennant legal line.
 - A full-width VOSSIE wordmark sized to the footer's width.
 
+**Updated during the build.** These are the review changes, recorded so the plan matches the code. The committed CSS is the source of truth.
+- **Touch spacing (spec section 5).**
+  - Footer links have 8px between them and are at least 44px wide.
+  - The two legal links are 44px targets.
+  - An opened accordion leaves 8px under its summary.
+- **Phone grid.** `.footer-grid` uses `minmax(0, 1fr)`, so the sign-up row can't push the column past the screen edge.
+- **Sign-up and POPIA.**
+  - The email input has no `name` and the form uses `method="dialog"`, so pressing "Get updates" before hydration sends nothing anywhere.
+  - Typing again clears the confirmation, so a second sign-up is announced too.
+- **As in the approved mockup:**
+  - the giant links keep their arrows at the far right (`justify-content: space-between`);
+  - the wordmark is top-aligned, so `-0.1em` crops about 8% of the letters at every size;
+  - the legal row stacks to the left on phones, with the pennant beside the credit (`.footer-lock`);
+  - the install button is the sky pill (`btn btn-sky`).
+- **Smaller fixes:**
+  - the install sheet resets the focus ring to navy;
+  - `FitText` refits on the next frame, so there's no ResizeObserver loop warning;
+  - a refused install prompt is caught.
+
 **Files:**
 - Create: `lib/fit-text.ts`, `lib/fit-text.test.ts`, `lib/install.ts`
 - Create: `components/footer/FitText.tsx`, `components/footer/FitText.test.tsx`, `components/footer/NewsletterForm.tsx`, `components/footer/NewsletterForm.test.tsx`, `components/footer/InstallButton.tsx`, `components/footer/InstallButton.test.tsx`, `components/footer/ShopYourCampusLink.tsx`, `components/footer/SiteFooter.tsx`, `components/footer/SiteFooter.test.tsx`
@@ -6808,6 +6827,11 @@ Message: `feat: add the bold footer with sign-up, install help and fitted wordma
 ---
 
 ### Task 18: Finish the root layout (boot script and final order)
+
+**Updated during the build.**
+- **Script order.** Next places its own async bootstrap scripts and the metadata tags ahead of the boot script. So it's the first parser-blocking script, not the first script. Measured on a production build, the attribute is set at about 11ms and first paint is at about 32ms.
+- **`appleWebApp.capable`** produces `mobile-web-app-capable` only, with no `apple-mobile-web-app-capable`. iOS standalone mode relies on the manifest from Task 19.
+- **Development.** `data-low-data` survives hydration in the dev server too.
 
 **Files:**
 - Create: `tests/e2e/boot.spec.ts`
@@ -7711,6 +7735,20 @@ test.describe("footer", () => {
     await shop.click();
     await expect(page.getByRole("link", { name: "Browse everything" })).toBeVisible();
   });
+
+  test("assistive technology meets one copy of each footer list", async ({ page }) => {
+    // The phone accordions and the wider columns hold the same links; CSS must hide exactly one of them.
+    await page.goto("/");
+    const footer = page.getByRole("contentinfo");
+    const online = footer.getByRole("link", { name: "Eduvos Online", exact: true });
+    if (isTabletOrWider(page)) {
+      await expect(online).toHaveCount(1);
+    } else {
+      await expect(online).toHaveCount(0);
+      await footer.locator("summary.footer-summary", { hasText: /^Campuses$/ }).click();
+      await expect(online).toHaveCount(1);
+    }
+  });
 });
 ```
 
@@ -8280,4 +8318,18 @@ Part 2 must add:
 
 **Testing**
 - **Link clicks in jsdom.** Cancel the click's default after React has handled it, or jsdom reports "Not implemented: navigation". The menu and search tests do this with a small `swallowNavigation()` helper.
+
+**Footer**
+- **Height.**
+  - The footer is about 1620px tall at 1280. Campuses is one column of 13 links at 52px each (44px plus 8px).
+  - The mockup has two columns (`.ftr .camps{columns:2}`). To get there:
+    1. narrow the sign-up column by stacking the input above the button;
+    2. put the campuses in two columns;
+    3. check at 1024, 1280 and 1440.
+  - At 1024 a few labels wrap today: "Browse everything", "Textbooks & notes", "How selling works" and "Cape Town Tyger Valley".
+- **Install help in in-app browsers.** Any iPhone user agent gets Safari's Share › Add to Home Screen how-to. That includes Instagram's and TikTok's in-app browsers, which have no Share toolbar. Detect them and suggest "Open in Safari" first.
+- **Install button after hydration.** The button only appears after hydration, and pushes what's below it down by about 60px. That's harmless while the footer sits at the foot of a long page.
+- **Landmark.** The footer's link groups have no `<nav aria-label="Footer">`, because the sign-up shares their grid. Add one when the footer is restructured.
+- **Install pill at 320px.** The label wraps to two lines and the icon narrows slightly. If that matters, give the icon `flex-shrink: 0`.
+- **Colour and contrast (Lama's call).** The mockup's footer headings are sky, and so is the menu's "Change" link. Small sky text measures 4.97:1 on plain navy, but about 4.0:1 where a star of the texture sits behind a letter. The mockup's wordmark is white; the plan and build use sky.
 
