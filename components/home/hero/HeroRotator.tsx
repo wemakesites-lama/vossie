@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { PauseIcon, PlayIcon } from "@/components/icons";
+import { useLowData } from "@/hooks/useLowData";
 import { useMotionAllowed } from "@/hooks/useMotionAllowed";
 import { usePageHidden } from "@/hooks/usePageHidden";
 import { cx } from "@/lib/cx";
@@ -53,6 +54,7 @@ export function HeroRotator({ slides, sentence, chip }: HeroRotatorProps) {
   const pageHidden = usePageHidden();
   const pageLoaded = useSyncExternalStore(subscribeLoad, isPageLoaded, notLoadedOnServer);
   const motionAllowed = useMotionAllowed();
+  const lowData = useLowData();
 
   const count = slides.length;
   const playing = playChoice === "playing" || (playChoice === "auto" && motionAllowed);
@@ -76,8 +78,17 @@ export function HeroRotator({ slides, sentence, chip }: HeroRotatorProps) {
   const onPointerLeave = (event: PointerEvent<HTMLElement>) => {
     if (event.pointerType === "mouse") setMouseOver(false);
   };
+  // Focus on a call to action holds autoplay, so the link under the keyboard never goes inert. The slide controls
+  // never go inert, so focus there doesn't hold: Play has to work while it has focus.
+  const onFocus = (event: FocusEvent<HTMLElement>) => {
+    setFocusInside(!(event.target as Element).closest(".hero-controls"));
+  };
   const onBlur = (event: FocusEvent<HTMLElement>) => {
-    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocusInside(false);
+    const root = event.currentTarget;
+    // Switching to another window leaves activeElement where it was, so keep the hold, or the link would go inert.
+    if (!root.contains(event.relatedTarget as Node | null) && !root.contains(document.activeElement)) {
+      setFocusInside(false);
+    }
   };
 
   const onSwipeStart = (event: PointerEvent<HTMLElement>) => {
@@ -92,15 +103,15 @@ export function HeroRotator({ slides, sentence, chip }: HeroRotatorProps) {
   };
 
   // The first photo is in the prerendered page. After the load event the others mount, ready for the cross-fade.
-  // With reduced motion or data saver nothing rotates, so only the slide on show loads (plan decision 8).
-  const mountPhoto = (n: number) => n === 0 || n === index || (pageLoaded && motionAllowed);
+  // With data saver on, only the slide on show loads (plan decision 8).
+  const mountPhoto = (n: number) => n === 0 || n === index || (pageLoaded && !lowData);
 
   return (
     <div
       className="hero"
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
-      onFocus={() => setFocusInside(true)}
+      onFocus={onFocus}
       onBlur={onBlur}
     >
       <div className="hero-panel surface-navy texture-stars">

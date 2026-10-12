@@ -35,6 +35,7 @@ export function ListingCardSkeleton() {
       <span className="skeleton listing-skeleton-line" />
       <span className="skeleton listing-skeleton-price" />
       <span className="skeleton listing-skeleton-meta" />
+      <span className="skeleton listing-skeleton-badge" />
     </div>
   );
 }

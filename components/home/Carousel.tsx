@@ -48,10 +48,14 @@ export function Carousel({ label, header, children, className, controls = true }
 
     const observer = new ResizeObserver(schedule);
     observer.observe(track);
+    // New slides (after a campus choice re-renders the section) change the row's width without resizing the track.
+    const slides = new MutationObserver(schedule);
+    slides.observe(track, { childList: true });
     track.addEventListener("scroll", schedule, { passive: true });
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
+      slides.disconnect();
       track.removeEventListener("scroll", schedule);
     };
   }, []);

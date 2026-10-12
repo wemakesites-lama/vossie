@@ -1933,16 +1933,18 @@
     border-radius: var(--radius-card);
   }
 
-  /* The ring goes round the whole card, not just the title. */
-  .listing-link:focus-visible {
-    outline: none;
-    box-shadow: none;
-  }
+  /* The ring goes round the whole card, not just the title. Without :has() (iOS before 15.4) the link keeps its own ring. */
+  @supports selector(:has(*)) {
+    .listing-link:focus-visible {
+      outline: none;
+      box-shadow: none;
+    }
 
-  .listing-card:has(.listing-link:focus-visible) {
-    border-radius: var(--radius-card);
-    outline: 2.5px solid var(--focus-ring, var(--color-navy));
-    outline-offset: 4px;
+    .listing-card:has(.listing-link:focus-visible) {
+      border-radius: var(--radius-card);
+      outline: 2.5px solid var(--focus-ring, var(--color-navy));
+      outline-offset: 4px;
+    }
   }
 
   .listing-card:has(.listing-link:active) {
@@ -2003,21 +2005,29 @@
     aspect-ratio: 1 / 1;
   }
 
+  /* The skeleton matches the card with a badge, the tallest version (spec section 9). */
   .listing-skeleton-line {
-    height: 14px;
-    margin-top: 14px;
+    height: calc(2 * 1.35 * 14px);
+    margin-top: 12px;
   }
 
   .listing-skeleton-price {
     width: 45%;
-    height: 24px;
-    margin-top: 10px;
+    height: clamp(1.5rem, 1.35rem + 0.5vw, 1.75rem);
+    margin-top: 6px;
   }
 
   .listing-skeleton-meta {
     width: 60%;
-    height: 12px;
+    height: 18px;
+    margin-top: 6px;
+  }
+
+  .listing-skeleton-badge {
+    width: 30%;
+    height: 22px;
     margin-top: 8px;
+    border-radius: 999px;
   }
 }
 
@@ -2144,22 +2154,30 @@
     position: relative;
     order: -1;
     aspect-ratio: 4 / 3;
+    /* Landscape phones keep the phone layout, so keep the photo to part of the screen there. In portrait the
+       4:3 box is far below this. The explicit width stops the cap from shrinking the box through its ratio. */
+    width: 100%;
+    max-height: 60svh;
     background: var(--color-pale);
-    /* Sideways swipes change the slide; up and down still scroll the page. */
-    touch-action: pan-y;
+    /* Sideways swipes change the slide; up and down still scroll the page, and pinch-zoom still works. */
+    touch-action: pan-y pinch-zoom;
     --focus-ring: var(--color-sky);
     --focus-halo: var(--color-navy);
   }
 
+  /* The cross-fade (spec 7.3): the new photo fades in on top while the old one stays put underneath, then drops
+     out, so the pale box never shows through. */
   .hero-photo {
     position: absolute;
     inset: 0;
     opacity: 0;
-    transition: opacity 500ms var(--ease-out);
+    transition: opacity 0s linear 500ms;
   }
 
   .hero-photo-active {
+    z-index: 1;
     opacity: 1;
+    transition: opacity 500ms var(--ease-out);
   }
 
   .hero-photo-img,
@@ -2172,9 +2190,11 @@
     position: absolute;
     right: 12px;
     bottom: 12px;
+    /* Above the photo on show, which has z-index 1 for the cross-fade. */
+    z-index: 2;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     padding: 6px;
     border-radius: 10px;
     background: rgb(9 20 42 / 0.72);
@@ -2235,6 +2255,7 @@
     .hero-media {
       order: 0;
       aspect-ratio: auto;
+      max-height: none;
     }
 
     .hero-controls {
@@ -2253,6 +2274,13 @@
   @media (min-width: 64rem) and (min-height: 30rem) {
     .hero-panel {
       padding: 48px 44px;
+    }
+  }
+
+  /* Spec section 4: 64px from 1280px. */
+  @media (min-width: 80rem) and (min-height: 30rem) {
+    .hero-title {
+      font-size: 4rem;
     }
   }
 }

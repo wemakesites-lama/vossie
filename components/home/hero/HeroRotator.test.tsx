@@ -90,6 +90,29 @@ describe("HeroRotator (spec 7.3)", () => {
     expect(activeWord(container)).toBe("textbooks");
   });
 
+  it("holds while keyboard focus is on a call to action", () => {
+    vi.useFakeTimers();
+    const { container } = render(hero);
+    act(() => screen.getByRole("link", { name: "Shop textbooks" }).focus());
+    act(() => {
+      vi.advanceTimersByTime(14000);
+    });
+    expect(activeWord(container)).toBe("textbooks");
+  });
+
+  it("plays again from the toggle while the toggle has focus", () => {
+    vi.useFakeTimers();
+    const { container } = render(hero);
+    const toggle = screen.getByRole("button", { name: "Pause slides" });
+    act(() => toggle.focus());
+    fireEvent.click(toggle);
+    fireEvent.click(screen.getByRole("button", { name: "Play slides" }));
+    act(() => {
+      vi.advanceTimersByTime(7000);
+    });
+    expect(activeWord(container)).toBe("tech");
+  });
+
   it("holds while the tab is hidden", () => {
     vi.useFakeTimers();
     Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
@@ -107,6 +130,8 @@ describe("HeroRotator (spec 7.3)", () => {
     fireEvent.pointerDown(media, { pointerType: "touch", clientX: 300, clientY: 100 });
     fireEvent.pointerUp(media, { pointerType: "touch", clientX: 200, clientY: 110 });
     expect(activeWord(container)).toBe("tech");
+    // A swipe stops autoplay, like choosing a thumbnail.
+    expect(screen.getByRole("button", { name: "Play slides" })).toBeInTheDocument();
     fireEvent.pointerDown(media, { pointerType: "touch", clientX: 100, clientY: 100 });
     fireEvent.pointerUp(media, { pointerType: "touch", clientX: 160, clientY: 260 });
     expect(activeWord(container)).toBe("tech");
@@ -122,6 +147,12 @@ describe("HeroRotator (spec 7.3)", () => {
   });
 
   it("mounts the other photos once the page has loaded, for the cross-fade", () => {
+    const { container } = render(hero);
+    expect(photos(container)).toHaveLength(3);
+  });
+
+  it("with reduced motion, still loads the other photos once the page has loaded", () => {
+    mockMatchMedia((query) => query.includes("reduce"));
     const { container } = render(hero);
     expect(photos(container)).toHaveLength(3);
   });
