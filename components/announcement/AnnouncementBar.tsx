@@ -63,6 +63,8 @@ export function AnnouncementBar({ messages }: { messages: readonly Announcement[
             <Link
               key={message.id}
               href={message.href}
+              // The two messages that aren't showing don't fetch their pages until they do.
+              prefetch={position === activeIndex ? undefined : false}
               className="announce-item"
               data-active={position === activeIndex ? "" : undefined}
               inert={position !== activeIndex}

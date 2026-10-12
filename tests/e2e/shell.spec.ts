@@ -220,3 +220,20 @@ test.describe("footer", () => {
     }
   });
 });
+
+test.describe("privacy", () => {
+  test("opening search sends no recent search to the server", async ({ page }) => {
+    const term = "zz-private-term-7341";
+    await page.addInitScript((value) => {
+      localStorage.setItem("vossie_recent_searches", JSON.stringify([value]));
+    }, term);
+    const urls: string[] = [];
+    page.on("request", (request) => urls.push(request.url()));
+    await page.goto("/");
+    await page.getByRole("button", { name: "Search", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Search Vossie" });
+    await expect(dialog.getByRole("link", { name: term, exact: true })).toBeVisible();
+    await page.waitForLoadState("networkidle");
+    expect(urls.filter((url) => url.includes(term))).toEqual([]);
+  });
+});

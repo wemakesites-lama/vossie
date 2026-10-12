@@ -33,7 +33,9 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
 
   const campus = choice && choice !== ALL_CAMPUSES ? campuses.find((c) => c.slug === choice) : undefined;
   const campusTerms = campus ? trending[campus.slug] : undefined;
-  const trendingTerms = campusTerms?.length ? campusTerms : (trending.all ?? []);
+  // The heading names a campus only when that campus has terms of its own; otherwise these are the all-campus terms.
+  const trendingCampus = campus && campusTerms?.length ? campus : undefined;
+  const trendingTerms = (trendingCampus ? campusTerms : trending.all) ?? [];
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     const term = String(new FormData(event.currentTarget).get("q") ?? "").trim();
@@ -100,7 +102,8 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
             <ul className="search-chips">
               {recent.map((term) => (
                 <li key={term}>
-                  <Link href={browseHref(term)} data-term={term} className="search-chip">
+                  {/* No prefetch: it would send this search to the server as the chip scrolls into view. */}
+                  <Link href={browseHref(term)} data-term={term} prefetch={false} className="search-chip">
                     <ClockIcon className="size-4" />
                     {term}
                   </Link>
@@ -112,12 +115,13 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
 
         <section aria-labelledby={`${id}-trending`} className="search-section">
           <h2 ref={trendingHeadingRef} tabIndex={-1} id={`${id}-trending`} className="search-heading">
-            {campus ? `Trending at ${campus.name}` : "Trending on Vossie"}
+            {trendingCampus ? `Trending at ${trendingCampus.name}` : "Trending on Vossie"}
           </h2>
           <ul className="search-chips">
             {trendingTerms.map((term) => (
               <li key={term}>
-                <Link href={browseHref(term)} data-term={term} className="search-chip">
+                {/* No prefetch either, to save data: nothing is requested until a chip is followed. */}
+                <Link href={browseHref(term)} data-term={term} prefetch={false} className="search-chip">
                   <TrendingIcon className="size-4" />
                   {term}
                 </Link>

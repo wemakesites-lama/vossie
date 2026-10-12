@@ -55,7 +55,7 @@ describe("SearchOverlay", () => {
   it("falls back to all-campus terms when the campus has none of its own", () => {
     setCampusChoice("pretoria");
     const dialog = openSearch();
-    expect(within(dialog).getByRole("heading", { name: "Trending at Pretoria" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: "Trending on Vossie" })).toBeInTheDocument();
     expect(within(dialog).getByRole("link", { name: "Scientific calculator" })).toBeInTheDocument();
   });
 
@@ -69,6 +69,7 @@ describe("SearchOverlay", () => {
     );
     act(() => openOverlay("search", screen.getByRole("button", { name: "Search trigger" })));
     const dialog = screen.getByRole("dialog", { name: "Search Vossie" });
+    expect(within(dialog).getByRole("heading", { name: "Trending on Vossie" })).toBeInTheDocument();
     expect(within(dialog).getByRole("link", { name: "Scientific calculator" })).toBeInTheDocument();
   });
 
