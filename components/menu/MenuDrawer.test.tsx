@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { setCampusChoice } from "@/lib/campus";
@@ -28,6 +28,11 @@ function openMenu() {
   const trigger = screen.getByRole("button", { name: "Menu trigger" });
   act(() => openOverlay("menu", trigger));
   return { trigger, menu: screen.getByRole("dialog", { name: "Menu" }) };
+}
+
+/** jsdom can't navigate and reports it on every link click. Cancel the click's default once React has handled it. */
+function swallowNavigation() {
+  document.addEventListener("click", (event) => event.preventDefault(), { once: true });
 }
 
 describe("MenuDrawer", () => {
@@ -61,7 +66,8 @@ describe("MenuDrawer", () => {
     await user.click(within(menu).getByRole("button", { name: "Campuses" }));
     expect(within(menu).getByRole("heading", { name: "Campuses" })).toBeInTheDocument();
     expect(within(menu).getByRole("link", { name: "All campuses" })).toHaveAttribute("href", "/browse");
-    expect(within(menu).getByRole("link", { name: "Midrand, Gauteng" })).toHaveAttribute("href", "/c/midrand");
+    // Chromium names the row "Midrand , Gauteng" (blockified flex children get spaces); jsdom has no space.
+    expect(within(menu).getByRole("link", { name: /^Midrand\s*,\s*Gauteng$/ })).toHaveAttribute("href", "/c/midrand");
   });
 
   it("shows the current campus, then closes itself and opens the campus picker", async () => {
@@ -88,6 +94,26 @@ describe("MenuDrawer", () => {
     await user.click(toggle);
     expect(toggle).toHaveAttribute("aria-checked", "true");
     expect(document.documentElement).toHaveAttribute("data-low-data");
+  });
+
+  it("describes what the data saver switch does", () => {
+    renderMenu();
+    const { menu } = openMenu();
+    expect(within(menu).getByRole("switch", { name: "Data saver" })).toHaveAccessibleDescription(
+      "Pauses autoplay and animation, and loads lighter photos.",
+    );
+  });
+
+  it("closes when a link is followed, but not on a click that opens a new tab", () => {
+    renderMenu();
+    const { menu } = openMenu();
+    const sell = within(menu).getByRole("link", { name: "Sell" });
+    swallowNavigation();
+    fireEvent.click(sell, { metaKey: true });
+    expect(menu).toHaveAttribute("open");
+    swallowNavigation();
+    fireEvent.click(sell);
+    expect(menu).not.toHaveAttribute("open");
   });
 
   it("closes with the Close button, returns focus, and reopens on the main view", async () => {

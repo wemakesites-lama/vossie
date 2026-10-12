@@ -923,12 +923,16 @@
   .menu-view {
     flex: 1;
     padding-top: 28px;
+  }
+
+  /* Only the drill-downs slide in. The main view arrives with the panel's own motion. */
+  .menu-view-drill {
     animation: menu-view-in var(--dur-base) var(--ease-out);
   }
 
   .menu-links {
     display: grid;
-    gap: 4px;
+    gap: 8px;
   }
 
   .menu-links a,
@@ -943,8 +947,12 @@
     text-transform: uppercase;
   }
 
+  /* Colour alone isn't enough to mark the current page (WCAG 1.4.1), so it's underlined too, like the header's. */
   .menu-links [aria-current="page"] {
     color: var(--color-sky);
+    text-decoration: underline;
+    text-decoration-thickness: 0.06em;
+    text-underline-offset: 0.12em;
   }
 
   .menu-row {
@@ -998,6 +1006,8 @@
 
   .menu-sublinks [aria-current="page"] {
     color: var(--color-sky);
+    text-decoration: underline 2px;
+    text-underline-offset: 4px;
   }
 
   .menu-sublink-detail {
@@ -1049,6 +1059,24 @@
 
   .menu-switch[aria-checked="true"] .menu-switch-thumb {
     translate: 18px 0;
+  }
+
+  /* Tablet and up. The big type takes the height left over, so the main view fits without scrolling
+     down to about 610px of height. The 305px reserved is the menu's other parts (padding, top bar, view
+     padding, data saver: 253px), plus six 8px gaps and 4px of slack. The 7 is the number of link rows.
+     If a row or block is added, the menu scrolls rather than breaks. */
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .menu-links a,
+    .menu-link-button {
+      min-height: 44px;
+      font-size: clamp(2.5rem, min(1.6rem + 4.4vw, (100dvh - 305px) / 7), 4.5rem);
+    }
+
+    /* Shop's drill-down arrow sits beside the word, as Campuses' chevron does, not at the far edge. */
+    .menu-row {
+      justify-content: flex-start;
+      gap: 24px;
+    }
   }
 }
 

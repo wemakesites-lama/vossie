@@ -56,8 +56,9 @@ export function MenuDrawer({ campuses, categories }: MenuDrawerProps) {
     (from === "categories" ? shopDrillRef : campusesDrillRef).current?.focus();
   }
 
-  /** Links navigate in place, so close the menu as soon as one is followed. */
+  /** Links navigate in place, so close the menu as soon as one is followed. A click that opens a new tab leaves it open. */
   function closeOnLink(event: MouseEvent<HTMLDialogElement>) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
     if ((event.target as HTMLElement).closest("a")) close();
   }
 
@@ -130,7 +131,7 @@ export function MenuDrawer({ campuses, categories }: MenuDrawerProps) {
         )}
 
         {view === "categories" && (
-          <section aria-labelledby="menu-categories-title" className="menu-view">
+          <section aria-labelledby="menu-categories-title" className="menu-view menu-view-drill">
             <button ref={backRef} type="button" onClick={goBack} className="menu-back">
               <ArrowLeftIcon />
               Back
@@ -152,7 +153,7 @@ export function MenuDrawer({ campuses, categories }: MenuDrawerProps) {
         )}
 
         {view === "campuses" && (
-          <section aria-labelledby="menu-campuses-title" className="menu-view">
+          <section aria-labelledby="menu-campuses-title" className="menu-view menu-view-drill">
             <button ref={backRef} type="button" onClick={goBack} className="menu-back">
               <ArrowLeftIcon />
               Back
@@ -182,6 +183,7 @@ export function MenuDrawer({ campuses, categories }: MenuDrawerProps) {
             type="button"
             role="switch"
             aria-checked={lowData}
+            aria-describedby="menu-low-data-note"
             onClick={() => setLowData(!lowData)}
             className="menu-switch"
           >
@@ -190,7 +192,9 @@ export function MenuDrawer({ campuses, categories }: MenuDrawerProps) {
               <span className="menu-switch-thumb" />
             </span>
           </button>
-          <p className="text-meta text-white/75">Pauses autoplay and animation, and loads lighter photos.</p>
+          <p id="menu-low-data-note" className="text-meta text-white/75">
+            Pauses autoplay and animation, and loads lighter photos.
+          </p>
         </div>
       </div>
     </dialog>
