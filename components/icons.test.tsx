@@ -3,15 +3,18 @@ import { describe, expect, it } from "vitest";
 import * as icons from "./icons";
 
 describe("icons", () => {
-  it("exports the shell's icon set", () => {
+  it("exports the site's icon set", () => {
     expect(Object.keys(icons).sort()).toEqual([
       "ArrowLeftIcon",
+      "ArrowRightIcon",
       "ArrowUpRightIcon",
       "CheckIcon",
       "ChevronDownIcon",
+      "ChevronLeftIcon",
       "ChevronRightIcon",
       "ClockIcon",
       "CloseIcon",
+      "FlagIcon",
       "HeartIcon",
       "MapPinIcon",
       "MenuIcon",
@@ -20,6 +23,7 @@ describe("icons", () => {
       "PlusSquareIcon",
       "SearchIcon",
       "ShareIcon",
+      "ShieldIcon",
       "TrendingIcon",
       "UserIcon",
     ]);

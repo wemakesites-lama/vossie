@@ -77,6 +77,14 @@ export function ChevronDownIcon(props: IconProps) {
   );
 }
 
+export function ChevronLeftIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m15 6-6 6 6 6" />
+    </Svg>
+  );
+}
+
 export function ChevronRightIcon(props: IconProps) {
   return (
     <Svg {...props}>
@@ -89,6 +97,14 @@ export function ArrowLeftIcon(props: IconProps) {
   return (
     <Svg {...props}>
       <path d="M19 12H5m6-6-6 6 6 6" />
+    </Svg>
+  );
+}
+
+export function ArrowRightIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M5 12h14m-6-6 6 6-6 6" />
     </Svg>
   );
 }
@@ -164,6 +180,22 @@ export function PlusSquareIcon(props: IconProps) {
     <Svg {...props}>
       <rect x="4" y="4" width="16" height="16" rx="3" />
       <path d="M12 8.5v7M8.5 12h7" />
+    </Svg>
+  );
+}
+
+export function ShieldIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M12 3.5 19 6.5v5.3c0 4.2-2.9 7.6-7 9.2-4.1-1.6-7-5-7-9.2V6.5Z" />
+    </Svg>
+  );
+}
+
+export function FlagIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M5.5 20.5v-16h11l-2 4 2 4h-11" />
     </Svg>
   );
 }
