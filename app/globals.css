@@ -2019,6 +2019,8 @@
     border-radius: 999px;
     background: var(--color-white);
     color: var(--color-navy);
+    /* The ring falls on the photo, so it sits on a white halo, as the over-photo rings elsewhere do. */
+    --focus-halo: var(--color-white);
   }
 
   .save-heart[aria-pressed="true"] svg {
@@ -2649,6 +2651,14 @@
     gap: 14px;
     padding-block: 12px;
     color: var(--color-navy);
+  }
+
+  .collections-link {
+    transition: scale var(--dur-fast) var(--ease-out);
+  }
+
+  .collections-link:active {
+    scale: 0.98;
   }
 
   /* The hairline belongs to the link, so moving the mouse between rows never crosses a pixel where no link is
@@ -3625,6 +3635,19 @@
     .seller-card:has(.seller-link:focus-visible)::after,
     .free-card:has(.free-card-link:focus-visible)::after {
       border: 3px solid Highlight;
+    }
+
+    /* Chosen states drawn with a fill would vanish here, so they use the system's selection colours. */
+    .scope-switch [aria-pressed="true"],
+    .campus-choice-on {
+      forced-color-adjust: none;
+      background: SelectedItem;
+      color: SelectedItemText;
+    }
+
+    .campus-name-on::after {
+      forced-color-adjust: none;
+      background: CanvasText;
     }
   }
 }

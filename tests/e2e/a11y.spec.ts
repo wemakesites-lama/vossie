@@ -66,6 +66,13 @@ test("the homepage with a campus that has nothing new", async ({ page, context, 
   expect(await seriousIssues(page)).toEqual([]);
 });
 
+test("the homepage with a campus chosen (the Just listed switch)", async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: "vossie_campus", value: "midrand", url: baseURL! }]);
+  await page.goto("/");
+  await expect(page.locator("#just-listed").getByRole("group", { name: "Show new listings from" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
 test("the homepage for a returning visitor", async ({ page }) => {
   await page.goto("/listings/l-001");
   await expect.poll(() => page.evaluate(() => localStorage.getItem("vossie_recently_viewed"))).not.toBeNull();

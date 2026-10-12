@@ -168,6 +168,18 @@ test.describe("choosing a campus (spec 7.7 and 7.8)", () => {
     await expect(page.locator(".toast")).toHaveText("Showing Midrand first");
     const cookies = await page.context().cookies();
     expect(cookies.find((cookie) => cookie.name === "vossie_campus")?.value).toBe("midrand");
+    // The refresh reaches the other campus-aware parts too.
+    await expect(page.locator("#featured-title")).toHaveText("Hustles at Midrand");
+  });
+
+  // Spec section 8: nothing moves by itself with reduced motion. The Play button for the hero proves the page has
+  // hydrated, so the absence below isn't just a page that hasn't started yet.
+  test("the campus highlight never cycles with reduced motion (spec 8)", async ({ page }) => {
+    onlyAt("laptop-1024", "desktop-1440");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+    await expect(page.getByRole("button", { name: "Play slides" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /campus highlights/ })).toHaveCount(0);
   });
 
   test("an empty campus offers every campus, and the switch flips the grid", async ({ page, context, baseURL }) => {

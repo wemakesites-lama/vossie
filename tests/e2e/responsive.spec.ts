@@ -35,7 +35,22 @@ test("the main controls are reachable with the keyboard", async ({ page }) => {
     });
     if (name) reached.add(name);
   }
-  for (const expected of ["Skip to content", "Menu", "Vossie home", "Account", "Shop your campus", "Start selling", "Get updates"]) {
+  const expectedNames = [
+    "Skip to content",
+    "Menu",
+    "Vossie home",
+    "Account",
+    "Shop your campus",
+    "Start selling",
+    "Get updates",
+    // The homepage's own controls (spec section 15). Not the events' RSVP links: What's on shows only upcoming
+    // events, so whether there are any depends on the date the tests run.
+    "Save ",
+    "Show slide 1 of 3",
+    "Post a request",
+    "Our story",
+  ];
+  for (const expected of expectedNames) {
     expect([...reached].some((name) => name.startsWith(expected)), `${expected} should be reachable`).toBe(true);
   }
 });
