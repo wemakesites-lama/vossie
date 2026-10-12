@@ -31,6 +31,9 @@ export function CampusPicker({ campuses }: { campuses: readonly Campus[] }) {
       const left = Math.max(EDGE, Math.min(rect.left, window.innerWidth - POPOVER_WIDTH - EDGE));
       dialog.style.setProperty("--picker-top", `${Math.round(top)}px`);
       dialog.style.setProperty("--picker-left", `${Math.round(left)}px`);
+    } else {
+      dialog.style.removeProperty("--picker-top");
+      dialog.style.removeProperty("--picker-left");
     }
     searchRef.current?.focus();
   });

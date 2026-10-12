@@ -10,6 +10,7 @@ export function useSheetDrag(sheetRef: RefObject<HTMLElement | null>, onDismiss:
   const startY = useRef<number | null>(null);
 
   function onPointerDown(event: PointerEvent<HTMLElement>) {
+    if (event.button !== 0 || !event.isPrimary) return;
     startY.current = event.clientY;
     event.currentTarget.setPointerCapture(event.pointerId);
   }

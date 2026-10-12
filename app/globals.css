@@ -169,6 +169,12 @@
   textarea {
     font-size: max(16px, 1em);
   }
+
+  /* Tailwind's preflight fades placeholders to half strength (about 2.7:1), too faint to read. */
+  ::placeholder {
+    color: var(--color-muted);
+    opacity: 1;
+  }
 }
 
 @utility surface-navy {
@@ -708,7 +714,8 @@
     display: flex;
     flex-direction: column;
     max-height: 85dvh;
-    padding: 4px 16px max(16px, env(safe-area-inset-bottom));
+    padding: 4px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
   }
 
   /* Short on height, only the list gives way (it scrolls). The handle, title and search box keep their size. */
@@ -761,6 +768,11 @@
 
   .picker-option[aria-current="true"] {
     background: var(--color-pale);
+  }
+
+  /* The list scrolls and would clip a ring drawn outside the option, so draw it just inside. */
+  .picker-option:focus-visible {
+    outline-offset: -4px;
   }
 
   @media (hover: hover) and (pointer: fine) {
