@@ -1,6 +1,6 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ToastRegion } from "@/components/ui/ToastRegion";
 import { getCampusCookieValue, setCampusChoice } from "@/lib/campus";
 import { openOverlay } from "@/lib/overlays";
@@ -115,5 +115,51 @@ describe("CampusPicker", () => {
     render(<CampusPicker campuses={campuses} />);
     const dialog = openPicker();
     expect(within(dialog).getByRole("searchbox", { name: "Find your campus" })).toHaveFocus();
+  });
+
+  it("opens under its trigger on a larger screen, and forgets that spot when opened without one", async () => {
+    const user = userEvent.setup();
+    mockMatchMedia((query) => query === "(min-width: 48rem) and (min-height: 30rem)");
+    render(
+      <>
+        <button type="button">Open picker</button>
+        <CampusPicker campuses={campuses} />
+      </>,
+    );
+    const trigger = screen.getByRole("button", { name: "Open picker" });
+    // jsdom has no layout: say where the trigger is. The popover sits 8px below it, level with its left edge.
+    vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue({
+      x: 200,
+      y: 60,
+      left: 200,
+      top: 60,
+      right: 360,
+      bottom: 104,
+      width: 160,
+      height: 44,
+      toJSON: () => ({}),
+    });
+    const dialog = openPicker(trigger);
+    expect(dialog.style.getPropertyValue("--picker-top")).toBe("112px");
+    expect(dialog.style.getPropertyValue("--picker-left")).toBe("200px");
+
+    await user.click(within(dialog).getByRole("button", { name: "Close" }));
+    openPicker();
+    expect(dialog.style.getPropertyValue("--picker-top")).toBe("");
+    expect(dialog.style.getPropertyValue("--picker-left")).toBe("");
+  });
+
+  it("closes when its handle is dragged down more than 80px", () => {
+    render(<CampusPicker campuses={campuses} />);
+    const dialog = openPicker();
+    // The handle is hidden from assistive technology, so it has no role to look it up by.
+    const handle = dialog.querySelector<HTMLElement>(".sheet-handle");
+    if (!handle) throw new Error("The sheet has no drag handle");
+    handle.setPointerCapture = vi.fn(); // jsdom has no pointer capture
+    fireEvent.pointerDown(handle, { pointerId: 1, isPrimary: true, button: 0, clientY: 100 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientY: 150 });
+    expect(dialog).toHaveAttribute("open");
+    fireEvent.pointerUp(handle, { pointerId: 1, clientY: 200 });
+    expect(dialog).not.toHaveAttribute("open");
   });
 });
