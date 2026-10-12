@@ -5552,6 +5552,14 @@ Spec section 6.1. It has one addition: a pause/play button. WCAG 2.2.2 needs a w
 - **A mouse over the bar.** A touch tap doesn't count. A tap fires `mouseenter` with no `mouseleave` until the next tap somewhere else, so Play would seem to do nothing.
 - **Keyboard focus on the message.** This hold applies only while focus is on the message, so the focused link never fades out and goes inert under the user, even if a mouse passes over and leaves.
 
+**Updated during the build.** The plan's focus ring was clipped at the top of the window and hidden by the header's quick links. So the CSS changed:
+- the message link and the Pause button draw their ring inside (`outline-offset: -4px`);
+- the link got 8px of side padding and 10px corners to make room for that ring;
+- the bar's own side padding shrank to match, so the tag stays where it was;
+- the message and the button sit 8px apart (spec section 5).
+
+The committed CSS is the source of truth.
+
 **Files:**
 - Create: `components/announcement/AnnouncementBar.tsx`, `components/announcement/AnnouncementBar.test.tsx`
 - Modify: `app/globals.css` (announcement styles), `app/layout.tsx` (render the bar)
@@ -7638,6 +7646,11 @@ test.describe("search", () => {
     const dialog = page.getByRole("dialog", { name: "Search Vossie" });
     const box = dialog.getByRole("searchbox", { name: "Search Vossie" });
     await expect(box).toBeFocused();
+    // An empty search goes nowhere and keeps the overlay open. The unit tests can't show this, because their
+    // next/form mock always prevents the default.
+    await box.press("Enter");
+    await expect(page).toHaveURL(/\/$/);
+    await expect(dialog).toBeVisible();
     await box.fill("calculator");
     await box.press("Enter");
     await expect(page).toHaveURL(/\/browse\?q=calculator$/);
@@ -7652,6 +7665,8 @@ test.describe("announcement bar", () => {
   test("moves on every six seconds", async ({ page }) => {
     await page.clock.install();
     await page.goto("/");
+    // The timer starts at hydration, which is when the button flips from Play to Pause.
+    await expect(page.getByRole("button", { name: "Pause announcements" })).toBeVisible();
     const active = page.locator(".announce-item[data-active]");
     await expect(active).toContainText("Live on all 12");
     await page.clock.fastForward(6500);
@@ -8238,4 +8253,31 @@ Part 2 must add:
 - **Other test helpers.**
   - `createMediaQueryList` is static, so `change` events never fire.
   - The `next/image` and `next/form` mocks drop props that aren't on their short lists.
+
+### Notes from the Part 1 reviews (2026-10-12)
+
+**Decisions**
+- **Focus after following a menu or search link.**
+  - The overlay closes, and focus returns to the button that opened it: the header's Menu or Search button.
+  - Next 16.4 leaves focus alone on client navigation, and its route announcer reads the new page title. Accepted.
+  - Revisit this if a Part 2 page should take focus itself.
+
+**Search**
+- **`/browse` must tidy `q`:** trim it, collapse whitespace and cap it at 100 characters.
+  - The overlay submits the raw field value, limited by `maxLength={100}`, while Recent stores the tidied term.
+  - If `/browse` ever records terms from its URL, cap them in `addRecentSearch` too.
+
+**Announcement bar, once messages come from data**
+- **Keep the active index in range.** Clamp it (`index % items.length`) or reset it when the list of messages changes.
+- **Hidden tabs.** `pageHidden` starts false, so a tab opened in the background keeps its throttled timer until the first visibility change. A `useSyncExternalStore` on `visibilitychange` would start it right.
+- **Before hydration.** The server HTML shows "Play announcements" until hydration flips it to "Pause", because `useMotionAllowed()` has a "not allowed" server snapshot.
+
+**Navigation**
+- **`aria-current` on 404 URLs.**
+  - The 404 page is prerendered for `/_not-found`, so on a 404 URL the server-rendered `NavLink`s mark nothing as current.
+  - React doesn't patch attributes during hydration, so they stay unmarked. Links mounted later on the client are marked.
+  - Real routes are prerendered with their own pathname, so they agree. This is harmless.
+
+**Testing**
+- **Link clicks in jsdom.** Cancel the click's default after React has handled it, or jsdom reports "Not implemented: navigation". The menu and search tests do this with a small `swallowNavigation()` helper.
 

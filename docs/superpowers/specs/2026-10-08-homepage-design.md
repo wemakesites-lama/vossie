@@ -129,10 +129,12 @@ Every component uses three font variables, never a font name: `--font-display` (
 
 - **Design order.** Every section is designed at 360px first, then widened.
 - **Test widths:** 360, 390 and 430 (phones), 768 (tablet), 1024 (small laptop), 1280 and 1440 (desktop).
-- **Breakpoints:** Tailwind defaults (`sm` 640, `md` 768, `lg` 1024, `xl` 1280).
-  - Phone layouts run up to `md`.
-  - Split and grid layouts start at `md` (tablet), with full desktop compositions from `lg`.
+- **Breakpoints:** two steps, each with a height guard so a phone held sideways keeps the phone layout.
+  - **Tablet step, `wide:`:** at least 768px (48rem) wide and 480px (30rem) tall. Phone layouts run below it. Split and grid layouts start at it.
+  - **Desktop step, `desk:`:** at least 1024px (64rem) wide and 480px tall. Full desktop compositions start here.
+  - In component CSS these are `@media (min-width: 48rem) and (min-height: 30rem)` and `@media (min-width: 64rem) and (min-height: 30rem)`. Tailwind's `md:` and `lg:` aren't used.
 - **Touch.** Every tappable target is at least 44x44px with 8px between targets. Primary actions sit in the lower two-thirds of the phone screen where thumbs reach.
+  - Rows in a list divided by hairlines, such as the menu's sub-lists and the campus picker, may touch. Each row is still at least 44px tall.
 - **No hover-only features.** Hover effects are extras, enabled only under `(hover: hover) and (pointer: fine)`. Everything works by tap and keyboard.
 - **Swipe rows.** Horizontal rows use native CSS scroll-snap, show a peek of the next card, and have a progress bar. Desktop adds arrow buttons; keyboard arrows work when the row has focus.
 - **Phone extras.** Respects the iPhone notch and home bar (safe-area insets). Landscape phones use the phone layout. Tablets get the split hero.
@@ -154,7 +156,7 @@ Every component uses three font variables, never a font name: `--font-display` (
   - Left: a labelled Menu button and the campus pill (current campus, opens the campus picker).
   - Centre: the pennant (a link to the homepage, accessible name "Vossie home").
   - Right: Search, Account, and Saved with its count.
-  - Above the header on `lg` and up: a quick-link row (Shop, Sell, Campuses, Hub, How it works, Safety).
+  - Above the header from the desktop step (`desk:`) up: a quick-link row (Shop, Sell, Campuses, Hub, How it works, Safety).
 - **Phone:**
   - Left: Menu and Search. Centre: the pennant. Right: Account and Saved.
   - The campus chip lives at the top of the hero panel and in the menu.
@@ -360,7 +362,7 @@ See 6.6.
 |---|---|
 | `--dur-fast` | 150ms (button presses, hovers) |
 | `--dur-base` | 250ms (toggles, fades, image fade-in) |
-| `--dur-slow` | 400ms (sheets, menu, slide changes) |
+| `--dur-slow` | 400ms (sheets, slide changes). The menu opens in 300ms (section 6.3). |
 | `--ease-out` | `cubic-bezier(.2,.8,.2,1)` |
 | `--ease-spring` | `cubic-bezier(.34,1.56,.64,1)` (pennant pop, save heart) |
 
