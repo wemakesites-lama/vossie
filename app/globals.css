@@ -1217,6 +1217,12 @@
     margin-top: 12px;
   }
 
+  /* A tile whose name wraps makes its row taller. Let the tile beside it fill that height too,
+     so the two don't sit side by side at different heights. One-line rows stay 52px. */
+  .search-categories > li {
+    display: grid;
+  }
+
   .search-category {
     display: flex;
     align-items: center;
