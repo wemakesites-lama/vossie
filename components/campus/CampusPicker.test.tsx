@@ -8,6 +8,22 @@ import type { Campus } from "@/lib/types";
 import { mockMatchMedia } from "@/tests/helpers/dom";
 import { CampusPicker } from "./CampusPicker";
 
+// The shared setup's router mock can't be asserted on, so this file has its own.
+const router = vi.hoisted(() => ({
+  push: vi.fn(),
+  replace: vi.fn(),
+  refresh: vi.fn(),
+  prefetch: vi.fn(),
+  back: vi.fn(),
+  forward: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => router,
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 const campus = (slug: string, name: string, region: string): Campus => ({
   slug,
   name,
@@ -96,6 +112,14 @@ describe("CampusPicker", () => {
     await user.click(within(dialog).getByRole("button", { name: "All campuses, Shop every campus" }));
     expect(getCampusCookieValue()).toBe("all");
     expect(screen.getByRole("status")).toHaveTextContent("Showing all campuses");
+  });
+
+  it("re-renders the campus-aware sections after a choice", async () => {
+    const user = userEvent.setup();
+    render(<CampusPicker campuses={campuses} />);
+    const dialog = openPicker();
+    await user.click(within(dialog).getByRole("button", { name: "Midrand, Gauteng" }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 
   it("marks the current choice", () => {

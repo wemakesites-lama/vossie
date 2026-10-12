@@ -4,9 +4,9 @@ import { useId, useRef, useState } from "react";
 import { CheckIcon, CloseIcon } from "@/components/icons";
 import { useOverlayDialog } from "@/components/ui/useOverlayDialog";
 import { useCampusChoice } from "@/hooks/useCampusChoice";
+import { useChooseCampus } from "@/hooks/useChooseCampus";
 import { WIDE_QUERY } from "@/lib/breakpoints";
-import { ALL_CAMPUSES, setCampusChoice } from "@/lib/campus";
-import { showToast } from "@/lib/toast";
+import { ALL_CAMPUSES } from "@/lib/campus";
 import type { Campus, CampusChoice } from "@/lib/types";
 import { useSheetDrag } from "./useSheetDrag";
 
@@ -20,6 +20,7 @@ export function CampusPicker({ campuses }: { campuses: readonly Campus[] }) {
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const choice = useCampusChoice(campuses);
+  const chooseCampus = useChooseCampus(campuses);
 
   const { dialogRef, close, onBackdropClick } = useOverlayDialog("campus", (trigger, dialog) => {
     setQuery("");
@@ -45,10 +46,9 @@ export function CampusPicker({ campuses }: { campuses: readonly Campus[] }) {
     : campuses;
 
   function choose(next: CampusChoice) {
-    setCampusChoice(next);
+    // Close first, so the confirmation toast isn't hidden behind the modal from screen readers.
     close();
-    const name = campuses.find((campus) => campus.slug === next)?.name;
-    showToast(name ? `Showing ${name} first` : "Showing all campuses");
+    chooseCampus(next);
   }
 
   return (
