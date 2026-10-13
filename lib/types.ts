@@ -165,3 +165,35 @@ export type MoreFrom = {
   from: "seller" | "category";
   items: readonly Listing[];
 };
+
+export type PriceFilter = "free" | "under-50" | "under-100" | "under-250" | "under-500";
+
+export type PayFilter = "cash" | "swap";
+
+export type BrowseSort = "match" | "new" | "price-low" | "price-high";
+
+/** A browse page's whole state, read from its link (browse and listing spec 3.2). */
+export type BrowseQuery = {
+  q: string | null;
+  category: string | null;
+  /** A campus slug, or "all". */
+  campus: CampusChoice;
+  /** Whether the campus came from the link, rather than from the viewer's chosen campus. */
+  campusFromLink: boolean;
+  price: PriceFilter | null;
+  pay: PayFilter | null;
+  deals: "free-and-swaps" | null;
+  sort: BrowseSort;
+  /** How many results to show: 24, 48 … 240. */
+  shown: number;
+};
+
+/** What a search needs: the query without the paging or where the campus came from (spec 6.3). */
+export type SearchQuery = Omit<BrowseQuery, "shown" | "campusFromLink">;
+
+export type SearchResult = {
+  /** Every match, filtered and sorted. */
+  items: readonly Listing[];
+  /** How many match at other campuses, when the query is for one campus. Otherwise 0. */
+  elsewhere: number;
+};
