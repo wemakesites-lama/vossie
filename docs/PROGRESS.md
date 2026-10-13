@@ -86,9 +86,15 @@ Lama went with Claude's recommendations. They are decisions 27 to 34 in `docs/re
 - **LCP** (3.3 s simulated, against the spec's 2.5 s) is revisited when real photos arrive (decision 34).
 - **Checks:** 310 unit tests. End to end, 283 pass, 142 are skipped by design and none fail.
 
+## 2026-10-13: Browse and listing pages designed and planned
+- **Go-live checklist:** `docs/reference/GO-LIVE.md` lists every page and view the marketplace needs before launch (about 45), the work that isn't a screen, the decisions for Lama and Eduvos, and a suggested order.
+- **Brainstorm** (decisions 35 to 45): UI first on sample data. Every campus is browsable, and you collect at the listing's campus. Browse is category-led; the listing page has a gallery and an action dock. The link is the whole state, and the page opens on your chosen campus.
+- **Spec:** `docs/superpowers/specs/2026-10-13-browse-and-listing-design.md`.
+- **Plan:** `docs/superpowers/plans/2026-10-13-browse-and-listing-pages.md`, 22 tasks. Its 18 plan decisions are for Lama to confirm or veto. Decision 18 corrects the spec: browse works without the app's JavaScript bundle, but not with JavaScript switched off entirely, because streamed content needs React's small inline script.
+
 ## Next
 - Lama reviews the Part 2 screenshots in `docs/progress/part-2/` against the mockup. They were retaken after the open-point changes; to retake them again, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "homepage review screenshots"`.
-- Then the next stage of pages.
+- Lama reviews the browse and listing plan's decisions, then the build starts.
 
 ## Waiting on
 - Eduvos font files and licence confirmation.
