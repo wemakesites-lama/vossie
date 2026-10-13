@@ -69,6 +69,13 @@ describe("parseBrowseParams (spec 3.2)", () => {
   it("cuts a long search to 100 characters", () => {
     expect(parse({ q: "a".repeat(150) }).q).toHaveLength(100);
   });
+
+  it("never splits an emoji at the limit, so the search can still go in a link", () => {
+    const q = parse({ q: `${"a".repeat(99)}📚📚` }).q!;
+    expect(Array.from(q)).toHaveLength(100);
+    expect(q.endsWith("📚")).toBe(true);
+    expect(() => encodeURIComponent(q)).not.toThrow();
+  });
 });
 
 describe("parseShown", () => {

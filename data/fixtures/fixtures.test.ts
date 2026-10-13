@@ -58,6 +58,8 @@ describe("listing fixtures (browse and listing spec 6.2)", () => {
     for (const listing of listings) {
       expect(campusSlugs.has(listing.campusSlug), listing.id).toBe(true);
       expect(categorySlugs.has(listing.categorySlug), listing.id).toBe(true);
+      // UTC to the second, with a Z: the newest-first sorts compare these as text.
+      expect(listing.createdAt, listing.id).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/);
       expect(Number.isNaN(Date.parse(listing.createdAt)), listing.id).toBe(false);
     }
   });
@@ -92,8 +94,15 @@ describe("listing fixtures (browse and listing spec 6.2)", () => {
     }
   });
 
-  it("has at most five more photos per listing", () => {
+  it("has at most five more photos per listing, and at least three listings with more than one", () => {
     for (const listing of listings) expect(listing.morePhotos.length, listing.id).toBeLessThanOrEqual(5);
+    expect(listings.filter((listing) => listing.morePhotos.length > 0).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("uses every way of handing over, so each collect box wording can be tested", () => {
+    expect(new Set(listings.map((listing) => listing.handover))).toEqual(
+      new Set(["pickup", "on-campus", "on-campus-or-online", "online"]),
+    );
   });
 
   it("has paused, sold, free and swap-only listings, to test those states", () => {

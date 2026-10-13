@@ -66,7 +66,7 @@ function campusFirst<T extends { campusSlug: string }>(items: readonly T[], camp
   return [...own, ...others].slice(0, limit);
 }
 
-/** Listings people can buy or book. Paused and sold listings never appear in lists (spec 5.5). */
+/** Listings people can buy or book. Paused and sold listings never appear in lists (browse and listing spec 5.5). */
 function available(items: readonly Listing[]): Listing[] {
   return items.filter((listing) => listing.availability === "available");
 }
@@ -140,7 +140,7 @@ export async function getHubBanner(): Promise<HubBanner> {
   return hubBanner;
 }
 
-/** Everything a listing page needs (spec 6.3), for any listing, paused and sold ones included. */
+/** Everything a listing page needs (browse and listing spec 6.3), for any listing, paused and sold ones included. */
 export async function getListingDetail(id: string): Promise<ListingDetail | null> {
   "use cache";
   const listing = listings.find((item) => item.id === id);
@@ -154,7 +154,8 @@ export async function getListingDetail(id: string): Promise<ListingDetail | null
 }
 
 /**
- * A listing page's "More from" row (spec 5.7): up to `limit` of the seller's other available listings, newest first.
+ * A listing page's "More from" row (browse and listing spec 5.7): up to `limit` of the seller's other available
+ * listings, newest first.
  * When the seller has none, the same category's: those at the listing's campus first, then the rest.
  */
 export async function getMoreFrom(

@@ -57,7 +57,9 @@ export function parseShown(raw: string | undefined): number {
  * mangled link still shows results. With no campus in the link, the viewer's chosen campus is used.
  */
 export function parseBrowseParams(params: BrowseParams, viewerCampus: CampusChoice, known: KnownSlugs): BrowseQuery {
-  const q = first(params.q)?.trim().slice(0, MAX_QUERY_LENGTH).trim() || null;
+  // Cut by characters (code points), not UTF-16 units, so an emoji at the limit is never split in half: a lone half
+  // would make encodeURIComponent throw later.
+  const q = Array.from(first(params.q)?.trim() ?? "").slice(0, MAX_QUERY_LENGTH).join("").trim() || null;
 
   const cat = first(params.cat);
   const campusParam = first(params.campus);
