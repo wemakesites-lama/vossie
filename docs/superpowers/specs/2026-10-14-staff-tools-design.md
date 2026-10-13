@@ -74,7 +74,7 @@ Mentors can follow their sellers' health.
 7. **Trust badges are calculated from the store,** with the rules in the info pages (part C, decision 4): New seller, Responsive, Trusted. Listings show their seller's badge.
    - The calculation runs when an admin opens Overview, and after each confirmed sale or first reply. There's no scheduler yet.
    - The nightly job is a go-live item.
-8. **Featured honours pins,** then fills the other slots with the existing fair daily draw (the homepage's `drawFeatured`), now only from approved, unpaused shops with at least one available listing.
+8. **Featured honours pins,** then fills the other slots with the existing fair daily draw (the homepage's `drawFeatured`), now only from approved, unpaused shops with at least one available listing, and with a week's break before the same seller is drawn again (as the trust page says). Draws are recorded in the store so the break can be checked.
 9. **Staff tools are desktop-first but work on phones.**
    - Tables become stacked rows below the tablet step.
    - Every action is a form button, with no client code beyond the shell.
