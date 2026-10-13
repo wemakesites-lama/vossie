@@ -9,7 +9,6 @@ const PLACEHOLDERS: Array<[path: string, title: string]> = [
   ["/looking-for", "Looking For"],
   ["/login", "Sign in"],
   ["/account", "Your account"],
-  ["/saved", "Saved"],
   ["/collections/exam-season", "Notes, tutors & cram snacks"],
 ];
 

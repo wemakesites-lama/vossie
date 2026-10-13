@@ -1,16 +1,19 @@
 import { brotliCompressSync, constants } from "node:zlib";
 import { expect, test } from "@playwright/test";
 
-const PAGES: ReadonlyArray<[name: string, path: string]> = [
+// Saved reads the saved cookie, so it's measured with two listings saved: its cards and their hearts load as they would.
+const PAGES: ReadonlyArray<[name: string, path: string, saved?: string]> = [
   ["homepage", "/"],
   ["browse page", "/browse"],
   ["listing page", "/listings/l-001"],
   ["storefront", "/sellers/tech-corner"],
+  ["Saved page", "/saved", "l-001.l-026"],
 ];
 
-for (const [name, path] of PAGES) {
-  test(`a first visit to the ${name} stays inside the size budgets`, async ({ page }) => {
+for (const [name, path, saved] of PAGES) {
+  test(`a first visit to the ${name} stays inside the size budgets`, async ({ page, context, baseURL }) => {
     test.skip(test.info().project.name !== "phone-390", "Measured once, at phone size");
+    if (saved) await context.addCookies([{ name: "vossie_saved", value: saved, url: baseURL! }]);
     const pending: Array<Promise<void>> = [];
     // script, font and total are the gzip transfer sizes `next start` serves. scriptBrotli is the same scripts
     // compressed the way a host serves them.

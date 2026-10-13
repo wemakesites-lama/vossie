@@ -5301,3 +5301,68 @@
     }
   }
 }
+
+/* --- Shopping: Saved (shopping plan, Task 7, spec 5.2 to 5.4) --- */
+@layer components {
+  /* .page and .saved-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
+  .saved-page {
+    padding: 24px 16px 64px;
+  }
+
+  .saved-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .saved-note {
+    max-width: 60ch;
+    margin-top: 10px;
+    color: var(--color-muted);
+    font-size: 13px;
+  }
+
+  /* The skeleton's count line has the same height, so the cards land where the skeleton's were. */
+  .saved-count,
+  .saved-skeleton-count {
+    height: 20px;
+    margin-top: 20px;
+  }
+
+  .saved-count {
+    color: var(--color-navy);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+  }
+
+  .saved-skeleton-count {
+    width: 5rem;
+  }
+
+  .saved-empty {
+    display: grid;
+    justify-items: start;
+    gap: 12px;
+    margin-top: 24px;
+    padding: 28px 20px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+  }
+
+  .saved-empty-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 24px;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .saved-page {
+      padding-inline: 40px;
+    }
+  }
+}
