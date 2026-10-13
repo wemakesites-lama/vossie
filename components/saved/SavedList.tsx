@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ListingGrid } from "@/components/listings/ListingGrid";
 import { getCampuses, getListingsByIds } from "@/lib/data";
 import { getSavedIds } from "@/lib/data/saved";
+import { RefreshWhenStale } from "./RefreshWhenStale";
 
 /**
  * The saved listings (shopping spec 5.2), read from the saved cookie on each request: a count, then the cards in saved
@@ -26,9 +27,13 @@ export async function SavedList() {
     );
   }
 
+  // Compared with the cookie each time Next shows this page again, so a kept copy never stays out of date.
+  const refresh = <RefreshWhenStale savedIds={ids.join(".")} />;
+
   if (listings.length === 0) {
     return (
       <section aria-labelledby="saved-empty-title" className="saved-empty">
+        {refresh}
         <h2 id="saved-empty-title" className="saved-empty-title">
           Nothing saved yet
         </h2>
@@ -42,6 +47,7 @@ export async function SavedList() {
 
   return (
     <section aria-labelledby="saved-list-title">
+      {refresh}
       <h2 id="saved-list-title" className="sr-only">
         Your saved listings
       </h2>
