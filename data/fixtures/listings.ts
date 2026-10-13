@@ -74,7 +74,8 @@ const listing = (
 const service = { kind: "service" } as const;
 
 // Newest first. Every campus has listings except Mbombela, so its empty state can be tested. l-016 is paused and
-// l-026 is sold (plan decision 14). Free items are R0; swap-only items have no price.
+// l-026 is sold (plan decision 14). Free items are R0; swap-only items have no price. Each listing's badge is its
+// seller's (shopping spec 6.1).
 export const listings: readonly Listing[] = [
   listing(
     "l-001", "Casio fx-991ZA Plus calculator", 250, "midrand", "tech", "tech-corner", "responsive", "2026-10-12T07:40:00Z",
@@ -90,7 +91,7 @@ export const listings: readonly Listing[] = [
     { condition: "like-new" },
   ),
   listing(
-    "l-002", "Intro to Financial Accounting, 4th edition", 300, "midrand", "textbooks-notes", "book-swap", "new-seller",
+    "l-002", "Intro to Financial Accounting, 4th edition", 300, "midrand", "textbooks-notes", "book-swap", "trusted",
     "2026-10-12T06:55:00Z",
     "The prescribed book for Accounting 1. A few highlighted pages, none torn.",
   ),
@@ -111,7 +112,8 @@ export const listings: readonly Listing[] = [
     { pickup: "reception", morePhotos: [photo(2, "Inside the fridge, with the freezer box")] },
   ),
   listing(
-    "l-021", "Bicycle, 21 gears", 1500, "cape-town-mowbray", "res-living", "weekend-market", null, "2026-10-12T05:30:00Z",
+    "l-021", "Bicycle, 21 gears", 1500, "cape-town-mowbray", "res-living", "weekend-market", "new-seller",
+    "2026-10-12T05:30:00Z",
     "A mountain bike with 21 gears, serviced last month. The lock is included.",
     {
       pickup: "reception",
@@ -152,7 +154,7 @@ export const listings: readonly Listing[] = [
     { ...service, handover: "on-campus", from: true },
   ),
   listing(
-    "l-006", "Desk lamp with a USB port", 180, "midrand", "res-living", "res-deals", null, "2026-10-11T12:30:00Z",
+    "l-006", "Desk lamp with a USB port", 180, "midrand", "res-living", "res-deals", "trusted", "2026-10-11T12:30:00Z",
     "A warm LED desk lamp with a USB port to charge your phone. It bends any way you need.",
     { condition: "like-new" },
   ),
@@ -251,18 +253,19 @@ export const listings: readonly Listing[] = [
   // Giveaways and swap-only items, once a separate list (the "fs-" ids are kept, so old links still work). They're
   // dated before every other listing, so Just listed doesn't change (plan decision 7).
   listing(
-    "fs-001", "Business Management 1 notes", 0, "midrand", "textbooks-notes", "book-swap", null, "2026-10-08T18:00:00Z",
+    "fs-001", "Business Management 1 notes", 0, "midrand", "textbooks-notes", "book-swap", "trusted",
+    "2026-10-08T18:00:00Z",
     "Handwritten notes for every chapter. Free to a first-year who needs them.",
     { condition: "fair" },
   ),
   listing(
-    "fs-002", "Desk lamp, swap for a kettle", null, "pretoria", "res-living", "res-essentials", null,
+    "fs-002", "Desk lamp, swap for a kettle", null, "pretoria", "res-living", "res-essentials", "responsive",
     "2026-10-08T16:00:00Z",
     "A working desk lamp. I'd rather swap it for a kettle than sell it.",
     { swapFor: "a kettle" },
   ),
   listing(
-    "fs-003", "Res curtains, two panels", 0, "midrand", "res-living", "res-deals", null, "2026-10-08T14:00:00Z",
+    "fs-003", "Res curtains, two panels", 0, "midrand", "res-living", "res-deals", "trusted", "2026-10-08T14:00:00Z",
     "Two curtain panels that fit a res window. Free if you collect this week.",
   ),
   listing(
@@ -275,7 +278,7 @@ export const listings: readonly Listing[] = [
     "Twenty plastic hangers, free to whoever collects first.",
   ),
   listing(
-    "fs-006", "Calculator for a textbook", null, "cape-town-mowbray", "tech", "weekend-market", null,
+    "fs-006", "Calculator for a textbook", null, "cape-town-mowbray", "tech", "weekend-market", "new-seller",
     "2026-10-08T08:00:00Z",
     "A scientific calculator I no longer need. I'm swapping it for a first-year textbook.",
     { swapFor: "an Accounting 1 textbook" },

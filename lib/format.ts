@@ -70,3 +70,34 @@ export function eventDate(date: string): { day: string; month: string } {
   const [, month, day] = date.split("-").map(Number);
   return { day: String(day), month: MONTHS[month - 1] };
 }
+
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+/** "2026-03" → "March 2026", for "Selling since" (shopping spec 4.1). No timezone maths: it's a month, not a moment. */
+export function monthYear(yearMonth: string): string {
+  const [year, month] = yearMonth.split("-").map(Number);
+  return `${MONTH_NAMES[month - 1]} ${year}`;
+}
+
+/** "1 listing", "12 listings". */
+export function listingsLabel(count: number): string {
+  return count === 1 ? "1 listing" : `${count} listings`;
+}
+
+/** A seller's share card's alt text (shopping spec 4.3). */
+export function sellerCardAlt(name: string, category: string, campusName: string): string {
+  return `${name}, ${category} at ${campusName} on Vossie`;
+}

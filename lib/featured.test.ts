@@ -1,16 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { makeSeller } from "@/tests/helpers/fakes";
 import type { Seller } from "./types";
 import { dayNumber, drawFeatured } from "./featured";
 
-const seller = (slug: string, campusSlug: string, verified = true): Seller => ({
-  slug,
-  name: slug,
-  tagline: "",
-  category: "Food",
-  campusSlug,
-  verified,
-  image: { src: "/p.svg", alt: "" },
-});
+const seller = (slug: string, campusSlug: string, verified = true): Seller =>
+  makeSeller({ slug, name: slug, campusSlug, verified });
 
 const sellers = [
   seller("a", "midrand"),

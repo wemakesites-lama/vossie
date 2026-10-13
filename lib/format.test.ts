@@ -5,8 +5,11 @@ import {
   eventDate,
   formatRand,
   joinWords,
+  listingsLabel,
+  monthYear,
   offersLabel,
   priceLabel,
+  sellerCardAlt,
   shareCardAlt,
   shortDescription,
 } from "./format";
@@ -85,5 +88,22 @@ describe("eventDate", () => {
   it("splits a YYYY-MM-DD date into the day and short month for the date block", () => {
     expect(eventDate("2026-10-05")).toEqual({ day: "5", month: "Oct" });
     expect(eventDate("2026-12-31")).toEqual({ day: "31", month: "Dec" });
+  });
+});
+
+describe("shopping wording (shopping spec 4 and 7)", () => {
+  it("writes a YYYY-MM month in words, for Selling since", () => {
+    expect(monthYear("2026-03")).toBe("March 2026");
+    expect(monthYear("2025-12")).toBe("December 2025");
+  });
+
+  it("counts listings in plain words", () => {
+    expect(listingsLabel(1)).toBe("1 listing");
+    expect(listingsLabel(0)).toBe("0 listings");
+    expect(listingsLabel(12)).toBe("12 listings");
+  });
+
+  it("says who, what and where on a seller's share card", () => {
+    expect(sellerCardAlt("Tech corner", "Tech", "Midrand")).toBe("Tech corner, Tech at Midrand on Vossie");
   });
 });

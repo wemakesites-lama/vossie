@@ -1,4 +1,4 @@
-import type { BrowseQuery, Listing } from "@/lib/types";
+import type { BrowseQuery, Listing, Seller } from "@/lib/types";
 
 /** A listing for tests: an available R100 tech item at Midrand's library. Override what the test is about. */
 export function makeListing(overrides: Partial<Listing> = {}): Listing {
@@ -22,6 +22,24 @@ export function makeListing(overrides: Partial<Listing> = {}): Listing {
     pickupPointId: "pp-midrand-library",
     swapFor: null,
     availability: "available",
+    ...overrides,
+  };
+}
+
+/** A seller for tests: an unverified Midrand tech seller with no badge. Override what the test is about. */
+export function makeSeller(overrides: Partial<Seller> = {}): Seller {
+  return {
+    slug: "test-seller",
+    name: "Test seller",
+    tagline: "A test tagline.",
+    category: "Tech",
+    categorySlug: "tech",
+    campusSlug: "midrand",
+    verified: false,
+    badge: null,
+    about: "A test seller.",
+    since: "2026-03",
+    image: { src: "/placeholders/seller/tech-corner.svg", alt: "The test seller at work" },
     ...overrides,
   };
 }

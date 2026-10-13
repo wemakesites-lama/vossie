@@ -119,3 +119,37 @@ describe("listing fixtures (browse and listing spec 6.2)", () => {
     );
   });
 });
+
+describe("seller and collection fixtures (shopping spec 6.1)", () => {
+  it("gives every seller an about, a start month and a known category with its own name", () => {
+    for (const seller of sellers) {
+      expect(seller.about.trim().length, seller.slug).toBeGreaterThan(0);
+      expect(seller.since, seller.slug).toMatch(/^\d{4}-(0[1-9]|1[0-2])$/);
+      expect(seller.since <= "2026-10", seller.slug).toBe(true);
+      expect(categories.find((category) => category.slug === seller.categorySlug)?.name, seller.slug).toBe(
+        seller.category,
+      );
+    }
+  });
+
+  it("gives every listing its seller's trust badge", () => {
+    for (const listing of listings) {
+      expect(listing.badge, listing.id).toBe(sellersBySlug.get(listing.sellerSlug)?.badge);
+    }
+  });
+
+  it("has a seller with nothing available, so the storefront's empty state can be tested", () => {
+    const selling = new Set(
+      listings.filter((listing) => listing.availability === "available").map((listing) => listing.sellerSlug),
+    );
+    expect(sellers.filter((seller) => !selling.has(seller.slug)).map((seller) => seller.slug)).toContain("lash-lounge");
+  });
+
+  it("builds every collection from known categories, with an intro", () => {
+    for (const collection of collections) {
+      expect(collection.intro.length, collection.slug).toBeGreaterThan(0);
+      expect(collection.rule.categories.length, collection.slug).toBeGreaterThan(0);
+      for (const slug of collection.rule.categories) expect(categorySlugs.has(slug), collection.slug).toBe(true);
+    }
+  });
+});

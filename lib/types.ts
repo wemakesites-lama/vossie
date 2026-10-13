@@ -47,6 +47,18 @@ export type Collection = {
   eyebrow: string;
   title: string;
   image: ImageRef;
+  /** One sentence under the title (shopping spec 7.2). */
+  intro: string;
+  rule: CollectionRule;
+};
+
+/** Browse's price caps, in rand (browse and listing spec 4.9). Browse reads them from links as ?max=50 and so on. */
+export type PriceCap = 50 | 100 | 250 | 500;
+
+/** Which listings a collection shows (shopping spec 6.1), like a saved browse: these categories, under an optional cap. */
+export type CollectionRule = {
+  categories: readonly string[];
+  maxPrice?: PriceCap;
 };
 
 export type PayMode = "cash" | "swap" | "both";
@@ -99,8 +111,16 @@ export type Seller = {
   tagline: string;
   /** The category as shown, e.g. "Hair & beauty". */
   category: string;
+  /** The same category's slug, for links (shopping spec 6.1). */
+  categorySlug: string;
   campusSlug: string;
   verified: boolean;
+  /** The seller's trust badge. Each of their listings shows the same one (shopping spec 6.1). */
+  badge: TrustBadge | null;
+  /** Two or three sentences in the seller's own words. Line breaks are kept on the page. */
+  about: string;
+  /** YYYY-MM: the month they started selling. */
+  since: string;
   image: ImageRef;
 };
 
