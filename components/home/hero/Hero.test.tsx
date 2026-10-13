@@ -16,7 +16,7 @@ describe("Hero", () => {
     expect(screen.getByRole("region", { name: "Buy & sell textbooks, tech and services on campus" })).toContainElement(
       heading,
     );
-    expect(screen.getByRole("link", { name: "Shop textbooks" })).toHaveAttribute("href", "/categories/textbooks-notes");
+    expect(screen.getByRole("link", { name: "Shop textbooks" })).toHaveAttribute("href", "/browse?cat=textbooks-notes");
     expect(screen.getByRole("button", { name: "Shopping at Midrand" })).toBeInTheDocument();
   });
 });

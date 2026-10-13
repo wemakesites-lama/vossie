@@ -135,7 +135,7 @@ describe("SearchOverlay", () => {
 
   it("links every category", () => {
     const dialog = openSearch();
-    expect(within(dialog).getByRole("link", { name: "Tech" })).toHaveAttribute("href", "/categories/tech");
+    expect(within(dialog).getByRole("link", { name: "Tech" })).toHaveAttribute("href", "/browse?cat=tech");
   });
 
   it("remembers a chip's term and closes when the chip is followed", async () => {

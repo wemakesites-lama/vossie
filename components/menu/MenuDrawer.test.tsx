@@ -52,7 +52,7 @@ describe("MenuDrawer", () => {
     const { menu } = openMenu();
     await user.click(within(menu).getByRole("button", { name: "Shop by category" }));
     expect(within(menu).getByRole("heading", { name: "Shop by category" })).toBeInTheDocument();
-    expect(within(menu).getByRole("link", { name: "Tech" })).toHaveAttribute("href", "/categories/tech");
+    expect(within(menu).getByRole("link", { name: "Tech" })).toHaveAttribute("href", "/browse?cat=tech");
     const back = within(menu).getByRole("button", { name: "Back" });
     expect(back).toHaveFocus();
     await user.click(back);
@@ -65,9 +65,9 @@ describe("MenuDrawer", () => {
     const { menu } = openMenu();
     await user.click(within(menu).getByRole("button", { name: "Campuses" }));
     expect(within(menu).getByRole("heading", { name: "Campuses" })).toBeInTheDocument();
-    expect(within(menu).getByRole("link", { name: "All campuses" })).toHaveAttribute("href", "/browse");
+    expect(within(menu).getByRole("link", { name: "All campuses" })).toHaveAttribute("href", "/browse?campus=all");
     // Chromium names the row "Midrand , Gauteng" (blockified flex children get spaces); jsdom has no space.
-    expect(within(menu).getByRole("link", { name: /^Midrand\s*,\s*Gauteng$/ })).toHaveAttribute("href", "/c/midrand");
+    expect(within(menu).getByRole("link", { name: /^Midrand\s*,\s*Gauteng$/ })).toHaveAttribute("href", "/browse?campus=midrand");
   });
 
   it("shows the current campus, then closes itself and opens the campus picker", async () => {

@@ -7,9 +7,9 @@ describe("ShopByCategory (spec 7.5)", () => {
     render(await ShopByCategory());
     expect(screen.getByRole("heading", { level: 2, name: "Shop by category" })).toBeInTheDocument();
     const carousel = screen.getByRole("region", { name: "Categories" });
-    const tiles = within(carousel).getAllByRole("link").filter((link) => link.getAttribute("href")?.startsWith("/categories/"));
+    const tiles = within(carousel).getAllByRole("link").filter((link) => link.getAttribute("href")?.startsWith("/browse?cat="));
     expect(tiles).toHaveLength(10);
-    expect(within(carousel).getByRole("link", { name: "Tech" })).toHaveAttribute("href", "/categories/tech");
+    expect(within(carousel).getByRole("link", { name: "Tech" })).toHaveAttribute("href", "/browse?cat=tech");
     expect(screen.getByRole("link", { name: "All categories" })).toHaveAttribute("href", "/browse");
   });
 

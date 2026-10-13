@@ -139,7 +139,7 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
           <ul className="search-categories">
             {categories.map((category) => (
               <li key={category.slug}>
-                <Link href={`/categories/${category.slug}`} className="search-category">
+                <Link href={`/browse?cat=${category.slug}`} className="search-category">
                   {category.name}
                 </Link>
               </li>

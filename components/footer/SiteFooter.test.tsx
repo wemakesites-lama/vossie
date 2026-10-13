@@ -16,15 +16,15 @@ describe("SiteFooter", () => {
     expect(screen.getByRole("link", { name: "Start selling" })).toHaveAttribute("href", "/sell");
   });
 
-  it("sends 'Shop your campus' to the chosen campus", () => {
+  it("keeps 'Shop your campus' on /browse, which opens on the chosen campus (plan decision 12)", () => {
     setCampusChoice("midrand");
     render(<SiteFooter campuses={campuses} />);
-    expect(screen.getByRole("link", { name: "Shop your campus" })).toHaveAttribute("href", "/c/midrand");
+    expect(screen.getByRole("link", { name: "Shop your campus" })).toHaveAttribute("href", "/browse");
   });
 
   it("links every campus, the privacy notice and the sign-up", () => {
     render(<SiteFooter campuses={campuses} />);
-    expect(screen.getAllByRole("link", { name: "Eduvos Online" })[0]).toHaveAttribute("href", "/c/online");
+    expect(screen.getAllByRole("link", { name: "Eduvos Online" })[0]).toHaveAttribute("href", "/browse?campus=online");
     expect(screen.getAllByRole("link", { name: "Privacy (POPIA)" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("textbox", { name: "Email address" })).toBeInTheDocument();
   });

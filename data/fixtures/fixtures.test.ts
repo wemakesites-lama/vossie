@@ -18,7 +18,7 @@ const isUnique = (values: readonly string[]) => new Set(values).size === values.
 describe("homepage fixtures (spec section 13)", () => {
   it("has three hero slides, each opening one of the categories", () => {
     expect(heroSlides.map((slide) => slide.word)).toEqual(["textbooks", "tech", "services"]);
-    const categoryPaths = new Set(categories.map((category) => `/categories/${category.slug}`));
+    const categoryPaths = new Set(categories.map((category) => `/browse?cat=${category.slug}`));
     for (const slide of heroSlides) expect(categoryPaths.has(slide.cta.href)).toBe(true);
   });
 

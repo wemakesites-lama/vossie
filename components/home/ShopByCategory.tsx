@@ -5,7 +5,7 @@ import { Carousel } from "./Carousel";
 import { Photo } from "@/components/listings/Photo";
 import { SectionHeader } from "./SectionHeader";
 
-// Browse filters (a placeholder page in this stage). The query names will be settled with the browse page.
+// Budget filters. `max` is browse's other name for `price` (browse and listing spec 3.2), so these links stay.
 const BUDGETS = [
   { label: "Under R50", href: "/browse?max=50" },
   { label: "Under R100", href: "/browse?max=100" },
@@ -29,7 +29,7 @@ export async function ShopByCategory() {
         {categories.map((category) => (
           <li key={category.slug}>
             {/* No prefetch: a row of cards would fetch every page as it scrolls past (mobile data). */}
-            <Link href={`/categories/${category.slug}`} prefetch={false} className="category-tile">
+            <Link href={`/browse?cat=${category.slug}`} prefetch={false} className="category-tile">
               <Photo
                 image={{ src: category.image.src, alt: "" }}
                 sizes="(orientation: landscape) and (max-height: 29.99rem) 21vw, (min-width: 64rem) and (min-height: 30rem) 172px, (min-width: 48rem) and (min-height: 30rem) 22vw, 42vw"

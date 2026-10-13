@@ -10,10 +10,6 @@ const PLACEHOLDERS: Array<[path: string, title: string]> = [
   ["/login", "Sign in"],
   ["/account", "Your account"],
   ["/saved", "Saved"],
-  ["/c/midrand", "Midrand"],
-  ["/c/online", "Eduvos Online"],
-  ["/categories/tech", "Tech"],
-  ["/categories/textbooks-notes", "Textbooks & notes"],
   ["/collections/exam-season", "Notes, tutors & cram snacks"],
   ["/listings/l-001", "Casio fx-991ZA Plus calculator"],
   ["/listings/fs-002", "Desk lamp, swap for a kettle"],
@@ -39,14 +35,8 @@ test.describe("placeholder routes", () => {
     });
   }
 
-  test("unknown campus, category, listing, collection and seller slugs show the 404 page", async ({ page }) => {
+  test("unknown listing, collection and seller slugs show the 404 page", async ({ page }) => {
     onlyAtPhoneAndDesktop();
-    await page.goto("/c/atlantis");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
-    await expect(page).toHaveTitle("Page not found · Vossie");
-    await page.goto("/categories/spaceships");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
-    await expect(page).toHaveTitle("Page not found · Vossie");
     await page.goto("/listings/nope");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
     await expect(page).toHaveTitle("Page not found · Vossie");
@@ -56,6 +46,19 @@ test.describe("placeholder routes", () => {
     await page.goto("/sellers/nope");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
     await expect(page).toHaveTitle("Page not found · Vossie");
+  });
+
+  test("old category and campus links open browse (spec 3.1)", async ({ page }) => {
+    onlyAtPhoneAndDesktop();
+    await page.goto("/categories/tech");
+    await expect(page).toHaveURL(/\/browse\?cat=tech$/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tech");
+    await page.goto("/c/midrand");
+    await expect(page).toHaveURL(/\/browse\?campus=midrand$/);
+    await expect(page.getByRole("link", { name: "Remove filter: Midrand" })).toBeVisible();
+    // An unknown campus is ignored, so the link still shows results.
+    await page.goto("/c/atlantis");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Everything");
   });
 
   test("a made-up path is a real 404", async ({ page }) => {

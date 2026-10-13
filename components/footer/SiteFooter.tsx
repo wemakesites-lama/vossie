@@ -6,7 +6,6 @@ import type { Campus } from "@/lib/types";
 import { FitText } from "./FitText";
 import { InstallButton } from "./InstallButton";
 import { NewsletterForm } from "./NewsletterForm";
-import { ShopYourCampusLink } from "./ShopYourCampusLink";
 
 type FooterLink = { href: string; label: string };
 type LinkGroup = {
@@ -21,9 +20,9 @@ const LINK_GROUPS: readonly LinkGroup[] = [
     title: "Shop",
     links: [
       { href: "/browse", label: "Browse everything" },
-      { href: "/categories/textbooks-notes", label: "Textbooks & notes" },
-      { href: "/categories/tech", label: "Tech" },
-      { href: "/categories/services", label: "Services" },
+      { href: "/browse?cat=textbooks-notes", label: "Textbooks & notes" },
+      { href: "/browse?cat=tech", label: "Tech" },
+      { href: "/browse?cat=services", label: "Services" },
       { href: "/looking-for", label: "Looking For" },
       { href: "/saved", label: "Saved" },
     ],
@@ -55,7 +54,7 @@ export function SiteFooter({ campuses }: { campuses: readonly Campus[] }) {
     {
       title: "Campuses",
       columns: true,
-      links: campuses.map((campus) => ({ href: `/c/${campus.slug}`, label: campus.name })),
+      links: campuses.map((campus) => ({ href: `/browse?campus=${campus.slug}`, label: campus.name })),
     },
   ];
 
@@ -64,7 +63,11 @@ export function SiteFooter({ campuses }: { campuses: readonly Campus[] }) {
       <div className="footer-inner">
         <h2 className="sr-only">Site links</h2>
         <div className="footer-giants">
-          <ShopYourCampusLink campuses={campuses} />
+          {/* /browse opens on the chosen campus by itself, so this needs no client code (plan decision 12). */}
+          <Link href="/browse" className="footer-giant">
+            Shop your campus
+            <ArrowUpRightIcon className="footer-giant-arrow" />
+          </Link>
           <Link href="/sell" className="footer-giant">
             Start selling
             <ArrowUpRightIcon className="footer-giant-arrow" />

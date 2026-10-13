@@ -146,7 +146,7 @@ export function MenuDrawer({ campuses, categories }: MenuDrawerProps) {
               </li>
               {categories.map((category) => (
                 <li key={category.slug}>
-                  <NavLink href={`/categories/${category.slug}`}>{category.name}</NavLink>
+                  <Link href={`/browse?cat=${category.slug}`}>{category.name}</Link>
                 </li>
               ))}
             </ul>
@@ -164,15 +164,15 @@ export function MenuDrawer({ campuses, categories }: MenuDrawerProps) {
             </h2>
             <ul className="menu-sublinks">
               <li>
-                <Link href="/browse">All campuses</Link>
+                <Link href="/browse?campus=all">All campuses</Link>
               </li>
               {campuses.map((campus) => (
                 <li key={campus.slug}>
-                  <NavLink href={`/c/${campus.slug}`}>
+                  <Link href={`/browse?campus=${campus.slug}`}>
                     {campus.name}
                     <span className="sr-only">,</span>{" "}
                     <span className="menu-sublink-detail">{campus.region}</span>
-                  </NavLink>
+                  </Link>
                 </li>
               ))}
             </ul>
