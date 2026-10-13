@@ -5126,3 +5126,178 @@
     }
   }
 }
+
+/* --- Shopping: the storefront (shopping plan, Task 5, spec 4.1 and 4.2) --- */
+@layer components {
+  /* .page and .seller-page sit on one element, so this padding replaces .page's gutter: it's the whole content edge,
+     16px on phones and 40px from the tablet step. */
+  .seller-page {
+    padding: 16px 16px 64px;
+  }
+
+  /* The band sits on the page column's edge, like the homepage's panels: 10px from the screen on phones, 24px from the
+     tablet step (plan decision 9). */
+  .seller-hero {
+    display: grid;
+    gap: 18px;
+    margin-inline: -6px;
+    padding: 24px 20px;
+    border-radius: var(--radius-panel);
+  }
+
+  .seller-hero-photo {
+    width: 64px;
+    border: 2px solid var(--color-white);
+    border-radius: 999px;
+  }
+
+  .seller-hero-name {
+    font-family: var(--vos-font-display);
+    font-size: var(--text-hero);
+    line-height: 0.96;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .seller-hero-tagline {
+    max-width: 40ch;
+    margin-top: 10px;
+    font-size: 15px;
+  }
+
+  .seller-stamps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  /* White outline and white text on the stars. */
+  .seller-stamp {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border: 1.5px solid var(--color-white);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  /* Solid pills with navy text: navy on sky is 4.97:1. */
+  .seller-verified {
+    border-color: var(--color-sky);
+    background: var(--color-sky);
+    color: var(--color-navy);
+  }
+
+  .seller-badge {
+    background: var(--color-white);
+    color: var(--color-navy);
+  }
+
+  .seller-hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .seller-message {
+    flex: 1;
+    min-height: 48px;
+  }
+
+  .seller-share {
+    flex: none;
+    border: 1.5px solid var(--color-white);
+    color: var(--color-white);
+  }
+
+  .seller-layout {
+    display: grid;
+    gap: 40px;
+    margin-top: 32px;
+  }
+
+  /* The seller's own line breaks are kept (spec 4.1). */
+  .seller-about-text {
+    max-width: 65ch;
+    margin-top: 12px;
+    white-space: pre-line;
+  }
+
+  .seller-since {
+    margin-top: 12px;
+    color: var(--color-muted);
+    font-size: 13px;
+  }
+
+  .seller-empty {
+    display: grid;
+    justify-items: start;
+    gap: 6px;
+    margin-top: 16px;
+    padding: 24px 20px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+  }
+
+  .seller-empty-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 24px;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  /* Navy on the grey panel: sky-dark is 4.25:1 there. */
+  .seller-empty a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-navy);
+    font-weight: 600;
+    text-decoration: underline 1.5px;
+    text-underline-offset: 4px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .seller-page {
+      padding-inline: 40px;
+    }
+
+    .seller-hero {
+      margin-inline: -16px;
+      padding: 32px;
+    }
+
+    .seller-hero-actions {
+      justify-self: start;
+    }
+
+    .seller-message {
+      padding-inline: 32px;
+    }
+  }
+
+  /* Desktop (spec 4.2): photo, name and stamps on the left, the actions on the right; About beside the listings. */
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .seller-hero {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 28px;
+      padding: 40px;
+    }
+
+    .seller-hero-photo {
+      width: 96px;
+    }
+
+    .seller-layout {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+      align-items: start;
+    }
+  }
+}
