@@ -4175,10 +4175,11 @@
 
   /* One row that scrolls sideways when it doesn't fit, with no scrollbar showing. The top padding keeps focus
      rings inside the scroll box, which would clip them. */
+  /* The tabs carry their own 11px side padding, so even "All" is a 44px-wide target with its focus ring clear of the
+     text. The list pulls out by the same 11px, so the first tab's text still lines up with the content edge. */
   .category-tabs ul {
     display: flex;
-    gap: 22px;
-    margin-bottom: -1px;
+    margin: 0 -11px -1px;
     padding-top: 4px;
     overflow-x: auto;
     scrollbar-width: none;
@@ -4192,6 +4193,7 @@
     display: inline-flex;
     align-items: center;
     min-height: 44px;
+    padding-inline: 11px;
     border-bottom: 3px solid transparent;
     color: var(--color-muted);
     font-size: 14px;
@@ -4440,7 +4442,7 @@
     font-weight: 600;
   }
 
-  .filter-clear {
+  .chips-clear {
     display: inline-flex;
     align-items: center;
     min-height: 44px;

@@ -24,7 +24,7 @@ export function ActiveFilters({ query, campusNames }: { query: BrowseQuery; camp
       ))}
       {chips.length > 1 && (
         <li>
-          <Link href={clearAllHref(query)} prefetch={false} className="filter-clear">
+          <Link href={clearAllHref(query)} prefetch={false} className="chips-clear">
             Clear all
           </Link>
         </li>
