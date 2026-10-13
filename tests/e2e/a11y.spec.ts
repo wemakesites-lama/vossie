@@ -85,3 +85,42 @@ test("a listing page", async ({ page }) => {
   await page.goto("/listings/l-001");
   expect(await seriousIssues(page)).toEqual([]);
 });
+
+test("browse", async ({ page }) => {
+  await page.goto("/browse");
+  await expect(page.locator("main article").first()).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("browse with Filters open", async ({ page }) => {
+  await page.goto("/browse?cat=tech&price=under-500");
+  await page.locator("details.tool-filters > summary").click();
+  await expect(page.getByRole("button", { name: "Show results" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("browse with Sort open", async ({ page }) => {
+  await page.goto("/browse?q=calculator");
+  await page.locator("details.tool-sort > summary").click();
+  await expect(page.getByRole("link", { name: "Best match" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("browse with nothing found", async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: "vossie_campus", value: "mbombela", url: baseURL! }]);
+  await page.goto("/browse");
+  await expect(page.getByText("Nothing here yet")).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("a sold listing", async ({ page }) => {
+  await page.goto("/listings/l-026");
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("a listing with several photos and a campus note", async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: "vossie_campus", value: "pretoria", url: baseURL! }]);
+  await page.goto("/listings/l-021");
+  await expect(page.getByRole("region", { name: "Photos" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
