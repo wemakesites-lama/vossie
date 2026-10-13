@@ -4563,3 +4563,157 @@
     }
   }
 }
+
+/* --- Listing: photos, banner and collect box (browse and listing plan, Task 14, spec 5.3, 5.5, 5.6) --- */
+@layer components {
+  /* Phones: edge to edge. The page's gutters are 16px (Task 16), so the strip pulls out by that much. */
+  .gallery {
+    margin-inline: -16px;
+  }
+
+  .gallery-strip {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .gallery-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .gallery-strip:focus-visible {
+    outline-offset: -3px;
+  }
+
+  .gallery-list {
+    display: flex;
+    gap: 8px;
+  }
+
+  .gallery-item {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+  }
+
+  /* The next photo's edge peeks in, so it's clear there are more. */
+  .gallery-strip-many .gallery-item {
+    flex-basis: 88%;
+  }
+
+  .gallery-count {
+    margin: 10px 16px 0;
+    color: var(--color-muted);
+    font-size: 12px;
+  }
+
+  .gallery-saver {
+    display: none;
+  }
+
+  .gallery-saver > summary {
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .gallery-saver > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .gallery-saver-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  /* Data saver (spec 5.6): only the cover loads. Hidden lazy images are never fetched. */
+  :root[data-low-data] .gallery-more,
+  :root[data-low-data] .gallery-count {
+    display: none;
+  }
+
+  :root[data-low-data] .gallery-strip-many .gallery-item {
+    flex-basis: 100%;
+  }
+
+  :root[data-low-data] .gallery-saver {
+    display: block;
+    margin: 12px 16px 0;
+  }
+
+  .availability-banner {
+    padding: 12px 16px;
+    border-radius: var(--radius-card);
+    background: var(--color-pale);
+    color: var(--color-navy);
+    font-weight: 700;
+  }
+
+  .collect-box {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+
+  .collect-icon {
+    flex: none;
+    margin-top: 2px;
+    color: var(--color-navy);
+  }
+
+  .collect-heading {
+    color: var(--color-navy);
+    font-weight: 700;
+  }
+
+  .collect-line {
+    margin-top: 2px;
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  .campus-note {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-line);
+    color: var(--color-ink);
+    font-size: 14px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .gallery {
+      margin-inline: 0;
+    }
+
+    .gallery-photo {
+      border-radius: var(--radius-card);
+    }
+
+    .gallery-count,
+    :root[data-low-data] .gallery-saver {
+      margin-inline: 0;
+    }
+  }
+
+  /* Desktop: the cover large, the rest two to a row; nothing scrolls sideways. */
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .gallery-strip {
+      overflow: visible;
+    }
+
+    .gallery-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .gallery-item:first-child {
+      grid-column: 1 / -1;
+    }
+
+    .gallery-count {
+      display: none;
+    }
+  }
+}
