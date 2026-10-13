@@ -11,8 +11,6 @@ const PLACEHOLDERS: Array<[path: string, title: string]> = [
   ["/account", "Your account"],
   ["/saved", "Saved"],
   ["/collections/exam-season", "Notes, tutors & cram snacks"],
-  ["/listings/l-001", "Casio fx-991ZA Plus calculator"],
-  ["/listings/fs-002", "Desk lamp, swap for a kettle"],
   ["/sellers/hair-studio", "Hair studio"],
 ];
 

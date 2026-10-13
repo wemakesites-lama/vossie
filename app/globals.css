@@ -4773,3 +4773,274 @@
     }
   }
 }
+
+/* --- Listing: layout, panel, seller, details and more from (browse and listing plan, Task 16, spec 5.1, 5.2, 5.7) --- */
+@layer components {
+  /* .page and .listing-page sit on one element, so this padding replaces .page's gutter instead of adding to it. The
+     numbers are therefore the whole content edge: 16px on phones (the gallery pulls out by exactly that) and 40px from
+     the tablet step, matching the homepage. */
+  .listing-page {
+    padding: 8px 16px 64px;
+  }
+
+  .listing-crumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 8px;
+    color: var(--color-muted);
+    font-size: 13px;
+  }
+
+  .listing-crumbs li + li::before {
+    content: "/";
+    margin-right: 8px;
+  }
+
+  .listing-crumbs a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-sky-dark);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .listing-layout {
+    display: grid;
+    gap: 22px;
+  }
+
+  .listing-panel {
+    display: grid;
+    align-content: start;
+    gap: 16px;
+  }
+
+  .listing-heading {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.5rem);
+    line-height: 1;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .listing-page-price {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: clamp(2rem, 1.6rem + 1.8vw, 3rem);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .swap-callout {
+    padding: 12px 16px;
+    border-radius: var(--radius-card);
+    background: var(--color-pale);
+    color: var(--color-navy);
+  }
+
+  .listing-seller {
+    display: flex;
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+
+  /* align-self: in a stretching row the photo would grow to the card's height and lose its 1 / 1 ratio. */
+  .listing-seller-photo {
+    flex: none;
+    align-self: flex-start;
+    width: 56px;
+    border-radius: 999px;
+  }
+
+  .listing-seller-body {
+    display: grid;
+    justify-items: start;
+    gap: 4px;
+  }
+
+  .listing-seller-eyebrow,
+  .listing-seller-meta {
+    color: var(--color-muted);
+    font-size: 12px;
+  }
+
+  .listing-seller-name {
+    color: var(--color-navy);
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .listing-seller-marks {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .listing-verified {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--color-navy);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .listing-seller-marks .listing-badge {
+    margin-top: 0;
+  }
+
+  .listing-seller-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-sky-dark);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .listing-details {
+    display: grid;
+    align-content: start;
+    gap: 24px;
+  }
+
+  .listing-section-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 24px;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  /* The seller's own line breaks are kept (spec 5.1). */
+  .listing-description {
+    max-width: 65ch;
+    margin-top: 12px;
+    white-space: pre-line;
+  }
+
+  .listing-facts {
+    display: grid;
+    gap: 10px;
+    max-width: 32rem;
+    margin-top: 20px;
+  }
+
+  .listing-facts > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .listing-facts dt {
+    color: var(--color-muted);
+  }
+
+  .listing-facts dd {
+    color: var(--color-navy);
+    font-weight: 600;
+    text-align: right;
+  }
+
+  .listing-facts a {
+    color: var(--color-sky-dark);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .safety-note {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+    color: var(--color-ink);
+    font-size: 14px;
+  }
+
+  .safety-icon {
+    flex: none;
+    color: var(--color-navy);
+  }
+
+  /* Navy on the grey panel: sky-dark is 4.25:1 there. */
+  .safety-note a {
+    color: var(--color-navy);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .listing-more {
+    margin-top: 48px;
+  }
+
+  .listing-more-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 14px;
+    margin-top: 16px;
+  }
+
+  .listing-report {
+    margin-top: 32px;
+  }
+
+  .listing-report a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    color: var(--color-sky-dark);
+    font-size: 13px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .listing-page {
+      padding-inline: 40px;
+    }
+  }
+
+  /* Desktop: photos and details on the left, the panel on the right staying in view (spec 5.2, plan decision 9).
+     --listing-sticky-top clears the pinned crest; check it by eye and adjust. */
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .listing-layout {
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      grid-template-areas:
+        "gallery panel"
+        "details panel";
+      align-items: start;
+      gap: 32px 40px;
+    }
+
+    .gallery {
+      grid-area: gallery;
+    }
+
+    .listing-panel {
+      grid-area: panel;
+      position: sticky;
+      top: var(--listing-sticky-top, 120px);
+    }
+
+    .listing-details {
+      grid-area: details;
+    }
+
+    .listing-more-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+}

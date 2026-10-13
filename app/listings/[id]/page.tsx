@@ -1,14 +1,23 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ComingSoon } from "@/components/ComingSoon";
+import { ListingView } from "@/components/listing/ListingView";
 import { RecordRecentlyViewed } from "@/components/listings/RecordRecentlyViewed";
-import { getListingDetail, getListingIds } from "@/lib/data";
+import { getCampuses, getListingDetail, getListingIds } from "@/lib/data";
+import { priceLabel, shortDescription } from "@/lib/format";
 
+/** The tab title is the listing; link previews get "{title} · {price}" and the start of the description (spec 5.8). */
 export async function generateMetadata({ params }: PageProps<"/listings/[id]">): Promise<Metadata> {
   const { id } = await params;
   const detail = await getListingDetail(id);
-  return { title: detail ? detail.listing.title : "Page not found" };
+  if (!detail) return { title: "Page not found" };
+  const { listing } = detail;
+  const description = shortDescription(listing.description);
+  return {
+    title: listing.title,
+    description,
+    openGraph: { title: `${listing.title} · ${priceLabel(listing)}`, description },
+  };
 }
 
 export async function generateStaticParams() {
@@ -26,15 +35,13 @@ export default function ListingPage({ params }: PageProps<"/listings/[id]">) {
 
 async function ListingDetails({ params }: Pick<PageProps<"/listings/[id]">, "params">) {
   const { id } = await params;
-  const detail = await getListingDetail(id);
+  const [detail, campuses] = await Promise.all([getListingDetail(id), getCampuses()]);
   if (!detail) notFound();
-  const { listing, campus } = detail;
+  const { listing } = detail;
   return (
     <>
       <RecordRecentlyViewed item={{ id: listing.id, title: listing.title, image: listing.image }} />
-      <ComingSoon title={listing.title}>
-        Listed at {campus.name}. The full listing page arrives later in this build.
-      </ComingSoon>
+      <ListingView detail={detail} campusNames={new Map(campuses.map((campus) => [campus.slug, campus.name]))} />
     </>
   );
 }
