@@ -9,7 +9,6 @@ const PLACEHOLDERS: Array<[path: string, title: string]> = [
   ["/looking-for", "Looking For"],
   ["/login", "Sign in"],
   ["/account", "Your account"],
-  ["/collections/exam-season", "Notes, tutors & cram snacks"],
 ];
 
 /** Routes don't change with width, so one phone and one desktop size are enough. */
