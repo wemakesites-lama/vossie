@@ -67,9 +67,11 @@ The approved mockup screens are in `docs/reference/mockups/` (`home-v2.html` is 
 | 57 | 2026-10-14 | The WhatsApp handoff | **Cut.** In-app messages only | Handing over a phone number exposes personal data (POPIA), and in-app messages feed the trust badges. Claude, under decision 54 |
 | 58 | 2026-10-14 | Safari's 7-day limit on cookies written by the page | **Noted for go-live, not fixed now** | Safari caps cookies set with `document.cookie` at 7 days, so on iPhones the campus choice and saves may expire a week after they were last set. Fix before launch by refreshing them from the server, or by moving saves into accounts. Claude, under decision 54 |
 | 59 | 2026-10-14 | Listing photos without a new dependency | **The browser shrinks and re-encodes photos when its JavaScript is there; the server strips location and other metadata itself** (JPEG, PNG, WebP) | No image library has to be installed, and the no-JavaScript path stays safe. Claude, under decision 54 |
+| 60 | 2026-10-14 | Shopping plan decisions that change the spec | **Saved's count streams in with the list, under the device note; the collection header sits side by side from the tablet step; the band's trust badge is a white pill** | Plan decisions 1, 7 and 17 in `2026-10-13-shopping-pages.md`. The spec now says so. Plan decision 10 stands as written: the "More in browse" links name no campus, so they open on the viewer's campus; if Lama wants every campus, as decision 47 gives Free & swaps, the links gain `&campus=all`. As built, landscape phones crop the collection photo to 4:1 (the plan said 2:1). The JS figure accepted under the stop rule is decision 52. Lama accepted the plan, which listed them ("commit it and start the build") |
 
 ## Still open
 
 - Eduvos's font files and licence confirmation, then the final font choice after comparing (decision 8).
 - The official crest SVG (decision 10).
 - The photos (decision 11).
+- Safari's 7-day limit on cookies written by the page (decision 58): on iPhones the campus choice and saves may expire a week after they were last set. Fix before launch, by refreshing them from the server or by moving saves into accounts.

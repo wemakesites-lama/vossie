@@ -2,7 +2,7 @@
 
 Every page and view the marketplace needs before it can go live, plus the work that isn't a screen. Drawn from the app's routes, the old demo's function map (`FUNCTION-MAP.md`) and the homepage spec's "Not in this stage" list.
 
-Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages. Update the status column as each stage lands.
+Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections). Update the status column as each stage lands.
 
 **Status key**
 - **Built:** done.
@@ -18,8 +18,8 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Browse and search: results, Filters panel, Sort, active-filter chips, Show more, empty state | `/browse` | Built |
 | Category and campus links | `/categories/[slug]`, `/c/[campus]` | Built (redirects into browse) |
 | Listing: gallery, phone dock, collect box, seller card, more from the seller, paused and sold states, Share | `/listings/[id]` | Built |
-| Seller storefront: header, badges, about, their listings, contact, report | `/sellers/[slug]` | Placeholder |
-| Collection: a curated list, e.g. "Res essentials" | `/collections/[slug]` | Placeholder |
+| Seller storefront: header, badges, about, their listings, contact, report | `/sellers/[slug]` | Built |
+| Collection: a curated list, e.g. "Res essentials" | `/collections/[slug]` | Built |
 | Looking For board | `/looking-for` | Placeholder |
 | A single Looking For request | `/looking-for/[id]` | Missing |
 | Hub feed: tips, events, office hours | `/hub` | Placeholder |
@@ -40,7 +40,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | "Sign in to do that" sheet, which returns you to what you were doing | sheet | Missing |
 | Account summary and sign out | `/account` | Placeholder |
 | Privacy settings: consent record, download my data, reports I've made, delete my account (required by POPIA) | `/account/privacy` | Missing |
-| Saved listings, and followed sellers once accounts exist | `/saved` | Placeholder |
+| Saved listings, and followed sellers once accounts exist | `/saved` | Built (followed sellers wait for accounts) |
 | Header: "Sign in" when signed out, and an inbox icon with an unread count | shell | Missing |
 
 ## 3. Messaging
@@ -75,7 +75,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Hub post editor and the office-hours queue | `/hub/new`, `/hub/manage` | Missing |
 | Mentor dashboard, seller detail, notes, check-ins, CSV export | `/mentor/*` | Missing; can follow launch |
 
-**Totals:** about 45 screens and views. 5 are built (home, browse, the listing page, the category and campus redirects, and the 404), and 40 are placeholders or missing. Most of the missing ones are the signed-in half of the product.
+**Totals:** about 45 screens and views. 8 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved and the collection page), and 37 are placeholders or missing. Most of the missing ones are the signed-in half of the product.
 
 ## 6. Work that isn't a screen
 
@@ -103,6 +103,8 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 ### Production
 - [ ] A domain and hosting.
 - [ ] Security headers.
+- [ ] A Content Security Policy (it needs per-request nonces, which make pages dynamic).
+- [ ] Decide how to keep the campus choice and saves past Safari's 7-day limit on cookies written by the page (decision 58).
 - [ ] robots.txt and a sitemap.
 - [ ] Share images for WhatsApp on the other pages. Each listing has a share card, in `next/og`'s built-in font until Eduvos's font files arrive.
 - [ ] Set `metadataBase` to the live domain, so share cards and other metadata URLs are absolute. While it's unset, a listing page carries two `og:image` tags once it has hydrated (the client adds one naming the page's own origin), and the one in the server HTML names `localhost:3000`.
@@ -113,6 +115,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 ### Quality
 - [ ] End-to-end, accessibility and per-page speed tests for every new flow.
 - [ ] LCP checked again with real photos (decision 34).
+- [ ] Try Turbopack's `requestCost` chunking option, which saved about 1.1 KB on every page in a trial (decision 53).
 - [ ] A test on a cheap Android phone.
 
 ### Launch
@@ -132,7 +135,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 ## 8. Suggested order
 
 1. **Done (2026-10-13):** browse and listing pages.
-2. **Now, the other public pages:** storefront, Saved, collections, the Looking For board and Hub to read, info and legal pages, and the error page.
+2. **Now, the other public pages:** the storefront, Saved and collections are done (2026-10-14). Next: the Looking For board and Hub to read, info and legal pages, and the error page.
 3. **Supabase, sign-in, and account and privacy.**
 4. **Selling:** onboarding, listing form and dashboard, plus the minimum admin (approvals and moderation).
 5. **Messaging:** composer, inbox, conversations, reports and notifications.

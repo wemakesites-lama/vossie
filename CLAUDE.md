@@ -37,7 +37,7 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 
 ## Code rules
 - Server Components by default. `"use client"` only where there is interaction.
-- Device preferences (campus cookie `vossie_campus`, saved items, recent searches, data saver) go through the stores in `lib/` and `useSyncExternalStore`.
+- Device preferences (campus cookie `vossie_campus`, saved cookie `vossie_saved`, recent searches, data saver) go through the stores in `lib/` and `useSyncExternalStore`.
 - Never read `cookies()`, `headers()` or `searchParams` outside `<Suspense>`.
 - No `Date.now()`, `new Date()` or `Math.random()` while prerendering.
 - Client hooks that suspend while Next builds App Shells (`usePathname()`, `useParams()`) are read only inside `<Suspense>` in shared layout code (see `components/ui/NavLink.tsx`).
@@ -55,7 +55,7 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - Touch targets are at least 44px. No hover-only features.
 
 ## Privacy (POPIA)
-- Collect the minimum. This stage stores nothing on a server: the campus choice is a cookie, and saved items and recent searches stay in the browser.
+- Collect the minimum. This stage stores nothing on a server: the campus choice and saved listings are first-party cookies, and recent searches stay in the browser.
 - The footer sign-up shows a confirmation only. It sends and stores nothing until there is a real, consented mailing list.
 - Photos of people need their consent.
 

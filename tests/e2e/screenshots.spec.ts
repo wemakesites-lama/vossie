@@ -148,3 +148,66 @@ test("browse and listing review screenshots", async ({ page, context, baseURL })
   await expect(title).toBeVisible();
   await page.screenshot({ path: file("07-listing-sold") });
 });
+
+test("shopping review screenshots", async ({ page, context, baseURL }) => {
+  const project = test.info().project.name;
+  test.skip(!["phone-390", "desktop-1440"].includes(project), "Saved at 390 and 1440 only");
+  const file = (name: string) => `docs/progress/shopping/${project}-${name}.png`;
+
+  /** Scroll the whole page so every lazy photo loads, then come back to the top. */
+  async function settle() {
+    await page.evaluate(async () => {
+      for (let y = 0; y < document.body.scrollHeight; y += 600) {
+        window.scrollTo(0, y);
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      window.scrollTo(0, 0);
+      await document.fonts.ready;
+    });
+  }
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+
+  // Saved streams its list behind a skeleton, so each shot waits for something the finished page shows.
+  const title = page.getByRole("heading", { level: 1 });
+
+  await page.goto("/sellers/tech-corner");
+  await expect(title).toBeVisible();
+  await settle();
+  await page.screenshot({ path: file("01-storefront"), fullPage: true });
+
+  await page.goto("/sellers/hair-studio");
+  await expect(title).toBeVisible();
+  await settle();
+  await page.screenshot({ path: file("02-storefront-verified") });
+
+  await page.goto("/sellers/lash-lounge");
+  await expect(page.getByText("Nothing listed right now")).toBeVisible();
+  await page.screenshot({ path: file("03-storefront-empty"), fullPage: true });
+
+  await context.addCookies([{ name: "vossie_saved", value: "l-001.l-026.l-016.l-007.l-004", url: baseURL! }]);
+  await page.goto("/saved");
+  await expect(page.getByText("5 saved", { exact: true })).toBeVisible();
+  await settle();
+  await page.screenshot({ path: file("04-saved"), fullPage: true });
+
+  const calculator = page.locator("main article").filter({ hasText: "Casio fx-991ZA Plus calculator" });
+  await calculator.getByRole("button", { name: "Save Casio fx-991ZA Plus calculator" }).click();
+  await expect(calculator.getByText("Removed", { exact: true })).toBeVisible();
+  await page.screenshot({ path: file("05-saved-removed") });
+  await context.clearCookies();
+
+  await page.goto("/saved");
+  await expect(page.getByRole("heading", { level: 2, name: "Nothing saved yet" })).toBeVisible();
+  await page.screenshot({ path: file("06-saved-empty") });
+
+  await page.goto("/collections/moving-in");
+  await expect(title).toBeVisible();
+  await settle();
+  await page.screenshot({ path: file("07-collection"), fullPage: true });
+
+  await page.goto("/collections/start-of-semester");
+  await expect(title).toBeVisible();
+  await settle();
+  await page.screenshot({ path: file("08-collection-first-screen") });
+});

@@ -103,16 +103,51 @@ Lama can veto any of these at plan review. In this plan, "plan decision N" means
   - The storefront adds Share (already written); Saved and collections add nothing beyond the shell and the hearts.
 - **Recording.** `tests/e2e/performance.spec.ts` prints each page's `scriptBrotli`. Tasks 1, 6, 7 and 9 run it at 390px and record the figures in their commit messages; Tasks 6, 7 and 9 add their page to it first.
 
-**As built** (fill in during the build):
+**As built** (first visit at 390px, brotli quality 5):
 
 | Point | `/` | `/browse` | Listing | Storefront | Saved | Collection |
 |---|---|---|---|---|---|---|
 | Start | 150,937 B | 151,607 B | 152,078 B | | | |
-| Task 1, the cookie store | | | | | | |
-| Task 6, storefront | | | | | | |
-| Task 7, Saved | | | | | | |
-| Task 9, collections | | | | | | |
-| **Final** | | | | | | |
+| Task 1, the cookie store (`0a650a7`) | 151,053 B | 151,735 B | 152,205 B | | | |
+| Task 6, storefront (`aa413ec`) | 151,053 B | 151,735 B | 152,969 B | 151,813 B | | |
+| After `53bf80b` (no prefetch on "See their shop" and the header's Saved link) | 151,055 B | 151,737 B | 152,211 B | 151,815 B | 151,531 B | 151,531 B |
+| **Final** (after `9e2094f`) | **151,058 B** | **151,740 B** | **152,214 B** | **151,818 B** | **151,636 B** | **151,534 B** |
+
+- **No rows for Tasks 7 and 9.** Saved and the collection page were first measured after `53bf80b`: Task 7's look and measure waited until the investigation below had freed the build ports.
+- **The stop line moved once.** The saved cookie store (Task 1) left the listing page 27 B past the line of 152,178 B. Lama accepted 152,205 B and moved the line to 152,305 B (decision 52). Every page ends under the new line, the highest being the listing page at 152,214 B (91 B under it, and 1,386 B under the limit of 153,600 B).
+- **The cookie store's cost.** It is in every page's shell and moved each page by about 116 to 128 B (`/` +116 B, browse +128 B, listing +127 B).
+- **`RefreshWhenStale` (`9e2094f`)** added 105 B, on Saved only (151,531 B to 151,636 B). Every other page moved by 3 B.
+
+## Changes made during the build (2026-10-14)
+
+The tasks above were built as written, except for these. The commits run from `0a650a7` (Task 1) to `3de7e91` (the review of Tasks 4 to 9).
+
+- **Task 1 (`0a650a7`): the stop rule fired.** The listing page measured 152,205 B, 27 B past the stop line (152,178 B). Lama accepted it and moved the line to 152,305 B (decision 52). Ledger row: `/` 151,053 B, browse 151,735 B, listing 152,205 B.
+- **Review of Tasks 1 to 3 (`db92800`):**
+  - the server reads the raw Cookie header with `readCookie`, because Next's `cookies()` keeps the last duplicate and URL-decodes the value, so a duplicated or percent-encoded `vossie_saved` cookie now reads the same on both sides;
+  - a fixture test checks that every listing id fits the saved-cookie rule;
+  - a test covers the 48-listing cap (with 50 listings);
+  - each collection's browse link is checked against browse's own parser;
+  - stationery-stop's about text gained a sentence.
+- **Task 6 (`aa413ec`): the listing page grew by 760 B.** It measured 152,969 B (the storefront 151,813 B), past the new stop line, so the build paused (decision 53).
+  - The investigation found that the listing page's "See their shop" link prefetched the storefront, whose route chunk repeats Share and Save. No listing page code had changed.
+  - Fixed in `53bf80b` with `prefetch={false}`, which brought the listing page to 152,211 B.
+  - The same commit turned off prefetch on the header's Saved link, which had added 476 B to every page once Saved had cards.
+  - Decision 53 also records Turbopack's `requestCost` option, which saved about 1.1 KB on every page in a trial. It is on the go-live checklist.
+- **Task 7 (`1c9f734`):** lint reported the `eslint-disable` comment above Saved's plain `<a href="/saved">` as unused, so it was dropped. The plan's "Lint" convention was wrong for this repo: the rule didn't flag that link. Saved's look on a production build, and its JS measure, waited until the investigation had freed the build ports.
+- **Task 9 (`e7e6a45`):** a collection's listings are looked up only after `notFound()` has dealt with an unknown slug, so an unknown slug never makes a cache entry of its own (a finding of the review of Tasks 1 to 3).
+- **Task 10 (`b993f49`) and its fix (`9e2094f`):** the end-to-end test caught a real bug. Opening Saved, saving something elsewhere and coming back by a link showed the old list, because Next shows a kept copy of a page without asking the server.
+  - `RefreshWhenStale` (a small client effect on Saved) compares the saved cookie with the ids the server built the list from each time the page is shown, and calls `router.refresh()` only when they differ.
+  - It costs 105 B, on Saved only.
+- **Task 11 (`b914581`):** built as written; no app fixes were needed.
+- **Review of Tasks 4 to 9 (`3de7e91`):**
+  - landscape phones crop the collection photo to 4:1 (211px tall at 844px wide) instead of plan decision 7's 2:1, which was taller than the screen;
+  - the collection page's cache comment now says what the late lookup actually saves;
+  - the Saved row of the size test checks that its cards are there, so it can't pass on the empty state.
+- **Not changed** (recorded in `3de7e91`, and listed as open points in `docs/PROGRESS.md`):
+  - More from shows 3 + 1 on tablets;
+  - fixed section ids repeat when Next keeps an earlier copy of the same page hidden in the DOM.
+- **Task 12:** the review screenshots passed on the first run, with each shot waiting for something the finished page shows, as the plan wrote it. Their final checks and figures are in `docs/PROGRESS.md`.
 
 ## Conventions for every task
 

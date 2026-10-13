@@ -143,9 +143,45 @@ Review notes that were deliberately not acted on:
 - `searchListings` caches free text. That's fine for sample data; revisit it with Supabase.
 - On a prerendered listing page, More from's "Try again" can't retry (the page is cached); revisit when Supabase data can fail.
 
+## 2026-10-14: Shopping pages built (storefront, Saved, collections)
+- **Seller storefronts** (`/sellers/[slug]`): a navy poster band with the seller's photo, name, tagline, stamps for campus, category, Verified and their badge, then Message (to the sign-in placeholder) and Share. About with "Selling since", their listings (4 across on desktop, beside About), an empty state that points to their category, and Report. Each seller has a share card.
+- **Saved** (`/saved`): saves now live in a first-party cookie, so the server builds the page. Cards show in saved order with their hearts pressed; sold and paused ones are tagged; removing one greys it until the next visit. Empty and error states; not indexed. When Next shows a kept copy of Saved after something else was saved, the page fetches its list again (`RefreshWhenStale`).
+- **Collections** (`/collections/[slug]`): each is a rule (categories and a price cap) that fills itself from every campus. Header with the photo, intro and count (beside the text from the tablet step; landscape phones crop the photo to 4:1), the listings, "More in browse" links that keep the cap, and the Hub's other collections.
+- **Data:** sellers gain an about, a start month, their trust badge and a category slug; seven listings' badges now match their seller's. `ListingGrid` is shared by the new pages and the listing page's More from (3 across on tablets now).
+- **Where the build differed from the plan** is in the plan's "Changes made during the build (2026-10-14)". The ones worth knowing:
+  - The JS stop line fired at Task 1 (the saved cookie store, in every page's shell) and again at Task 6. Lama moved the line to 152,305 B (decision 52).
+  - The Task 6 jump of 760 B on the listing page came from "See their shop" prefetching the storefront's route chunk. It and the header's Saved link no longer prefetch (decision 53).
+  - The end-to-end test caught a real bug: a kept copy of Saved showed an old list. `RefreshWhenStale` fixes it for 105 B, on Saved only.
+- **Plan decisions Lama may want to revisit:**
+  - Decision 10: the "More in browse" links name no campus, so they open on the viewer's campus. If Lama wants every campus, as Free & swaps has (decision 47), the links gain `&campus=all`.
+  - More from shows 3 + 1 on tablets (three across, then one card alone on the next row).
+  - Safari's 7-day limit on cookies written by the page, which may expire the campus choice and saves on iPhones (decision 58).
+- **Checks:**
+  - lint and types are clean;
+  - 528 unit tests pass;
+  - end to end, 444 pass, 296 are skipped by design and none fail, across 360, 390, 768, 1024 and 1440px;
+  - axe finds no serious or critical issues.
+- **First visit at 390px, JS brotli:** homepage 151,058 B, browse 151,740 B, listing 152,214 B, storefront 151,818 B, Saved 151,636 B, collection 151,534 B. The stage's stop line is 152,305 B (decision 52) and the limit is 153,600 B.
+- **Layout shift** (fonts held back, at 390 and 1440px):
+
+  | Page | 390px | 1440px |
+  |---|---|---|
+  | Storefront | 0.0006 | 0.0004 |
+  | Storefront, nothing listed | 0.0091 | 0.0007 |
+  | Saved | 0.0003 | 0.0100 |
+  | Saved, nothing saved | 0.0109 | 0.0077 |
+  | Collection | 0.0141 | 0.0002 |
+
+- Review screenshots: `docs/progress/shopping/`.
+
+## 2026-10-14: Open points for Lama after the shopping build
+Review notes that were deliberately not acted on:
+- Fixed section ids repeat when Next keeps an earlier copy of the same page hidden in the DOM, so a section's `aria-labelledby` could take a hidden heading's text. The fix cuts across every page: give ids per render.
+- The header's saved count includes ids that no longer exist (a saved listing that has since been removed still counts).
+
 ## Next
-- Lama reviews the screenshots in `docs/progress/browse-listing/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "browse and listing review screenshots"`.
-- Then the next stage on the go-live checklist (`docs/reference/GO-LIVE.md`): the other public pages.
+- Lama reviews the screenshots in `docs/progress/shopping/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "shopping review screenshots"`.
+- The remaining stages are B (Looking For and the Hub), C (info, legal and system pages), D (accounts), E (messaging), F (selling) and G (staff tools), in that order (decisions 54 and 55). Part B is next.
 
 ## Waiting on
 - Eduvos font files and licence confirmation.

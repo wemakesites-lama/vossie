@@ -1,7 +1,7 @@
 # Vossie shopping pages: design spec
 
 - **Date:** 2026-10-13
-- **Status:** Draft for Lama Nkuna's review
+- **Status:** Built (2026-10-14). Sections 4.1, 5.2, 5.5, 7.1, 7.2 and 10 mark where the build differs from the draft
 - **Scope:** the seller storefront (`/sellers/[slug]`), Saved (`/saved`) and collection pages (`/collections/[slug]`), on sample data, plus the data and shared-component changes they need. This is part A of the "other public pages" stage on the go-live checklist; part B (Looking For and the Hub) and part C (info, legal and system pages) follow with their own specs.
 
 ## Related documents
@@ -53,7 +53,7 @@ All three pages are Server Components. The only client code they use already exi
    - The tagline, in white.
    - Stamps for the campus and the category: small white-outlined pills with white text.
    - **Verified,** when the seller is verified: a solid sky pill with navy text and a tick icon.
-   - **The trust badge,** when there is one: the same pill style as on the listing page's seller card.
+   - **The trust badge,** when there is one: a white pill with navy text, the same shape, size and lettering as on the listing page's seller card. (That card's pill is navy and would vanish on the navy band.)
    - **Message seller:** a solid sky pill with navy text, linking to `signInHref("/sellers/<slug>")`, with no prefetch.
    - **Share:** the existing `ShareButton`, with white outline styling on navy.
    - Small text on the stars stays white; sky is used only for the pills and icons (CLAUDE.md).
@@ -96,7 +96,7 @@ All three pages are Server Components. The only client code they use already exi
 
 ### 5.2 The page
 
-1. **Heading:** an h1 "Saved", then a count line ("3 saved"), and the device note in small muted text: "Saved on this device. When sign-in arrives, your saves will follow you to any device."
+1. **Heading:** an h1 "Saved", then the device note in small muted text: "Saved on this device. When sign-in arrives, your saves will follow you to any device." The count line ("3 saved") streams in with the list, just above the cards, because it needs the cookie while the note stays prerendered. With nothing saved there is no count line; the empty state says it.
 2. **The list:** the saved listings in a `ListingGrid`, 2, 3 and 5 across, in saved order.
    - Paused and sold listings stay in the list, with a "Not taking orders" or "Sold" tag on the card (section 7.1).
    - IDs that no longer exist are dropped.
@@ -119,6 +119,10 @@ All three pages are Server Components. The only client code they use already exi
 - **Search engines:** the page is `noindex`.
 - **Loading:** while the list streams in, a skeleton of 8 card shapes holds its place.
 - **Errors:** if the listings fail to load: "We couldn't load your saved listings just now," with a "Try again" link to `/saved`.
+
+### 5.5 Refreshing a kept copy (added in the build)
+
+Next keeps the last few pages and shows one again, on a link or Back, without asking the server. So a visitor who opens Saved, saves something elsewhere and comes back by a link would see the old list. The page therefore includes `RefreshWhenStale` (`components/saved/RefreshWhenStale.tsx`), a small client effect. Each time the page is shown, it compares the saved cookie with the ids the server built the list from, and calls `router.refresh()` when they differ. It adds 105 B of JavaScript, on Saved only.
 
 ---
 
@@ -186,12 +190,15 @@ All use `"use cache"` with plain arguments. `getSeller` and `getSellerSlugs` sta
 - **`ListingCard`** also takes the optional `saved` prop (section 5.3); `ListingGrid` passes it on.
 - **`ShareButton`** takes a `className`, so the storefront can give it a white outline on the navy band.
 - **`lib/saved.ts`** switches to the cookie (section 5.1).
+- **Two links no longer prefetch (changed in the build).**
+  - The listing page's "See their shop" link has `prefetch={false}`. It had prefetched the storefront, whose route chunk repeats Share and Save, and that added 760 B to the listing page's first-visit JavaScript (decision 53).
+  - The header's Saved link has `prefetch={false}` too. Once Saved had cards, its prefetch added 476 B to every page.
 
 ### 7.2 The collection page
 
 1. **Header.**
-   - **Desktop:** the collection photo on the left, about two-fifths of the width, at its usual 4:5. On the right: the eyebrow, the h1 title, the intro, "Curated by the Incubation Hub", and the count ("12 listings").
-   - **Phones:** the photo runs edge to edge at 4:3, with the text below.
+   - **From the tablet step up:** the collection photo sits beside the text, on the left, about two-fifths of the width, at its usual 4:5. On the right: the eyebrow, the h1 title, the intro, "Curated by the Incubation Hub", and the count ("12 listings").
+   - **Phones:** the photo runs edge to edge at 4:3, with the text below. Landscape phones keep that layout but crop the photo to 4:1 (a strip about 211px tall at 844px wide), so the title and the first listings share the first screen.
 2. **The listings** in a `ListingGrid` (`"five"`), newest first, every campus, at most 48. Each card shows its campus.
 3. **"More in browse":** one link per category in the rule, keeping the price cap. For example, "More in Res & living under R500" goes to `/browse?cat=res-living&max=500`.
 4. **"More from the Hub":** the other collections as linked rows with a 64px thumbnail, the eyebrow and the title.
@@ -233,6 +240,8 @@ The homepage spec's section 10 applies, with these additions:
 - **The storefront** adds the existing Share button.
 - **The hearts' `saved` prop** adds a few bytes to the Save heart, on every page with cards, including the listing page.
 - If any page goes more than 100 B past the listing page's accepted 152,078 B (so past 152,178 B), the build stops and reports.
+  - **As built:** the saved cookie store, which is in every page's shell, put the listing page 27 B past that line (152,205 B). Lama accepted it and moved this stage's stop line to 152,305 B (decision 52).
+  - The final figures are in `docs/PROGRESS.md`, and every page is under the 153,600 B limit.
 - Layout shift stays at 0.05 or less on each page.
 
 ---
