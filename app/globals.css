@@ -5526,10 +5526,11 @@
     }
   }
 
-  /* Landscape phones keep the phone layout, with the photo cropped short so it doesn't fill the screen. */
+  /* Landscape phones keep the phone layout, with the photo cropped to a strip (211px tall at 844px wide) so the title
+     and the first listings share the first screen. */
   @media (orientation: landscape) and (max-height: 29.99rem) {
     .collection-photo {
-      --photo-ratio: 2 / 1;
+      --photo-ratio: 4 / 1;
     }
   }
 }

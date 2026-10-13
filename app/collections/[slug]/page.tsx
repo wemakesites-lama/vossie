@@ -37,7 +37,8 @@ async function CollectionDetails({ params }: Pick<PageProps<"/collections/[slug]
     getCampuses(),
   ]);
   if (!collection) notFound();
-  // Only a known collection's listings are looked up, so an unknown slug never makes its own cache entry.
+  // Only a known collection's listings are looked up, so an unknown slug doesn't also cache an empty listings result
+  // (its "not found" lookup is still cached).
   const listings = await getCollectionListings(slug).catch(() => null);
   return (
     <CollectionView

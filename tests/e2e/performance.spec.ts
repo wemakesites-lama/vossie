@@ -43,6 +43,8 @@ for (const [name, path, saved] of PAGES) {
     });
 
     await page.goto(path, { waitUntil: "networkidle" });
+    // A Saved row must measure the cards, not the empty state a cookie mix-up would show.
+    if (saved) await expect(page.locator("main article")).toHaveCount(saved.split(".").length);
     await Promise.all(pending);
     console.log(`${name}: ${JSON.stringify(bytes)}`);
 
