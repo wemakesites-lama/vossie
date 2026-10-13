@@ -1,19 +1,22 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import type { Listing } from "@/lib/types";
+import { makeListing } from "@/tests/helpers/fakes";
 import { ListingCard } from "./ListingCard";
 
-const braids: Listing = {
+const braids = makeListing({
   id: "l-004",
   title: "Box braids, shoulder length",
   priceZar: 400,
   priceIsFrom: true,
-  payMode: "cash",
-  campusSlug: "midrand",
   image: { src: "/placeholders/listing/hair-beauty.svg", alt: "Box braids, shoulder length" },
   badge: "trusted",
-  createdAt: "2026-10-11T18:20:00Z",
-};
+  kind: "service",
+  categorySlug: "hair-beauty",
+  sellerSlug: "hair-studio",
+  condition: null,
+  handover: "on-campus",
+  pickupPointId: null,
+});
 
 describe("ListingCard (spec 7.8)", () => {
   it("links its title to the listing page and shows price, campus and trust badge", () => {

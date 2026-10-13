@@ -31,14 +31,17 @@ describe("Free & swaps (spec 7.12)", () => {
     expect(screen.getByRole("region", { name: "Pass it on" })).toBeInTheDocument();
     expect(screen.getByText("Free & swaps")).toHaveClass("text-navy");
     const cards = within(screen.getByRole("region", { name: "Free and swap items" })).getAllByRole("article");
-    expect(cards).toHaveLength(7);
-    expect(within(cards[0]).getByText("Free")).toBeInTheDocument();
-    expect(within(cards[0]).getByRole("link", { name: "Business Management 1 notes" })).toHaveAttribute(
+    expect(cards).toHaveLength(8);
+    // The denim jacket is swap-only, so it's here too, and it's Midrand's newest (plan decision 6).
+    expect(within(cards[0]).getByText("Swap")).toBeInTheDocument();
+    expect(within(cards[0]).getByRole("link", { name: "Denim jacket, size M" })).toHaveAttribute("href", "/listings/l-010");
+    expect(within(cards[1]).getByText("Free")).toBeInTheDocument();
+    expect(within(cards[1]).getByRole("link", { name: "Business Management 1 notes" })).toHaveAttribute(
       "href",
       "/listings/fs-001",
     );
-    expect(within(cards[0]).getByText("Midrand")).toBeInTheDocument();
-    expect(screen.getAllByText("Swap")).toHaveLength(3);
+    expect(within(cards[1]).getByText("Midrand")).toBeInTheDocument();
+    expect(screen.getAllByText("Swap")).toHaveLength(4);
   });
 
   it("hides when there's nothing to give away or swap", async () => {

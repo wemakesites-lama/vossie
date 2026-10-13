@@ -2,14 +2,17 @@ import { describe, expect, it } from "vitest";
 import { campuses } from "./campuses";
 import { categories } from "./categories";
 import { collections } from "./collections";
-import { freeSwapItems } from "./free-swaps";
 import { heroSlides } from "./hero";
 import { hubBanner, hubEvents } from "./hub";
 import { listings } from "./listings";
+import { pickupPoints } from "./pickup-points";
 import { requests } from "./requests";
 import { sellers } from "./sellers";
 
 const campusSlugs = new Set(campuses.map((campus) => campus.slug));
+const categorySlugs = new Set(categories.map((category) => category.slug));
+const sellersBySlug = new Map(sellers.map((seller) => [seller.slug, seller]));
+const pointsById = new Map(pickupPoints.map((point) => [point.id, point]));
 const isUnique = (values: readonly string[]) => new Set(values).size === values.length;
 
 describe("homepage fixtures (spec section 13)", () => {
@@ -35,21 +38,8 @@ describe("homepage fixtures (spec section 13)", () => {
     expect(listings.filter((listing) => listing.campusSlug === "midrand").length).toBeGreaterThanOrEqual(10);
   });
 
-  it("gives every listing a known campus, a real time and a price that matches how it's paid", () => {
-    for (const listing of listings) {
-      expect(campusSlugs.has(listing.campusSlug)).toBe(true);
-      expect(Number.isNaN(Date.parse(listing.createdAt))).toBe(false);
-      if (listing.payMode === "swap") expect(listing.priceZar).toBeNull();
-      else expect(listing.priceZar).toBeGreaterThan(0);
-    }
-  });
-
-  it("keeps ids unique across listings and free and swap items, so one listing page finds either", () => {
-    expect(isUnique([...listings, ...freeSwapItems].map((item) => item.id))).toBe(true);
-  });
-
-  it("puts sellers, requests and free and swap items on known campuses", () => {
-    for (const item of [...sellers, ...requests, ...freeSwapItems]) expect(campusSlugs.has(item.campusSlug)).toBe(true);
+  it("puts sellers and requests on known campuses", () => {
+    for (const item of [...sellers, ...requests]) expect(campusSlugs.has(item.campusSlug)).toBe(true);
     expect(isUnique(sellers.map((seller) => seller.slug))).toBe(true);
   });
 
@@ -59,5 +49,64 @@ describe("homepage fixtures (spec section 13)", () => {
       expect(event.campusSlug === "all" || campusSlugs.has(event.campusSlug)).toBe(true);
     }
     expect(hubBanner.image.src).toMatch(/^\/placeholders\//);
+  });
+});
+
+describe("listing fixtures (browse and listing spec 6.2)", () => {
+  it("gives every listing a unique id, a known campus and category, and a real time", () => {
+    expect(isUnique(listings.map((listing) => listing.id))).toBe(true);
+    for (const listing of listings) {
+      expect(campusSlugs.has(listing.campusSlug), listing.id).toBe(true);
+      expect(categorySlugs.has(listing.categorySlug), listing.id).toBe(true);
+      expect(Number.isNaN(Date.parse(listing.createdAt)), listing.id).toBe(false);
+    }
+  });
+
+  it("gives every listing a seller on the listing's own campus", () => {
+    for (const listing of listings) {
+      expect(sellersBySlug.get(listing.sellerSlug)?.campusSlug, listing.id).toBe(listing.campusSlug);
+    }
+  });
+
+  it("has no price exactly when a listing is swap-only, and swap terms exactly when it takes swaps", () => {
+    for (const listing of listings) {
+      expect(listing.priceZar === null, listing.id).toBe(listing.payMode === "swap");
+      if (listing.priceZar !== null) expect(listing.priceZar, listing.id).toBeGreaterThanOrEqual(0);
+      expect(listing.swapFor !== null, listing.id).toBe(listing.payMode !== "cash");
+    }
+  });
+
+  it("names a pickup point on the listing's own campus exactly when the handover is a pickup", () => {
+    for (const listing of listings) {
+      expect(listing.pickupPointId !== null, listing.id).toBe(listing.handover === "pickup");
+      if (listing.pickupPointId) {
+        expect(pointsById.get(listing.pickupPointId)?.campusSlug, listing.id).toBe(listing.campusSlug);
+      }
+    }
+  });
+
+  it("gives items a condition and services none, and hands over online at Eduvos Online", () => {
+    for (const listing of listings) {
+      expect(listing.condition === null, listing.id).toBe(listing.kind === "service");
+      if (listing.campusSlug === "online") expect(listing.handover, listing.id).toBe("online");
+    }
+  });
+
+  it("has at most five more photos per listing", () => {
+    for (const listing of listings) expect(listing.morePhotos.length, listing.id).toBeLessThanOrEqual(5);
+  });
+
+  it("has paused, sold, free and swap-only listings, to test those states", () => {
+    expect(listings.some((listing) => listing.availability === "paused")).toBe(true);
+    expect(listings.some((listing) => listing.availability === "sold")).toBe(true);
+    expect(listings.some((listing) => listing.priceZar === 0)).toBe(true);
+    expect(listings.some((listing) => listing.payMode === "swap")).toBe(true);
+  });
+
+  it("has pickup points with unique ids on the physical campuses only", () => {
+    expect(isUnique(pickupPoints.map((point) => point.id))).toBe(true);
+    expect(new Set(pickupPoints.map((point) => point.campusSlug))).toEqual(
+      new Set(campuses.filter((campus) => campus.slug !== "online").map((campus) => campus.slug)),
+    );
   });
 });

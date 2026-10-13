@@ -101,6 +101,31 @@ describe("homepage data", () => {
     expect(await getJustListed({ campus: "mbombela", limit: 10 })).toEqual([]);
   });
 
+  it("keeps paused and sold listings out of Just listed", async () => {
+    const pretoria = (await getJustListed({ campus: "pretoria", limit: 10 })).map((listing) => listing.id);
+    expect(pretoria).not.toContain("l-016");
+    expect(pretoria).toContain("fs-002");
+    const everywhere = (await getJustListed({ campus: "all", limit: 100 })).map((listing) => listing.id);
+    expect(everywhere).not.toContain("l-026");
+    expect(everywhere).toHaveLength(36);
+  });
+
+  it("picks the free and swap-only listings for Free & swaps, newest first (plan decision 6)", async () => {
+    const items = await getFreeAndSwaps({ campus: "all", limit: 10 });
+    expect(items.map((item) => item.id)).toEqual([
+      "l-010",
+      "fs-001",
+      "fs-002",
+      "fs-003",
+      "fs-004",
+      "fs-005",
+      "fs-006",
+      "fs-007",
+    ]);
+    expect(items[0]).toMatchObject({ kind: "swap", title: "Denim jacket, size M", campusSlug: "midrand" });
+    expect(items[1]).toMatchObject({ kind: "free", title: "Business Management 1 notes" });
+  });
+
   it("puts a campus's own requests and free and swap items first, then tops up", async () => {
     expect((await getRequests({ campus: "pretoria", limit: 3 })).map((r) => r.campusSlug)).toEqual([
       "pretoria",

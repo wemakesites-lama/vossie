@@ -65,16 +65,32 @@ export type Availability = "available" | "paused" | "sold";
 export type Listing = {
   id: string;
   title: string;
-  /** Rand. Null when the item is swap-only. */
+  /** Rand. 0 for a free item; null when the item is swap-only. */
   priceZar: number | null;
   /** True for prices shown as "From R400" (services). */
   priceIsFrom: boolean;
   payMode: PayMode;
   campusSlug: string;
+  /** The cover photo. */
   image: ImageRef;
   badge: TrustBadge | null;
   /** ISO 8601 in UTC, e.g. "2026-10-12T07:40:00Z". */
   createdAt: string;
+  kind: ListingKind;
+  categorySlug: string;
+  sellerSlug: string;
+  /** Up to five more photos after the cover. */
+  morePhotos: readonly ImageRef[];
+  /** The seller's own words. Line breaks are kept on the page. */
+  description: string;
+  /** Null for services. */
+  condition: Condition | null;
+  handover: Handover;
+  /** Set only when the handover is "pickup": one of the listing campus's pickup points. */
+  pickupPointId: string | null;
+  /** What the seller would swap for. Set only when the pay mode is "swap" or "both". */
+  swapFor: string | null;
+  availability: Availability;
 };
 
 export type Seller = {
@@ -86,6 +102,22 @@ export type Seller = {
   campusSlug: string;
   verified: boolean;
   image: ImageRef;
+};
+
+/** An agreed place on campus where items change hands (browse and listing spec 6.1). */
+export type PickupPoint = {
+  id: string;
+  campusSlug: string;
+  name: string;
+};
+
+/** Everything the listing page needs, looked up once (spec 6.1). */
+export type ListingDetail = {
+  listing: Listing;
+  seller: Seller;
+  category: Category;
+  campus: Campus;
+  pickupPoint: PickupPoint | null;
 };
 
 export type LookingForRequest = {

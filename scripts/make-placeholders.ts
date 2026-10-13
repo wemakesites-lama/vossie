@@ -7,7 +7,6 @@ import { dirname, join } from "node:path";
 import { campuses } from "../data/fixtures/campuses.ts";
 import { categories } from "../data/fixtures/categories.ts";
 import { collections } from "../data/fixtures/collections.ts";
-import { freeSwapItems } from "../data/fixtures/free-swaps.ts";
 import { heroSlides } from "../data/fixtures/hero.ts";
 import { hubBanner } from "../data/fixtures/hub.ts";
 import { listings } from "../data/fixtures/listings.ts";
@@ -24,11 +23,13 @@ const SIZES: Record<string, [number, number]> = {
   hub: [2400, 1029],
   seller: [1000, 750],
   listing: [800, 800],
+  photo: [800, 800],
 };
 
 // Tiles and cards print their own text over or beside these, so only the larger photos carry a label. The Hub
 // banner's heading sits right over its photo, so it has none either.
-const LABELLED = new Set(["hero", "campus", "collection", "seller"]);
+// The gallery's extra photos are labelled "Photo 2" and "Photo 3", so the gallery can be checked by eye.
+const LABELLED = new Set(["hero", "campus", "collection", "seller", "photo"]);
 
 const art = new Map<string, Art>();
 
@@ -45,7 +46,9 @@ for (const category of categories) add(category.image.src, category.name);
 for (const collection of collections) add(collection.image.src, `Photo: ${collection.eyebrow}`);
 for (const seller of sellers) add(seller.image.src, `Photo: ${seller.name}`);
 for (const listing of listings) add(listing.image.src, listing.title);
-for (const item of freeSwapItems) add(item.image.src, item.title);
+for (const listing of listings) {
+  for (const extra of listing.morePhotos) add(extra.src, `Photo ${extra.src.split("/").pop()?.replace(".svg", "")}`);
+}
 add(hubBanner.image.src, "Photo: the Incubation Hub");
 
 const escapeXml = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
