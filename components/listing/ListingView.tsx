@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { FlagIcon } from "@/components/icons";
 import { priceLabel } from "@/lib/format";
+import { signInHref } from "@/lib/next-path";
 import type { ListingDetail } from "@/lib/types";
 import { AvailabilityBanner } from "./AvailabilityBanner";
 import { CampusNote } from "./CampusNote";
@@ -19,7 +20,7 @@ import { SellerCard } from "./SellerCard";
  */
 export function ListingView({ detail, campusNames }: { detail: ListingDetail; campusNames: ReadonlyMap<string, string> }) {
   const { listing, seller, category, campus, pickupPoint } = detail;
-  const signIn = `/login?next=${encodeURIComponent(`/listings/${listing.id}`)}`;
+  const signIn = signInHref(`/listings/${listing.id}`);
 
   return (
     <div className="page listing-page">

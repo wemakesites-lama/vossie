@@ -5033,8 +5033,6 @@
 
     .listing-panel {
       grid-area: panel;
-      position: sticky;
-      top: var(--listing-sticky-top, 120px);
     }
 
     .listing-details {
@@ -5043,6 +5041,15 @@
 
     .listing-more-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /* The panel (about 520 to 600px) only stays in view where it fits beside the 120px offset. On a shorter window it
+     scrolls with the page, so its seller link isn't hidden while it's stuck. */
+  @media (min-width: 64rem) and (min-height: 48rem) {
+    .listing-panel {
+      position: sticky;
+      top: var(--listing-sticky-top, 120px);
     }
   }
 }

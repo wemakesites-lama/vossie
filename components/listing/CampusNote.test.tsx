@@ -3,13 +3,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { CampusNote } from "./CampusNote";
 
 const viewer = vi.hoisted(() => ({ campus: "pretoria" }));
+const getViewerContext = vi.hoisted(() =>
+  vi.fn(async () => ({ campus: viewer.campus, signedIn: false, activity: null })),
+);
 
-vi.mock("@/lib/data/viewer", () => ({
-  getViewerContext: async () => ({ campus: viewer.campus, signedIn: false, activity: null }),
-}));
+vi.mock("@/lib/data/viewer", () => ({ getViewerContext }));
 
 afterEach(() => {
   viewer.campus = "pretoria";
+  getViewerContext.mockClear();
 });
 
 const atMidrand = { campusSlug: "midrand", campusName: "Midrand" } as const;
@@ -34,7 +36,10 @@ describe("CampusNote (spec 5.3)", () => {
     viewer.campus = "all";
     expect(await CampusNote({ ...atMidrand, handover: "pickup" })).toBeNull();
     viewer.campus = "pretoria";
+    getViewerContext.mockClear();
     expect(await CampusNote({ ...atMidrand, handover: "online" })).toBeNull();
     expect(await CampusNote({ ...atMidrand, handover: "on-campus-or-online" })).toBeNull();
+    // Staying away from the viewer's cookie is what keeps an online listing's page fully prerendered.
+    expect(getViewerContext).not.toHaveBeenCalled();
   });
 });

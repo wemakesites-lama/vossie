@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SaveHeart } from "@/components/listings/SaveHeart";
+import { signInHref } from "@/lib/next-path";
 import type { Listing } from "@/lib/types";
 import { ShareButton } from "./ShareButton";
 
@@ -13,7 +14,7 @@ export function ListingActions({
 }: {
   listing: Pick<Listing, "id" | "title" | "categorySlug" | "availability">;
 }) {
-  const signIn = `/login?next=${encodeURIComponent(`/listings/${listing.id}`)}`;
+  const signIn = signInHref(`/listings/${listing.id}`);
   return (
     <div className="listing-actions">
       {listing.availability === "available" ? (

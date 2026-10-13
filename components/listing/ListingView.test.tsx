@@ -58,6 +58,16 @@ describe("ListingView (spec 5.1)", () => {
     expect(screen.getByRole("link", { name: "See similar items" })).toHaveAttribute("href", "/browse?cat=tech");
   });
 
+  it("says when a seller is verified by the Hub, and only then", async () => {
+    await show("l-004");
+    expect(screen.getByText("Verified by the Hub")).toBeInTheDocument();
+  });
+
+  it("leaves Verified out for a seller who isn't", async () => {
+    await show("l-001");
+    expect(screen.queryByText("Verified by the Hub")).not.toBeInTheDocument();
+  });
+
   it("leaves the condition out for a service", async () => {
     await show("l-004");
     expect(screen.queryByText("Condition")).not.toBeInTheDocument();

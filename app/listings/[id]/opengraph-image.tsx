@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { getListingDetail } from "@/lib/data";
-import { priceLabel, shareCardAlt } from "@/lib/format";
+import { priceLabel, shareCardAlt, shortDescription } from "@/lib/format";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -13,13 +13,15 @@ const crest = `data:image/png;base64,${(await readFile(join(process.cwd(), "asse
 
 type Props = { params: Promise<{ id: string }> };
 
-/** One card per listing, with alt text saying what, how much and where (spec 5.8). */
+/**
+ * One card per listing, with alt text saying what, how much and where (spec 5.8). An unknown listing has no card: with
+ * no images, Next answers 404 instead of serving a generic card that would be cached for a year.
+ */
 export async function generateImageMetadata({ params }: Props) {
   const { id } = await params;
   const detail = await getListingDetail(id);
-  const alt = detail
-    ? shareCardAlt(detail.listing.title, priceLabel(detail.listing), detail.campus.name)
-    : "Vossie, the Eduvos student marketplace";
+  if (!detail) return [];
+  const alt = shareCardAlt(detail.listing.title, priceLabel(detail.listing), detail.campus.name);
   return [{ id: "card", alt, size, contentType }];
 }
 
@@ -27,7 +29,8 @@ export async function generateImageMetadata({ params }: Props) {
 export default async function Image({ params }: Props) {
   const { id } = await params;
   const detail = await getListingDetail(id);
-  const title = detail?.listing.title ?? "Vossie";
+  // Capped, so a long title can't run past the 630px height.
+  const title = detail ? shortDescription(detail.listing.title, 90) : "Vossie";
   const price = detail ? priceLabel(detail.listing) : "";
   const campus = detail?.campus.name ?? "Every Eduvos campus";
 

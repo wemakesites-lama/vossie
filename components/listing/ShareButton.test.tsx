@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ShareOutcome } from "@/lib/share";
+import { shareLink, type ShareOutcome } from "@/lib/share";
 import { getToast } from "@/lib/toast";
 import { ShareButton } from "./ShareButton";
 
@@ -11,9 +11,18 @@ vi.mock("@/lib/share", () => ({ shareLink: vi.fn(async () => outcome.value) }));
 
 afterEach(() => {
   outcome.value = "copied";
+  window.history.replaceState(null, "", "/");
+  vi.mocked(shareLink).mockClear();
 });
 
 describe("ShareButton (spec 5.8)", () => {
+  it("shares the listing's address, without a query or a hash", async () => {
+    window.history.replaceState(null, "", "/listings/l-001?retry=x#more-from");
+    render(<ShareButton title="Casio calculator" />);
+    await userEvent.click(screen.getByRole("button", { name: "Share" }));
+    expect(shareLink).toHaveBeenCalledWith("Casio calculator", `${window.location.origin}/listings/l-001`);
+  });
+
   it("says the link was copied", async () => {
     render(<ShareButton title="Casio calculator" />);
     await userEvent.click(screen.getByRole("button", { name: "Share" }));
