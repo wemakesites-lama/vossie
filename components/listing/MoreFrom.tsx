@@ -1,5 +1,5 @@
 import { SectionError } from "@/components/home/SectionError";
-import { ListingCard } from "@/components/listings/ListingCard";
+import { ListingGrid } from "@/components/listings/ListingGrid";
 import { getMoreFrom } from "@/lib/data";
 import type { Listing } from "@/lib/types";
 
@@ -25,13 +25,7 @@ export async function MoreFrom({ listing, sellerName, categoryName, campusNames 
         {title}
       </h2>
       {more ? (
-        <ul className="listing-more-grid">
-          {more.items.map((item) => (
-            <li key={item.id}>
-              <ListingCard listing={item} campusName={campusNames.get(item.campusSlug) ?? ""} />
-            </li>
-          ))}
-        </ul>
+        <ListingGrid listings={more.items} campusNames={campusNames} columns="four" />
       ) : (
         <SectionError id="more-from" title="More listings" path={`/listings/${listing.id}`} />
       )}

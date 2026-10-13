@@ -4998,13 +4998,6 @@
     margin-top: 48px;
   }
 
-  .listing-more-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 24px 14px;
-    margin-top: 16px;
-  }
-
   .listing-report {
     margin-top: 32px;
   }
@@ -5049,10 +5042,6 @@
     .listing-details {
       grid-area: details;
     }
-
-    .listing-more-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
   }
 
   /* The panel (about 520 to 600px) only stays in view where it fits beside the 120px offset. On a shorter window it
@@ -5061,6 +5050,79 @@
     .listing-panel {
       position: sticky;
       top: var(--listing-sticky-top, 120px);
+    }
+  }
+}
+
+/* --- Shopping: the card grid and card tags (shopping plan, Task 4, spec 7.1 and 5.3) --- */
+@layer components {
+  /* 2 across on phones, 3 from the tablet step, then 5 ("five") or 4 ("four") from the desktop step. */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 14px;
+    margin-top: 16px;
+  }
+
+  /* On the photo, under the card's link layer (z-index 1), so a tap still opens the listing. Clear of the heart. */
+  .listing-tags {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: grid;
+    justify-items: start;
+    gap: 4px;
+    max-width: calc(100% - 64px);
+  }
+
+  /* Navy on pale, like the listing page's availability banner. */
+  .listing-tag {
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--color-pale);
+    color: var(--color-navy);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  /* Saved's removed state (spec 5.3): once the heart is unpressed the card stays, its photo grey and tagged. The text
+     keeps full contrast. Without :has() (iOS before 15.4) only the heart shows it. */
+  .listing-removed {
+    display: none;
+  }
+
+  .listing-card:has(.save-heart[aria-pressed="false"]) .listing-removed {
+    display: block;
+  }
+
+  .listing-card:has(.listing-removed):has(.save-heart[aria-pressed="false"]) .listing-photo {
+    filter: grayscale(1);
+    opacity: 0.6;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .card-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 28px 18px;
+    }
+  }
+
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .card-grid[data-columns="five"] {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .card-grid[data-columns="four"] {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /* Landscape phones keep the phone layout but get four cards a row, as the homepage does. */
+  @media (orientation: landscape) and (max-height: 29.99rem) {
+    .card-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 }

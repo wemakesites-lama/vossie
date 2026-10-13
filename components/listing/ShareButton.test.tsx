@@ -42,4 +42,14 @@ describe("ShareButton (spec 5.8)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Share" }));
     expect(getToast()).toBeNull();
   });
+
+  it("takes a class for where it sits: the listing page's by default, or the storefront's", () => {
+    const { unmount } = render(<ShareButton title="Casio calculator" />);
+    expect(screen.getByRole("button", { name: "Share" })).toHaveClass("icon-btn", "listing-share");
+    unmount();
+    render(<ShareButton title="Tech corner" className="seller-share" />);
+    const button = screen.getByRole("button", { name: "Share" });
+    expect(button).toHaveClass("icon-btn", "seller-share");
+    expect(button).not.toHaveClass("listing-share");
+  });
 });

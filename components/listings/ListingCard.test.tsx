@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { makeListing } from "@/tests/helpers/fakes";
 import { ListingCard } from "./ListingCard";
@@ -38,5 +39,25 @@ describe("ListingCard (spec 7.8)", () => {
     render(<ListingCard listing={{ ...braids, priceZar: null, payMode: "swap", badge: null }} campusName="Midrand" />);
     expect(screen.getByText("Swap")).toBeInTheDocument();
     expect(screen.queryByText("Trusted")).not.toBeInTheDocument();
+  });
+
+  it("tags a sold or paused listing (only Saved shows them, shopping spec 7.1)", () => {
+    const { unmount } = render(<ListingCard listing={{ ...braids, availability: "sold" }} campusName="Midrand" />);
+    expect(screen.getByText("Sold")).toHaveClass("listing-tag");
+    unmount();
+    render(<ListingCard listing={{ ...braids, availability: "paused" }} campusName="Midrand" />);
+    expect(screen.getByText("Not taking orders")).toHaveClass("listing-tag");
+  });
+
+  it("has no tag when the listing is available", () => {
+    const { container } = render(<ListingCard listing={braids} campusName="Midrand" />);
+    expect(container.querySelector(".listing-tags")).toBeNull();
+  });
+
+  it("on Saved, starts its heart pressed and carries a hidden Removed tag for CSS to show (shopping spec 5.3)", () => {
+    const html = renderToString(<ListingCard listing={braids} campusName="Midrand" saved />);
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).toMatch(/<p class="listing-tag listing-removed" aria-hidden="true">Removed<\/p>/);
+    expect(renderToString(<ListingCard listing={braids} campusName="Midrand" />)).not.toContain("Removed");
   });
 });
