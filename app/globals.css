@@ -4228,3 +4228,189 @@
     }
   }
 }
+
+/* --- Browse: toolbar, Filters panel and Sort menu (browse and listing plan, Task 10, spec 4.4) --- */
+@layer components {
+  /* One wrapping row. An open Filters panel takes the whole width under it, so Sort and the count move below it;
+     Sort's menu opens in place. Nothing floats over the results, since a <details> can't be closed by tapping
+     elsewhere (plan decision 1). */
+  .browse-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .tool {
+    flex: none;
+  }
+
+  .tool-filters[open] {
+    flex-basis: 100%;
+  }
+
+  .tool-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1.5px solid var(--color-navy);
+    border-radius: 999px;
+    color: var(--color-navy);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .tool-button::-webkit-details-marker {
+    display: none;
+  }
+
+  .tool[open] > .tool-button {
+    background: var(--color-navy);
+    color: var(--color-white);
+  }
+
+  .tool-chevron {
+    transition: rotate var(--dur-fast) var(--ease-out);
+  }
+
+  .tool[open] .tool-chevron {
+    rotate: 180deg;
+  }
+
+  .browse-count {
+    flex-basis: 100%;
+    color: var(--color-muted);
+    font-size: 13px;
+  }
+
+  .filters-panel {
+    display: grid;
+    gap: 20px;
+    margin-top: 12px;
+    padding: 18px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+  }
+
+  .filters-fields {
+    display: grid;
+    gap: 20px;
+  }
+
+  .filters-group {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .filters-label {
+    color: var(--color-navy);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .filters-select {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1.5px solid var(--color-field);
+    border-radius: 12px;
+    background: var(--color-white);
+    color: var(--color-ink);
+  }
+
+  .filters-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .filters-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1.5px solid var(--color-field);
+    border-radius: 999px;
+    background: var(--color-white);
+    color: var(--color-navy);
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .filters-option input {
+    accent-color: var(--color-navy);
+  }
+
+  .filters-option:has(input:checked) {
+    border-color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .filters-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 20px;
+  }
+
+  /* Navy on the grey panel: sky-dark is 4.25:1 there. */
+  .filters-clear {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-navy);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: underline 1.5px;
+    text-underline-offset: 4px;
+  }
+
+  .sort-menu {
+    display: grid;
+    min-width: 15rem;
+    margin-top: 8px;
+    padding: 6px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    background: var(--color-white);
+  }
+
+  .sort-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 10px;
+    color: var(--color-navy);
+    font-size: 14px;
+  }
+
+  .sort-option[aria-current="true"] {
+    background: var(--color-pale);
+    font-weight: 700;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .browse-count {
+      flex-basis: auto;
+      align-self: center;
+      margin-left: auto;
+    }
+
+    .filters-fields {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+}
