@@ -5,6 +5,7 @@ const PAGES: ReadonlyArray<[name: string, path: string]> = [
   ["homepage", "/"],
   ["browse page", "/browse"],
   ["listing page", "/listings/l-001"],
+  ["storefront", "/sellers/tech-corner"],
 ];
 
 for (const [name, path] of PAGES) {

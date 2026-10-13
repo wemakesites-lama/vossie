@@ -1,14 +1,23 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ComingSoon } from "@/components/ComingSoon";
-import { getSeller, getSellerSlugs } from "@/lib/data";
+import { SellerView } from "@/components/seller/SellerView";
+import { getCampuses, getSeller, getSellerSlugs } from "@/lib/data";
 
-/** The tab reads "Hair studio · Vossie" (the layout adds the suffix). An unknown slug gets the 404's title. */
+/**
+ * The tab title is the seller's name ("Tech corner · Vossie"; the layout adds the suffix) and the description their
+ * tagline. Link previews say where: "Tech corner · Midrand on Vossie" (spec 4.3). An unknown slug gets the 404's title.
+ */
 export async function generateMetadata({ params }: PageProps<"/sellers/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const seller = await getSeller(slug);
-  return { title: seller ? seller.name : "Page not found" };
+  const [seller, campuses] = await Promise.all([getSeller(slug), getCampuses()]);
+  if (!seller) return { title: "Page not found" };
+  const campus = campuses.find((item) => item.slug === seller.campusSlug)?.name ?? "Eduvos";
+  return {
+    title: seller.name,
+    description: seller.tagline,
+    openGraph: { title: `${seller.name} · ${campus} on Vossie`, description: seller.tagline },
+  };
 }
 
 export async function generateStaticParams() {
@@ -26,7 +35,7 @@ export default function SellerPage({ params }: PageProps<"/sellers/[slug]">) {
 
 async function SellerDetails({ params }: Pick<PageProps<"/sellers/[slug]">, "params">) {
   const { slug } = await params;
-  const seller = await getSeller(slug);
+  const [seller, campuses] = await Promise.all([getSeller(slug), getCampuses()]);
   if (!seller) notFound();
-  return <ComingSoon title={seller.name}>{seller.tagline} Seller storefronts arrive in the next stage.</ComingSoon>;
+  return <SellerView seller={seller} campusNames={new Map(campuses.map((campus) => [campus.slug, campus.name]))} />;
 }

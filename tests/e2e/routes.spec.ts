@@ -11,7 +11,6 @@ const PLACEHOLDERS: Array<[path: string, title: string]> = [
   ["/account", "Your account"],
   ["/saved", "Saved"],
   ["/collections/exam-season", "Notes, tutors & cram snacks"],
-  ["/sellers/hair-studio", "Hair studio"],
 ];
 
 /** Routes don't change with width, so one phone and one desktop size are enough. */
