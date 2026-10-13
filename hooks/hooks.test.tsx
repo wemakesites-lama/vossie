@@ -3,7 +3,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { setCampusChoice } from "@/lib/campus";
 import { setLowData } from "@/lib/low-data";
-import { SAVED_KEY, toggleSaved } from "@/lib/saved";
+import { savedCookieString, toggleSaved } from "@/lib/saved";
 import { mockMatchMedia } from "@/tests/helpers/dom";
 import { useCampusChoice } from "./useCampusChoice";
 import { useLowData } from "./useLowData";
@@ -33,7 +33,7 @@ describe("device preference hooks", () => {
   });
 
   it("useSavedCount counts saves on this device", () => {
-    localStorage.setItem(SAVED_KEY, JSON.stringify(["a", "b"]));
+    document.cookie = savedCookieString(["a", "b"], false);
     const { result } = renderHook(() => useSavedCount());
     expect(result.current).toBe(2);
     act(() => {
@@ -70,7 +70,7 @@ describe("device preference hooks", () => {
 
   it("renders safe defaults on the server, whatever the device has stored", () => {
     setCampusChoice("pretoria");
-    localStorage.setItem(SAVED_KEY, JSON.stringify(["a"]));
+    document.cookie = savedCookieString(["a"], false);
     setLowData(true);
     expect(renderToString(<ServerValues />)).toContain("null|0|false|true|false");
   });

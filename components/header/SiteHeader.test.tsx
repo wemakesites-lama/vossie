@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ALL_CAMPUSES, setCampusChoice } from "@/lib/campus";
 import { onOverlayOpen } from "@/lib/overlays";
-import { SAVED_KEY } from "@/lib/saved";
+import { savedCookieString } from "@/lib/saved";
 import type { Campus } from "@/lib/types";
 import { setScrollY } from "@/tests/helpers/dom";
 import { SavedLink } from "./SavedLink";
@@ -120,7 +120,7 @@ describe("SiteHeader", () => {
 
   it("shows the chosen campus and the number of saved items on this device", () => {
     setCampusChoice("pretoria");
-    localStorage.setItem(SAVED_KEY, JSON.stringify(["a", "b"]));
+    document.cookie = savedCookieString(["a", "b"], false);
     renderHeader();
     expect(screen.getByRole("button", { name: "Shopping at Pretoria" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Saved, 2 items" })).toBeInTheDocument();
@@ -155,12 +155,13 @@ describe("SiteHeader", () => {
   });
 
   it("says 1 item in the singular and caps the badge at 99+", () => {
-    localStorage.setItem(SAVED_KEY, JSON.stringify(["a"]));
+    document.cookie = savedCookieString(["a"], false);
     const { unmount } = render(<SavedLink />);
     expect(screen.getByRole("link", { name: "Saved, 1 item" })).toBeInTheDocument();
     unmount();
-    localStorage.setItem(SAVED_KEY, JSON.stringify(Array.from({ length: 120 }, (_, i) => `id${i}`)));
+    // 120 ids in the cookie: the store keeps 100 (shopping spec 5.1), and the badge shows 99+.
+    document.cookie = savedCookieString(Array.from({ length: 120 }, (_, i) => `id${i}`), false);
     render(<SavedLink />);
-    expect(screen.getByRole("link", { name: "Saved, 120 items" })).toHaveTextContent("99+");
+    expect(screen.getByRole("link", { name: "Saved, 100 items" })).toHaveTextContent("99+");
   });
 });

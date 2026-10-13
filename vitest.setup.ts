@@ -4,6 +4,7 @@ import { afterEach, vi } from "vitest";
 // These app modules load before every test file. If a test needs vi.mock for one of them, check that the mock takes effect.
 import { CAMPUS_COOKIE } from "./lib/campus";
 import { LOW_DATA_ATTR } from "./lib/low-data";
+import { SAVED_COOKIE } from "./lib/saved";
 import { dismissToast } from "./lib/toast";
 import { createMediaQueryList } from "./tests/helpers/dom";
 
@@ -112,7 +113,10 @@ afterEach(() => {
     // Undoes vi.spyOn spies made inside tests. A spy made at module level or in beforeAll is undone after the first test.
     vi.restoreAllMocks();
     localStorage.clear();
+    // Undo blockCookies() (tests/helpers/dom.ts), so the resets below reach the real cookie jar.
+    Reflect.deleteProperty(document, "cookie");
     document.cookie = `${CAMPUS_COOKIE}=; Path=/; Max-Age=0`;
+    document.cookie = `${SAVED_COOKIE}=; Path=/; Max-Age=0`;
     document.documentElement.removeAttribute(LOW_DATA_ATTR);
     Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
   }

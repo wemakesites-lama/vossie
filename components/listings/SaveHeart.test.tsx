@@ -1,8 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { renderToString } from "react-dom/server";
+import { describe, expect, it } from "vitest";
 import { isSaved } from "@/lib/saved";
 import { getToast } from "@/lib/toast";
+import { blockCookies } from "@/tests/helpers/dom";
 import { SaveHeart } from "./SaveHeart";
 
 describe("SaveHeart (spec 7.8)", () => {
@@ -22,11 +24,9 @@ describe("SaveHeart (spec 7.8)", () => {
     expect(getToast()?.message).toBe("Removed from saved");
   });
 
-  it("stays as it was, and says so, when storage is blocked", async () => {
+  it("stays as it was, and says so, when cookies are blocked", async () => {
     const user = userEvent.setup();
-    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-      throw new Error("blocked");
-    });
+    blockCookies();
     render(<SaveHeart id="l-001" title="Casio calculator" />);
     const heart = screen.getByRole("button", { name: "Save Casio calculator" });
     await user.click(heart);
@@ -37,5 +37,12 @@ describe("SaveHeart (spec 7.8)", () => {
   it("takes an extra class, for the listing page's action bar", () => {
     render(<SaveHeart id="l-001" title="Casio calculator" className="save-heart-inline" />);
     expect(screen.getByRole("button", { name: "Save Casio calculator" })).toHaveClass("save-heart", "save-heart-inline");
+  });
+
+  it("starts pressed on the server when the page says it's saved (the Saved page, shopping spec 5.3)", () => {
+    expect(renderToString(<SaveHeart id="l-001" title="Casio calculator" savedOnServer />)).toContain(
+      'aria-pressed="true"',
+    );
+    expect(renderToString(<SaveHeart id="l-001" title="Casio calculator" />)).toContain('aria-pressed="false"');
   });
 });

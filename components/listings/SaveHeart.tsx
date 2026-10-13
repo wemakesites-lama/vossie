@@ -7,9 +7,17 @@ import { cx } from "@/lib/cx";
 import { toggleSaved } from "@/lib/saved";
 import { showToast } from "@/lib/toast";
 
+type SaveHeartProps = {
+  id: string;
+  title: string;
+  className?: string;
+  /** What the server shows: pressed on the Saved page (shopping spec 5.3), not pressed everywhere else. */
+  savedOnServer?: boolean;
+};
+
 /** The Save heart (spec 7.8). Saves stay on this device until sign-in exists, and the toast says so. */
-export function SaveHeart({ id, title, className }: { id: string; title: string; className?: string }) {
-  const saved = useIsSaved(id);
+export function SaveHeart({ id, title, className, savedOnServer }: SaveHeartProps) {
+  const saved = useIsSaved(id, savedOnServer);
   // The pop plays only when someone saves, never when a saved heart first appears.
   const [popping, setPopping] = useState(false);
 
@@ -19,7 +27,7 @@ export function SaveHeart({ id, title, className }: { id: string; title: string;
       setPopping(nowSaved);
       showToast(nowSaved ? "Saved on this device" : "Removed from saved");
     } catch {
-      // Storage is blocked. Nothing changed, so there's nothing to roll back.
+      // The cookie didn't take (cookies are blocked). Nothing changed, so there's nothing to roll back.
       showToast("Couldn't update. Try again.");
     }
   }

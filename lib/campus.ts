@@ -1,3 +1,4 @@
+import { preferenceCookie, readCookie } from "./cookies";
 import type { Campus, CampusChoice } from "./types";
 
 export const CAMPUS_COOKIE = "vossie_campus";
@@ -8,8 +9,6 @@ export const ONLINE_CAMPUS = "online";
 export function isOnlineCampus(campus: Pick<Campus, "slug">): boolean {
   return campus.slug === ONLINE_CAMPUS;
 }
-
-const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
 /** Turn a raw cookie value into a valid choice. Unknown or missing values mean all campuses. */
 export function parseCampusChoice(
@@ -22,28 +21,18 @@ export function parseCampusChoice(
 
 /** Read the campus cookie out of a `document.cookie`-style string. A malformed value counts as no choice. */
 export function readCampusCookie(cookieString: string): string | null {
-  for (const part of cookieString.split(";")) {
-    const [name, ...rest] = part.trim().split("=");
-    if (name !== CAMPUS_COOKIE) continue;
-    try {
-      return decodeURIComponent(rest.join("="));
-    } catch {
-      return null;
-    }
+  const raw = readCookie(cookieString, CAMPUS_COOKIE);
+  if (raw === null) return null;
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return null;
   }
-  return null;
 }
 
 /** A first-party preference cookie: one year, whole site, Lax, Secure on https. */
 export function campusCookieString(choice: CampusChoice, secure: boolean): string {
-  const parts = [
-    `${CAMPUS_COOKIE}=${encodeURIComponent(choice)}`,
-    "Path=/",
-    `Max-Age=${ONE_YEAR_SECONDS}`,
-    "SameSite=Lax",
-  ];
-  if (secure) parts.push("Secure");
-  return parts.join("; ");
+  return preferenceCookie(CAMPUS_COOKIE, encodeURIComponent(choice), secure);
 }
 
 /** Label for the header pill and the menu. `null` means "not known yet" (server render). */

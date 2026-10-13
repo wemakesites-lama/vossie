@@ -2,7 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { recordRecentlyViewed } from "@/lib/recently-viewed";
-import { toggleSaved } from "@/lib/saved";
+import { savedCookieString, toggleSaved } from "@/lib/saved";
 import { useIsSaved } from "./useIsSaved";
 import { useRecentlyViewed } from "./useRecentlyViewed";
 
@@ -10,6 +10,10 @@ function ServerValues() {
   const saved = useIsSaved("l-001");
   const viewed = useRecentlyViewed();
   return <output>{`${saved}|${viewed.length}`}</output>;
+}
+
+function SavedOnServer() {
+  return <output>{String(useIsSaved("l-001", true))}</output>;
 }
 
 describe("homepage device hooks", () => {
@@ -30,7 +34,11 @@ describe("homepage device hooks", () => {
   });
 
   it("render nothing saved and nothing viewed on the server", () => {
-    localStorage.setItem("vossie_saved", JSON.stringify(["l-001"]));
+    document.cookie = savedCookieString(["l-001"], false);
     expect(renderToString(<ServerValues />)).toContain("false|0");
+  });
+
+  it("renders the server value the page gives, for the Saved page", () => {
+    expect(renderToString(<SavedOnServer />)).toContain("true");
   });
 });

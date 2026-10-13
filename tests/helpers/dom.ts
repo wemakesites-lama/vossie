@@ -26,3 +26,11 @@ export function setScrollY(y: number) {
   Object.defineProperty(window, "scrollY", { configurable: true, value: y });
   window.dispatchEvent(new Event("scroll"));
 }
+
+/**
+ * Make cookie writes vanish without a word, as in a browser with cookies blocked. The setup file undoes it after
+ * each test.
+ */
+export function blockCookies(): void {
+  Object.defineProperty(document, "cookie", { configurable: true, get: () => "", set: () => {} });
+}
