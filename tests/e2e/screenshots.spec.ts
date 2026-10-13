@@ -96,3 +96,55 @@ test("homepage review screenshots", async ({ page, context, baseURL }) => {
   await page.goto("/");
   await wholePage("03-whole-page-midrand");
 });
+
+test("browse and listing review screenshots", async ({ page, context, baseURL }) => {
+  const project = test.info().project.name;
+  test.skip(!["phone-390", "desktop-1440"].includes(project), "Saved at 390 and 1440 only");
+  const file = (name: string) => `docs/progress/browse-listing/${project}-${name}.png`;
+
+  /** Scroll the whole page so every lazy photo loads, then come back to the top. */
+  async function settle() {
+    await page.evaluate(async () => {
+      for (let y = 0; y < document.body.scrollHeight; y += 600) {
+        window.scrollTo(0, y);
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      window.scrollTo(0, 0);
+      await document.fonts.ready;
+    });
+  }
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+
+  // Both pages stream their body behind a skeleton, so each shot waits for the page's own heading first.
+  const title = page.getByRole("heading", { level: 1 });
+
+  await page.goto("/browse");
+  await expect(title).toBeVisible();
+  await settle();
+  await page.screenshot({ path: file("01-browse"), fullPage: true });
+
+  await page.locator("details.tool-filters > summary").click();
+  await page.screenshot({ path: file("02-browse-filters") });
+
+  await page.goto("/browse?q=calculator");
+  await expect(title).toBeVisible();
+  await settle();
+  await page.screenshot({ path: file("03-browse-search") });
+
+  await context.addCookies([{ name: "vossie_campus", value: "mbombela", url: baseURL! }]);
+  await page.goto("/browse");
+  await expect(page.getByRole("heading", { level: 2, name: "Nothing here yet" })).toBeVisible();
+  await page.screenshot({ path: file("04-browse-empty") });
+  await context.clearCookies();
+
+  await page.goto("/listings/l-001");
+  await expect(title).toBeVisible();
+  await settle();
+  await page.screenshot({ path: file("05-listing") });
+  await page.screenshot({ path: file("06-listing-whole"), fullPage: true });
+
+  await page.goto("/listings/l-026");
+  await expect(title).toBeVisible();
+  await page.screenshot({ path: file("07-listing-sold") });
+});

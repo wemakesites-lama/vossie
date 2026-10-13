@@ -19,7 +19,7 @@
 **Sources:**
 - **Spec:** `docs/superpowers/specs/2026-10-13-browse-and-listing-design.md`. "Spec 4.8" in this plan means that spec's section 4.8.
 - **Homepage spec** (tokens, breakpoints, motion, accessibility, budgets): `docs/superpowers/specs/2026-10-08-homepage-design.md`.
-- **Decisions:** `docs/reference/LANDING-DECISIONS.md` (rows 35 to 45 are this stage's).
+- **Decisions:** `docs/reference/LANDING-DECISIONS.md` (rows 35 to 46 are this stage's; row 46 was added at the end of the build).
 - **Previous plan, for conventions:** `docs/superpowers/plans/2026-10-12-homepage-part-2-sections.md`.
 
 ---
@@ -95,6 +95,77 @@ Lama can veto any of these at plan review. In this plan, "plan decision N" means
 - **The listing page** adds `ShareButton` and `lib/share.ts`, estimated at ~0.5 KB, on top of the shell, `SaveHeart` and `RecordRecentlyViewed`.
 - **Recording.** Task 21 extends `tests/e2e/performance.spec.ts` to measure `/`, `/browse` and `/listings/l-001`, and records each `scriptBrotli` in its commit message. Task 16 measures the listing page early, with a throwaway script, because it's the task that first puts `ShareButton` on a page.
 - **The stop rule.** If any page passes 152,000 B, stop after that task and report. Don't cut features to fit; that's Lama's decision.
+
+**As built** (first visit at 390px, brotli quality 5):
+
+| Point | `/` | `/browse` | Listing |
+|---|---|---|---|
+| Start (the homepage as Part 2 left it) | 150,316 B | | |
+| Task 16, listing page (5e1f5ae) | 150,507 B | 150,961 B | 151,637 B |
+| Task 17, share card (8d01878) | 150,937 B | 151,391 B (worked out, not measured alone) | 152,067 B |
+| Task 19, `ScrollToResult` (2e1dec3) | 150,937 B | 151,560 B | 152,067 B |
+| Review of Tasks 13 to 18 (2e74bf6) | 150,937 B | 151,560 B | 152,078 B |
+| **Final** (Task 21, b413f02) | **150,937 B** | **151,560 B** | **152,078 B** |
+
+- **The stop rule fired at Task 17.** The share card's `next/og` import makes Turbopack add its async-module runtime to every page: +430 B on `/`, `/browse` and the listing page. A bisect proved it. The plan's estimate counted `ShareButton` and `lib/share.ts` only, so it missed this.
+- **Lama's decision, 2026-10-13:** accept 152,078 B (decision 46 in the decisions log). The listing page ends 78 B over the stop line and 1,522 B under the limit. A branded `app/global-error.tsx` was tried to win bytes back; it added 207 B, because Next's default error UI stays in the framework chunk, so it was dropped and never committed.
+- **Browse's client code.** Browse is no longer all server code: `ScrollToResult` (Task 19) is a small client effect, rendered only after Show more. It cost 169 B net, so browse moved by 599 B in all since Task 16 (the share card's 430 B included).
+
+## Changes made during the build (2026-10-13)
+
+The tasks below were built as written, except for these. The commits run from de4eb4e (Task 1) to b413f02 (Task 21).
+
+- **Who commits and reviews.** As in Part 2, implementers left their work uncommitted, and the controller checked each task and committed it. Reviews were one combined reviewer per build step, and their fixes are commits 040d430 (Tasks 1 to 7), cf65f3f (Tasks 8 to 12) and 2e74bf6 (Tasks 13 to 18). Once, the controller ran a status check and a `git add` in one command; both succeeded and nothing was harmed.
+- **Plan decisions 7 and 14 understated the homepage change.** Just listed also changes at four more campuses, as well as Pretoria (which loses the paused l-016 and gains fs-002):
+  - Bedfordview gains fs-005;
+  - Cape Town Mowbray gains fs-006;
+  - Eduvos Online gains fs-004;
+  - East London shows fs-007 in place of the sold l-026.
+
+  "All campuses" and Midrand are unchanged.
+- **Plan decision 18 reaches the listing page too.** Listing pages also stream their body, because `params` is awaited inside `<Suspense>` (the project rule in `CLAUDE.md`). With JavaScript switched off entirely they are blank, like browse, and an unknown listing shows the 404 page with a 200 status. The spec, decision 5 and row 39 of the decisions log now say so. Both pages work without the app's bundle but need React's inline script.
+- **Review of Tasks 1 to 7 (040d430):**
+  - long searches are cut at a whole character (code point), so an emoji is never split;
+  - the fixture tests now check the timestamp format, at least three listings with extra photos, and every handover kind.
+- **Task 11 (da27fa3):** the `eslint-disable` comment above Show more's plain `<a>` was dropped. It was unused, because the rule only checks literal hrefs.
+- **Task 12 (ff3f631):**
+  - `.browse`'s padding is the whole gutter, 16px and 40px, because `.page` and `.browse` share one element;
+  - the skeleton reserves the phone count line (50px) and the 48px tab row;
+  - the shell search test scopes its second click to the header.
+- **Review of Tasks 8 to 12 (cf65f3f):**
+  - the toolbar's menus are keyed on the campus too, so the Filters select follows a campus chosen in the picker;
+  - the count is always a `role="status"` (screen-reader only when there's nothing to count);
+  - category tabs have 11px side padding, so every tab is at least 44px wide;
+  - `filter-clear` was renamed `chips-clear`.
+- **Task 16 (5e1f5ae):**
+  - `.listing-page`'s padding is 16px and 40px, for the same reason as browse;
+  - the seller photo has `align-self: flex-start`, because it was stretching.
+- **Task 17 (8d01878):** the unused `eslint-disable` for `<img>` was dropped. The build lists the card route as prerendered (SSG).
+- **Task 19 (2e1dec3):**
+  - Show more sometimes left the page at the top under load, because Chrome ran its one fragment scroll before the streamed card arrived. A small client effect, `ScrollToResult`, rendered only after Show more, scrolls the card into view;
+  - the budget-chip test counts visible cards, because Next keeps the previous page hidden in the DOM after a client-side navigation.
+- **Review of Tasks 13 to 18 (2e74bf6):**
+  - `safeNextPath` parses the path with `URL`, which closes a dot-segment bypass such as `/.//evil.example`;
+  - a `signInHref` helper builds the sign-in link in one place;
+  - an unknown listing's share card returns 404, and card titles are capped at 90 characters;
+  - Share sends origin plus pathname, with no `?retry=` or hash;
+  - the listing panel is sticky only from 48rem tall, where it fits;
+  - new tests cover the online campus note and the Verified mark.
+- **Task 20 (5958fa7):** three plan locators were ambiguous and are now exact:
+  - the seller heading;
+  - the toast status (the footer sign-up also has `role="status"`);
+  - `og:image`. While `metadataBase` is unset, the client adds a second `og:image` tag after hydration, naming the page's own origin, and the server HTML's tag names `localhost:3000`. Setting `metadataBase` is on the go-live checklist.
+- **Task 21 (b413f02):** built as written. Its figures are in the commit message.
+- **Task 22:** the review-screenshot test waits for each page's heading before a shot (and for "Nothing here yet" on the empty state), because the first run caught the loading skeleton for the empty state. The plan's version of the test didn't wait.
+- **Where the build differs from the spec** (recorded, no change made):
+  - the phone dock uses `scroll-margin-bottom` on `main` and `footer` descendants, not `scroll-padding-bottom`;
+  - the "3 photos" label sits under the strip, not on it.
+- **Review notes not acted on** (open points for Lama, also in `docs/PROGRESS.md`):
+  - searches typed in browse's own field don't reach Recent searches, which needs client code;
+  - header, footer and menu links to `/browse?…` still prefetch (decision 28 keeps this for the header and footer);
+  - the gallery's focusable region is a tab stop on desktop, where it doesn't scroll;
+  - small code-tidy items: a duplicated newest-first comparator, the `getMoreFrom` cache key carrying the whole listing, casts rather than type guards in `lib/browse/query.ts`, and a double loop in `scripts/make-placeholders.ts`;
+  - `searchListings` caches free text, which is fine for sample data; revisit it with Supabase.
 
 ## Conventions for every task
 

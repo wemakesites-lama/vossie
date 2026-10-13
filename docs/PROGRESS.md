@@ -92,9 +92,51 @@ Lama went with Claude's recommendations. They are decisions 27 to 34 in `docs/re
 - **Spec:** `docs/superpowers/specs/2026-10-13-browse-and-listing-design.md`.
 - **Plan:** `docs/superpowers/plans/2026-10-13-browse-and-listing-pages.md`, 22 tasks. Its 18 plan decisions are for Lama to confirm or veto. Decision 18 corrects the spec: browse works without the app's JavaScript bundle, but not with JavaScript switched off entirely, because streamed content needs React's small inline script.
 
+## 2026-10-13: Browse and listing pages built
+- **Browse** (`/browse`): search with one-typo tolerance and seller names, ten category tabs, Filters (campus, price, paid with) and Sort as native `<details>`, removable chips, Show more, and empty and error states. The link is the whole state; it opens on the chosen campus. It works without the app's JavaScript (it still needs React's small inline script, which places the streamed results).
+- **Listing pages** (`/listings/[id]`): photos (a swipe strip on phones, stacked on desktop), price wording for free and cash-or-swap, swap terms, where to collect it and a note when that isn't your campus, the seller, facts, a safety note, more from the seller, and paused and sold states. On phones the actions sit in a dock; on desktop the column stays in view. Message and Report go to the sign-in placeholder, which links back. Each listing has a share card for WhatsApp.
+- **Data:** one listing model (free and swap items joined it), pickup points, 29 sellers, `searchListings`, `getListingDetail` and `getMoreFrom`.
+- **Links:** `/categories/…` and `/c/…` redirect into browse; the homepage, menu, footer and search link straight to it.
+- **Where the build differed from the plan** is in the plan's "Changes made during the build (2026-10-13)". The ones worth knowing:
+  - Just listed changed at four more campuses than the plan said, as well as Pretoria (Bedfordview, Cape Town Mowbray, Eduvos Online and East London).
+  - Listing pages stream their body too, so with JavaScript switched off entirely they are blank, like browse, and an unknown listing shows the 404 page with a 200 status. The spec and decision 39 now say so.
+  - Show more has one small client effect, `ScrollToResult`, because Chrome sometimes ran its fragment scroll before the streamed card arrived.
+- **Checks:**
+  - lint and types are clean;
+  - 453 unit tests pass;
+  - end to end, 358 pass, 212 are skipped by design and none fail, across 360, 390, 768, 1024 and 1440px;
+  - axe finds no serious or critical issues.
+- **First visit at 390px, JS brotli:** homepage 150,937 B, browse 151,560 B, listing 152,078 B (limit 153,600 B).
+  - The share card's `next/og` import adds 430 B to every page. That put the listing page 78 B over the 152,000 B stop line.
+  - Lama accepted 152,078 B (decision 46). A branded `app/global-error.tsx` was tried to win bytes back; it added 207 B, so it was dropped.
+- **Layout shift** (fonts held back, at 390 and 1440px):
+
+  | Page | 390px | 1440px |
+  |---|---|---|
+  | Homepage | 0.0015 | 0.0036 |
+  | Browse | 0.0003 | 0.0003 |
+  | Listing | 0.0110 | 0.0055 |
+  | Listing, campus Pretoria | 0.0110 | 0.0071 |
+  | Browse, campus Midrand | 0.0003 | 0.0004 |
+  | Browse, campus Mbombela | 0.0006 | 0.0004 |
+
+- Review screenshots: `docs/progress/browse-listing/`.
+
+## 2026-10-13: Open points for Lama after the browse and listing build
+Review notes that were deliberately not acted on:
+- Searches typed in browse's own field don't reach Recent searches. That needs client code, and the listing page has 1,522 B left under the limit.
+- Header, footer and menu links to `/browse?…` still prefetch. Decision 28 keeps that for the header and footer.
+- The gallery's focusable region is a tab stop on desktop, where it doesn't scroll.
+- Small code-tidy items:
+  - a duplicated newest-first comparator;
+  - the `getMoreFrom` cache key carries the whole listing;
+  - `lib/browse/query.ts` uses casts rather than type guards;
+  - `scripts/make-placeholders.ts` has a double loop.
+- `searchListings` caches free text. That's fine for sample data; revisit it with Supabase.
+
 ## Next
-- Lama reviews the Part 2 screenshots in `docs/progress/part-2/` against the mockup. They were retaken after the open-point changes; to retake them again, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "homepage review screenshots"`.
-- Lama reviews the browse and listing plan's decisions, then the build starts.
+- Lama reviews the screenshots in `docs/progress/browse-listing/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "browse and listing review screenshots"`.
+- Then the next stage on the go-live checklist (`docs/reference/GO-LIVE.md`): the other public pages.
 
 ## Waiting on
 - Eduvos font files and licence confirmation.

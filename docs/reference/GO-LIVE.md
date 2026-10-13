@@ -2,7 +2,7 @@
 
 Every page and view the marketplace needs before it can go live, plus the work that isn't a screen. Drawn from the app's routes, the old demo's function map (`FUNCTION-MAP.md`) and the homepage spec's "Not in this stage" list.
 
-Written 2026-10-12, after the homepage (Parts 1 and 2). Update the status column as each stage lands.
+Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages. Update the status column as each stage lands.
 
 **Status key**
 - **Built:** done.
@@ -15,9 +15,9 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Update the status column
 | Screen or view | Route | Status |
 |---|---|---|
 | Home | `/` | Built |
-| Browse and search: results, Filters panel, Sort, active-filter chips, Show more, empty state | `/browse` | Designing |
-| Category and campus links | `/categories/[slug]`, `/c/[campus]` | Placeholder; become redirects into browse |
-| Listing: gallery, phone dock, collect box, seller card, more from the seller, sold and reserved states, Share | `/listings/[id]` | Designing |
+| Browse and search: results, Filters panel, Sort, active-filter chips, Show more, empty state | `/browse` | Built |
+| Category and campus links | `/categories/[slug]`, `/c/[campus]` | Built (redirects into browse) |
+| Listing: gallery, phone dock, collect box, seller card, more from the seller, sold and reserved states, Share | `/listings/[id]` | Built |
 | Seller storefront: header, badges, about, their listings, contact, report | `/sellers/[slug]` | Placeholder |
 | Collection: a curated list, e.g. "Res essentials" | `/collections/[slug]` | Placeholder |
 | Looking For board | `/looking-for` | Placeholder |
@@ -75,7 +75,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Update the status column
 | Hub post editor and the office-hours queue | `/hub/new`, `/hub/manage` | Missing |
 | Mentor dashboard, seller detail, notes, check-ins, CSV export | `/mentor/*` | Missing; can follow launch |
 
-**Totals:** about 45 screens and views. 2 are built, 2 are being designed, and 41 are placeholders or missing. Most of the missing ones are the signed-in half of the product.
+**Totals:** about 45 screens and views. 5 are built (home, browse, the listing page, the category and campus redirects, and the 404), and 40 are placeholders or missing. Most of the missing ones are the signed-in half of the product.
 
 ## 6. Work that isn't a screen
 
@@ -104,7 +104,8 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Update the status column
 - [ ] A domain and hosting.
 - [ ] Security headers.
 - [ ] robots.txt and a sitemap.
-- [ ] Share images for WhatsApp.
+- [ ] Share images for WhatsApp on the other pages. Each listing has a share card, in `next/og`'s built-in font until Eduvos's font files arrive.
+- [ ] Set `metadataBase` to the live domain, so share cards and other metadata URLs are absolute. While it's unset, a listing page carries two `og:image` tags once it has hydrated (the client adds one naming the page's own origin), and the one in the server HTML names `localhost:3000`.
 - [ ] Error monitoring.
 - [ ] Backups.
 - [ ] A decision on analytics: none, or a privacy-friendly one.
@@ -130,8 +131,8 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Update the status column
 
 ## 8. Suggested order
 
-1. **Now:** browse and listing pages.
-2. **The other public pages:** storefront, Saved, collections, the Looking For board and Hub to read, info and legal pages, and the error page.
+1. **Done (2026-10-13):** browse and listing pages.
+2. **Now, the other public pages:** storefront, Saved, collections, the Looking For board and Hub to read, info and legal pages, and the error page.
 3. **Supabase, sign-in, and account and privacy.**
 4. **Selling:** onboarding, listing form and dashboard, plus the minimum admin (approvals and moderation).
 5. **Messaging:** composer, inbox, conversations, reports and notifications.

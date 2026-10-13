@@ -28,7 +28,7 @@ Like the homepage, this stage runs on realistic sample data behind `lib/data`, s
 2. **Cross-campus buying.** Every campus is browsable. Physical items say where they're collected, with a note when that isn't the viewer's campus. No couriers or payments. Delivery between campuses may come later.
 3. **Browse layout: C, category-led.** A big display title, the categories as a row of tabs, the other filters behind one Filters button.
 4. **Listing layout: A, gallery and action dock.** Photos as the hero; a dock fixed at the bottom on phones; a column that stays in view on desktop.
-5. **Server-rendered from the URL.** The link is the whole state. Filters, tabs, sort and search are links or plain GET forms. Near-zero page JavaScript; everything works with JavaScript off.
+5. **Server-rendered from the URL.** The link is the whole state. Filters, tabs, sort and search are links or plain GET forms. Near-zero page JavaScript: everything works without the app's JavaScript, before it arrives or if it never does. (React's small inline script, which places streamed content, is still needed. Both pages stream their body, so with JavaScript switched off entirely they stay blank.)
 6. **Campus default.** With no campus in the link, browse shows the viewer's chosen campus as a removable chip. A campus in the link always wins. With no campus chosen, browse shows every campus.
 7. **Filters and Sort open with `<details>`,** not the Popover API. Popovers need Safari 17, and iPhone 8s and Xs (common second-hand) stop at iOS 16.
 8. **"Free" sits in the Price group,** written as `price=free`, `price=under-100` and so on. The homepage's `max=` links stay valid as an alias.
@@ -495,7 +495,7 @@ Everything in the homepage spec's section 10 applies. In addition:
 - The phone photo strip is a focusable, labelled region; each photo has alt text with its position.
 - The dock never hides the focused element (2.4.11), through `scroll-padding-bottom`.
 - Touch targets are at least 44px, colours stay within the brand tokens, and there's no new motion.
-- Every flow works with JavaScript off.
+- Every flow works without the app's JavaScript bundle. (React's inline script is still needed to place the streamed body.)
 
 ---
 
@@ -525,7 +525,7 @@ The homepage budget (homepage spec section 11) applies to each page's first visi
 **End to end (Playwright at 360, 390, 768, 1024 and 1440):**
 - Every homepage, menu, footer and search link that goes to browse lands on the right results: budget chips, both "See all" links, categories, campuses, a search.
 - Filtering, sorting, Show more (lands on card 25) and Clear all.
-- The browse flow again with JavaScript turned off.
+- The browse flow again with the app's JavaScript bundle blocked.
 - The campus default: a chosen campus shows its chip; removing it shows every campus; a campus in the link wins.
 - The two redirects.
 - The listing page: the dock on phones, the column that stays in view on desktop, the sold banner, the 404 for an unknown id, and a keyboard walk.
