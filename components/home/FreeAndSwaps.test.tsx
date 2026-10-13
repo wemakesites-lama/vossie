@@ -44,6 +44,14 @@ describe("Free & swaps (spec 7.12)", () => {
     expect(screen.getAllByText("Swap")).toHaveLength(4);
   });
 
+  it("opens every campus from See all, because the panel tops up from other campuses", async () => {
+    render(await FreeAndSwapsContent());
+    expect(screen.getByRole("link", { name: "See all free and swap items" })).toHaveAttribute(
+      "href",
+      "/browse?deals=free-and-swaps&campus=all",
+    );
+  });
+
   it("hides when there's nothing to give away or swap", async () => {
     items.mode = "empty";
     const { container } = render(await FreeAndSwapsContent());

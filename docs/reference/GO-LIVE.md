@@ -17,7 +17,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Home | `/` | Built |
 | Browse and search: results, Filters panel, Sort, active-filter chips, Show more, empty state | `/browse` | Built |
 | Category and campus links | `/categories/[slug]`, `/c/[campus]` | Built (redirects into browse) |
-| Listing: gallery, phone dock, collect box, seller card, more from the seller, sold and reserved states, Share | `/listings/[id]` | Built |
+| Listing: gallery, phone dock, collect box, seller card, more from the seller, paused and sold states, Share | `/listings/[id]` | Built |
 | Seller storefront: header, badges, about, their listings, contact, report | `/sellers/[slug]` | Placeholder |
 | Collection: a curated list, e.g. "Res essentials" | `/collections/[slug]` | Placeholder |
 | Looking For board | `/looking-for` | Placeholder |

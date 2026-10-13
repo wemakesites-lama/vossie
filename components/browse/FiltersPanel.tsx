@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { PAY_LABELS, PRICE_LABELS, clearAllHref } from "@/lib/browse/filters";
 import { defaultSort } from "@/lib/browse/query";
 import type { BrowseQuery, Campus } from "@/lib/types";
@@ -42,9 +41,11 @@ export function FiltersPanel({ query, campuses }: { query: BrowseQuery; campuses
         <button type="submit" className="btn btn-primary">
           Show results
         </button>
-        <Link href={clearAllHref(query)} prefetch={false} className="filters-clear">
+        {/* A plain <a>, a full page load like the form itself: a client-side navigation would remove the focused
+            link along with the panel, and focus would be lost. */}
+        <a href={clearAllHref(query)} className="filters-clear">
           Clear
-        </Link>
+        </a>
       </div>
     </form>
   );

@@ -26,6 +26,12 @@ test("Show more lands on the 25th card", async ({ page }) => {
   await expect(cards(page)).toHaveCount(36);
   await expect(page.locator("#r-25")).toBeInViewport();
   await expect(page.getByText("36 listings")).toBeVisible();
+
+  // The keyboard carries on from the first new card (spec 4.6): once the page is running its link has focus, and the
+  // next Tab stays inside that card (on its Save heart) rather than starting again from the top.
+  await expect(page.locator("#r-25 a").first()).toBeFocused();
+  await page.keyboard.press("Tab");
+  expect(await page.evaluate(() => document.activeElement?.closest("li")?.id)).toBe("r-25");
 });
 
 test.describe("the campus (decision 40)", () => {
@@ -108,6 +114,29 @@ test("search forgives a typo, finds seller names, and stays out of search engine
   await expect(cards(page).first()).toContainText("Cupcake box");
 });
 
+test("only plain, category and campus pages are open to search engines", async ({ page }) => {
+  onlyAt("desktop-1440");
+  const cases: ReadonlyArray<[path: string, title: string, indexed: boolean]> = [
+    ["/browse", "Browse · Vossie", true],
+    ["/browse?cat=tech", "Tech · Vossie", true],
+    ["/browse?campus=midrand", "Browse · Vossie", true],
+    ["/browse?cat=tech&campus=midrand", "Tech · Vossie", true],
+    ["/browse?cat=tech&sort=price-low", "Tech · Vossie", false],
+    ["/browse?cat=tech&price=free", "Tech · Vossie", false],
+    ["/browse?pay=swap", "Browse · Vossie", false],
+    ["/browse?deals=free-and-swaps&campus=all", "Browse · Vossie", false],
+    ["/browse?n=48", "Browse · Vossie", false],
+  ];
+  for (const [path, title, indexed] of cases) {
+    await page.goto(path);
+    // The title and the robots tag come from the same metadata, so once the title is there the tag is too.
+    await expect(page, path).toHaveTitle(title);
+    const robots = page.locator('meta[name="robots"]');
+    if (indexed) await expect(robots, path).toHaveCount(0);
+    else await expect(robots, path).toHaveAttribute("content", /noindex/);
+  }
+});
+
 test("homepage links land on the right results", async ({ page }) => {
   onlyAt("phone-390", "desktop-1440");
   const cases: ReadonlyArray<[path: string, count: number, chip: string | null]> = [
@@ -115,6 +144,8 @@ test("homepage links land on the right results", async ({ page }) => {
     ["/browse?price=free", 4, "Free"],
     ["/browse?pay=swap", 6, "Swaps"],
     ["/browse?deals=free-and-swaps", 10, "Free & swaps"],
+    // The homepage's Free & swaps "See all": every campus, whatever campus the visitor chose.
+    ["/browse?deals=free-and-swaps&campus=all", 10, "Free & swaps"],
     ["/browse?cat=tech", 5, null],
   ];
   for (const [path, count, chip] of cases) {

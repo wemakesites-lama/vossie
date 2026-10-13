@@ -4371,6 +4371,8 @@
   .filters-clear {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    min-width: 44px;
     min-height: 44px;
     color: var(--color-navy);
     font-size: 13px;
@@ -4489,6 +4491,9 @@
 
   /* Navy on the grey panel: sky-dark is 4.25:1 there. */
   .browse-empty a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     color: var(--color-navy);
     font-weight: 600;
     text-decoration: underline 1.5px;
@@ -4747,7 +4752,11 @@
 
   /* Below the tablet step: the dock. The same actions, fixed to the bottom of the screen, clear of the iPhone home
      bar. The page keeps room under the footer and under anything focused, so the dock never covers either (WCAG
-     2.4.11). Toasts sit above it. */
+     2.4.11). Toasts sit above it.
+
+     The body rules name the page, not just the dock: with Cache Components, Next keeps the last few pages hidden in the
+     DOM for Back, and React hides each with an inline display style on its top element. :has() ignores that, so a
+     plain body:has(.listing-actions) would still match after you leave a listing and pad the next page. */
   @media not all and (min-width: 48rem) and (min-height: 30rem) {
     .listing-actions {
       position: fixed;
@@ -4761,16 +4770,16 @@
       background: var(--color-white);
     }
 
-    body:has(.listing-actions) {
+    body:has(.listing-page:not([style*="display"]) .listing-actions) {
       padding-bottom: calc(69px + env(safe-area-inset-bottom));
     }
 
-    body:has(.listing-actions) :is(main, footer),
-    body:has(.listing-actions) :is(main, footer) * {
+    body:has(.listing-page:not([style*="display"]) .listing-actions) :is(main, footer),
+    body:has(.listing-page:not([style*="display"]) .listing-actions) :is(main, footer) * {
       scroll-margin-bottom: calc(84px + env(safe-area-inset-bottom));
     }
 
-    body:has(.listing-actions) .toast-pop {
+    body:has(.listing-page:not([style*="display"]) .listing-actions) .toast-pop {
       bottom: calc(84px + env(safe-area-inset-bottom));
     }
   }
@@ -4802,6 +4811,8 @@
   .listing-crumbs a {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    min-width: 44px;
     min-height: 44px;
     color: var(--color-sky-dark);
     text-decoration: underline;

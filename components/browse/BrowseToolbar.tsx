@@ -19,7 +19,7 @@ type BrowseToolbarProps = {
  */
 export function BrowseToolbar({ query, campuses, total }: BrowseToolbarProps) {
   const active = countActiveFilters(query);
-  // Keyed on the link and the campus: a client-side navigation (a sort link), or a campus chosen in the picker (which
+  // Keyed on the link and the campus: a client-side navigation (a category tab), or a campus chosen in the picker (which
   // refreshes the page without changing its link), gives closed menus and a Filters form showing the new campus. An
   // uncontrolled <select> would otherwise keep the old one (plan decision 5).
   const key = `${query.campus} ${browseHref(query)}`;
@@ -41,8 +41,9 @@ export function BrowseToolbar({ query, campuses, total }: BrowseToolbarProps) {
         </summary>
         <SortMenu query={query} />
       </details>
-      {/* Always there, as a status message, so a screen reader hears the new count after a change that keeps the tab
-          title (a chip removed, a campus chosen; WCAG 4.1.3). With nothing to count it's hidden from view. */}
+      {/* Always there, as a status message, so a screen reader hears the new count after a campus is chosen in the
+          picker, which refreshes the page in place and keeps the tab title (WCAG 4.1.3). With nothing to count it's
+          hidden from view. */}
       <p role="status" className={cx("browse-count", !counted && "sr-only")}>
         {counted ? countLabel(total, Math.min(total, query.shown)) : total === 0 ? "No listings" : ""}
       </p>

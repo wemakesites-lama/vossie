@@ -2,15 +2,25 @@ import { expect, test } from "@playwright/test";
 
 type Shift = { value: number; nodes: string[] };
 
-const PAGES: ReadonlyArray<[name: string, path: string]> = [
+// A campus (the `vossie_campus` cookie) changes what the page shows and where the campus note, the empty state and the
+// results fall, so those pages are measured with one chosen too. Midrand has results; Mbombela has none.
+const PAGES: ReadonlyArray<[name: string, path: string, campus?: string]> = [
   ["homepage", "/"],
   ["browse page", "/browse"],
   ["listing page", "/listings/l-001"],
+  ["listing page (campus pretoria)", "/listings/l-001", "pretoria"],
+  ["browse page (campus midrand)", "/browse", "midrand"],
+  ["browse page (campus mbombela)", "/browse", "mbombela"],
 ];
 
-for (const [name, path] of PAGES) {
-  test(`the ${name} holds still while fonts and content arrive (CLS 0.05 or less, spec 11)`, async ({ page }) => {
+for (const [name, path, campus] of PAGES) {
+  test(`the ${name} holds still while fonts and content arrive (CLS 0.05 or less, spec 11)`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
     test.skip(!["phone-390", "desktop-1440"].includes(test.info().project.name), "Measured at 390 and 1440");
+    if (campus) await context.addCookies([{ name: "vossie_campus", value: campus, url: baseURL! }]);
 
     // Hold the fonts back, so they swap in after first paint: the worst case for shifts.
     await page.route(/\.woff2$/, async (route) => {

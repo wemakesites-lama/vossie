@@ -10,7 +10,7 @@ type PhotoProps = {
   /** How wide the photo shows at each breakpoint, for the srcset. Always set it. */
   sizes: string;
   className?: string;
-  /** Only the hero's first photo: fetch it straight away and early. */
+  /** The page's main photo (the hero's first slide, a listing's cover): fetch it straight away and early. */
   priority?: boolean;
 };
 

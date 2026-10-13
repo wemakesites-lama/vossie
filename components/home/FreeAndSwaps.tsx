@@ -9,8 +9,8 @@ import { Photo } from "@/components/listings/Photo";
 import { SectionError } from "./SectionError";
 import { SectionHeader } from "./SectionHeader";
 
-// Browse filters are settled with the browse page (a placeholder in this stage); this one asks for both kinds.
-const SEE_ALL = { href: "/browse?deals=free-and-swaps", label: "See all", context: " free and swap items" };
+// The panel tops up from other campuses, so "See all" opens every campus.
+const SEE_ALL = { href: "/browse?deals=free-and-swaps&campus=all", label: "See all", context: " free and swap items" };
 
 /** Free & swaps (spec 7.12): giveaways and swap-only items, the visitor's campus first. */
 export function FreeAndSwaps() {

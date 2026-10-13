@@ -101,12 +101,20 @@ Lama went with Claude's recommendations. They are decisions 27 to 34 in `docs/re
   - Just listed changed at four more campuses than the plan said, as well as Pretoria (Bedfordview, Cape Town Mowbray, Eduvos Online and East London).
   - Listing pages stream their body too, so with JavaScript switched off entirely they are blank, like browse, and an unknown listing shows the 404 page with a 200 status. The spec and decision 39 now say so.
   - Show more has one small client effect, `ScrollToResult`, because Chrome sometimes ran its fragment scroll before the streamed card arrived.
+- **Final review fixes:**
+  - the phone dock's styles no longer leak to the next page (Next keeps the last pages hidden in the DOM for Back);
+  - the homepage's Free & swaps "See all" opens every campus (decision 47);
+  - focus is kept after a sort or a chip change, because those links now do a full page load;
+  - Show more focuses the first new card, and Back visits aren't pulled to it;
+  - every tap target is at least 44px;
+  - the layout-shift test also runs with a campus chosen (Pretoria on the listing page, Midrand and Mbombela on browse);
+  - filtered browse links (a search, price, payment, deals, a sort other than the default, or more than 24 shown) are noindex.
 - **Checks:**
   - lint and types are clean;
-  - 453 unit tests pass;
-  - end to end, 358 pass, 212 are skipped by design and none fail, across 360, 390, 768, 1024 and 1440px;
+  - 455 unit tests pass;
+  - end to end, 366 pass, 229 are skipped by design and none fail, across 360, 390, 768, 1024 and 1440px;
   - axe finds no serious or critical issues.
-- **First visit at 390px, JS brotli:** homepage 150,937 B, browse 151,560 B, listing 152,078 B (limit 153,600 B).
+- **First visit at 390px, JS brotli:** homepage 150,937 B, browse 151,607 B, listing 152,078 B (limit 153,600 B).
   - The share card's `next/og` import adds 430 B to every page. That put the listing page 78 B over the 152,000 B stop line.
   - Lama accepted 152,078 B (decision 46). A branded `app/global-error.tsx` was tried to win bytes back; it added 207 B, so it was dropped.
 - **Layout shift** (fonts held back, at 390 and 1440px):
@@ -133,6 +141,7 @@ Review notes that were deliberately not acted on:
   - `lib/browse/query.ts` uses casts rather than type guards;
   - `scripts/make-placeholders.ts` has a double loop.
 - `searchListings` caches free text. That's fine for sample data; revisit it with Supabase.
+- On a prerendered listing page, More from's "Try again" can't retry (the page is cached); revisit when Supabase data can fail.
 
 ## Next
 - Lama reviews the screenshots in `docs/progress/browse-listing/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "browse and listing review screenshots"`.

@@ -54,6 +54,7 @@ The approved mockup screens are in `docs/reference/mockups/` (`home-v2.html` is 
 | 44 | 2026-10-13 | Message seller and Report before sign-in exists | **Links to `/login?next=…`,** not a "coming soon" sheet | No JavaScript, and it's the flow they'll use once accounts exist. Lama, on Claude's recommendation |
 | 45 | 2026-10-13 | Free and swap items | **Ordinary listings** (free is R0; swap-only has no price), not a separate kind of item | One model for browse, the listing page and the homepage. Lama, on Claude's recommendation |
 | 46 | 2026-10-13 | The JS stop line after the share card (152,000 B) | **Accept 152,078 B on the listing page.** It is 78 B over the stop line and 1,522 B under the 153,600 B limit. The share card stays | The share card's `next/og` import makes Turbopack add its async-module runtime to every page: +430 B on `/`, `/browse` and the listing page (a bisect proved it). A branded `app/global-error.tsx` was tried to win bytes back; it added 207 B instead, because Next's default error UI stays in the framework chunk, so it was dropped and never committed. Final first-visit figures at 390px: `/` 150,937 B, `/browse` 151,560 B, listing 152,078 B. Lama |
+| 47 | 2026-10-13 | Free & swaps "See all" | **Every campus:** `/browse?deals=free-and-swaps&campus=all` | The panel tops up from other campuses, so a campus-only "See all" opened "Nothing here yet" at 6 of 13 campus choices. Lama, on Claude's recommendation |
 
 ## Still open
 

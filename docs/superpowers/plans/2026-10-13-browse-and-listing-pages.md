@@ -5,8 +5,8 @@
 **Goal:** Build the browse page (`/browse`: search, category tabs, filters, sort, Show more) and the full listing page (`/listings/[id]`) on sample data, as the spec `docs/superpowers/specs/2026-10-13-browse-and-listing-design.md` describes, tested at five screen sizes and within the JS budget.
 
 **Architecture:**
-- **The URL is the state.** `lib/browse/` turns search params into a `BrowseQuery` and builds every link back out of one. Tabs, chips, sort and Show more are links; Filters and the browse search are plain GET forms; Filters and Sort open with `<details>`. Browse adds no client code and works without the app's JavaScript bundle (plan decision 18).
-- **Server first.** Every new component is a Server Component except `ShareButton`. Browse renders per request inside `<Suspense>` (it reads `searchParams` and the campus cookie). Listing pages stay prerendered; only the "not your campus" note reads the cookie, inside its own `<Suspense>`.
+- **The URL is the state.** `lib/browse/` turns search params into a `BrowseQuery` and builds every link back out of one. Tabs, chips, sort and Show more are links; Filters and the browse search are plain GET forms; Filters and Sort open with `<details>`. Browse planned no client code of its own and works without the app's JavaScript bundle (plan decision 18). As built it has one small client effect, `ScrollToResult` (added in the build, rendered only after Show more).
+- **Server first.** Every new component is a Server Component except `ShareButton` and, on browse, `ScrollToResult` (added in the build, after Show more). Browse renders per request inside `<Suspense>` (it reads `searchParams` and the campus cookie). Listing pages stay prerendered; only the "not your campus" note reads the cookie, inside its own `<Suspense>`.
 - **Data only through `lib/data`.** One listing model for regular, free and swap items. New cached functions: `searchListings`, `getListingDetail`, `getMoreFrom`, `getPickupPoints`. The filtering, sorting and search maths are plain functions in `lib/browse/`, so Supabase later replaces only the data source.
 
 **Tech Stack:** As the homepage left it:
@@ -19,7 +19,7 @@
 **Sources:**
 - **Spec:** `docs/superpowers/specs/2026-10-13-browse-and-listing-design.md`. "Spec 4.8" in this plan means that spec's section 4.8.
 - **Homepage spec** (tokens, breakpoints, motion, accessibility, budgets): `docs/superpowers/specs/2026-10-08-homepage-design.md`.
-- **Decisions:** `docs/reference/LANDING-DECISIONS.md` (rows 35 to 46 are this stage's; row 46 was added at the end of the build).
+- **Decisions:** `docs/reference/LANDING-DECISIONS.md` (rows 35 to 47 are this stage's; rows 46 and 47 were added at the end of the build).
 - **Previous plan, for conventions:** `docs/superpowers/plans/2026-10-12-homepage-part-2-sections.md`.
 
 ---
@@ -157,6 +157,14 @@ The tasks below were built as written, except for these. The commits run from de
   - `og:image`. While `metadataBase` is unset, the client adds a second `og:image` tag after hydration, naming the page's own origin, and the server HTML's tag names `localhost:3000`. Setting `metadataBase` is on the go-live checklist.
 - **Task 21 (b413f02):** built as written. Its figures are in the commit message.
 - **Task 22:** the review-screenshot test waits for each page's heading before a shot (and for "Nothing here yet" on the empty state), because the first run caught the loading skeleton for the empty state. The plan's version of the test didn't wait.
+- **Final review fixes (the commit after 1363551):**
+  - the dock's `body:has(...)` rules now name a visible listing page (`.listing-page:not([style*="display"])`), because Next keeps the last pages hidden in the DOM for Back and `:has()` ignores their inline `display: none`; the next page no longer gets the dock's padding, scroll margin or raised toasts;
+  - the homepage's Free & swaps "See all" is `/browse?deals=free-and-swaps&campus=all` (decision 47);
+  - the sort options, the chips and Clear all are plain `<a>` (a full page load, like the Filters form), because a client-side navigation removed the focused link and focus was lost; plan decisions 3 and 5 changed with it: those links no longer prefetch or navigate on the client, so decision 5's example is now a category tab;
+  - `ScrollToResult` also focuses the named card's link (`preventScroll`), so the keyboard continues from the first new card (spec 4.6), and runs once per page load, so a Back visit isn't pulled to a card;
+  - `.browse-empty a`, `.filters-clear` and `.listing-crumbs a` are at least 44px;
+  - the layout-shift test also runs the listing page with Pretoria chosen and browse with Midrand and with Mbombela;
+  - filtered browse links (a search, price, payment, deals, a sort other than the default, or `n` above 24) are `noindex`; plain browse, category pages and campus pages stay indexed.
 - **Where the build differs from the spec** (recorded, no change made):
   - the phone dock uses `scroll-margin-bottom` on `main` and `footer` descendants, not `scroll-padding-bottom`;
   - the "3 photos" label sits under the strip, not on it.

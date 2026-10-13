@@ -502,7 +502,7 @@ Everything in the homepage spec's section 10 applies. In addition:
 ## 10. Performance budget
 
 The homepage budget (homepage spec section 11) applies to each page's first visit:
-- **JavaScript:** 150 KB or less, brotli at quality 5. Browse adds nothing beyond the shell and the Save hearts. The listing page adds `ShareButton`, a few hundred bytes.
+- **JavaScript:** 150 KB or less, brotli at quality 5. Browse adds nothing beyond the shell and the Save hearts, apart from `ScrollToResult` (a small client effect, rendered after Show more only). The listing page adds `ShareButton`, a few hundred bytes.
 - **Fonts:** 60 KB or less (unchanged).
 - **Total before below-the-fold photos:** 350 KB or less.
 - **Layout shift:** 0.05 or less.
