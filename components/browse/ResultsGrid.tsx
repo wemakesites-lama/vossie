@@ -2,6 +2,7 @@ import { ListingCard } from "@/components/listings/ListingCard";
 import { browseHref } from "@/lib/browse/href";
 import { PAGE_SIZE } from "@/lib/browse/query";
 import type { BrowseQuery, Listing } from "@/lib/types";
+import { ScrollToResult } from "./ScrollToResult";
 
 type ResultsGridProps = {
   /** The listings to show: the first `query.shown` of the results. */
@@ -26,6 +27,8 @@ export function ResultsGrid({ items, total, query, campusNames }: ResultsGridPro
           </li>
         ))}
       </ul>
+      {/* Only after Show more, whose link ends in #r-N: finishes the scroll if the browser's own missed the streamed card. */}
+      {query.shown > PAGE_SIZE && <ScrollToResult />}
       {total > query.shown && (
         <p className="show-more">
           {/* A full page load, not <Link>: landing on #r-25 puts the keyboard's starting point on the first new card

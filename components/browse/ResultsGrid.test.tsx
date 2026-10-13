@@ -1,7 +1,13 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { makeBrowseQuery, makeListing } from "@/tests/helpers/fakes";
 import { ResultsGrid } from "./ResultsGrid";
+
+// ScrollToResult renders nothing, so a marker stands in for it. Its own behaviour is tested in ScrollToResult.test.tsx.
+vi.mock("./ScrollToResult", async () => {
+  const { createElement } = await import("react");
+  return { ScrollToResult: () => createElement("span", { "data-testid": "scroll-to-result" }) };
+});
 
 const names = new Map([["midrand", "Midrand"]]);
 const listings = (count: number) =>
@@ -23,5 +29,14 @@ describe("ResultsGrid (spec 4.6)", () => {
       <ResultsGrid items={listings(24)} total={36} query={makeBrowseQuery({ category: "tech" })} campusNames={names} />,
     );
     expect(screen.getByRole("link", { name: "Show more" })).toHaveAttribute("href", "/browse?cat=tech&n=48#r-25");
+  });
+
+  it("finishes the scroll to the new card only once Show more has been used", () => {
+    const { rerender } = render(
+      <ResultsGrid items={listings(24)} total={36} query={makeBrowseQuery()} campusNames={names} />,
+    );
+    expect(screen.queryByTestId("scroll-to-result")).not.toBeInTheDocument();
+    rerender(<ResultsGrid items={listings(36)} total={36} query={makeBrowseQuery({ shown: 48 })} campusNames={names} />);
+    expect(screen.getByTestId("scroll-to-result")).toBeInTheDocument();
   });
 });
