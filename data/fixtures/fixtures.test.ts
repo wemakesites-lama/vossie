@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { parseSavedIds } from "@/lib/saved";
 import { campuses } from "./campuses";
 import { categories } from "./categories";
 import { collections } from "./collections";
@@ -62,6 +63,10 @@ describe("listing fixtures (browse and listing spec 6.2)", () => {
       expect(listing.createdAt, listing.id).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/);
       expect(Number.isNaN(Date.parse(listing.createdAt)), listing.id).toBe(false);
     }
+  });
+
+  it("gives every listing an id the saved cookie can hold, or its heart would fail with \"Couldn't update\"", () => {
+    for (const listing of listings) expect(parseSavedIds(listing.id), listing.id).toEqual([listing.id]);
   });
 
   it("gives every listing a seller on the listing's own campus", () => {

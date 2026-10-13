@@ -1,22 +1,22 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getSavedIds } from "./saved";
 
-const cookieValue = vi.hoisted(() => ({ current: undefined as string | undefined }));
+// The raw Cookie request header, as the server receives it.
+const cookieHeader = vi.hoisted(() => ({ current: undefined as string | undefined }));
 
 vi.mock("next/headers", () => ({
-  cookies: async () => ({
-    get: (name: string) =>
-      name === "vossie_saved" && cookieValue.current !== undefined ? { value: cookieValue.current } : undefined,
+  headers: async () => ({
+    get: (name: string) => (name === "cookie" ? (cookieHeader.current ?? null) : null),
   }),
 }));
 
 afterEach(() => {
-  cookieValue.current = undefined;
+  cookieHeader.current = undefined;
 });
 
 describe("getSavedIds (shopping spec 5.1)", () => {
   it("reads the saved ids from the cookie, newest first", async () => {
-    cookieValue.current = "l-003.l-001";
+    cookieHeader.current = "vossie_saved=l-003.l-001";
     expect(await getSavedIds()).toEqual(["l-003", "l-001"]);
   });
 
@@ -25,7 +25,17 @@ describe("getSavedIds (shopping spec 5.1)", () => {
   });
 
   it("drops bad values and repeats, as the browser does", async () => {
-    cookieValue.current = "l-001.<script>.l-001.l-002";
+    cookieHeader.current = "vossie_saved=l-001.<script>.l-001.l-002";
     expect(await getSavedIds()).toEqual(["l-001", "l-002"]);
+  });
+
+  it("takes the first of two cookies with the name, as the browser does", async () => {
+    cookieHeader.current = "vossie_saved=l-001; theme=x; vossie_saved=l-002";
+    expect(await getSavedIds()).toEqual(["l-001"]);
+  });
+
+  it("drops a percent-encoded id instead of decoding it, as the browser does", async () => {
+    cookieHeader.current = "vossie_saved=%6C-001";
+    expect(await getSavedIds()).toEqual([]);
   });
 });

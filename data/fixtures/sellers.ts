@@ -150,7 +150,8 @@ export const sellers: readonly Seller[] = [
   seller(
     "stationery-stop", "Stationery stop", "Paper, pens and highlighters in bundles.", "stationery", "pretoria",
     { badge: null, since: "2026-06" },
-    "Paper, pens and highlighters in bundles, for less than buying them one at a time.",
+    "Paper, pens and highlighters in bundles, for less than buying them one at a time. I restock before every " +
+      "exam season.",
   ),
   seller(
     "bookshelf", "Bookshelf", "Textbooks from finished modules.", "textbooks-notes", "bedfordview",

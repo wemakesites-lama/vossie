@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { campuses } from "@/data/fixtures/campuses";
+import { categories as fixtureCategories } from "@/data/fixtures/categories";
+import { collections } from "@/data/fixtures/collections";
+import { knownSlugs, parseBrowseParams } from "@/lib/browse/query";
+import { ALL_CAMPUSES } from "@/lib/campus";
 import { makeListing } from "@/tests/helpers/fakes";
 import { collectionBrowseLinks, matchesRule } from "./collections";
 import type { CollectionRule } from "./types";
@@ -43,5 +48,22 @@ describe("collectionBrowseLinks (shopping spec 7.2)", () => {
       { label: "More in Tutoring", href: "/browse?cat=tutoring" },
       { label: "More in Services", href: "/browse?cat=services" },
     ]);
+  });
+
+  it("makes links that browse's own parser reads back as the same category and cap, for every collection", () => {
+    const known = knownSlugs(campuses, fixtureCategories);
+    for (const collection of collections) {
+      const { rule } = collection;
+      const links = collectionBrowseLinks(rule, fixtureCategories);
+      // One link per category, in the rule's order, so the links line up with the rule's categories below.
+      expect(links, collection.slug).toHaveLength(rule.categories.length);
+      links.forEach((link, index) => {
+        // The search params of the link, as Next hands them to the browse page.
+        const params = Object.fromEntries(new URL(link.href, "https://vossie.test").searchParams);
+        const query = parseBrowseParams(params, ALL_CAMPUSES, known);
+        expect(query.category, link.href).toBe(rule.categories[index]);
+        expect(query.price, link.href).toBe(rule.maxPrice === undefined ? null : `under-${rule.maxPrice}`);
+      });
+    }
   });
 });
