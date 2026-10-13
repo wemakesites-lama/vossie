@@ -160,9 +160,10 @@ test.describe("search", () => {
     await box.fill("calculator");
     await box.press("Enter");
     await expect(page).toHaveURL(/\/browse\?q=calculator$/);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Browse");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("“calculator”");
 
-    await page.getByRole("button", { name: "Search", exact: true }).click();
+    // Browse has its own search field with a "Search" button in the page, so open the overlay from the header.
+    await page.getByRole("banner").getByRole("button", { name: "Search", exact: true }).click();
     // Look in the Recent section for the exact name: the trending lists also hold "Scientific calculator" (and
     // Pretoria's "Calculator"), which a substring match on "calculator" would catch too.
     const recent = dialog.getByRole("region", { name: "Recent", exact: true });

@@ -4115,9 +4115,11 @@
 
 /* --- Browse: frame, header and category tabs (browse and listing plan, Task 9, spec 4.1 to 4.3) --- */
 @layer components {
-  /* Inside .page's gutters, the same 16px (phones) and 40px (tablet up) content edge as the homepage's sections. */
+  /* .page and .browse sit on one element, so this padding replaces .page's gutter instead of adding to it. The
+     numbers are therefore the whole content edge: the same 16px (phones) and 40px (tablet up) as the homepage's
+     sections. */
   .browse {
-    padding: 24px 6px 64px;
+    padding: 24px 16px 64px;
   }
 
   /* Phones: the search field first, then the eyebrow and h1. Desktop: the h1 on the left, the field on the right. */
@@ -4213,7 +4215,7 @@
 
   @media (min-width: 48rem) and (min-height: 30rem) {
     .browse {
-      padding-inline: 16px;
+      padding-inline: 40px;
     }
   }
 
@@ -4509,6 +4511,55 @@
   @media (orientation: landscape) and (max-height: 29.99rem) {
     .results-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+}
+
+/* --- Browse: loading skeleton (browse and listing plan, Task 12, spec section 8) --- */
+@layer components {
+  .browse-skeleton-eyebrow {
+    width: 5rem;
+    height: calc(var(--text-eyebrow) * 1.1);
+  }
+
+  .browse-skeleton-title {
+    width: 60%;
+    height: var(--text-section);
+    margin-top: 6px;
+  }
+
+  .browse-skeleton-search {
+    order: -1;
+    height: 48px;
+    border-radius: 999px;
+  }
+
+  /* The real tab row is 48px tall (a 4px top padding and 44px tabs, with the rule overlapping their last pixel). */
+  .browse-skeleton-tabs {
+    height: 48px;
+    margin-top: 22px;
+  }
+
+  /* On phones the count sits on its own line under Filters and Sort (a 10px gap and a 20px line), so the grid starts
+     30px lower than on a wider screen. This margin collapses into the grid's own 20px, so it is written as the
+     whole 50px gap. Reserving it keeps the cards from jumping when the body streams in. */
+  .browse-skeleton-tools {
+    width: 14rem;
+    height: 44px;
+    margin-top: 16px;
+    margin-bottom: 50px;
+    border-radius: 999px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .browse-skeleton-tools {
+      margin-bottom: 0;
+    }
+  }
+
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .browse-skeleton-search {
+      order: 0;
     }
   }
 }
