@@ -11,6 +11,7 @@ import { sellers } from "@/data/fixtures/sellers";
 import { trendingSearches } from "@/data/fixtures/trending";
 import { findListings } from "@/lib/browse/results";
 import { ALL_CAMPUSES } from "@/lib/campus";
+import { matchesRule } from "@/lib/collections";
 import { drawFeatured } from "@/lib/featured";
 import type {
   Announcement,
@@ -84,6 +85,28 @@ export async function getHeroSlides(): Promise<readonly HeroSlide[]> {
 export async function getCollections(): Promise<readonly Collection[]> {
   "use cache";
   return collections;
+}
+
+export async function getCollection(slug: string): Promise<Collection | null> {
+  "use cache";
+  return collections.find((collection) => collection.slug === slug) ?? null;
+}
+
+/** The most a collection page shows (shopping spec 6.2). */
+const COLLECTION_LIMIT = 48;
+
+/**
+ * A collection's listings (shopping spec 6.2): the available listings its rule matches, at every campus, newest first,
+ * at most 48. An unknown collection has none.
+ */
+export async function getCollectionListings(slug: string): Promise<readonly Listing[]> {
+  "use cache";
+  const collection = collections.find((item) => item.slug === slug);
+  if (!collection) return [];
+  return available(listings)
+    .filter((listing) => matchesRule(listing, collection.rule))
+    .sort(newestFirst)
+    .slice(0, COLLECTION_LIMIT);
 }
 
 /** The newest listings at one campus, or at every campus for "all" (spec 7.8). */
@@ -204,4 +227,23 @@ export async function getSeller(slug: string): Promise<Seller | null> {
 export async function getSellerSlugs(): Promise<readonly string[]> {
   "use cache";
   return sellers.map((seller) => seller.slug);
+}
+
+/** A storefront's listings (shopping spec 4.1): the seller's available listings, newest first. */
+export async function getSellerListings(slug: string): Promise<readonly Listing[]> {
+  "use cache";
+  return available(listings)
+    .filter((listing) => listing.sellerSlug === slug)
+    .sort(newestFirst);
+}
+
+/**
+ * The Saved page's listings (shopping spec 5.2): one per id, in the order given, paused and sold ones included. Ids
+ * that don't exist any more are dropped. The cache keys on the whole list of ids, which is fine for sample data;
+ * revisit it with Supabase (plan decision 13).
+ */
+export async function getListingsByIds(ids: readonly string[]): Promise<readonly Listing[]> {
+  "use cache";
+  const byId = new Map(listings.map((listing) => [listing.id, listing]));
+  return ids.flatMap((id) => byId.get(id) ?? []);
 }

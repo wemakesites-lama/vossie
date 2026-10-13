@@ -3,6 +3,8 @@ import {
   getAnnouncements,
   getCampuses,
   getCategories,
+  getCollection,
+  getCollectionListings,
   getCollections,
   getFeatured,
   getFreeAndSwaps,
@@ -12,10 +14,12 @@ import {
   getJustListed,
   getListingDetail,
   getListingIds,
+  getListingsByIds,
   getMoreFrom,
   getPickupPoints,
   getRequests,
   getSeller,
+  getSellerListings,
   getSellerSlugs,
   getTrendingSearches,
   searchListings,
@@ -275,5 +279,50 @@ describe("searchListings (browse and listing spec 6.3)", () => {
   it("sorts tech by price, swap-only last", async () => {
     const tech = await searchListings({ ...everything, category: "tech", sort: "price-low" });
     expect(tech.items.map((listing) => listing.id)).toEqual(["l-018", "l-001", "l-007", "l-022", "fs-006"]);
+  });
+});
+
+describe("shopping page data (shopping spec 6.2)", () => {
+  const ids = (items: readonly { id: string }[]) => items.map((item) => item.id);
+
+  it("lists a seller's available listings, newest first", async () => {
+    expect(ids(await getSellerListings("tech-corner"))).toEqual(["l-001", "l-007"]);
+    expect(ids(await getSellerListings("weekend-market"))).toEqual(["l-021", "l-022", "fs-006"]);
+  });
+
+  it("leaves paused and sold listings off a storefront", async () => {
+    expect(await getSellerListings("lash-lounge")).toEqual([]);
+    expect(ids(await getSellerListings("study-desk"))).toEqual(["fs-007"]);
+    expect(await getSellerListings("nope")).toEqual([]);
+  });
+
+  it("finds a collection by slug", async () => {
+    expect((await getCollection("moving-in"))?.title).toBe("Res setup under R500");
+    expect(await getCollection("nope")).toBeNull();
+  });
+
+  it("fills Res setup under R500 from every campus: free ones in, swap-only and dearer ones out", async () => {
+    expect(ids(await getCollectionListings("moving-in"))).toEqual(["l-014", "l-006", "l-027", "fs-003", "fs-005"]);
+  });
+
+  it("fills the uncapped collections, swap-only listings in, paused and sold ones out", async () => {
+    const semester = ids(await getCollectionListings("start-of-semester"));
+    expect(semester).toHaveLength(12);
+    expect(semester).toContain("fs-006");
+    expect(semester).not.toContain("l-026");
+    expect(await getCollectionListings("exam-season")).toHaveLength(10);
+    const skills = ids(await getCollectionListings("skills-for-hire"));
+    expect(skills).toHaveLength(9);
+    expect(skills).toContain("fs-004");
+    expect(skills).not.toContain("l-016");
+  });
+
+  it("has no listings for an unknown collection", async () => {
+    expect(await getCollectionListings("nope")).toEqual([]);
+  });
+
+  it("looks listings up by id in the order given, paused and sold ones in, unknown ids out", async () => {
+    expect(ids(await getListingsByIds(["l-026", "nope", "l-001", "l-016"]))).toEqual(["l-026", "l-001", "l-016"]);
+    expect(await getListingsByIds([])).toEqual([]);
   });
 });
