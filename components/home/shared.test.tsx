@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { Photo } from "./Photo";
+import { Photo } from "@/components/listings/Photo";
 import { SectionError } from "./SectionError";
 import { SectionHeader } from "./SectionHeader";
 
@@ -44,5 +44,13 @@ describe("SectionError", () => {
     render(<SectionError id="just-listed" title="Just listed" />);
     expect(screen.getByText("Just listed didn't load.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Try again" })).toHaveAttribute("href", "/?retry=just-listed#just-listed");
+  });
+
+  it("comes back to the page it's on, when given one", () => {
+    render(<SectionError id="more-from" title="More listings" path="/listings/l-001" />);
+    expect(screen.getByRole("link", { name: "Try again" })).toHaveAttribute(
+      "href",
+      "/listings/l-001?retry=more-from#more-from",
+    );
   });
 });

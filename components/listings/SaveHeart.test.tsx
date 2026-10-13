@@ -33,4 +33,9 @@ describe("SaveHeart (spec 7.8)", () => {
     expect(heart).toHaveAttribute("aria-pressed", "false");
     expect(getToast()?.message).toBe("Couldn't update. Try again.");
   });
+
+  it("takes an extra class, for the listing page's action bar", () => {
+    render(<SaveHeart id="l-001" title="Casio calculator" className="save-heart-inline" />);
+    expect(screen.getByRole("button", { name: "Save Casio calculator" })).toHaveClass("save-heart", "save-heart-inline");
+  });
 });

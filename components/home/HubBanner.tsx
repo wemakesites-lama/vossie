@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { getHubBanner } from "@/lib/data";
-import { Photo } from "./Photo";
+import { Photo } from "@/components/listings/Photo";
 import { EventsSkeleton, WhatsOnEvents } from "./WhatsOn";
 
 /** The Hub banner and What's on (spec 7.13): full width, sitting on the footer. */

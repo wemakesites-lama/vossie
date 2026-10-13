@@ -5,7 +5,7 @@ import { getViewerContext } from "@/lib/data/viewer";
 import { cx } from "@/lib/cx";
 import type { FreeSwapItem } from "@/lib/types";
 import { Carousel } from "./Carousel";
-import { Photo } from "./Photo";
+import { Photo } from "@/components/listings/Photo";
 import { SectionError } from "./SectionError";
 import { SectionHeader } from "./SectionHeader";
 

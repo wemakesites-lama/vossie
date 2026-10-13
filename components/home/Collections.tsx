@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRightIcon } from "@/components/icons";
 import { getCollections } from "@/lib/data";
-import { Photo } from "./Photo";
+import { Photo } from "@/components/listings/Photo";
 
 /**
  * The Hub's collections (spec 7.6). On desktop and tablet, hovering or focusing a title deals its photo onto the stack.

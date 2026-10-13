@@ -4,7 +4,7 @@ import { getCampuses, getJustListed } from "@/lib/data";
 import { getViewerContext } from "@/lib/data/viewer";
 import type { CampusChoice, Listing } from "@/lib/types";
 import { JustListedViews } from "./JustListedViews";
-import { ListingCard, ListingCardSkeleton } from "./ListingCard";
+import { ListingCard, ListingCardSkeleton } from "@/components/listings/ListingCard";
 import { SectionError } from "./SectionError";
 import { SectionHeader } from "./SectionHeader";
 

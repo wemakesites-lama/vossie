@@ -8,7 +8,7 @@ import { getViewerContext } from "@/lib/data/viewer";
 import { sastToday } from "@/lib/time";
 import type { Seller } from "@/lib/types";
 import { Carousel } from "./Carousel";
-import { Photo } from "./Photo";
+import { Photo } from "@/components/listings/Photo";
 import { SectionError } from "./SectionError";
 import { SectionHeader } from "./SectionHeader";
 

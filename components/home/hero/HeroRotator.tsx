@@ -16,7 +16,7 @@ import { useMotionAllowed } from "@/hooks/useMotionAllowed";
 import { usePageHidden } from "@/hooks/usePageHidden";
 import { cx } from "@/lib/cx";
 import type { HeroSlide } from "@/lib/types";
-import { Photo } from "../Photo";
+import { Photo } from "@/components/listings/Photo";
 
 const ROTATE_MS = 7000;
 const SWIPE_PX = 40;

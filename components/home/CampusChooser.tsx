@@ -11,7 +11,7 @@ import { ALL_CAMPUSES, isOnlineCampus } from "@/lib/campus";
 import { cx } from "@/lib/cx";
 import type { Campus, CampusChoice } from "@/lib/types";
 import { Carousel } from "./Carousel";
-import { Photo } from "./Photo";
+import { Photo } from "@/components/listings/Photo";
 
 const CYCLE_MS = 4000;
 

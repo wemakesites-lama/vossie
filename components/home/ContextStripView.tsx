@@ -5,7 +5,7 @@ import { FlagIcon, MapPinIcon, ShieldIcon } from "@/components/icons";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import type { ViewedItem } from "@/lib/recently-viewed";
 import type { ViewerActivity } from "@/lib/types";
-import { Photo } from "./Photo";
+import { Photo } from "@/components/listings/Photo";
 
 // Phones and tablets get the short words; the desktop strip has room for the long ones.
 const TRUST = [

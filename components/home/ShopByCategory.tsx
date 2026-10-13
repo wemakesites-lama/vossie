@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRightIcon } from "@/components/icons";
 import { getCategories } from "@/lib/data";
 import { Carousel } from "./Carousel";
-import { Photo } from "./Photo";
+import { Photo } from "@/components/listings/Photo";
 import { SectionHeader } from "./SectionHeader";
 
 // Browse filters (a placeholder page in this stage). The query names will be settled with the browse page.
