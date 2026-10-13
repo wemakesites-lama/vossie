@@ -5,6 +5,7 @@ import { collections } from "@/data/fixtures/collections";
 import { heroSlides } from "@/data/fixtures/hero";
 import { hubBanner, hubEvents } from "@/data/fixtures/hub";
 import { listings } from "@/data/fixtures/listings";
+import { pickupPoints } from "@/data/fixtures/pickup-points";
 import { requests } from "@/data/fixtures/requests";
 import { sellers } from "@/data/fixtures/sellers";
 import { trendingSearches } from "@/data/fixtures/trending";
@@ -21,8 +22,10 @@ import type {
   HubBanner,
   HubEvent,
   Listing,
-  ListingSummary,
+  ListingDetail,
   LookingForRequest,
+  MoreFrom,
+  PickupPoint,
   Seller,
   TrendingSearches,
 } from "@/lib/types";
@@ -134,11 +137,42 @@ export async function getHubBanner(): Promise<HubBanner> {
   return hubBanner;
 }
 
-/** A listing page's summary. Task 3 replaces this with getListingDetail. */
-export async function getListing(id: string): Promise<ListingSummary | null> {
+/** Everything a listing page needs (spec 6.3), for any listing, paused and sold ones included. */
+export async function getListingDetail(id: string): Promise<ListingDetail | null> {
   "use cache";
-  const found = listings.find((listing) => listing.id === id);
-  return found ? { id: found.id, title: found.title, campusSlug: found.campusSlug, image: found.image } : null;
+  const listing = listings.find((item) => item.id === id);
+  if (!listing) return null;
+  const seller = sellers.find((item) => item.slug === listing.sellerSlug);
+  const category = categories.find((item) => item.slug === listing.categorySlug);
+  const campus = campuses.find((item) => item.slug === listing.campusSlug);
+  if (!seller || !category || !campus) return null;
+  const pickupPoint = pickupPoints.find((point) => point.id === listing.pickupPointId) ?? null;
+  return { listing, seller, category, campus, pickupPoint };
+}
+
+/**
+ * A listing page's "More from" row (spec 5.7): up to `limit` of the seller's other available listings, newest first.
+ * When the seller has none, the same category's: those at the listing's campus first, then the rest.
+ */
+export async function getMoreFrom(
+  listing: Pick<Listing, "id" | "sellerSlug" | "categorySlug" | "campusSlug">,
+  limit: number,
+): Promise<MoreFrom> {
+  "use cache";
+  const others = available(listings)
+    .filter((item) => item.id !== listing.id)
+    .sort(newestFirst);
+  const fromSeller = others.filter((item) => item.sellerSlug === listing.sellerSlug);
+  if (fromSeller.length > 0) return { from: "seller", items: fromSeller.slice(0, limit) };
+  const sameCategory = others.filter((item) => item.categorySlug === listing.categorySlug);
+  const ownCampus = sameCategory.filter((item) => item.campusSlug === listing.campusSlug);
+  const elsewhere = sameCategory.filter((item) => item.campusSlug !== listing.campusSlug);
+  return { from: "category", items: [...ownCampus, ...elsewhere].slice(0, limit) };
+}
+
+export async function getPickupPoints(): Promise<readonly PickupPoint[]> {
+  "use cache";
+  return pickupPoints;
 }
 
 export async function getListingIds(): Promise<readonly string[]> {

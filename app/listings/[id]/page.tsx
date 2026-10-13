@@ -3,12 +3,12 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ComingSoon } from "@/components/ComingSoon";
 import { RecordRecentlyViewed } from "@/components/listings/RecordRecentlyViewed";
-import { getCampuses, getListing, getListingIds } from "@/lib/data";
+import { getListingDetail, getListingIds } from "@/lib/data";
 
 export async function generateMetadata({ params }: PageProps<"/listings/[id]">): Promise<Metadata> {
   const { id } = await params;
-  const listing = await getListing(id);
-  return { title: listing ? listing.title : "Page not found" };
+  const detail = await getListingDetail(id);
+  return { title: detail ? detail.listing.title : "Page not found" };
 }
 
 export async function generateStaticParams() {
@@ -26,15 +26,14 @@ export default function ListingPage({ params }: PageProps<"/listings/[id]">) {
 
 async function ListingDetails({ params }: Pick<PageProps<"/listings/[id]">, "params">) {
   const { id } = await params;
-  const listing = await getListing(id);
-  if (!listing) notFound();
-  const campus = (await getCampuses()).find((item) => item.slug === listing.campusSlug);
+  const detail = await getListingDetail(id);
+  if (!detail) notFound();
+  const { listing, campus } = detail;
   return (
     <>
       <RecordRecentlyViewed item={{ id: listing.id, title: listing.title, image: listing.image }} />
       <ComingSoon title={listing.title}>
-        Listed at {campus?.name ?? "an Eduvos campus"}. Listing pages, with photos, messages and safe pickup, arrive in
-        the next stage.
+        Listed at {campus.name}. The full listing page arrives later in this build.
       </ComingSoon>
     </>
   );

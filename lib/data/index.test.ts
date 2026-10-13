@@ -10,8 +10,10 @@ import {
   getHubBanner,
   getHubEvents,
   getJustListed,
-  getListing,
+  getListingDetail,
   getListingIds,
+  getMoreFrom,
+  getPickupPoints,
   getRequests,
   getSeller,
   getSellerSlugs,
@@ -170,11 +172,12 @@ describe("homepage data", () => {
     expect(featured.every((seller) => seller.verified && seller.campusSlug === "midrand")).toBe(true);
   });
 
-  it("finds listing pages for listings and free and swap items", async () => {
-    expect(await getListing("l-001")).toMatchObject({ title: "Casio fx-991ZA Plus calculator", campusSlug: "midrand" });
-    expect(await getListing("fs-002")).toMatchObject({ title: "Desk lamp, swap for a kettle" });
-    expect(await getListing("nope")).toBeNull();
+  it("finds listing pages for every listing, including paused and sold ones", async () => {
+    expect((await getListingDetail("fs-002"))?.listing.title).toBe("Desk lamp, swap for a kettle");
+    expect((await getListingDetail("l-026"))?.listing.availability).toBe("sold");
+    expect(await getListingDetail("nope")).toBeNull();
     const ids = await getListingIds();
+    expect(ids).toHaveLength(38);
     expect(ids).toContain("l-001");
     expect(ids).toContain("fs-001");
   });
@@ -183,5 +186,39 @@ describe("homepage data", () => {
     expect(await getSeller("hair-studio")).toMatchObject({ name: "Hair studio" });
     expect(await getSeller("nope")).toBeNull();
     expect(await getSellerSlugs()).toContain("maths-tutor");
+  });
+});
+
+describe("listing page data (browse and listing spec 6.3)", () => {
+  it("looks a listing up with its seller, category, campus and pickup point", async () => {
+    const detail = await getListingDetail("l-001");
+    expect(detail?.listing.title).toBe("Casio fx-991ZA Plus calculator");
+    expect(detail?.seller.name).toBe("Tech corner");
+    expect(detail?.category.name).toBe("Tech");
+    expect(detail?.campus.name).toBe("Midrand");
+    expect(detail?.pickupPoint).toEqual({ id: "pp-midrand-library", campusSlug: "midrand", name: "Library entrance" });
+    expect((await getListingDetail("l-013"))?.pickupPoint).toBeNull();
+  });
+
+  it("has two pickup points on each physical campus", async () => {
+    expect(await getPickupPoints()).toHaveLength(24);
+  });
+
+  it("offers more from the seller first", async () => {
+    const calculator = (await getListingDetail("l-001"))!.listing;
+    const more = await getMoreFrom(calculator, 4);
+    expect(more.from).toBe("seller");
+    expect(more.items.map((listing) => listing.id)).toEqual(["l-007"]);
+  });
+
+  it("falls back to the same category, the listing's campus first, leaving out paused and sold ones", async () => {
+    const braids = (await getListingDetail("l-004"))!.listing;
+    const forBraids = await getMoreFrom(braids, 4);
+    expect(forBraids.from).toBe("category");
+    // The paused lash listing (l-016) is left out.
+    expect(forBraids.items.map((listing) => listing.id)).toEqual(["l-023"]);
+
+    const python = (await getListingDetail("l-013"))!.listing;
+    expect((await getMoreFrom(python, 4)).items.map((listing) => listing.id)).toEqual(["l-031", "l-005", "l-025"]);
   });
 });

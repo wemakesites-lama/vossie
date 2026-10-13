@@ -160,10 +160,8 @@ export type Viewer = {
   activity: ViewerActivity | null;
 };
 
-/** What a listing page needs, for regular listings and free and swap items alike. */
-export type ListingSummary = {
-  id: string;
-  title: string;
-  campusSlug: string;
-  image: ImageRef;
+/** A listing page's "More from" row (spec 5.7): the seller's other listings, or the same category's. */
+export type MoreFrom = {
+  from: "seller" | "category";
+  items: readonly Listing[];
 };
