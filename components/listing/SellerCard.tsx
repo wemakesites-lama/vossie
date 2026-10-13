@@ -32,7 +32,9 @@ export function SellerCard({ seller, badge, campusName }: SellerCardProps) {
             {badge && <span className="listing-badge">{badgeLabel(badge)}</span>}
           </p>
         )}
-        <Link href={`/sellers/${seller.slug}`} className="listing-seller-link">
+        {/* No prefetch: prefetching the storefront would download its own copy of Share and Save, which this page
+            already has (Turbopack gives each route one chunk of its client parts), 760 B on every listing visit. */}
+        <Link href={`/sellers/${seller.slug}`} prefetch={false} className="listing-seller-link">
           See their shop
         </Link>
       </div>
