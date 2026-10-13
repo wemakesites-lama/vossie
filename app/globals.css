@@ -4414,3 +4414,101 @@
     }
   }
 }
+
+/* --- Browse: chips, results, empty state (browse and listing plan, Task 11, spec 4.5 to 4.7) --- */
+@layer components {
+  .filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 12px 0 16px;
+    border-radius: 999px;
+    background: var(--color-pale);
+    color: var(--color-navy);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .filter-clear {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: 6px;
+    color: var(--color-sky-dark);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: underline 1.5px;
+    text-underline-offset: 4px;
+  }
+
+  /* 2 columns on phones, 3 from the tablet step, 5 from the desktop step. Unlike the homepage's grid, nothing is
+     hidden: every card the server sends shows. */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 14px;
+    margin-top: 20px;
+  }
+
+  .show-more {
+    display: flex;
+    justify-content: center;
+    margin-top: 36px;
+  }
+
+  .browse-empty {
+    display: grid;
+    justify-items: start;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 28px 20px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+  }
+
+  .browse-empty-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 24px;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  /* Navy on the grey panel: sky-dark is 4.25:1 there. */
+  .browse-empty a {
+    color: var(--color-navy);
+    font-weight: 600;
+    text-decoration: underline 1.5px;
+    text-underline-offset: 4px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .results-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 28px 18px;
+      margin-top: 24px;
+    }
+  }
+
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .results-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+
+  /* Landscape phones keep the phone layout but get four cards a row, as the homepage does. */
+  @media (orientation: landscape) and (max-height: 29.99rem) {
+    .results-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+}
