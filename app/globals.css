@@ -1731,7 +1731,8 @@
 /* --- Homepage: frame and shared pieces (Part 2, Task 8, spec sections 4, 7 and 9) --- */
 @layer components {
   /* The page column: 1200px of content, with 10px gutters on phones and 24px from the tablet step (spec section 4). */
-  .home {
+  .home,
+  .page {
     width: 100%;
     max-width: calc(var(--container-page) + 48px);
     margin-inline: auto;
@@ -1831,7 +1832,8 @@
   }
 
   @media (min-width: 48rem) and (min-height: 30rem) {
-    .home {
+    .home,
+    .page {
       padding-inline: 24px;
     }
 
@@ -4109,4 +4111,120 @@
 
 :root[data-low-data] .category-tile {
   background: var(--color-navy);
+}
+
+/* --- Browse: frame, header and category tabs (browse and listing plan, Task 9, spec 4.1 to 4.3) --- */
+@layer components {
+  /* Inside .page's gutters, the same 16px (phones) and 40px (tablet up) content edge as the homepage's sections. */
+  .browse {
+    padding: 24px 6px 64px;
+  }
+
+  /* Phones: the search field first, then the eyebrow and h1. Desktop: the h1 on the left, the field on the right. */
+  .browse-head {
+    display: grid;
+    gap: 18px;
+  }
+
+  .browse-search {
+    order: -1;
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    padding-inline: 18px 2px;
+    border: 1.5px solid var(--color-navy);
+    border-radius: 999px;
+    background: var(--color-white);
+  }
+
+  /* The ring goes round the whole pill. */
+  .browse-search:focus-within {
+    outline: 2.5px solid var(--color-navy);
+    outline-offset: 3px;
+  }
+
+  .browse-search-input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    background: transparent;
+    color: var(--color-ink);
+  }
+
+  .browse-search-input:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .browse-title {
+    margin-top: 6px;
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .category-tabs {
+    margin-top: 22px;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  /* One row that scrolls sideways when it doesn't fit, with no scrollbar showing. The top padding keeps focus
+     rings inside the scroll box, which would clip them. */
+  .category-tabs ul {
+    display: flex;
+    gap: 22px;
+    margin-bottom: -1px;
+    padding-top: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .category-tabs ul::-webkit-scrollbar {
+    display: none;
+  }
+
+  .category-tab {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    border-bottom: 3px solid transparent;
+    color: var(--color-muted);
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .category-tab:focus-visible {
+    outline-offset: -2px;
+  }
+
+  /* Navy, not sky: a sky underline would be 2.6:1 on white as a state indicator (WCAG 1.4.11). Where the browser
+     supports it, the row starts scrolled to the chosen tab; elsewhere it starts at All, and the h1 says where you
+     are (spec 4.3). */
+  .category-tab[aria-current="page"] {
+    border-bottom-color: var(--color-navy);
+    color: var(--color-navy);
+    font-weight: 700;
+    scroll-initial-target: nearest;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .browse {
+      padding-inline: 16px;
+    }
+  }
+
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .browse-head {
+      grid-template-columns: minmax(0, 1fr) minmax(18rem, 26rem);
+      align-items: end;
+    }
+
+    .browse-search {
+      order: 0;
+    }
+  }
 }
