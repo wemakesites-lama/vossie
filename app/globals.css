@@ -4101,7 +4101,7 @@
    With data saver on, card and tile photos below the hero aren't loaded at all: hidden lazy images are never
    requested. The boxes keep their size, so nothing moves. Tiles and campus cards drop the whole photo box, so
    their white words sit on navy. */
-:root[data-low-data] :is(.listing-card, .seller-card, .free-card, .collections, .campus-chooser-wide, .context-thumbs) .photo-img {
+:root[data-low-data] :is(.listing-card, .seller-card, .free-card, .collections, .campus-chooser-wide, .context-thumbs, .hub-more) .photo-img {
   display: none;
 }
 
@@ -5363,6 +5363,173 @@
   @media (min-width: 48rem) and (min-height: 30rem) {
     .saved-page {
       padding-inline: 40px;
+    }
+  }
+}
+
+/* --- Shopping: collection pages (shopping plan, Task 8, spec 7.2) --- */
+@layer components {
+  /* .page and .collection-page sit on one element, so this padding is the whole content edge: 16px, then 40px. On
+     phones the photo meets the header, so there's no top padding. */
+  .collection-page {
+    padding: 0 16px 64px;
+  }
+
+  /* Phones: edge to edge at 4:3, pulled out by the page's 16px (spec 7.2). */
+  .collection-photo {
+    --photo-ratio: 4 / 3;
+    margin-inline: -16px;
+  }
+
+  .collection-head-text {
+    display: grid;
+    justify-items: start;
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  .collection-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .collection-intro {
+    max-width: 50ch;
+    color: var(--color-ink);
+    font-size: 16px;
+  }
+
+  .collection-curator {
+    color: var(--color-muted);
+    font-size: 13px;
+  }
+
+  .collection-count {
+    color: var(--color-navy);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .collection-listings {
+    margin-top: 32px;
+  }
+
+  .collection-empty {
+    padding: 28px 20px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 24px;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .collection-browse,
+  .hub-more {
+    margin-top: 48px;
+  }
+
+  .collection-browse-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 16px;
+  }
+
+  .collection-browse-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1.5px solid var(--color-navy);
+    border-radius: 999px;
+    color: var(--color-navy);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .hub-more-list {
+    max-width: 40rem;
+    margin-top: 8px;
+  }
+
+  /* Rows with a 64px thumbnail, like the homepage's collections on phones. Rows in a hairline-divided list may touch. */
+  .hub-more-link {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) 22px;
+    align-items: center;
+    gap: 14px;
+    padding-block: 12px;
+    color: var(--color-navy);
+  }
+
+  .hub-more-list li + li .hub-more-link {
+    border-top: 1px solid var(--color-line);
+  }
+
+  .hub-more-thumb {
+    border-radius: 10px;
+  }
+
+  .hub-more-text {
+    display: grid;
+  }
+
+  .hub-more-eyebrow {
+    color: var(--color-sky-dark);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-eyebrow);
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  .hub-more-title {
+    margin-top: 2px;
+    font-family: var(--vos-font-display);
+    font-size: 24px;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .hub-more-arrow {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* From the tablet step: the photo on the left, two-fifths wide at 4:5, and the text beside it (plan decision 7). */
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .collection-page {
+      padding: 24px 40px 64px;
+    }
+
+    .collection-head {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+      align-items: center;
+      gap: 40px;
+    }
+
+    .collection-photo {
+      --photo-ratio: 4 / 5;
+      margin-inline: 0;
+      border-radius: var(--radius-panel);
+    }
+
+    .collection-head-text {
+      margin-top: 0;
+    }
+  }
+
+  /* Landscape phones keep the phone layout, with the photo cropped short so it doesn't fill the screen. */
+  @media (orientation: landscape) and (max-height: 29.99rem) {
+    .collection-photo {
+      --photo-ratio: 2 / 1;
     }
   }
 }
