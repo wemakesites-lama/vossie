@@ -42,10 +42,20 @@ The approved mockup screens are in `docs/reference/mockups/` (`home-v2.html` is 
 | 32 | 2026-10-12 | Footer columns on desktop | **`1.1fr repeat(3, minmax(0, 0.75fr)) 2fr`** | Nothing wraps at 1280 or 1440. The slack is about 5px, so remeasure when the Eduvos fonts arrive. Lama, on Claude's recommendation |
 | 33 | 2026-10-12 | Smaller points after Part 2 | **Done:** Collections hover only for a mouse (touch uses focus); the Collections arrow follows its title; sample events run to February 2027; the viewer falls back to all campuses if the campus lookup fails; Just listed says "No new listings yet" when nothing is new anywhere. **Kept as built:** the hero offers Play under reduced motion (the campus cycle doesn't, being decorative); the chip's "Shopping all campuses" and the pill's "All campuses"; the scroll reveal's fade near the bottom edge; the How it works heading centred on phones | Lama, on Claude's recommendation |
 | 34 | 2026-10-12 | Largest Contentful Paint | **Revisit when the real photos arrive.** Lighthouse's simulated slow 4G gives 3.3s (spec: 2.5s); unthrottled it's under 0.2s, and the LCP element is the hero photo, already loaded first | Real photos (AVIF through `next/image`) will change it. Lama, on Claude's recommendation |
+| 35 | 2026-10-13 | Scope of the browse and listing stage | **UI first, on sample data.** Browse fully works (search, filters, sort, paging); the listing page is complete apart from actions that need an account | Same approach as the homepage; the data layer is shaped for Supabase. Lama, on Claude's recommendation |
+| 36 | 2026-10-13 | Cross-campus buying of physical items | **Every campus is browsable; you collect at the listing's campus.** Physical items say where they're collected, with a note when that isn't your campus. No couriers or payments | Lama: "show it, collect there for now". A delivery function for cross-campus or distance sales may come later. Resolves the open question from the homepage brainstorm |
+| 37 | 2026-10-13 | Browse layout | **C, category-led:** a big display title, the categories as a row of tabs, other filters behind one Filters button | Lama. Screen `browse-layout.html` |
+| 38 | 2026-10-13 | Listing layout | **A, gallery and action dock:** photos as the hero, a dock fixed at the bottom on phones, a column that stays in view on desktop | Lama. Screen `listing-layout.html`. Fixes the old demo's defect D12 |
+| 39 | 2026-10-13 | How browse works | **Server-rendered from the URL.** The link is the whole state; filters, tabs, sort and search are links or plain GET forms; it works with JavaScript off | Near-zero page JavaScript. Lama, on Claude's recommendation |
+| 40 | 2026-10-13 | Browse's campus with none in the link | **The viewer's chosen campus, as a removable chip.** A campus in the link wins; with no campus chosen, every campus | Lama, on Claude's recommendation |
+| 41 | 2026-10-13 | How Filters and Sort open | **`<details>`, not the Popover API** | Popovers need Safari 17; iPhone 8s and Xs stop at iOS 16. Lama, on Claude's recommendation |
+| 42 | 2026-10-13 | The price filter | **"Free" sits in the Price group: `price=free`, `price=under-100` and so on.** The homepage's `max=` links stay valid as an alias | Lama, on Claude's recommendation |
+| 43 | 2026-10-13 | Photos on a desktop listing page | **Stacked,** not a main photo with thumbnails | Switching thumbnails needs JavaScript. Lama, on Claude's recommendation |
+| 44 | 2026-10-13 | Message seller and Report before sign-in exists | **Links to `/login?next=…`,** not a "coming soon" sheet | No JavaScript, and it's the flow they'll use once accounts exist. Lama, on Claude's recommendation |
+| 45 | 2026-10-13 | Free and swap items | **Ordinary listings** (free is R0; swap-only has no price), not a separate kind of item | One model for browse, the listing page and the homepage. Lama, on Claude's recommendation |
 
 ## Still open
 
-- Cross-campus buying of physical items: services and digital only, courier with held payment, or self-arranged handover.
 - Eduvos's font files and licence confirmation, then the final font choice after comparing (decision 8).
 - The official crest SVG (decision 10).
 - The photos (decision 11).
