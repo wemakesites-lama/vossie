@@ -3,24 +3,32 @@ import { expect, test } from "@playwright/test";
 type Shift = { value: number; nodes: string[] };
 
 // A campus (the `vossie_campus` cookie) changes what the page shows and where the campus note, the empty state and the
-// results fall, so those pages are measured with one chosen too. Midrand has results; Mbombela has none.
-const PAGES: ReadonlyArray<[name: string, path: string, campus?: string]> = [
+// results fall, so those pages are measured with one chosen too. Midrand has results; Mbombela has none. Saved reads
+// the `vossie_saved` cookie, so it's measured with listings saved and with none.
+const PAGES: ReadonlyArray<[name: string, path: string, cookies?: Readonly<Record<string, string>>]> = [
   ["homepage", "/"],
   ["browse page", "/browse"],
   ["listing page", "/listings/l-001"],
-  ["listing page (campus pretoria)", "/listings/l-001", "pretoria"],
-  ["browse page (campus midrand)", "/browse", "midrand"],
-  ["browse page (campus mbombela)", "/browse", "mbombela"],
+  ["listing page (campus pretoria)", "/listings/l-001", { vossie_campus: "pretoria" }],
+  ["browse page (campus midrand)", "/browse", { vossie_campus: "midrand" }],
+  ["browse page (campus mbombela)", "/browse", { vossie_campus: "mbombela" }],
+  ["storefront", "/sellers/tech-corner"],
+  ["storefront (nothing listed)", "/sellers/lash-lounge"],
+  ["Saved page", "/saved", { vossie_saved: "l-001.l-026.l-016.l-007.l-004.l-009" }],
+  ["Saved page (nothing saved)", "/saved"],
+  ["collection page", "/collections/start-of-semester"],
 ];
 
-for (const [name, path, campus] of PAGES) {
+for (const [name, path, cookies] of PAGES) {
   test(`the ${name} holds still while fonts and content arrive (CLS 0.05 or less, spec 11)`, async ({
     page,
     context,
     baseURL,
   }) => {
     test.skip(!["phone-390", "desktop-1440"].includes(test.info().project.name), "Measured at 390 and 1440");
-    if (campus) await context.addCookies([{ name: "vossie_campus", value: campus, url: baseURL! }]);
+    if (cookies) {
+      await context.addCookies(Object.entries(cookies).map(([cookie, value]) => ({ name: cookie, value, url: baseURL! })));
+    }
 
     // Hold the fonts back, so they swap in after first paint: the worst case for shifts.
     await page.route(/\.woff2$/, async (route) => {

@@ -124,3 +124,42 @@ test("a listing with several photos and a campus note", async ({ page, context, 
   await expect(page.getByRole("region", { name: "Photos" })).toBeVisible();
   expect(await seriousIssues(page)).toEqual([]);
 });
+
+test("a storefront", async ({ page }) => {
+  await page.goto("/sellers/tech-corner");
+  await expect(page.getByRole("heading", { level: 2, name: "2 listings" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("a verified storefront", async ({ page }) => {
+  await page.goto("/sellers/hair-studio");
+  await expect(page.locator(".seller-verified")).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("a storefront with nothing listed", async ({ page }) => {
+  await page.goto("/sellers/lash-lounge");
+  await expect(page.getByText("Nothing listed right now")).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("Saved, with sold and paused listings and one removed", async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: "vossie_saved", value: "l-001.l-026.l-016", url: baseURL! }]);
+  await page.goto("/saved");
+  const heart = page.getByRole("button", { name: "Save Casio fx-991ZA Plus calculator" });
+  await heart.click();
+  await expect(heart).toHaveAttribute("aria-pressed", "false");
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("Saved with nothing saved", async ({ page }) => {
+  await page.goto("/saved");
+  await expect(page.getByRole("heading", { level: 2, name: "Nothing saved yet" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("a collection", async ({ page }) => {
+  await page.goto("/collections/moving-in");
+  await expect(page.getByText("5 listings", { exact: true })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
