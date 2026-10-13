@@ -9,6 +9,7 @@ import { pickupPoints } from "@/data/fixtures/pickup-points";
 import { requests } from "@/data/fixtures/requests";
 import { sellers } from "@/data/fixtures/sellers";
 import { trendingSearches } from "@/data/fixtures/trending";
+import { findListings } from "@/lib/browse/results";
 import { ALL_CAMPUSES } from "@/lib/campus";
 import { drawFeatured } from "@/lib/featured";
 import type {
@@ -26,6 +27,8 @@ import type {
   LookingForRequest,
   MoreFrom,
   PickupPoint,
+  SearchQuery,
+  SearchResult,
   Seller,
   TrendingSearches,
 } from "@/lib/types";
@@ -173,6 +176,18 @@ export async function getMoreFrom(
 export async function getPickupPoints(): Promise<readonly PickupPoint[]> {
   "use cache";
   return pickupPoints;
+}
+
+/**
+ * Browse results (browse and listing spec 6.3): every available listing that matches, filtered and sorted, and how
+ * many match at other campuses. The caller shows the first `shown`, so Show more reuses this cached result.
+ */
+export async function searchListings(query: SearchQuery): Promise<SearchResult> {
+  "use cache";
+  return findListings(listings, query, {
+    sellers: new Map(sellers.map((seller) => [seller.slug, seller.name])),
+    categories: new Map(categories.map((category) => [category.slug, category.name])),
+  });
 }
 
 export async function getListingIds(): Promise<readonly string[]> {

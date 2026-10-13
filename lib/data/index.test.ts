@@ -18,7 +18,9 @@ import {
   getSeller,
   getSellerSlugs,
   getTrendingSearches,
+  searchListings,
 } from "./index";
+import type { SearchQuery } from "@/lib/types";
 
 describe("sample data layer", () => {
   it("returns the 12 Eduvos campuses with Eduvos Online last", async () => {
@@ -220,5 +222,58 @@ describe("listing page data (browse and listing spec 6.3)", () => {
 
     const python = (await getListingDetail("l-013"))!.listing;
     expect((await getMoreFrom(python, 4)).items.map((listing) => listing.id)).toEqual(["l-031", "l-005", "l-025"]);
+  });
+});
+
+describe("searchListings (browse and listing spec 6.3)", () => {
+  const everything: SearchQuery = {
+    q: null,
+    category: null,
+    campus: "all",
+    price: null,
+    pay: null,
+    deals: null,
+    sort: "new",
+  };
+
+  it("lists every available listing, newest first", async () => {
+    const result = await searchListings(everything);
+    expect(result.items).toHaveLength(36);
+    expect(result.items[0].id).toBe("l-001");
+    expect(result.elsewhere).toBe(0);
+  });
+
+  it("keeps to one campus and counts the rest", async () => {
+    const midrand = await searchListings({ ...everything, campus: "midrand" });
+    expect(midrand.items).toHaveLength(14);
+    expect(midrand.elsewhere).toBe(22);
+    expect(await searchListings({ ...everything, campus: "mbombela" })).toEqual({ items: [], elsewhere: 36 });
+  });
+
+  it("finds by title, typo, seller name and several words, leaving out the sold calculator", async () => {
+    const ids = async (q: string, campus = "all") =>
+      (await searchListings({ ...everything, q, campus, sort: "match" })).items.map((listing) => listing.id);
+    expect(await ids("calculator")).toEqual(["l-001", "fs-006"]);
+    expect(await ids("calculator", "midrand")).toEqual(["l-001"]);
+    expect(await ids("brads")).toEqual(["l-004"]);
+    expect(await ids("kettel")).toEqual(["l-014", "fs-002"]);
+    expect(await ids("bakery")).toEqual(["l-009"]);
+    expect(await ids("notes for accounting")).toEqual(["l-002"]);
+  });
+
+  it("filters by category, price, pay and deals", async () => {
+    const count = async (changes: Partial<SearchQuery>) =>
+      (await searchListings({ ...everything, ...changes })).items.length;
+    expect(await count({ category: "tech" })).toBe(5);
+    expect(await count({ price: "free" })).toBe(4);
+    expect(await count({ price: "under-50" })).toBe(4);
+    expect(await count({ price: "under-100" })).toBe(7);
+    expect(await count({ pay: "swap" })).toBe(6);
+    expect(await count({ deals: "free-and-swaps" })).toBe(10);
+  });
+
+  it("sorts tech by price, swap-only last", async () => {
+    const tech = await searchListings({ ...everything, category: "tech", sort: "price-low" });
+    expect(tech.items.map((listing) => listing.id)).toEqual(["l-018", "l-001", "l-007", "l-022", "fs-006"]);
   });
 });
