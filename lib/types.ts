@@ -53,6 +53,15 @@ export type PayMode = "cash" | "swap" | "both";
 
 export type TrustBadge = "trusted" | "responsive" | "new-seller";
 
+export type ListingKind = "item" | "service";
+
+export type Condition = "new" | "like-new" | "good" | "fair";
+
+/** How an item changes hands or a service happens (browse and listing spec 5.3). */
+export type Handover = "pickup" | "on-campus" | "on-campus-or-online" | "online";
+
+export type Availability = "available" | "paused" | "sold";
+
 export type Listing = {
   id: string;
   title: string;

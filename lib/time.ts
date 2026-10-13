@@ -19,3 +19,19 @@ export function sastDate(now: Date): string {
 export function sastToday(): string {
   return sastDate(new Date());
 }
+
+// en-GB writes "12 October 2026": day, month in words, year.
+const SAST_LONG = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Africa/Johannesburg",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+/**
+ * A stored UTC time as a date in South Africa, in words: "12 October 2026" (browse and listing spec 5.1). It reads
+ * no clock (the time comes from the data), so it's safe while prerendering.
+ */
+export function longSastDate(iso: string): string {
+  return SAST_LONG.format(new Date(iso));
+}
