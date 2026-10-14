@@ -65,6 +65,17 @@ describe("the dashboard's numbers (selling spec 2.8, plan decision 18)", () => {
     expect(stats.record.enquiries).toBe(1);
   });
 
+  it("leaves out conversations whose shop's owner has gone, so a restored or reused link inherits none (amendment 9.1)", async () => {
+    sampleStore().conversations.clear();
+    add({ sellerGone: true, firstReplyAt: ago(0.5) });
+    add({ sellerGone: true, status: "confirmed", confirmedAt: ago(24), confirmedBy: "buyer" });
+    add({ sellerGone: true, status: "done", completedAt: ago(24 * 8) });
+    add({});
+    const stats = await shopStats("tech-corner", NOW);
+    expect(stats.week).toEqual({ enquiries: 1, due: 0, repliedInTime: 0, salesConfirmed: 0 });
+    expect(stats.record).toEqual({ enquiries: 1, due: 0, repliedInTime: 0, salesConfirmed: 0 });
+  });
+
   it("counts sales the buyer confirmed, and ones marked done 7 days ago, writing nothing", async () => {
     sampleStore().conversations.clear();
     add({ status: "confirmed", confirmedAt: ago(24), confirmedBy: "buyer" });

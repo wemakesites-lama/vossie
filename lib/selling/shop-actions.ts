@@ -165,7 +165,7 @@ export async function sendForApproval(formData: FormData): Promise<void> {
     await writeFormState(onboardingForm(5), { errors: ["guidelines-missing"], values: {}, notice: null }, now);
     done(onboardingPath(5));
   }
-  await createShop(
+  const shop = await createShop(
     account.id,
     {
       name: draft.name,
@@ -178,6 +178,12 @@ export async function sendForApproval(formData: FormData): Promise<void> {
     },
     now,
   );
+  if (!shop) {
+    // No shop was made (the account already has a seller profile), so /sell would show the pitch again with nothing
+    // said. Stay on step 5 with the draft kept, and say so (amendment 9.3).
+    await writeFormState(onboardingForm(5), { errors: ["send-failed"], values: {}, notice: null }, now);
+    done(onboardingPath(5));
+  }
   sellersChanged();
   done(SELL_PATH);
 }

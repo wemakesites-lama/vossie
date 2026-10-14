@@ -19,6 +19,8 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
   ["points-missing", { message: "Choose at least one pickup point.", field: "points" }],
   ["points-campus", { message: "Your campus changed, so choose your pickup points there.", field: "points" }],
   ["guidelines-missing", { message: "Tick the box to say you've read the seller guidelines.", field: "guidelines" }],
+  // Step 5 only, when the shop couldn't be made. It belongs to no field.
+  ["send-failed", { message: "Something went wrong, so your application wasn't sent. Try again.", field: "none" }],
   ["slug-format", { message: "Use 3 to 40 lower-case letters, numbers and single hyphens.", field: "slug" }],
   ["slug-taken", { message: "Another shop has that link. Try another.", field: "slug" }],
   // A listing, in the form's order. "category-missing" serves a shop too.

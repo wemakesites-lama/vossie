@@ -60,6 +60,8 @@ describe("the sample shops (selling plan, Task 1)", () => {
       { src: "/placeholders/photo/2.svg", alt: "The back of the calculator, with the battery cover" },
       { src: "/placeholders/photo/3.svg", alt: "The slide-on cover" },
     ]);
+    // Every sample listing was published when it was listed (selling plan amendment 9.2).
+    for (const row of sampleListingRows) expect(row.firstPublishedAt, row.id).toBe(row.createdAt);
     expect(sampleListingRows.find((row) => row.id === "l-016")?.state).toBe("paused");
     expect(sampleListingRows.find((row) => row.id === "l-026")?.state).toBe("sold");
   });

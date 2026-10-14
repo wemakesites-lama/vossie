@@ -17,6 +17,11 @@ const PHOTO_ID = /^ph-[0-9a-f-]{36}$/;
 /** A photo checked and stripped (lib/selling/uploads.ts), ready to store. */
 export type Upload = { type: PhotoType; bytes: Uint8Array<ArrayBuffer> };
 
+/** A photo that waits on a form (no use) and is a day old or more: it's gone for good (amendment 9.5). */
+function isStale(row: Pick<PhotoRow, "use" | "createdAt">, nowMs: number): boolean {
+  return row.use === null && Date.parse(row.createdAt) <= nowMs - LOOSE_PHOTO_TTL_MS;
+}
+
 export function isPhotoId(id: string): boolean {
   return PHOTO_ID.test(id);
 }
@@ -47,9 +52,8 @@ export async function storePhotos(ownerId: string, uploads: readonly Upload[], n
     photos.set(id, { id, ownerId, use: null, type: upload.type, bytes: upload.bytes, createdAt: now.toISOString() });
     return photoSrc(id);
   });
-  const cutoff = now.getTime() - LOOSE_PHOTO_TTL_MS;
   for (const [id, row] of photos) {
-    if (row.use === null && Date.parse(row.createdAt) <= cutoff) photos.delete(id);
+    if (isStale(row, now.getTime())) photos.delete(id);
   }
   // The store keeps insertion order, so the oldest waiting photos come first.
   const waiting = [...photos.values()].filter((row) => row.use === null && row.ownerId === ownerId);
@@ -57,10 +61,13 @@ export async function storePhotos(ownerId: string, uploads: readonly Upload[], n
   return srcs;
 }
 
-/** A photo's type and bytes, for /photos/[id]. */
-export async function getPhoto(id: string): Promise<Pick<PhotoRow, "type" | "bytes"> | null> {
+/**
+ * A photo's type and bytes, for /photos/[id]. A waiting photo more than a day old is null, even if no upload has come
+ * along to tidy it away yet, so its limit doesn't wait for the next upload (amendment 9.5).
+ */
+export async function getPhoto(id: string, now: Date): Promise<Pick<PhotoRow, "type" | "bytes"> | null> {
   const row = sampleStore().photos.get(id);
-  return row ? { type: row.type, bytes: row.bytes } : null;
+  return row && !isStale(row, now.getTime()) ? { type: row.type, bytes: row.bytes } : null;
 }
 
 /** The addresses of `ownerId`'s photos with this use; null means waiting on a form. */

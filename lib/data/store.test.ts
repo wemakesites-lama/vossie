@@ -25,6 +25,8 @@ describe("the sample store (accounts spec 2.1)", () => {
     expect(store.reports.size).toBe(0);
     expect(store.sellers.size).toBe(30);
     expect(store.listings.size).toBe(38);
+    // Every sample listing has been published already (selling plan amendment 9.2).
+    expect([...store.listings.values()].every((row) => row.firstPublishedAt === row.createdAt)).toBe(true);
     expect(store.photos.size).toBe(0);
     expect(store.onboardingDrafts.size).toBe(0);
   });

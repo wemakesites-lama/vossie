@@ -62,9 +62,11 @@ function moveShop(from: string, to: string): void {
   for (const profile of store.sellerProfiles.values()) {
     if (profile.sellerSlug === from) profile.sellerSlug = to;
   }
-  // Messaging names the shop by its link (messaging plan decision 1), so its conversations and reports move too.
+  // Messaging names the shop by its link (messaging plan decision 1), so its conversations and reports move too. Not
+  // the ones whose owner has gone (`sellerGone`): they belong to a shop that no longer exists, so they stay on its old
+  // link rather than follow this shop, which isn't theirs (amendment 9.1).
   for (const conversation of store.conversations.values()) {
-    if (conversation.sellerSlug === from) conversation.sellerSlug = to;
+    if (conversation.sellerSlug === from && !conversation.sellerGone) conversation.sellerSlug = to;
   }
   for (const report of store.reports.values()) {
     if (report.targetKind === "seller" && report.targetId === from) report.targetId = to;
@@ -230,21 +232,26 @@ export async function forgetShopOf(accountId: string): Promise<boolean> {
 
 /**
  * Brings a sample account's shop and its sample listings back from the fixtures, once deleted (D's plan decision 15:
- * a sample account's button puts it back). True when it did.
+ * a sample account's button puts it back). True when it did. When another student's shop has taken the shop's own link
+ * in the meantime, the shop comes back under a free one, and the account's profile follows it, so the profile never
+ * claims someone else's shop (amendment 9.3). A waiting shop's profile has no link to follow.
  */
 export async function restoreSampleShop(accountId: string): Promise<boolean> {
   const store = sampleStore();
   if ([...store.sellers.values()].some((row) => row.ownerId === accountId)) return false;
   let restored = false;
-  for (const [slug, owner] of sampleShopOwners) {
-    const seed = sampleSellerRows.find((row) => row.slug === slug);
-    if (owner !== accountId || !seed || store.sellers.has(slug)) continue;
-    store.sellers.set(slug, structuredClone(seed));
+  for (const [seedSlug, owner] of sampleShopOwners) {
+    const seed = sampleSellerRows.find((row) => row.slug === seedSlug);
+    if (owner !== accountId || !seed) continue;
+    const slug = freeSlug(seedSlug, null);
+    store.sellers.set(slug, { ...structuredClone(seed), slug });
     for (const listing of sampleListingRows) {
-      if (listing.sellerSlug === slug && !store.listings.has(listing.id)) {
-        store.listings.set(listing.id, structuredClone(listing));
+      if (listing.sellerSlug === seedSlug && !store.listings.has(listing.id)) {
+        store.listings.set(listing.id, { ...structuredClone(listing), sellerSlug: slug });
       }
     }
+    const profile = store.sellerProfiles.get(accountId);
+    if (profile?.sellerSlug) profile.sellerSlug = slug;
     restored = true;
   }
   return restored;
@@ -282,6 +289,23 @@ export type ListingExport = {
   /** Each photo's address (a placeholder's, or /photos/… to download it) and description ("" means the title). */
   photos: { address: string; description: string }[];
   createdAt: string;
+  /** When it was first published, or null for a draft that never has been. */
+  firstPublishedAt: string | null;
+  updatedAt: string;
+};
+
+/**
+ * The onboarding wizard's answers so far, for a student who hasn't sent their application (amendment 9.6): what they
+ * typed, with the photo by its address. Blanks are "" and null. No ids.
+ */
+export type OnboardingDraftExport = {
+  name: string;
+  tagline: string;
+  category: string;
+  about: string;
+  photo: string | null;
+  campus: string;
+  pickupPoints: string[];
   updatedAt: string;
 };
 
@@ -305,14 +329,40 @@ function listingExport(row: ListingRow): ListingExport {
     campus: row.campusSlug,
     photos: row.photos.map((photo) => ({ address: photo.src, description: photo.alt })),
     createdAt: row.createdAt,
+    firstPublishedAt: row.firstPublishedAt,
     updatedAt: row.updatedAt,
   };
 }
 
-/** The account's shop and listings, most recently changed first, for the data export. */
-export async function exportShop(accountId: string): Promise<{ shop: ShopExport | null; listings: ListingExport[] }> {
+/** What the data export holds for selling: the shop, its listings, and the wizard's draft. */
+export type SellingExport = {
+  shop: ShopExport | null;
+  listings: ListingExport[];
+  onboardingDraft: OnboardingDraftExport | null;
+};
+
+function draftExport(draft: OnboardingDraftRow): OnboardingDraftExport {
+  return {
+    name: draft.name,
+    tagline: draft.tagline,
+    category: categoryName(draft.categorySlug),
+    about: draft.about,
+    photo: draft.photoSrc,
+    campus: draft.campusSlug,
+    pickupPoints: draft.pickupPointIds.flatMap((id) => spotName(id) ?? []),
+    updatedAt: draft.updatedAt,
+  };
+}
+
+/**
+ * The account's shop and listings, most recently changed first, and the wizard's draft if it has one, for the data
+ * export. A draft and a shop don't overlap in practice: sending the application deletes the draft.
+ */
+export async function exportShop(accountId: string): Promise<SellingExport> {
+  const draft = sampleStore().onboardingDrafts.get(accountId);
+  const onboardingDraft = draft ? draftExport(draft) : null;
   const own = await getShopOf(accountId);
-  if (!own) return { shop: null, listings: [] };
+  if (!own) return { shop: null, listings: [], onboardingDraft };
   const { shop, status } = own;
   const listings = [...sampleStore().listings.values()]
     .filter((row) => row.sellerSlug === shop.slug)
@@ -332,5 +382,6 @@ export async function exportShop(accountId: string): Promise<{ shop: ShopExport 
       createdAt: shop.createdAt,
     },
     listings: listings.map(listingExport),
+    onboardingDraft,
   };
 }

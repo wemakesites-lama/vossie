@@ -4,6 +4,7 @@ import { pngBytes } from "@/tests/helpers/image-bytes";
 import {
   deleteOwnListing,
   getOwnListing,
+  isFirstPublish,
   listOwnListings,
   saveOwnListing,
   setOwnListingState,
@@ -66,6 +67,7 @@ describe("a shop's own listings (selling spec 2.9 and 2.10, plan decision 3)", (
       campusSlug: "midrand",
       title: "Desk fan",
       createdAt: NOW.toISOString(),
+      firstPublishedAt: NOW.toISOString(),
       updatedAt: NOW.toISOString(),
     });
     expect(await getOwnListing("tech-corner", row.id)).toEqual(row);
@@ -73,13 +75,37 @@ describe("a shop's own listings (selling spec 2.9 and 2.10, plan decision 3)", (
 
   it("dates a draft from when it's first published, then keeps that date", async () => {
     const draft = (await save({ intent: "draft" }))!;
-    expect((await save({ id: draft.id, now: LATER }))).toMatchObject({ state: "available", createdAt: LATER.toISOString() });
+    expect(draft).toMatchObject({ createdAt: NOW.toISOString(), firstPublishedAt: null });
+    expect((await save({ id: draft.id, now: LATER }))).toMatchObject({
+      state: "available",
+      createdAt: LATER.toISOString(),
+      firstPublishedAt: LATER.toISOString(),
+    });
     const edited = await save({
       id: draft.id,
       now: new Date("2026-10-16T08:00:00.000Z"),
       fields: { ...fields, title: "Desk fan, white" },
     });
-    expect(edited).toMatchObject({ title: "Desk fan, white", createdAt: LATER.toISOString() });
+    expect(edited).toMatchObject({
+      title: "Desk fan, white",
+      createdAt: LATER.toISOString(),
+      firstPublishedAt: LATER.toISOString(),
+    });
+  });
+
+  it("is a first publish once: published, saved back as a draft and published again keeps both dates (amendment 9.2)", async () => {
+    const published = (await save())!;
+    const draft = (await save({ id: published.id, intent: "draft", now: LATER }))!;
+    expect(draft).toMatchObject({ state: "draft", createdAt: NOW.toISOString(), firstPublishedAt: NOW.toISOString() });
+    const again = (await save({ id: published.id, now: new Date("2026-10-16T08:00:00.000Z") }))!;
+    expect(again).toMatchObject({ state: "available", createdAt: NOW.toISOString(), firstPublishedAt: NOW.toISOString() });
+    expect(again.updatedAt).toBe("2026-10-16T08:00:00.000Z");
+    // The flag stages H and I hang their notifications on: true for the first publish only.
+    expect(isFirstPublish(null, "available")).toBe(true);
+    expect(isFirstPublish(null, "draft")).toBe(false);
+    expect(isFirstPublish({ firstPublishedAt: null }, "available")).toBe(true);
+    expect(isFirstPublish(draft, "available")).toBe(false);
+    expect(isFirstPublish(again, "available")).toBe(false);
   });
 
   it("keeps a sold listing sold on Save changes", async () => {
@@ -110,9 +136,9 @@ describe("a shop's own listings (selling spec 2.9 and 2.10, plan decision 3)", (
     const row = (await save({ photos: [{ src: a, alt: "" }, { src: b, alt: "The plug" }] }))!;
     expect(await photoSrcsOf("acc-seller", `listing:${row.id}`)).toEqual(new Set([a, b]));
     await save({ id: row.id, photos: [{ src: b, alt: "" }] });
-    expect(await getPhoto(photoIdOf(a)!)).toBeNull();
+    expect(await getPhoto(photoIdOf(a)!, NOW)).toBeNull();
     expect(await deleteOwnListing("tech-corner", "acc-seller", row.id)).toBe(true);
-    expect(await getPhoto(photoIdOf(b)!)).toBeNull();
+    expect(await getPhoto(photoIdOf(b)!, NOW)).toBeNull();
     expect(await getOwnListing("tech-corner", row.id)).toBeNull();
   });
 });

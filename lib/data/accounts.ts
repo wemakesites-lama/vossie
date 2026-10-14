@@ -6,7 +6,7 @@ import { listSessions } from "./sessions";
 import { exportConversations, forgetAccountInMessaging, unreadCounts, type ConversationExport } from "./messages";
 import { exportNotifications, type NotificationExport } from "./notifications";
 import { deleteReportsBy, exportReports, type ReportExport } from "./reports";
-import { exportShop, forgetShopOf, type ListingExport, type ShopExport } from "./shops";
+import { exportShop, forgetShopOf, type ListingExport, type OnboardingDraftExport, type ShopExport } from "./shops";
 import { sampleStore } from "./store";
 
 // Accounts, their shops and their consent (accounts spec section 4), shaped like the Supabase calls that will replace
@@ -144,7 +144,8 @@ export async function restoreSampleAccount(email: string): Promise<Account | nul
 
 /**
  * "Download your data" (spec 3.3, plan decision 20). Messaging adds conversations, reports and notifications
- * (messaging plan decision 15); selling adds the shop and its listings (selling plan decision 22).
+ * (messaging plan decision 15); selling adds the shop, its listings and the wizard's draft (selling plan decision 22
+ * and amendment 9.6).
  */
 export type AccountExport = {
   exportedAt: string;
@@ -166,6 +167,8 @@ export type AccountExport = {
   /** The account's shop, if it has one, and every listing in it, drafts included. */
   shop: ShopExport | null;
   listings: ListingExport[];
+  /** The onboarding wizard's answers so far, for a student who hasn't sent their application yet. */
+  onboardingDraft: OnboardingDraftExport | null;
 };
 
 /** The account's data, as the export gives it. Null when the account has gone. */
@@ -199,6 +202,7 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
     notifications,
     shop: selling.shop,
     listings: selling.listings,
+    onboardingDraft: selling.onboardingDraft,
   };
 }
 

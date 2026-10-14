@@ -151,6 +151,7 @@ export function makeListingRow(overrides: Partial<ListingRow> = {}): ListingRow 
     campusSlug: "midrand",
     photos: [],
     createdAt: "2026-10-14T08:00:00.000Z",
+    firstPublishedAt: "2026-10-14T08:00:00.000Z",
     updatedAt: "2026-10-14T08:00:00.000Z",
     ...overrides,
   };

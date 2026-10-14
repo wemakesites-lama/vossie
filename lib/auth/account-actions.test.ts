@@ -15,6 +15,7 @@ const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new M
 vi.mock("next/headers", async () => (await import("@/tests/helpers/next-request")).nextHeaders(request));
 vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
+vi.mock("next/cache", async () => (await import("@/tests/helpers/next-request")).nextCache(request));
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
 const IN_30_DAYS = new Date("2026-11-13T08:42:00.000Z");
@@ -117,6 +118,26 @@ describe("deleting the account (accounts spec 2.13)", () => {
   it("sends a signed-out visitor to sign in, deleting nothing", async () => {
     expect(await redirectOf(() => deleteAccount(form({ confirm: "yes" })))).toBe("/login?next=%2Faccount%2Fprivacy");
     expect(sampleStore().accounts.size).toBe(5);
+  });
+
+  it("takes a deleted seller's shop and listings out of the catalog at once, by expiring the sellers tag (selling spec 2.13, amendment 9.7)", async () => {
+    await signedInAs("acc-seller");
+    await redirectOf(() => deleteAccount(form({ confirm: "yes" })));
+    expect(sampleStore().sellers.has("tech-corner")).toBe(false);
+    expect(request.updatedTags).toEqual(["sellers"]);
+  });
+
+  it("expires nothing for an account with no shop, as buyers see nothing change", async () => {
+    await signedInAs("acc-student");
+    await redirectOf(() => deleteAccount(form({ confirm: "yes" })));
+    expect(request.updatedTags).toEqual([]);
+  });
+
+  it("expires nothing when the box wasn't ticked", async () => {
+    await signedInAs("acc-seller");
+    await redirectOf(() => deleteAccount(form({})));
+    expect(sampleStore().sellers.has("tech-corner")).toBe(true);
+    expect(request.updatedTags).toEqual([]);
   });
 });
 

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { makeListingRow } from "@/tests/helpers/fakes";
 import { pngBytes } from "@/tests/helpers/image-bytes";
 import { getPhoto, photoIdOf, photoSrcsOf, storePhotos } from "./photos";
 import {
@@ -85,7 +86,7 @@ describe("applying to sell (selling spec 2.6 and 2.7, plan decisions 1 and 16)",
     const [first, second] = await storePhotos("acc-student", [upload(), upload()], NOW);
     await saveOnboardingDraft({ ...emptyDraft("acc-student", "midrand", NOW), photoSrc: first });
     await saveOnboardingDraft({ ...emptyDraft("acc-student", "midrand", NOW), photoSrc: second });
-    expect(await getPhoto(photoIdOf(first)!)).toBeNull();
+    expect(await getPhoto(photoIdOf(first)!, NOW)).toBeNull();
     expect(await photoSrcsOf("acc-student", "draft")).toEqual(new Set([second]));
   });
 });
@@ -125,7 +126,7 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     const [first, second] = await storePhotos("acc-seller", [upload(), upload()], NOW);
     await updateShop("acc-seller", { ...details, image: { src: first, alt: "" } }, NOW);
     await updateShop("acc-seller", { ...details, image: { src: second, alt: "" } }, NOW);
-    expect(await getPhoto(photoIdOf(first)!)).toBeNull();
+    expect(await getPhoto(photoIdOf(first)!, NOW)).toBeNull();
     expect(await photoSrcsOf("acc-seller", "shop")).toEqual(new Set([second]));
   });
 
@@ -150,6 +151,14 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     expect([...store.conversations.values()].map((row) => row.sellerSlug)).toEqual(["gadgets", "gadgets"]);
     expect(store.reports.get("rep-t1")?.targetId).toBe("gadgets");
     expect(await changeShopSlug("acc-seller", "gadgets-two", NOW)).toBe("used");
+  });
+
+  it("leaves a gone shop's conversations on the old link, so no new owner of it can open them (amendment 9.1)", async () => {
+    sampleStore().conversations.get("conv-s2")!.sellerGone = true;
+    expect(await changeShopSlug("acc-seller", "gadgets", NOW)).toBe("changed");
+    const links = new Map([...sampleStore().conversations.values()].map((row) => [row.id, row.sellerSlug]));
+    expect(links.get("conv-s1")).toBe("gadgets");
+    expect(links.get("conv-s2")).toBe("tech-corner");
   });
 
   it("won't take another shop's link, or change a waiting shop's", async () => {
@@ -192,6 +201,30 @@ describe("deleting and bringing back (plan decision 22, D's plan decision 15)", 
     expect(await restoreSampleShop("acc-seller")).toBe(false);
     expect(await restoreSampleShop("acc-student")).toBe(false);
   });
+
+  it("puts a sample shop back under a free link when another shop has taken its own, and its profile says so (amendment 9.3)", async () => {
+    await forgetShopOf("acc-seller");
+    const taker = (await applyAs("acc-student", { name: "Tech corner", campusSlug: "pretoria", pickupPointIds: [] }))!;
+    expect(taker.slug).toBe("tech-corner");
+    expect(await restoreSampleShop("acc-seller")).toBe(true);
+    const store = sampleStore();
+    // The other student's shop keeps the link; Tech corner comes back whole, one link along.
+    expect(store.sellers.get("tech-corner")).toMatchObject({ ownerId: "acc-student" });
+    expect(store.sellers.get("tech-corner-2")).toMatchObject({ ownerId: "acc-seller", name: "Tech corner" });
+    expect(store.sellerProfiles.get("acc-seller")?.sellerSlug).toBe("tech-corner-2");
+    expect(store.sellerProfiles.get("acc-student")?.sellerSlug).toBeNull();
+    for (const id of ["l-001", "l-007"]) expect(store.listings.get(id)?.sellerSlug, id).toBe("tech-corner-2");
+    expect((await getShopOf("acc-seller"))?.shop.slug).toBe("tech-corner-2");
+    expect(await restoreSampleShop("acc-seller")).toBe(false);
+  });
+
+  it("keeps a waiting sample shop's profile without a link when it comes back under a new one", async () => {
+    await forgetShopOf("acc-pending");
+    await applyAs("acc-student", { name: "Crochet corner", campusSlug: "pretoria", pickupPointIds: [] });
+    expect(await restoreSampleShop("acc-pending")).toBe(true);
+    expect(sampleStore().sellers.get("crochet-corner-2")?.ownerId).toBe("acc-pending");
+    expect(sampleStore().sellerProfiles.get("acc-pending")?.sellerSlug).toBeNull();
+  });
 });
 
 describe("the data export (plan decision 22)", () => {
@@ -219,6 +252,50 @@ describe("the data export (plan decision 22)", () => {
       ],
     });
     expect(JSON.stringify(data)).not.toMatch(/acc-seller|l-001|pp-midrand/);
-    expect(await exportShop("acc-student")).toEqual({ shop: null, listings: [] });
+    expect(await exportShop("acc-student")).toEqual({ shop: null, listings: [], onboardingDraft: null });
+  });
+
+  it("says when each listing was first published, and none for a draft that never was", async () => {
+    sampleStore().listings.set(
+      "l-draft",
+      makeListingRow({ id: "l-draft", title: "Not out yet", state: "draft", firstPublishedAt: null }),
+    );
+    const { listings } = await exportShop("acc-seller");
+    const casio = listings.find((row) => row.title === "Casio fx-991ZA Plus calculator")!;
+    expect(casio.firstPublishedAt).toBe(casio.createdAt);
+    expect(listings.find((row) => row.title === "Not out yet")?.firstPublishedAt).toBeNull();
+  });
+
+  it("includes the wizard's answers when the account has a draft: the photo by its address, and no ids (amendment 9.6)", async () => {
+    const [photo] = await storePhotos("acc-student", [upload()], NOW);
+    await saveOnboardingDraft({
+      ...emptyDraft("acc-student", "midrand", NOW),
+      name: "Zola's Bakes",
+      tagline: "Muffins on Mondays.",
+      categorySlug: "food",
+      about: "I bake between lectures.",
+      photoSrc: photo,
+      pickupPointIds: ["pp-midrand-library"],
+    });
+    const data = await exportShop("acc-student");
+    expect(data.shop).toBeNull();
+    expect(data.onboardingDraft).toEqual({
+      name: "Zola's Bakes",
+      tagline: "Muffins on Mondays.",
+      category: "Food",
+      about: "I bake between lectures.",
+      photo,
+      campus: "midrand",
+      pickupPoints: ["Library entrance"],
+      updatedAt: NOW.toISOString(),
+    });
+    expect(JSON.stringify(data)).not.toContain("acc-student");
+  });
+
+  it("leaves a half-filled draft's blanks as they are, and has no draft once the shop is sent", async () => {
+    await saveOnboardingDraft(emptyDraft("acc-student", "midrand", NOW));
+    expect((await exportShop("acc-student")).onboardingDraft).toMatchObject({ name: "", category: "", photo: null });
+    await applyAs("acc-student");
+    expect((await exportShop("acc-student")).onboardingDraft).toBeNull();
   });
 });

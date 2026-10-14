@@ -255,6 +255,11 @@ export type ListingRow = {
   photos: ImageRef[];
   /** When it was first published; while it's still a draft, when it was made (plan decision 3). */
   createdAt: string;
+  /**
+   * When it was first published, or null while it never has been (a draft made and never published). Set once and
+   * never cleared, so a listing saved back as a draft and published again isn't a first publish twice (amendment 9.2).
+   */
+  firstPublishedAt: string | null;
   updatedAt: string;
 };
 

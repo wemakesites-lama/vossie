@@ -11,6 +11,16 @@ import { sampleStore } from "./store";
 
 const copy = (row: ListingRow): ListingRow => structuredClone(row);
 
+/**
+ * Whether saving a listing to `state` is its first publish (amendment 9.2): it isn't a draft, and it has never been
+ * published. `before` is the listing as it was stored, or null for a new one. A listing published, saved back as a
+ * draft and published again isn't a first publish the second time. Stages H and I tell a shop's followers and the
+ * matching saved searches only on a first publish, so they ask this rather than work it out from the state.
+ */
+export function isFirstPublish(before: Pick<ListingRow, "firstPublishedAt"> | null, state: ListingState): boolean {
+  return state !== "draft" && (before === null || before.firstPublishedAt === null);
+}
+
 /** The shop's listings, most recently changed first. */
 export async function listOwnListings(sellerSlug: string): Promise<ListingRow[]> {
   return [...sampleStore().listings.values()]
@@ -39,8 +49,9 @@ export type ListingSave = {
 
 /**
  * Saves a new or changed listing (plan decision 3) on its shop's campus. The photos it uses become its own, and the
- * ones it no longer uses are deleted. A draft's `createdAt` moves to when it's first published. Null when `id` isn't
- * one of the shop's listings, or the shop has gone.
+ * ones it no longer uses are deleted. A draft's `createdAt` moves to when it's first published, and that moment is
+ * kept in `firstPublishedAt` for good: publishing again after a save back to draft changes neither (amendment 9.2).
+ * Null when `id` isn't one of the shop's listings, or the shop has gone.
  */
 export async function saveOwnListing(save: ListingSave): Promise<ListingRow | null> {
   const { listings, sellers } = sampleStore();
@@ -49,7 +60,7 @@ export async function saveOwnListing(save: ListingSave): Promise<ListingRow | nu
   if (!shop || (save.id && existing?.sellerSlug !== save.sellerSlug)) return null;
   const at = save.now.toISOString();
   const state = nextState(existing?.state ?? null, save.intent);
-  const firstPublish = state !== "draft" && (!existing || existing.state === "draft");
+  const firstPublish = isFirstPublish(existing ?? null, state);
   const row: ListingRow = {
     id: existing?.id ?? `l-${randomUUID()}`,
     sellerSlug: save.sellerSlug,
@@ -58,6 +69,7 @@ export async function saveOwnListing(save: ListingSave): Promise<ListingRow | nu
     campusSlug: shop.campusSlug,
     photos: save.photos.map((photo) => ({ src: photo.src, alt: photo.alt })),
     createdAt: !existing || firstPublish ? at : existing.createdAt,
+    firstPublishedAt: firstPublish ? at : (existing?.firstPublishedAt ?? null),
     updatedAt: at,
   };
   listings.set(row.id, row);

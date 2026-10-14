@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { storePhotos } from "@/lib/data/photos";
-import { resetSampleStore } from "@/lib/data/store";
+import { attachPhotos, photoIdOf, storePhotos } from "@/lib/data/photos";
+import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { pngBytes } from "@/tests/helpers/image-bytes";
 import { GET } from "./route";
 
@@ -11,16 +11,32 @@ const get = (id: string) => GET(new Request(`http://localhost/photos/${id}`), { 
 
 beforeEach(() => {
   resetSampleStore();
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
 });
 
+const photo = { type: "image/png" as const, bytes: pngBytes() };
+
 describe("a stored photo (selling spec 2.4)", () => {
-  it("serves the stripped bytes with their real type, for browsers to keep a year", async () => {
-    const [src] = await storePhotos("acc-seller", [{ type: "image/png", bytes: pngBytes() }], NOW);
+  it("serves the stripped bytes with their real type, for the device that asked to keep a year", async () => {
+    const [src] = await storePhotos("acc-seller", [photo], NOW);
     const response = await get(src.split("/").at(-1)!);
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("image/png");
-    expect(response.headers.get("Cache-Control")).toBe("public, max-age=31536000, immutable");
+    // "private": a phone keeps the bytes, but no shared cache or CDN keeps a photo after its listing is deleted
+    // (amendment 9.4).
+    expect(response.headers.get("Cache-Control")).toBe("private, max-age=31536000, immutable");
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(pngBytes());
+  });
+
+  it("is a 404 for a waiting photo more than a day old, though nobody has uploaded since to tidy it away (amendment 9.5)", async () => {
+    const [waiting, used] = await storePhotos("acc-seller", [photo, photo], NOW);
+    for (const src of [waiting, used]) sampleStore().photos.get(photoIdOf(src)!)!.createdAt = "2026-10-13T07:59:00.000Z";
+    await attachPhotos("acc-seller", [used], "shop");
+    const gone = await get(photoIdOf(waiting)!);
+    expect(gone.status).toBe(404);
+    expect(gone.headers.get("Cache-Control")).toBe("no-store");
+    expect((await get(photoIdOf(used)!)).status).toBe(200);
   });
 
   it("is a 404 that nothing keeps for an unknown or made-up id", async () => {

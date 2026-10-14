@@ -18,6 +18,7 @@ import { saveFormState } from "./form-states";
 import { storePhotos } from "./photos";
 import { createReport } from "./reports";
 import { createSession } from "./sessions";
+import { emptyDraft, saveOnboardingDraft } from "./shops";
 import { recordCodeSent, saveSampleEmail, saveSignInAttempt } from "./sign-in";
 import { resetSampleStore, sampleStore } from "./store";
 
@@ -142,9 +143,9 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
   it("holds the account, its consent, and when its sessions started and end, with no ids", async () => {
     await createSession({ key: "session-key-1", accountId: "acc-seller", createdAt: NOW, expiresAt: IN_30_DAYS });
     const data = await exportAccountData("acc-seller", NOW);
-    // Messaging adds three keys (messaging plan decision 15) and selling two (selling plan decision 22), checked
-    // below; everything else is compared in full.
-    const { conversations, reports, notifications, shop, listings, ...rest } = data!;
+    // Messaging adds three keys (messaging plan decision 15) and selling three (selling plan decision 22 and
+    // amendment 9.6), checked below; everything else is compared in full.
+    const { conversations, reports, notifications, shop, listings, onboardingDraft, ...rest } = data!;
     expect(rest).toEqual({
       exportedAt: NOW.toISOString(),
       account: {
@@ -169,6 +170,7 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
       "notifications",
       "shop",
       "listings",
+      "onboardingDraft",
     ]);
     expect(conversations.map((row) => [row.with, row.about])).toEqual([
       ["Thandi", "Casio fx-991ZA Plus calculator"],
@@ -181,9 +183,25 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
       expect.objectContaining({ title: "Casio fx-991ZA Plus calculator" }),
       expect.objectContaining({ title: "Gaming headset, barely used" }),
     ]);
+    // The sample seller's shop is sent already, so the wizard has nothing left.
+    expect(onboardingDraft).toBeNull();
     const text = JSON.stringify(data);
     expect(text).not.toContain("session-key-1");
     expect(text).not.toContain("acc-seller");
+  });
+
+  it("holds the wizard's draft for a student who hasn't sent their application yet (selling plan amendment 9.6)", async () => {
+    await saveOnboardingDraft({
+      ...emptyDraft("acc-student", "midrand", NOW),
+      name: "Zola's Bakes",
+      categorySlug: "food",
+      about: "I bake between lectures.",
+      pickupPointIds: ["pp-midrand-library"],
+    });
+    const data = await exportAccountData("acc-student", NOW);
+    expect(data!.shop).toBeNull();
+    expect(data!.onboardingDraft).toMatchObject({ name: "Zola's Bakes", category: "Food", pickupPoints: ["Library entrance"] });
+    expect(JSON.stringify(data)).not.toContain("acc-student");
   });
 
   it("settles the 7-day auto-confirm first, so a sale that has confirmed itself exports as confirmed (messaging plan amendment 3, fix 10)", async () => {

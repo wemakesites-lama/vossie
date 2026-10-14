@@ -93,7 +93,7 @@ describe("the onboarding wizard (selling spec 2.6, plan decision 15)", () => {
     const withPhoto = form({ step: "3", photo: photoFile(pngBytes({ exif: true, text: true })) });
     expect(await redirectOf(() => saveOnboardingStep(withPhoto))).toBe("/sell/onboarding?step=4");
     const src = (await getOnboardingDraft("acc-student"))!.photoSrc!;
-    const stored = await getPhoto(photoIdOf(src)!);
+    const stored = await getPhoto(photoIdOf(src)!, NOW);
     expect(stored?.type).toBe("image/png");
     expect(containsText(stored!.bytes, GPS)).toBe(false);
     expect(await redirectOf(() => saveOnboardingStep(form({ step: "3" })))).toBe("/sell/onboarding?step=4");
@@ -157,6 +157,25 @@ describe("the onboarding wizard (selling spec 2.6, plan decision 15)", () => {
     expect(await redirectOf(() => sendForApproval(form({})))).toBe("/sell/onboarding?step=5");
     expect((await readFormState(onboardingForm(5)))?.errors).toEqual(["guidelines-missing"]);
     expect(await getShopOf("acc-student")).toBeNull();
+  });
+
+  it("stays on step 5 and says so when the shop can't be made, rather than landing on /sell with no shop (amendment 9.3)", async () => {
+    await signedInAs("acc-student");
+    await saveOnboardingDraft(finishedDraft());
+    // A seller profile with no shop behind it: createShop refuses an account that has one.
+    sampleStore().sellerProfiles.set("acc-student", {
+      accountId: "acc-student",
+      status: "pending",
+      sellerSlug: null,
+      appliedAt: NOW.toISOString(),
+    });
+    const redirect = await redirectSignalOf(() => sendForApproval(form({ guidelines: "yes" })));
+    expect([redirect.url, redirect.type]).toEqual(["/sell/onboarding?step=5", "replace"]);
+    expect((await readFormState(onboardingForm(5)))?.errors).toEqual(["send-failed"]);
+    expect(await getShopOf("acc-student")).toBeNull();
+    expect((await getOnboardingDraft("acc-student"))?.name).toBe("Zola's Bakes");
+    // Nothing changed for buyers, so no tag expires.
+    expect(request.updatedTags).toEqual([]);
   });
 
   it("sends anyone with a shop to /sell, and anyone signed out to sign in first", async () => {
@@ -226,7 +245,7 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     expect(src).toMatch(/^\/photos\/ph-/);
     await redirectOf(() => saveShopProfile(profile({ removePhoto: "yes" })));
     expect((await getShopOf("acc-seller"))?.shop.image).toBeNull();
-    expect(await getPhoto(photoIdOf(src)!)).toBeNull();
+    expect(await getPhoto(photoIdOf(src)!, NOW)).toBeNull();
   });
 
   it("sends a student with no shop to /sell, changing nobody's shop", async () => {

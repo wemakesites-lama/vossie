@@ -5,7 +5,9 @@ import { sampleStore } from "./store";
 
 // The dashboard's numbers (selling spec 2.8, plan decision 18), from messaging's conversations. The trust page's
 // rules: an enquiry is a buyer's first message about a listing; one still inside its 48 hours doesn't count yet; a
-// sale counts once the buyer confirms it, or 7 days after the seller marks it done. Nothing here writes.
+// sale counts once the buyer confirms it, or 7 days after the seller marks it done. A conversation whose shop's owner
+// has deleted their account (`sellerGone`) is nobody's now, so it counts for no shop, even one that later gets the
+// same link (selling plan amendment 9.1). Nothing here writes.
 
 const REPLY_WINDOW_MS = 2 * DAY_MS;
 const WEEK_MS = 7 * DAY_MS;
@@ -36,7 +38,9 @@ function counts(rows: readonly ConversationRow[], enquiriesSince: number, salesS
 
 /** A shop's last 7 days, and its record for the badges: 90 days of enquiries, and every sale. */
 export async function shopStats(sellerSlug: string, now: Date): Promise<ShopStats> {
-  const rows = [...sampleStore().conversations.values()].filter((row) => row.sellerSlug === sellerSlug);
+  const rows = [...sampleStore().conversations.values()].filter(
+    (row) => row.sellerSlug === sellerSlug && !row.sellerGone,
+  );
   const weekStart = now.getTime() - WEEK_MS;
   return {
     week: counts(rows, weekStart, weekStart, now),

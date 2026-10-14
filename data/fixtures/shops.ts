@@ -84,6 +84,8 @@ export const sampleListingRows: readonly ListingRow[] = listings.map(
       ...listing.morePhotos.map((photo) => ({ ...photo })),
     ],
     createdAt: listing.createdAt,
+    // Every sample listing was published when it was listed (selling plan amendment 9.2).
+    firstPublishedAt: listing.createdAt,
     updatedAt: listing.createdAt,
   }),
 );

@@ -20,6 +20,12 @@ describe("selling's error words (plan decisions 24 and 27)", () => {
     expect(sellingErrors(["slug-taken"], shopFieldIds("profile"))[0].fieldId).toBe("profile-slug");
   });
 
+  it("words a send that failed, and links it to no field (amendment 9.3)", () => {
+    expect(sellingErrors(["send-failed"], shopFieldIds("onb"))).toEqual([
+      { message: "Something went wrong, so your application wasn't sent. Try again.", fieldId: null },
+    ]);
+  });
+
   it("leaves an error unlinked when the form has no such field, and drops codes it doesn't know", () => {
     expect(sellingErrors(["guidelines-missing"], { name: "x" })).toEqual([
       { message: "Tick the box to say you've read the seller guidelines.", fieldId: null },

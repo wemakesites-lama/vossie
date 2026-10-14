@@ -93,7 +93,7 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
     expect(state.errors).toEqual(["title-missing", "price-invalid"]);
     expect(state.values).toMatchObject({ title: "", price: "lots", category: "res-living" });
     expect(state.values.photos).toMatch(/^\/photos\/ph-/);
-    expect(await getPhoto(photoIdOf(state.values.photos)!)).not.toBeNull();
+    expect(await getPhoto(photoIdOf(state.values.photos)!, NOW)).not.toBeNull();
     expect(await fan()).toBeUndefined();
   });
 
@@ -108,7 +108,7 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
     const [front, back] = (await fan())!.photos;
     expect([front.alt, back.alt]).toEqual(["The fan from the front", ""]);
     for (const photo of [front, back]) {
-      expect(containsText((await getPhoto(photoIdOf(photo.src)!))!.bytes, GPS)).toBe(false);
+      expect(containsText((await getPhoto(photoIdOf(photo.src)!, NOW))!.bytes, GPS)).toBe(false);
     }
   });
 
@@ -178,7 +178,7 @@ describe("My listings' buttons and Delete listing (selling spec 2.9, plan decisi
     const row = (await fan())!;
     expect(await redirectOf(() => deleteListingForm(form({ listing: row.id })))).toBe("/sell/listings");
     expect(await getOwnListing("tech-corner", row.id)).toBeNull();
-    expect(await getPhoto(photoIdOf(row.photos[0].src)!)).toBeNull();
+    expect(await getPhoto(photoIdOf(row.photos[0].src)!, NOW)).toBeNull();
     expect((await readFormState(MY_LISTINGS_FORM))?.notice).toBe("deleted");
   });
 

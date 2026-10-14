@@ -13,6 +13,7 @@ const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new M
 vi.mock("next/headers", async () => (await import("@/tests/helpers/next-request")).nextHeaders(request));
 vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
+vi.mock("next/cache", async () => (await import("@/tests/helpers/next-request")).nextCache(request));
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
 
@@ -381,6 +382,20 @@ describe("the sample accounts' buttons (accounts spec 2.8)", () => {
     await redirectOf(() => signInAsSample(form({ email: "seller@eduvos.com" })));
     expect(sampleStore().sellers.get("tech-corner")?.ownerId).toBe("acc-seller");
     expect(sampleStore().listings.has("l-001")).toBe(true);
+  });
+
+  it("expires the sellers tag when it brings a shop back, so the catalog shows it at once (selling spec 2.13, amendment 9.7)", async () => {
+    await deleteAccountData("acc-seller");
+    expect(request.updatedTags).toEqual([]);
+    await redirectOf(() => signInAsSample(form({ email: "seller@eduvos.com" })));
+    expect(request.updatedTags).toEqual(["sellers"]);
+  });
+
+  it("expires nothing when the sample account has no shop to bring back", async () => {
+    await redirectOf(() => signInAsSample(form({ email: "student@eduvos.com" })));
+    // A sample seller whose shop is still there has nothing to bring back either.
+    await redirectOf(() => signInAsSample(form({ email: "seller@eduvos.com" })));
+    expect(request.updatedTags).toEqual([]);
   });
 
   it("ends a sign-in that was under way", async () => {
