@@ -73,9 +73,11 @@ test.describe("the seller storefront (spec 4)", () => {
       "content",
       "Tech corner, Tech at Midrand on Vossie",
     );
-    // As on the listing page: without a metadataBase the card's URL names another port, and the browser adds a
-    // second og:image after hydration, so read the first (the server's) and fetch its path from the test server.
-    const cardUrl = new URL((await page.locator('meta[property="og:image"]').first().getAttribute("content"))!);
+    // As on the listing page: metadataBase makes the card's address absolute, so there is one og:image, and its
+    // address names the site's own origin. Fetch its path from the test server.
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator('meta[property="og:image"]')).toHaveCount(1);
+    const cardUrl = new URL((await page.locator('meta[property="og:image"]').getAttribute("content"))!);
     const response = await request.get(new URL(`${cardUrl.pathname}${cardUrl.search}`, baseURL).toString());
     expect(response.status()).toBe(200);
     expect(response.headers()["content-type"]).toBe("image/png");
@@ -126,7 +128,8 @@ test.describe("Saved (spec 5)", () => {
     await expect(page.locator(".toast")).toHaveText("Removed from saved");
     await expect(removed).toBeVisible();
     await expect(calculator.locator(".listing-photo")).toHaveCSS("filter", "grayscale(1)");
-    await expect(calculator.locator(".listing-title")).not.toHaveCSS("opacity", "0.6");
+    // Only the photo fades. Opacity isn't inherited, so the card itself is what shows whether the whole card faded.
+    await expect(calculator).toHaveCSS("opacity", "1");
 
     // Another tap saves it back.
     await heart.click();
@@ -146,6 +149,25 @@ test.describe("Saved (spec 5)", () => {
     await expect(page.getByText("2 saved", { exact: true })).toBeVisible();
     await expect(card(page, "Sharp scientific calculator").getByText("Sold", { exact: true })).toBeVisible();
     await expect(card(page, "Lash extensions, classic set").getByText("Not taking orders")).toBeVisible();
+  });
+
+  test("forgets saved ids whose listings no longer exist, so the header stops counting them", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    onlyAt("phone-390", "desktop-1440");
+    await context.addCookies([{ name: "vossie_saved", value: "gone-1.gone-2", url: baseURL! }]);
+    await page.goto("/saved");
+    await expect(page.getByRole("heading", { level: 2, name: "Nothing saved yet" })).toBeVisible();
+    // The header first counts both ids, then Saved forgets them and the count goes.
+    const header = page.locator(".site-header");
+    await expect(header.getByRole("link", { name: "Saved", exact: true })).toBeVisible();
+    await expect(header.getByRole("link", { name: /^Saved, / })).toHaveCount(0);
+    // The cookie itself is gone, not just hidden.
+    await expect
+      .poll(async () => (await context.cookies()).some((cookie) => cookie.name === "vossie_saved"))
+      .toBe(false);
   });
 
   test("with nothing saved, says so and points to browse", async ({ page }) => {

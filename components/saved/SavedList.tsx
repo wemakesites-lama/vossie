@@ -6,8 +6,9 @@ import { RefreshWhenStale } from "./RefreshWhenStale";
 
 /**
  * The saved listings (shopping spec 5.2), read from the saved cookie on each request: a count, then the cards in saved
- * order, newest first. Paused and sold ones stay, tagged; ids that no longer exist are dropped. The hearts start
- * pressed, and unpressing one leaves the card in place, greyed, until the next visit (spec 5.3).
+ * order, newest first. Paused and sold ones stay, tagged; ids that no longer exist are dropped, and then forgotten
+ * from the cookie (RefreshWhenStale). The hearts start pressed, and unpressing one leaves the card in place, greyed,
+ * until the next visit (spec 5.3).
  */
 export async function SavedList() {
   const ids = await getSavedIds();
@@ -27,8 +28,10 @@ export async function SavedList() {
     );
   }
 
-  // Compared with the cookie each time Next shows this page again, so a kept copy never stays out of date.
-  const refresh = <RefreshWhenStale savedIds={ids.join(".")} />;
+  // Compared with the cookie each time Next shows this page again, so a kept copy never stays out of date, and it
+  // forgets the ids that have no listing (the saved ids minus the shown ones), so the header stops counting them.
+  const shownIds = listings.map((listing) => listing.id).join(".");
+  const refresh = <RefreshWhenStale savedIds={ids.join(".")} shownIds={shownIds} />;
 
   if (listings.length === 0) {
     return (

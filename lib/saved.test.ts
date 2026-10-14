@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { blockCookies } from "@/tests/helpers/dom";
 import {
+  forgetSaved,
   getSavedCount,
   isSaved,
   parseSavedIds,
@@ -89,5 +90,63 @@ describe("saved items on this device", () => {
     unsubscribe();
     document.dispatchEvent(new Event("visibilitychange"));
     expect(listener).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("forgetting saved ids (listings that no longer exist)", () => {
+  it("removes the ids from the cookie, keeps the others in order and tells subscribers", () => {
+    document.cookie = savedCookieString(["l-3", "gone-1", "l-2", "gone-2", "l-1"], false);
+    const listener = vi.fn();
+    const unsubscribe = subscribeSaved(listener);
+    forgetSaved(["gone-1", "gone-2"]);
+    expect(readSavedIds()).toEqual(["l-3", "l-2", "l-1"]);
+    expect(document.cookie).toContain(`${SAVED_COOKIE}=l-3.l-2.l-1`);
+    expect(getSavedCount()).toBe(3);
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
+  });
+
+  it("deletes the cookie when every saved id is forgotten", () => {
+    document.cookie = savedCookieString(["gone-1"], false);
+    forgetSaved(["gone-1"]);
+    expect(readSavedIds()).toEqual([]);
+    expect(document.cookie).not.toContain(SAVED_COOKIE);
+  });
+
+  it("leaves the cookie and the subscribers alone when none of the ids are saved", () => {
+    document.cookie = savedCookieString(["l-2", "l-1"], false);
+    const listener = vi.fn();
+    const unsubscribe = subscribeSaved(listener);
+    forgetSaved(["gone-1"]);
+    forgetSaved([]);
+    expect(readSavedIds()).toEqual(["l-2", "l-1"]);
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
+  });
+
+  it("does nothing, and doesn't throw, when cookies are blocked", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeSaved(listener);
+    blockCookies();
+    expect(() => forgetSaved(["gone-1"])).not.toThrow();
+    expect(readSavedIds()).toEqual([]);
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
+  });
+
+  it("doesn't throw when the browser refuses the write", () => {
+    // Some browsers throw (not just drop the write) when a page may not set cookies, such as in a sandboxed frame.
+    Object.defineProperty(document, "cookie", {
+      configurable: true,
+      get: () => `${SAVED_COOKIE}=l-1.gone-1`,
+      set: () => {
+        throw new DOMException("Not allowed", "SecurityError");
+      },
+    });
+    const listener = vi.fn();
+    const unsubscribe = subscribeSaved(listener);
+    expect(() => forgetSaved(["gone-1"])).not.toThrow();
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
   });
 });

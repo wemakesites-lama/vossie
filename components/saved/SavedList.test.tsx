@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { readSavedIds, savedCookieString } from "@/lib/saved";
 import { SavedList } from "./SavedList";
 
 const saved = vi.hoisted(() => ({ ids: [] as string[], failing: false }));
@@ -41,6 +42,20 @@ describe("SavedList (shopping spec 5.2)", () => {
     expect(screen.getByText("2 saved")).toBeInTheDocument();
     expect(screen.getByText("Sold")).toBeInTheDocument();
     expect(screen.getByText("Not taking orders")).toBeInTheDocument();
+  });
+
+  it("forgets the ids that have no listing, in the empty state too, so the cookie stops carrying them", async () => {
+    saved.ids = ["l-026", "gone", "l-016"];
+    document.cookie = savedCookieString(saved.ids, false);
+    const { unmount } = render(await SavedList());
+    expect(readSavedIds()).toEqual(["l-026", "l-016"]);
+    unmount();
+
+    saved.ids = ["gone-1", "gone-2"];
+    document.cookie = savedCookieString(saved.ids, false);
+    render(await SavedList());
+    expect(screen.getByRole("heading", { level: 2, name: "Nothing saved yet" })).toBeInTheDocument();
+    expect(readSavedIds()).toEqual([]);
   });
 
   it("starts every heart pressed in the server's HTML (spec 5.3)", async () => {

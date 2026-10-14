@@ -56,6 +56,23 @@ export function toggleSaved(id: string): boolean {
   return saving;
 }
 
+/**
+ * Forget saved ids whose listings no longer exist, so the cookie and the header's count stop carrying them. The other
+ * ids keep their order. Never throws: a browser with cookies blocked has nothing to forget, and one that refuses the
+ * write is left as it was.
+ */
+export function forgetSaved(ids: readonly string[]): void {
+  try {
+    const saved = readSavedIds();
+    const next = saved.filter((id) => !ids.includes(id));
+    if (next.length === saved.length) return;
+    document.cookie = savedCookieString(next, window.location.protocol === "https:");
+  } catch {
+    return;
+  }
+  listeners.forEach((listener) => listener());
+}
+
 export function subscribeSaved(listener: () => void): () => void {
   listeners.add(listener);
   // Another tab may have saved something: re-check when this tab comes back into view.
