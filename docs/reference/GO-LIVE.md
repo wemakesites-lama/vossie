@@ -20,8 +20,8 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Listing: gallery, phone dock, collect box, seller card, more from the seller, paused and sold states, Share | `/listings/[id]` | Built |
 | Seller storefront: header, badges, about, their listings, contact, report | `/sellers/[slug]` | Built |
 | Collection: a curated list, e.g. "Res essentials" | `/collections/[slug]` | Built |
-| Looking For board | `/looking-for` | Built (posting a request waits for accounts) |
-| A single Looking For request | `/looking-for/[id]` | Built (offers wait for accounts) |
+| Looking For board | `/looking-for` | Built to read; posting a request: stage H (designed) |
+| A single Looking For request | `/looking-for/[id]` | Built to read; offers: stage H (designed) |
 | Hub feed: tips, events, office hours | `/hub` | Built |
 | Hub post, with RSVP and book-a-slot | `/hub/[id]` | Built (RSVP and booking wait for accounts) |
 | How it works, Safety | `/how-it-works`, `/safety` | Built |
@@ -30,7 +30,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Terms of use, seller guidelines | `/terms`, `/seller-guidelines` | Built as drafts; Eduvos signs off the wording |
 | Error page (when something breaks) | `error.tsx` | Next's default for now (the branded page was dropped under the stop rule, decision 62) |
 | Not found | 404 | Built |
-| Offline page | `/offline` | Missing; can follow launch |
+| Offline page | `/offline` | Designed (stage H): a self-contained page and a navigation-only worker |
 
 ## 2. Sign-in and account
 
@@ -42,8 +42,11 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | "Sign in to do that" sheet, which returns you to what you were doing | links | **Built as links** to `/login?next=…` (decision 44); signed-in visitors see a note with the way back |
 | Account summary and sign out | `/account` | **Built** |
 | Privacy settings: consent record, download my data, reports I've made, delete my account (required by POPIA) | `/account/privacy` | **Built** (the list of reports you've made waits for stage E) |
-| Saved listings, and followed sellers once accounts exist | `/saved` | Built (followed sellers wait for accounts) |
+| Saved listings, and followed sellers once accounts exist | `/saved` | Built (followed sellers: stage H, on Saved's Shops tab) |
 | Header: "Sign in" when signed out, and an inbox icon with an unread count | shell | **Built** (the unread count waits for stage E) |
+| Post, edit, close, reopen and delete a Looking For request | `/looking-for/new`, `/looking-for/[id]/edit`, `/looking-for/[id]/delete` | Designed (stage H) |
+| Your requests | `/account/requests` | Designed (stage H) |
+| Offer to help with a request (shops only) | `/looking-for/[id]/offer` | Designed (stage H) |
 
 ## 3. Messaging
 
@@ -73,7 +76,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 
 | Screen or view | Route | Status |
 |---|---|---|
-| Admin: seller approvals, reports queue, hide a listing or pause an account, Verified badge, Featured pins, pickup points, audit log | `/admin/*` | Missing |
+| Admin: seller approvals, reports queue, hide a listing or pause an account, Verified badge, Featured pins, pickup points, audit log; hide a request (stage H) | `/admin/*` | Missing |
 | Hub post editor and the office-hours queue | `/hub/new`, `/hub/manage` | Missing |
 | Mentor dashboard, seller detail, notes, check-ins, CSV export | `/mentor/*` | Missing; can follow launch |
 
@@ -91,7 +94,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] **Keyed hashes for codes.** Sign-in codes and tokens are stored as plain SHA-256 hashes (a code is salted with its attempt's key, which sits in the same row). A 6-digit code has only a million values, so a leaked store gives the codes away. The real backend hashes them with a server secret (HMAC).
 - [ ] **Counting tries.** The real backend counts a wrong try (atomically) before it compares the code, so guesses sent in parallel can't get past 5 tries. The same goes for the 5 codes an hour: `recordWrongTry` and `reserveCodeSend` in `lib/data/sign-in.ts` say what each needs (a single `UPDATE … RETURNING`, and a single upsert or a per-email lock).
 - [ ] **The store's scope.** The sample store lives in one server process. Running more than one instance, or serverless functions, needs the real database first.
-- [ ] Scheduled jobs: the nightly Featured draw, recalculating trust badges, and confirming sales automatically after 7 days.
+- [ ] Scheduled jobs: the nightly Featured draw, recalculating trust badges, confirming sales automatically after 7 days, and closing old Looking For requests (stage H leaves them open).
 
 ### POPIA and legal (Eduvos signs these off)
 - [ ] Final privacy policy, with a named Information Officer. A draft is live at `/privacy`; Eduvos's legal team reviews it.
@@ -115,7 +118,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] The official crest SVG.
 - [ ] Real pickup points for each campus.
 - [ ] Real Hub events, tips and story. The 18 posts and the Hub's two paragraphs are sample wording.
-- [ ] Real Looking For requests. The 16 requests (and the offers counts on them) are samples to remove.
+- [ ] Real Looking For requests. The 16 requests (and the offers counts on them) are samples to remove, with their `seedOffers` (stage H).
 - [ ] Info pages say what's true today; update them as stages land (How it works' "What can I do on Vossie today?", the trust page's sample notes, the privacy page's "Your account" section).
 - [ ] Remove every sample listing and the sample accounts (sample mode off). The development sign-in switch went in stage D.
 
@@ -141,6 +144,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] LCP checked again with real photos (decision 34).
 - [ ] Try Turbopack's `requestCost` chunking option, which saved about 1.1 KB on every page in a trial (decision 53).
 - [ ] A test on a cheap Android phone.
+- [ ] The offline worker's kill switch (stage H): a version that removes itself and its cache, tried on a real phone before launch.
 
 ### Launch
 - [ ] A support contact, and a privacy contact address. `/privacy` says one will be added; `/terms` and `/seller-guidelines` tell people to "contact the Hub" without saying how.
@@ -149,7 +153,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 
 ## 7. Decisions for Lama and Eduvos
 
-- [ ] **Who can sell?** Any signed-in student, or only sellers the Hub has approved? An approval queue suits a hustle selling braids but is heavy for one textbook. This choice shapes onboarding and the admin tools.
+- [ ] **Who can sell?** Any signed-in student, or only sellers the Hub has approved? An approval queue suits a hustle selling braids but is heavy for one textbook. This choice shapes onboarding and the admin tools, and who can make offers on Looking For requests (stage H: approved shops only).
 - [ ] **Which email proves someone is a student?** The demo's `@vossie.net` was a stand-in.
 - [ ] **Plus addresses.** `thandi+1@eduvos.com` counts as a new address, which gets round the per-email code limit and allows several accounts per student. Decide with Eduvos whether to treat plus addresses as the same person, or reject them, once its mail system is known.
 - [ ] **Who moderates reports and approvals,** and how fast do they respond?
@@ -164,6 +168,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 3. **Done in sample mode (2026-10-14): sign-in, account and privacy.** Supabase and an email service replace the sample store at go-live.
 4. **Selling:** onboarding, listing form and dashboard, plus the minimum admin (approvals and moderation).
 5. **Messaging:** composer, inbox, conversations, reports and notifications.
+   - Stage E builds messaging, then stage F selling. Stage G adds the staff tools: admin, the Hub's posting tools and the mentors' dashboard. Stage H adds community actions: posting Looking For requests, offers, following shops and the offline page.
 6. **Launch readiness:** legal sign-off, domain, monitoring, content, and the pilot.
 
-**After launch:** mentor tools, Hub posting, follows, saved-search alerts, and delivery between campuses.
+**After launch:** saved-search alerts, and delivery between campuses.
