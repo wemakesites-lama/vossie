@@ -55,7 +55,7 @@ test("the campus picker", async ({ page }) => {
 });
 
 test("a placeholder page", async ({ page }) => {
-  await page.goto("/privacy");
+  await page.goto("/sell");
   expect(await seriousIssues(page)).toEqual([]);
 });
 
