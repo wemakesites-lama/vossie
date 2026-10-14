@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { sampleAccounts } from "@/data/fixtures/accounts";
 import { sampleConversations } from "@/data/fixtures/messages";
+import { sampleSellerRows } from "@/data/fixtures/shops";
 import { resetSampleStore, sampleStore, STORE_VERSION } from "./store";
 
 beforeEach(() => {
@@ -8,7 +9,7 @@ beforeEach(() => {
 });
 
 describe("the sample store (accounts spec 2.1)", () => {
-  it("is seeded with the sample accounts, their consents, their shops and the sample conversations, and nothing else", () => {
+  it("is seeded with the sample accounts, their consents, their shops, the sample conversations and the sample listings, and nothing else", () => {
     const store = sampleStore();
     expect([...store.accounts.keys()]).toEqual(sampleAccounts.map(({ account }) => account.id));
     expect(store.consents.size).toBe(5);
@@ -22,6 +23,10 @@ describe("the sample store (accounts spec 2.1)", () => {
     expect(store.messages.size).toBe(5);
     expect(store.notifications.size).toBe(4);
     expect(store.reports.size).toBe(0);
+    expect(store.sellers.size).toBe(30);
+    expect(store.listings.size).toBe(38);
+    expect(store.photos.size).toBe(0);
+    expect(store.onboardingDrafts.size).toBe(0);
   });
 
   it("is one store for the whole process, so a module loaded again still shares it", async () => {
@@ -43,6 +48,16 @@ describe("the sample store (accounts spec 2.1)", () => {
     sampleStore().messages.get("msg-s2")!.readAt = "2026-10-14T08:00:00.000Z";
     expect(sampleConversations[0].status).toBe("replied");
     expect(resetAndRead().messages.get("msg-s2")?.readAt).toBeNull();
+  });
+
+  it("copies the sample shops and listings too (selling plan, Task 1)", () => {
+    sampleStore().sellers.get("tech-corner")!.pickupPointIds.push("pp-pretoria-library");
+    sampleStore().listings.get("l-001")!.photos.pop();
+    expect(sampleSellerRows.find((row) => row.slug === "tech-corner")?.pickupPointIds).toEqual([
+      "pp-midrand-library",
+      "pp-midrand-reception",
+    ]);
+    expect(resetAndRead().listings.get("l-001")?.photos).toHaveLength(3);
   });
 
   it("starts again from the fixtures when reset", () => {

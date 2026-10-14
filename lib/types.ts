@@ -406,3 +406,34 @@ export type UnreadCounts = {
   /** Sales a seller marked done that the account, as the buyer, hasn't confirmed: the strip. */
   salesToConfirm: number;
 };
+
+// --- Selling (selling plan, Task 1) -------------------------------------------------------------------------------
+
+/** A listing as its seller sees it (selling spec 2.9, plan decision 3): a draft, or available, paused or sold. */
+export type ListingState = "draft" | Availability;
+
+/** My listings' tabs (selling spec 2.9). */
+export type ListingsTab = "available" | "paused" | "sold" | "drafts";
+
+/** The photo files the server takes (selling spec 2.3), by their real signature. */
+export type PhotoType = "image/jpeg" | "image/png" | "image/webp";
+
+/** Enquiries and sales over a stretch of time, from a shop's conversations (selling spec 2.8, plan decision 18). */
+export type EnquiryCounts = {
+  /** Buyers' first messages about a listing. */
+  enquiries: number;
+  /** Enquiries answered within 48 hours, or older than 48 hours: the ones the reply rate counts. */
+  due: number;
+  /** Enquiries the shop first answered within 48 hours. */
+  repliedInTime: number;
+  /** Sales the buyer confirmed, or that confirmed themselves 7 days after the seller marked them done. */
+  salesConfirmed: number;
+};
+
+/** The dashboard's numbers (selling spec 2.8). */
+export type ShopStats = {
+  /** The last 7 days. */
+  week: EnquiryCounts;
+  /** Enquiries over the last 90 days and sales over the shop's whole life: the trust page's badge rules. */
+  record: EnquiryCounts;
+};
