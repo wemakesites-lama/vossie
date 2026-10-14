@@ -25,5 +25,5 @@ export async function OpenThread({ id }: { id: string }) {
   const [sent, state, campuses] = await Promise.all([takeSentNote(id), readFormState(replyFormKey(id)), getCampuses()]);
   const campusSlug = thread.listing?.campusSlug ?? thread.shop.campusSlug;
   const campusName = campuses.find((campus) => campus.slug === campusSlug)?.name ?? "";
-  return <ThreadView thread={thread} now={now} reply={replyForm(state)} sent={sent} campusName={campusName} />;
+  return <ThreadView thread={thread} now={now} reply={replyForm(state, id)} sent={sent} campusName={campusName} />;
 }

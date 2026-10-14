@@ -8,7 +8,7 @@ import { composerForm, ComposerView, type ComposerStatus } from "./ComposerView"
 // The form only needs something to post to; the action has its own test.
 vi.mock("@/lib/messaging/actions", () => ({ sendFirstMessage: async () => {} }));
 
-const EMPTY = composerForm(null);
+const L007: MessageTarget = { kind: "listing", listingId: "l-007" };
 
 const state = (fields: Partial<FormStateRow>): FormStateRow => ({
   key: "s:composer:listing:l-007",
@@ -21,7 +21,7 @@ const state = (fields: Partial<FormStateRow>): FormStateRow => ({
   ...fields,
 });
 
-async function show(target: MessageTarget, status: ComposerStatus = { kind: "open" }, form = EMPTY) {
+async function show(target: MessageTarget, status: ComposerStatus = { kind: "open" }, form = composerForm(null, target)) {
   const subject = (await composerSubject(target))!;
   return render(<ComposerView subject={subject} status={status} form={form} />);
 }
@@ -56,13 +56,14 @@ describe("the composer (messaging spec 3.1)", () => {
   it("keeps what was typed and shows what's wrong after a failed post", async () => {
     const form = composerForm(
       state({ errors: ["message-missing", "swap-length"], values: { body: "", swapOffer: "x".repeat(201) } }),
+      L007,
     );
-    await show({ kind: "listing", listingId: "l-007" }, { kind: "open" }, form);
+    await show(L007, { kind: "open" }, form);
     const summary = screen.getByRole("alert", { name: "There's a problem" });
     expect(summary).toHaveAttribute("id", "composer-summary");
     expect(within(summary).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
-      "#composer-body",
-      "#composer-swap",
+      "#composer-message-l-007",
+      "#composer-swap-l-007",
     ]);
     expect(screen.getByLabelText("Offer a swap (optional)")).toHaveValue("x".repeat(201));
     expect(screen.getByLabelText("Your message")).toHaveAttribute("aria-invalid", "true");
@@ -71,6 +72,7 @@ describe("the composer (messaging spec 3.1)", () => {
   it("warns about scam words with the message kept, and offers Send anyway (spec 2.3)", async () => {
     const form = composerForm(
       state({ notice: "check", values: { body: "Can I pay a deposit first?", swapOffer: "", warnings: "advance,deposit" } }),
+      { kind: "listing", listingId: "l-001" },
     );
     await show({ kind: "listing", listingId: "l-001" }, { kind: "open" }, form);
     expect(screen.getByLabelText("Your message")).toHaveValue("Can I pay a deposit first?");

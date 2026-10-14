@@ -24,5 +24,5 @@ export async function Composer({ target }: { target: MessageTarget }) {
   if (subject.seller.slug === shopSlugOf(account)) status = { kind: "own" };
   else if (!subject.open) status = { kind: "unavailable" };
   else if (existing) status = { kind: "existing", conversationId: existing };
-  return <ComposerView subject={subject} status={status} form={composerForm(state)} />;
+  return <ComposerView subject={subject} status={status} form={composerForm(state, target)} />;
 }

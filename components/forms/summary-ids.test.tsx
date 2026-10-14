@@ -47,24 +47,30 @@ describe("error summary ids (accounts spec 6)", () => {
   // can all be there together. Every id, and so every summary's, must be unique across them.
   it("never repeats an id when every form shows a summary at once", async () => {
     const composer = (await composerSubject({ kind: "listing", listingId: "l-007" }))!;
-    const composerWithErrors = composerForm({
-      key: "s:composer:listing:l-007",
-      sessionKey: "s",
-      form: "composer:listing:l-007",
-      errors: ["message-missing"],
-      values: {},
-      notice: null,
-      expiresAt: "2099-01-01T00:00:00.000Z",
-    });
-    const threadWithErrors = replyForm({
-      key: "s:reply:conv-test",
-      sessionKey: "s",
-      form: "reply:conv-test",
-      errors: ["message-missing"],
-      values: {},
-      notice: null,
-      expiresAt: "2099-01-01T00:00:00.000Z",
-    });
+    const composerWithErrors = composerForm(
+      {
+        key: "s:composer:listing:l-007",
+        sessionKey: "s",
+        form: "composer:listing:l-007",
+        errors: ["message-missing"],
+        values: {},
+        notice: null,
+        expiresAt: "2099-01-01T00:00:00.000Z",
+      },
+      { kind: "listing", listingId: "l-007" },
+    );
+    const threadWithErrors = replyForm(
+      {
+        key: "s:reply:conv-test",
+        sessionKey: "s",
+        form: "reply:conv-test",
+        errors: ["message-missing"],
+        values: {},
+        notice: null,
+        expiresAt: "2099-01-01T00:00:00.000Z",
+      },
+      "conv-test",
+    );
     render(
       <>
         <EmailStep next={null} email="" consented={false} errors={oops} samples={null} />

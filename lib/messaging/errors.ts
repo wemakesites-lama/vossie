@@ -1,13 +1,26 @@
 import type { FormError } from "@/lib/auth/messages";
+import type { MessageTarget } from "./paths";
 import { REPORTS_PER_DAY } from "./rules";
 
 // Messaging's error words (spec 3.1 and 3.4; plan decision 26 for the ones the spec doesn't give), each linked to its
 // field, in the shape D's ErrorSummary and errorFor take.
 
-/** The composer's fields' ids. */
-export const COMPOSER_FIELDS = { body: "composer-body", swapOffer: "composer-swap" } as const;
-/** The thread's reply field's id. */
-export const REPLY_FIELDS = { body: "thread-reply" } as const;
+// Field ids end with the item they belong to (plan amendment 5). Next keeps the last pages hidden in the DOM, and two
+// composers or two threads can be there at once: a <label for> or an error summary's "#field" link goes to the *first*
+// element with that id, which may be on the hidden page. The ids of a field's hint and error ("-hint", "-error") are
+// made from its id, so they follow.
+
+/** The composer's fields' ids, for the listing or the shop the message goes to: "composer-message-l-001". */
+export function composerFields(target: MessageTarget): { body: string; swapOffer: string } {
+  const item = target.kind === "listing" ? target.listingId : target.sellerSlug;
+  return { body: `composer-message-${item}`, swapOffer: `composer-swap-${item}` };
+}
+
+/** The thread's reply field's id, for its conversation: "thread-reply-conv-s1". */
+export function replyFields(conversationId: string): { body: string } {
+  return { body: `thread-reply-${conversationId}` };
+}
+
 /** The report form's fields' ids. The reason links to the first radio button. */
 export const REPORT_FIELDS = { reason: "report-reason-scam", detail: "report-detail" } as const;
 

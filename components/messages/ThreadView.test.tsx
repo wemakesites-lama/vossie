@@ -14,7 +14,7 @@ vi.mock("@/lib/messaging/actions", () => ({
 
 // Wednesday 14 October 2026, 15:00 in South Africa.
 const NOW = new Date("2026-10-14T13:00:00Z");
-const EMPTY = replyForm(null);
+const EMPTY = replyForm(null, "conv-test");
 
 function show(thread = makeThread(), { sent = false, reply = EMPTY } = {}) {
   return render(<ThreadView thread={thread} now={NOW} reply={reply} sent={sent} campusName="Midrand" />);
@@ -102,7 +102,7 @@ describe("a thread (messaging spec 3.3)", () => {
 
   it("has a labelled reply form that posts the conversation's id and keeps a failed reply (section 5)", () => {
     const { container } = show(makeThread(), {
-      reply: replyForm(state({ errors: ["message-missing"], values: { body: "" } })),
+      reply: replyForm(state({ errors: ["message-missing"], values: { body: "" } }), "conv-test"),
     });
     const reply = screen.getByRole("region", { name: "Reply" });
     expect(within(reply).getByLabelText("Your reply")).toHaveAttribute("aria-invalid", "true");
@@ -112,13 +112,18 @@ describe("a thread (messaging spec 3.3)", () => {
   });
 
   it("gives the reply form's error summary its own id (messaging plan amendment 1)", () => {
-    show(makeThread(), { reply: replyForm(state({ errors: ["message-missing"], values: { body: "" } })) });
+    show(makeThread(), {
+      reply: replyForm(state({ errors: ["message-missing"], values: { body: "" } }), "conv-test"),
+    });
     expect(screen.getByRole("alert", { name: "There's a problem" })).toHaveAttribute("id", "thread-reply-summary");
   });
 
   it("warns about scam words in a reply, with Send anyway (plan decision 9)", () => {
     show(makeThread(), {
-      reply: replyForm(state({ notice: "check", values: { body: "Send your banking details", warnings: "bank" } })),
+      reply: replyForm(
+        state({ notice: "check", values: { body: "Send your banking details", warnings: "bank" } }),
+        "conv-test",
+      ),
     });
     expect(screen.getByLabelText("Your reply")).toHaveValue("Send your banking details");
     expect(screen.getByRole("alert", { name: "Check this before you send" })).toBeInTheDocument();

@@ -4,7 +4,7 @@ import { ArrowLeftIcon } from "@/components/icons";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
 import { sendReply } from "@/lib/messaging/actions";
-import { messagingErrors, REPLY_FIELDS } from "@/lib/messaging/errors";
+import { messagingErrors, replyFields } from "@/lib/messaging/errors";
 import { inboxPath, threadPath } from "@/lib/messaging/paths";
 import { parseWarnings, type ScamWarning } from "@/lib/messaging/scam-check";
 import { messageTime } from "@/lib/time";
@@ -18,11 +18,12 @@ import { StatusPill } from "./StatusPill";
 /** The reply form after a post (D decision 3): what was typed, what's wrong, and the scam check's warnings. */
 export type ReplyForm = { body: string; errors: FormError[]; warnings: ScamWarning[] };
 
-export function replyForm(state: FormStateRow | null): ReplyForm {
+/** `conversationId` is the thread the form is for: its field id ends with it (plan amendment 5). */
+export function replyForm(state: FormStateRow | null, conversationId: string): ReplyForm {
   if (!state) return { body: "", errors: [], warnings: [] };
   return {
     body: state.values.body ?? "",
-    errors: messagingErrors(state.errors, REPLY_FIELDS),
+    errors: messagingErrors(state.errors, replyFields(conversationId)),
     warnings: state.notice === "check" ? parseWarnings(state.values.warnings) : [],
   };
 }
@@ -106,6 +107,7 @@ export function ThreadView({ thread, now, reply, sent, campusName }: ThreadViewP
 }
 
 function ReplyFormView({ thread, reply }: { thread: Thread; reply: ReplyForm }) {
+  const fields = replyFields(thread.id);
   return (
     <section aria-labelledby="thread-reply-title" className="thread-reply">
       <h2 id="thread-reply-title" className="sr-only">
@@ -116,12 +118,12 @@ function ReplyFormView({ thread, reply }: { thread: Thread; reply: ReplyForm }) 
       <form key={thread.messages.length} action={sendReply} noValidate className="form-stack">
         <input type="hidden" name="conversation" value={thread.id} />
         <MessageField
-          id={REPLY_FIELDS.body}
+          id={fields.body}
           name="body"
           label="Your reply"
           hint="Up to 1,000 characters."
           defaultValue={reply.body}
-          error={errorFor(reply.errors, REPLY_FIELDS.body)}
+          error={errorFor(reply.errors, fields.body)}
           rows={4}
           required
         />
