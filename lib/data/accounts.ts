@@ -3,6 +3,9 @@ import { sampleAccounts, sampleConsents } from "@/data/fixtures/accounts";
 import type { Account, Consent, SellerStatus, StaffRole, ViewerActivity } from "@/lib/types";
 import type { AccountRow } from "./rows";
 import { listSessions } from "./sessions";
+import { exportConversations, forgetAccountInMessaging, unreadCounts, type ConversationExport } from "./messages";
+import { exportNotifications, type NotificationExport } from "./notifications";
+import { deleteReportsBy, exportReports, type ReportExport } from "./reports";
 import { sampleStore } from "./store";
 
 // Accounts, their shops and their consent (accounts spec section 4), shaped like the Supabase calls that will replace
@@ -103,12 +106,14 @@ export async function getLatestConsent(accountId: string): Promise<Consent | nul
 }
 
 /**
- * The numbers for the context strip (spec 2.9 and 3.4), or null when the account has gone. Zeros until stage E counts
- * new messages and sales to confirm; saves stay on the device (spec 2.12), so none "come back" through the account.
+ * The numbers for the context strip (spec 2.9 and 3.4), or null when the account has gone: its unread messages and
+ * the sales it has to confirm, from stage E's store (messaging spec 3.6). Saves stay on the device (spec 2.12), so
+ * none "come back" through the account. `now` settles the 7-day auto-confirm (messaging spec 2.5).
  */
-export async function getAccountActivity(accountId: string): Promise<ViewerActivity | null> {
+export async function getAccountActivity(accountId: string, now: Date): Promise<ViewerActivity | null> {
   if (!sampleStore().accounts.has(accountId)) return null;
-  return { newMessages: 0, salesToConfirm: 0, savedItemsBack: 0 };
+  const counts = await unreadCounts(accountId, now);
+  return { newMessages: counts.messages, salesToConfirm: counts.salesToConfirm, savedItemsBack: 0 };
 }
 
 /** The sample accounts' buttons on the sign-in page (spec 2.8), in the fixture's order. */
@@ -136,7 +141,10 @@ export async function restoreSampleAccount(email: string): Promise<Account | nul
   return toAccount(account);
 }
 
-/** "Download your data" (spec 3.3, plan decision 20). Later stages add `messages`, `reports` and `listings`. */
+/**
+ * "Download your data" (spec 3.3, plan decision 20). Messaging adds conversations, reports and notifications
+ * (messaging plan decision 15); selling adds listings.
+ */
 export type AccountExport = {
   exportedAt: string;
   account: {
@@ -150,6 +158,10 @@ export type AccountExport = {
   consents: { policy: string; agreedAt: string }[];
   /** When each session started and ends. Never an id. */
   sessions: { signedInAt: string; expiresAt: string }[];
+  /** Every conversation, with both sides' messages marked "you" or "them". */
+  conversations: ConversationExport[];
+  reports: ReportExport[];
+  notifications: NotificationExport[];
 };
 
 /** The account's data, as the export gives it. Null when the account has gone. */
@@ -161,6 +173,11 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
     .sort((a, b) => Date.parse(a.agreedAt) - Date.parse(b.agreedAt))
     .map((row) => ({ policy: row.version, agreedAt: row.agreedAt }));
   const sessions = (await listSessions(accountId)).map((row) => ({ signedInAt: row.createdAt, expiresAt: row.expiresAt }));
+  const [conversations, reports, notifications] = await Promise.all([
+    exportConversations(accountId),
+    exportReports(accountId),
+    exportNotifications(accountId),
+  ]);
   return {
     exportedAt: now.toISOString(),
     account: {
@@ -173,19 +190,26 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
     },
     consents,
     sessions,
+    conversations,
+    reports,
+    notifications,
   };
 }
 
 /**
  * Deletes an account straight away (spec 2.13): the account, its shop, its consent, its sessions and their forms'
  * state, any sign-in under way for its email, every sample outbox row addressed to its email (found by address, so
- * a row whose attempt has already ended goes too), and its code count. Later stages add their tables here (messages,
- * listings, reports). Nothing of anyone else's is touched.
+ * a row whose attempt has already ended goes too), and its code count. Messaging's tables go first (messaging plan
+ * decision 14); selling adds listings. Nothing of anyone else's is touched.
  */
 export async function deleteAccountData(accountId: string): Promise<void> {
   const store = sampleStore();
   const account = store.accounts.get(accountId);
   if (!account) return;
+  // Messaging first, while the account's storefront is still known: its messages, reports and notifications go, and
+  // the other side keeps its own side of each conversation (messaging plan decision 14).
+  await forgetAccountInMessaging(accountId, store.sellerProfiles.get(accountId)?.sellerSlug ?? null);
+  await deleteReportsBy(accountId);
   store.accounts.delete(accountId);
   store.sellerProfiles.delete(accountId);
   for (const [id, row] of store.consents) {

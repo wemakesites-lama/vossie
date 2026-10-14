@@ -14,6 +14,7 @@ import {
   updateAccountDetails,
 } from "./accounts";
 import { saveFormState } from "./form-states";
+import { createReport } from "./reports";
 import { createSession } from "./sessions";
 import { recordCodeSent, saveSampleEmail, saveSignInAttempt } from "./sign-in";
 import { resetSampleStore, sampleStore } from "./store";
@@ -99,9 +100,10 @@ describe("accounts (accounts spec 2.6 and 2.9)", () => {
     expect(await updateAccountDetails("acc-nope", { firstName: "Zola", campusSlug: "pretoria" })).toBeNull();
   });
 
-  it("has no activity for the context strip yet: zeros until messaging and selling (spec 2.9)", async () => {
-    expect(await getAccountActivity("acc-student")).toEqual({ newMessages: 0, salesToConfirm: 0, savedItemsBack: 0 });
-    expect(await getAccountActivity("acc-nope")).toBeNull();
+  it("counts new messages and sales to confirm for the context strip (spec 2.9, messaging spec 3.6)", async () => {
+    expect(await getAccountActivity("acc-student", NOW)).toEqual({ newMessages: 1, salesToConfirm: 1, savedItemsBack: 0 });
+    expect(await getAccountActivity("acc-mentor", NOW)).toEqual({ newMessages: 0, salesToConfirm: 0, savedItemsBack: 0 });
+    expect(await getAccountActivity("acc-nope", NOW)).toBeNull();
   });
 
   it("lists the sample accounts' buttons (spec 2.8)", async () => {
@@ -138,7 +140,7 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
   it("holds the account, its consent, and when its sessions started and end, with no ids", async () => {
     await createSession({ key: "session-key-1", accountId: "acc-seller", createdAt: NOW, expiresAt: IN_30_DAYS });
     const data = await exportAccountData("acc-seller", NOW);
-    expect(data).toEqual({
+    expect(data).toMatchObject({
       exportedAt: NOW.toISOString(),
       account: {
         email: "seller@eduvos.com",
@@ -151,6 +153,22 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
       consents: [{ policy: "2026-10-draft", agreedAt: "2026-10-14T08:00:00.000Z" }],
       sessions: [{ signedInAt: NOW.toISOString(), expiresAt: IN_30_DAYS.toISOString() }],
     });
+    // Messaging adds three keys (messaging plan decision 15): the sample seller has two conversations with Thandi.
+    expect(Object.keys(data!)).toEqual([
+      "exportedAt",
+      "account",
+      "consents",
+      "sessions",
+      "conversations",
+      "reports",
+      "notifications",
+    ]);
+    expect(data!.conversations.map((row) => [row.with, row.about])).toEqual([
+      ["Thandi", "Casio fx-991ZA Plus calculator"],
+      ["Thandi", "Gaming headset, barely used"],
+    ]);
+    expect(data!.reports).toEqual([]);
+    expect(data!.notifications).toHaveLength(2);
     const text = JSON.stringify(data);
     expect(text).not.toContain("session-key-1");
     expect(text).not.toContain("acc-seller");
@@ -214,6 +232,26 @@ describe("deleting an account (accounts spec 2.13)", () => {
     expect([...store.signInAttempts.keys()]).toEqual(["theirs"]);
     expect([...store.sampleEmails.keys()].sort()).toEqual(["theirs", "theirs-orphan"]);
     expect([...store.codeSends.keys()]).toEqual(["student@eduvos.com"]);
+  });
+
+  it("removes the account's messages, reports and notifications, and keeps the other side's (messaging plan decision 14)", async () => {
+    await createReport({
+      reporterId: "acc-student",
+      target: { kind: "listing", id: "l-001" },
+      targetTitle: "Casio fx-991ZA Plus calculator",
+      reason: "scam",
+      detail: "",
+      now: NOW,
+    });
+    await deleteAccountData("acc-student");
+    const store = sampleStore();
+    expect([...store.messages.keys()].sort()).toEqual(["msg-s2", "msg-s4"]);
+    expect([...store.conversations.values()].map((row) => [row.id, row.buyerId, row.sellerGone])).toEqual([
+      ["conv-s1", null, false],
+      ["conv-s2", null, false],
+    ]);
+    expect(store.reports.size).toBe(0);
+    expect(store.notifications.size).toBe(0);
   });
 });
 

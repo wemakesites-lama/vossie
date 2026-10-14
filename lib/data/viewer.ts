@@ -29,6 +29,7 @@ export const getViewerContext = cache(async (): Promise<Viewer> => {
   ]);
   const campus = parseCampusChoice(store.get(CAMPUS_COOKIE)?.value, campuses);
   if (!account) return { campus, signedIn: false, activity: null };
-  const activity = await getAccountActivity(account.id).catch(() => null);
+  // getViewer awaited connection() before it found the account, so the clock can be read here (decision 26).
+  const activity = await getAccountActivity(account.id, new Date()).catch(() => null);
   return { campus, signedIn: true, activity: worthShowing(activity) };
 });
