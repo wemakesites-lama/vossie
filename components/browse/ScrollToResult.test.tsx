@@ -33,6 +33,8 @@ function addTarget(id: string, rect: DOMRect) {
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
+  vi.useRealTimers();
   target?.remove();
   target = null;
   window.history.replaceState(null, "", "/");
@@ -82,5 +84,58 @@ describe("ScrollToResult (plan decision 4, spec 4.6)", () => {
     render(<ScrollToResult />);
     expect(element.scrollIntoView).toHaveBeenCalledTimes(1);
     expect(focus).toHaveBeenCalledTimes(1);
+  });
+
+  describe("while the page is still loading", () => {
+    // The browser's own fragment step comes right after DOMContentLoaded and clears focus to the body, because the
+    // result is a list item. It is simulated here by blurring the link, then firing the event.
+    async function renderWhileLoading() {
+      vi.useFakeTimers();
+      vi.spyOn(document, "readyState", "get").mockReturnValue("loading");
+      const ScrollToResult = await loadFresh();
+      window.history.replaceState(null, "", "#r-3");
+      const added = addTarget("r-3", OFF_SCREEN);
+      render(<ScrollToResult />);
+      return added;
+    }
+
+    it("takes focus again one task after DOMContentLoaded, once the browser has cleared it", async () => {
+      const { link } = await renderWhileLoading();
+      expect(link).toHaveFocus();
+
+      link.blur();
+      document.dispatchEvent(new Event("DOMContentLoaded"));
+      // Still inside the event: the browser's step is yet to come, so going now would be undone.
+      expect(link).not.toHaveFocus();
+      vi.runAllTimers();
+      expect(link).toHaveFocus();
+    });
+
+    it("leaves focus where someone put it in the meantime", async () => {
+      const { link } = await renderWhileLoading();
+      const other = document.createElement("button");
+      document.body.appendChild(other);
+      other.focus();
+
+      document.dispatchEvent(new Event("DOMContentLoaded"));
+      vi.runAllTimers();
+      expect(other).toHaveFocus();
+      expect(link).not.toHaveFocus();
+      other.remove();
+    });
+
+    it("goes only once when the page was already loaded", async () => {
+      vi.useFakeTimers();
+      vi.spyOn(document, "readyState", "get").mockReturnValue("complete");
+      const ScrollToResult = await loadFresh();
+      window.history.replaceState(null, "", "#r-3");
+      const { link, focus } = addTarget("r-3", OFF_SCREEN);
+      render(<ScrollToResult />);
+      expect(link).toHaveFocus();
+
+      document.dispatchEvent(new Event("DOMContentLoaded"));
+      vi.runAllTimers();
+      expect(focus).toHaveBeenCalledTimes(1);
+    });
   });
 });

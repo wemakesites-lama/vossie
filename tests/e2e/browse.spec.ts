@@ -6,6 +6,9 @@ function onlyAt(...projects: string[]) {
   test.skip(!projects.includes(project()), `Checked at ${projects.join(" and ")}`);
 }
 
+/** How long to wait for something that depends on the page finishing loading, when the machine is busy (see "Show more"). */
+const SLOW_PAGE = 15_000;
+
 const cards = (page: Page) => page.locator("main article");
 const filters = (page: Page) => page.locator("details.tool-filters");
 const sort = (page: Page) => page.locator("details.tool-sort");
@@ -24,12 +27,17 @@ test("Show more lands on the 25th card", async ({ page }) => {
   await page.getByRole("link", { name: "Show more" }).click();
   await expect(page).toHaveURL(/\/browse\?n=48#r-25$/);
   await expect(cards(page)).toHaveCount(36);
-  await expect(page.locator("#r-25")).toBeInViewport();
+  // Both checks below wait on the page itself finishing (the app's script starting, and the browser reaching the end
+  // of the page), not on a response, and with many browsers sharing a busy machine that can take longer than the
+  // default 5 seconds. They check the same thing; they just wait longer for it.
+  await expect(page.locator("#r-25")).toBeInViewport({ timeout: SLOW_PAGE });
   await expect(page.getByText("36 listings")).toBeVisible();
 
   // The keyboard carries on from the first new card (spec 4.6): once the page is running its link has focus, and the
-  // next Tab stays inside that card (on its Save heart) rather than starting again from the top.
-  await expect(page.locator("#r-25 a").first()).toBeFocused();
+  // next Tab stays inside that card (on its Save heart) rather than starting again from the top. The browser clears
+  // focus right after the page's last byte (the card is a list item, which can't hold it), so the app takes it again
+  // one task later: this passes only when that second take has happened.
+  await expect(page.locator("#r-25 a").first()).toBeFocused({ timeout: SLOW_PAGE });
   await page.keyboard.press("Tab");
   expect(await page.evaluate(() => document.activeElement?.closest("li")?.id)).toBe("r-25");
 });

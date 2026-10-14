@@ -13,6 +13,12 @@ let handled = false;
  * the named card's link, so a keyboard user carries on from the first new card (spec 4.6), without scrolling; then, if
  * the card is off screen, it scrolls it into view (the page's scroll margin keeps it clear of the header). It runs once
  * per page load, so coming back to the page with Back does nothing.
+ *
+ * It can run while the page is still arriving (the cards stream in ahead of the page's last bytes, and under load that
+ * gap is long). Chrome then takes its own fragment step right after DOMContentLoaded (the HTML spec's step does the
+ * same), and because #r-25 is a list item, which can't hold focus, that step clears focus to the body, undoing the focus
+ * above. So it goes again one task after DOMContentLoaded. Focus is only taken while nobody holds it, so a key pressed
+ * in the meantime is kept.
  */
 export function ScrollToResult() {
   useEffect(() => {
@@ -20,11 +26,18 @@ export function ScrollToResult() {
     handled = true;
     const id = window.location.hash.slice(1);
     if (!/^r-\d+$/.test(id)) return;
-    const target = document.getElementById(id);
-    if (!target) return;
-    target.querySelector("a")?.focus({ preventScroll: true });
-    const { top, bottom } = target.getBoundingClientRect();
-    if (bottom <= 0 || top >= window.innerHeight) target.scrollIntoView({ block: "start" });
+    const finish = () => {
+      const target = document.getElementById(id);
+      if (!target) return;
+      const held = document.activeElement;
+      if (!held || held === document.body) target.querySelector("a")?.focus({ preventScroll: true });
+      const { top, bottom } = target.getBoundingClientRect();
+      if (bottom <= 0 || top >= window.innerHeight) target.scrollIntoView({ block: "start" });
+    };
+    if (document.readyState !== "complete") {
+      document.addEventListener("DOMContentLoaded", () => setTimeout(finish), { once: true });
+    }
+    finish();
   }, []);
   return null;
 }
