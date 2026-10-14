@@ -92,7 +92,12 @@ describe("step 1: the email and the privacy box (accounts spec 3.1)", () => {
 
   it("asks for the email and the box together", async () => {
     await redirectSignalOf(() => startSignIn(form({ email: " ", next: "/listings/l-001" })));
-    expect(attempt()).toMatchObject({ step: "email", errors: ["email-missing", "consent-missing"], consentedAt: null });
+    expect(attempt()).toMatchObject({
+      step: "email",
+      errors: ["email-missing", "consent-missing"],
+      consentedAt: null,
+      postedAt: NOW.toISOString(),
+    });
     expect(sampleStore().sampleEmails.size).toBe(0);
   });
 
@@ -249,6 +254,37 @@ describe("sending a new code (plan decision 6)", () => {
     await redirectSignalOf(() => resendCode(form({})));
     await redirectSignalOf(async () => verifyCode(form({ code: await wrongCode() })));
     expect(attempt()?.resent).toBe(false);
+  });
+});
+
+describe("the stamp that lets a step's errors show only straight after their post (accounts spec 3.1)", () => {
+  const at = (seconds: number) => vi.setSystemTime(new Date(NOW.getTime() + seconds * 1000));
+  const stamp = (seconds: number) => new Date(NOW.getTime() + seconds * 1000).toISOString();
+
+  it("stamps the attempt with the time of every post that saves it", async () => {
+    await start("thandi@eduvos.com");
+    expect(attempt()?.postedAt).toBe(stamp(0));
+    at(5);
+    await redirectSignalOf(async () => verifyCode(form({ code: await wrongCode() })));
+    expect(attempt()).toMatchObject({ errors: ["code-wrong"], postedAt: stamp(5) });
+    at(10);
+    await redirectSignalOf(() => resendCode(form({})));
+    expect(attempt()).toMatchObject({ resent: true, postedAt: stamp(10) });
+    at(15);
+    await redirectSignalOf(async () => verifyCode(form({ code: await sentCode() })));
+    expect(attempt()).toMatchObject({ step: "profile", postedAt: stamp(15) });
+    at(20);
+    await redirectSignalOf(() => completeProfile(form({ firstName: "A", campus: "atlantis" })));
+    expect(attempt()).toMatchObject({ errors: ["first-name-length", "campus-missing"], postedAt: stamp(20) });
+  });
+
+  it("stamps the rate-limit error that replaces a good email's code", async () => {
+    for (const minutes of [0, 5, 10, 15, 20]) {
+      await recordCodeSent("thandi@eduvos.com", new Date(NOW.getTime() - minutes * 60_000));
+    }
+    at(7);
+    await start("thandi@eduvos.com");
+    expect(attempt()).toMatchObject({ errors: ["email-rate"], postedAt: stamp(7) });
   });
 });
 

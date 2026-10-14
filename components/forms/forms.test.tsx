@@ -13,12 +13,12 @@ const errors = [
 
 describe("ErrorSummary (accounts spec 6)", () => {
   it("is nothing when nothing is wrong", () => {
-    const { container } = render(<ErrorSummary errors={[]} />);
+    const { container } = render(<ErrorSummary id="signin-email-summary" errors={[]} />);
     expect(container).toBeEmptyDOMElement();
   });
 
   it("is an alert headed \"There's a problem\" that links each message to its field", () => {
-    render(<ErrorSummary errors={errors} />);
+    render(<ErrorSummary id="signin-email-summary" errors={errors} />);
     const summary = screen.getByRole("alert", { name: "There's a problem" });
     expect(within(summary).getByRole("link", { name: "Use your Eduvos email address." })).toHaveAttribute(
       "href",
@@ -29,7 +29,27 @@ describe("ErrorSummary (accounts spec 6)", () => {
   });
 
   it("asks the browser to focus it on a page load (plan decision 11)", () => {
-    expect(renderToString(<ErrorSummary errors={errors} />)).toMatch(/<div[^>]*role="alert"[^>]*autofocus=""/);
+    expect(renderToString(<ErrorSummary id="signin-email-summary" errors={errors} />)).toMatch(
+      /<div[^>]*role="alert"[^>]*autofocus=""/,
+    );
+  });
+
+  // Next keeps earlier pages in the DOM, so two forms' summaries can be there at once. Their ids come from the caller
+  // (not useId, which restarts on every request in a Server Component), and the heading's id follows the summary's.
+  it("takes its id, and its heading's id, from the form it belongs to", () => {
+    render(
+      <>
+        <ErrorSummary id="signin-email-summary" errors={errors} />
+        <ErrorSummary id="account-details-summary" errors={errors} />
+      </>,
+    );
+    const [first, second] = screen.getAllByRole("alert", { name: "There's a problem" });
+    expect(first).toHaveAttribute("id", "signin-email-summary");
+    expect(first).toHaveAttribute("aria-labelledby", "signin-email-summary-title");
+    expect(first.querySelector("h2")).toHaveAttribute("id", "signin-email-summary-title");
+    expect(second).toHaveAttribute("id", "account-details-summary");
+    expect(second).toHaveAttribute("aria-labelledby", "account-details-summary-title");
+    expect(document.getElementById("form-summary-title")).toBeNull();
   });
 });
 

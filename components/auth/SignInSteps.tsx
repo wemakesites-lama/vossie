@@ -33,7 +33,7 @@ export function EmailStep({ next, email, consented, errors, samples }: EmailStep
   const consentError = errorFor(errors, FIELDS.consent);
   return (
     <div className="signin-card">
-      <ErrorSummary errors={errors} />
+      <ErrorSummary id="signin-email-summary" errors={errors} />
       <form action={startSignIn} noValidate className="form-stack">
         <NextField next={next} />
         <div className="form-field">
@@ -130,7 +130,7 @@ export function CodeStep({ next, maskedEmail, errors, resent, sampleCode }: Code
   const codeError = errorFor(errors, FIELDS.code);
   return (
     <div className="signin-card">
-      <ErrorSummary errors={errors} />
+      <ErrorSummary id="signin-code-summary" errors={errors} />
       {resent && (
         <p role="status" className="form-notice">
           We sent a new code.
@@ -203,7 +203,7 @@ export function ProfileStep({ next, firstName, campus, campuses, errors }: Profi
   const campusError = errorFor(errors, FIELDS.campus);
   return (
     <div className="signin-card">
-      <ErrorSummary errors={errors} />
+      <ErrorSummary id="signin-profile-summary" errors={errors} />
       <p className="signin-lede">First time on Vossie? Tell us two things and you&apos;re in.</p>
       <form action={completeProfile} noValidate className="form-stack">
         <NextField next={next} />

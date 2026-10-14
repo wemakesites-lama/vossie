@@ -72,7 +72,7 @@ export function AccountView({ account, campuses, details }: AccountViewProps) {
             Your details are saved.
           </p>
         )}
-        <ErrorSummary errors={details.errors} />
+        <ErrorSummary id="account-details-summary" errors={details.errors} />
         <form action={updateDetails} noValidate className="form-stack">
           <div className="form-field">
             <label htmlFor={DETAILS_FIELDS.firstName} className="form-label">

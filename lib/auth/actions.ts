@@ -92,9 +92,20 @@ async function beginAttempt(
     wrongTries: 0,
     firstName: "",
     campusSlug: "",
+    postedAt: null,
     expiresAt: new Date(now.getTime() + ATTEMPT_TTL_MS).toISOString(),
     ...fields,
   };
+}
+
+/**
+ * Saves an attempt as the post that's ending left it, stamped with that post's time. Every post sets the attempt's
+ * `errors` (and `resent`) afresh, so the stamp tells the page how old they are: it shows them only straight after the
+ * post, not on a visit 20 minutes later (spec 3.1, SIGN_IN_ERRORS_SHOW_MS).
+ */
+async function saveAfterPost(attempt: SignInAttemptRow, now: Date): Promise<void> {
+  attempt.postedAt = now.toISOString();
+  await saveSignInAttempt(attempt, now);
 }
 
 /**
@@ -146,7 +157,7 @@ export async function startSignIn(formData: FormData): Promise<void> {
     if (await sendCode(attempt, now)) attempt.step = "code";
     else attempt.errors = ["email-rate"];
   }
-  await saveSignInAttempt(attempt, now);
+  await saveAfterPost(attempt, now);
   backToSignIn(next);
 }
 
@@ -190,7 +201,7 @@ export async function verifyCode(formData: FormData): Promise<void> {
       attempt.errors = ["locked"];
     }
   }
-  await saveSignInAttempt(attempt, now);
+  await saveAfterPost(attempt, now);
   backToSignIn(next);
 }
 
@@ -203,7 +214,7 @@ export async function resendCode(formData: FormData): Promise<void> {
   const sent = await sendCode(attempt, now);
   attempt.resent = sent;
   attempt.errors = sent ? [] : ["code-rate"];
-  await saveSignInAttempt(attempt, now);
+  await saveAfterPost(attempt, now);
   backToSignIn(next);
 }
 
@@ -233,7 +244,7 @@ export async function completeProfile(formData: FormData): Promise<void> {
     attempt.errors = errors;
     attempt.firstName = name.value.slice(0, 80);
     attempt.campusSlug = campusSlug ?? "";
-    await saveSignInAttempt(attempt, now);
+    await saveAfterPost(attempt, now);
     backToSignIn(next);
   }
   // Another tab may have finished first: then this signs in to that account rather than making a second one.

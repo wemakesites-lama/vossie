@@ -67,7 +67,7 @@ export function PrivacySettingsView({ consent, deleteErrors }: PrivacySettingsVi
           <li>once messaging and selling open, your messages, shop and listings go too.</li>
         </ul>
         <p>Saved listings stay on this device until you clear them.</p>
-        <ErrorSummary errors={deleteErrors} />
+        <ErrorSummary id="account-privacy-delete-summary" errors={deleteErrors} />
         <form action={deleteAccount} noValidate className="form-stack">
           <div className="form-field">
             <FieldError id="delete-confirm-error" message={confirmError} />

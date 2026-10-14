@@ -73,6 +73,12 @@ export type SignInAttemptRow = {
   /** Step 3's answers after an error, so the fields can show them again. */
   firstName: string;
   campusSlug: string;
+  /**
+   * When the last post saved this attempt, or null before any has. `errors` and `resent` belong to that post, so the
+   * page shows them only for a minute after it (SIGN_IN_ERRORS_SHOW_MS): the attempt lasts 30 minutes, and an old
+   * error summary must not come back, and take focus, on a fresh visit.
+   */
+  postedAt: string | null;
   expiresAt: string;
 };
 

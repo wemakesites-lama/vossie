@@ -17,6 +17,11 @@ export const MAX_WRONG_TRIES = 5;
 export const CODES_PER_HOUR = 5;
 /** A sign-in attempt, all three steps, must finish within 30 minutes of starting. */
 export const ATTEMPT_TTL_MS = 30 * 60 * 1000;
+/**
+ * A step's errors, and "We sent a new code.", show for a minute after the post that set them (spec 3.1). They belong to
+ * that post; the attempt itself lasts 30 minutes, and a later visit starts clean.
+ */
+export const SIGN_IN_ERRORS_SHOW_MS = 60 * 1000;
 /** A session lasts 30 days (spec 2.5). */
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 /** A signed-in form's errors or notice last 10 minutes (plan decision 3). */

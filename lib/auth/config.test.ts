@@ -10,6 +10,7 @@ import {
   policyLabel,
   POLICY_VERSION,
   SESSION_TTL_MS,
+  SIGN_IN_ERRORS_SHOW_MS,
 } from "./config";
 
 describe("sign-in settings (accounts spec 2.1, 2.4 and 2.7)", () => {
@@ -35,6 +36,7 @@ describe("sign-in settings (accounts spec 2.1, 2.4 and 2.7)", () => {
     expect(CODES_PER_HOUR).toBe(5);
     expect(ATTEMPT_TTL_MS).toBe(30 * 60 * 1000);
     expect(SESSION_TTL_MS).toBe(30 * 24 * 60 * 60 * 1000);
+    expect(SIGN_IN_ERRORS_SHOW_MS).toBe(60 * 1000);
   });
 
   it("names the policy version a student agrees to, which the sample accounts' consents use", () => {
