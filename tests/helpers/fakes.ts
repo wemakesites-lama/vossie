@@ -1,3 +1,4 @@
+import type { SignInAttemptRow } from "@/lib/data/rows";
 import type { BrowseQuery, Listing, Seller } from "@/lib/types";
 
 /** A listing for tests: an available R100 tech item at Midrand's library. Override what the test is about. */
@@ -56,6 +57,25 @@ export function makeBrowseQuery(overrides: Partial<BrowseQuery> = {}): BrowseQue
     deals: null,
     sort: "new",
     shown: 24,
+    ...overrides,
+  };
+}
+
+/** A sign-in attempt for tests: on step 1, with no errors, and running out in 2099. Override what the test is about. */
+export function makeSignInAttempt(overrides: Partial<SignInAttemptRow> = {}): SignInAttemptRow {
+  return {
+    key: "attempt-key",
+    step: "email",
+    email: "",
+    errors: [],
+    resent: false,
+    codeHash: null,
+    codeExpiresAt: null,
+    wrongTries: 0,
+    consentedAt: null,
+    firstName: "",
+    campusSlug: "",
+    expiresAt: "2099-01-01T00:00:00.000Z",
     ...overrides,
   };
 }

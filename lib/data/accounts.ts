@@ -1,0 +1,194 @@
+import { randomUUID } from "node:crypto";
+import { sampleAccounts, sampleConsents } from "@/data/fixtures/accounts";
+import type { Account, Consent, SellerStatus, StaffRole, ViewerActivity } from "@/lib/types";
+import type { AccountRow } from "./rows";
+import { listSessions } from "./sessions";
+import { sampleStore } from "./store";
+
+// Accounts, their shops and their consent (accounts spec section 4), shaped like the Supabase calls that will replace
+// them: async, by id or by email, handing out copies. Times come from the caller, so nothing here reads the clock.
+// Only Server Actions create, change or delete; pages only read.
+
+function toAccount(row: AccountRow): Account {
+  const shop = sampleStore().sellerProfiles.get(row.id);
+  return {
+    id: row.id,
+    email: row.email,
+    firstName: row.firstName,
+    campusSlug: row.campusSlug,
+    roles: [...row.roles],
+    seller: shop ? { status: shop.status, sellerSlug: shop.sellerSlug } : null,
+    createdAt: row.createdAt,
+  };
+}
+
+export async function getAccount(id: string): Promise<Account | null> {
+  const row = sampleStore().accounts.get(id);
+  return row ? toAccount(row) : null;
+}
+
+/** The account with this (normalised) email, if there is one. */
+export async function findAccountByEmail(email: string): Promise<Account | null> {
+  for (const row of sampleStore().accounts.values()) {
+    if (row.email === email) return toAccount(row);
+  }
+  return null;
+}
+
+/** A new student account (spec 2.6). Its id is random, as Supabase's would be. */
+export async function createAccount(details: {
+  email: string;
+  firstName: string;
+  campusSlug: string;
+  now: Date;
+}): Promise<Account> {
+  const row: AccountRow = {
+    id: `acc-${randomUUID()}`,
+    email: details.email,
+    firstName: details.firstName,
+    campusSlug: details.campusSlug,
+    roles: [],
+    createdAt: details.now.toISOString(),
+  };
+  sampleStore().accounts.set(row.id, row);
+  return toAccount(row);
+}
+
+/** "Edit details" (spec 3.2). Null when the account has gone. */
+export async function updateAccountDetails(
+  id: string,
+  details: { firstName: string; campusSlug: string },
+): Promise<Account | null> {
+  const row = sampleStore().accounts.get(id);
+  if (!row) return null;
+  row.firstName = details.firstName;
+  row.campusSlug = details.campusSlug;
+  return toAccount(row);
+}
+
+/** Records that the account agreed to `version` at `at` (spec 2.7). Once per version: a repeat changes nothing. */
+export async function recordConsent(accountId: string, version: string, at: Date): Promise<void> {
+  const { consents } = sampleStore();
+  for (const row of consents.values()) {
+    if (row.accountId === accountId && row.version === version) return;
+  }
+  const id = `consent-${randomUUID()}`;
+  consents.set(id, { id, accountId, version, agreedAt: at.toISOString() });
+}
+
+/** The newest consent, for the privacy settings page (spec 3.3). */
+export async function getLatestConsent(accountId: string): Promise<Consent | null> {
+  let latest: Consent | null = null;
+  for (const row of sampleStore().consents.values()) {
+    if (row.accountId !== accountId) continue;
+    if (!latest || Date.parse(row.agreedAt) > Date.parse(latest.agreedAt)) {
+      latest = { version: row.version, agreedAt: row.agreedAt };
+    }
+  }
+  return latest;
+}
+
+/**
+ * The numbers for the context strip (spec 2.9 and 3.4), or null when the account has gone. Zeros until stage E counts
+ * new messages and sales to confirm; saves stay on the device (spec 2.12), so none "come back" through the account.
+ */
+export async function getAccountActivity(accountId: string): Promise<ViewerActivity | null> {
+  if (!sampleStore().accounts.has(accountId)) return null;
+  return { newMessages: 0, salesToConfirm: 0, savedItemsBack: 0 };
+}
+
+/** The sample accounts' buttons on the sign-in page (spec 2.8), in the fixture's order. */
+export async function getSampleSignIns(): Promise<{ email: string; label: string }[]> {
+  return sampleAccounts.map(({ account, label }) => ({ email: account.email, label }));
+}
+
+/**
+ * Puts a deleted sample account back from the fixtures, with its shop and consent (plan decision 15). An account that
+ * already has the address, the sample itself or one made after it was deleted, is returned as it is. Null for an
+ * address that isn't a sample account's.
+ */
+export async function restoreSampleAccount(email: string): Promise<Account | null> {
+  const sample = sampleAccounts.find(({ account }) => account.email === email);
+  if (!sample) return null;
+  const existing = await findAccountByEmail(email);
+  if (existing) return existing;
+  const { account, seller } = structuredClone(sample);
+  const store = sampleStore();
+  store.accounts.set(account.id, account);
+  if (seller) store.sellerProfiles.set(seller.accountId, seller);
+  for (const consent of sampleConsents) {
+    if (consent.accountId === account.id) store.consents.set(consent.id, { ...consent });
+  }
+  return toAccount(account);
+}
+
+/** "Download your data" (spec 3.3, plan decision 20). Later stages add `messages`, `reports` and `listings`. */
+export type AccountExport = {
+  exportedAt: string;
+  account: {
+    email: string;
+    firstName: string;
+    campus: string;
+    roles: StaffRole[];
+    memberSince: string;
+    shop: { status: SellerStatus; storefront: string | null } | null;
+  };
+  consents: { policy: string; agreedAt: string }[];
+  /** When each session started and ends. Never an id. */
+  sessions: { signedInAt: string; expiresAt: string }[];
+};
+
+/** The account's data, as the export gives it. Null when the account has gone. */
+export async function exportAccountData(accountId: string, now: Date): Promise<AccountExport | null> {
+  const account = await getAccount(accountId);
+  if (!account) return null;
+  const consents = [...sampleStore().consents.values()]
+    .filter((row) => row.accountId === accountId)
+    .sort((a, b) => Date.parse(a.agreedAt) - Date.parse(b.agreedAt))
+    .map((row) => ({ policy: row.version, agreedAt: row.agreedAt }));
+  const sessions = (await listSessions(accountId)).map((row) => ({ signedInAt: row.createdAt, expiresAt: row.expiresAt }));
+  return {
+    exportedAt: now.toISOString(),
+    account: {
+      email: account.email,
+      firstName: account.firstName,
+      campus: account.campusSlug,
+      roles: [...account.roles],
+      memberSince: account.createdAt,
+      shop: account.seller ? { status: account.seller.status, storefront: account.seller.sellerSlug } : null,
+    },
+    consents,
+    sessions,
+  };
+}
+
+/**
+ * Deletes an account straight away (spec 2.13): the account, its shop, its consent, its sessions and their forms'
+ * state, any sign-in under way for its email, and its code count. Later stages add their tables here (messages,
+ * listings, reports). Nothing of anyone else's is touched.
+ */
+export async function deleteAccountData(accountId: string): Promise<void> {
+  const store = sampleStore();
+  const account = store.accounts.get(accountId);
+  if (!account) return;
+  store.accounts.delete(accountId);
+  store.sellerProfiles.delete(accountId);
+  for (const [id, row] of store.consents) {
+    if (row.accountId === accountId) store.consents.delete(id);
+  }
+  const sessionKeys = new Set<string>();
+  for (const [key, row] of store.sessions) {
+    if (row.accountId !== accountId) continue;
+    sessionKeys.add(key);
+    store.sessions.delete(key);
+  }
+  for (const [key, row] of store.formStates) {
+    if (sessionKeys.has(row.sessionKey)) store.formStates.delete(key);
+  }
+  for (const [key, row] of store.signInAttempts) {
+    if (row.email !== account.email) continue;
+    store.signInAttempts.delete(key);
+    store.sampleEmails.delete(key);
+  }
+  store.codeSends.delete(account.email);
+}
