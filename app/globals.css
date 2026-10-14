@@ -4101,7 +4101,7 @@
    With data saver on, card and tile photos below the hero aren't loaded at all: hidden lazy images are never
    requested. The boxes keep their size, so nothing moves. Tiles and campus cards drop the whole photo box, so
    their white words sit on navy. */
-:root[data-low-data] :is(.listing-card, .seller-card, .free-card, .collections, .campus-chooser-wide, .context-thumbs, .hub-more) .photo-img {
+:root[data-low-data] :is(.listing-card, .seller-card, .free-card, .collections, .campus-chooser-wide, .context-thumbs, .hub-more, .hub-sellers) .photo-img {
   display: none;
 }
 
@@ -6022,6 +6022,326 @@
       grid-column: 2;
       grid-row: 1 / span 2;
       margin-top: 0;
+    }
+  }
+}
+
+/* --- Community: a request's page (community plan, Task 5, spec 4.2) --- */
+@layer components {
+  /* .page and .request-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
+  .request-page {
+    padding: 8px 16px 64px;
+  }
+
+  .request-layout {
+    display: grid;
+    gap: 24px;
+    margin-top: 8px;
+  }
+
+  .request-heading {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.5rem);
+    line-height: 1;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  /* Facts as small pills, navy on pale (plan decision 17). A Hub post's facts use them too. */
+  .fact-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .fact-pills > li {
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--color-pale);
+    color: var(--color-navy);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .request-facts {
+    margin-top: 16px;
+  }
+
+  /* The asker's own line breaks are kept (spec 4.2). */
+  .request-details {
+    max-width: 65ch;
+    margin-top: 20px;
+    white-space: pre-line;
+  }
+
+  .request-offers {
+    display: grid;
+    justify-items: start;
+    gap: 14px;
+    padding: 20px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+  }
+
+  .request-offers-count {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 24px;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .request-offer {
+    min-height: 48px;
+    padding-inline: 32px;
+  }
+
+  .request-related {
+    margin-top: 48px;
+  }
+
+  .request-see-all {
+    margin-top: 16px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .request-page {
+      padding-inline: 40px;
+    }
+  }
+
+  /* Desktop: the request on the left, the offers beside it (plan decision 18). */
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .request-layout {
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      align-items: start;
+      gap: 40px;
+    }
+  }
+}
+
+/* --- Community: the Hub page, Verified sellers and the feed (community plan, Task 6, spec 5.1) --- */
+@layer components {
+  /* .page and .hub-page sit on one element, so this padding is the whole content edge: 16px, then 40px. On phones the
+     story's photo meets the header, so there's no top padding. */
+  .hub-page {
+    padding: 0 16px 64px;
+  }
+
+  /* Phones: the photo edge to edge at 7:3, pulled out by the page's 16px. */
+  .hub-story-photo {
+    --photo-ratio: 7 / 3;
+    margin-inline: -16px;
+  }
+
+  .hub-story-text {
+    display: grid;
+    gap: 12px;
+    max-width: 60ch;
+    margin-top: 20px;
+  }
+
+  .hub-story-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .hub-verified,
+  .hub-feed {
+    margin-top: 48px;
+  }
+
+  /* One row that scrolls sideways on phones, out to the screen's edges, and wraps from the tablet step (plan decision
+     7). The padding keeps focus rings inside the scroll box. */
+  .hub-sellers {
+    display: flex;
+    gap: 12px;
+    margin: 12px -16px 0;
+    padding: 6px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .hub-sellers::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hub-sellers > li {
+    flex: none;
+  }
+
+  .hub-seller {
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: 2px;
+    width: 8.5rem;
+    min-height: 44px;
+    padding: 14px 10px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    color: var(--color-navy);
+    text-align: center;
+  }
+
+  .hub-seller-photo {
+    width: 56px;
+    margin-bottom: 8px;
+    border-radius: 999px;
+  }
+
+  .hub-seller-name {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .hub-seller-campus {
+    color: var(--color-muted);
+    font-size: 12px;
+  }
+
+  .hub-feed-list {
+    display: grid;
+    gap: 14px;
+    margin-top: 20px;
+  }
+
+  /* All shows two lists, events and office hours, then tips (plan decision 5), with room between them. */
+  .hub-feed-list + .hub-feed-list,
+  .hub-feed-list + .hub-feed-empty,
+  .hub-feed-empty + .hub-feed-list {
+    margin-top: 32px;
+  }
+
+  /* The title's link covers the whole card. */
+  .hub-card {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    height: 100%;
+    padding: 18px 20px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    background: var(--color-white);
+  }
+
+  .hub-card-title {
+    color: var(--color-navy);
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .hub-card-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-card);
+  }
+
+  /* The ring goes round the whole card. Without :has() (iOS before 15.4) the link keeps its own ring. */
+  @supports selector(:has(*)) {
+    .hub-card-link:focus-visible {
+      outline: none;
+      box-shadow: none;
+    }
+
+    .hub-card:has(.hub-card-link:focus-visible) {
+      outline: 2.5px solid var(--color-navy);
+      outline-offset: 3px;
+    }
+  }
+
+  .hub-card-when {
+    margin-top: 6px;
+    color: var(--color-navy);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .hub-card-where,
+  .hub-card-going,
+  .hub-card-summary {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  /* Navy on the grey panel. */
+  .hub-feed-empty {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  /* The skeleton has the real tab row's height (its 4px padding, 44px tabs and 1px line) and an event card's. */
+  .hub-feed-skeleton-tabs {
+    height: 49px;
+    margin-top: 22px;
+  }
+
+  .hub-card-skeleton {
+    height: 9.5rem;
+    border-radius: var(--radius-card);
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .hub-page {
+      padding: 24px 40px 64px;
+    }
+
+    /* The text on the left and the photo on the right, at 4:3. The photo is decorative, so its place in the reading
+       order doesn't matter. */
+    .hub-story {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      grid-template-areas: "text photo";
+      align-items: center;
+      gap: 40px;
+    }
+
+    .hub-story-photo {
+      --photo-ratio: 4 / 3;
+      grid-area: photo;
+      margin-inline: 0;
+      border-radius: var(--radius-panel);
+    }
+
+    .hub-story-text {
+      grid-area: text;
+      margin-top: 0;
+    }
+
+    .hub-sellers {
+      flex-wrap: wrap;
+      margin-inline: 0;
+      padding-inline: 0;
+      overflow-x: visible;
+    }
+
+    .hub-feed-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .hub-feed-list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  /* Landscape phones keep the phone layout, with the photo cropped short so it doesn't fill the screen. */
+  @media (orientation: landscape) and (max-height: 29.99rem) {
+    .hub-story-photo {
+      --photo-ratio: 4 / 1;
     }
   }
 }

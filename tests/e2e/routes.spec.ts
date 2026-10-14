@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 
 const PLACEHOLDERS: Array<[path: string, title: string]> = [
   ["/sell", "Start selling"],
-  ["/hub", "The Incubation Hub"],
   ["/login", "Sign in"],
   ["/account", "Your account"],
 ];
@@ -26,7 +25,7 @@ test.describe("placeholder routes", () => {
     });
   }
 
-  test("unknown listing, collection and seller slugs show the 404 page", async ({ page }) => {
+  test("unknown listing, collection, seller and request links show the 404 page", async ({ page }) => {
     onlyAtPhoneAndDesktop();
     await page.goto("/listings/nope");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
@@ -35,6 +34,9 @@ test.describe("placeholder routes", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
     await expect(page).toHaveTitle("Page not found · Vossie");
     await page.goto("/sellers/nope");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
+    await expect(page).toHaveTitle("Page not found · Vossie");
+    await page.goto("/looking-for/nope");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
     await expect(page).toHaveTitle("Page not found · Vossie");
   });
