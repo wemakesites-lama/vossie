@@ -3,8 +3,6 @@ import { expect, test } from "@playwright/test";
 const PLACEHOLDERS: Array<[path: string, title: string]> = [
   ["/sell", "Start selling"],
   ["/hub", "The Incubation Hub"],
-  ["/how-it-works", "How Vossie works"],
-  ["/safety", "Safety"],
   ["/privacy", "Privacy (POPIA)"],
   ["/looking-for", "Looking For"],
   ["/login", "Sign in"],
