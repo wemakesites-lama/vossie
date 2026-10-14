@@ -7,3 +7,8 @@ export function SellSkeleton() {
     </div>
   );
 }
+
+/** A selling form's shape while it streams in (the wizard, Edit shop and the listing form). */
+export function SellFormSkeleton() {
+  return <span className="skeleton sell-skeleton-form" aria-hidden="true" />;
+}

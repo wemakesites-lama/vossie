@@ -6,7 +6,10 @@ import { CodeStep, EmailStep, ProfileStep } from "@/components/auth/SignInSteps"
 import { composerForm, ComposerView } from "@/components/messages/ComposerView";
 import { reportForm, ReportView } from "@/components/messages/ReportView";
 import { replyForm, ThreadView } from "@/components/messages/ThreadView";
+import { OnboardingView } from "@/components/sell/OnboardingView";
 import { campuses } from "@/data/fixtures/campuses";
+import { categories } from "@/data/fixtures/categories";
+import { pickupPoints } from "@/data/fixtures/pickup-points";
 import { composerSubject } from "@/lib/messaging/subjects";
 import type { Account } from "@/lib/types";
 import { makeThread } from "@/tests/helpers/fakes";
@@ -31,6 +34,7 @@ vi.mock("@/lib/messaging/actions", () => ({
   sendReply: async () => {},
   sendReport: async () => {},
 }));
+vi.mock("@/lib/selling/shop-actions", () => ({ saveOnboardingStep: async () => {}, sendForApproval: async () => {} }));
 
 const account: Account = {
   id: "acc-student",
@@ -43,6 +47,30 @@ const account: Account = {
 };
 
 const oops = [{ message: "Something is wrong.", fieldId: null }];
+
+const wizardDraft = {
+  accountId: "acc-student",
+  name: "Zola's Bakes",
+  tagline: "",
+  categorySlug: "food",
+  about: "I bake between lectures.",
+  photoSrc: null,
+  campusSlug: "midrand",
+  pickupPointIds: ["pp-midrand-library"],
+  updatedAt: "2026-10-14T08:00:00.000Z",
+};
+
+/** One of the onboarding wizard's steps with a summary showing (selling plan amendment 1). */
+const wizardStep = (step: 1 | 2 | 3 | 4 | 5) => (
+  <OnboardingView
+    step={step}
+    draft={wizardDraft}
+    errors={oops}
+    campuses={campuses}
+    categories={categories}
+    pickupPoints={pickupPoints}
+  />
+);
 
 describe("error summary ids (accounts spec 6)", () => {
   // Next keeps the last pages hidden in the DOM, so the sign-in steps, the account page and the privacy settings page
@@ -111,10 +139,15 @@ describe("error summary ids (accounts spec 6)", () => {
           already={false}
           form={reportWithErrors}
         />
+        {wizardStep(1)}
+        {wizardStep(2)}
+        {wizardStep(3)}
+        {wizardStep(4)}
+        {wizardStep(5)}
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(8);
+    expect(summaries).toHaveLength(13);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -126,6 +159,11 @@ describe("error summary ids (accounts spec 6)", () => {
       "composer-summary",
       "thread-reply-summary",
       "report-summary",
+      "onb-step-1-summary",
+      "onb-step-2-summary",
+      "onb-step-3-summary",
+      "onb-step-4-summary",
+      "onb-step-5-summary",
     ]);
   });
 });
