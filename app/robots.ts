@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { isSiteHidden } from "@/lib/site-hidden";
 import { siteUrl } from "@/lib/site-url";
 
 // Pages that belong to one person or one device (info and system spec 2.8). A Disallow matches from the start of the
@@ -8,6 +9,8 @@ import { siteUrl } from "@/lib/site-url";
 const DISALLOWED = ["/saved", "/login", "/account", "/sell$", "/sell/"];
 
 export default function robots(): MetadataRoute.Robots {
+  // The whole site hidden from search engines (decision 68): nothing to crawl, so no sitemap either.
+  if (isSiteHidden()) return { rules: { userAgent: "*", disallow: "/" } };
   return {
     rules: { userAgent: "*", allow: "/", disallow: DISALLOWED },
     sitemap: `${siteUrl()}/sitemap.xml`,

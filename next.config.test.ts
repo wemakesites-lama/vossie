@@ -32,6 +32,18 @@ describe("security headers (info and system spec 2.9)", () => {
     expect(await sitewideHeaders()).not.toHaveProperty("Content-Security-Policy");
   });
 
+  it("hides every page from search engines when VOSSIE_NOINDEX is 1 (decision 68)", async () => {
+    vi.stubEnv("VOSSIE_NOINDEX", "1");
+    expect(await sitewideHeaders()).toHaveProperty("X-Robots-Tag", "noindex, nofollow");
+  });
+
+  it("sends no X-Robots-Tag when VOSSIE_NOINDEX is unset or anything but 1", async () => {
+    for (const value of ["", "0", "true"]) {
+      vi.stubEnv("VOSSIE_NOINDEX", value);
+      expect(await sitewideHeaders(), value).not.toHaveProperty("X-Robots-Tag");
+    }
+  });
+
   it("keeps the redirects it already had", async () => {
     const redirects = await nextConfig.redirects!();
     expect(redirects.map((redirect) => redirect.source)).toEqual(

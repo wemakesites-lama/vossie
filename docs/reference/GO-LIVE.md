@@ -150,6 +150,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] A support contact, and a privacy contact address. `/privacy` says one will be added; `/terms` and `/seller-guidelines` tell people to "contact the Hub" without saying how.
 - [ ] Enough sellers listed before day one, so it doesn't open empty.
 - [ ] Possibly a pilot on one campus.
+- [ ] Unset `VOSSIE_NOINDEX` on the live deployment and rebuild, so search engines can find Vossie (decision 68).
 
 ## 7. Decisions for Lama and Eduvos
 

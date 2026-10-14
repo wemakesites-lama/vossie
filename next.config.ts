@@ -30,6 +30,9 @@ const nextConfig: NextConfig = {
           ...(process.env.NODE_ENV === "production"
             ? [{ key: "Strict-Transport-Security", value: "max-age=31536000" }]
             : []),
+          // The whole site hidden from search engines (decision 68). The same check as `isSiteHidden()` in
+          // `lib/site-hidden.ts`, written out because this file's imports are limited (Next's TypeScript config docs).
+          ...(process.env.VOSSIE_NOINDEX === "1" ? [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] : []),
         ],
       },
     ];

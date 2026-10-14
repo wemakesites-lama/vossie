@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { siteUrl } from "@/lib/site-url";
 import robots from "./robots";
 
@@ -46,5 +46,19 @@ describe("robots.txt (info and system spec 2.8)", () => {
 
   it("points to the sitemap at the site's own address", () => {
     expect(sitemap).toBe(`${siteUrl()}/sitemap.xml`);
+  });
+});
+
+describe("robots.txt with the whole site hidden (VOSSIE_NOINDEX=1, decision 68)", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("disallows everything and leaves the sitemap out", () => {
+    vi.stubEnv("VOSSIE_NOINDEX", "1");
+    expect(robots()).toEqual({ rules: { userAgent: "*", disallow: "/" } });
+  });
+
+  it("is the usual file when VOSSIE_NOINDEX is anything but 1", () => {
+    vi.stubEnv("VOSSIE_NOINDEX", "0");
+    expect(robots().sitemap).toBe(`${siteUrl()}/sitemap.xml`);
   });
 });
