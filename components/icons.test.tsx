@@ -18,6 +18,7 @@ describe("icons", () => {
       "HeartIcon",
       "MapPinIcon",
       "MenuIcon",
+      "MessageIcon",
       "PauseIcon",
       "PlayIcon",
       "PlusSquareIcon",

@@ -35,6 +35,15 @@ export function MenuIcon(props: IconProps) {
   );
 }
 
+/** A speech bubble: a new message (messaging spec 3.5). */
+export function MessageIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4.5 5.5h15a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H10l-4.5 3.5V16.5h-1a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z" />
+    </Svg>
+  );
+}
+
 export function CloseIcon(props: IconProps) {
   return (
     <Svg {...props}>
