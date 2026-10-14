@@ -1,0 +1,27 @@
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { Inbox } from "@/components/messages/Inbox";
+import { InboxSkeleton } from "@/components/messages/InboxSkeleton";
+import { parseInboxTab } from "@/lib/messaging/paths";
+
+/** A page for one person, so search engines leave it out (plan decision 24). */
+export const metadata: Metadata = { title: "Messages", robots: { index: false } };
+
+/**
+ * The inbox (messaging spec 3.2). The heading is prerendered; the tabs and conversations need the session, so they
+ * render per request inside <Suspense>.
+ */
+export default function MessagesPage({ searchParams }: PageProps<"/messages">) {
+  return (
+    <div className="page inbox-page">
+      <h1 className="inbox-title">Messages</h1>
+      <Suspense fallback={<InboxSkeleton />}>
+        <InboxForVisitor searchParams={searchParams} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function InboxForVisitor({ searchParams }: Pick<PageProps<"/messages">, "searchParams">) {
+  return <Inbox tab={parseInboxTab((await searchParams).tab)} />;
+}
