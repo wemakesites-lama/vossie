@@ -1,5 +1,5 @@
 import type { SampleEmailRow, SignInAttemptRow } from "./rows";
-import { sampleStore } from "./store";
+import { type SampleStore, sampleStore } from "./store";
 
 // Sign-in attempts, the code count and sample mode's outbox (accounts spec 2.2, 2.3 and 5).
 
@@ -29,18 +29,68 @@ export async function deleteSignInAttempt(key: string): Promise<void> {
   store.sampleEmails.delete(key);
 }
 
-/** How many codes went to `email` in the hour before `now` (spec 5). */
-export async function countCodesSent(email: string, now: Date): Promise<number> {
-  const since = now.getTime() - HOUR_MS;
-  return (sampleStore().codeSends.get(email) ?? []).filter((at) => Date.parse(at) > since).length;
+/**
+ * Counts one wrong try against the attempt and gives the new count (spec 2.2). 0 when the attempt has gone.
+ *
+ * This is one step, not a read, a change and a write of the whole row: two posts at once each get their own count, so
+ * neither can undo the other's try and slip past the lockout. Here nothing awaits between the read and the change,
+ * which is what makes it one step. The real backend must make it atomic too, for instance with one statement:
+ * `UPDATE sign_in_attempts SET wrong_tries = wrong_tries + 1 WHERE key = $1 RETURNING wrong_tries`.
+ */
+export async function recordWrongTry(attemptKey: string): Promise<number> {
+  const row = sampleStore().signInAttempts.get(attemptKey);
+  if (!row) return 0;
+  row.wrongTries += 1;
+  return row.wrongTries;
 }
 
-/** Notes a code sent to `email`, forgetting sends more than an hour old. */
-export async function recordCodeSent(email: string, now: Date): Promise<void> {
-  const { codeSends } = sampleStore();
+/** The sends to `email` in the hour before `now`. */
+function sendsInLastHour(store: SampleStore, email: string, now: Date): string[] {
   const since = now.getTime() - HOUR_MS;
-  const recent = (codeSends.get(email) ?? []).filter((at) => Date.parse(at) > since);
-  codeSends.set(email, [...recent, now.toISOString()]);
+  return (store.codeSends.get(email) ?? []).filter((at) => Date.parse(at) > since);
+}
+
+/** Writes down a send to `email`, and forgets every email's sends more than an hour old (they no longer count). */
+function noteSend(store: SampleStore, email: string, now: Date): void {
+  for (const other of [...store.codeSends.keys()]) {
+    const recent = sendsInLastHour(store, other, now);
+    if (recent.length === 0) store.codeSends.delete(other);
+    else store.codeSends.set(other, recent);
+  }
+  store.codeSends.set(email, [...(store.codeSends.get(email) ?? []), now.toISOString()]);
+}
+
+/**
+ * Asks to send a code to `email` (spec 5): counts the sends in the hour before `now` and, only if they are under
+ * `limit`, records this one and says yes. Otherwise nothing is recorded and it says no.
+ *
+ * Counting and recording are one step, so posts at once can't each count "under the limit" and all send. Here nothing
+ * awaits between the two, which is what makes it one step. The real backend must make it atomic too, and a count
+ * followed by an insert is not enough: use a single upsert on a per-email counter row
+ * (`INSERT … ON CONFLICT (email, hour) DO UPDATE SET n = n + 1 WHERE n < $limit RETURNING n`, no row back meaning "no"),
+ * or a transaction that holds a per-email lock while it counts and inserts.
+ */
+export async function reserveCodeSend(email: string, now: Date, limit: number): Promise<boolean> {
+  const store = sampleStore();
+  if (sendsInLastHour(store, email, now).length >= limit) return false;
+  noteSend(store, email, now);
+  return true;
+}
+
+/**
+ * How many codes went to `email` in the hour before `now` (spec 5). A read for tests and tools. The sign-in actions
+ * don't count and then record: they call reserveCodeSend, which does both in one step.
+ */
+export async function countCodesSent(email: string, now: Date): Promise<number> {
+  return sendsInLastHour(sampleStore(), email, now).length;
+}
+
+/**
+ * Notes a code sent to `email`, and forgets every email's sends more than an hour old. It doesn't check a limit: the
+ * sign-in actions call reserveCodeSend, which does. Kept for tests that need sends already on record.
+ */
+export async function recordCodeSent(email: string, now: Date): Promise<void> {
+  noteSend(sampleStore(), email, now);
 }
 
 /** Sample mode's outbox (spec 2.3, plan decision 5): keeps the last code "sent" for an attempt. */

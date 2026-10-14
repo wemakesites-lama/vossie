@@ -15,7 +15,7 @@ import {
 } from "./accounts";
 import { saveFormState } from "./form-states";
 import { createSession } from "./sessions";
-import { recordCodeSent, saveSignInAttempt } from "./sign-in";
+import { recordCodeSent, saveSampleEmail, saveSignInAttempt } from "./sign-in";
 import { resetSampleStore, sampleStore } from "./store";
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
@@ -60,6 +60,34 @@ describe("accounts (accounts spec 2.6 and 2.9)", () => {
     });
     expect(account.id).toMatch(/^acc-[0-9a-f-]{36}$/);
     expect(await findAccountByEmail("new@eduvos.com")).toEqual(account);
+  });
+
+  it("never makes a second account for an email: it gives back the one that's there, unchanged", async () => {
+    const first = await createAccount({ email: "new@eduvos.com", firstName: "Ayanda", campusSlug: "pretoria", now: NOW });
+    const again = await createAccount({
+      email: "new@eduvos.com",
+      firstName: "Zola",
+      campusSlug: "midrand",
+      now: new Date("2026-10-15T08:00:00.000Z"),
+    });
+    expect(again).toEqual(first);
+    expect(await getAccount(first.id)).toMatchObject({ firstName: "Ayanda", campusSlug: "pretoria" });
+    expect([...sampleStore().accounts.values()].filter((row) => row.email === "new@eduvos.com")).toHaveLength(1);
+  });
+
+  it("makes one account when two posts for the same new email overlap", async () => {
+    const [a, b] = await Promise.all([
+      createAccount({ email: "new@eduvos.com", firstName: "Ayanda", campusSlug: "pretoria", now: NOW }),
+      createAccount({ email: "new@eduvos.com", firstName: "Zola", campusSlug: "midrand", now: NOW }),
+    ]);
+    expect(b.id).toBe(a.id);
+    expect([...sampleStore().accounts.values()].filter((row) => row.email === "new@eduvos.com")).toHaveLength(1);
+  });
+
+  it("gives back a sample account rather than making a second one with its email", async () => {
+    const existing = await createAccount({ email: "student@eduvos.com", firstName: "Zola", campusSlug: "midrand", now: NOW });
+    expect(existing).toMatchObject({ id: "acc-student", firstName: "Thandi" });
+    expect(sampleStore().accounts.size).toBe(5);
   });
 
   it("changes the first name and campus", async () => {
@@ -142,6 +170,7 @@ describe("deleting an account (accounts spec 2.13)", () => {
       NOW,
     );
     await saveSignInAttempt(makeSignInAttempt({ key: "attempt", email: "pending@eduvos.com", step: "code" }), NOW);
+    await saveSampleEmail({ attemptKey: "attempt", to: "pending@eduvos.com", code: "111111", sentAt: NOW.toISOString() });
     await recordCodeSent("pending@eduvos.com", NOW);
 
     await deleteAccountData("acc-pending");
@@ -153,9 +182,38 @@ describe("deleting an account (accounts spec 2.13)", () => {
     expect([...store.sessions.keys()]).toEqual(["theirs"]);
     expect(store.formStates.size).toBe(0);
     expect(store.signInAttempts.has("attempt")).toBe(false);
+    expect(store.sampleEmails.has("attempt")).toBe(false);
     expect(store.codeSends.has("pending@eduvos.com")).toBe(false);
     expect(store.accounts.size).toBe(4);
     expect(store.consents.size).toBe(4);
+  });
+
+  it("clears the sample outbox by address, even for an attempt that has already gone", async () => {
+    // An outbox row whose attempt was ended some other way (a cancelled or tidied one) still holds the code and address.
+    await saveSampleEmail({ attemptKey: "orphan", to: "pending@eduvos.com", code: "222222", sentAt: NOW.toISOString() });
+    await saveSampleEmail({ attemptKey: "orphan-2", to: "pending@eduvos.com", code: "333333", sentAt: NOW.toISOString() });
+
+    await deleteAccountData("acc-pending");
+
+    expect(sampleStore().sampleEmails.size).toBe(0);
+  });
+
+  it("leaves another email's sign-in, outbox row and code count alone", async () => {
+    await saveSignInAttempt(makeSignInAttempt({ key: "mine", email: "pending@eduvos.com", step: "code" }), NOW);
+    await saveSampleEmail({ attemptKey: "mine", to: "pending@eduvos.com", code: "111111", sentAt: NOW.toISOString() });
+    await saveSampleEmail({ attemptKey: "orphan", to: "pending@eduvos.com", code: "222222", sentAt: NOW.toISOString() });
+    await recordCodeSent("pending@eduvos.com", NOW);
+    await saveSignInAttempt(makeSignInAttempt({ key: "theirs", email: "student@eduvos.com", step: "code" }), NOW);
+    await saveSampleEmail({ attemptKey: "theirs", to: "student@eduvos.com", code: "444444", sentAt: NOW.toISOString() });
+    await saveSampleEmail({ attemptKey: "theirs-orphan", to: "student@eduvos.com", code: "555555", sentAt: NOW.toISOString() });
+    await recordCodeSent("student@eduvos.com", NOW);
+
+    await deleteAccountData("acc-pending");
+
+    const store = sampleStore();
+    expect([...store.signInAttempts.keys()]).toEqual(["theirs"]);
+    expect([...store.sampleEmails.keys()].sort()).toEqual(["theirs", "theirs-orphan"]);
+    expect([...store.codeSends.keys()]).toEqual(["student@eduvos.com"]);
   });
 });
 

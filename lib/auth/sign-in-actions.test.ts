@@ -180,6 +180,15 @@ describe("step 2: the code (accounts spec 3.1)", () => {
     expect(attempt()).toMatchObject({ step: "email", email: "thandi@eduvos.com", codeHash: null, errors: ["locked"] });
   });
 
+  it("counts every wrong try, even when posts overlap, so the lockout can't be slipped past", async () => {
+    await start("thandi@eduvos.com");
+    const wrong = await wrongCode();
+    await Promise.all(Array.from({ length: 3 }, () => redirectSignalOf(() => verifyCode(form({ code: wrong })))));
+    expect(attempt()).toMatchObject({ step: "code", wrongTries: 3 });
+    await Promise.all(Array.from({ length: 2 }, () => redirectSignalOf(() => verifyCode(form({ code: wrong })))));
+    expect(attempt()).toMatchObject({ step: "email", codeHash: null, errors: ["locked"] });
+  });
+
   it("refuses the right code once its 10 minutes are up", async () => {
     await start("student@eduvos.com");
     const code = await sentCode();
@@ -225,6 +234,14 @@ describe("sending a new code (plan decision 6)", () => {
     expect(attempt()).toMatchObject({ resent: true, errors: [] });
     await redirectSignalOf(() => resendCode(form({})));
     expect(attempt()).toMatchObject({ step: "code", resent: false, errors: ["code-rate"] });
+  });
+
+  it("never goes past 5 codes an hour, even when posts overlap", async () => {
+    await start("thandi@eduvos.com");
+    for (let sent = 2; sent <= 4; sent++) await redirectSignalOf(() => resendCode(form({})));
+    expect(sampleStore().codeSends.get("thandi@eduvos.com")).toHaveLength(4);
+    await Promise.all(Array.from({ length: 4 }, () => redirectSignalOf(() => resendCode(form({})))));
+    expect(sampleStore().codeSends.get("thandi@eduvos.com")).toHaveLength(5);
   });
 
   it("stops saying \"We sent a new code\" after the next try", async () => {

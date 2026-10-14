@@ -12,10 +12,10 @@ import {
 } from "@/lib/data/accounts";
 import type { SignInAttemptRow, SignInError } from "@/lib/data/rows";
 import {
-  countCodesSent,
   deleteSignInAttempt,
   getSignInAttempt,
-  recordCodeSent,
+  recordWrongTry,
+  reserveCodeSend,
   saveSampleEmail,
   saveSignInAttempt,
 } from "@/lib/data/sign-in";
@@ -102,12 +102,12 @@ async function beginAttempt(
  * tries (plan decision 6). False, and nothing sent, when this email has had its 5 codes this hour.
  */
 async function sendCode(attempt: SignInAttemptRow, now: Date): Promise<boolean> {
-  if ((await countCodesSent(attempt.email, now)) >= CODES_PER_HOUR) return false;
+  // The place is counted and taken in one step, so posts at once can't each find room and all send (spec 5).
+  if (!(await reserveCodeSend(attempt.email, now, CODES_PER_HOUR))) return false;
   const code = newCode();
   attempt.codeHash = hashCode(attempt.key, code);
   attempt.codeExpiresAt = new Date(now.getTime() + CODE_TTL_MS).toISOString();
   attempt.wrongTries = 0;
-  await recordCodeSent(attempt.email, now);
   // Sample mode has no email service: its outbox stands in for one, and the sign-in page shows the code from it
   // (plan decision 5). The real email service replaces this call.
   await saveSampleEmail({ attemptKey: attempt.key, to: attempt.email, code, sentAt: now.toISOString() });
@@ -177,7 +177,9 @@ export async function verifyCode(formData: FormData): Promise<void> {
     attempt.codeExpiresAt = null;
     attempt.errors = [];
   } else {
-    attempt.wrongTries += 1;
+    // The try is counted in one step in the store, not read, added to and saved back with the row, so posts at once
+    // each count their own and none is lost (spec 2.2).
+    attempt.wrongTries = await recordWrongTry(attempt.key);
     if (attempt.wrongTries < MAX_WRONG_TRIES) {
       attempt.errors = ["code-wrong"];
     } else {

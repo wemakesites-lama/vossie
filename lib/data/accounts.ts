@@ -27,21 +27,35 @@ export async function getAccount(id: string): Promise<Account | null> {
   return row ? toAccount(row) : null;
 }
 
-/** The account with this (normalised) email, if there is one. */
-export async function findAccountByEmail(email: string): Promise<Account | null> {
+function rowByEmail(email: string): AccountRow | null {
   for (const row of sampleStore().accounts.values()) {
-    if (row.email === email) return toAccount(row);
+    if (row.email === email) return row;
   }
   return null;
 }
 
-/** A new student account (spec 2.6). Its id is random, as Supabase's would be. */
+/** The account with this (normalised) email, if there is one. */
+export async function findAccountByEmail(email: string): Promise<Account | null> {
+  const row = rowByEmail(email);
+  return row ? toAccount(row) : null;
+}
+
+/**
+ * A new student account (spec 2.6). Its id is random, as Supabase's would be. An email has one account, ever: when
+ * there is one already, whatever made this call (a second tab, a double post), that account is returned, unchanged,
+ * and its first name and campus are not overwritten with the new ones.
+ *
+ * Looking and making are one step here, because nothing awaits between them. The real backend must do the same with a
+ * unique index on the email (`INSERT … ON CONFLICT (email) DO NOTHING`, then read the row that is there).
+ */
 export async function createAccount(details: {
   email: string;
   firstName: string;
   campusSlug: string;
   now: Date;
 }): Promise<Account> {
+  const existing = rowByEmail(details.email);
+  if (existing) return toAccount(existing);
   const row: AccountRow = {
     id: `acc-${randomUUID()}`,
     email: details.email,
@@ -164,7 +178,8 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
 
 /**
  * Deletes an account straight away (spec 2.13): the account, its shop, its consent, its sessions and their forms'
- * state, any sign-in under way for its email, and its code count. Later stages add their tables here (messages,
+ * state, any sign-in under way for its email, every sample outbox row addressed to its email (found by address, so
+ * a row whose attempt has already ended goes too), and its code count. Later stages add their tables here (messages,
  * listings, reports). Nothing of anyone else's is touched.
  */
 export async function deleteAccountData(accountId: string): Promise<void> {
@@ -189,6 +204,9 @@ export async function deleteAccountData(accountId: string): Promise<void> {
     if (row.email !== account.email) continue;
     store.signInAttempts.delete(key);
     store.sampleEmails.delete(key);
+  }
+  for (const [key, row] of store.sampleEmails) {
+    if (row.to === account.email) store.sampleEmails.delete(key);
   }
   store.codeSends.delete(account.email);
 }
