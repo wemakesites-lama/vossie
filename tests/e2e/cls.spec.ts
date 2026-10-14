@@ -4,7 +4,9 @@ type Shift = { value: number; nodes: string[] };
 
 // A campus (the `vossie_campus` cookie) changes what the page shows and where the campus note, the empty state and the
 // results fall, so those pages are measured with one chosen too. Midrand has results; Mbombela has none. Saved reads
-// the `vossie_saved` cookie, so it's measured with listings saved and with none.
+// the `vossie_saved` cookie, so it's measured with listings saved and with none. The Looking For board reads the campus
+// cookie too; Mbombela has no requests of its own. A Hub event's and office hours' action streams in, so both are
+// measured.
 const PAGES: ReadonlyArray<[name: string, path: string, cookies?: Readonly<Record<string, string>>]> = [
   ["homepage", "/"],
   ["browse page", "/browse"],
@@ -19,6 +21,13 @@ const PAGES: ReadonlyArray<[name: string, path: string, cookies?: Readonly<Recor
   ["Saved page", "/saved", { vossie_saved: "l-001.l-026.l-016.l-007.l-004.l-009" }],
   ["Saved page (nothing saved)", "/saved"],
   ["collection page", "/collections/start-of-semester"],
+  ["Looking For board", "/looking-for"],
+  ["Looking For board (campus mbombela)", "/looking-for", { vossie_campus: "mbombela" }],
+  ["request page", "/looking-for/r-001"],
+  ["Hub page", "/hub"],
+  ["Hub event", "/hub/h-001"],
+  ["Hub office hours", "/hub/h-002"],
+  ["Hub tip", "/hub/h-013"],
 ];
 
 for (const [name, path, cookies] of PAGES) {

@@ -180,3 +180,64 @@ test("the 404 page", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
   expect(await seriousIssues(page)).toEqual([]);
 });
+
+test("the Looking For board", async ({ page }) => {
+  await page.goto("/looking-for");
+  await expect(page.getByRole("region", { name: "Open requests" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("the Looking For board at a campus with no requests", async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: "vossie_campus", value: "mbombela", url: baseURL! }]);
+  await page.goto("/looking-for");
+  await expect(page.getByText("Nothing at Mbombela yet.")).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("the Looking For board with nothing in a category", async ({ page }) => {
+  await page.goto("/looking-for?cat=tickets-events");
+  await expect(page.getByText("No requests here yet. Be the first to ask.")).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("a request", async ({ page }) => {
+  await page.goto("/looking-for/r-001");
+  await expect(page.getByRole("region", { name: "Already on Vossie" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("a closed request", async ({ page }) => {
+  await page.goto("/looking-for/r-015");
+  await expect(page.getByText("This request is closed")).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("the Hub", async ({ page }) => {
+  await page.goto("/hub");
+  await expect(page.getByRole("list", { name: "Tips" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("the Hub's office hours tab", async ({ page }) => {
+  await page.goto("/hub?type=office-hours");
+  await expect(page.getByRole("navigation", { name: "Post types" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("a Hub event", async ({ page }) => {
+  await page.goto("/hub/h-001");
+  await expect(page.locator(".hub-post-action").getByText(/RSVP|This event has passed/)).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("a past Hub event", async ({ page }) => {
+  await page.goto("/hub/h-011");
+  await expect(page.getByText("This event has passed")).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("a Hub tip", async ({ page }) => {
+  await page.goto("/hub/h-013");
+  await expect(page.locator(".hub-post-body").getByRole("heading", { level: 2 }).first()).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
