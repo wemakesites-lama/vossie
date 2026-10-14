@@ -5534,3 +5534,213 @@
     }
   }
 }
+
+/* --- Info pages: the frame (info and system plan, Task 1, spec 2.5 and section 6) --- */
+@layer components {
+  /* .page and .info-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
+  .info-page {
+    padding: 24px 16px 64px;
+  }
+
+  .info-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .info-lede {
+    max-width: 50ch;
+    margin-top: 12px;
+    color: var(--color-ink);
+    font-size: 18px;
+    line-height: 1.5;
+  }
+
+  .info-updated {
+    margin-top: 8px;
+    color: var(--color-muted);
+    font-size: 13px;
+  }
+
+  /* The banner says it in words; the border and the pale fill only back the words up (spec section 6). Navy on pale
+     is about 10:1. */
+  .info-draft {
+    max-width: 65ch;
+    margin-top: 20px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--color-navy);
+    border-radius: var(--radius-card);
+    background: var(--color-pale);
+    color: var(--color-navy);
+  }
+
+  .info-layout {
+    margin-top: 28px;
+  }
+
+  .info-toc-label {
+    color: var(--color-muted);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* Phones and tablets: one row of pills that scrolls sideways when it doesn't fit, with no scrollbar showing, like
+     browse's tabs. The 4px of padding above and below keeps focus rings inside the scroll box, which would clip them.
+     The row pulls out by the page's own padding, so the pills run to the screen's edge. */
+  .info-toc ol {
+    display: flex;
+    gap: 8px;
+    margin: 4px -16px 0;
+    padding: 4px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .info-toc ol::-webkit-scrollbar {
+    display: none;
+  }
+
+  .info-toc a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: 16px;
+    border: 1.5px solid var(--color-navy);
+    border-radius: 999px;
+    color: var(--color-navy);
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .info-toc a:hover {
+      background: var(--color-pale);
+    }
+  }
+
+  /* The text is about 65 characters wide, whatever the screen (spec 2.5). */
+  .info-body {
+    max-width: 65ch;
+    margin-top: 28px;
+  }
+
+  .info-section + .info-section {
+    margin-top: 40px;
+  }
+
+  .info-section-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: clamp(1.5rem, 1.2rem + 1vw, 1.875rem);
+    line-height: 1.05;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  /* Tailwind's reset strips the browser's text styles, so the page's own text is set back here. */
+  .info-body p,
+  .info-body ul,
+  .info-body ol {
+    margin-top: 12px;
+  }
+
+  .info-body ul,
+  .info-body ol {
+    padding-left: 1.25rem;
+  }
+
+  .info-body ul {
+    list-style: disc;
+  }
+
+  .info-body ol {
+    list-style: decimal;
+  }
+
+  .info-body li + li {
+    margin-top: 8px;
+  }
+
+  .info-body li::marker {
+    color: var(--color-navy);
+  }
+
+  .info-body h3 {
+    margin-top: 24px;
+    color: var(--color-navy);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .info-body h3 + p {
+    margin-top: 4px;
+  }
+
+  .info-body strong {
+    color: var(--color-navy);
+  }
+
+  /* Links in the text are underlined, so colour isn't the only sign of them; sky-dark is 4.7:1 on white (spec 6). */
+  .info-body a {
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .info-body code {
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: var(--color-panel);
+    font-size: 0.9em;
+    overflow-wrap: anywhere;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .info-page {
+      padding-inline: 40px;
+    }
+
+    .info-toc ol {
+      margin-inline: -40px;
+      padding-inline: 40px;
+    }
+  }
+
+  /* Desktop: the contents list stands on the left as a quiet column of links with a hairline beside them, and the
+     text takes the 65-character column next to it. */
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .info-layout {
+      display: grid;
+      grid-template-columns: 14rem minmax(0, 65ch);
+      column-gap: 64px;
+      align-items: start;
+    }
+
+    .info-toc ol {
+      display: grid;
+      gap: 0;
+      margin: 8px 0 0;
+      padding: 0;
+      overflow: visible;
+    }
+
+    .info-toc a {
+      padding: 6px 0 6px 14px;
+      border: 0;
+      border-left: 2px solid var(--color-line);
+      border-radius: 0;
+      font-weight: 500;
+      white-space: normal;
+    }
+
+    .info-body {
+      margin-top: 0;
+    }
+  }
+}
