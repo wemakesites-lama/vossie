@@ -143,3 +143,18 @@ No client code beyond the shell: forms post to Server Actions. The header's coun
 ## 8. Not in this stage
 
 Live updates, push or email notifications, attachments, blocking a user, and the staff side of reports (stage G).
+
+## 9. Changes on plan review (2026-10-14)
+
+The plan (`docs/superpowers/plans/2026-10-14-messaging.md`) refines these points; where they differ, these win.
+
+1. **Shops answer, not people.** A conversation belongs to a shop (its slug); whoever owns the shop answers. The storefront's Message goes to `/sellers/[slug]/message`, a question with no listing, one per buyer and shop. Stage G decides whether shop questions count as enquiries for trust badges.
+2. **Messaging the same listing again:** the Message link goes straight to the existing thread, and the composer shows a note instead of redirecting (a redirect would trap Back).
+3. **The scam check runs on replies too.**
+4. **No live character count:** a static hint ("Up to 1,000 characters"), and the server says what's too long. "Sent." is a note kept in the form state and cleared once read, not a flash cookie.
+5. **The header count** is a red badge on the account icon (a third icon doesn't fit at 360px). It's as fresh as the last full page load or post, and the inbox and threads have a Refresh link (a full page load).
+6. **Every write refreshes and then redirects,** which clears the pages Next keeps for Back; the end-to-end tests check the kept-page paths.
+7. **Reports:** one per target while it's open, and 10 a day per account. Privacy settings list "Reports you've made".
+8. **Deleting an account** removes its messages, notifications and reports. The other person keeps their side of each conversation, shown as "This person has left Vossie", with no reply form. A conversation with neither side left is deleted. The data export gains conversations, reports and notifications, with no ids.
+9. **How long messages are kept is Eduvos's call** (a go-live item). In sample mode they last until the server restarts.
+10. **Testing:** until stage F, the seller in end-to-end tests is the sample Tech corner account, used only on each test's own conversation.
