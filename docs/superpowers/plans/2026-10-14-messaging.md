@@ -205,7 +205,7 @@ The four tables, how they fit D's store, and what stages F and G add:
 |---|---|---|---|---|---|---|---|---|
 | Start (D's final figures, measured again at `f7e1bee`) | 150,614 | 151,361 | 151,770 | 151,374 | 151,090 | n/a | n/a | n/a |
 | Task 7, the session links | 150,614 | 151,361 | 151,770 | 151,374 | 151,090 | n/a | n/a | n/a |
-| Task 13, the header's badge and the strip | | | | | | | | |
+| Task 13, the header's badge and the strip | 150,613 | 151,360 | 151,769 | 151,373 | 151,089 | n/a | n/a | n/a |
 | **Final (Task 17)** | | | | | | | | |
 
 The stop line used: 152,305 B (decision 52). Unit tests at the start: 978 (153 files). End to end at the start: 734 pass, 541 skipped (D's final run, `docs/PROGRESS.md`). The storefront's and request page's start figures weren't in PROGRESS; they were measured at `f7e1bee` with `performance.spec.ts` (sign-in 150,614 B and account 150,614 B match D's). The highest page is the listing page, 535 B under the stop line.

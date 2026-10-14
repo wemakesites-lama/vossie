@@ -94,6 +94,7 @@ describe("error summary ids (accounts spec 6)", () => {
           account={account}
           campuses={campuses}
           details={{ ...detailsForm(account, null), errors: oops }}
+          counts={{ conversations: 0, notifications: 0 }}
         />
         <PrivacySettingsView consent={null} deleteErrors={oops} />
         <ComposerView subject={composer} status={{ kind: "open" }} form={composerWithErrors} />

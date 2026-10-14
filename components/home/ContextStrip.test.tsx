@@ -36,7 +36,7 @@ describe("ContextStripView (spec 7.4)", () => {
     expect(screen.getByText("2 new messages")).toBeInTheDocument();
     expect(screen.getByText("1 sale to confirm")).toBeInTheDocument();
     expect(screen.getByText("1 saved item is back")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open inbox" })).toHaveAttribute("href", "/account");
+    expect(screen.getByRole("link", { name: "Open inbox" })).toHaveAttribute("href", "/messages");
   });
 });
 

@@ -8,7 +8,7 @@ import { DETAILS_FIELDS } from "@/lib/auth/form-state";
 import { errorFor, formErrors, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
 import { sastMonthYear } from "@/lib/time";
-import type { Account, Campus, StaffRole } from "@/lib/types";
+import type { Account, Campus, StaffRole, UnreadCounts } from "@/lib/types";
 
 export type DetailsForm = { firstName: string; campus: string; errors: FormError[]; saved: boolean };
 
@@ -31,10 +31,12 @@ type AccountViewProps = {
   account: Account;
   campuses: readonly Pick<Campus, "slug" | "name">[];
   details: DetailsForm;
+  /** Unread conversations and new notifications, for the first two rows (messaging spec 3.6). */
+  counts: Pick<UnreadCounts, "conversations" | "notifications">;
 };
 
 /** Your account (accounts spec 3.2): who you are, Edit details, the account's pages, and Sign out. */
-export function AccountView({ account, campuses, details }: AccountViewProps) {
+export function AccountView({ account, campuses, details, counts }: AccountViewProps) {
   const campusName = campuses.find((campus) => campus.slug === account.campusSlug)?.name ?? "None chosen";
   const nameError = errorFor(details.errors, DETAILS_FIELDS.firstName);
   const campusError = errorFor(details.errors, DETAILS_FIELDS.campus);
@@ -117,6 +119,20 @@ export function AccountView({ account, campuses, details }: AccountViewProps) {
       <nav aria-label="Your account's pages">
         <ul className="account-rows">
           <li>
+            <CountRow
+              href="/messages"
+              label="Messages"
+              detail={counts.conversations > 0 ? `${counts.conversations} unread` : null}
+            />
+          </li>
+          <li>
+            <CountRow
+              href="/notifications"
+              label="Notifications"
+              detail={counts.notifications > 0 ? `${counts.notifications} new` : null}
+            />
+          </li>
+          <li>
             {/* No prefetch, as in the header: Saved's card chunk would load on every visit here. */}
             <Link href="/saved" prefetch={false} className="account-row">
               Saved
@@ -170,6 +186,23 @@ function SellingRow({ seller }: { seller: Account["seller"] }) {
         {detail && (
           <>
             <span className="sr-only">,</span> <span className="account-row-detail">{detail}</span>
+          </>
+        )}
+      </span>
+      <ChevronRightIcon />
+    </Link>
+  );
+}
+
+/** A row with a count under its name when there's something new (messaging spec 3.6), read as "Messages, 2 unread". */
+function CountRow({ href, label, detail }: { href: string; label: string; detail: string | null }) {
+  return (
+    <Link href={href} prefetch={false} className="account-row">
+      <span>
+        {label}
+        {detail && (
+          <>
+            <span className="sr-only">,</span> <span className="account-row-detail account-row-count">{detail}</span>
           </>
         )}
       </span>

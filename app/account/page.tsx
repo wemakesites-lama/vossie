@@ -5,6 +5,7 @@ import { AccountView, detailsForm } from "@/components/account/AccountView";
 import { DETAILS_FORM, readFormState } from "@/lib/auth/form-state";
 import { requireAccount } from "@/lib/auth/session";
 import { getCampuses } from "@/lib/data";
+import { unreadCounts } from "@/lib/data/messages";
 
 /** An account page belongs to one person, so search engines leave it out (accounts spec 3.3). */
 export const metadata: Metadata = { title: "Your account", robots: { index: false } };
@@ -26,6 +27,11 @@ export default function AccountPage() {
 
 async function AccountContent() {
   const account = await requireAccount("/account");
-  const [campuses, state] = await Promise.all([getCampuses(), readFormState(DETAILS_FORM)]);
-  return <AccountView account={account} campuses={campuses} details={detailsForm(account, state)} />;
+  // requireAccount awaited connection() as it found the session, so the counts may read the clock (decision 26).
+  const [campuses, state, counts] = await Promise.all([
+    getCampuses(),
+    readFormState(DETAILS_FORM),
+    unreadCounts(account.id, new Date()),
+  ]);
+  return <AccountView account={account} campuses={campuses} details={detailsForm(account, state)} counts={counts} />;
 }
