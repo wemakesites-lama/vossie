@@ -7,7 +7,12 @@ import { FitText } from "./FitText";
 import { InstallButton } from "./InstallButton";
 import { NewsletterForm } from "./NewsletterForm";
 
-type FooterLink = { href: string; label: string };
+type FooterLink = {
+  href: string;
+  label: string;
+  /** `false` where following the link should not download its route when the footer scrolls into view. */
+  prefetch?: false;
+};
 type LinkGroup = {
   title: string;
   links: readonly FooterLink[];
@@ -24,7 +29,9 @@ const LINK_GROUPS: readonly LinkGroup[] = [
       { href: "/browse?cat=tech", label: "Tech" },
       { href: "/browse?cat=services", label: "Services" },
       { href: "/looking-for", label: "Looking For" },
-      { href: "/saved", label: "Saved" },
+      // No prefetch, as with the header's Saved link: the footer is on every page, and prefetching Saved would download
+      // its route chunk (about 0.6 KB) on each one once the footer scrolls into view on desktop and tablet.
+      { href: "/saved", label: "Saved", prefetch: false },
     ],
   },
   {
@@ -33,7 +40,7 @@ const LINK_GROUPS: readonly LinkGroup[] = [
       { href: "/sell", label: "List an item" },
       { href: "/how-it-works", label: "How selling works" },
       { href: "/hub", label: "Incubation Hub" },
-      { href: "/safety", label: "Seller safety" },
+      { href: "/seller-guidelines", label: "Seller guidelines" },
     ],
   },
   {
@@ -41,7 +48,9 @@ const LINK_GROUPS: readonly LinkGroup[] = [
     links: [
       { href: "/how-it-works", label: "How it works" },
       { href: "/safety", label: "Safety" },
+      { href: "/trust", label: "How trust works" },
       { href: "/privacy", label: "Privacy (POPIA)" },
+      { href: "/terms", label: "Terms of use" },
       { href: "/account", label: "Your account" },
     ],
   },
@@ -107,7 +116,8 @@ export function SiteFooter({ campuses }: { campuses: readonly Campus[] }) {
             <p>An Eduvos Incubation Hub project</p>
           </div>
           <p className="footer-legal-links">
-            <Link href="/privacy">Privacy (POPIA)</Link> · <Link href="/safety">Safety</Link>
+            <Link href="/privacy">Privacy (POPIA)</Link> · <Link href="/terms">Terms of use</Link> ·{" "}
+            <Link href="/safety">Safety</Link>
           </p>
         </div>
       </div>
@@ -123,7 +133,9 @@ function FooterLinks({ links, columns = false }: { links: readonly FooterLink[];
     <ul className={cx("footer-links", columns && "footer-links-columns")}>
       {links.map((link) => (
         <li key={`${link.href}-${link.label}`}>
-          <Link href={link.href}>{link.label}</Link>
+          <Link href={link.href} prefetch={link.prefetch}>
+            {link.label}
+          </Link>
         </li>
       ))}
     </ul>
