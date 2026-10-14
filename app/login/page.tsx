@@ -1,34 +1,39 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ComingSoon } from "@/components/ComingSoon";
+import { SignIn } from "@/components/auth/SignIn";
+import { SignInSkeleton } from "@/components/auth/SignInSkeleton";
 import { safeNextPath } from "@/lib/next-path";
 
-export const metadata: Metadata = { title: "Sign in" };
+/** Signing in belongs to one visitor, so search engines leave it out (accounts spec 3.1). */
+export const metadata: Metadata = { title: "Sign in", robots: { index: false } };
 
+/**
+ * Sign in (accounts spec 3.1). The heading is prerendered; the card for this browser's state and the link back to
+ * `next` render per request inside <Suspense>.
+ */
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
-    <ComingSoon title="Sign in">
-      <p>
-        Signing in arrives in the next stage. Then you&apos;ll be able to message sellers, report listings and keep your
-        saved items on every device.
-      </p>
-      <Suspense fallback={null}>
-        <BackLink searchParams={searchParams} />
+    <div className="page signin-page">
+      <h1 className="signin-title">Sign in</h1>
+      <Suspense fallback={<SignInSkeleton />}>
+        <SignInForVisitor searchParams={searchParams} />
       </Suspense>
-    </ComingSoon>
+    </div>
   );
 }
 
-/** A link back to where the visitor came from, when `next` is a path on this site (spec 5.9). */
-async function BackLink({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
+async function SignInForVisitor({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
   const next = safeNextPath((await searchParams).next);
-  if (!next) return null;
   return (
-    <p className="mt-4">
-      <Link href={next} className="font-semibold text-sky-dark underline underline-offset-4">
-        {next.startsWith("/listings/") ? "Back to the listing" : "Go back"}
-      </Link>
-    </p>
+    <>
+      <SignIn next={next} />
+      {/* Back to where the visitor came from, when that's a path on this site (browse and listing spec 5.9). */}
+      {next && (
+        <p className="signin-back">
+          <Link href={next}>{next.startsWith("/listings/") ? "Back to the listing" : "Go back"}</Link>
+        </p>
+      )}
+    </>
   );
 }

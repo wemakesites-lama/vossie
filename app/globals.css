@@ -6466,3 +6466,273 @@
     }
   }
 }
+
+/* --- Accounts: forms (accounts plan, Task 7, spec 3 and 6) --- */
+@layer components {
+  .form-stack {
+    display: grid;
+    gap: 20px;
+  }
+
+  .form-field {
+    display: grid;
+    gap: 6px;
+  }
+
+  .form-label {
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .form-hint {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  /* 16px text, so iOS doesn't zoom into the field. The border is the field colour (3.4:1 on white, WCAG 1.4.11). */
+  .form-input {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--color-field);
+    border-radius: 10px;
+    background: var(--color-white);
+    color: var(--color-ink);
+    font-size: 16px;
+  }
+
+  /* An invalid field says so in words (the message above it); the thicker red border backs that up. */
+  .form-input[aria-invalid="true"] {
+    border: 2px solid var(--color-danger);
+  }
+
+  .form-select {
+    appearance: none;
+    padding-right: 44px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='%2315305D' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+  }
+
+  /* The box and its words make one target at least 44px tall (spec 6). */
+  .form-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .form-checkbox {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin-block: 10px;
+    accent-color: var(--color-navy);
+  }
+
+  .form-check label {
+    min-height: 44px;
+    padding-block: 10px;
+    color: var(--color-ink);
+  }
+
+  .form-check a {
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .form-error {
+    color: var(--color-danger);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .form-summary {
+    padding: 16px 18px;
+    border: 2px solid var(--color-danger);
+    border-radius: var(--radius-card);
+    background: var(--color-white);
+  }
+
+  .form-summary-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 22px;
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  .form-summary-list {
+    display: grid;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .form-summary-list a {
+    color: var(--color-danger);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .form-notice {
+    padding: 12px 16px;
+    border-radius: var(--radius-card);
+    background: var(--color-pale);
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .form-submit {
+    justify-self: start;
+    min-width: 10rem;
+  }
+
+  /* A button that reads as a link, for second choices such as "Send a new code". Sky-dark on white is 4.7:1. */
+  .link-button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+/* --- Accounts: the sign-in page (accounts plan, Task 7, spec 3.1) --- */
+@layer components {
+  /* .page and .signin-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
+  .signin-page {
+    padding: 24px 16px 64px;
+  }
+
+  /* One column, 30rem at most, centred in the page column (spec 3.1). */
+  .signin-title,
+  .signin-card,
+  .signin-back {
+    max-width: 30rem;
+    margin-inline: auto;
+  }
+
+  .signin-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .signin-card {
+    display: grid;
+    gap: 20px;
+    margin-top: 20px;
+    padding: 24px 20px;
+    border: 1.5px solid var(--color-line);
+    border-radius: var(--radius-panel);
+  }
+
+  /* While the step streams in: about step 1's height, sample accounts and all, so the back link doesn't jump. */
+  .signin-skeleton {
+    min-height: 40rem;
+    border: 0;
+    background: var(--color-panel);
+  }
+
+  .signin-lede strong {
+    color: var(--color-navy);
+    overflow-wrap: anywhere;
+  }
+
+  .signin-sample-code {
+    padding: 12px 16px;
+    border-radius: var(--radius-card);
+    background: var(--color-pale);
+    color: var(--color-navy);
+  }
+
+  .signin-sample-code strong {
+    font-size: 20px;
+    letter-spacing: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .form-input-code {
+    max-width: 12rem;
+    font-size: 22px;
+    letter-spacing: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .signin-secondary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 24px;
+  }
+
+  .signin-samples {
+    display: grid;
+    gap: 12px;
+  }
+
+  /* "or" between two hairlines. */
+  .signin-or {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--color-muted);
+    font-size: 13px;
+  }
+
+  .signin-or::before,
+  .signin-or::after {
+    content: "";
+    flex: 1;
+    height: 1.5px;
+    background: var(--color-line);
+  }
+
+  .signin-samples-title {
+    color: var(--color-navy);
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .signin-sample-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .signin-back {
+    margin-top: 12px;
+  }
+
+  .signin-back a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .signin-page {
+      padding-inline: 40px;
+    }
+
+    .signin-card {
+      padding: 32px;
+    }
+
+    .signin-sample-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .signin-skeleton {
+      min-height: 33rem;
+    }
+  }
+}

@@ -79,7 +79,7 @@ test("messaging goes through the sign-in page and back", async ({ page }) => {
   await page.goto("/listings/l-001");
   await page.getByRole("link", { name: "Message seller" }).click();
   await expect(page).toHaveURL(/\/login\?next=%2Flistings%2Fl-001$/);
-  await expect(page.getByText("Signing in arrives in the next stage.", { exact: false })).toBeVisible();
+  await expect(page.getByLabel("Your Eduvos email address")).toBeVisible();
   await page.getByRole("link", { name: "Back to the listing" }).click();
   await expect(page).toHaveURL(/\/listings\/l-001$/);
 });
