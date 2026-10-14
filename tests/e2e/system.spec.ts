@@ -111,4 +111,17 @@ test.describe("security headers (info and system spec 2.9)", () => {
       expect(headers["content-security-policy"], path).toBeUndefined();
     }
   });
+
+  // /photos/[id] hands out bytes people uploaded, so nosniff matters most there (selling plan amendment 8, item 10).
+  // A stored photo can't be fetched here until a form can upload one: Task 16's selling tests check the same two
+  // headers on a 200 as well.
+  test("the photo route sends nosniff, and keeps nothing of a photo that isn't there", async ({ request }) => {
+    onlyAt("desktop-1440");
+    for (const id of ["ph-00000000-0000-4000-8000-000000000000", "nope"]) {
+      const response = await request.get(`/photos/${id}`);
+      expect(response.status(), id).toBe(404);
+      expect(response.headers()["x-content-type-options"], id).toBe("nosniff");
+      expect(response.headers()["cache-control"], id).toBe("no-store");
+    }
+  });
 });

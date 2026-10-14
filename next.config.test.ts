@@ -51,3 +51,13 @@ describe("security headers (info and system spec 2.9)", () => {
     );
   });
 });
+
+describe("uploads (selling spec 2.3, plan decision 12)", () => {
+  it("lets a Server Action take up to 32 MB, room for six 5 MB photos and the form", () => {
+    expect(nextConfig.experimental?.serverActions?.bodySizeLimit).toBe("32mb");
+  });
+
+  it("keeps no resized photos on the server's disk, so a deleted photo can't be served again", () => {
+    expect(nextConfig.images?.maximumDiskCacheSize).toBe(0);
+  });
+});
