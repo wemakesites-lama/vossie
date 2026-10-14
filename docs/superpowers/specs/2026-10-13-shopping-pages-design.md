@@ -39,7 +39,7 @@ Finish the shopping journey: from a listing to its seller's storefront, from any
 | `/collections/[slug]` | Prerendered for every collection. Unknown slugs get the 404 |
 | `/saved` | The heading and device note are prerendered; the list renders per request inside `<Suspense>` (it reads the saved cookie) |
 
-All three pages are Server Components. The only client code they use already exists: the Save hearts, and the storefront's Share button.
+All three pages are Server Components. The client code they use is the Save hearts and the storefront's Share button (both already existed), and on Saved a small `RefreshWhenStale` effect (section 5.5, added in the build).
 
 ---
 
@@ -107,7 +107,7 @@ All three pages are Server Components. The only client code they use already exi
 - Tapping a heart on the Saved page unsaves the listing, and the usual "Removed from saved" toast appears.
 - The card stays where it is, with its photo turned grey and a "Removed" tag on the photo. The card's text keeps full contrast.
 - Tapping the heart again saves it back.
-- This is CSS only: the grid's `li:has(.save-heart[aria-pressed="false"])`.
+- This is CSS only: the card's `.listing-card:has(.save-heart[aria-pressed="false"])`.
 - The card is gone the next time the page loads.
 
 **The Saved page's hearts start pressed.** A Save heart reads the saved list in the browser, and on the server it shows "not saved". On the Saved page that would make every card look removed until the page's JavaScript runs, and for good without it. So the Saved page tells its cards they're saved:
@@ -236,7 +236,7 @@ The homepage spec's section 10 applies, with these additions:
 ## 10. Performance budget
 
 - Every page stays under 153,600 B of first-visit JavaScript (brotli quality 5, 390px).
-- **Saved and collections** add no client code beyond the shell and the Save hearts.
+- **Saved and collections** add no client code beyond the shell and the Save hearts, except Saved's small `RefreshWhenStale` effect (105 B, section 5.5).
 - **The storefront** adds the existing Share button.
 - **The hearts' `saved` prop** adds a few bytes to the Save heart, on every page with cards, including the listing page.
 - If any page goes more than 100 B past the listing page's accepted 152,078 B (so past 152,178 B), the build stops and reports.

@@ -176,8 +176,10 @@ Review notes that were deliberately not acted on:
 
 ## 2026-10-14: Open points for Lama after the shopping build
 Review notes that were deliberately not acted on:
-- Fixed section ids repeat when Next keeps an earlier copy of the same page hidden in the DOM, so a section's `aria-labelledby` could take a hidden heading's text. The fix cuts across every page: give ids per render.
-- The header's saved count includes ids that no longer exist (a saved listing that has since been removed still counts).
+- Fixed section ids repeat when Next keeps an earlier copy of the same page hidden in the DOM. The final review checked this in Chrome and it is **not a bug today**: Next puts the visible copy first, so `aria-labelledby` names the right section (axe agrees). React's `useId` wouldn't help, because in Server Components it restarts on every request. If it's ever needed, build the ids from the slug (e.g. `collection-moving-in-listings-title`).
+- The header's saved count includes ids that no longer exist, and a visitor can't remove them (there's no card to tap). The final review's fix, to be built: Saved forgets the ids it couldn't find, so the cookie and the header follow.
+- The footer's Saved link still prefetches (578 B on desktop and tablet once the footer scrolls into view); it's fixed with part C's footer task.
+- Saved only refreshes when it's shown again, so a save made in another tab appears on the next visit, not when you switch back. Re-saving a card on Saved moves it to the top on the next visit.
 
 ## Next
 - Lama reviews the screenshots in `docs/progress/shopping/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "shopping review screenshots"`.
