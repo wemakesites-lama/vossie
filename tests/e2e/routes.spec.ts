@@ -25,7 +25,7 @@ test.describe("placeholder routes", () => {
     });
   }
 
-  test("unknown listing, collection, seller and request links show the 404 page", async ({ page }) => {
+  test("unknown listing, collection, seller, request and Hub post links show the 404 page", async ({ page }) => {
     onlyAtPhoneAndDesktop();
     await page.goto("/listings/nope");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
@@ -37,6 +37,9 @@ test.describe("placeholder routes", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
     await expect(page).toHaveTitle("Page not found · Vossie");
     await page.goto("/looking-for/nope");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
+    await expect(page).toHaveTitle("Page not found · Vossie");
+    await page.goto("/hub/nope");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
     await expect(page).toHaveTitle("Page not found · Vossie");
   });

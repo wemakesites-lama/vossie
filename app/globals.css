@@ -6345,3 +6345,121 @@
     }
   }
 }
+
+/* --- Community: a Hub post (community plan, Task 7, spec 5.2) --- */
+@layer components {
+  /* .page and .hub-post-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
+  .hub-post-page {
+    padding: 8px 16px 64px;
+  }
+
+  .hub-post {
+    max-width: 46rem;
+  }
+
+  /* Phones: the cover edge to edge at 7:3, pulled out by the page's 16px. */
+  .hub-post-cover {
+    --photo-ratio: 7 / 3;
+    margin-inline: -16px;
+  }
+
+  .hub-post-kind {
+    margin-top: 20px;
+  }
+
+  .hub-post-title {
+    margin-top: 6px;
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.5rem);
+    line-height: 1;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .hub-post-date {
+    margin-top: 12px;
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  .hub-post-facts {
+    margin-top: 16px;
+  }
+
+  .hub-post-body {
+    margin-top: 24px;
+  }
+
+  /* RSVP or Request a slot streams in after the rest of the post (plan decision 9). The room is kept for each kind's
+     tallest state, so nothing moves: the button, or office hours' button and two-line note. */
+  .hub-post-action {
+    display: grid;
+    justify-items: start;
+    align-content: start;
+    gap: 8px;
+    min-height: 48px;
+    margin-top: 28px;
+  }
+
+  .hub-post-action[data-kind="office-hours"] {
+    min-height: 100px;
+  }
+
+  .hub-post-cta {
+    min-height: 48px;
+    padding-inline: 32px;
+  }
+
+  .hub-post-note {
+    max-width: 40ch;
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  /* Navy on the grey panel. */
+  .hub-post-passed {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: var(--color-panel);
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .hub-post-action-skeleton {
+    width: 10rem;
+    height: 48px;
+    border-radius: 999px;
+  }
+
+  .hub-upcoming {
+    margin-top: 48px;
+  }
+
+  .hub-upcoming-skeleton-title {
+    width: 14rem;
+    height: 24px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .hub-post-page {
+      padding-inline: 40px;
+    }
+
+    .hub-post-cover {
+      margin-top: 8px;
+      margin-inline: 0;
+      border-radius: var(--radius-panel);
+    }
+  }
+
+  /* Landscape phones keep the phone layout, with the cover cropped short so it doesn't fill the screen. */
+  @media (orientation: landscape) and (max-height: 29.99rem) {
+    .hub-post-cover {
+      --photo-ratio: 4 / 1;
+    }
+  }
+}
