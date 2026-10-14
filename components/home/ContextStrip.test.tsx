@@ -20,7 +20,7 @@ describe("ContextStripView (spec 7.4)", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Why you can trust Vossie" })).toBeInTheDocument();
     expect(screen.getByText("Verified Incubation Hub sellers")).toBeInTheDocument();
     expect(screen.getByText("Never pay before you see it")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "How trust works" })).toHaveAttribute("href", "/safety");
+    expect(screen.getByRole("link", { name: "How trust works" })).toHaveAttribute("href", "/trust");
   });
 
   it("picks up where a returning visitor left off", () => {

@@ -12,7 +12,7 @@ import { Photo } from "@/components/listings/Photo";
 import { SectionError } from "./SectionError";
 import { SectionHeader } from "./SectionHeader";
 
-const HOW_WE_PICK = { href: "/how-it-works", label: "How we pick", context: " featured sellers" };
+const HOW_WE_PICK = { href: "/trust#trust-featured", label: "How we pick", context: " featured sellers" };
 
 /** Featured today (spec 7.10): the fair daily draw of verified sellers, the visitor's campus first. */
 export function FeaturedToday() {

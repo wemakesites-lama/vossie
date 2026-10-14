@@ -38,7 +38,7 @@ describe("Featured today (spec 7.10)", () => {
     expect(within(cards[0]).getByText("Featured")).toBeInTheDocument();
     expect(screen.getAllByText("Verified seller.")).toHaveLength(4);
     expect(screen.getAllByText(/· Midrand$/)).toHaveLength(4);
-    expect(screen.getByRole("link", { name: "How we pick featured sellers" })).toHaveAttribute("href", "/how-it-works");
+    expect(screen.getByRole("link", { name: "How we pick featured sellers" })).toHaveAttribute("href", "/trust#trust-featured");
   });
 
   it("features sellers from every campus when none is chosen", async () => {

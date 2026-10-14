@@ -40,7 +40,7 @@ function TrustStrip() {
           </li>
         ))}
         <li className="context-end">
-          <Link href="/safety" className="context-link">
+          <Link href="/trust" className="context-link">
             How trust works
           </Link>
         </li>
