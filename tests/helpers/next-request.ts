@@ -8,6 +8,7 @@
  *   vi.mock("next/headers", async () => (await import("@/tests/helpers/next-request")).nextHeaders(request));
  *   vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
  *   vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
+ *   vi.mock("next/cache", async () => (await import("@/tests/helpers/next-request")).nextCache(request));
  *
  * Call resetRequest(request) in beforeEach.
  */
@@ -18,12 +19,15 @@ export type FakeRequest = {
   sent: Map<string, { value: string; options: Record<string, unknown> }>;
   /** The x-forwarded-proto header. */
   proto: string;
+  /** Set when a Server Action called refresh() from next/cache (messaging plan decision 6). */
+  refreshed?: boolean;
 };
 
 export function resetRequest(request: FakeRequest): void {
   request.cookies.clear();
   request.sent.clear();
   request.proto = "http";
+  request.refreshed = false;
 }
 
 export function nextHeaders(request: FakeRequest) {
@@ -89,4 +93,13 @@ export async function redirectSignalOf(run: () => Promise<unknown>): Promise<Red
     throw error;
   }
   throw new Error("Expected a redirect, but there was none");
+}
+
+/** Stands in for next/cache: refresh() just notes that it was called (messaging plan, Task 6). */
+export function nextCache(request: FakeRequest) {
+  return {
+    refresh: () => {
+      request.refreshed = true;
+    },
+  };
 }
