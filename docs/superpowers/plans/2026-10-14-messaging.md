@@ -162,6 +162,18 @@ The controller adds amendments here; they override the tasks below wherever they
 
 1. **Error summaries need their own id** (D's review, `17dd972`). `ErrorSummary` takes a required `id` prop, and its heading's id is `${id}-title`, because Next keeps earlier pages in the DOM and ids must be unique across them. Every form this plan adds passes its own: the composer `composer-summary`, the thread's reply `thread-reply-summary`, the report form `report-summary` (and any other form, `<page>-<form>-summary`). Each task that adds one also adds that form to `components/forms/summary-ids.test.tsx`, which renders every form at once and checks no id repeats.
 2. **The request page's report link** (recheck item 15). `RequestView` keeps `signInHref(…)` in a local `const signIn` used by both its links; Task 7 edits by meaning.
+3. **The review of Tasks 1 to 5** (Claude, under decision 54). The built code matched the plan; these change the plan's own code, in one fix commit after Task 7:
+   1. **A sale nobody can dispute doesn't count.** `markCompleted` refuses (`"not-allowed"`) when the buyer has left. Deleting a buyer whose sale is Done puts it back to Replied and forgets the completion, so it never confirms itself.
+   2. **The scam check catches more ways to say it.** Paying in advance also matches "before" (with first, upfront, in advance), "transfer", "cash send" and "eWallet" on its own; bank details also match "bank account" and "bank acc". "I'll pay cash when I see it." still passes.
+   3. **Plan decision 12 is about messages.** It allows one unread *message* notification per conversation per person; a sale to confirm is its own notification. When the sale is confirmed (by the buyer or by itself) or rejected, its sale-to-confirm notification is marked read.
+   4. **"Asked" until someone replies.** A buyer's second message before any reply notifies the seller as "{Name} asked about {title}", not "replied".
+   5. **`cleanText` drops invisible and direction-changing characters:** U+202A–U+202E, U+2066–U+2069, U+200B, U+200E, U+200F, U+2060 and U+FEFF. It keeps U+200D (emoji need it). A message of only those counts as empty.
+   6. **Comments say what's counted:** code points (plan decision 8), so an emoji family counts as several.
+   7. **The report limit says what it counts:** "You've sent 10 reports in the last 24 hours. Try again later."
+   8. **Deletion clears `readAt`** on the other side's remaining messages: it was when the deleted person read them. A conversation a deletion leaves empty still goes; its shop couldn't reply to it anyway.
+   9. **The deleted side** (spec 9.8, amended to match): names show as "Deleted account", and the thread's note says "This person has left Vossie, so you can't reply." Tasks 9 and 10 use these words, in place of plan decision 21's "The other person has left Vossie…".
+   10. **The export runs the auto-confirm first,** so it never says "done" for a sale that has confirmed itself.
+   11. **The account export test is strict again:** apart from the three new keys, the rest is compared with `toEqual`.
 
 ## Store design
 
