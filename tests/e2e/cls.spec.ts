@@ -6,9 +6,10 @@ type Shift = { value: number; nodes: string[] };
 // results fall, so those pages are measured with one chosen too. Midrand has results; Mbombela has none. Saved reads
 // the `vossie_saved` cookie, so it's measured with listings saved and with none. The Looking For board reads the campus
 // cookie too; Mbombela has no requests of its own. A Hub event's and office hours' action streams in, so both are
-// measured. Account pages are measured signed in, with a sample account.
+// measured. Account pages are measured signed in, with a sample account. Messaging's pages are measured signed in too:
+// the seller for a thread and notifications, which the seller only reads.
 const PAGES: ReadonlyArray<
-  [name: string, path: string, cookies?: Readonly<Record<string, string>>, signedIn?: boolean]
+  [name: string, path: string, cookies?: Readonly<Record<string, string>>, signIn?: string]
 > = [
   ["homepage", "/"],
   ["browse page", "/browse"],
@@ -31,11 +32,17 @@ const PAGES: ReadonlyArray<
   ["Hub office hours", "/hub/h-002"],
   ["Hub tip", "/hub/h-013"],
   ["sign-in page", "/login"],
-  ["account page", "/account", undefined, true],
-  ["privacy settings page", "/account/privacy", undefined, true],
+  ["account page", "/account", undefined, "Student, Midrand"],
+  ["privacy settings page", "/account/privacy", undefined, "Student, Midrand"],
+  ["homepage (signed in: the badge and the strip)", "/", undefined, "Student, Midrand"],
+  ["composer page", "/listings/l-002/message", undefined, "Student, Midrand"],
+  ["inbox page", "/messages", undefined, "Student, Midrand"],
+  ["thread page", "/messages/conv-s1", undefined, "Seller, Tech corner"],
+  ["report page", "/report?listing=l-002", undefined, "Student, Midrand"],
+  ["notifications page", "/notifications", undefined, "Seller, Tech corner"],
 ];
 
-for (const [name, path, cookies, signedIn] of PAGES) {
+for (const [name, path, cookies, signIn] of PAGES) {
   test(`the ${name} holds still while fonts and content arrive (CLS 0.05 or less, spec 11)`, async ({
     page,
     context,
@@ -45,10 +52,10 @@ for (const [name, path, cookies, signedIn] of PAGES) {
     if (cookies) {
       await context.addCookies(Object.entries(cookies).map(([cookie, value]) => ({ name: cookie, value, url: baseURL! })));
     }
-    if (signedIn) {
+    if (signIn) {
       // Signed in with a sample account's button first. The measure below is a fresh page load, so only it counts.
       await page.goto("/login");
-      await page.locator("main").getByRole("button", { name: "Student, Midrand", exact: true }).click();
+      await page.locator("main").getByRole("button", { name: signIn, exact: true }).click();
       await page.waitForURL(/\/account$/);
     }
 
