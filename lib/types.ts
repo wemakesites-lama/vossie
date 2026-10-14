@@ -218,11 +218,47 @@ export type ViewerActivity = {
   savedItemsBack: number;
 };
 
-/** Who is looking (spec section 13). No accounts exist yet, so `signedIn` is a development switch. */
+/**
+ * Who is looking (spec section 13): the chosen campus, whether they're signed in, and the activity worth a "Welcome
+ * back" strip, or null when there's none (accounts spec 2.9 and 3.4).
+ */
 export type Viewer = {
   campus: CampusChoice;
   signedIn: boolean;
   activity: ViewerActivity | null;
+};
+
+/** What a Hub staff member can do on top of being a student (accounts spec 2.9). */
+export type StaffRole = "mentor" | "admin";
+
+/** Where a student's shop stands (accounts spec 2.9, selling spec 7). */
+export type SellerStatus = "pending" | "approved" | "paused";
+
+export type SellerProfile = {
+  status: SellerStatus;
+  /** The storefront's slug, once the shop has one. A shop waiting for approval has none yet. */
+  sellerSlug: string | null;
+};
+
+/** A signed-in student (accounts spec 2.9). Every account is a student; some also sell, mentor or run Vossie. */
+export type Account = {
+  id: string;
+  /** Lower case. Never shown to other students (messaging spec 2.11). */
+  email: string;
+  firstName: string;
+  campusSlug: string;
+  roles: readonly StaffRole[];
+  seller: SellerProfile | null;
+  /** ISO 8601 in UTC. */
+  createdAt: string;
+};
+
+/** A record that the student agreed to the privacy policy (accounts spec 2.7). */
+export type Consent = {
+  /** The policy's version, e.g. "2026-10-draft". */
+  version: string;
+  /** ISO 8601 in UTC. */
+  agreedAt: string;
 };
 
 /** A listing page's "More from" row (spec 5.7): the seller's other listings, or the same category's. */
