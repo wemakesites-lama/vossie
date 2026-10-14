@@ -36,7 +36,8 @@ Every signed-in screen can be built, clicked through and tested before Supabase 
 5. **Sessions:**
    - an `httpOnly` cookie `vossie_session` holding a random id: 30 days, `SameSite=Lax`, `Secure` on HTTPS;
    - signing out deletes it and the stored session;
-   - a second, readable cookie `vossie_signed_in=1` only tells the header which icon to show; the server never trusts it.
+   - the header and menu learn the session from the server (small server parts passed into them), so there's no readable "signed in" cookie and no client code for it (changed on plan review: it saves bytes on every page);
+   - session ids, sign-in attempt keys and codes are stored hashed.
 6. **First sign-in asks for a first name and a campus** (prefilled from the campus cookie). It's a third step on `/login`. Sellers see the first name in messages; nobody else sees it.
 7. **Consent is recorded:** the policy version (`2026-10-draft`) and the time, shown on the privacy settings page.
 8. **Sample accounts make testing quick.** Seeded accounts:
@@ -52,9 +53,9 @@ Every signed-in screen can be built, clicked through and tested before Supabase 
    In sample mode, step 1 also shows "Sign in as a sample account" buttons. Each one signs in straight away and goes to `next`.
 9. **Roles:** every account is a student. An account can also have a seller profile (pending, approved or paused), and can be a mentor or an admin. `getViewer()` returns the account or `null`. The old development switch `VOSSIE_SAMPLE_SIGNED_IN` goes, and the context strip's activity comes from the account's real numbers (zeros until messaging and selling exist).
 10. **Pages that need an account** call `requireAccount(nextPath)` inside `<Suspense>`. It redirects to `/login?next=…` when signed out. After signing in, `next` is followed (`safeNextPath`).
-11. **The sign-in links already on the site keep working.** Message, Report, RSVP, Post a request and the rest still link to `signInHref(...)`. Signed-in visitors who follow one land back where they were. Each later stage turns its own links into the real action for signed-in visitors.
-12. **Saved stays on the device in sample mode.** Moving saves into the account needs a server write on every heart tap; that arrives with the real backend. The Saved page's note stays true.
-13. **Account deletion is immediate in the store** (POPIA): the account, its sessions, consent and future messages and listings are removed, and the visitor is signed out to the homepage with a toast.
+11. **The sign-in links already on the site keep working.** Message, Report, RSVP, Post a request and the rest still link to `signInHref(...)`. Signed-in visitors who follow one see "You're signed in as…" with a link back to where they were (section 3.1). Each later stage turns its own links into the real action for signed-in visitors.
+12. **Saved stays on the device in sample mode.** Moving saves into the account needs a server write on every heart tap; that arrives with the real backend. The Saved page's note and the homepage's save note are reworded so they stay true once sign-in exists (they promised saves would follow you "when sign-in arrives").
+13. **Account deletion is immediate in the store** (POPIA): the account, its sessions, consent and future messages and listings are removed, and the visitor is signed out to the homepage with a toast. Signing out shows a toast too. The toast's wording travels in a short-lived (60-second) flash cookie, and only the homepage carries the client code that shows it.
 
 ---
 
@@ -73,12 +74,14 @@ Every signed-in screen can be built, clicked through and tested before Supabase 
     - "Tick the box to agree to the privacy policy.".
 - **Step 2 (code):**
   - "We sent a code to t•••@eduvos.com", a code field (`inputmode="numeric"`, `autocomplete="one-time-code"`, 6 digits), and **Sign in**;
-  - "Use a different email", which cancels the attempt;
+  - "Use a different email", which cancels the attempt, and **Send a new code**;
   - in sample mode, the code in a pale note.
   - **Errors:**
+    - "Enter the 6-digit code." (anything that isn't 6 digits doesn't use up a try);
     - "That code isn't right. 4 tries left.";
     - "That code has expired. Send a new one.";
-    - "Too many tries. Start again.".
+    - "Too many tries. Start again.";
+    - a rate-limit message when an email has had 5 codes in an hour.
 - **Step 3 (first sign-in):** "Your first name" (2 to 40 characters), "Your campus" (a select of the 13 campuses, prefilled), and **Continue**.
 - **Signed in already:** the page says "You're signed in as {email}", with links to your account and back.
 
@@ -105,7 +108,7 @@ Every signed-in screen can be built, clicked through and tested before Supabase 
 
 ### 3.4 The shell
 
-- **Header:** the account icon's link and name follow `vossie_signed_in`:
+- **Header:** the account icon's link and name follow the session, read on the server:
   - signed out: "Sign in", to `/login`;
   - signed in: "Your account", to `/account`.
 - **Menu:** the same, plus **Sign out** when signed in.
@@ -132,7 +135,7 @@ Every signed-in screen can be built, clicked through and tested before Supabase 
 
 ## 6. Accessibility
 
-Labels on every field. Errors are announced: the error summary is focused after a failed post, using `autoFocus` on the summary, which needs no client code. Buttons are at least 44px.
+Labels on every field. Errors are announced: after a failed post without the app's JavaScript (a full page load), the error summary is focused with `autoFocus`, which needs no client code; with JavaScript, the summary is a `role="alert"` and is announced instead. Buttons are at least 44px. The expired-code case is unit-tested only (an end-to-end test can't wait 10 minutes).
 
 ## 7. Performance
 
