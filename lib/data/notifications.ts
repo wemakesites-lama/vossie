@@ -1,0 +1,133 @@
+import { randomUUID } from "node:crypto";
+import type { NotificationItem, NotificationKind } from "@/lib/types";
+import type { NotificationRow } from "./rows";
+import { sampleStore } from "./store";
+
+// Notifications (messaging spec 2.9 and 3.5; plan decisions 12 and 13): one row per thing that needs an account's
+// attention, its sentence and link fixed when it's made. Server Actions make them (only they make ids); pages read
+// them and mark them read. Times come from the caller.
+
+type NewNotification = {
+  accountId: string;
+  kind: NotificationKind;
+  subjectId: string;
+  text: string;
+  href: string;
+  now: Date;
+};
+
+function add({ accountId, kind, subjectId, text, href, now }: NewNotification): void {
+  const id = `note-${randomUUID()}`;
+  sampleStore().notifications.set(id, {
+    id,
+    accountId,
+    kind,
+    subjectId,
+    text,
+    href,
+    createdAt: now.toISOString(),
+    readAt: null,
+  });
+}
+
+/** A notification of any kind: a sale to confirm here; report outcomes and shop approvals in stage G. */
+export async function notify(notification: NewNotification): Promise<void> {
+  add(notification);
+}
+
+/**
+ * Tells `accountId` about a message in a conversation (plan decision 12). While the last such notification is
+ * unread, it's brought up to date (its sentence and time) rather than a second one added, so a busy thread doesn't
+ * flood the list.
+ */
+export async function notifyAboutMessage({
+  accountId,
+  conversationId,
+  text,
+  href,
+  now,
+}: {
+  accountId: string;
+  conversationId: string;
+  text: string;
+  href: string;
+  now: Date;
+}): Promise<void> {
+  for (const row of sampleStore().notifications.values()) {
+    if (row.accountId !== accountId || row.kind !== "message" || row.subjectId !== conversationId) continue;
+    if (row.readAt !== null) continue;
+    row.text = text;
+    row.createdAt = now.toISOString();
+    return;
+  }
+  add({ accountId, kind: "message", subjectId: conversationId, text, href, now });
+}
+
+function ofAccount(accountId: string): NotificationRow[] {
+  return [...sampleStore().notifications.values()]
+    .filter((row) => row.accountId === accountId)
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+}
+
+/** The account's newest `limit` notifications, newest first, saying which were new (spec 3.5). Copies. */
+export async function getNotifications(accountId: string, limit: number): Promise<NotificationItem[]> {
+  return ofAccount(accountId)
+    .slice(0, limit)
+    .map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      text: row.text,
+      href: row.href,
+      createdAt: row.createdAt,
+      isNew: row.readAt === null,
+    }));
+}
+
+/** How many of the account's notifications are new: the header's badge (spec 2.9). */
+export async function countNewNotifications(accountId: string): Promise<number> {
+  return ofAccount(accountId).filter((row) => row.readAt === null).length;
+}
+
+/** Opening /notifications marks them all read (spec 2.9). */
+export async function markNotificationsRead(accountId: string, now: Date): Promise<void> {
+  for (const row of sampleStore().notifications.values()) {
+    if (row.accountId === accountId && row.readAt === null) row.readAt = now.toISOString();
+  }
+}
+
+/** Opening a thread marks its notifications read (plan decision 12). */
+export async function markConversationNotificationsRead(
+  accountId: string,
+  conversationId: string,
+  now: Date,
+): Promise<void> {
+  for (const row of sampleStore().notifications.values()) {
+    if (row.accountId === accountId && row.subjectId === conversationId && row.readAt === null) {
+      row.readAt = now.toISOString();
+    }
+  }
+}
+
+/**
+ * Deleting an account (plan decision 14): its own notifications, and everyone's about `subjectIds` (the conversations
+ * it was in), which name it.
+ */
+export async function deleteNotifications({
+  accountId,
+  subjectIds,
+}: {
+  accountId: string;
+  subjectIds: ReadonlySet<string>;
+}): Promise<void> {
+  const { notifications } = sampleStore();
+  for (const [id, row] of notifications) {
+    if (row.accountId === accountId || subjectIds.has(row.subjectId)) notifications.delete(id);
+  }
+}
+
+/** An account's notifications in its data export (plan decision 15): no ids. */
+export type NotificationExport = { text: string; at: string; read: boolean };
+
+export async function exportNotifications(accountId: string): Promise<NotificationExport[]> {
+  return ofAccount(accountId).map((row) => ({ text: row.text, at: row.createdAt, read: row.readAt !== null }));
+}
