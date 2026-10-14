@@ -11,7 +11,8 @@ function ConversationField({ id }: { id: string }) {
 /**
  * The sale (messaging spec 2.5, plan decision 30): the seller's Mark as completed once they've replied (not when the
  * buyer has left, plan amendment 3); the buyer's Confirm the sale and It didn't happen once it's done; and lines saying
- * where it stands. Every press is a plain form.
+ * where it stands. Every press is a plain form. A sale waiting to be confirmed shows nothing when the other side has
+ * left: deleting an account puts it back to Replied, so this is only a guard (plan amendment 6).
  */
 export function SaleActions({ thread }: { thread: Thread }) {
   const { id, role, status, otherName, otherPresent, completedAt, confirmedAt, confirmedBy } = thread;
@@ -23,6 +24,7 @@ export function SaleActions({ thread }: { thread: Thread }) {
     return <p className="thread-sale">{line}</p>;
   }
   if (status === "done" && completedAt) {
+    if (!otherPresent) return null;
     const marked = shortSastDate(completedAt);
     const auto = shortSastDate(autoConfirmAt(completedAt));
     if (role === "seller") {

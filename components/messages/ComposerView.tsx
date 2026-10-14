@@ -59,7 +59,7 @@ export function ComposerView({ subject, status, form }: ComposerViewProps) {
         <div className="composer-note">
           <p className="form-notice">This listing isn&apos;t available right now, so it can&apos;t be messaged.</p>
           {listing && (
-            <Link href={`/browse?cat=${listing.categorySlug}`} className="btn btn-outline text-navy">
+            <Link href={`/browse?cat=${listing.categorySlug}`} prefetch={false} className="btn btn-outline text-navy">
               See similar items
             </Link>
           )}

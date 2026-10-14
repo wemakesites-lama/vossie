@@ -162,6 +162,34 @@ describe("the sale (messaging spec 2.5, plan decision 30)", () => {
     expect(within(ask).getByRole("button", { name: "It didn't happen" })).toBeInTheDocument();
   });
 
+  it("asks the buyer nothing when the seller has left, since nobody stands behind the sale (messaging plan amendment 6, fix 2)", () => {
+    show(
+      makeThread({
+        status: "done",
+        completedAt: "2026-10-13T15:00:00.000Z",
+        otherName: "Deleted account",
+        otherPresent: false,
+      }),
+    );
+    expect(screen.queryByRole("region", { name: "Did the sale happen?" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Confirm the sale|It didn't happen/ })).toBeNull();
+    expect(screen.getByText("This person has left Vossie, so you can't reply.")).toBeInTheDocument();
+  });
+
+  it("tells the seller nothing is waiting when the buyer has left, the same rule from the other side", () => {
+    show(
+      makeThread({
+        role: "seller",
+        status: "done",
+        completedAt: "2026-10-13T15:00:00.000Z",
+        otherName: "Deleted account",
+        otherPresent: false,
+      }),
+    );
+    expect(screen.queryByText(/You marked this as completed/)).toBeNull();
+    expect(screen.getByText("This person has left Vossie, so you can't reply.")).toBeInTheDocument();
+  });
+
   it("tells the seller they're waiting for the buyer", () => {
     show(makeThread({ role: "seller", otherName: "Ayanda", status: "done", completedAt: "2026-10-13T15:00:00.000Z" }));
     expect(screen.getByText(/^You marked this as completed on 13 Oct\./)).toHaveTextContent(

@@ -32,11 +32,13 @@ export function reportReasonId(target: ReportTarget, reason: string): string {
 
 /**
  * The report form's fields' ids, for the thing reported. A missing reason links to the first radio button, so the
- * reason's id is that button's; the detail's is "report-detail-seller-tech-corner".
+ * reason's id is that button's; the detail's is "report-detail-seller-tech-corner". The reasons' error belongs to the
+ * group, not to a button, so its id ("report-reason-seller-tech-corner-error") is the group's, not a field's.
  */
-export function reportFields(target: ReportTarget): { reason: string; detail: string } {
+export function reportFields(target: ReportTarget): { reason: string; reasonError: string; detail: string } {
   return {
     reason: reportReasonId(target, REPORT_REASONS[0].value),
+    reasonError: `report-reason-${target.kind}-${target.id}-error`,
     detail: `report-detail-${target.kind}-${target.id}`,
   };
 }

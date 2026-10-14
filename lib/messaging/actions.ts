@@ -173,9 +173,9 @@ function reportTargetFrom(formData: FormData): ReportTarget | null {
 }
 
 /**
- * Send report (spec 3.4): one of the seven reasons and an optional detail, at most 10 a day. A second report on a
- * target the account has already reported, while that report is open, goes straight to the thank-you and stores
- * nothing (plan decision 17).
+ * Send report (spec 3.4): one of the seven reasons and an optional detail, at most 10 in any 24 hours. A second
+ * report on a target the account has already reported, while that report is open, goes straight to the thank-you and
+ * stores nothing (plan decision 17).
  */
 export async function sendReport(formData: FormData): Promise<void> {
   const target = reportTargetFrom(formData);

@@ -110,7 +110,7 @@ function InboxEmpty({ tab }: { tab: InboxTab }) {
   return (
     <div className="inbox-empty">
       <p>No messages yet. Find something you like and message the seller.</p>
-      <Link href="/browse" className="btn btn-primary">
+      <Link href="/browse" prefetch={false} className="btn btn-primary">
         Browse
       </Link>
     </div>

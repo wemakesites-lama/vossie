@@ -8,7 +8,7 @@ export async function ReportSentBack({ params }: { params: Readonly<Record<strin
   const subject = target ? await reportSubject(target) : null;
   if (!subject) {
     return (
-      <Link href="/" className="btn btn-outline text-navy">
+      <Link href="/" prefetch={false} className="btn btn-outline text-navy">
         Back to the homepage
       </Link>
     );

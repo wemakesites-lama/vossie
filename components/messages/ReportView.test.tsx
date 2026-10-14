@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { FormStateRow } from "@/lib/data/rows";
 import type { ReportTarget } from "@/lib/types";
@@ -117,6 +118,24 @@ describe("the report form (messaging spec 3.4)", () => {
     expect(screen.getByRole("group", { name: "Why are you reporting it?" })).toHaveAccessibleDescription(
       "Error: Choose a reason.",
     );
+  });
+
+  it("starts empty for each thing reported, so one target's reason and detail never carry to the next (plan amendment 6)", async () => {
+    // /report?listing=A and /report?seller=B are one page to Next's router, which keeps the form it has.
+    const user = userEvent.setup();
+    const seller: ReportTarget = { kind: "seller", id: "tech-corner" };
+    const sellerSubject = { title: "Tech corner", href: "/sellers/tech-corner", backLabel: "Back to the shop" };
+    const { rerender } = render(
+      <ReportView target={LISTING} subject={SUBJECT} already={false} form={reportForm(null, LISTING)} />,
+    );
+    await user.click(screen.getByRole("radio", { name: "Spam" }));
+    await user.type(screen.getByLabelText("Tell us more (optional)"), "Posted twice");
+    expect(screen.getByRole("radio", { name: "Spam" })).toBeChecked();
+    expect(screen.getByLabelText("Tell us more (optional)")).toHaveValue("Posted twice");
+
+    rerender(<ReportView target={seller} subject={sellerSubject} already={false} form={reportForm(null, seller)} />);
+    expect(screen.getAllByRole("radio").filter((radio) => (radio as HTMLInputElement).checked)).toEqual([]);
+    expect(screen.getByLabelText("Tell us more (optional)")).toHaveValue("");
   });
 
   it("says when the visitor has reported it already, with no form (plan decision 17)", () => {

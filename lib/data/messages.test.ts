@@ -468,6 +468,56 @@ describe("deleting an account (plan decision 14)", () => {
     expect(await getNotifications("acc-student", 50)).toEqual([]);
   });
 
+  it("puts a Done sale back to Replied when the seller leaves, and it never confirms itself (messaging plan amendment 6, fix 2)", async () => {
+    expect(sampleStore().conversations.get("conv-s2")).toMatchObject({ status: "done", sellerGone: false });
+    await forgetAccountInMessaging("acc-seller", "tech-corner");
+    expect(sampleStore().conversations.get("conv-s2")).toMatchObject({
+      sellerGone: true,
+      status: "replied",
+      completedAt: null,
+      confirmedAt: null,
+      confirmedBy: null,
+    });
+    const afterTheSevenDays = new Date("2026-11-01T10:00:00.000Z");
+    expect((await getThread("conv-s2", "acc-student", afterTheSevenDays))?.status).toBe("replied");
+    expect(await unreadCounts("acc-student", afterTheSevenDays)).toMatchObject({ salesToConfirm: 0 });
+    expect(await confirmSale({ conversationId: "conv-s2", accountId: "acc-student", now: afterTheSevenDays })).toBe(
+      "not-allowed",
+    );
+  });
+
+  it("leaves a sale that is already confirmed, and the conversation's times, when the seller leaves", async () => {
+    await confirmSale({ conversationId: "conv-s2", accountId: "acc-student", now: later(5) });
+    await forgetAccountInMessaging("acc-seller", "tech-corner");
+    expect(sampleStore().conversations.get("conv-s2")).toMatchObject({
+      sellerGone: true,
+      status: "confirmed",
+      completedAt: "2026-10-13T15:00:00.000Z",
+      confirmedAt: later(5).toISOString(),
+      confirmedBy: "buyer",
+      firstReplyAt: "2026-10-12T10:48:00.000Z",
+    });
+  });
+
+  it("leaves a Replied or Asked conversation's status alone when the seller leaves", async () => {
+    const { buyer, conversationId } = await ayandaAsks();
+    await forgetAccountInMessaging("acc-seller", "tech-corner");
+    expect(sampleStore().conversations.get(conversationId)).toMatchObject({ buyerId: buyer.id, status: "asked" });
+    expect(sampleStore().conversations.get("conv-s1")).toMatchObject({ status: "replied" });
+  });
+
+  it("won't let the buyer confirm or reject a sale once the seller has left (messaging plan amendment 6, fix 2)", async () => {
+    // Deleting the seller already undoes a Done sale; this is the rule behind it, for a Done sale that got here some other way.
+    sampleStore().conversations.get("conv-s2")!.sellerGone = true;
+    const change = { conversationId: "conv-s2", accountId: "acc-student", now: later(1) };
+    expect(await confirmSale(change)).toBe("not-allowed");
+    expect(await rejectSale(change)).toBe("not-allowed");
+    expect(sampleStore().conversations.get("conv-s2")).toMatchObject({ status: "done", confirmedAt: null });
+    expect(await getNotifications("acc-student", 50)).toContainEqual(
+      expect.objectContaining({ kind: "sale-to-confirm", isNew: true }),
+    );
+  });
+
   it("removes a conversation once neither side is left, or nothing is left in it", async () => {
     await forgetAccountInMessaging("acc-seller", "tech-corner");
     await forgetAccountInMessaging("acc-student", null);

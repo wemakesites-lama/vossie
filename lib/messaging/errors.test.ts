@@ -34,6 +34,7 @@ describe("messaging's error words (messaging spec 3.1 and 3.4, plan decision 26)
     // The reason's error links to the first radio button, so its id is that radio's.
     expect(reportFields({ kind: "seller", id: "tech-corner" })).toEqual({
       reason: "report-reason-seller-tech-corner-scam",
+      reasonError: "report-reason-seller-tech-corner-error",
       detail: "report-detail-seller-tech-corner",
     });
     expect(reportFields({ kind: "request", id: "r-001" }).detail).toBe("report-detail-request-r-001");

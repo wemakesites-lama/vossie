@@ -1,10 +1,8 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { LinkProps } from "@/components/messages/SessionLinks";
 import { composerPath, reportPath, type MessageTarget } from "@/lib/messaging/paths";
 import { signInHref } from "@/lib/next-path";
 import type { ReportTarget } from "@/lib/types";
-
-type LinkProps<Target> = { target: Target; className?: string; children: ReactNode };
 
 /**
  * Stands in for components/messages/ViewerLinks.tsx in component tests (messaging plan, Task 7). The real links are

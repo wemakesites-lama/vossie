@@ -250,10 +250,13 @@ export async function markCompleted(change: SaleChange): Promise<SaleResult> {
   return "done";
 }
 
-/** The buyer's Confirm the sale (spec 2.5): Done becomes Confirmed, and the sale to confirm is read. */
+/**
+ * The buyer's Confirm the sale (spec 2.5): Done becomes Confirmed, and the sale to confirm is read. Not when the seller
+ * has left: nobody stands behind the claim, so it wouldn't count (messaging plan amendment 6).
+ */
 export async function confirmSale(change: SaleChange): Promise<SaleResult> {
   const row = await saleRow(change, "buyer", "done");
-  if (!row) return "not-allowed";
+  if (!row || row.sellerGone) return "not-allowed";
   row.status = "confirmed";
   row.confirmedAt = change.now.toISOString();
   row.confirmedBy = "buyer";
@@ -261,10 +264,13 @@ export async function confirmSale(change: SaleChange): Promise<SaleResult> {
   return "done";
 }
 
-/** The buyer's It didn't happen (spec 2.5): back to Replied, no completion counted, and the sale to confirm is read. */
+/**
+ * The buyer's It didn't happen (spec 2.5): back to Replied, no completion counted, and the sale to confirm is read. Not
+ * when the seller has left, as for Confirm the sale.
+ */
 export async function rejectSale(change: SaleChange): Promise<SaleResult> {
   const row = await saleRow(change, "buyer", "done");
-  if (!row) return "not-allowed";
+  if (!row || row.sellerGone) return "not-allowed";
   row.status = "replied";
   row.completedAt = null;
   await markSaleNotificationsRead(change.accountId, row.id, change.now);
@@ -380,9 +386,11 @@ export async function unreadCounts(accountId: string, now: Date): Promise<Unread
  * conversation's times stay, for the trust badges. Notifications about those conversations go, since they name the
  * account. `shopSlug` is the account's storefront, if it has one.
  *
- * Two more things follow from the person having left (messaging plan amendment 3). The other side's remaining
- * messages are no longer read: their `readAt` was when the deleted person read them. And a sale waiting for a deleted
- * buyer goes back to Replied, with its completion forgotten, so nobody has to confirm it and it never confirms itself.
+ * Two more things follow from the person having left (messaging plan amendments 3 and 6). The other side's remaining
+ * messages are no longer read: their `readAt` was when the deleted person read them. And a sale waiting to be
+ * confirmed (Done) goes back to Replied, with its completion forgotten, whichever side left: with the buyer gone nobody
+ * can dispute it, and with the seller gone nobody stands behind it. So nobody has to confirm it and it never confirms
+ * itself. A sale that is already Confirmed stays.
  */
 export async function forgetAccountInMessaging(accountId: string, shopSlug: string | null): Promise<void> {
   const { conversations, messages } = sampleStore();
@@ -397,14 +405,13 @@ export async function forgetAccountInMessaging(accountId: string, shopSlug: stri
       if (message.from === side) messages.delete(id);
       else message.readAt = null;
     }
-    if (side === "buyer") {
-      row.buyerId = null;
-      if (row.status === "done") {
-        row.status = "replied";
-        row.completedAt = null;
-      }
-    } else {
-      row.sellerGone = true;
+    if (side === "buyer") row.buyerId = null;
+    else row.sellerGone = true;
+    // A sale waiting to be confirmed has lost either the buyer who could dispute it or the seller who made the claim
+    // (messaging plan amendment 6).
+    if (row.status === "done") {
+      row.status = "replied";
+      row.completedAt = null;
     }
   }
   for (const id of touched) {

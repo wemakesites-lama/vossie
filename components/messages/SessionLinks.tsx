@@ -10,7 +10,8 @@ import { ViewerMessageLink, ViewerReportLink } from "./ViewerLinks";
 // 2.1); the session's link streams in, with the same words and look, so nothing moves. Server Components and a Link,
 // with no prefetch: no client bytes.
 
-type LinkProps<Target> = { target: Target; className?: string; children: ReactNode };
+/** What the session links take; ViewerLinks.tsx and the test stand-in use the same shape. */
+export type LinkProps<Target> = { target: Target; className?: string; children: ReactNode };
 
 export function MessageSellerLink({ target, className, children }: LinkProps<MessageTarget>) {
   const signedOut = (

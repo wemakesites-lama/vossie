@@ -6,6 +6,7 @@ import { errorFor, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
 import { sendReport } from "@/lib/messaging/actions";
 import { messagingErrors, reportFields, reportReasonId } from "@/lib/messaging/errors";
+import { reportFormKey } from "@/lib/messaging/paths";
 import { REPORT_REASONS } from "@/lib/messaging/rules";
 import type { ReportSubject } from "@/lib/messaging/subjects";
 import type { ReportTarget } from "@/lib/types";
@@ -57,11 +58,13 @@ function ReportFormView({ target, form }: { target: ReportTarget; form: ReportFo
   const fields = reportFields(target);
   const reasonError = errorFor(form.errors, fields.reason);
   // The error belongs to the group (aria-invalid isn't allowed on a radio button), so the fieldset carries it.
-  const reasonErrorId = `report-reason-${target.kind}-${target.id}-error`;
+  const reasonErrorId = fields.reasonError;
   return (
     <>
       <ErrorSummary id="report-summary" errors={form.errors} />
-      <form action={sendReport} noValidate className="form-stack">
+      {/* The key names the target: /report?listing=A and /report?seller=B are one page to Next's router, which keeps
+          the form it has, so without it B would start with A's reason and detail (plan amendment 6). */}
+      <form key={reportFormKey(target)} action={sendReport} noValidate className="form-stack">
         <input type="hidden" name="kind" value={target.kind} />
         <input type="hidden" name="id" value={target.id} />
         <fieldset className="report-reasons" aria-describedby={describedBy(reasonError && reasonErrorId)}>

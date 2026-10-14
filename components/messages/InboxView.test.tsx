@@ -1,8 +1,12 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { makeSummary } from "@/tests/helpers/fakes";
+import { prefetchingLinks } from "@/tests/helpers/next-link";
 import { InboxView } from "./InboxView";
 import { StatusPill } from "./StatusPill";
+
+// Link shows its prefetch as data-prefetch, to check that no link here prefetches (decision 53).
+vi.mock("next/link", async () => (await import("@/tests/helpers/next-link")).nextLinkShowingPrefetch);
 
 // Wednesday 14 October 2026, 15:00 in South Africa.
 const NOW = new Date("2026-10-14T13:00:00Z");
@@ -69,6 +73,16 @@ describe("the inbox (messaging spec 3.2)", () => {
     render(<InboxView tab="buying" hasShop={false} conversations={[]} now={NOW} />);
     expect(screen.getByText("No messages yet. Find something you like and message the seller.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Browse" })).toHaveAttribute("href", "/browse");
+  });
+
+  it("doesn't prefetch Browse, nor any other link (CLAUDE.md, decision 53, plan amendment 6)", () => {
+    const empty = render(<InboxView tab="buying" hasShop={false} conversations={[]} now={NOW} />);
+    expect(screen.getByRole("link", { name: "Browse" })).toHaveAttribute("data-prefetch", "false");
+    expect(prefetchingLinks(empty.container)).toEqual([]);
+    empty.unmount();
+    const full = render(<InboxView tab="selling" hasShop conversations={[makeSummary()]} now={NOW} />);
+    expect(full.container.querySelectorAll("a[data-prefetch]").length).toBeGreaterThan(0);
+    expect(prefetchingLinks(full.container)).toEqual([]);
   });
 
   it("tells a seller with no enquiries where they'll show up (plan decision 26)", () => {

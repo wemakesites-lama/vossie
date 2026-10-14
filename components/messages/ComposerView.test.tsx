@@ -3,10 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import type { FormStateRow } from "@/lib/data/rows";
 import type { MessageTarget } from "@/lib/messaging/paths";
 import { composerSubject } from "@/lib/messaging/subjects";
+import { prefetchingLinks } from "@/tests/helpers/next-link";
 import { composerForm, ComposerView, type ComposerStatus } from "./ComposerView";
 
 // The form only needs something to post to; the action has its own test.
 vi.mock("@/lib/messaging/actions", () => ({ sendFirstMessage: async () => {} }));
+// Link shows its prefetch as data-prefetch, to check that no link here prefetches (decision 53).
+vi.mock("next/link", async () => (await import("@/tests/helpers/next-link")).nextLinkShowingPrefetch);
 
 const L007: MessageTarget = { kind: "listing", listingId: "l-007" };
 
@@ -102,5 +105,20 @@ describe("the composer (messaging spec 3.1)", () => {
     await show({ kind: "listing", listingId: "l-001" }, { kind: "existing", conversationId: "conv-s2" });
     expect(screen.getByText("You've already messaged Tech corner about this.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open the conversation" })).toHaveAttribute("href", "/messages/conv-s2");
+  });
+
+  it("doesn't prefetch any link it draws, calls to action included (CLAUDE.md, decision 53, plan amendment 6)", async () => {
+    const statuses: ComposerStatus[] = [
+      { kind: "open" },
+      { kind: "own" },
+      { kind: "unavailable" },
+      { kind: "existing", conversationId: "conv-s2" },
+    ];
+    for (const status of statuses) {
+      const { container, unmount } = await show({ kind: "listing", listingId: "l-001" }, status);
+      expect(container.querySelectorAll("a[data-prefetch]").length, status.kind).toBeGreaterThan(0);
+      expect(prefetchingLinks(container).map((link) => link.textContent), status.kind).toEqual([]);
+      unmount();
+    }
   });
 });
