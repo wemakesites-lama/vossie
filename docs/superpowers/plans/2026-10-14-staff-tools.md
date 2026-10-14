@@ -165,6 +165,12 @@ The controller adds amendments here; they override the tasks below wherever they
     - Staff pages show the 404 from inside the page, with status 200, in sample mode; the proxy check is a go-live item.
 
     Task 22 lists for Lama that a deleted sample staff account, signed in again by its button, doesn't get back Sipho's mentor assignment or Naledi's authorship of h-002, h-007 and h-012.
+11. **What stage F's amendments 8 and 9 changed** (controller, 2026-10-15; read the selling plan's amendments 8 and 9 before Task 1):
+    - `ListingRow` has `firstPublishedAt: string | null`; any `ListingRow` literal G writes needs it (typecheck catches it). `STORE_VERSION` was 4 after F's fixes; F's later tasks may raise it, so read it rather than assume.
+    - `AccountExport` now ends `…, shop, listings, onboardingDraft`. G's new export keys go after `onboardingDraft`, and its key-order test in `lib/data/accounts.test.ts` lists them there.
+    - `getPhoto(id, now)` takes a required `now`.
+    - `/photos/[id]` sends `private, max-age=31536000, immutable`; a photo G hides with its listing is still only on devices that already had it.
+    - `shopStats` skips conversations with `sellerGone`; G's badge recalculation should read the same rows the same way (`recalculateBadges`), so the dashboard and the badge agree.
 
 ## Store design
 

@@ -142,7 +142,10 @@ Lama can veto any of these at plan review. In this plan, "plan decision N" means
 
 ## Amendments on review
 
-(Empty. The controller adds amendments here; they override the tasks below wherever they differ.)
+The controller adds amendments here; they override the tasks below wherever they differ.
+
+1. **A first publish is decided once, by stage F** (selling plan amendment 9.2, controller, 2026-10-15). `ListingRow` has `firstPublishedAt`, and `lib/data/own-listings.ts` exports `isFirstPublish(before, state)`. Wherever this plan computes `firstPublish` in `saveListingForm` (as `saved.state !== "draft" && (!existing || existing.state === "draft")`), use `isFirstPublish(existing, saved.state)` instead, with `existing` the row read before the save. Otherwise a listing published, saved back as a draft and published again would notify every follower twice. Add a test: publish, draft, publish again sends one new-listing notification.
+2. **Also from stage F's amendments 8 and 9:** `AccountExport` ends `…, shop, listings, onboardingDraft` (this plan's `requests` and `following` go after it, and its key-order test says so); `getPhoto(id, now)` takes a required `now`; `/photos/[id]` is `private`; `shopStats` skips `sellerGone` conversations, and so should any count this plan adds (offer threads included); prices are whole rand ("R250,00" is 250) and shop names compare in any alphabet. Read the selling plan's amendments 8 and 9 before Task 1.
 
 ## Store design
 

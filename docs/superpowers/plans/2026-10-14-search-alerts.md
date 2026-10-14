@@ -125,7 +125,9 @@ Lama can veto any of these at plan review. In this plan, "plan decision N" means
 
 ## Amendments on review
 
-(Empty. The controller adds amendments here; they override the tasks below wherever they differ.)
+The controller adds amendments here; they override the tasks below wherever they differ.
+
+1. **The match hangs on F's own first-publish rule** (selling plan amendment 9.2 and community actions plan amendment 1, controller, 2026-10-15). The `firstPublish` condition this plan reuses from H is `isFirstPublish(existing, saved.state)` from `lib/data/own-listings.ts`, true only while `firstPublishedAt` is null, so a listing republished from a draft alerts no saved search a second time. Add that case to Task 2's tests. The export's key order ends `…, shop, listings, onboardingDraft`, then H's keys, then `savedSearches`.
 
 ## Store design
 
