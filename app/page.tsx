@@ -9,6 +9,7 @@ import { JustListed } from "@/components/home/JustListed";
 import { LookingFor } from "@/components/home/LookingFor";
 import { ShopByCampus } from "@/components/home/ShopByCampus";
 import { ShopByCategory } from "@/components/home/ShopByCategory";
+import { Flash } from "@/components/ui/Flash";
 
 /**
  * The homepage (spec section 7), in the approved order (decision 4). The campus-aware parts stream in behind
@@ -31,6 +32,8 @@ export default function HomePage() {
       </div>
       {/* Full width, sitting on the footer (spec 7.13). */}
       <HubBanner />
+      {/* Signing out and deleting an account land here, with a toast (accounts plan decision 12). */}
+      <Flash />
     </>
   );
 }
