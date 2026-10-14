@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 
 const PLACEHOLDERS: Array<[path: string, title: string]> = [
   ["/sell", "Start selling"],
-  ["/account", "Your account"],
 ];
 
 /** Routes don't change with width, so one phone and one desktop size are enough. */
@@ -62,5 +61,16 @@ test.describe("placeholder routes", () => {
     expect(response?.status()).toBe(404);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
     await expect(page).toHaveTitle("Page not found · Vossie");
+  });
+
+  test("account pages send a signed-out visitor to sign in, coming back afterwards (accounts spec 2.10)", async ({
+    page,
+  }) => {
+    onlyAtPhoneAndDesktop();
+    await page.goto("/account");
+    await expect(page).toHaveURL(/\/login\?next=%2Faccount$/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Sign in");
+    await page.goto("/account/privacy");
+    await expect(page).toHaveURL(/\/login\?next=%2Faccount%2Fprivacy$/);
   });
 });

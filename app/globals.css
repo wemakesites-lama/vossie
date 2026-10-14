@@ -6748,3 +6748,179 @@
     }
   }
 }
+
+/* --- Accounts: your account (accounts plan, Task 10, spec 3.2) --- */
+@layer components {
+  /* .page and .account-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
+  .account-page {
+    padding: 24px 16px 64px;
+  }
+
+  .account-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  /* One readable column (spec 3.2). */
+  .account-body {
+    display: grid;
+    gap: 36px;
+    max-width: 40rem;
+    margin-top: 24px;
+  }
+
+  .account-card {
+    padding: 20px;
+    border-radius: var(--radius-panel);
+    background: var(--color-panel);
+  }
+
+  .account-name {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 30px;
+    line-height: 1;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .account-facts {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .account-facts div {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  /* Muted on the grey panel is 5.4:1. */
+  .account-facts dt,
+  .account-since {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  .account-facts dd {
+    overflow-wrap: anywhere;
+  }
+
+  .account-since {
+    margin-top: 14px;
+  }
+
+  .account-section {
+    display: grid;
+    gap: 16px;
+  }
+
+  .account-section-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 26px;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .account-rows {
+    border-top: 1.5px solid var(--color-line);
+  }
+
+  .account-rows li {
+    border-bottom: 1.5px solid var(--color-line);
+  }
+
+  .account-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 56px;
+    padding-block: 10px;
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .account-row svg {
+    flex: none;
+  }
+
+  .account-row-detail {
+    display: block;
+    color: var(--color-muted);
+    font-size: 13px;
+    font-weight: 400;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .account-row:hover {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+  }
+
+  .account-skeleton-card {
+    height: 10.5rem;
+    border-radius: var(--radius-panel);
+  }
+
+  .account-skeleton-form {
+    height: 22rem;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .account-page {
+      padding-inline: 40px;
+    }
+
+    .account-card {
+      padding: 28px;
+    }
+  }
+}
+
+/* --- Accounts: privacy settings (accounts plan, Task 11, spec 3.3) --- */
+@layer components {
+  .account-crumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    margin-bottom: 8px;
+    color: var(--color-sky-dark);
+    font-weight: 600;
+  }
+
+  .account-crumb svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Links in the text are underlined, so colour isn't the only sign of them. Only links in a paragraph: the error
+     summary's links (inside .account-section too) keep their red. */
+  .account-section p a:not(.btn) {
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .account-delete ul {
+    display: grid;
+    gap: 6px;
+    padding-left: 1.25rem;
+    list-style: disc;
+  }
+
+  /* The delete button: a red outline (spec 3.3). Red on white is 6.6:1. */
+  .btn-danger {
+    border: 1.5px solid var(--color-danger);
+    background: var(--color-white);
+    color: var(--color-danger);
+  }
+}
