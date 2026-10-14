@@ -154,11 +154,15 @@ test("each listing has a share card for link previews", async ({ page, request, 
     "content",
     "Casio fx-991ZA Plus calculator, R250, at Midrand on Vossie",
   );
-  // Without a metadataBase the card's URL names another port, so fetch its path from the test server
-  // (setting metadataBase is on the go-live checklist). The same gap makes the browser add a second
-  // og:image after hydration (it resolves against the page's own origin), so read the first, which is
-  // the one in the server's HTML and the one a link preview sees.
-  const card = new URL((await page.locator('meta[property="og:image"]').first().getAttribute("content"))!);
+  // metadataBase comes from NEXT_PUBLIC_SITE_URL (http://localhost:3000 when it isn't set), so the card's address is
+  // absolute, and in this test it names another port: fetch its path from the test server. There is one og:image, in
+  // the server's HTML and after hydration alike (before metadataBase the browser added a second one).
+  await page.waitForLoadState("networkidle");
+  const images = page.locator('meta[property="og:image"]');
+  await expect(images).toHaveCount(1);
+  const content = (await images.getAttribute("content"))!;
+  expect(content).toMatch(/^https?:\/\//);
+  const card = new URL(content);
   const response = await request.get(new URL(`${card.pathname}${card.search}`, baseURL).toString());
   expect(response.status()).toBe(200);
   expect(response.headers()["content-type"]).toBe("image/png");

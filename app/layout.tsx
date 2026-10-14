@@ -8,10 +8,13 @@ import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { ToastRegion } from "@/components/ui/ToastRegion";
 import { BOOT_SCRIPT } from "@/lib/boot-script";
 import { getAnnouncements, getCampuses, getCategories, getTrendingSearches } from "@/lib/data";
+import { siteUrl } from "@/lib/site-url";
 import { fontVariables } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  // The base of every relative address in metadata, such as the share cards' (info and system spec 2.7).
+  metadataBase: new URL(siteUrl()),
   title: {
     default: "Vossie · The Eduvos student marketplace",
     template: "%s · Vossie",
