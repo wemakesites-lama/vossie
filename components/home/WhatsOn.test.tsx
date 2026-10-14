@@ -42,8 +42,12 @@ describe("WhatsOnEvents (spec 7.13)", () => {
     expect(within(rows[1]).getByText("Midrand")).toBeInTheDocument();
     expect(container.querySelector("time")).toHaveAttribute("dateTime", "2026-10-14");
     expect(container.querySelector("time")).toHaveTextContent("14 Oct");
-    expect(within(rows[0]).getByRole("link", { name: "RSVP for Pitch night" })).toHaveAttribute("href", "/hub");
-    expect(within(rows[1]).getByRole("link", { name: "Book for Office hours: pricing your hustle" })).toBeInTheDocument();
+    // Each event opens its own post (community spec 5.3).
+    expect(within(rows[0]).getByRole("link", { name: "RSVP for Pitch night" })).toHaveAttribute("href", "/hub/h-001");
+    expect(within(rows[1]).getByRole("link", { name: "Book for Office hours: pricing your hustle" })).toHaveAttribute(
+      "href",
+      "/hub/h-002",
+    );
   });
 
   it("says when nothing is on, and points to the Hub", async () => {

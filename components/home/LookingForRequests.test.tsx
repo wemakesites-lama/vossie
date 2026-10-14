@@ -34,7 +34,12 @@ describe("LookingForRequests", () => {
       "Birthday cake for Friday Midrand · 3 offers",
       "Graphic calculator to borrow for exams Pretoria · 1 offer",
     ]);
-    expect(rows[0]).toHaveAttribute("href", "/looking-for");
+    // Each row opens its own request (community spec 4.3).
+    expect(rows.map((row) => row.getAttribute("href"))).toEqual([
+      "/looking-for/r-001",
+      "/looking-for/r-003",
+      "/looking-for/r-002",
+    ]);
   });
 
   it("invites the first request when there are none", async () => {

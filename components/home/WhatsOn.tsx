@@ -44,8 +44,9 @@ export async function WhatsOnEvents() {
                 {event.campusSlug === ALL_CAMPUSES ? "All campuses" : names.get(event.campusSlug)}
               </span>
             </span>
-            {/* The Hub page is a placeholder in this stage; RSVP and booking arrive with it. */}
-            <Link href="/hub" className="event-action">
+            {/* Each event opens its own post, where RSVP and booking go through sign-in (community spec 5.3). No
+                prefetch: three different pages (plan decision 12, decision 28). */}
+            <Link href={`/hub/${event.id}`} prefetch={false} className="event-action">
               {/* The space sits outside the hidden span: name computation trims each element's own text. */}
               {action}{" "}
               <span className="sr-only">for {event.title}</span>

@@ -19,8 +19,9 @@ export async function LookingForRequests() {
     <ul aria-label="Open requests" className="request-list">
       {requests.map((request) => (
         <li key={request.id}>
-          {/* Requests open on the Looking For page, a placeholder in this stage (spec 7.11). */}
-          <Link href="/looking-for" className="request-row">
+          {/* Each request opens its own page (community spec 4.3). No prefetch: three different pages now (plan
+              decision 12, decision 28). */}
+          <Link href={`/looking-for/${request.id}`} prefetch={false} className="request-row">
             <span className="request-text">
               <span className="request-title">{request.title}</span>{" "}
               <span className="request-meta">
