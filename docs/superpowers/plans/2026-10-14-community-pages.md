@@ -325,7 +325,153 @@ export type LookingForRequest = {
 Replace `data/fixtures/requests.ts` with:
 
 ```ts
-{{REQUESTS_TS}}
+import type { LookingForRequest, RequestStatus } from "@/lib/types";
+
+type Ask = {
+  categorySlug: string;
+  /** Rand, or null for "open to offers". */
+  budgetZar: number | null;
+  swapWelcome?: boolean;
+  /** YYYY-MM-DD in South African time. */
+  neededBy?: string;
+  /** ISO 8601 in UTC. */
+  createdAt: string;
+  status?: RequestStatus;
+};
+
+const request = (
+  id: string,
+  title: string,
+  campusSlug: string,
+  offers: number,
+  { categorySlug, budgetZar, swapWelcome = false, neededBy, createdAt, status = "open" }: Ask,
+  details: string,
+): LookingForRequest => ({
+  id,
+  title,
+  campusSlug,
+  offers,
+  details,
+  categorySlug,
+  budgetZar,
+  swapWelcome,
+  neededBy: neededBy ?? null,
+  createdAt,
+  status,
+});
+
+// Looking For requests, newest first (community spec 4.3). The first seven are the homepage's: their ids, titles,
+// campuses and offers are as before, and they stay the newest, so the homepage shows what it did. Every campus but
+// Mbombela has an open request, so Mbombela tests the empty state. Nothing open is in Tickets & events, so the board's
+// empty category can be tested. Requests name no one (community spec decision 2). The wording is sample text.
+export const requests: readonly LookingForRequest[] = [
+  request(
+    "r-001", "Accounting 1 tutor this week", "midrand", 2,
+    { categorySlug: "tutoring", budgetZar: 300, neededBy: "2026-10-16", createdAt: "2026-10-13T07:30:00Z" },
+    "I'm stuck on adjustments and the trial balance before Friday's test. Looking for someone who passed " +
+      "Accounting 1 to work through two past papers with me.\nEvenings on campus suit me best.",
+  ),
+  request(
+    "r-002", "Graphic calculator to borrow for exams", "pretoria", 1,
+    {
+      categorySlug: "tech", budgetZar: 100, swapWelcome: true, neededBy: "2026-10-26",
+      createdAt: "2026-10-12T18:10:00Z",
+    },
+    "My calculator stopped working and exams start on the 26th. I'd like to borrow a graphic calculator for three " +
+      "weeks. I can pay R100, or swap my Statistics 1 notes.",
+  ),
+  request(
+    "r-003", "Birthday cake for Friday", "midrand", 3,
+    { categorySlug: "food", budgetZar: 350, neededBy: "2026-10-16", createdAt: "2026-10-12T09:45:00Z" },
+    "A chocolate cake for my roommate's birthday on Friday, big enough for ten people. Writing on top would be a " +
+      "bonus. I can collect on campus at lunchtime.",
+  ),
+  request(
+    "r-004", "Second-hand bar fridge", "bedfordview", 0,
+    { categorySlug: "res-living", budgetZar: 1200, createdAt: "2026-10-11T15:20:00Z" },
+    "Looking for a small bar fridge for my res room, in working order. I can collect anywhere near campus if you can " +
+      "help me carry it.",
+  ),
+  request(
+    "r-005", "Someone to fix my laptop hinge", "cape-town-mowbray", 1,
+    { categorySlug: "services", budgetZar: null, neededBy: "2026-10-20", createdAt: "2026-10-11T08:05:00Z" },
+    "The left hinge on my laptop cracked and the screen wobbles. I'd like it fixed rather than replaced. Open to " +
+      "offers on price.",
+  ),
+  request(
+    "r-006", "Lift to campus on Monday mornings", "pretoria", 2,
+    // 22:40 UTC is 00:40 the next day in South Africa: the page says "Posted 11 Oct".
+    { categorySlug: "services", budgetZar: 200, createdAt: "2026-10-10T22:40:00Z" },
+    "I live about ten minutes from campus and have an 8am class every Monday. I'll put in R200 a month for petrol if " +
+      "you drive past.\nIt's for the rest of the semester.",
+  ),
+  request(
+    "r-007", "Business Law 2 notes", "online", 4,
+    {
+      categorySlug: "textbooks-notes", budgetZar: 150, swapWelcome: true, neededBy: "2026-10-30",
+      createdAt: "2026-10-10T06:15:00Z",
+    },
+    "Looking for clear summary notes for Business Law 2, especially contracts. A PDF is fine. I can pay R150 or swap " +
+      "my Business Management 2 notes.",
+  ),
+  request(
+    "r-008", "Formal dress for a faculty dinner", "bloemfontein", 1,
+    {
+      categorySlug: "fashion-thrift", budgetZar: 400, swapWelcome: true, neededBy: "2026-10-24",
+      createdAt: "2026-10-09T19:30:00Z",
+    },
+    "I need a long formal dress, size 34, for a faculty dinner on the 24th. Happy to buy, borrow or swap one of mine.",
+  ),
+  request(
+    "r-009", "Desk chair that doesn't wobble", "cape-town-tyger-valley", 0,
+    { categorySlug: "res-living", budgetZar: 300, createdAt: "2026-10-09T10:00:00Z" },
+    "My res chair is falling apart. Looking for a sturdy desk chair, ideally one that adjusts. I can collect from " +
+      "campus or nearby.",
+  ),
+  request(
+    "r-010", "Catering for a society braai", "durban-umhlanga", 2,
+    { categorySlug: "food", budgetZar: 1500, neededBy: "2026-10-31", createdAt: "2026-10-08T16:25:00Z" },
+    "Our society is having a braai for about 20 people on the 31st. We need someone to do the meat and two salads; " +
+      "we'll bring the drinks.",
+  ),
+  request(
+    "r-011", "Drawing set for Engineering Graphics", "east-london", 1,
+    { categorySlug: "stationery", budgetZar: 250, neededBy: "2026-10-19", createdAt: "2026-10-08T07:50:00Z" },
+    "I need a full drawing set: compass, set squares and a scale ruler. Second-hand is fine as long as nothing is " +
+      "missing.",
+  ),
+  request(
+    "r-012", "Box braids before graduation", "nelson-mandela-bay", 3,
+    { categorySlug: "hair-beauty", budgetZar: 450, neededBy: "2026-11-27", createdAt: "2026-10-07T13:35:00Z" },
+    "Looking for someone to do medium box braids, waist length, the week before graduation. I'll buy the hair if you " +
+      "tell me how many packs.",
+  ),
+  request(
+    "r-013", "Laptop charger, Lenovo 65W", "potchefstroom", 0,
+    { categorySlug: "tech", budgetZar: null, swapWelcome: true, createdAt: "2026-10-06T18:00:00Z" },
+    "My laptop charger stopped working. I need a 65W Lenovo charger with a USB-C plug. Make me an offer, or I can " +
+      "swap a pair of wired headphones.",
+  ),
+  request(
+    "r-014", "Python help for my first practical", "vanderbijlpark", 1,
+    { categorySlug: "tutoring", budgetZar: 200, neededBy: "2026-10-23", createdAt: "2026-10-06T09:20:00Z" },
+    "My first Python practical is due on the 23rd and my loops keep breaking. Looking for an hour or two of help, " +
+      "online or on campus.",
+  ),
+  request(
+    "r-015", "Kettle for res", "midrand", 5,
+    { categorySlug: "res-living", budgetZar: 150, createdAt: "2026-10-03T12:00:00Z", status: "closed" },
+    "Looking for a working kettle for my res room. Collecting on campus is easiest.",
+  ),
+  request(
+    "r-016", "Two tickets to the spring concert", "pretoria", 2,
+    {
+      categorySlug: "tickets-events", budgetZar: 300, neededBy: "2026-10-10",
+      createdAt: "2026-09-29T08:30:00Z", status: "closed",
+    },
+    "Looking for two tickets to the spring concert on the 10th, at or below what you paid.",
+  ),
+];
 ```
 
 Run: `pnpm test data/fixtures/fixtures.test.ts`
@@ -453,7 +599,38 @@ export function shortSastDate(iso: string): string {
 Create `lib/requests.ts`:
 
 ```ts
-{{LIB_REQUESTS_TS}}
+import { ALL_CAMPUSES } from "./campus";
+import type { CampusChoice, Category } from "./types";
+
+/** The board's `?cat=` (community spec 4.1): a known category's slug, or null for every category. */
+export function readRequestCategory(
+  raw: string | string[] | undefined,
+  categories: readonly Pick<Category, "slug">[],
+): string | null {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (value === undefined) return null;
+  return categories.some((category) => category.slug === value) ? value : null;
+}
+
+/** The board's link for one category, or for all of them. */
+export function boardHref(category: string | null): string {
+  return category === null ? "/looking-for" : `/looking-for?cat=${category}`;
+}
+
+/**
+ * The board's two lists (community spec 4.1): the viewer's campus, then every other campus, each keeping the order
+ * given. With "All campuses" chosen there's one list, so this returns null.
+ */
+export function splitByCampus<T extends { campusSlug: string }>(
+  items: readonly T[],
+  campus: CampusChoice,
+): { own: T[]; others: T[] } | null {
+  if (campus === ALL_CAMPUSES) return null;
+  return {
+    own: items.filter((item) => item.campusSlug === campus),
+    others: items.filter((item) => item.campusSlug !== campus),
+  };
+}
 ```
 
 Run: `pnpm test lib/format.test.ts lib/time.test.ts lib/requests.test.ts`
@@ -771,7 +948,365 @@ export type HubPost = {
 Replace `data/fixtures/hub.ts` with:
 
 ```ts
-{{HUB_TS}}
+import type { HubBanner, HubPost, HubPostKind } from "@/lib/types";
+
+export const hubBanner: HubBanner = {
+  image: { src: "/placeholders/hub/banner.svg", alt: "" },
+};
+
+/** A post's body, one line per argument (the markdown subset, community spec decision 9). */
+const lines = (...text: string[]): string => text.join("\n");
+
+type Words = { summary: string; body: string };
+
+/** When and where. Events start at 18:00 in South Africa (16:00 UTC), office hours at 13:00 (11:00 UTC). */
+type When = { startsAt: string; place: string };
+
+const post = (
+  id: string,
+  kind: HubPostKind,
+  title: string,
+  campusSlug: string,
+  publishedAt: string,
+  details: Pick<HubPost, "startsAt" | "place" | "capacity" | "going">,
+  { summary, body }: Words,
+): HubPost => ({
+  id,
+  kind,
+  title,
+  campusSlug,
+  publishedAt,
+  ...details,
+  summary,
+  body,
+  image: { src: `/placeholders/hub/${id}.svg`, alt: "" },
+});
+
+const event = (
+  id: string,
+  title: string,
+  campusSlug: string,
+  publishedAt: string,
+  { startsAt, place }: When,
+  places: { capacity: number; going: number },
+  words: Words,
+): HubPost => post(id, "event", title, campusSlug, publishedAt, { startsAt, place, ...places }, words);
+
+const officeHours = (
+  id: string,
+  title: string,
+  campusSlug: string,
+  publishedAt: string,
+  { startsAt, place }: When,
+  words: Words,
+): HubPost =>
+  post(id, "office-hours", title, campusSlug, publishedAt, { startsAt, place, capacity: null, going: null }, words);
+
+const tip = (id: string, title: string, publishedAt: string, words: Words): HubPost =>
+  post(id, "tip", title, "all", publishedAt, { startsAt: null, place: null, capacity: null, going: null }, words);
+
+// The Incubation Hub's posts (community spec 5.3). h-001 to h-010 are the homepage's 10 events, with the same titles,
+// campuses and dates; "Photo day for your shop" is booked, so it's office hours. h-011 and h-012 are past, so "has
+// passed" can be tested on any date (plan decision 2). The wording is sample text for the Hub to change.
+export const hubPosts: readonly HubPost[] = [
+  event(
+    "h-001", "Pitch night", "all", "2026-09-30T08:00:00Z",
+    { startsAt: "2026-10-14T16:00:00Z", place: "Online, with a watch party at every Hub" },
+    { capacity: 80, going: 12 },
+    {
+      summary: "Five student businesses pitch to Hub mentors, and the room votes for a crowd favourite.",
+      body: lines(
+        "Five student businesses pitch to a panel of Incubation Hub mentors. Each team gets five minutes to pitch " +
+          "and three minutes for questions.",
+        "",
+        "## How the night runs",
+        "1. Doors open at 17:30 at your campus's Hub, or join online.",
+        "2. Pitches start at 18:00.",
+        "3. Everyone votes for a crowd favourite before the panel announces its pick.",
+        "",
+        "Come to cheer, to learn, or to see what it takes. **Want to pitch next time?** Start with " +
+          "[how to get the Verified badge](/hub/h-017), then talk to the Hub on your campus.",
+      ),
+    },
+  ),
+  officeHours(
+    "h-002", "Office hours: pricing your hustle", "midrand", "2026-10-01T08:00:00Z",
+    { startsAt: "2026-10-15T11:00:00Z", place: "The Hub, Block C" },
+    {
+      summary: "Bring your price list and a mentor will check it against your costs and what students pay.",
+      body: lines(
+        "Not sure if you're charging too much or too little? Bring your price list, or just your costs, and a mentor " +
+          "will work through it with you.",
+        "",
+        "## Bring",
+        "- What it costs you to make or deliver one item or session",
+        "- Your prices now, if you have them",
+        "- Two or three listings like yours on Vossie",
+        "",
+        "Slots are 20 minutes. Read [how to price your first listing](/hub/h-013) before you come.",
+      ),
+    },
+  ),
+  event(
+    "h-003", "Market day on the lawn", "pretoria", "2026-10-02T08:00:00Z",
+    { startsAt: "2026-10-20T16:00:00Z", place: "The lawn outside the library" },
+    { capacity: 40, going: 23 },
+    {
+      summary: "An evening market for student sellers on the library lawn: come to buy, or bring your stock and sell.",
+      body: lines(
+        "Student sellers set up on the lawn outside the library for an evening market. Come and buy, or bring your " +
+          "own stock and sell.",
+        "",
+        "## For sellers",
+        "- Stalls are free, and Verified sellers choose their spot first.",
+        "- Bring a table if you can. The Hub has ten to lend.",
+        "- Card machines work best on mobile data: the Wi-Fi on the lawn is patchy.",
+        "",
+        "Read [meeting a buyer safely on campus](/hub/h-015) for the basics on cash and handovers.",
+      ),
+    },
+  ),
+  officeHours(
+    "h-004", "Photo day for your shop", "bedfordview", "2026-10-05T08:00:00Z",
+    { startsAt: "2026-10-22T11:00:00Z", place: "Studio room, Block A" },
+    {
+      summary: "Book 15 minutes in the studio room and leave with photos of your products or your work.",
+      body: lines(
+        "A Hub mentor sets up a light box and a plain backdrop in the studio room. Book a slot, bring up to five " +
+          "items or examples of your work, and leave with photos you can use on Vossie.",
+        "",
+        "- Clean your items first: dust shows up on camera.",
+        "- Selling a service? Bring something that shows your work, like a finished set of nails or a printed logo.",
+        "",
+        "Can't make it? Try [five phone tricks for better photos](/hub/h-014).",
+      ),
+    },
+  ),
+  event(
+    "h-005", "Hub mixer", "all", "2026-10-07T08:00:00Z",
+    { startsAt: "2026-10-28T16:00:00Z", place: "The Hub on every campus" },
+    { capacity: 120, going: 45 },
+    {
+      summary: "Meet other student sellers and the Hub's mentors over snacks at your campus's Hub.",
+      body: lines(
+        "An evening to meet other student sellers, swap ideas and put faces to the mentors. Every campus's Hub hosts " +
+          "its own, with snacks from student food sellers.",
+        "",
+        "No pitch and no slides. Just bring yourself and, if you like, a few business cards.",
+      ),
+    },
+  ),
+  event(
+    "h-006", "Selling online: photos that sell", "all", "2026-10-08T08:00:00Z",
+    { startsAt: "2026-11-05T16:00:00Z", place: "Online" },
+    { capacity: 200, going: 64 },
+    {
+      summary: "A one-hour online workshop on taking listing photos with nothing but your phone.",
+      body: lines(
+        "A one-hour workshop on taking photos that make people stop scrolling. All you need is your phone.",
+        "",
+        "## What we'll cover",
+        "1. Light: where to stand, and why a window beats a flash.",
+        "2. Background: plain, tidy and the same every time.",
+        "3. The first photo: the one buyers see in the grid.",
+        "",
+        "There's time for questions at the end. Send in a photo you're unsure about when you RSVP, and we may use it " +
+          "as an example.",
+      ),
+    },
+  ),
+  officeHours(
+    "h-007", "Office hours: your first listing", "midrand", "2026-10-09T08:00:00Z",
+    { startsAt: "2026-11-19T11:00:00Z", place: "The Hub, Block C" },
+    {
+      summary: "Sit with a mentor and put your first listing on Vossie, from the title to the photos.",
+      body: lines(
+        "Never listed anything before? Bring your phone and the thing you want to sell, and a mentor will help you " +
+          "list it in one sitting.",
+        "",
+        "We'll go through the title, the price, the photos and how buyers will reach you. Read " +
+          "[writing a listing people trust](/hub/h-016) first if you have time.",
+      ),
+    },
+  ),
+  event(
+    "h-008", "End-of-year market", "all", "2026-10-10T08:00:00Z",
+    { startsAt: "2026-12-03T16:00:00Z", place: "By the student centre on every campus" },
+    { capacity: 60, going: 18 },
+    {
+      summary: "The last market of the year, on every campus: clear out, stock up or find a gift.",
+      body: lines(
+        "The last market of the year, on every campus at once. Students clearing out res sell what they don't want " +
+          "to carry home, and student businesses sell gifts and food.",
+        "",
+        "- Stalls are free for students.",
+        "- Free items go on the giveaway table.",
+        "- Anything left at the end can go in the Hub's donation box.",
+      ),
+    },
+  ),
+  event(
+    "h-009", "Back-to-campus pop-up", "pretoria", "2026-10-11T08:00:00Z",
+    { startsAt: "2027-01-28T16:00:00Z", place: "Student centre foyer" },
+    { capacity: 50, going: 6 },
+    {
+      summary: "A pop-up for the first week back: second-hand textbooks, res kit and student services in one place.",
+      body: lines(
+        "A pop-up for the first week back, in the student centre foyer. Second-hand textbooks, res kit and student " +
+          "services, all in one place.",
+        "",
+        "Selling? Stalls go to Verified sellers first, then everyone else. **Buying?** Bring your module list, so " +
+          "you know which editions you need.",
+      ),
+    },
+  ),
+  event(
+    "h-010", "Pitch night", "all", "2026-10-12T08:00:00Z",
+    { startsAt: "2027-02-11T16:00:00Z", place: "Online, with a watch party at every Hub" },
+    { capacity: 80, going: 3 },
+    {
+      summary: "The first pitch night of 2027: five new student businesses, one panel and a crowd favourite.",
+      body: lines(
+        "The first pitch night of the year. Five new student businesses pitch to a panel of Incubation Hub mentors, " +
+          "and the room votes for a crowd favourite.",
+        "",
+        "Applications to pitch open in January. Start with [how to get the Verified badge](/hub/h-017).",
+      ),
+    },
+  ),
+  event(
+    "h-011", "Hub open day", "all", "2026-09-01T08:00:00Z",
+    { startsAt: "2026-09-16T16:00:00Z", place: "The Hub on every campus" },
+    { capacity: 150, going: 96 },
+    {
+      summary: "An open day at every campus's Hub: meet the mentors and see what the Hub can do for your business.",
+      body: lines(
+        "Every campus's Hub opened its doors for the evening. Students met the mentors, heard how Vossie works and " +
+          "booked their first office hours.",
+        "",
+        "Missed it? The Hub runs [office hours](/hub?type=office-hours) through the year.",
+      ),
+    },
+  ),
+  officeHours(
+    "h-012", "Office hours: registering your business", "midrand", "2026-09-10T08:00:00Z",
+    { startsAt: "2026-09-24T11:00:00Z", place: "The Hub, Block C" },
+    {
+      summary: "A mentor walks you through registering a small business, step by step.",
+      body: lines(
+        "Thinking of registering your business? A mentor will walk you through the steps, what it costs and what " +
+          "to have ready.",
+        "",
+        "- Your ID and proof of address",
+        "- A name for your business, and two back-ups",
+        "- A rough idea of what you'll sell",
+      ),
+    },
+  ),
+  tip("h-013", "How to price your first listing", "2026-10-12T07:00:00Z", {
+    summary: "Start from what's already listed, add up your costs, and leave room to say yes to a fair offer.",
+    body: lines(
+      "Pricing is the first thing buyers look at, and the easiest thing to get wrong. Start with what's already out " +
+        "there, then check it against your own costs.",
+      "",
+      "## Start from what's out there",
+      "1. Search Vossie for the same thing, or [browse what's already listed](/browse).",
+      "2. Note the lowest and highest prices for the same condition.",
+      "3. Price yours somewhere in between, and say why in the description.",
+      "",
+      "## Check your costs",
+      "For food, services and anything you make, add up what one item or session costs you: ingredients, data, " +
+        "transport and your time. If the market price doesn't cover it, **don't go lower**. Change what you offer " +
+        "instead.",
+      "",
+      "## Leave room for a fair offer",
+      "Students like to ask for a little off. If you'd take R250, a price of R270 lets you say yes. " +
+        "*Firm prices are fine too*, as long as the listing says so.",
+    ),
+  }),
+  tip("h-014", "Five phone tricks for better photos", "2026-10-09T07:00:00Z", {
+    summary: "Daylight, a plain background and a clean lens do more for a listing than any filter.",
+    body: lines(
+      "Buyers decide in a second, and they decide on the first photo. You don't need a good camera, just these five " +
+        "habits.",
+      "",
+      "1. **Use daylight.** Stand near a window, and turn the flash off.",
+      "2. **Clear the background.** A plain wall, a sheet or a desk with nothing else on it.",
+      "3. **Wipe the lens.** Phones live in pockets, and a smudge makes everything look old.",
+      "4. **Show the whole thing first,** then the details: labels, scratches, the size tag.",
+      "5. **Shoot straight on.** Hold the phone at the same height as the item.",
+      "",
+      "Want help in person? Book a slot on [photo day for your shop](/hub/h-004).",
+    ),
+  }),
+  tip("h-015", "Meeting a buyer safely on campus", "2026-10-06T07:00:00Z", {
+    summary: "Meet in a busy place on campus, in daylight, and check the item before any money moves.",
+    body: lines(
+      "Most sales on Vossie end with a handover on campus. A few habits keep them easy and safe.",
+      "",
+      "## Before you meet",
+      "- Agree on the price and the place in your messages, so there are no surprises.",
+      "- Pick a busy spot on campus, like the library entrance, during the day.",
+      "- Tell a friend where you're going.",
+      "",
+      "## At the handover",
+      "- Let the buyer check the item before they pay.",
+      "- For cash, count it there and then. For a transfer, wait until it shows in your account.",
+      "- If something feels wrong, walk away. There will be other buyers.",
+      "",
+      "Read Vossie's [safety tips](/safety) for more.",
+    ),
+  }),
+  tip("h-016", "Writing a listing people trust", "2026-10-01T07:00:00Z", {
+    summary: "Say what it is, what condition it's in and how the handover works, in plain words.",
+    body: lines(
+      "A clear listing gets fewer questions and sells sooner. Write it the way you'd describe the item to a friend.",
+      "",
+      "## The title",
+      "Say what it is, then what makes it different: “Casio calculator, exam approved” beats " +
+        "“Calculator for sale”.",
+      "",
+      "## The description",
+      "- What's included, and what isn't.",
+      "- The condition, honestly, with any marks or faults.",
+      "- Where and when you can hand it over.",
+      "",
+      "*Tip:* if a buyer asks the same question twice, add the answer to the listing. When you're ready, " +
+        "[start selling](/sell).",
+    ),
+  }),
+  tip("h-017", "How to get the Verified badge", "2026-09-25T07:00:00Z", {
+    summary: "Verified means the Hub has met you and checked your business. Here's how to apply.",
+    body: lines(
+      "The Verified badge tells buyers the Incubation Hub has met you and checked your business. It's free, and it " +
+        "takes about a week.",
+      "",
+      "## How it works",
+      "1. Sell on Vossie for at least a month.",
+      "2. Book [office hours](/hub?type=office-hours) and tell the mentor you'd like to be verified.",
+      "3. Bring your ID and examples of your work. The mentor checks them with you.",
+      "4. Once you're verified, the badge shows on your shop and your listings.",
+      "",
+      "The Hub can take the badge away if a seller stops keeping their promises to buyers.",
+    ),
+  }),
+  tip("h-018", "From side hustle to small business", "2026-09-18T07:00:00Z", {
+    summary: "Three signs your hustle is ready to grow, and what to do about each one.",
+    body: lines(
+      "Plenty of student businesses start as a favour for a friend. Here are three signs yours is ready for more.",
+      "",
+      "## You're turning people away",
+      "If you're fully booked most weeks, it's time to raise your prices or find someone to help.",
+      "",
+      "## People ask the same questions",
+      "Write the answers into your listings and your shop's About, so you can spend the time on the work.",
+      "",
+      "## You're not sure where the money goes",
+      "Keep a simple record of what comes in and what goes out, every week. A mentor can show you how in " +
+        "[office hours](/hub?type=office-hours).",
+    ),
+  }),
+];
 ```
 
 - [ ] **Step 5: Write the tests for the helpers**
@@ -967,7 +1502,105 @@ export function placesLabel(going: number, capacity: number): string {
 Create `lib/hub.ts`:
 
 ```ts
-{{LIB_HUB_TS}}
+import { ALL_CAMPUSES } from "./campus";
+import { sastDate } from "./time";
+import type { HubEvent, HubPost, HubPostKind } from "./types";
+
+/** The feed's tabs (community spec 5.1), as `?type=` names them. "all" is the feed with no `type`. */
+export const HUB_FEED_TYPES = ["all", "events", "office-hours", "tips"] as const;
+export type HubFeedType = (typeof HUB_FEED_TYPES)[number];
+
+/** The tabs' names, which the post page's breadcrumb uses too. */
+export const HUB_FEED_LABELS: Record<HubFeedType, string> = {
+  all: "All",
+  events: "Events",
+  "office-hours": "Office hours",
+  tips: "Tips",
+};
+
+const FEED_KINDS: Record<HubFeedType, readonly HubPostKind[]> = {
+  all: ["event", "office-hours", "tip"],
+  events: ["event"],
+  "office-hours": ["office-hours"],
+  tips: ["tip"],
+};
+
+const FEED_TYPE_OF: Record<HubPostKind, Exclude<HubFeedType, "all">> = {
+  event: "events",
+  "office-hours": "office-hours",
+  tip: "tips",
+};
+
+/** The feed's `?type=`. Anything it doesn't know shows everything. */
+export function readHubFeedType(raw: string | string[] | undefined): HubFeedType {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return HUB_FEED_TYPES.find((type) => type === value) ?? "all";
+}
+
+/** The kinds of post a tab shows. */
+export function feedKinds(type: HubFeedType): readonly HubPostKind[] {
+  return FEED_KINDS[type];
+}
+
+/** The tab that holds a kind of post, for a post page's breadcrumb. */
+export function feedTypeOf(kind: HubPostKind): Exclude<HubFeedType, "all"> {
+  return FEED_TYPE_OF[kind];
+}
+
+/** A tab's link. It lands on the feed, so a tap below the story keeps the feed in view (plan decision 6). */
+export function hubFeedHref(type: HubFeedType): string {
+  return type === "all" ? "/hub#hub-feed" : `/hub?type=${type}#hub-feed`;
+}
+
+/** The South African date (YYYY-MM-DD) an event or office hours fall on; null for a tip. */
+export function postDate(post: Pick<HubPost, "startsAt">): string | null {
+  return post.startsAt === null ? null : sastDate(new Date(post.startsAt));
+}
+
+/**
+ * Whether an event or office hours are over (community spec 5.2, decision 6): their date is before `today`, the SAST
+ * date. Today's still count as upcoming, as on the feed and the homepage. A tip never passes.
+ */
+export function hasPassed(post: Pick<HubPost, "startsAt">, today: string): boolean {
+  const date = postDate(post);
+  return date !== null && date < today;
+}
+
+/**
+ * The feed's order (community spec 5.1): events and office hours on or after `from` (the SAST date), soonest first,
+ * then tips, newest first. Past events and office hours drop off.
+ */
+export function orderHubPosts(posts: readonly HubPost[], from: string): HubPost[] {
+  const dated: HubPost[] = [];
+  const tips: HubPost[] = [];
+  for (const post of posts) {
+    const date = postDate(post);
+    if (date === null) tips.push(post);
+    else if (date >= from) dated.push(post);
+  }
+  // ISO times in UTC sort as text.
+  dated.sort((a, b) => (a.startsAt ?? "").localeCompare(b.startsAt ?? ""));
+  tips.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  return [...dated, ...tips];
+}
+
+/** What's on's row on the homepage (community spec 5.3): the SAST date, and RSVP for an event or Book otherwise. */
+export function toHubEvent(post: HubPost): HubEvent | null {
+  const date = postDate(post);
+  if (date === null) return null;
+  return {
+    id: post.id,
+    date,
+    title: post.title,
+    campusSlug: post.campusSlug,
+    action: post.kind === "event" ? "rsvp" : "book",
+  };
+}
+
+/** Where a post is for: "All campuses", or the campus's name (community spec 5.1). */
+export function hubCampusName(campusSlug: string, campusNames: ReadonlyMap<string, string>): string {
+  return campusSlug === ALL_CAMPUSES ? "All campuses" : (campusNames.get(campusSlug) ?? "");
+}
 ```
 
 Run: `pnpm test lib/time.test.ts lib/format.test.ts lib/hub.test.ts data/fixtures/fixtures.test.ts`
@@ -1329,7 +1962,121 @@ Expected: FAIL, because `./markdown` doesn't exist.
 Create `lib/markdown.ts`:
 
 ```ts
-{{LIB_MARKDOWN_TS}}
+import { safeNextPath } from "./next-path";
+
+/** Text inside a block of a Hub post (community spec decision 9). */
+export type MarkdownInline =
+  | { type: "text"; text: string }
+  | { type: "strong"; children: MarkdownInline[] }
+  | { type: "em"; children: MarkdownInline[] }
+  | { type: "link"; href: string; children: MarkdownInline[] };
+
+/** A block of a Hub post: a "## " heading, a paragraph, or a list of "- " bullets or "1. " numbers. */
+export type MarkdownBlock =
+  | { type: "heading"; children: MarkdownInline[] }
+  | { type: "paragraph"; children: MarkdownInline[] }
+  | { type: "bullets"; items: MarkdownInline[][] }
+  | { type: "numbers"; items: MarkdownInline[][] };
+
+// **bold**, *italic* and [words](/path). A marker needs a character other than a space or "*" just inside it, as in
+// Markdown, so "2 * 3 * 4" and "** loose **" stay as written.
+const INLINE = /\*\*([^\s*](?:.*?[^\s*])?)\*\*|\*([^\s*](?:.*?[^\s*])?)\*|\[([^\]]+)\]\(([^)\s]*)\)/g;
+const HEADING = /^## +(.+)$/;
+const BULLET = /^- +(.+)$/;
+const NUMBERED = /^\d{1,3}\. +(.+)$/;
+
+/** Add a part, joining it to the text before it, so a dropped link's words run on with the text around them. */
+function push(parts: MarkdownInline[], part: MarkdownInline): void {
+  const last = parts.at(-1);
+  if (part.type === "text" && last?.type === "text") last.text += part.text;
+  else parts.push(part);
+}
+
+/** Bold, italic and links in one run of text. Everything else, HTML included, is plain text. */
+export function parseInline(text: string): MarkdownInline[] {
+  const parts: MarkdownInline[] = [];
+  let end = 0;
+  for (const match of text.matchAll(INLINE)) {
+    const [whole, bold, italic, words, href] = match;
+    if (match.index > end) push(parts, { type: "text", text: text.slice(end, match.index) });
+    if (bold !== undefined) push(parts, { type: "strong", children: parseInline(bold) });
+    else if (italic !== undefined) push(parts, { type: "em", children: parseInline(italic) });
+    else {
+      // Only paths on this site stay links (community spec decision 9). safeNextPath refuses whatever would lead off
+      // the site ("https://…", "//…", "/\…", "javascript:…"); the words stay, without the link.
+      const path = safeNextPath(href);
+      const children = parseInline(words);
+      if (path === null) children.forEach((child) => push(parts, child));
+      else push(parts, { type: "link", href: path, children });
+    }
+    end = match.index + whole.length;
+  }
+  if (end < text.length) push(parts, { type: "text", text: text.slice(end) });
+  return parts;
+}
+
+type List = { type: "bullets" | "numbers"; items: MarkdownInline[][] };
+
+/**
+ * A Hub post's body as blocks (community spec decision 9). Lines run together into a paragraph until a blank line;
+ * "## " starts a heading, "- " a bullet and "1. " a numbered item. Nothing else is special: "# " and "### " lines are
+ * plain text.
+ */
+export function parseMarkdown(source: string): MarkdownBlock[] {
+  const blocks: MarkdownBlock[] = [];
+  let paragraph: string[] = [];
+  // Typed with "as": the closures below change it, which TypeScript's narrowing can't see.
+  let list = null as List | null;
+
+  const closeParagraph = () => {
+    if (paragraph.length > 0) blocks.push({ type: "paragraph", children: parseInline(paragraph.join(" ")) });
+    paragraph = [];
+  };
+  const closeList = () => {
+    if (list) blocks.push(list);
+    list = null;
+  };
+
+  for (const line of source.replace(/\r\n?/g, "\n").split("\n").map((text) => text.trim())) {
+    const heading = HEADING.exec(line);
+    const item = BULLET.exec(line) ?? NUMBERED.exec(line);
+    if (line === "") {
+      closeParagraph();
+      closeList();
+    } else if (heading) {
+      closeParagraph();
+      closeList();
+      blocks.push({ type: "heading", children: parseInline(heading[1]) });
+    } else if (item) {
+      const type = line.startsWith("-") ? "bullets" : "numbers";
+      closeParagraph();
+      if (list?.type !== type) closeList();
+      list ??= { type, items: [] };
+      list.items.push(parseInline(item[1]));
+    } else {
+      closeList();
+      paragraph.push(line);
+    }
+  }
+  closeParagraph();
+  closeList();
+  return blocks;
+}
+
+function inlineText(parts: readonly MarkdownInline[]): string {
+  return parts.map((part) => (part.type === "text" ? part.text : inlineText(part.children))).join("");
+}
+
+/** A post's body as plain words, for its page's description (community spec 5.2). */
+export function markdownText(source: string): string {
+  return parseMarkdown(source)
+    .map((block) =>
+      block.type === "bullets" || block.type === "numbers"
+        ? block.items.map(inlineText).join(" ")
+        : inlineText(block.children),
+    )
+    .join(" ");
+}
 ```
 
 Run: `pnpm test lib/markdown.test.ts`
