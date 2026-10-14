@@ -6,8 +6,14 @@ import { onOverlayOpen } from "@/lib/overlays";
 import { savedCookieString } from "@/lib/saved";
 import type { Campus } from "@/lib/types";
 import { setScrollY } from "@/tests/helpers/dom";
+import { AccountLink } from "./AccountLink";
 import { SavedLink } from "./SavedLink";
 import { SiteHeader } from "./SiteHeader";
+
+// AccountLink's own file reads the session; the header's tests only need the link itself.
+vi.mock("@/lib/auth/session", () => ({ getViewer: async () => null }));
+
+const signedOut = <AccountLink signedIn={false} />;
 
 const campus = (slug: string, name: string): Campus => ({
   slug,
@@ -19,7 +25,7 @@ const campus = (slug: string, name: string): Campus => ({
 const campuses = [campus("midrand", "Midrand"), campus("pretoria", "Pretoria")];
 
 function renderHeader() {
-  render(<SiteHeader campuses={campuses} />);
+  render(<SiteHeader campuses={campuses} account={signedOut} />);
   return screen.getByRole("banner");
 }
 
@@ -29,7 +35,7 @@ describe("SiteHeader", () => {
     expect(header).toHaveAttribute("data-mode", "expanded");
     expect(screen.getByRole("link", { name: "Vossie home" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("button", { name: "Menu" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Account" })).toHaveAttribute("href", "/account");
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
     expect(screen.getByRole("link", { name: "Saved" })).toHaveAttribute("href", "/saved");
   });
 
@@ -133,11 +139,11 @@ describe("SiteHeader", () => {
   });
 
   it("leaves the campus pill plain with no choice, or with All campuses", () => {
-    const { unmount } = render(<SiteHeader campuses={campuses} />);
+    const { unmount } = render(<SiteHeader campuses={campuses} account={signedOut} />);
     expect(screen.getByRole("button", { name: /^Shopping at/ })).not.toHaveAttribute("data-chosen");
     unmount();
     setCampusChoice(ALL_CAMPUSES);
-    render(<SiteHeader campuses={campuses} />);
+    render(<SiteHeader campuses={campuses} account={signedOut} />);
     expect(screen.getByRole("button", { name: "Shopping at All campuses" })).not.toHaveAttribute("data-chosen");
   });
 
@@ -163,5 +169,13 @@ describe("SiteHeader", () => {
     document.cookie = savedCookieString(Array.from({ length: 120 }, (_, i) => `id${i}`), false);
     render(<SavedLink />);
     expect(screen.getByRole("link", { name: "Saved, 100 items" })).toHaveTextContent("99+");
+  });
+
+  it("shows the account icon it's given, among the items that go inert when hidden (accounts spec 3.4)", () => {
+    render(<SiteHeader campuses={campuses} account={<AccountLink signedIn />} />);
+    const link = screen.getByRole("link", { name: "Your account" });
+    expect(link).toHaveAttribute("href", "/account");
+    act(() => setScrollY(400));
+    expect(link.closest(".hdr-group")).toHaveAttribute("inert");
   });
 });

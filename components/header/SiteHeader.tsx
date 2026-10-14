@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, type CSSProperties, type MouseEvent } from "react";
+import { useRef, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { Pennant } from "@/components/brand/Pennant";
-import { MenuIcon, SearchIcon, UserIcon } from "@/components/icons";
+import { MenuIcon, SearchIcon } from "@/components/icons";
 import { NavLink } from "@/components/ui/NavLink";
 import { isMotionAllowedNow } from "@/hooks/useMotionAllowed";
 import { isPlainClick } from "@/lib/click";
@@ -17,7 +17,16 @@ import { useHeaderMode } from "./useHeaderMode";
 /** Reveal stagger: each item fades in 40ms after the one before (spec section 6.2). */
 const stagger = (index: number) => ({ "--i": index }) as CSSProperties;
 
-export function SiteHeader({ campuses }: { campuses: readonly Campus[] }) {
+type SiteHeaderProps = {
+  campuses: readonly Campus[];
+  /**
+   * The account icon, rendered on the server from the session (components/header/AccountLink.tsx), so the header
+   * knows who's signed in without client code (accounts plan decision 1).
+   */
+  account: ReactNode;
+};
+
+export function SiteHeader({ campuses, account }: SiteHeaderProps) {
   const headerRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const { mode, reveal } = useHeaderMode(headerRef);
@@ -120,9 +129,7 @@ export function SiteHeader({ campuses }: { campuses: readonly Campus[] }) {
             >
               <SearchIcon />
             </button>
-            <Link href="/account" aria-label="Account" className="hdr-item icon-btn" style={stagger(3)}>
-              <UserIcon />
-            </Link>
+            {account}
             <SavedLink className="hdr-item" style={stagger(4)} />
           </div>
         </div>

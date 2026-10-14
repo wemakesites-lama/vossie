@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type MouseEvent } from "react";
+import { useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { ArrowLeftIcon, ChevronRightIcon, CloseIcon, MapPinIcon } from "@/components/icons";
 import { NavLink } from "@/components/ui/NavLink";
@@ -19,10 +19,15 @@ type View = "main" | "categories" | "campuses";
 type MenuDrawerProps = {
   campuses: readonly Campus[];
   categories: readonly Category[];
+  /**
+   * The account rows, rendered on the server from the session (components/menu/MenuAccount.tsx): "Sign in", or "Your
+   * account" and Sign out (accounts spec 3.4).
+   */
+  account: ReactNode;
 };
 
 /** Full-screen navy menu (spec section 6.3) with drill-down views for categories and campuses. */
-export function MenuDrawer({ campuses, categories }: MenuDrawerProps) {
+export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
   const [view, setView] = useState<View>("main");
   const backRef = useRef<HTMLButtonElement>(null);
   const shopDrillRef = useRef<HTMLButtonElement>(null);
@@ -57,10 +62,14 @@ export function MenuDrawer({ campuses, categories }: MenuDrawerProps) {
     (from === "categories" ? shopDrillRef : campusesDrillRef).current?.focus();
   }
 
-  /** Links navigate in place, so close the menu as soon as one is followed. A click that opens a new tab leaves it open. */
+  /**
+   * Links navigate in place, so close the menu as soon as one is followed. A click that opens a new tab leaves it open.
+   * A form button (Sign out) closes it too, so the toast that follows isn't hidden behind the menu (accounts plan
+   * decision 14). The form still posts: closing the dialog doesn't stop the click's submit.
+   */
   function closeOnLink(event: MouseEvent<HTMLDialogElement>) {
     if (!isPlainClick(event)) return;
-    if ((event.target as HTMLElement).closest("a")) close();
+    if ((event.target as HTMLElement).closest("a, [type=submit]")) close();
   }
 
   return (
@@ -124,9 +133,7 @@ export function MenuDrawer({ campuses, categories }: MenuDrawerProps) {
               <li>
                 <NavLink href="/safety">Safety</NavLink>
               </li>
-              <li>
-                <NavLink href="/account">Account</NavLink>
-              </li>
+              {account}
             </ul>
           </nav>
         )}

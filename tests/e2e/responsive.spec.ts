@@ -39,7 +39,7 @@ test("the main controls are reachable with the keyboard", async ({ page }) => {
     "Skip to content",
     "Menu",
     "Vossie home",
-    "Account",
+    "Sign in",
     "Shop your campus",
     "Start selling",
     "Get updates",

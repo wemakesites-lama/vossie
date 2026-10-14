@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { AnnouncementBar } from "@/components/announcement/AnnouncementBar";
 import { CampusPicker } from "@/components/campus/CampusPicker";
 import { SiteFooter } from "@/components/footer/SiteFooter";
+import { AccountLink, HeaderAccount } from "@/components/header/AccountLink";
 import { SiteHeader } from "@/components/header/SiteHeader";
+import { MenuAccount, MenuAccountLinks } from "@/components/menu/MenuAccount";
 import { MenuDrawer } from "@/components/menu/MenuDrawer";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { ToastRegion } from "@/components/ui/ToastRegion";
@@ -54,12 +57,29 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         <AnnouncementBar messages={announcements} />
-        <SiteHeader campuses={campuses} />
+        <SiteHeader
+          campuses={campuses}
+          account={
+            // The session is read per request, so the icon streams in; the static shell says "Sign in" (accounts plan
+            // decision 1). The layout never awaits the session itself, so every page keeps its static shell.
+            <Suspense fallback={<AccountLink signedIn={false} />}>
+              <HeaderAccount />
+            </Suspense>
+          }
+        />
         <main id="main" tabIndex={-1} className="flex-1">
           {children}
         </main>
         <SiteFooter campuses={campuses} />
-        <MenuDrawer campuses={campuses} categories={categories} />
+        <MenuDrawer
+          campuses={campuses}
+          categories={categories}
+          account={
+            <Suspense fallback={<MenuAccountLinks signedIn={false} />}>
+              <MenuAccount />
+            </Suspense>
+          }
+        />
         <SearchOverlay campuses={campuses} categories={categories} trending={trending} />
         <CampusPicker campuses={campuses} />
         <ToastRegion />

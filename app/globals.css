@@ -6736,3 +6736,15 @@
     }
   }
 }
+
+/* --- Accounts: the menu's Sign out row (accounts plan, Task 8, spec 3.4) --- */
+@layer components {
+  /* Signed in, the menu has 8 rows, not 7 (plan decision 14), so from the tablet step the big type shares the spare
+     height 8 ways. 324px is the 316px the 7-row rule reserves, plus one more 8px gap. Signed out, nothing changes. */
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .menu-links:has(.menu-signout) a,
+    .menu-links:has(.menu-signout) .menu-link-button {
+      font-size: clamp(2.5rem, min(1.6rem + 4.4vw, (100dvh - 324px) / 8), 4.5rem);
+    }
+  }
+}

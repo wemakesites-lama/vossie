@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { setCampusChoice } from "@/lib/campus";
 import { onOverlayOpen, openOverlay } from "@/lib/overlays";
@@ -15,11 +16,18 @@ const categories: Category[] = [
   { slug: "tech", name: "Tech", image: { src: "/p.svg", alt: "" } },
 ];
 
-function renderMenu() {
+/** The menu as the layout fills it for a signed-out visitor, unless the test gives other account rows. */
+function renderMenu(
+  account: ReactNode = (
+    <li>
+      <a href="/login">Sign in</a>
+    </li>
+  ),
+) {
   render(
     <>
       <button type="button">Menu trigger</button>
-      <MenuDrawer campuses={campuses} categories={categories} />
+      <MenuDrawer campuses={campuses} categories={categories} account={account} />
     </>,
   );
 }
@@ -40,7 +48,7 @@ describe("MenuDrawer", () => {
     renderMenu();
     const { menu } = openMenu();
     expect(within(menu).getByRole("link", { name: "Shop" })).toHaveAttribute("href", "/browse");
-    for (const name of ["Sell", "Hub", "How it works", "Safety", "Account"]) {
+    for (const name of ["Sell", "Hub", "How it works", "Safety", "Sign in"]) {
       expect(within(menu).getByRole("link", { name })).toBeInTheDocument();
     }
     expect(within(menu).getByRole("button", { name: "Campuses" })).toBeInTheDocument();
@@ -113,6 +121,19 @@ describe("MenuDrawer", () => {
     expect(menu).toHaveAttribute("open");
     swallowNavigation();
     fireEvent.click(sell);
+    expect(menu).not.toHaveAttribute("open");
+  });
+
+  it("closes when a form button such as Sign out is pressed, so its toast can be seen (accounts plan decision 14)", () => {
+    renderMenu(
+      <li>
+        <form onSubmit={(event) => event.preventDefault()}>
+          <button type="submit">Sign out</button>
+        </form>
+      </li>,
+    );
+    const { menu } = openMenu();
+    fireEvent.click(within(menu).getByRole("button", { name: "Sign out" }));
     expect(menu).not.toHaveAttribute("open");
   });
 
