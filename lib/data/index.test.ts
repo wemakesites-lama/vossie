@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { cacheTag } from "next/cache";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { makeListingRow } from "@/tests/helpers/fakes";
 import {
   getAnnouncements,
@@ -544,5 +545,104 @@ describe("the store behind the data layer (selling spec 2.1, plan decisions 2 an
   it("never shows a shop that's waiting for approval", async () => {
     expect(await getSeller("crochet-corner")).toBeNull();
     expect(await getSellerSlugs()).not.toContain("crochet-corner");
+  });
+});
+
+describe("a shop that isn't open is kept out of every list (selling spec 8.8, amendment 8.14)", () => {
+  const TECH_CORNER = new Set(["l-001", "l-007", "l-tc-free"]);
+  const ours = (items: readonly { id: string }[]) => items.some((item) => TECH_CORNER.has(item.id));
+  const days = Array.from({ length: 28 }, (_, n) => `2026-10-${String(n + 1).padStart(2, "0")}`);
+
+  /** The lists Tech corner shows in, of those a paused or waiting shop must be kept out of. */
+  async function listsShowingTechCorner(): Promise<string[]> {
+    const shows: string[] = [];
+    // Featured draws 4 of Midrand's verified shops a day; over four weeks each one has its turn.
+    const featured = await Promise.all(days.map((day) => getFeatured({ campus: "midrand", day })));
+    if (featured.flat().some((seller) => seller.slug === "tech-corner")) shows.push("Featured");
+    if ((await getVerifiedSellers()).some((seller) => seller.slug === "tech-corner")) shows.push("Verified");
+    const query: SearchQuery = {
+      q: "tech corner",
+      category: null,
+      campus: "all",
+      price: null,
+      pay: null,
+      deals: null,
+      sort: "match",
+    };
+    if (ours((await searchListings(query)).items)) shows.push("search");
+    const collected = await Promise.all((await getCollections()).map((item) => getCollectionListings(item.slug)));
+    if (collected.some(ours)) shows.push("collections");
+    if (ours(await getFreeAndSwaps({ campus: "all", limit: 100 }))) shows.push("Free & swaps");
+    // Another shop's tech listing with nothing else from its shop, so More from falls back to the category.
+    const elsewhere = { id: "l-018", sellerSlug: "no-such-shop", categorySlug: "tech", campusSlug: "midrand" };
+    if (ours((await getMoreFrom(elsewhere, 100)).items)) shows.push("More from");
+    if (ours(await getRelatedListings({ categorySlug: "tech", campusSlug: "midrand", limit: 100 }))) {
+      shows.push("Related");
+    }
+    return shows;
+  }
+
+  it.each([
+    { state: "paused", status: "paused" as const },
+    { state: "waiting for approval", status: "pending" as const },
+  ])("keeps a verified shop that's $state out of every list", async ({ status }) => {
+    const store = sampleStore();
+    store.sellers.get("tech-corner")!.verified = true;
+    // A free listing, so the shop has one for Free & swaps too.
+    store.listings.set(
+      "l-tc-free",
+      makeListingRow({ id: "l-tc-free", title: "Free phone case", priceZar: 0, createdAt: "2026-10-14T09:00:00.000Z" }),
+    );
+    const everyList = ["Featured", "Verified", "search", "collections", "Free & swaps", "More from", "Related"];
+    expect(await listsShowingTechCorner()).toEqual(everyList);
+
+    store.sellerProfiles.get("acc-seller")!.status = status;
+    expect(await listsShowingTechCorner()).toEqual([]);
+  });
+});
+
+describe("the cache tags (selling spec 2.1, plan decision 6, amendment 8.13)", () => {
+  /** What `read` passed to cacheTag, call by call. */
+  async function tagsOf(read: () => Promise<unknown>): Promise<string[][]> {
+    vi.mocked(cacheTag).mockClear();
+    await read();
+    return vi.mocked(cacheTag).mock.calls;
+  }
+
+  const query: SearchQuery = {
+    q: null,
+    category: null,
+    campus: "all",
+    price: null,
+    pay: null,
+    deals: null,
+    sort: "new",
+  };
+  const listingReaders: Record<string, () => Promise<unknown>> = {
+    getCollectionListings: () => getCollectionListings("moving-in"),
+    getJustListed: () => getJustListed({ campus: "all", limit: 4 }),
+    getRelatedListings: () => getRelatedListings({ categorySlug: "tech", campusSlug: "midrand", limit: 4 }),
+    getFreeAndSwaps: () => getFreeAndSwaps({ campus: "all", limit: 4 }),
+    getListingDetail: () => getListingDetail("l-001"),
+    getMoreFrom: () =>
+      getMoreFrom({ id: "l-001", sellerSlug: "tech-corner", categorySlug: "tech", campusSlug: "midrand" }, 4),
+    searchListings: () => searchListings(query),
+    getListingIds: () => getListingIds(),
+    getSellerListings: () => getSellerListings("tech-corner"),
+    getListingsByIds: () => getListingsByIds(["l-001"]),
+  };
+  const sellerReaders: Record<string, () => Promise<unknown>> = {
+    getSeller: () => getSeller("tech-corner"),
+    getSellerSlugs: () => getSellerSlugs(),
+    getFeatured: () => getFeatured({ campus: "midrand", day: "2026-10-12" }),
+    getVerifiedSellers: () => getVerifiedSellers(),
+  };
+
+  it.each(Object.entries(listingReaders))("tags %s with listings and sellers", async (_, read) => {
+    expect(await tagsOf(read)).toEqual([["listings", "sellers"]]);
+  });
+
+  it.each(Object.entries(sellerReaders))("tags %s with sellers", async (_, read) => {
+    expect(await tagsOf(read)).toEqual([["sellers"]]);
   });
 });

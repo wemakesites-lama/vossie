@@ -29,7 +29,7 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
   ["condition-missing", { message: "Choose the item's condition.", field: "condition" }],
   ["price-missing", { message: "Enter a price, or tick It's free.", field: "price" }],
   ["price-invalid", { message: "Enter the price in whole rand, like 250.", field: "price" }],
-  ["price-high", { message: `Keep the price under ${formatRand(PRICE_MAX)}.`, field: "price" }],
+  ["price-high", { message: `Keep the price to ${formatRand(PRICE_MAX)} or less.`, field: "price" }],
   ["pay-missing", { message: "Choose how you want to be paid.", field: "payMode" }],
   ["free-swap", { message: "A free listing can't be a swap. Choose Cash, or untick It's free.", field: "payMode" }],
   ["swap-missing", { message: "Say what you'd swap it for.", field: "swapFor" }],

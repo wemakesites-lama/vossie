@@ -48,10 +48,11 @@ vi.mock("next/image", async () => {
 });
 
 // The data layer's "use cache" functions tag what they return (lib/data/tags.ts), and cacheTag needs Next's runtime,
-// so in unit tests tagging does nothing. Server Action tests stand next/cache in with tests/helpers/next-request.ts,
-// which records what they expire (selling plan, Task 4).
+// so in unit tests tagging only records its calls, for lib/data/index.test.ts to check (selling plan amendment 8.13).
+// Server Action tests stand next/cache in with tests/helpers/next-request.ts, which records what they expire (selling
+// plan, Task 4).
 vi.mock("next/cache", () => ({
-  cacheTag: () => {},
+  cacheTag: vi.fn(),
   cacheLife: () => {},
   updateTag: () => {},
   revalidateTag: () => {},

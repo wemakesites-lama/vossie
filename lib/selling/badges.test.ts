@@ -38,6 +38,15 @@ describe("what the next badge needs (selling spec 2.8, plan decision 18)", () =>
     );
   });
 
+  it("rounds the rate now down, so it never shows the target before it's met (amendment 8.7)", () => {
+    expect(badgeProgress("new-seller", counts(49, 49, 39, 0), OLD_ACCOUNT, NOW)).toBe(
+      "80% of enquiries answered within 48 hours (now 79%) for Responsive.",
+    );
+    expect(badgeProgress("new-seller", counts(100, 100, 57, 0), OLD_ACCOUNT, NOW)).toBe(
+      "80% of enquiries answered within 48 hours (now 57%) for Responsive.",
+    );
+  });
+
   it("asks for replies when there are enough enquiries but none has come due yet", () => {
     expect(badgeProgress("new-seller", counts(3, 0, 0, 0), OLD_ACCOUNT, NOW)).toBe(
       "80% of enquiries answered within 48 hours for Responsive.",

@@ -35,7 +35,9 @@ export function badgeProgress(
   const rate = replyRate(record);
   // With no enquiry due yet the rate isn't known: it's only asked for once there are enough enquiries.
   if (rate !== null ? rate < rule.rate : record.enquiries >= rule.enquiries) {
-    const rateNow = rate === null ? "" : ` (now ${Math.round(rate * 100)}%)`;
+    // Rounded down, so 39 of 49 shows as 79%, not the 80% it hasn't reached (amendment 8.7). In whole numbers, so
+    // 57 of 100 is 57% (0.57 * 100 is 56.99… in floating point).
+    const rateNow = rate === null ? "" : ` (now ${Math.floor((record.repliedInTime * 100) / record.due)}%)`;
     needs.push(`${Math.round(rule.rate * 100)}% of enquiries answered within 48 hours${rateNow}`);
   }
   if (record.salesConfirmed < rule.sales) {

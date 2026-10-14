@@ -140,11 +140,11 @@ The plan (`docs/superpowers/plans/2026-10-14-selling.md`) refines these points; 
 1. **No test-only routes.** End-to-end tests apply as a new student (who stays waiting) and use the seeded approved seller (`seller@eduvos.com`, Tech corner) for listing flows, only on each test's own listing. Approval itself arrives in stage G.
 2. **Uploads on a real host.** The 32 MB Server Action body works on `next start` but not on many hosts (Vercel's functions take 4.5 MB). Go-live needs direct-to-storage uploads, and the no-JavaScript path then needs its own answer; it's on the go-live checklist.
 3. **No resized copies of deleted photos.** The image optimiser's disk cache is off (`images.maximumDiskCacheSize: 0`), so a deleted photo can't keep being served in another size (POPIA).
-4. **What the metadata stripper removes:**
-   - JPEG: APP1 (Exif and XMP), APP13 (IPTC, which can hold a location) and comments;
-   - PNG: `eXIf`, `tEXt`, `zTXt` and `iTXt`;
-   - WebP: `EXIF` and `XMP `;
-   - in every format: anything after the image's end, such as a phone's appended motion video.
+4. **The metadata stripper keeps only what the image needs** (selling plan amendment 8): an allowlist for each format, with everything else dropped, so Exif, XMP, IPTC, C2PA, comments and anything unknown go. It keeps:
+   - JPEG: the tables (DQT, DHT, DAC), DRI, the frame (SOFn), the scans, DNL and EXP; APP0 only for JFIF, APP2 only for a colour profile (`ICC_PROFILE`), APP14 only for Adobe's. When the Exif held an Orientation other than 1, a minimal APP1 holding only that is written back (no location), so a portrait photo doesn't show sideways;
+   - PNG: `IHDR`, `PLTE`, `IDAT`, `IEND`, `tRNS`, `gAMA`, `cHRM`, `sRGB`, `iCCP`, `sBIT`, `cICP`, `mDCV`, `cLLI`, `pHYs`, `bKGD`, `acTL`, `fcTL` and `fdAT`;
+   - WebP: `VP8X` (its EXIF and XMP flags cleared), `VP8 `, `VP8L`, `ALPH`, `ICCP`, `ANIM` and `ANMF` (with only each frame's `VP8 `, `VP8L` and `ALPH`);
+   - in every format, nothing after the image's end, such as a phone's appended motion video. A file with no image in it is refused.
 5. **The dashboard counts the last 7 days** (not "this week"). Only messages about a listing count as enquiries, as the trust page defines them. Replies show as "3 of 4 within 48 hours".
 6. **Sold listings can be relisted,** so a mistaken "Mark sold" can be undone.
 7. **Drafts stay drafts after approval:** the seller publishes them one by one.

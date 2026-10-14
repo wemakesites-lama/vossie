@@ -25,26 +25,43 @@ export function cleanLine(raw: string): string {
   return cleanText(raw).replace(/\s+/g, " ");
 }
 
-/** A shop name as names are compared (plan decision 16): no case, accents or punctuation. "Tech Corner!" is "tech corner". */
+/**
+ * A shop name as names are compared (plan decision 16, amendment 8.6): no case, accents, apostrophes or punctuation,
+ * in any alphabet. "Tech Corner!" is "tech corner", "Zoë's Café" is "zoes cafe", and "東京" stays "東京".
+ */
 export function nameKey(name: string): string {
   return name
     .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/['’]/g, "")
+    .replace(/\p{M}/gu, "")
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
 }
 
-/** A shop's link made from its name (plan decision 16): "Zoë's Café" becomes "zoes-cafe". */
+/**
+ * A shop's link made from its name (plan decision 16, amendment 8.6): the name's a to z and digits, joined by
+ * hyphens, so "Zoë's Café" becomes "zoes-cafe". One shorter than SLUG_MIN gets "-shop" ("ab-shop"), and a name with
+ * none of them is "shop".
+ */
 export function slugify(name: string): string {
-  const slug = nameKey(name.replace(/['’]/g, "")).replace(/ /g, "-").slice(0, SLUG_MAX).replace(/-+$/, "");
-  return slug || "shop";
+  const slug = nameKey(name)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+/, "")
+    .slice(0, SLUG_MAX)
+    .replace(/-+$/, "");
+  if (slug.length >= SLUG_MIN) return slug;
+  return slug ? `${slug}-shop` : "shop";
 }
 
-/** A shop's name (selling spec 2.6): 2 to 60 characters, once tidied. Unique on its campus: the caller checks that. */
+/**
+ * A shop's name (selling spec 2.6): 2 to 60 characters, once tidied, with at least one letter or digit in any
+ * alphabet (amendment 8.6). A name of nothing else, only emoji say, counts as no name, as a first name does (D's
+ * checkFirstName). Unique on its campus: the caller checks that.
+ */
 export function checkShopName(raw: string): TextCheck<"name-missing" | "name-length"> {
   const value = cleanLine(raw);
-  if (value === "") return { value, error: "name-missing" };
+  if (!/[\p{L}\p{N}]/u.test(value)) return { value, error: "name-missing" };
   const length = characterCount(value);
   return { value, error: length < SHOP_NAME_MIN || length > SHOP_NAME_MAX ? "name-length" : null };
 }
@@ -71,10 +88,19 @@ export function checkSlug(raw: string): TextCheck<"slug-format"> {
   return { value, error: ok ? null : "slug-format" };
 }
 
-/** A price as typed, in whole rand: "250", "R1 200" and "1,200" all work. Null when it isn't one. */
+// Plain digits, or digits in groups of three split by commas or by spaces ("1,200", "1 200"), then perhaps ",00" or
+// ".00": South Africa writes cents after a decimal comma, so "R250,00" is R250.
+const PRICE_SHAPE = /^(?:\d+|\d{1,3}(?:,\d{3})+|\d{1,3}(?:\s\d{3})+)(?:[.,]00)?$/;
+
+/**
+ * A price as typed, in whole rand (amendment 8.5): "250", "R1 200", "1,200" and "R250,00" all work; "99,99" and
+ * "1,20" don't. Null when it isn't one.
+ */
 export function parsePrice(raw: string): number | null {
-  const digits = raw.trim().replace(/^r\s*/i, "").replace(/[\s,]/g, "");
-  return /^\d{1,9}$/.test(digits) ? Number(digits) : null;
+  const typed = raw.trim().replace(/^r\s*/i, "");
+  if (!PRICE_SHAPE.test(typed)) return null;
+  const digits = typed.replace(/[.,]00$/, "").replace(/[\s,]/g, "");
+  return digits.length <= 9 ? Number(digits) : null;
 }
 
 export const KIND_CHOICES: ReadonlyArray<{ value: ListingKind; label: string }> = [

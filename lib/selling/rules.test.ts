@@ -38,10 +38,20 @@ describe("one line of text", () => {
 });
 
 describe("shops (selling spec 2.6 and 2.11, plan decision 16)", () => {
-  it("compares names without case, accents or punctuation", () => {
+  it("compares names without case, accents, apostrophes or punctuation", () => {
     expect(nameKey("Tech Corner!")).toBe("tech corner");
-    expect(nameKey("Zoë's  café")).toBe("zoe s cafe");
+    expect(nameKey("Zoë's  café")).toBe("zoes cafe");
     expect(nameKey("tech-corner")).toBe(nameKey("TECH CORNER"));
+    // Amendment 8.6.
+    expect(nameKey("Zoe's Cafe")).toBe(nameKey("Zoes Cafe"));
+    expect(nameKey("Zoe’s Cafe")).toBe(nameKey("Zoes Cafe"));
+  });
+
+  it("compares names in any alphabet, so two names in another script don't collide (amendment 8.6)", () => {
+    expect(nameKey("Ζήτα Café")).toBe("ζητα cafe");
+    expect(nameKey("東京 2")).toBe("東京 2");
+    expect(nameKey("東京")).not.toBe(nameKey("大阪"));
+    expect(nameKey("Кафе")).toBe(nameKey("КАФЕ"));
   });
 
   it("makes a link from a name", () => {
@@ -51,6 +61,13 @@ describe("shops (selling spec 2.6 and 2.11, plan decision 16)", () => {
     expect(slugify("!!!")).toBe("shop");
   });
 
+  it("keeps a link at least 3 characters long, and only a to z, digits and hyphens (amendment 8.6)", () => {
+    expect(slugify("AB")).toBe("ab-shop");
+    expect(slugify("Ζήτα Café")).toBe("cafe");
+    expect(slugify("東京")).toBe("shop");
+    expect(slugify("東京 7")).toBe("7-shop");
+  });
+
   it("takes a name of 2 to 60 characters once tidied", () => {
     expect(checkShopName("  Tech   corner ")).toEqual({ value: "Tech corner", error: null });
     expect(checkShopName(" ").error).toBe("name-missing");
@@ -58,6 +75,14 @@ describe("shops (selling spec 2.6 and 2.11, plan decision 16)", () => {
     expect(checkShopName("Te").error).toBeNull();
     expect(checkShopName("a".repeat(60)).error).toBeNull();
     expect(checkShopName("a".repeat(61)).error).toBe("name-length");
+  });
+
+  it("needs a letter or a digit in a name, in any alphabet (amendment 8.6)", () => {
+    expect(checkShopName("☕☕☕").error).toBe("name-missing");
+    expect(checkShopName("!?!").error).toBe("name-missing");
+    expect(checkShopName("☕ Cafe").error).toBeNull();
+    expect(checkShopName("東京").error).toBeNull();
+    expect(checkShopName("24/7").error).toBeNull();
   });
 
   it("lets the tagline be empty, and up to 80 characters", () => {
@@ -72,6 +97,7 @@ describe("shops (selling spec 2.6 and 2.11, plan decision 16)", () => {
       error: null,
     });
     expect(checkAbout(" ").error).toBe("about-missing");
+    expect(checkAbout("a".repeat(600)).error).toBeNull();
     expect(checkAbout("a".repeat(601)).error).toBe("about-length");
   });
 
@@ -89,6 +115,19 @@ describe("prices (plan decision 26)", () => {
     expect(parsePrice("R1 200")).toBe(1200);
     expect(parsePrice(" r 1,200 ")).toBe(1200);
     for (const bad of ["", "12.50", "R", "two hundred", "-5"]) expect(parsePrice(bad), bad).toBeNull();
+  });
+
+  it("takes the decimal comma, with no cents, and thousands only in groups of three (amendment 8.5)", () => {
+    expect(parsePrice("R250,00")).toBe(250);
+    expect(parsePrice("250.00")).toBe(250);
+    expect(parsePrice("1,200")).toBe(1200);
+    expect(parsePrice("R1 200,00")).toBe(1200);
+    expect(parsePrice("12,500")).toBe(12500);
+    expect(parsePrice("1,200.00")).toBe(1200);
+    expect(parsePrice("100,000")).toBe(100000);
+    for (const bad of ["99,99", "1,20", "12,50", "1,2000", "12,5000", "1,200,0", "1 20", "1,,200", "1, 200", "250,", ",00"]) {
+      expect(parsePrice(bad), bad).toBeNull();
+    }
   });
 });
 
@@ -172,6 +211,14 @@ describe("the listing form's rules (selling spec 2.10, plan decision 26)", () =>
         "handover-missing",
       ],
     });
+  });
+
+  it("takes each limit at the limit (amendment 8.15)", () => {
+    expect(checkListing({ ...item, title: "a".repeat(70) }, MIDRAND).errors).toEqual([]);
+    expect(checkListing({ ...item, price: "R1" }, MIDRAND).value?.priceZar).toBe(1);
+    expect(checkListing({ ...item, price: "R100,000" }, MIDRAND).value?.priceZar).toBe(100000);
+    expect(checkListing({ ...item, description: "a".repeat(1000) }, MIDRAND).errors).toEqual([]);
+    expect(checkListing({ ...item, payMode: "both", swapFor: "a".repeat(200) }, MIDRAND).errors).toEqual([]);
   });
 
   it("checks the limits and the choices", () => {
