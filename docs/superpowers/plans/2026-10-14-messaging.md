@@ -174,6 +174,7 @@ The controller adds amendments here; they override the tasks below wherever they
    9. **The deleted side** (spec 9.8, amended to match): names show as "Deleted account", and the thread's note says "This person has left Vossie, so you can't reply." Tasks 9 and 10 use these words, in place of plan decision 21's "The other person has left Vossie…".
    10. **The export runs the auto-confirm first,** so it never says "done" for a sale that has confirmed itself.
    11. **The account export test is strict again:** apart from the three new keys, the rest is compared with `toEqual`.
+4. **What "works without JavaScript" means** (found in Task 8). Next reveals streamed `<Suspense>` content with a small inline script. With JavaScript turned off in the browser, the request-time parts (the composer's form included) stay on their skeletons. The plan's promise holds for the case it was made for: the app's bundle failing or blocked, which the e2e tests check. Task 17 adds this to `docs/PROGRESS.md`'s open points, and to the go-live checklist's quality items ("decide whether a browser with JavaScript off needs the forms").
 
 ## Store design
 
