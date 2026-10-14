@@ -6,6 +6,7 @@ import { listSessions } from "./sessions";
 import { exportConversations, forgetAccountInMessaging, unreadCounts, type ConversationExport } from "./messages";
 import { exportNotifications, type NotificationExport } from "./notifications";
 import { deleteReportsBy, exportReports, type ReportExport } from "./reports";
+import { exportShop, forgetShopOf, type ListingExport, type ShopExport } from "./shops";
 import { sampleStore } from "./store";
 
 // Accounts, their shops and their consent (accounts spec section 4), shaped like the Supabase calls that will replace
@@ -143,7 +144,7 @@ export async function restoreSampleAccount(email: string): Promise<Account | nul
 
 /**
  * "Download your data" (spec 3.3, plan decision 20). Messaging adds conversations, reports and notifications
- * (messaging plan decision 15); selling adds listings.
+ * (messaging plan decision 15); selling adds the shop and its listings (selling plan decision 22).
  */
 export type AccountExport = {
   exportedAt: string;
@@ -162,6 +163,9 @@ export type AccountExport = {
   conversations: ConversationExport[];
   reports: ReportExport[];
   notifications: NotificationExport[];
+  /** The account's shop, if it has one, and every listing in it, drafts included. */
+  shop: ShopExport | null;
+  listings: ListingExport[];
 };
 
 /** The account's data, as the export gives it. Null when the account has gone. */
@@ -177,6 +181,7 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
   // reads that sale's notification, and the notifications must be read after that.
   const conversations = await exportConversations(accountId, now);
   const [reports, notifications] = await Promise.all([exportReports(accountId), exportNotifications(accountId)]);
+  const selling = await exportShop(accountId);
   return {
     exportedAt: now.toISOString(),
     account: {
@@ -192,6 +197,8 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
     conversations,
     reports,
     notifications,
+    shop: selling.shop,
+    listings: selling.listings,
   };
 }
 
@@ -199,7 +206,8 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
  * Deletes an account straight away (spec 2.13): the account, its shop, its consent, its sessions and their forms'
  * state, any sign-in under way for its email, every sample outbox row addressed to its email (found by address, so
  * a row whose attempt has already ended goes too), and its code count. Messaging's tables go first (messaging plan
- * decision 14); selling adds listings. Nothing of anyone else's is touched.
+ * decision 14), then selling's shop, listings and photos (selling plan decision 22). Nothing of anyone else's is
+ * touched.
  */
 export async function deleteAccountData(accountId: string): Promise<void> {
   const store = sampleStore();
@@ -209,6 +217,8 @@ export async function deleteAccountData(accountId: string): Promise<void> {
   // the other side keeps its own side of each conversation (messaging plan decision 14).
   await forgetAccountInMessaging(accountId, store.sellerProfiles.get(accountId)?.sellerSlug ?? null);
   await deleteReportsBy(accountId);
+  // Then its shop, the shop's listings, every photo it uploaded and its wizard draft (selling plan decision 22).
+  await forgetShopOf(accountId);
   store.accounts.delete(accountId);
   store.sellerProfiles.delete(accountId);
   for (const [id, row] of store.consents) {
