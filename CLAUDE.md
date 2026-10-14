@@ -39,6 +39,7 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - Server Components by default. `"use client"` only where there is interaction.
 - Device preferences (campus cookie `vossie_campus`, saved cookie `vossie_saved`, recent searches, data saver) go through the stores in `lib/` and `useSyncExternalStore`.
 - Never read `cookies()`, `headers()` or `searchParams` outside `<Suspense>`.
+- Who's signed in comes only from `getViewer()` or `requireAccount()` (`lib/auth/session.ts`), inside `<Suspense>`. Forms are plain `<form action={serverAction}>`: the action checks its input, takes identity from the session, keeps errors in the store (never the URL) and ends with `redirect()`. Only `lib/data` touches the sample store.
 - No `Date.now()`, `new Date()` or `Math.random()` while prerendering.
 - Client hooks that suspend while Next builds App Shells (`usePathname()`, `useParams()`) are read only inside `<Suspense>` in shared layout code (see `components/ui/NavLink.tsx`).
 - Dynamic routes:
@@ -54,10 +55,10 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - Motion: animate only `transform` and `opacity` (the CSS `translate`, `scale` and `rotate` properties count as transform). Respect `prefers-reduced-motion` and data saver (`html[data-low-data]`).
 - Touch targets are at least 44px. No hover-only features.
 - The site's address comes only from `siteUrl()` (`lib/site-url.ts`), which reads `NEXT_PUBLIC_SITE_URL`. `metadataBase`, `robots.txt` and the sitemap use it. Never write a domain in code.
-- Links that would prefetch a route with client components cost that route's chunk on every page they appear on. Use `prefetch={false}` unless there's a reason (decision 53).
+- Links that would prefetch a route with client components cost that route's chunk on every page they appear on. Use `prefetch={false}` unless there's a reason (decision 53). The header's home link prefetches `/`, so client code used only on the homepage costs bytes on every page.
 
 ## Privacy (POPIA)
-- Collect the minimum. This stage stores nothing on a server: the campus choice and saved listings are first-party cookies, and recent searches stay in the browser.
+- Collect the minimum. Sample mode keeps accounts, sessions, consent and sign-ins in the server's memory only, wiped on restart; the campus choice and saved listings are first-party cookies, and recent searches stay in the browser.
 - Looking For requests never name the asker: they say "Asked by a student at {campus}". Sellers are businesses and show their names (community spec decision 2).
 - The footer sign-up shows a confirmation only. It sends and stores nothing until there is a real, consented mailing list.
 - Every cookie and browser-storage key is named `vossie_…`, and the privacy page must name each one: a test (`app/privacy/page.test.tsx`) finds them in the code and fails until it does.

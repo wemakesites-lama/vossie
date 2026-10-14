@@ -320,3 +320,71 @@ test("community review screenshots", async ({ page, context, baseURL }) => {
   // Full page: at 1440px the "have passed" line sits below the first screen.
   await page.screenshot({ path: file("10-hub-past"), fullPage: true });
 });
+
+test("accounts review screenshots", async ({ page, context }) => {
+  const project = test.info().project.name;
+  test.skip(!["phone-390", "desktop-1440"].includes(project), "Saved at 390 and 1440 only");
+  const file = (name: string) => `docs/progress/accounts/${project}-${name}.png`;
+  const main = page.locator("main");
+  const alert = page.getByRole("alert", { name: "There's a problem" });
+  // A new address each run: the screenshots share the sample store with nothing else, but a rerun mustn't reuse one.
+  const email = `shots-${project}-${Date.now().toString(36)}@eduvos.com`;
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+
+  await page.goto("/login?next=%2Flistings%2Fl-001");
+  await expect(main.getByRole("heading", { level: 2, name: "Sign in as a sample account" })).toBeVisible();
+  await page.screenshot({ path: file("01-sign-in"), fullPage: true });
+
+  await main.getByRole("button", { name: "Send code", exact: true }).click();
+  await expect(alert).toBeVisible();
+  await page.screenshot({ path: file("02-sign-in-errors"), fullPage: true });
+
+  await page.getByLabel("Your Eduvos email address", { exact: true }).fill(email);
+  await page.getByLabel("I agree to the privacy policy", { exact: true }).check();
+  await main.getByRole("button", { name: "Send code", exact: true }).click();
+  const code = (await main.locator(".signin-sample-code strong").textContent()) ?? "";
+  await page.getByLabel("6-digit code", { exact: true }).fill(code === "111111" ? "222222" : "111111");
+  await main.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(alert).toContainText("4 tries left");
+  await page.screenshot({ path: file("03-code-wrong"), fullPage: true });
+
+  await page.getByLabel("6-digit code", { exact: true }).fill(code);
+  await main.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByLabel("Your first name", { exact: true })).toBeVisible();
+  await page.screenshot({ path: file("04-first-sign-in"), fullPage: true });
+
+  await page.getByLabel("Your first name", { exact: true }).fill("Ayanda");
+  await page.getByLabel("Your campus", { exact: true }).selectOption({ label: "Pretoria" });
+  await main.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page).toHaveURL(/\/listings\/l-001$/);
+
+  await page.goto("/login");
+  await expect(main.getByText(/You're signed in as/)).toBeVisible();
+  await page.screenshot({ path: file("05-signed-in-already") });
+
+  await page.goto("/account");
+  await expect(main.getByRole("heading", { level: 2, name: "Ayanda" })).toBeVisible();
+  await page.screenshot({ path: file("06-account"), fullPage: true });
+
+  await main.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(main.getByRole("status")).toHaveText("Your details are saved.");
+  await page.screenshot({ path: file("07-account-saved") });
+
+  await page.goto("/account/privacy");
+  await main.getByRole("button", { name: "Delete my account", exact: true }).click();
+  await expect(alert).toBeVisible();
+  await page.screenshot({ path: file("08-privacy-settings"), fullPage: true });
+
+  // The Delete button is far down the page, so the header has folded to its crest. Back to the top for the Menu button.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  const menu = page.getByRole("dialog", { name: "Menu" });
+  await expect(menu.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await page.screenshot({ path: file("09-menu-signed-in") });
+
+  await menu.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.locator(".toast")).toHaveText("You're signed out");
+  await page.screenshot({ path: file("10-signed-out-toast") });
+  await context.clearCookies();
+});

@@ -270,9 +270,47 @@ Review notes that were deliberately not acted on:
 - **Request and office-hours pages have the most layout shift of the new pages,** 0.0244 at 390px for a request and 0.0172 for office hours and tips. All are under the 0.05 limit; the board, the Hub and an event page are under 0.003.
 - **JS room for the signed-in stages.** The listing page, the highest, ends at 151,710 B: 595 B under the stop line and 1,890 B under the limit. Decision 63's `requestCost` is experimental and a threshold effect, so later code can shrink the saving; `performance.spec.ts` is the guard.
 
+## 2026-10-14: Sign-in and accounts built, in sample mode (stage D)
+- **The sample store** (`lib/data/store.ts`): one per server process, on `globalThis`, seeded with five sample accounts (student, approved seller, seller waiting for approval, mentor and admin) and wiped when the server restarts. Every read and write goes through `lib/data` functions shaped like Supabase's; stages E to G add their tables to it.
+- **Sign in** (`/login`): your Eduvos email and the privacy box, then a 6-digit code (shown on screen in sample mode; 10 minutes, 5 tries, 5 codes an hour), then a first name and campus on a first sign-in. Every step is a plain form posting to a Server Action, so it works without the app's JavaScript. Sample-account buttons sign straight in. `VOSSIE_SAMPLE_MODE=0` turns sign-in off; `VOSSIE_EMAIL_DOMAINS` sets the domains.
+- **Sessions:** an httpOnly cookie with a random token, for 30 days; the store keeps only hashes of tokens and codes. The header's icon and the menu's rows come from the server, so there's no readable sign-in cookie.
+- **Your account** (`/account`): your details, Edit details, Saved, selling and privacy settings, Sign out. **Privacy settings** (`/account/privacy`): the consent record, Download your data (`vossie-data.json`), and Delete your account, which removes everything at once and signs you out with a toast.
+- **Words:** the privacy policy names the three new cookies and describes the preview's accounts; How it works and the save notes say what's true now.
+- **Where the build differed from the plan** is in the plan's "Changes made during the build (2026-10-14)". The ones worth knowing:
+  - The review of Tasks 1 to 6 (`1767777`) made counting a wrong try and taking a place in the hour's 5 codes one step each (overlap tests showed parallel posts slipping past both limits), made an email have one account ever, and tightened emails (ASCII) and first names (a letter is needed).
+  - The homepage's sign-out toast cost every page 81 B, though its code is on the homepage only: the header's home link prefetches `/` and so pulls in the homepage's chunk (`6e4bb91`).
+  - The stage review (`17dd972`) made the toast show once when Next brings a kept page back, gave each form's error summary its own id, and made a sign-in step's errors show for 60 seconds after their post.
+  - The end-to-end test for the toast showing once first passed with the fix removed (a retrying assertion waited out the 4-second toast). It now counts toasts in the page and fails without the fix.
+- **Plan decisions Lama may want to revisit:** these review fixes changed behaviour:
+  - Sign-in errors, and "We sent a new code.", now show for 60 seconds after the post that set them. Someone who comes back to a half-finished sign-in 20 minutes later sees the form with what they typed, not the old error summary.
+  - Error summaries take an id from each form (`signin-email-summary`, `account-details-summary` and so on), instead of one shared id; nothing changes on screen.
+  - Sample wording for Lama to change: the sample accounts' names and buttons (plan decision 15) and the words in plan decision 7 (the rate-limit message, the toasts, the hints and the privacy settings page's sentences).
+- **Checks:**
+  - lint and types are clean;
+  - 978 unit tests pass, in 153 files;
+  - end to end, 734 pass, 541 are skipped by design and none fail, across 360, 390, 768, 1024 and 1440px;
+  - axe finds no serious or critical issues on each sign-in step, the sign-in page when signed in, the account page after a failed save, privacy settings with the box missed, and the signed-in menu.
+- **First visit at 390px, JS brotli:** homepage 150,614 B, browse 151,361 B, listing 151,770 B, sign-in 150,614 B, account (signed in) 150,614 B (stop line 152,305 B, never reached; limit 153,600 B). The listing page is the highest, 535 B under the stop line. Every page is 60 B above where the stage started: 39 B lighter from the header and menu, 81 B heavier from the toast, 18 B from the review fix that makes the toast show once.
+- **Layout shift** (fonts held back, at 390 and 1440px):
+
+  | Page | 390px | 1440px |
+  |---|---|---|
+  | Sign-in | 0.0003 | 0.0002 |
+  | Account (signed in) | 0.0004 | 0.0004 |
+  | Privacy settings (signed in) | 0.0005 | 0.0004 |
+
+  Run to run the figures move by a few ten-thousandths; all are far under the limit of 0.05.
+- Review screenshots: `docs/progress/accounts/` (20, at 390 and 1440px).
+
+## 2026-10-14: Open points for Lama after the accounts build
+- **`data/fixtures/viewer.ts` looks unused now.** It held the sample activity behind the old `VOSSIE_SAMPLE_SIGNED_IN` switch, which stage D retired. It is left in place, and Lama decides whether to delete it.
+- **Client code used only on the homepage costs bytes on every page.** The header's home link prefetches `/`, which pulls in the homepage's own chunk wherever the link appears. `FlashToast` (homepage only) cost every page 81 B. Anything client-side added to the homepage later has the same effect, and `performance.spec.ts` is the guard.
+- **Sample mode keeps accounts in the server's memory.** They vanish when the server restarts, the sign-in code shows on the page, and one process holds them all. The go-live checklist has what the real backend must do (keyed hashes for codes, atomic try counting, the `Secure` flag behind a proxy, plus addresses, and a database before more than one instance).
+- **JS room for stages E to G.** The listing page ends at 151,770 B: 535 B under the stop line and 1,830 B under the limit.
+
 ## Next
-- Lama reviews the screenshots in `docs/progress/community/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "community review screenshots"`.
-- Stage D (sign-in and accounts) builds next. The plans for D and E are written, and F's is being drafted. After that come F (selling) and G (staff tools) (decisions 54 and 55).
+- Lama reviews the screenshots in `docs/progress/accounts/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "accounts review screenshots"`.
+- Then stage E: messaging, reports and notifications (`2026-10-14-messaging-design.md`), on this stage's store and sessions.
 
 ## Waiting on
 - Eduvos font files and licence confirmation.

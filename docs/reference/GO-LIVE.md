@@ -2,7 +2,7 @@
 
 Every page and view the marketplace needs before it can go live, plus the work that isn't a screen. Drawn from the app's routes, the old demo's function map (`FUNCTION-MAP.md`) and the homepage spec's "Not in this stage" list.
 
-Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) and after Looking For and the Hub (part B). Update the status column as each stage lands.
+Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) after Looking For and the Hub (part B), and after sign-in and accounts, in sample mode (stage D). Update the status column as each stage lands.
 
 **Status key**
 - **Built:** done.
@@ -36,14 +36,14 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 
 | Screen or view | Route | Status |
 |---|---|---|
-| Sign in, step 1: Eduvos email and POPIA consent | `/login` | Placeholder |
-| Sign in, step 2: the code, with wrong-code, expired-code and non-Eduvos-email errors | `/login` | Missing |
-| First sign-in: your name and campus | none yet | Missing |
-| "Sign in to do that" sheet, which returns you to what you were doing | sheet | Missing |
-| Account summary and sign out | `/account` | Placeholder |
-| Privacy settings: consent record, download my data, reports I've made, delete my account (required by POPIA) | `/account/privacy` | Missing |
+| Sign in, step 1: Eduvos email and POPIA consent | `/login` | **Built (sample mode: the code shows on screen)** |
+| Sign in, step 2: the code, with wrong-code, expired-code and non-Eduvos-email errors | `/login` | **Built (sample mode: the code shows on screen)** |
+| First sign-in: your name and campus | `/login`, step 3 | **Built** |
+| "Sign in to do that" sheet, which returns you to what you were doing | links | **Built as links** to `/login?next=…` (decision 44); signed-in visitors see a note with the way back |
+| Account summary and sign out | `/account` | **Built** |
+| Privacy settings: consent record, download my data, reports I've made, delete my account (required by POPIA) | `/account/privacy` | **Built** (the list of reports you've made waits for stage E) |
 | Saved listings, and followed sellers once accounts exist | `/saved` | Built (followed sellers wait for accounts) |
-| Header: "Sign in" when signed out, and an inbox icon with an unread count | shell | Missing |
+| Header: "Sign in" when signed out, and an inbox icon with an unread count | shell | **Built** (the unread count waits for stage E) |
 
 ## 3. Messaging
 
@@ -77,7 +77,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Hub post editor and the office-hours queue | `/hub/new`, `/hub/manage` | Missing |
 | Mentor dashboard, seller detail, notes, check-ins, CSV export | `/mentor/*` | Missing; can follow launch |
 
-**Totals:** about 45 screens and views. 18 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, the privacy policy, terms of use and seller guidelines as drafts, and Looking For's board and request pages and the Hub's feed and post pages, which read today and send acting to sign-in), and 27 are placeholders or missing. Most of the missing ones are the signed-in half of the product.
+**Totals:** about 45 screens and views. 21 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, the privacy policy, terms of use and seller guidelines as drafts, Looking For's board and request pages and the Hub's feed and post pages, which read today and send acting to sign-in, and, in sample mode, sign-in, your account and privacy settings), and 24 are placeholders or missing. Most of the missing ones are the signed-in half of the product.
 
 ## 6. Work that isn't a screen
 
@@ -85,6 +85,12 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] Supabase project: schema, access rules, photo storage, seed data (campuses, categories, real pickup points).
 - [ ] Replace the sample fixtures with real queries behind `lib/data`, which is already shaped for this.
 - [ ] A proper email sending service for sign-in codes. Supabase's built-in email is heavily rate-limited.
+- [ ] The email service replaces sample mode's outbox (`saveSampleEmail` in `sendCode`, `lib/auth/actions.ts`), and the sign-in page stops showing the code.
+- [ ] Supabase Auth or the real database behind `lib/data/accounts.ts`, `sessions.ts`, `sign-in.ts` and `form-states.ts`; then set `VOSSIE_SAMPLE_MODE=0`, which removes the sample accounts' buttons.
+- [ ] Sign-in rate limits on the real backend: per IP address as well as per email.
+- [ ] **Keyed hashes for codes.** Sign-in codes and tokens are stored as plain SHA-256 hashes (a code is salted with its attempt's key, which sits in the same row). A 6-digit code has only a million values, so a leaked store gives the codes away. The real backend hashes them with a server secret (HMAC).
+- [ ] **Counting tries.** The real backend counts a wrong try (atomically) before it compares the code, so guesses sent in parallel can't get past 5 tries. The same goes for the 5 codes an hour: `recordWrongTry` and `reserveCodeSend` in `lib/data/sign-in.ts` say what each needs (a single `UPDATE … RETURNING`, and a single upsert or a per-email lock).
+- [ ] **The store's scope.** The sample store lives in one server process. Running more than one instance, or serverless functions, needs the real database first.
 - [ ] Scheduled jobs: the nightly Featured draw, recalculating trust badges, and confirming sales automatically after 7 days.
 
 ### POPIA and legal (Eduvos signs these off)
@@ -101,6 +107,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] How consent is recorded.
 - [ ] The data export and deletion flows.
 - [ ] Where the data is hosted. The old demo ran in Ireland; sending data abroad needs adequate safeguards (section 72).
+- [ ] The privacy policy's "Vossie is still a preview" sentence comes out once accounts move to the real backend.
 
 ### Content
 - [ ] Real photos.
@@ -109,11 +116,13 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] Real pickup points for each campus.
 - [ ] Real Hub events, tips and story. The 18 posts and the Hub's two paragraphs are sample wording.
 - [ ] Real Looking For requests. The 16 requests (and the offers counts on them) are samples to remove.
-- [ ] Info pages say what's true today; update them as stages land (How it works' "What can I do on Vossie today?", the trust page's sample notes, the privacy page's "When sign-in arrives").
-- [ ] Remove every sample listing and the development sign-in switch.
+- [ ] Info pages say what's true today; update them as stages land (How it works' "What can I do on Vossie today?", the trust page's sample notes, the privacy page's "Your account" section).
+- [ ] Remove every sample listing and the sample accounts (sample mode off). The development sign-in switch went in stage D.
 
 ### Production
 - [ ] A domain and hosting.
+- [ ] A stable `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` when more than one server instance runs (Server Actions).
+- [ ] **The `Secure` flag.** The cookies' `Secure` flag follows `x-forwarded-proto` (`isHttps` in `lib/auth/cookies.ts`). On the real host, make sure only its own proxy sets that header, or always set `Secure` in production.
 - [x] Security headers: `nosniff`, referrer policy, `X-Frame-Options`, `Permissions-Policy` and HSTS, without a CSP (2026-10-14).
 - [ ] A Content Security Policy (it needs per-request nonces, which make pages dynamic).
 - [ ] HSTS: add `includeSubDomains` and preload once the domain is settled.
@@ -142,6 +151,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 
 - [ ] **Who can sell?** Any signed-in student, or only sellers the Hub has approved? An approval queue suits a hustle selling braids but is heavy for one textbook. This choice shapes onboarding and the admin tools.
 - [ ] **Which email proves someone is a student?** The demo's `@vossie.net` was a stand-in.
+- [ ] **Plus addresses.** `thandi+1@eduvos.com` counts as a new address, which gets round the per-email code limit and allows several accounts per student. Decide with Eduvos whether to treat plus addresses as the same person, or reject them, once its mail system is known.
 - [ ] **Who moderates reports and approvals,** and how fast do they respond?
 - [ ] **In-app messages, a WhatsApp handoff, or both?** And do new messages send an email?
 - [ ] **Do Looking For and the Hub go live on day one?** If not, their homepage sections are hidden.
@@ -151,7 +161,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 
 1. **Done (2026-10-13):** browse and listing pages.
 2. **Done (2026-10-14): the other public pages.** The storefront, Saved, collections, the info, legal and system pages, and Looking For and the Hub (to read) are done. The branded error page was dropped under the JS stop rule, so Next's default shows. Next is item 3, starting with stage D (sign-in and accounts): it turns every "sign in to do that" link on these pages into the real flow.
-3. **Supabase, sign-in, and account and privacy.**
+3. **Done in sample mode (2026-10-14): sign-in, account and privacy.** Supabase and an email service replace the sample store at go-live.
 4. **Selling:** onboarding, listing form and dashboard, plus the minimum admin (approvals and moderation).
 5. **Messaging:** composer, inbox, conversations, reports and notifications.
 6. **Launch readiness:** legal sign-off, domain, monitoring, content, and the pilot.
