@@ -47,6 +47,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Post, edit, close, reopen and delete a Looking For request | `/looking-for/new`, `/looking-for/[id]/edit`, `/looking-for/[id]/delete` | Designed (stage H) |
 | Your requests | `/account/requests` | Designed (stage H) |
 | Offer to help with a request (shops only) | `/looking-for/[id]/offer` | Designed (stage H) |
+| Saved searches: save from browse, pause and delete on Saved, a notification when a new listing matches | `/browse`, `/saved?tab=searches` | Designed (stage I) |
 
 ## 3. Messaging
 
@@ -89,6 +90,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] Replace the sample fixtures with real queries behind `lib/data`, which is already shaped for this.
 - [ ] A proper email sending service for sign-in codes. Supabase's built-in email is heavily rate-limited.
 - [ ] The email service replaces sample mode's outbox (`saveSampleEmail` in `sendCode`, `lib/auth/actions.ts`), and the sign-in page stops showing the code.
+- [ ] Saved-search matching runs inside the publish Server Action (stage I). On the real backend, run it as a database query or from a queue, so publishing doesn't wait.
 - [ ] Supabase Auth or the real database behind `lib/data/accounts.ts`, `sessions.ts`, `sign-in.ts` and `form-states.ts`; then set `VOSSIE_SAMPLE_MODE=0`, which removes the sample accounts' buttons.
 - [ ] Sign-in rate limits on the real backend: per IP address as well as per email.
 - [ ] **Keyed hashes for codes.** Sign-in codes and tokens are stored as plain SHA-256 hashes (a code is salted with its attempt's key, which sits in the same row). A 6-digit code has only a million values, so a leaked store gives the codes away. The real backend hashes them with a server secret (HMAC).
@@ -158,7 +160,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] **Which email proves someone is a student?** The demo's `@vossie.net` was a stand-in.
 - [ ] **Plus addresses.** `thandi+1@eduvos.com` counts as a new address, which gets round the per-email code limit and allows several accounts per student. Decide with Eduvos whether to treat plus addresses as the same person, or reject them, once its mail system is known.
 - [ ] **Who moderates reports and approvals,** and how fast do they respond?
-- [ ] **In-app messages, a WhatsApp handoff, or both?** And do new messages send an email?
+- [ ] **In-app messages, a WhatsApp handoff, or both?** And do new messages, or saved-search alerts (stage I), send an email?
 - [ ] **Do Looking For and the Hub go live on day one?** If not, their homepage sections are hidden.
 - [ ] **All 13 campuses at once, or a pilot campus first?**
 
@@ -169,7 +171,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 3. **Done in sample mode (2026-10-14): sign-in, account and privacy.** Supabase and an email service replace the sample store at go-live.
 4. **Selling:** onboarding, listing form and dashboard, plus the minimum admin (approvals and moderation).
 5. **Messaging:** composer, inbox, conversations, reports and notifications.
-   - Stage E builds messaging, then stage F selling. Stage G adds the staff tools: admin, the Hub's posting tools and the mentors' dashboard. Stage H adds community actions: posting Looking For requests, offers, following shops and the offline page.
+   - Stage E builds messaging, then stage F selling. Stage G adds the staff tools: admin, the Hub's posting tools and the mentors' dashboard. Stage H adds community actions: posting Looking For requests, offers, following shops and the offline page. Stage I adds saved-search alerts.
 6. **Launch readiness:** legal sign-off, domain, monitoring, content, and the pilot.
 
-**After launch:** saved-search alerts, and delivery between campuses.
+**After launch:** delivery between campuses.
