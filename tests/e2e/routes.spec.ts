@@ -73,4 +73,27 @@ test.describe("placeholder routes", () => {
     await page.goto("/account/privacy");
     await expect(page).toHaveURL(/\/login\?next=%2Faccount%2Fprivacy$/);
   });
+
+  test("messaging pages send a signed-out visitor to sign in, coming back afterwards (messaging spec 3)", async ({
+    page,
+  }) => {
+    onlyAtPhoneAndDesktop();
+    for (const [path, next] of [
+      ["/messages", "%2Fmessages"],
+      ["/messages?tab=selling", "%2Fmessages%3Ftab%3Dselling"],
+      ["/messages/conv-s1", "%2Fmessages%2Fconv-s1"],
+      ["/notifications", "%2Fnotifications"],
+      ["/listings/l-001/message", "%2Flistings%2Fl-001%2Fmessage"],
+      ["/sellers/tech-corner/message", "%2Fsellers%2Ftech-corner%2Fmessage"],
+      ["/report?listing=l-001", "%2Freport%3Flisting%3Dl-001"],
+    ]) {
+      await page.goto(path);
+      await expect(page).toHaveURL(new RegExp(`/login\\?next=${next}$`));
+    }
+    // Something that doesn't exist is the 404 before any sign-in.
+    for (const path of ["/listings/nope/message", "/sellers/nope/message", "/report?listing=nope", "/report"]) {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
+    }
+  });
 });
