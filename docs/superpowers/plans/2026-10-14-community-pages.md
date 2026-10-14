@@ -88,6 +88,36 @@ Lama can veto any of these at plan review. In this plan, "plan decision N" means
 19. **The board's Post a request always comes back to `/looking-for`:** the heading is prerendered, so it can't know the chosen category. The sign-in page's back link reads "Go back" (spec decision 1).
 20. **Sample wording:** the 16 requests, the 18 posts and the Hub's story are for Lama and the Hub to change.
 
+## Amendments on review (2026-10-14, the controller)
+
+These override the tasks below wherever they differ.
+
+1. **Part C (info, legal and system pages) landed before this plan's build,** at `23a7400`. Shared files differ from what the tasks quote. Before each edit, read the file's current text, and edit by the exact lines that are there now. Never paste back a whole list or file from an older copy. In particular:
+   - **`tests/e2e/routes.spec.ts`:** `PLACEHOLDERS` now holds only `/sell`, `/hub`, `/looking-for`, `/login` and `/account`.
+   - **`tests/e2e/performance.spec.ts`:** `PAGES` also has `["info page", "/how-it-works"]`, and the Saved row checks its cards.
+   - **`tests/e2e/a11y.spec.ts`:** "a placeholder page" now visits `/sell`.
+   - **`tests/e2e/cls.spec.ts` and `screenshots.spec.ts`:** these have more rows and tests.
+   - **The footer:** it has more links.
+   - **`ContextStripView`:** its trust link goes to `/trust`.
+   - **`FeaturedToday`:** "How we pick" goes to `/trust#trust-featured`.
+   - **`GO-LIVE.md`, `PROGRESS.md` and the decisions log:** these have newer sections (the last decision row is 62).
+2. **The sitemap includes requests and Hub posts.** Part C's `app/sitemap.ts` says what to add once `getRequestIds` and `getHubPostIds` exist (read its comment and `lib/sitemap.ts`). Do it in the task that adds the second of those functions (Task 2), with a test in `app/sitemap.test.ts` that every request and Hub post is listed. `/looking-for` and `/hub` are already among `STATIC_PATHS`.
+3. **The JS figures at the start:**
+
+   | Page | JS |
+   |---|---|
+   | `/` | 151,082 B |
+   | browse | 151,829 B |
+   | listing | 152,238 B |
+   | How it works | 151,082 B |
+   | storefront | 151,842 B |
+   | Saved | 151,717 B |
+   | collection | 151,558 B |
+
+   The stop line is 152,305 B. A separate investigation into Turbopack's chunking may change `next.config.ts` and these figures before or during this build. If it lands, the controller says so, and the new figures become the start.
+4. **The privacy guard test.** `app/privacy/page.test.tsx` fails if a new `"vossie_…"` cookie or storage name appears in the code without the privacy page naming it. This plan adds none. If a task does, name it on the privacy page in the same task.
+5. **Prefetch costs bytes on every page** (CLAUDE.md, decision 53). The plan already sets `prefetch={false}` on its repeated links (plan decision 12). Keep that for any new link to a route with client components.
+
 ## The JS ledger
 
 - **Limit:** 153,600 B (brotli, quality 5) on a first visit at 390px, for each page.
