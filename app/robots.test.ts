@@ -20,7 +20,7 @@ describe("robots.txt (info and system spec 2.8)", () => {
     expect(rule.allow).toBe("/");
   });
 
-  it("keeps crawlers off Saved, sign-in, the account pages and the selling pages", () => {
+  it("keeps crawlers off Saved, sign-in, the account, messaging and selling pages", () => {
     for (const path of [
       "/saved",
       "/login",
@@ -29,6 +29,13 @@ describe("robots.txt (info and system spec 2.8)", () => {
       "/account/privacy",
       "/sell",
       "/sell/onboarding",
+      "/messages",
+      "/messages/conv-s1",
+      "/notifications",
+      "/report?listing=l-001",
+      "/report/sent?listing=l-001",
+      "/listings/l-001/message",
+      "/sellers/tech-corner/message",
     ]) {
       expect(blocked(path), path).toBe(true);
     }

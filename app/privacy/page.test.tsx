@@ -143,6 +143,20 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     expect(within(rights).getByRole("link", { name: "privacy settings" })).toHaveAttribute("href", "/account/privacy");
   });
 
+  it("says what messaging keeps, for how long, and what deleting your account removes (messaging plan, Task 14)", () => {
+    render(<PrivacyPage />);
+    const today = screen.getByRole("region", { name: "What this site stores today" });
+    expect(within(today).getByText(/your messages, your reports and your notifications in its memory only/)).toBeInTheDocument();
+    const account = screen.getByRole("region", { name: "Your account" });
+    expect(within(account).getByText("Your notifications.")).toBeInTheDocument();
+    const keep = screen.getByRole("region", { name: "How long we keep it" });
+    expect(within(keep).getByText(/Eduvos will set how long they are kept before launch/)).toBeInTheDocument();
+    expect(within(keep).getByText(/your messages, your reports and your notifications straight away/)).toBeInTheDocument();
+    // The other side keeps its own messages and sees "Deleted account" (messaging plan, amendment 3.9).
+    expect(within(keep).getByText(/keeps only their own messages, and your name shows as "Deleted account"/)).toBeInTheDocument();
+    expect(within(keep).queryByText(/before messaging opens/)).toBeNull();
+  });
+
   it("names every vossie_ cookie and browser store the code uses, so a new one can't slip past the policy", () => {
     // Every cookie and storage key is named "vossie_…". A key added later fails here until this page names it.
     const names = new Set<string>();

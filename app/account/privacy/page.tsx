@@ -8,6 +8,7 @@ import { DELETE_FIELDS, DELETE_FORM, readFormState } from "@/lib/auth/form-state
 import { formErrors } from "@/lib/auth/messages";
 import { requireAccount } from "@/lib/auth/session";
 import { getLatestConsent } from "@/lib/data/accounts";
+import { listReportsBy } from "@/lib/data/reports";
 
 /** Like every account page, kept out of search engines (accounts spec 3.3). */
 export const metadata: Metadata = { title: "Privacy settings", robots: { index: false } };
@@ -33,6 +34,16 @@ export default function PrivacySettingsPage() {
 
 async function PrivacySettings() {
   const account = await requireAccount("/account/privacy");
-  const [consent, state] = await Promise.all([getLatestConsent(account.id), readFormState(DELETE_FORM)]);
-  return <PrivacySettingsView consent={consent} deleteErrors={formErrors(state?.errors ?? [], DELETE_FIELDS)} />;
+  const [consent, state, reports] = await Promise.all([
+    getLatestConsent(account.id),
+    readFormState(DELETE_FORM),
+    listReportsBy(account.id),
+  ]);
+  return (
+    <PrivacySettingsView
+      consent={consent}
+      deleteErrors={formErrors(state?.errors ?? [], DELETE_FIELDS)}
+      reports={reports}
+    />
+  );
 }

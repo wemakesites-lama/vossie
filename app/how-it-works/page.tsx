@@ -111,8 +111,8 @@ const SECTIONS: readonly InfoSection[] = [
         </p>
         <h3>What can I do on Vossie today?</h3>
         <p>
-          Browse every campus, save listings on your device and share them, and sign in with your Eduvos email.
-          Messaging and selling arrive in the next stages, so this page describes how they will work.
+          Browse every campus, save listings on your device and share them, sign in with your Eduvos email, message
+          sellers and report a problem. Selling arrives in the next stage, so this page describes how it will work.
         </p>
       </>
     ),

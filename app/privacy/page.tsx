@@ -37,10 +37,10 @@ const SECTIONS: readonly InfoSection[] = [
     children: (
       <>
         <p>
-          Vossie is still a preview. If you sign in, the server keeps your account, your sign-ins and your consent in
-          its memory only, so they are wiped whenever it restarts, and no email is sent (the sign-in code shows on the
-          screen). Apart from that, a few small things are kept on your own device, so the site can remember your
-          choices.
+          Vossie is still a preview. If you sign in, the server keeps your account, your sign-ins, your consent, your
+          messages, your reports and your notifications in its memory only, so they are wiped whenever it restarts, and
+          no email is sent (the sign-in code shows on the screen). Apart from that, a few small things are kept on your
+          own device, so the site can remember your choices.
         </p>
         <h3>Two first-party cookies</h3>
         <p>
@@ -115,7 +115,7 @@ const SECTIONS: readonly InfoSection[] = [
       <>
         <p>
           Messaging, selling and, later, keeping your saves on every device need an account. This is what your account
-          holds and why, including what messaging and selling will add once they open.
+          holds and why, including what selling will add once it opens.
         </p>
         <ul>
           <li>
@@ -139,6 +139,10 @@ const SECTIONS: readonly InfoSection[] = [
             <strong>Your messages, swap offers and reports.</strong> To pass them to the other person, to work out reply
             times for trust badges, and to keep Vossie safe. Allowed under POPIA section 11: needed to run the service,
             and our legitimate interest in keeping students safe.
+          </li>
+          <li>
+            <strong>Your notifications.</strong> A note when someone messages you or a sale needs confirming, which
+            only you see. Allowed under POPIA section 11: needed to run your account.
           </li>
           <li>
             <strong>If you sell: your shop and listings.</strong> Shop name, tagline, about text, photos, campus, pickup
@@ -170,10 +174,15 @@ const SECTIONS: readonly InfoSection[] = [
         </li>
         <li>Your account details stay until you delete your account.</li>
         <li>
-          Deleting your account removes your account, your sign-in sessions and your record of consent straight away,
-          along with your shop and listings if you have them.
+          Deleting your account removes your account, your sign-in sessions, your record of consent, your messages,
+          your reports and your notifications straight away, along with your shop and listings if you have them. The
+          other person in a conversation keeps only their own messages, and your name shows as &quot;Deleted
+          account&quot;.
         </li>
-        <li>How long messages and reports are kept will be set before messaging opens, and this policy will say so.</li>
+        <li>
+          While Vossie is a preview, messages, reports and notifications live in the server&apos;s memory and go
+          whenever it restarts. Eduvos will set how long they are kept before launch, and this policy will say so.
+        </li>
         <li>
           Server logs are kept for a short time. The hosting service decides how long, and this policy will say once it
           is chosen.
