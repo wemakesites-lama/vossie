@@ -1,6 +1,21 @@
 /** Where the site is served from when nothing says otherwise: the local server. */
 export const DEFAULT_SITE_URL = "http://localhost:3000";
 
+let warned = false;
+
+/**
+ * A production build without NEXT_PUBLIC_SITE_URL still works (the end-to-end tests build that way), but every share
+ * card, robots.txt and sitemap address would name the local server. Say so once, in the build and server logs.
+ */
+function warnIfUnsetInProduction(): void {
+  if (warned || process.env.NODE_ENV !== "production") return;
+  warned = true;
+  console.warn(
+    `NEXT_PUBLIC_SITE_URL isn't set, so share cards, robots.txt and the sitemap use ${DEFAULT_SITE_URL}. ` +
+      "Set it in the host's build environment.",
+  );
+}
+
 /**
  * The address the site is served from, as an origin with no trailing slash (info and system spec 2.7). It comes from
  * NEXT_PUBLIC_SITE_URL, which Next reads when it builds, so the host needs it in its build environment. `metadataBase`,
@@ -12,7 +27,10 @@ export const DEFAULT_SITE_URL = "http://localhost:3000";
  */
 export function siteUrl(): string {
   const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (!raw) return DEFAULT_SITE_URL;
+  if (!raw) {
+    warnIfUnsetInProduction();
+    return DEFAULT_SITE_URL;
+  }
   let url: URL | null = null;
   try {
     url = new URL(raw);

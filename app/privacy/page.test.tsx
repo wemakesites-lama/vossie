@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { CAMPUS_COOKIE } from "@/lib/campus";
@@ -88,7 +90,7 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     expect(within(today).getByText(/clear cookies like these after a week/)).toBeInTheDocument();
   });
 
-  it("lists what accounts will collect, why and the lawful basis, so it needn't be rewritten", () => {
+  it("lists what accounts will collect, why and the POPIA section 11 ground, so it needn't be rewritten", () => {
     render(<PrivacyPage />);
     const accounts = screen.getByRole("region", { name: "When sign-in arrives" });
     const items = within(accounts).getAllByRole("listitem");
@@ -96,7 +98,7 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     expect(within(accounts).getByText("Your Eduvos email address.")).toBeInTheDocument();
     expect(within(accounts).getByText("Your first name and campus.")).toBeInTheDocument();
     expect(within(accounts).getByText("Your agreement to this policy.")).toBeInTheDocument();
-    expect(within(accounts).getAllByText(/Lawful basis/).length).toBe(items.length);
+    expect(within(accounts).getAllByText(/Allowed under POPIA section 11/).length).toBe(items.length);
   });
 
   it("says nobody is sold anything, and who sees what", () => {
@@ -121,5 +123,20 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
       "href",
       "https://inforegulator.org.za",
     );
+  });
+
+  it("names every vossie_ cookie and browser store the code uses, so a new one can't slip past the policy", () => {
+    // Every cookie and storage key is named "vossie_…". A key added later fails here until this page names it.
+    const names = new Set<string>();
+    for (const folder of ["app", "components", "hooks", "lib"]) {
+      for (const file of readdirSync(join(process.cwd(), folder), { recursive: true }) as string[]) {
+        if (!/\.tsx?$/.test(file) || /\.test\.tsx?$/.test(file)) continue;
+        const source = readFileSync(join(process.cwd(), folder, file), "utf8");
+        for (const [, name] of source.matchAll(/"(vossie_[a-z_]+)"/g)) names.add(name);
+      }
+    }
+    expect(names.size).toBeGreaterThanOrEqual(5);
+    const { container } = render(<PrivacyPage />);
+    for (const name of names) expect(container.textContent, name).toContain(name);
   });
 });

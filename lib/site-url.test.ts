@@ -32,4 +32,22 @@ describe("siteUrl (info and system spec 2.7)", () => {
       expect(() => siteUrl(), bad).toThrow(/NEXT_PUBLIC_SITE_URL must be a web address/);
     }
   });
+
+  it("warns once when a production build has no address, and never in development", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", undefined);
+    vi.stubEnv("NODE_ENV", "development");
+    vi.resetModules();
+    const dev = await import("./site-url");
+    dev.siteUrl();
+    expect(warn).not.toHaveBeenCalled();
+
+    vi.stubEnv("NODE_ENV", "production");
+    vi.resetModules();
+    const prod = await import("./site-url");
+    prod.siteUrl();
+    prod.siteUrl();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toMatch(/NEXT_PUBLIC_SITE_URL isn't set/);
+  });
 });

@@ -7,7 +7,7 @@ type Step = { title: string; body: string };
 
 const BUYING: readonly Step[] = [
   { title: "Find it on your campus", body: "Search, browse categories, or shop every campus." },
-  { title: "Message the seller", body: "Chat in Vossie or on WhatsApp. Offer a swap if they accept one." },
+  { title: "Message the seller", body: "Chat in Vossie. Offer a swap if they accept one." },
   { title: "Meet at a pickup point", body: "See it first, then pay or swap on the spot." },
 ];
 

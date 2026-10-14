@@ -100,38 +100,39 @@ const SECTIONS: readonly InfoSection[] = [
         <ul>
           <li>
             <strong>Your Eduvos email address.</strong> To check that you are an Eduvos student and to send you sign-in
-            codes. Lawful basis: it is needed to run the account you ask for.
+            codes. Allowed under POPIA section 11: it is needed to run the account you ask for.
           </li>
           <li>
             <strong>Your first name and campus.</strong> Sellers see your first name in messages, so they know who they
-            are talking to. Your campus puts your campus first. Lawful basis: needed to run your account.
+            are talking to. Your campus puts your campus first. Allowed under POPIA section 11: needed to run your
+            account.
           </li>
           <li>
             <strong>Your agreement to this policy.</strong> We keep the version you agreed to and the time, as a record
-            that you were asked. Lawful basis: your consent.
+            that you were asked. Allowed under POPIA section 11: your consent.
           </li>
           <li>
-            <strong>A sign-in cookie.</strong> A random code that keeps you signed in for up to 30 days. Lawful basis:
-            needed to run your account.
+            <strong>A sign-in cookie.</strong> A random code that keeps you signed in for up to 30 days. Allowed under
+            POPIA section 11: needed to run your account.
           </li>
           <li>
             <strong>Your messages, swap offers and reports.</strong> To pass them to the other person, to work out reply
-            times for trust badges, and to keep Vossie safe. Lawful basis: needed to run the service, and our legitimate
-            interest in keeping students safe.
+            times for trust badges, and to keep Vossie safe. Allowed under POPIA section 11: needed to run the service,
+            and our legitimate interest in keeping students safe.
           </li>
           <li>
             <strong>If you sell: your shop and listings.</strong> Shop name, tagline, about text, photos, campus, pickup
             points and what you list, shown to buyers. Hidden location data, such as GPS, is removed from photos you
-            upload. Lawful basis: needed to run your shop.
+            upload. Allowed under POPIA section 11: needed to run your shop.
           </li>
           <li>
             <strong>If you are in the Hub&apos;s programme: mentors&apos; notes.</strong> Mentors can keep private notes
-            and check-ins about your shop. Only Hub staff can see them, never the seller. Lawful basis: our legitimate
-            interest in supporting student businesses.
+            and check-ins about your shop. Only Hub staff can see them, never the seller. Allowed under POPIA section
+            11: our legitimate interest in supporting student businesses.
           </li>
           <li>
             <strong>A log of what Hub staff do.</strong> Who approved, hid or paused what, and when, so staff actions can
-            be checked. Lawful basis: our legitimate interest in running Vossie fairly.
+            be checked. Allowed under POPIA section 11: our legitimate interest in running Vossie fairly.
           </li>
         </ul>
         <p>Vossie does not ask for your ID number, your bank details or your home address.</p>
@@ -193,9 +194,9 @@ const SECTIONS: readonly InfoSection[] = [
     children: (
       <p>
         The hosting for Vossie is still to be decided. If personal information is stored outside South Africa, POPIA
-        section 72 only allows it where the country, the company or a binding agreement gives it protection at least as
-        strong as POPIA, or where you consent. Eduvos will confirm where Vossie&apos;s data lives before launch, and this
-        page will say so.
+        section 72 generally allows it where the country, the company or a binding agreement gives it protection at
+        least as strong as POPIA, or where you consent. Eduvos will confirm where Vossie&apos;s data lives before
+        launch, and this page will say so.
       </p>
     ),
   },
@@ -228,7 +229,7 @@ const SECTIONS: readonly InfoSection[] = [
     children: (
       <>
         <p>
-          Questions, or want to use one of your rights? Ask the Incubation Hub team on any Eduvos campus. A contact
+          Questions, or want to use one of your rights? Ask the Incubation Hub team. A contact
           address for privacy requests will be added here before launch.
         </p>
         <p>
