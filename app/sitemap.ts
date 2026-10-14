@@ -1,21 +1,25 @@
 import type { MetadataRoute } from "next";
-import { getCollections, getListingIds, getSellerSlugs } from "@/lib/data";
+import { getCollections, getHubPostIds, getListingIds, getRequestIds, getSellerSlugs } from "@/lib/data";
 import { siteUrl } from "@/lib/site-url";
 import { sitemapEntries } from "@/lib/sitemap";
 
 /**
- * Every public page (info and system spec 2.8). A cached route handler: the data functions are cached too.
- *
- * Part B must add its ids when its data functions land: import `getHubPostIds` and `getRequestIds` from `@/lib/data`,
- * add `getRequestIds(), getHubPostIds()` to the `Promise.all` and its destructuring (`requestIds, hubPostIds`), and
- * pass `requestIds, hubPostIds` to `sitemapEntries`, which already handles them. Then add the matching test to
- * `app/sitemap.test.ts` (every request and Hub post is listed).
+ * Every public page (info and system spec 2.8), requests and Hub posts included (community spec 3). A cached route
+ * handler: the data functions are cached too.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [listingIds, sellerSlugs, collections] = await Promise.all([getListingIds(), getSellerSlugs(), getCollections()]);
+  const [listingIds, sellerSlugs, collections, requestIds, hubPostIds] = await Promise.all([
+    getListingIds(),
+    getSellerSlugs(),
+    getCollections(),
+    getRequestIds(),
+    getHubPostIds(),
+  ]);
   return sitemapEntries(siteUrl(), {
     listingIds,
     sellerSlugs,
     collectionSlugs: collections.map((collection) => collection.slug),
+    requestIds,
+    hubPostIds,
   });
 }

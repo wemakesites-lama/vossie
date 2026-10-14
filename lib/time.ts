@@ -1,3 +1,5 @@
+import { dayMonth } from "./format";
+
 // Store UTC, render in Africa/Johannesburg (SAST, UTC+2, no daylight saving). Never rely on the server's timezone.
 const SAST_DATE = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Africa/Johannesburg",
@@ -34,4 +36,32 @@ const SAST_LONG = new Intl.DateTimeFormat("en-GB", {
  */
 export function longSastDate(iso: string): string {
   return SAST_LONG.format(new Date(iso));
+}
+
+/** A stored UTC time as a short date in South Africa: "13 Oct" (community spec 4.1). It reads no clock. */
+export function shortSastDate(iso: string): string {
+  return dayMonth(sastDate(new Date(iso)));
+}
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// en-GB writes the 24-hour clock as "18:00"; h23 writes half past midnight as "00:30", never "24:30".
+const SAST_CLOCK = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Africa/Johannesburg",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/**
+ * A stored UTC time as a day and time in South Africa: "Wed 14 Oct · 18:00" (community spec 5.3), for events and
+ * office hours. It reads no clock, so it's safe while prerendering.
+ */
+export function sastDateTime(iso: string): string {
+  const moment = new Date(iso);
+  const date = sastDate(moment);
+  const [year, month, day] = date.split("-").map(Number);
+  // The weekday of the South African date itself, worked out in UTC so the server's timezone can't move it.
+  const weekday = WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  return `${weekday} ${dayMonth(date)} · ${SAST_CLOCK.format(moment)}`;
 }

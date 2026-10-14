@@ -11,17 +11,25 @@ import {
   getHeroSlides,
   getHubBanner,
   getHubEvents,
+  getHubPost,
+  getHubPostIds,
+  getHubPosts,
   getJustListed,
   getListingDetail,
   getListingIds,
   getListingsByIds,
   getMoreFrom,
+  getOpenRequests,
   getPickupPoints,
+  getRelatedListings,
+  getRequest,
+  getRequestIds,
   getRequests,
   getSeller,
   getSellerListings,
   getSellerSlugs,
   getTrendingSearches,
+  getVerifiedSellers,
   searchListings,
 } from "./index";
 import type { SearchQuery } from "@/lib/types";
@@ -150,25 +158,25 @@ describe("homepage data", () => {
 
   it("lists a campus's events with the every-campus ones, soonest first", async () => {
     expect((await getHubEvents({ campus: "midrand", limit: 3, from: "2026-10-12" })).map((event) => event.id)).toEqual([
-      "e-001",
-      "e-002",
-      "e-005",
+      "h-001",
+      "h-002",
+      "h-005",
     ]);
     expect((await getHubEvents({ campus: "mbombela", limit: 3, from: "2026-10-12" })).map((event) => event.id)).toEqual([
-      "e-001",
-      "e-005",
-      "e-006",
+      "h-001",
+      "h-005",
+      "h-006",
     ]);
     expect((await getHubEvents({ campus: "all", limit: 3, from: "2026-10-12" })).map((event) => event.id)).toEqual([
-      "e-001",
-      "e-002",
-      "e-003",
+      "h-001",
+      "h-002",
+      "h-003",
     ]);
     // Events before `from` (today's SAST date) are left out.
     expect((await getHubEvents({ campus: "all", limit: 3, from: "2026-10-15" })).map((event) => event.id)).toEqual([
-      "e-002",
-      "e-003",
-      "e-004",
+      "h-002",
+      "h-003",
+      "h-004",
     ]);
   });
 
@@ -324,5 +332,172 @@ describe("shopping page data (shopping spec 6.2)", () => {
   it("looks listings up by id in the order given, paused and sold ones in, unknown ids out", async () => {
     expect(ids(await getListingsByIds(["l-026", "nope", "l-001", "l-016"]))).toEqual(["l-026", "l-001", "l-016"]);
     expect(await getListingsByIds([])).toEqual([]);
+  });
+});
+
+describe("Looking For data (community spec 4.3)", () => {
+  const ids = (items: readonly { id: string }[]) => items.map((item) => item.id);
+
+  it("keeps the homepage's requests as they were, and never shows a closed one there", async () => {
+    expect(ids(await getRequests({ campus: "all", limit: 3 }))).toEqual(["r-001", "r-002", "r-003"]);
+    expect(ids(await getRequests({ campus: "midrand", limit: 3 }))).toEqual(["r-001", "r-003", "r-002"]);
+    expect(ids(await getRequests({ campus: "mbombela", limit: 3 }))).toEqual(["r-001", "r-002", "r-003"]);
+    const everything = ids(await getRequests({ campus: "all", limit: 100 }));
+    expect(everything).toHaveLength(14);
+    expect(everything).not.toContain("r-015");
+  });
+
+  it("leads with a campus's own new request where it has one (plan decision 1)", async () => {
+    expect(ids(await getRequests({ campus: "bloemfontein", limit: 3 }))).toEqual(["r-008", "r-001", "r-002"]);
+  });
+
+  it("lists every open request for the board, newest first", async () => {
+    expect(ids(await getOpenRequests({ category: null }))).toEqual([
+      "r-001",
+      "r-002",
+      "r-003",
+      "r-004",
+      "r-005",
+      "r-006",
+      "r-007",
+      "r-008",
+      "r-009",
+      "r-010",
+      "r-011",
+      "r-012",
+      "r-013",
+      "r-014",
+    ]);
+  });
+
+  it("narrows the board to one category", async () => {
+    expect(ids(await getOpenRequests({ category: "tech" }))).toEqual(["r-002", "r-013"]);
+    expect(ids(await getOpenRequests({ category: "tutoring" }))).toEqual(["r-001", "r-014"]);
+    expect(await getOpenRequests({ category: "tickets-events" })).toEqual([]);
+  });
+
+  it("finds any request by id, closed ones too, and lists every id for the pages", async () => {
+    expect((await getRequest("r-001"))?.title).toBe("Accounting 1 tutor this week");
+    expect((await getRequest("r-015"))?.status).toBe("closed");
+    expect(await getRequest("nope")).toBeNull();
+    const every = await getRequestIds();
+    expect(every).toHaveLength(16);
+    expect(every).toContain("r-016");
+  });
+
+  it("finds listings already on Vossie in the request's category, its campus first, then the newest", async () => {
+    expect(ids(await getRelatedListings({ categorySlug: "tutoring", campusSlug: "midrand", limit: 4 }))).toEqual([
+      "l-005",
+      "l-013",
+      "l-031",
+      "l-025",
+    ]);
+    expect(ids(await getRelatedListings({ categorySlug: "res-living", campusSlug: "bedfordview", limit: 4 }))).toEqual([
+      "fs-005",
+      "l-003",
+      "l-021",
+      "l-014",
+    ]);
+    expect(ids(await getRelatedListings({ categorySlug: "tech", campusSlug: "pretoria", limit: 4 }))).toEqual([
+      "l-001",
+      "l-018",
+      "l-007",
+      "l-022",
+    ]);
+  });
+
+  it("leaves paused and sold listings out of Already on Vossie", async () => {
+    // The paused lash listing (l-016) is Pretoria's only hair and beauty listing; the sold calculator is East London's.
+    expect(ids(await getRelatedListings({ categorySlug: "hair-beauty", campusSlug: "pretoria", limit: 4 }))).toEqual([
+      "l-004",
+      "l-023",
+    ]);
+    expect(ids(await getRelatedListings({ categorySlug: "tech", campusSlug: "east-london", limit: 10 }))).not.toContain(
+      "l-026",
+    );
+  });
+});
+
+describe("Hub data (community spec 5.3)", () => {
+  const ids = (items: readonly { id: string }[]) => items.map((item) => item.id);
+  const every = ["event", "office-hours", "tip"] as const;
+
+  it("derives What's on from the posts, with the old events' dates, titles, campuses and actions", async () => {
+    const events = await getHubEvents({ campus: "all", limit: 20, from: "2026-10-12" });
+    expect(events.map(({ date, title, campusSlug, action }) => ({ date, title, campusSlug, action }))).toEqual([
+      { date: "2026-10-14", title: "Pitch night", campusSlug: "all", action: "rsvp" },
+      { date: "2026-10-15", title: "Office hours: pricing your hustle", campusSlug: "midrand", action: "book" },
+      { date: "2026-10-20", title: "Market day on the lawn", campusSlug: "pretoria", action: "rsvp" },
+      { date: "2026-10-22", title: "Photo day for your shop", campusSlug: "bedfordview", action: "book" },
+      { date: "2026-10-28", title: "Hub mixer", campusSlug: "all", action: "rsvp" },
+      { date: "2026-11-05", title: "Selling online: photos that sell", campusSlug: "all", action: "rsvp" },
+      { date: "2026-11-19", title: "Office hours: your first listing", campusSlug: "midrand", action: "book" },
+      { date: "2026-12-03", title: "End-of-year market", campusSlug: "all", action: "rsvp" },
+      { date: "2027-01-28", title: "Back-to-campus pop-up", campusSlug: "pretoria", action: "rsvp" },
+      { date: "2027-02-11", title: "Pitch night", campusSlug: "all", action: "rsvp" },
+    ]);
+  });
+
+  it("lists the feed: upcoming events and office hours soonest first, then tips newest first", async () => {
+    expect(ids(await getHubPosts({ kinds: every, from: "2026-10-12" }))).toEqual([
+      "h-001",
+      "h-002",
+      "h-003",
+      "h-004",
+      "h-005",
+      "h-006",
+      "h-007",
+      "h-008",
+      "h-009",
+      "h-010",
+      "h-013",
+      "h-014",
+      "h-015",
+      "h-016",
+      "h-017",
+      "h-018",
+    ]);
+  });
+
+  it("drops past events and office hours, and has none once the sample ones are over", async () => {
+    const upcoming = ids(await getHubPosts({ kinds: ["event", "office-hours"], from: "2026-10-15" }));
+    expect(upcoming[0]).toBe("h-002");
+    expect(upcoming).toHaveLength(9);
+    expect(await getHubPosts({ kinds: ["event", "office-hours"], from: "2027-03-01" })).toEqual([]);
+  });
+
+  it("keeps to the kinds asked for", async () => {
+    expect(ids(await getHubPosts({ kinds: ["event"], from: "2026-10-12" }))).toEqual([
+      "h-001",
+      "h-003",
+      "h-005",
+      "h-006",
+      "h-008",
+      "h-009",
+      "h-010",
+    ]);
+    expect(ids(await getHubPosts({ kinds: ["office-hours"], from: "2026-10-12" }))).toEqual(["h-002", "h-004", "h-007"]);
+    expect(ids(await getHubPosts({ kinds: ["tip"], from: "2026-10-12" }))).toHaveLength(6);
+  });
+
+  it("finds any post by id, past ones too, and lists every id for the pages", async () => {
+    expect((await getHubPost("h-011"))?.title).toBe("Hub open day");
+    expect((await getHubPost("h-013"))?.kind).toBe("tip");
+    expect(await getHubPost("nope")).toBeNull();
+    expect(await getHubPostIds()).toHaveLength(18);
+  });
+
+  it("lists the Hub's Verified sellers A to Z (plan decision 11)", async () => {
+    expect((await getVerifiedSellers()).map((seller) => seller.name)).toEqual([
+      "Code coach",
+      "Design studio",
+      "Hair studio",
+      "Home bakery",
+      "Maths tutor",
+      "Nail bar",
+      "Phone fix",
+      "Study notes",
+      "Thrift rack",
+    ]);
   });
 });

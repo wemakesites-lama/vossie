@@ -1,4 +1,4 @@
-import type { Condition, Listing, TrustBadge } from "./types";
+import type { Condition, HubPostKind, Listing, LookingForRequest, TrustBadge } from "./types";
 
 /** Rand with commas between thousands, as the approved mockup shows ("R1,200"). */
 export function formatRand(amount: number): string {
@@ -100,4 +100,37 @@ export function listingsLabel(count: number): string {
 /** A seller's share card's alt text (shopping spec 4.3). */
 export function sellerCardAlt(name: string, category: string, campusName: string): string {
   return `${name}, ${category} at ${campusName} on Vossie`;
+}
+
+/** "2026-10-24" → "24 Oct". The date is already South African, so there's no timezone maths. */
+export function dayMonth(date: string): string {
+  const { day, month } = eventDate(date);
+  return `${day} ${month}`;
+}
+
+/** A request's budget (community spec 4.1): "Budget R300", "Budget R300 or a swap", "Open to offers". */
+export function budgetLabel(request: Pick<LookingForRequest, "budgetZar" | "swapWelcome">): string {
+  const budget = request.budgetZar === null ? "Open to offers" : `Budget ${formatRand(request.budgetZar)}`;
+  return request.swapWelcome ? `${budget} or a swap` : budget;
+}
+
+/** A request page's offers line (community spec 4.2): "2 offers so far", or an invitation when there are none. */
+export function offersSoFarLabel(offers: number): string {
+  return offers === 0 ? "No offers yet. Be the first." : `${offersLabel(offers)} so far`;
+}
+
+const HUB_KIND_LABELS: Record<HubPostKind, string> = {
+  event: "Event",
+  "office-hours": "Office hours",
+  tip: "Tip",
+};
+
+/** A Hub post's eyebrow (community spec 5.1). */
+export function hubKindLabel(kind: HubPostKind): string {
+  return HUB_KIND_LABELS[kind];
+}
+
+/** An event's numbers (community spec 5.1): "12 going · 80 places". */
+export function placesLabel(going: number, capacity: number): string {
+  return `${going} going · ${capacity === 1 ? "1 place" : `${capacity} places`}`;
 }

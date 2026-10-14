@@ -12,9 +12,9 @@ type SitemapSources = {
   listingIds: readonly string[];
   sellerSlugs: readonly string[];
   collectionSlugs: readonly string[];
-  /** Part B: the Looking For requests. Left out until that part exists. */
+  /** The Looking For requests (community spec 3). Optional, so the sitemap works without them. */
   requestIds?: readonly string[];
-  /** Part B: the Hub's posts. Left out until that part exists. */
+  /** The Hub's posts (community spec 3). Optional, so the sitemap works without them. */
   hubPostIds?: readonly string[];
 };
 

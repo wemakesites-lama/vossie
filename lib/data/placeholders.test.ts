@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { hubPosts } from "@/data/fixtures/hub";
 import { listings } from "@/data/fixtures/listings";
 import { sellers } from "@/data/fixtures/sellers";
 import {
@@ -21,6 +22,7 @@ describe("placeholder art (spec section 12)", () => {
       ...(await getCollections()).map((collection) => collection.image.src),
       ...(await getHeroSlides()).map((slide) => slide.image.src),
       (await getHubBanner()).image.src,
+      ...hubPosts.map((post) => post.image.src),
       ...(await getJustListed({ campus: "all", limit: 1000 })).map((listing) => listing.image.src),
       ...(await getFreeAndSwaps({ campus: "all", limit: 1000 })).map((item) => item.image.src),
       ...listings.flatMap((listing) => listing.morePhotos.map((extra) => extra.src)),

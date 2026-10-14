@@ -3,7 +3,7 @@ import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
 import { collections } from "@/data/fixtures/collections";
 import { heroSlides } from "@/data/fixtures/hero";
-import { hubBanner, hubEvents } from "@/data/fixtures/hub";
+import { hubBanner, hubPosts } from "@/data/fixtures/hub";
 import { listings } from "@/data/fixtures/listings";
 import { pickupPoints } from "@/data/fixtures/pickup-points";
 import { requests } from "@/data/fixtures/requests";
@@ -13,6 +13,7 @@ import { findListings } from "@/lib/browse/results";
 import { ALL_CAMPUSES } from "@/lib/campus";
 import { matchesRule } from "@/lib/collections";
 import { drawFeatured } from "@/lib/featured";
+import { orderHubPosts, toHubEvent } from "@/lib/hub";
 import type {
   Announcement,
   Campus,
@@ -23,6 +24,8 @@ import type {
   HeroSlide,
   HubBanner,
   HubEvent,
+  HubPost,
+  HubPostKind,
   Listing,
   ListingDetail,
   LookingForRequest,
@@ -124,9 +127,55 @@ export async function getFeatured({ campus, day }: { campus: CampusChoice; day: 
   return drawFeatured(sellers, campus, day);
 }
 
+/** Open requests only: closed ones never appear in lists (community spec 4.3). */
+function openRequests(items: readonly LookingForRequest[]): LookingForRequest[] {
+  return items.filter((request) => request.status === "open");
+}
+
+/** The homepage's open requests (spec 7.11): newest first, the visitor's campus first (community spec 4.3). */
 export async function getRequests({ campus, limit }: CampusQuery): Promise<readonly LookingForRequest[]> {
   "use cache";
-  return campusFirst(requests, campus, limit);
+  return campusFirst(openRequests(requests).sort(newestFirst), campus, limit);
+}
+
+/** The Looking For board (community spec 4.1): open requests, newest first, in one category or in all of them. */
+export async function getOpenRequests({ category }: { category: string | null }): Promise<readonly LookingForRequest[]> {
+  "use cache";
+  return openRequests(requests)
+    .filter((request) => category === null || request.categorySlug === category)
+    .sort(newestFirst);
+}
+
+/** A request's page (community spec 4.2), open or closed. */
+export async function getRequest(id: string): Promise<LookingForRequest | null> {
+  "use cache";
+  return requests.find((request) => request.id === id) ?? null;
+}
+
+/** Every request's id, so each request page is prerendered (community spec 3). */
+export async function getRequestIds(): Promise<readonly string[]> {
+  "use cache";
+  return requests.map((request) => request.id);
+}
+
+/**
+ * "Already on Vossie" (community spec 4.2, decision 4): up to `limit` available listings in a request's category,
+ * those at its campus first, then the rest, each part newest first.
+ */
+export async function getRelatedListings({
+  categorySlug,
+  campusSlug,
+  limit,
+}: {
+  categorySlug: string;
+  campusSlug: string;
+  limit: number;
+}): Promise<readonly Listing[]> {
+  "use cache";
+  const sameCategory = available(listings)
+    .filter((listing) => listing.categorySlug === categorySlug)
+    .sort(newestFirst);
+  return campusFirst(sameCategory, campusSlug, limit);
 }
 
 /** Free & swaps (spec 7.12): the free and swap-only listings, the visitor's campus first. */
@@ -147,15 +196,56 @@ export async function getFreeAndSwaps({ campus, limit }: CampusQuery): Promise<r
   return campusFirst(items, campus, limit);
 }
 
-/** The next Hub events for a campus: its own and the every-campus ones, soonest first (spec 7.13). */
+/**
+ * The next Hub events for a campus: its own and the every-campus ones, soonest first (spec 7.13). They're derived from
+ * the Hub's posts (community spec 5.3): events become RSVP rows, office hours Book rows.
+ */
 export async function getHubEvents({ campus, limit, from }: CampusQuery & { from: string }): Promise<readonly HubEvent[]> {
   "use cache";
   // `from` is today's SAST date (YYYY-MM-DD). It keeps past events out, and the cache keys on it, so it turns over each day.
-  return hubEvents
-    .filter((event) => event.date >= from)
-    .filter((event) => campus === ALL_CAMPUSES || event.campusSlug === ALL_CAMPUSES || event.campusSlug === campus)
-    .sort((a, b) => a.date.localeCompare(b.date))
+  return orderHubPosts(
+    hubPosts.filter((post) => post.kind !== "tip"),
+    from,
+  )
+    .filter((post) => campus === ALL_CAMPUSES || post.campusSlug === ALL_CAMPUSES || post.campusSlug === campus)
+    .flatMap((post) => toHubEvent(post) ?? [])
     .slice(0, limit);
+}
+
+/**
+ * The Hub's feed (community spec 5.1): posts of the given kinds. Events and office hours on or after `from` (today's
+ * SAST date) come first, soonest first; tips follow, newest first. The cache keys on `from`, so it turns over each day.
+ */
+export async function getHubPosts({
+  kinds,
+  from,
+}: {
+  kinds: readonly HubPostKind[];
+  from: string;
+}): Promise<readonly HubPost[]> {
+  "use cache";
+  return orderHubPosts(
+    hubPosts.filter((post) => kinds.includes(post.kind)),
+    from,
+  );
+}
+
+/** A post's page (community spec 5.2), past events and office hours included. */
+export async function getHubPost(id: string): Promise<HubPost | null> {
+  "use cache";
+  return hubPosts.find((post) => post.id === id) ?? null;
+}
+
+/** Every post's id, so each post page is prerendered (community spec 3). */
+export async function getHubPostIds(): Promise<readonly string[]> {
+  "use cache";
+  return hubPosts.map((post) => post.id);
+}
+
+/** The Hub's Verified sellers (community spec 5.1), A to Z by name so no one is favoured (plan decision 11). */
+export async function getVerifiedSellers(): Promise<readonly Seller[]> {
+  "use cache";
+  return sellers.filter((seller) => seller.verified).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function getHubBanner(): Promise<HubBanner> {

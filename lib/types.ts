@@ -140,11 +140,26 @@ export type ListingDetail = {
   pickupPoint: PickupPoint | null;
 };
 
+/** Whether a request still takes offers (community spec 4.3). */
+export type RequestStatus = "open" | "closed";
+
+/** A Looking For request (community spec 4.3). It never names the asker (community spec decision 2). */
 export type LookingForRequest = {
   id: string;
   title: string;
   campusSlug: string;
   offers: number;
+  /** Two or three sentences in the asker's words. Line breaks are kept on the page. */
+  details: string;
+  categorySlug: string;
+  /** Rand, or null for "open to offers". */
+  budgetZar: number | null;
+  swapWelcome: boolean;
+  /** YYYY-MM-DD in South African time, or null. */
+  neededBy: string | null;
+  /** ISO 8601 in UTC, e.g. "2026-10-13T07:30:00Z". */
+  createdAt: string;
+  status: RequestStatus;
 };
 
 export type FreeSwapItem = {
@@ -155,7 +170,9 @@ export type FreeSwapItem = {
   image: ImageRef;
 };
 
+/** What's on's row on the homepage (spec 7.13), derived from a Hub post (community spec 5.3). */
 export type HubEvent = {
+  /** The post's id, so the row links to its page. */
   id: string;
   /** YYYY-MM-DD in South African time. */
   date: string;
@@ -166,6 +183,34 @@ export type HubEvent = {
 };
 
 export type HubBanner = { image: ImageRef };
+
+export type HubPostKind = "event" | "office-hours" | "tip";
+
+/** A post in the Incubation Hub's feed (community spec 5.3): an event, office hours or a tip. */
+export type HubPost = {
+  id: string;
+  kind: HubPostKind;
+  /** Up to 70 characters. */
+  title: string;
+  /** A campus slug, or "all" for every campus. Tips are "all". */
+  campusSlug: string;
+  /** ISO 8601 in UTC: when the Hub posted it. */
+  publishedAt: string;
+  /** ISO 8601 in UTC, for events and office hours; null for tips. */
+  startsAt: string | null;
+  /** Where it happens, e.g. "The Hub, Block C"; null for tips. */
+  place: string | null;
+  /** How many places an event has; null for office hours and tips. */
+  capacity: number | null;
+  /** How many have said they're going to an event; null for office hours and tips. */
+  going: number | null;
+  /** One sentence, for cards and link previews. */
+  summary: string;
+  /** The markdown subset (community spec decision 9), up to 4,000 characters. */
+  body: string;
+  /** The cover photo. Decorative: the title says what the post is. */
+  image: ImageRef;
+};
 
 export type ViewerActivity = {
   newMessages: number;

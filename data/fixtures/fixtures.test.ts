@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { safeNextPath } from "@/lib/next-path";
 import { parseSavedIds } from "@/lib/saved";
+import { sastDateTime } from "@/lib/time";
 import { campuses } from "./campuses";
 import { categories } from "./categories";
 import { collections } from "./collections";
 import { heroSlides } from "./hero";
-import { hubBanner, hubEvents } from "./hub";
+import { hubBanner, hubPosts } from "./hub";
 import { listings } from "./listings";
 import { pickupPoints } from "./pickup-points";
 import { requests } from "./requests";
@@ -42,14 +44,6 @@ describe("homepage fixtures (spec section 13)", () => {
   it("puts sellers and requests on known campuses", () => {
     for (const item of [...sellers, ...requests]) expect(campusSlugs.has(item.campusSlug)).toBe(true);
     expect(isUnique(sellers.map((seller) => seller.slug))).toBe(true);
-  });
-
-  it("dates Hub events as YYYY-MM-DD at a known campus or every campus", () => {
-    for (const event of hubEvents) {
-      expect(event.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(event.campusSlug === "all" || campusSlugs.has(event.campusSlug)).toBe(true);
-    }
-    expect(hubBanner.image.src).toMatch(/^\/placeholders\//);
   });
 });
 
@@ -155,6 +149,110 @@ describe("seller and collection fixtures (shopping spec 6.1)", () => {
       expect(collection.intro.length, collection.slug).toBeGreaterThan(0);
       expect(collection.rule.categories.length, collection.slug).toBeGreaterThan(0);
       for (const slug of collection.rule.categories) expect(categorySlugs.has(slug), collection.slug).toBe(true);
+    }
+  });
+});
+
+describe("Looking For fixtures (community spec 4.3)", () => {
+  const ISO_UTC = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/;
+
+  it("keeps the homepage's seven requests as they were", () => {
+    expect(requests.slice(0, 7).map(({ id, title, campusSlug, offers }) => ({ id, title, campusSlug, offers }))).toEqual([
+      { id: "r-001", title: "Accounting 1 tutor this week", campusSlug: "midrand", offers: 2 },
+      { id: "r-002", title: "Graphic calculator to borrow for exams", campusSlug: "pretoria", offers: 1 },
+      { id: "r-003", title: "Birthday cake for Friday", campusSlug: "midrand", offers: 3 },
+      { id: "r-004", title: "Second-hand bar fridge", campusSlug: "bedfordview", offers: 0 },
+      { id: "r-005", title: "Someone to fix my laptop hinge", campusSlug: "cape-town-mowbray", offers: 1 },
+      { id: "r-006", title: "Lift to campus on Monday mornings", campusSlug: "pretoria", offers: 2 },
+      { id: "r-007", title: "Business Law 2 notes", campusSlug: "online", offers: 4 },
+    ]);
+  });
+
+  it("gives every request a unique id, a known category, real times, a budget that makes sense and details", () => {
+    expect(isUnique(requests.map((request) => request.id))).toBe(true);
+    for (const request of requests) {
+      expect(request.id).toMatch(/^r-\d{3}$/);
+      expect(categorySlugs.has(request.categorySlug), request.id).toBe(true);
+      expect(request.createdAt, request.id).toMatch(ISO_UTC);
+      expect(Number.isNaN(Date.parse(request.createdAt)), request.id).toBe(false);
+      if (request.neededBy !== null) expect(request.neededBy, request.id).toMatch(/^\d{4}-\d\d-\d\d$/);
+      if (request.budgetZar !== null) expect(request.budgetZar, request.id).toBeGreaterThan(0);
+      expect(request.details.trim().length, request.id).toBeGreaterThan(0);
+      expect(request.offers, request.id).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("lists requests newest first", () => {
+    const times = requests.map((request) => request.createdAt);
+    expect(times).toEqual([...times].sort().reverse());
+  });
+
+  it("has an open request at every campus but Mbombela, so its empty state can be tested", () => {
+    const stillOpen = requests.filter((request) => request.status === "open");
+    const withOpen = new Set(stillOpen.map((request) => request.campusSlug));
+    expect(campuses.filter((campus) => !withOpen.has(campus.slug)).map((campus) => campus.slug)).toEqual(["mbombela"]);
+  });
+
+  it("has closed, open-to-offers and swap requests, and a category with nothing open, to test those states", () => {
+    expect(requests.some((request) => request.status === "closed")).toBe(true);
+    expect(requests.some((request) => request.budgetZar === null)).toBe(true);
+    expect(requests.some((request) => request.swapWelcome)).toBe(true);
+    const openCategories = new Set(
+      requests.filter((request) => request.status === "open").map((request) => request.categorySlug),
+    );
+    expect(openCategories.has("tickets-events")).toBe(false);
+  });
+});
+
+describe("Hub fixtures (community spec 5.3)", () => {
+  const ISO_UTC = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/;
+
+  it("gives every post a unique id, a known campus, a real time, its own cover and a body of the allowed length", () => {
+    expect(isUnique(hubPosts.map((post) => post.id))).toBe(true);
+    for (const post of hubPosts) {
+      expect(post.id).toMatch(/^h-\d{3}$/);
+      expect(post.campusSlug === "all" || campusSlugs.has(post.campusSlug), post.id).toBe(true);
+      expect(post.publishedAt, post.id).toMatch(ISO_UTC);
+      expect(post.title.length, post.id).toBeLessThanOrEqual(70);
+      expect(post.summary.length, post.id).toBeGreaterThan(0);
+      expect(post.body.length, post.id).toBeLessThanOrEqual(4000);
+      expect(post.image).toEqual({ src: `/placeholders/hub/${post.id}.svg`, alt: "" });
+    }
+    expect(hubBanner.image.src).toMatch(/^\/placeholders\//);
+  });
+
+  it("times events at 18:00 and office hours at 13:00 in South Africa, after they were posted", () => {
+    for (const post of hubPosts) {
+      if (post.startsAt === null) continue;
+      expect(post.startsAt, post.id).toMatch(ISO_UTC);
+      expect(sastDateTime(post.startsAt).endsWith(post.kind === "event" ? "· 18:00" : "· 13:00"), post.id).toBe(true);
+      expect(post.publishedAt < post.startsAt, post.id).toBe(true);
+      expect(post.place?.length, post.id).toBeGreaterThan(0);
+    }
+  });
+
+  it("gives tips no time or place, and only events their places and RSVPs", () => {
+    for (const post of hubPosts) {
+      const tip = post.kind === "tip";
+      expect(post.startsAt === null, post.id).toBe(tip);
+      expect(post.place === null, post.id).toBe(tip);
+      if (tip) expect(post.campusSlug, post.id).toBe("all");
+      expect(post.capacity !== null && post.going !== null, post.id).toBe(post.kind === "event");
+      if (post.capacity !== null && post.going !== null) expect(post.going, post.id).toBeLessThanOrEqual(post.capacity);
+    }
+  });
+
+  it("has at least five tips, and a past event and past office hours, so 'has passed' can be tested on any date", () => {
+    expect(hubPosts.filter((post) => post.kind === "tip").length).toBeGreaterThanOrEqual(5);
+    const past = hubPosts.filter((post) => post.startsAt !== null && post.startsAt < "2026-10-01");
+    expect(new Set(past.map((post) => post.kind))).toEqual(new Set(["event", "office-hours"]));
+  });
+
+  it("links only inside the site from its bodies, so the renderer drops none of the sample links", () => {
+    for (const post of hubPosts) {
+      for (const [, href] of post.body.matchAll(/\]\(([^)]*)\)/g)) {
+        expect(safeNextPath(href), `${post.id} ${href}`).toBe(href);
+      }
     }
   });
 });

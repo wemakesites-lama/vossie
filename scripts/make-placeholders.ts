@@ -8,7 +8,7 @@ import { campuses } from "../data/fixtures/campuses.ts";
 import { categories } from "../data/fixtures/categories.ts";
 import { collections } from "../data/fixtures/collections.ts";
 import { heroSlides } from "../data/fixtures/hero.ts";
-import { hubBanner } from "../data/fixtures/hub.ts";
+import { hubBanner, hubPosts } from "../data/fixtures/hub.ts";
 import { listings } from "../data/fixtures/listings.ts";
 import { sellers } from "../data/fixtures/sellers.ts";
 
@@ -27,17 +27,20 @@ const SIZES: Record<string, [number, number]> = {
 };
 
 // Tiles and cards print their own text over or beside these, so only the larger photos carry a label. The Hub
-// banner's heading sits right over its photo, so it has none either.
+// banner's heading sits right over its photo, so it has none either (it's added with no label below); the Hub posts'
+// covers share its folder and size, and carry their titles so they can be told apart (community plan decision 4).
 // The gallery's extra photos are labelled "Photo 2" and "Photo 3", so the gallery can be checked by eye.
-const LABELLED = new Set(["hero", "campus", "collection", "seller", "photo"]);
+const LABELLED = new Set(["hero", "campus", "collection", "seller", "photo", "hub"]);
 
 const art = new Map<string, Art>();
 
-function add(src: string, label: string) {
+function add(src: string, label: string | null) {
   const folder = src.split("/")[2]; // "/placeholders/<folder>/<file>.svg"
   const size = SIZES[folder];
   if (!size) throw new Error(`No size for ${src}`);
-  if (!art.has(src)) art.set(src, { label: LABELLED.has(folder) ? label : null, width: size[0], height: size[1] });
+  if (!art.has(src)) {
+    art.set(src, { label: label !== null && LABELLED.has(folder) ? label : null, width: size[0], height: size[1] });
+  }
 }
 
 for (const slide of heroSlides) add(slide.image.src, `Photo: ${slide.word}`);
@@ -49,7 +52,8 @@ for (const listing of listings) add(listing.image.src, listing.title);
 for (const listing of listings) {
   for (const extra of listing.morePhotos) add(extra.src, `Photo ${extra.src.split("/").pop()?.replace(".svg", "")}`);
 }
-add(hubBanner.image.src, "Photo: the Incubation Hub");
+for (const post of hubPosts) add(post.image.src, `Photo: ${post.title}`);
+add(hubBanner.image.src, null);
 
 const escapeXml = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 

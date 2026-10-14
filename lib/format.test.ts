@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
   badgeLabel,
+  budgetLabel,
   conditionLabel,
+  dayMonth,
   eventDate,
   formatRand,
+  hubKindLabel,
   joinWords,
   listingsLabel,
   monthYear,
   offersLabel,
+  offersSoFarLabel,
+  placesLabel,
   priceLabel,
   sellerCardAlt,
   shareCardAlt,
@@ -105,5 +110,39 @@ describe("shopping wording (shopping spec 4 and 7)", () => {
 
   it("says who, what and where on a seller's share card", () => {
     expect(sellerCardAlt("Tech corner", "Tech", "Midrand")).toBe("Tech corner, Tech at Midrand on Vossie");
+  });
+});
+
+describe("Looking For wording (community spec 4.1 and 4.2)", () => {
+  it("writes a request's budget", () => {
+    expect(budgetLabel({ budgetZar: 300, swapWelcome: false })).toBe("Budget R300");
+    expect(budgetLabel({ budgetZar: 1200, swapWelcome: false })).toBe("Budget R1,200");
+    expect(budgetLabel({ budgetZar: 300, swapWelcome: true })).toBe("Budget R300 or a swap");
+    expect(budgetLabel({ budgetZar: null, swapWelcome: false })).toBe("Open to offers");
+    expect(budgetLabel({ budgetZar: null, swapWelcome: true })).toBe("Open to offers or a swap");
+  });
+
+  it("counts the offers so far, inviting the first", () => {
+    expect(offersSoFarLabel(0)).toBe("No offers yet. Be the first.");
+    expect(offersSoFarLabel(1)).toBe("1 offer so far");
+    expect(offersSoFarLabel(2)).toBe("2 offers so far");
+  });
+
+  it("writes a YYYY-MM-DD date as a day and a short month", () => {
+    expect(dayMonth("2026-10-24")).toBe("24 Oct");
+    expect(dayMonth("2026-11-05")).toBe("5 Nov");
+  });
+});
+
+describe("Hub wording (community spec 5.1)", () => {
+  it("names each kind of post", () => {
+    expect(hubKindLabel("event")).toBe("Event");
+    expect(hubKindLabel("office-hours")).toBe("Office hours");
+    expect(hubKindLabel("tip")).toBe("Tip");
+  });
+
+  it("counts an event's RSVPs and places", () => {
+    expect(placesLabel(12, 80)).toBe("12 going · 80 places");
+    expect(placesLabel(0, 1)).toBe("0 going · 1 place");
   });
 });
