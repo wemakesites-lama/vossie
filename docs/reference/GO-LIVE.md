@@ -2,7 +2,7 @@
 
 Every page and view the marketplace needs before it can go live, plus the work that isn't a screen. Drawn from the app's routes, the old demo's function map (`FUNCTION-MAP.md`) and the homepage spec's "Not in this stage" list.
 
-Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections). Update the status column as each stage lands.
+Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections) and after the info, legal and system pages (part C). Update the status column as each stage lands.
 
 **Status key**
 - **Built:** done.
@@ -24,9 +24,11 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | A single Looking For request | `/looking-for/[id]` | Missing |
 | Hub feed: tips, events, office hours | `/hub` | Placeholder |
 | Hub post, with RSVP and book-a-slot | `/hub/[id]` | Missing |
-| How it works, Safety, Privacy policy | `/how-it-works`, `/safety`, `/privacy` | Placeholder |
-| How trust badges work, how Featured is picked, seller guidelines, terms of use | none yet | Missing |
-| Error page (when something breaks) | `error.tsx` | Missing |
+| How it works, Safety | `/how-it-works`, `/safety` | Built |
+| Privacy policy | `/privacy` | Built as a draft; Eduvos signs off the wording |
+| How trust works (the badges, and how Featured is picked) | `/trust` | Built |
+| Terms of use, seller guidelines | `/terms`, `/seller-guidelines` | Built as drafts; Eduvos signs off the wording |
+| Error page (when something breaks) | `error.tsx` | Next's default for now (the branded page was dropped under the stop rule, decision 62) |
 | Not found | 404 | Built |
 | Offline page | `/offline` | Missing; can follow launch |
 
@@ -75,7 +77,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Hub post editor and the office-hours queue | `/hub/new`, `/hub/manage` | Missing |
 | Mentor dashboard, seller detail, notes, check-ins, CSV export | `/mentor/*` | Missing; can follow launch |
 
-**Totals:** about 45 screens and views. 8 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved and the collection page), and 37 are placeholders or missing. Most of the missing ones are the signed-in half of the product.
+**Totals:** about 45 screens and views. 14 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, and the privacy policy, terms of use and seller guidelines as drafts), and 31 are placeholders or missing. Most of the missing ones are the signed-in half of the product.
 
 ## 6. Work that isn't a screen
 
@@ -86,8 +88,16 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] Scheduled jobs: the nightly Featured draw, recalculating trust badges, and confirming sales automatically after 7 days.
 
 ### POPIA and legal (Eduvos signs these off)
-- [ ] Final privacy policy, with a named Information Officer.
-- [ ] Terms of use and seller guidelines.
+- [ ] Final privacy policy, with a named Information Officer. A draft is live at `/privacy`; Eduvos's legal team reviews it.
+- [ ] Terms of use and seller guidelines. Drafts are live at `/terms` and `/seller-guidelines`; Eduvos's legal team reviews them.
+- [ ] **Claims in the drafts for Eduvos's lawyers to confirm** (plan decision 17 in `2026-10-14-info-and-system-pages.md`, and the review that followed):
+  - Eduvos is the responsible party for the personal information Vossie collects.
+  - Under-18s need a parent's or guardian's consent to use Vossie.
+  - Vossie sells no personal information and shares none for advertising.
+  - Each POPIA section 11 ground the privacy page gives for what accounts will collect: needed to run the account, consent, or Eduvos's legitimate interest (safety, supporting student businesses, running Vossie fairly).
+  - Deleting an account removes its data straight away, and the other retention promises under "How long we keep it".
+  - Hosting and section 72: the page says section 72 "generally allows" data stored abroad where the country, the company or an agreement protects it, and that Eduvos will say where it lives before launch.
+  - A contact address for privacy requests, and the Information Officer's name: both are still to be named.
 - [ ] How consent is recorded.
 - [ ] The data export and deletion flows.
 - [ ] Where the data is hosted. The old demo ran in Ireland; sending data abroad needs adequate safeguards (section 72).
@@ -98,16 +108,19 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] The official crest SVG.
 - [ ] Real pickup points for each campus.
 - [ ] Real Hub events.
+- [ ] Info pages say what's true today; update them as stages land (How it works' "What can I do on Vossie today?", the trust page's sample notes, the privacy page's "When sign-in arrives").
 - [ ] Remove every sample listing and the development sign-in switch.
 
 ### Production
 - [ ] A domain and hosting.
-- [ ] Security headers.
+- [x] Security headers: `nosniff`, referrer policy, `X-Frame-Options`, `Permissions-Policy` and HSTS, without a CSP (2026-10-14).
 - [ ] A Content Security Policy (it needs per-request nonces, which make pages dynamic).
+- [ ] HSTS: add `includeSubDomains` and preload once the domain is settled.
 - [ ] Decide how to keep the campus choice and saves past Safari's 7-day limit on cookies written by the page (decision 58).
-- [ ] robots.txt and a sitemap.
-- [ ] Share images for WhatsApp on the other pages. Each listing has a share card, in `next/og`'s built-in font until Eduvos's font files arrive.
-- [ ] Set `metadataBase` to the live domain, so share cards and other metadata URLs are absolute. While it's unset, a listing page carries two `og:image` tags once it has hydrated (the client adds one naming the page's own origin), and the one in the server HTML names `localhost:3000`.
+- [x] robots.txt and a sitemap (2026-10-14). Looking For requests and Hub posts join the sitemap when part B builds them (`app/sitemap.ts` says how).
+- [x] Share images for WhatsApp: a default card (`app/opengraph-image.tsx`) for every page, and listings and sellers have their own (2026-10-14). All use `next/og`'s built-in font until Eduvos's font files arrive.
+- [x] `metadataBase` comes from `NEXT_PUBLIC_SITE_URL` (`lib/site-url.ts`), so share cards, `robots.txt` and the sitemap all follow it (2026-10-14).
+- [ ] Set `NEXT_PUBLIC_SITE_URL` to the live domain in the host's build environment (see `.env.example`). Until it is set, share cards, `robots.txt` and the sitemap name `http://localhost:3000`, and a production build warns.
 - [ ] Error monitoring.
 - [ ] Backups.
 - [ ] A decision on analytics: none, or a privacy-friendly one.
@@ -119,7 +132,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] A test on a cheap Android phone.
 
 ### Launch
-- [ ] A support contact.
+- [ ] A support contact, and a privacy contact address. `/privacy` says one will be added; `/terms` and `/seller-guidelines` tell people to "contact the Hub" without saying how.
 - [ ] Enough sellers listed before day one, so it doesn't open empty.
 - [ ] Possibly a pilot on one campus.
 
@@ -135,7 +148,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 ## 8. Suggested order
 
 1. **Done (2026-10-13):** browse and listing pages.
-2. **Now, the other public pages:** the storefront, Saved and collections are done (2026-10-14). Next: the Looking For board and Hub to read, info and legal pages, and the error page.
+2. **The other public pages:** the storefront, Saved and collections (2026-10-14), and the info, legal and system pages (2026-10-14) are done. Next: the Looking For board and Hub to read (part B). The branded error page was dropped under the JS stop rule, so Next's default shows.
 3. **Supabase, sign-in, and account and privacy.**
 4. **Selling:** onboarding, listing form and dashboard, plus the minimum admin (approvals and moderation).
 5. **Messaging:** composer, inbox, conversations, reports and notifications.

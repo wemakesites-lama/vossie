@@ -211,3 +211,40 @@ test("shopping review screenshots", async ({ page, context, baseURL }) => {
   await settle();
   await page.screenshot({ path: file("08-collection-first-screen") });
 });
+
+test("info and system review screenshots", async ({ page }) => {
+  const project = test.info().project.name;
+  test.skip(!["phone-390", "desktop-1440"].includes(project), "Saved at 390 and 1440 only");
+  const file = (name: string) => `docs/progress/info-system/${project}-${name}.png`;
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const title = page.getByRole("heading", { level: 1 });
+  const fontsIn = () => page.evaluate(() => document.fonts.ready.then(() => undefined));
+
+  const pages: Array<[name: string, path: string]> = [
+    ["01-how-it-works", "/how-it-works"],
+    ["02-safety", "/safety"],
+    ["03-trust", "/trust"],
+    ["04-privacy", "/privacy"],
+    ["05-terms", "/terms"],
+    ["06-seller-guidelines", "/seller-guidelines"],
+  ];
+  for (const [name, path] of pages) {
+    await page.goto(path);
+    await expect(title).toBeVisible();
+    await fontsIn();
+    await page.screenshot({ path: file(name), fullPage: true });
+  }
+
+  // The first screen of a draft page, where the banner and the contents list sit.
+  await page.goto("/privacy");
+  await expect(title).toBeVisible();
+  await fontsIn();
+  await page.screenshot({ path: file("07-privacy-first-screen") });
+
+  // The branded error page was dropped (decision 62) and can't be reached on purpose anyway, so the 404 page
+  // stands in as the system page.
+  await page.goto("/there-is-no-such-page");
+  await expect(title).toHaveText("We couldn't find that page");
+  await page.screenshot({ path: file("08-not-found") });
+});

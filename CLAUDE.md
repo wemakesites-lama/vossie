@@ -53,10 +53,13 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
   - The desktop step is the custom `desk:` variant (64rem, same height guard). Use it instead of `lg:`: Tailwind emits its built-in `lg:` rules before custom variants, so a `wide:` value would beat an `lg:` value on desktop. In component CSS, write the desktop step as `@media (min-width: 64rem) and (min-height: 30rem)`.
 - Motion: animate only `transform` and `opacity` (the CSS `translate`, `scale` and `rotate` properties count as transform). Respect `prefers-reduced-motion` and data saver (`html[data-low-data]`).
 - Touch targets are at least 44px. No hover-only features.
+- The site's address comes only from `siteUrl()` (`lib/site-url.ts`), which reads `NEXT_PUBLIC_SITE_URL`. `metadataBase`, `robots.txt` and the sitemap use it. Never write a domain in code.
+- Links that would prefetch a route with client components cost that route's chunk on every page they appear on. Use `prefetch={false}` unless there's a reason (decision 53).
 
 ## Privacy (POPIA)
 - Collect the minimum. This stage stores nothing on a server: the campus choice and saved listings are first-party cookies, and recent searches stay in the browser.
 - The footer sign-up shows a confirmation only. It sends and stores nothing until there is a real, consented mailing list.
+- Every cookie and browser-storage key is named `vossie_…`, and the privacy page must name each one: a test (`app/privacy/page.test.tsx`) finds them in the code and fails until it does.
 - Photos of people need their consent.
 
 ## Time

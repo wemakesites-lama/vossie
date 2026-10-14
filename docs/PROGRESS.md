@@ -100,7 +100,7 @@ Lama went with Claude's recommendations. They are decisions 27 to 34 in `docs/re
 - **Where the build differed from the plan** is in the plan's "Changes made during the build (2026-10-13)". The ones worth knowing:
   - Just listed changed at four more campuses than the plan said, as well as Pretoria (Bedfordview, Cape Town Mowbray, Eduvos Online and East London).
   - Listing pages stream their body too, so with JavaScript switched off entirely they are blank, like browse, and an unknown listing shows the 404 page with a 200 status. The spec and decision 39 now say so.
-  - Show more has one small client effect, `ScrollToResult`, because Chrome sometimes ran its fragment scroll before the streamed card arrived.
+  - Show more has one small client effect, `ScrollToResult`, because Chrome sometimes ran its fragment scroll before the streamed card arrived. A flaky end-to-end test later showed a second cause (`a41662c`, found during part C): Chrome's fragment step clears focus once the page finishes parsing (the target is an `<li>`, which can't hold it). `ScrollToResult` now runs again one task after `DOMContentLoaded`, and takes focus only if nothing else has it (+65 B on browse).
 - **Final review fixes:**
   - the phone dock's styles no longer leak to the next page (Next keeps the last pages hidden in the DOM for Back);
   - the homepage's Free & swaps "See all" opens every campus (decision 47);
@@ -181,11 +181,55 @@ Review notes that were deliberately not acted on:
 - The footer's Saved link still prefetches (578 B on desktop and tablet once the footer scrolls into view); it's fixed with part C's footer task.
 - Saved only refreshes when it's shown again, so a save made in another tab appears on the next visit, not when you switch back. Re-saving a card on Saved moves it to the top on the next visit.
 
+## 2026-10-14: Info, legal and system pages built (part C)
+- **Info pages** share one frame (`InfoPage`: title, lede, "Last updated", an "On this page" list, then sections; the list is a row of pills on phones and tablets and a column from the desktop step):
+  - `/how-it-works` (buying, selling, trust in a paragraph, six questions, and "What can I do on Vossie today?"), `/safety` and `/trust` (Verified, the three badges, what counts, how Featured today is picked, all worded as how it will work once accounts are live);
+  - `/privacy` (titled "Privacy policy"), `/terms` and `/seller-guidelines` are **drafts for Eduvos to review**: a banner says so, they are `noindex`, and the Information Officer is "to be named by Eduvos". The privacy policy names every cookie and browser store this stage has, and says plainly that saved ids travel to Vossie in `vossie_saved` with each visit. A test finds every `"vossie_…"` name in the code and fails until the page names it;
+  - the footer links them all (its "Seller safety" became "Seller guidelines", "How trust works" and "Terms of use" joined, and its Saved link no longer prefetches). The homepage's "How trust works" and "How we pick" links open `/trust`, and its How it works step no longer says WhatsApp (decision 57).
+- **Production basics:**
+  - the site's address comes from `NEXT_PUBLIC_SITE_URL` (`.env.example`), so every page has one absolute `og:image`; a production build without it warns once;
+  - a default share card (`app/opengraph-image.tsx`) serves every page that has none of its own; listings and sellers keep theirs;
+  - `robots.txt` keeps crawlers off Saved, sign-in, the account pages and the selling pages (as `/sell$` and `/sell/`, so storefronts stay listed), and names no staff page;
+  - the sitemap lists 7 static paths (not the three drafts), the collections, sellers and listings. Requests and Hub posts join it when part B exists; `/looking-for` and `/hub` are in it meanwhile;
+  - security headers on every response (`nosniff`, referrer policy, `X-Frame-Options`, camera, microphone and location off, and HSTS for a year in production). No Content Security Policy yet.
+- **Error page: dropped.** Measured in a throwaway copy before it entered the repo, `app/error.tsx` added 472 B to every page, which put the listing page at 152,710 B and the storefront at 152,314 B, past the stop line (152,305 B). It was never created in the repo, and Next's default error page stays (decision 62).
+- **Decisions:** 61 (the pages, robots, sitemap, headers and share card) and 62 (the dropped error page). The spec and the go-live checklist match the build.
+- **Where the build differed from the plan** is in the plan's "Changes made during the build (2026-10-14)". The ones worth knowing:
+  - the plan's review made the three drafts `noindex` and added the default share card;
+  - the build was interrupted at the usage limit during Task 3 and finished by a new agent from the files it had written;
+  - a review of Tasks 1 to 7 reworded the privacy draft in POPIA terms ("Allowed under POPIA section 11") and added the storage-key guard test;
+  - the end-to-end run found a real bug outside this part: Show more's keyboard focus was cleared by Chrome after the page finished parsing (`a41662c`, +65 B on browse). Two open points from the shopping stage were also closed on the way: the footer's Saved link no longer prefetches (`27a85fc`), and Saved forgets ids whose listings are gone (`31f59ad`).
+- **Checks** (the final run):
+  - lint and types are clean;
+  - 626 unit tests pass, in 111 files;
+  - end to end, 520 pass, 375 are skipped by design and none fail, across 360, 390, 768, 1024 and 1440px;
+  - axe finds no serious or critical issues on the six pages or the 404 page.
+- **First visit at 390px, JS brotli:** homepage 151,082 B, browse 151,829 B, listing 152,238 B, How it works 151,082 B, storefront 151,842 B, Saved 151,717 B, collection 151,558 B. The stop line is 152,305 B (decision 52), so the listing page has 67 B to spare; the limit is 153,600 B.
+- **Layout shift** (fonts held back, at 390 and 1440px):
+
+  | Page | 390px | 1440px |
+  |---|---|---|
+  | How it works | 0.0031 | 0.0350 |
+  | Privacy | 0.0011 | 0.0022 |
+
+  The 1440px figure for How it works was 0.0312 in the Task 9 run and 0.0350 in the final run; both are under the limit of 0.05, but see the open points.
+- Review screenshots: `docs/progress/info-system/`.
+
+## 2026-10-14: Open points for Lama after the info and system build
+- **Eduvos has to review three pages.** The privacy policy, terms of use and seller guidelines are drafts. The claims for their lawyers to confirm are listed in `docs/reference/GO-LIVE.md` (under "POPIA and legal"): Eduvos is the responsible party; under-18s need a parent's or guardian's consent; Vossie sells no personal information; each POPIA section 11 ground; deleting an account removes its data straight away; and hosting under section 72. A contact address and the Information Officer's name are still to come.
+- **The branded error page was dropped** (decision 62): it costs 472 B on every page and the listing page has 67 B of room. Next's default error page shows. Revisit it if a later change frees the bytes; Turbopack's `requestCost` option saved about 1.1 KB per page in a trial (decision 53).
+- **`/looking-for` and `/hub` are in the sitemap before they exist.** They are placeholders until part B builds them, which also adds requests and Hub posts to the sitemap (`app/sitemap.ts` says how). The site isn't public yet, so nothing is indexed meanwhile.
+- **How it works' layout shift at 1440px is 0.0312 to 0.0350, and nobody knows why.** The moving nodes are the page's own layout (`div.info-layout` and the "Last updated" line) as the fonts arrive, with the announcement stack. It is under the 0.05 limit, and Privacy, built from the same frame, shifts 0.0022 to 0.0031, so look at it if the limit is ever close.
+- **The info pages describe the future in places.** How it works' "What can I do on Vossie today?", the trust page's "badges are samples" and the privacy policy's "When sign-in arrives" are true today and go stale as stages land (the go-live checklist lists them).
+- **The sample Featured draw doesn't match the trust page yet.** The page says a featured seller sits out for a week and needs something listed. `drawFeatured` (`lib/featured.ts`) does neither today; the staff tools spec adds both when it builds the real draw.
+- **Later stages may add to `robots.txt`.** Messages, notifications and reports are signed-in pages that a crawler only meets behind sign-in links, so none needs listing, but add them if you'd like it explicit. Staff pages stay unlisted on purpose.
+
 ## Next
-- Lama reviews the screenshots in `docs/progress/shopping/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "shopping review screenshots"`.
-- The remaining stages are B (Looking For and the Hub), C (info, legal and system pages), D (accounts), E (messaging), F (selling) and G (staff tools), in that order (decisions 54 and 55). Part B is next.
+- Lama reviews the screenshots in `docs/progress/info-system/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "info and system review screenshots"`.
+- Part B (Looking For and the Hub) builds next, then stage D (accounts). The plan for stage E (messaging) is being drafted. After that come F (selling) and G (staff tools) (decisions 54 and 55).
 
 ## Waiting on
 - Eduvos font files and licence confirmation.
 - The official crest SVG.
 - Photos. The homepage is built, so each one is now a file drop plus one line in a fixture.
+- Eduvos's legal review of the privacy policy, terms of use and seller guidelines; the Information Officer's name; a contact address for privacy requests and support.

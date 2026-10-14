@@ -114,18 +114,64 @@ These override the tasks below wherever they differ. The spec has been updated t
   - Task 8 adds `app/error.tsx`, a client component referenced from the root layout, so it can add bytes to every page. It is the only task that can, and it is measured before and after.
 - **Recording.** `tests/e2e/performance.spec.ts` prints each page's `scriptBrotli`. Tasks 1, 2, 3, 8 and 10 run it at 390px and record the figures in their commit messages. Task 2 adds `/how-it-works` to it.
 
-**As built** (fill in during the build):
+**As built** (first visit at 390px, brotli quality 5):
 
 | Point | `/` | `/browse` | Listing | `/how-it-works` |
 |---|---|---|---|---|
-| Start (Task 1) | | | | |
-| Task 2, How it works and Safety | | | | |
-| Task 3, trust links | | | | |
-| Task 8, before the error page | | | | |
-| Task 8, with the error page | | | | |
-| **Final (Task 10)** | | | | |
+| Start (Task 1; the shopping stage's final figures) | 151,058 B | 151,740 B | 152,214 B | |
+| Task 2, How it works and Safety (`8aa1d49`) | 151,058 B | 151,740 B | 152,214 B | 151,058 B |
+| Task 3, trust links (`10158ae`) | 151,054 B | 151,736 B | 152,210 B | |
+| Task 8, before the error page (after `31f59ad`) | 151,082 B | 151,764 B | 152,238 B | |
+| Task 8, with the error page (throwaway copy, +472 B on every page) | 151,554 B | 152,236 B | 152,710 B | |
+| **Final (Task 10, after `a41662c`)** | **151,082 B** | **151,829 B** | **152,238 B** | **151,082 B** |
 
-The stop line used: ________ B. Unit tests at the start: ________. End to end at the start: ________ pass, ________ skipped.
+- **The stop line used:** 152,305 B (decision 52). Nothing newer had been accepted.
+- **Unit tests at the start:** 528. **End to end at the start:** 444 pass, 296 skipped. (The figures the shopping stage ended on; Task 1 didn't log its own.) **At the end:** 626 unit tests in 111 files; 520 pass and 375 are skipped by design, none fail.
+- **Two figures in the Task 8 "with" row are derived.** The listing page (152,710 B) and the storefront (152,314 B) were measured. `/` and browse are each 472 B above their "before" figure. The listing page and the storefront were both past the stop line, so the error page was dropped (Task 8, below).
+- **Tasks 1 to 7 added no client code,** as planned. The small moves are Task 3's link change (-4 B on every page, in `ContextStripView`) and, later, `31f59ad` (+28 B on every page, Saved forgetting dead ids) and `a41662c` (+65 B on browse, `ScrollToResult`).
+- **Final, the other pages:** storefront 151,842 B, Saved 151,717 B, collection 151,558 B. The listing page ends 67 B under the stop line and 1,362 B under the limit (153,600 B).
+
+## Changes made during the build (2026-10-14)
+
+The tasks above were built as written, except for these. The commits run from `42e0fee` (this plan's own review) to `a41662c`.
+
+- **Plan review (`42e0fee`):** the controller's amendments above, plus corrections to the specs.
+  - The three draft legal pages are `noindex`.
+  - A default share card was added to Task 6.
+  - The error page is measured in a throwaway copy before it enters the repo (Task 8).
+  - The spec was corrected: the error page calls `retry()`; robots blocks `/sell$` and `/sell/`; the trust rules follow the messaging spec (and Trusted needs 3 enquiries); staff tools keep Featured's week-long break.
+- **Tasks 1 and 2 (`f957a10`, `8aa1d49`):** built as written. The "looking at it" check used port 3202, because the final reviewer's server held 3201.
+- **Task 3 (`10158ae`):** interrupted at the usage limit after Steps 1 and 2, and finished by a new agent from the files already written.
+- **Task 4 (`b3e2cec`):** the privacy draft says plainly that saved ids travel to Vossie in `vossie_saved` with each visit (a finding of the shopping stage's final review). Privacy, Terms and Seller guidelines are `noindex`, with tests.
+- **Task 5 (`27a85fc`):**
+  - the footer's Saved link doesn't prefetch, because it cost about 0.6 KB per page on tablet and desktop (the shopping stage's final review);
+  - the footer test mocks `next/link`.
+- **Task 6 (`6f86b11`):**
+  - the sitemap uses the variant without part B's ids: 7 static paths, with the three drafts left out;
+  - the default share card is `app/opengraph-image.tsx`;
+  - the seller share-card test's `og:image` change landed in `31f59ad`, which shares that file.
+- **Task 7 (`27b1efd`):** built as written.
+- **`31f59ad` (the shopping stage's final review):** Saved forgets saved ids whose listings are gone (`forgetSaved`), so the header stops counting them. +28 B on every page.
+- **Task 8: the error page was dropped.** Measured in a copy of the committed tree, `app/error.tsx` added 472 B to every page: the listing page reached 152,710 B and the storefront 152,314 B, past the stop line (152,305 B). Nothing was created in the repo, so Next's default error page stays (spec decision 6, decision 62). Its unit test was never written, since the page was never created.
+- **Task 9 (`fec8074`):**
+  - the sitemap end-to-end test expects the three drafts absent;
+  - the 404 axe row is kept on its own account;
+  - checks for the default share card were added;
+  - layout shift: How it works 0.0031 at 390 and 0.0312 at 1440 (the 1440 figure is unexplained and under the limit), Privacy 0.0011 and 0.0031.
+- **Review of Tasks 1 to 7 (`60b466e`):**
+  - the homepage's How it works step no longer says WhatsApp (decision 57);
+  - the privacy draft says "Allowed under POPIA section 11" instead of GDPR's "lawful basis", says section 72 "generally allows", and no longer invents a contact route;
+  - a guard test finds every `"vossie_…"` name in the code and fails until the privacy page names it;
+  - `siteUrl()` warns once when a production build has no `NEXT_PUBLIC_SITE_URL`.
+- **Kept as it was in that review:** `/looking-for` and `/hub` stay in the sitemap until part B builds them; two footer links wrap at 1024px; the desktop contents column's 44px links touch, which passes WCAG 2.2's target size rule.
+- **A browse fix found in this build (`a41662c`):** the flaky end-to-end test "Show more lands on the 25th card" was a real bug. Chrome's fragment step clears focus after `DOMContentLoaded`, so `ScrollToResult` now runs again one task after it and takes focus only if nothing has it. +65 B on browse.
+- **Task 10 (the commit that holds this section):**
+  - the screenshots test is as written, except that its comment about the error page now says the 404 page stands in for it. It passed on the first run and wrote 16 PNGs, which show what their names say: the draft banner on Privacy, Terms and Seller guidelines, the contents list as a row of pills at 390 and a left column at 1440, and the 404 page;
+  - the spec: its edits 2, 4 and 5 were already in it from the plan's review, so only the "Built" line, decision 11, and the error-page outcome were added as written. Also updated: the goal and decision 6 (the error page), decision 2 (saved ids travel with each visit), decision 8 (the sitemap as built), the `/privacy` row (section 11 grounds), the testing and "not in this part" sections;
+  - the decisions log has two rows, 61 and 62, instead of the plan's five. Row 61 sums up the pages, robots, sitemap, headers and share card, with the plan decisions that go beyond the spec (the spec already carries decisions 1 and 16); row 62 is the dropped error page;
+  - the go-live checklist follows Step 5, with the totals brought up to 14 built and 31 not, and the lawyers' claims added under "POPIA and legal";
+  - `CLAUDE.md` keeps its privacy line (campus choice and saved listings are first-party cookies, nothing stored on a server) is still true. Step 6's two additions (the `siteUrl()` line and the privacy page's guard test) were made by the controller, with a third line on prefetch costs (decision 53);
+  - `docs/PROGRESS.md` has the part C section, its open points, and `ScrollToResult`'s earlier note brought up to date. It records the final run's layout shift: How it works 0.0031 at 390 and 0.0350 at 1440 (Task 9 measured 0.0312), Privacy 0.0011 and 0.0022. The 1440 figure for How it works moves from run to run and is still unexplained; it is an open point.
 
 ## Conventions for every task
 
