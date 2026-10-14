@@ -6170,7 +6170,10 @@
     display: none;
   }
 
+  /* The li is as tall as its row (flex stretches it), and as a one-item grid it stretches its card to match, so cards in
+     a wrapped row stay level when one has a two-line campus name. */
   .hub-sellers > li {
+    display: grid;
     flex: none;
   }
 

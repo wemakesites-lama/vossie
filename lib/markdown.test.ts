@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { markdownText, parseInline, parseMarkdown } from "./markdown";
+import { MAX_MARKDOWN_LENGTH, markdownText, parseInline, parseMarkdown } from "./markdown";
 
 const text = (value: string) => ({ type: "text", text: value });
 
@@ -33,6 +33,31 @@ describe("parseInline (community spec decision 9)", () => {
     const source =
       "Read [this](https://evil.example) and [that](//evil.example) and [x](javascript:alert) and [y](/\\evil.example).";
     expect(parseInline(source)).toEqual([text("Read this and that and x and y.")]);
+  });
+
+  it("keeps a link whose address has one level of balanced parentheses whole", () => {
+    expect(parseInline("[menu](/browse?q=(x))")).toEqual([
+      { type: "link", href: "/browse?q=(x)", children: [text("menu")] },
+    ]);
+    expect(parseInline("See [menu](/browse?q=(x)) now.")).toEqual([
+      text("See "),
+      { type: "link", href: "/browse?q=(x)", children: [text("menu")] },
+      text(" now."),
+    ]);
+  });
+
+  it("drops a javascript: link with parentheses without leaving a stray bracket behind", () => {
+    expect(parseInline("[click](javascript:alert(1))")).toEqual([text("click")]);
+    expect(parseInline("Please [click](javascript:alert(1)) here.")).toEqual([text("Please click here.")]);
+  });
+
+  it("keeps percent-encoded paths as links on this site, because they stay inside the path", () => {
+    expect(parseInline("[a](/%5Cevil.example)")).toEqual([
+      { type: "link", href: "/%5Cevil.example", children: [text("a")] },
+    ]);
+    expect(parseInline("[b](/%2F%2Fevil.example)")).toEqual([
+      { type: "link", href: "/%2F%2Fevil.example", children: [text("b")] },
+    ]);
   });
 
   it("leaves stray stars alone", () => {
@@ -83,6 +108,31 @@ describe("parseMarkdown (community spec decision 9)", () => {
 
   it("has nothing for an empty body", () => {
     expect(parseMarkdown("")).toEqual([]);
+  });
+});
+
+describe("the length guard", () => {
+  it("stops at 8,000 characters and drops the rest before parsing", () => {
+    expect(MAX_MARKDOWN_LENGTH).toBe(8000);
+    const source = `${"a".repeat(8000)}\n\n## Dropped heading\n\nTail words`;
+    const blocks = parseMarkdown(source);
+    expect(blocks).toEqual([{ type: "paragraph", children: [text("a".repeat(8000))] }]);
+    // Cut mid-word, not mid-structure: a long line is simply shortened.
+    expect(parseMarkdown("b".repeat(20_000))).toEqual([{ type: "paragraph", children: [text("b".repeat(8000))] }]);
+    expect(markdownText(`${"c".repeat(8000)} and more`)).toBe("c".repeat(8000));
+  });
+
+  it("leaves a body of exactly 8,000 characters whole", () => {
+    expect(parseMarkdown("d".repeat(8000))).toEqual([{ type: "paragraph", children: [text("d".repeat(8000))] }]);
+  });
+
+  it("stays fast on a very long line of unclosed markers", () => {
+    // Without the guard, 100,000 characters like these took about four seconds (the matcher is quadratic).
+    const started = performance.now();
+    parseMarkdown("*a ".repeat(33_334));
+    parseMarkdown("[a ".repeat(33_334));
+    parseMarkdown("**a ".repeat(25_000));
+    expect(performance.now() - started).toBeLessThan(1500);
   });
 });
 

@@ -59,6 +59,27 @@ describe("RequestBoard (community spec 4.1)", () => {
     expect(titles("Other campuses")).toHaveLength(14);
   });
 
+  it("heads the list with Eduvos Online's own name for the online campus", async () => {
+    viewer.campus = "online";
+    await show();
+    expect(titles("At Eduvos Online")).toEqual(["Business Law 2 notes"]);
+    expect(titles("Other campuses")).toHaveLength(13);
+    expect(screen.queryByText(/Nothing at/)).toBeNull();
+  });
+
+  it("says so when the campus has none only because of the category, and Other campuses still follows", async () => {
+    viewer.campus = "midrand";
+    await show({ cat: "tech" });
+    // Midrand has open requests (tutoring and food), just none in Tech.
+    const own = screen.getByRole("region", { name: "At Midrand" });
+    expect(within(own).getByText("Nothing at Midrand yet.")).toBeInTheDocument();
+    expect(within(own).queryByRole("heading", { level: 3 })).toBeNull();
+    expect(titles("Other campuses")).toEqual(["Graphic calculator to borrow for exams", "Laptop charger, Lenovo 65W"]);
+    // The own section comes first, then Other campuses.
+    const regions = screen.getAllByRole("region").map((region) => region.getAttribute("aria-labelledby"));
+    expect(regions).toEqual(["board-own-title", "board-others-title"]);
+  });
+
   it("narrows to the category in the link, its chip current", async () => {
     await show({ cat: "tech" });
     const chips = screen.getByRole("navigation", { name: "Categories" });

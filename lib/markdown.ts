@@ -14,9 +14,20 @@ export type MarkdownBlock =
   | { type: "bullets"; items: MarkdownInline[][] }
   | { type: "numbers"; items: MarkdownInline[][] };
 
+/**
+ * The most characters of a body the parser reads; whatever comes after is dropped before parsing. The inline matcher
+ * is quadratic on a long line with many unclosed markers (100,000 characters took about four seconds), and nothing
+ * stops a long body today except the sample data. Once staff can write posts (stage G), this keeps one post from
+ * stalling the server. The sample bodies are well under 4,000.
+ */
+export const MAX_MARKDOWN_LENGTH = 8000;
+
 // **bold**, *italic* and [words](/path). A marker needs a character other than a space or "*" just inside it, as in
-// Markdown, so "2 * 3 * 4" and "** loose **" stay as written.
-const INLINE = /\*\*([^\s*](?:.*?[^\s*])?)\*\*|\*([^\s*](?:.*?[^\s*])?)\*|\[([^\]]+)\]\(([^)\s]*)\)/g;
+// Markdown, so "2 * 3 * 4" and "** loose **" stay as written. A link's address may hold one level of balanced
+// parentheses, so "[menu](/browse?q=(x))" is one link and "[click](javascript:alert(1))" is one dropped link, not a
+// link cut at the first ")" with a stray ")" left in the text.
+const INLINE =
+  /\*\*([^\s*](?:.*?[^\s*])?)\*\*|\*([^\s*](?:.*?[^\s*])?)\*|\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))*)\)/g;
 const HEADING = /^## +(.+)$/;
 const BULLET = /^- +(.+)$/;
 const NUMBERED = /^\d{1,3}\. +(.+)$/;
@@ -29,7 +40,8 @@ function push(parts: MarkdownInline[], part: MarkdownInline): void {
 }
 
 /** Bold, italic and links in one run of text. Everything else, HTML included, is plain text. */
-export function parseInline(text: string): MarkdownInline[] {
+export function parseInline(source: string): MarkdownInline[] {
+  const text = source.slice(0, MAX_MARKDOWN_LENGTH);
   const parts: MarkdownInline[] = [];
   let end = 0;
   for (const match of text.matchAll(INLINE)) {
@@ -73,7 +85,14 @@ export function parseMarkdown(source: string): MarkdownBlock[] {
     list = null;
   };
 
-  for (const line of source.replace(/\r\n?/g, "\n").split("\n").map((text) => text.trim())) {
+  // Anything past the limit is dropped before parsing (see MAX_MARKDOWN_LENGTH).
+  const lines = source
+    .slice(0, MAX_MARKDOWN_LENGTH)
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((text) => text.trim());
+
+  for (const line of lines) {
     const heading = HEADING.exec(line);
     const item = BULLET.exec(line) ?? NUMBERED.exec(line);
     if (line === "") {
