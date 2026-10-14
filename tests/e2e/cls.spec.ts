@@ -9,6 +9,8 @@ const PAGES: ReadonlyArray<[name: string, path: string, cookies?: Readonly<Recor
   ["homepage", "/"],
   ["browse page", "/browse"],
   ["listing page", "/listings/l-001"],
+  ["how it works page", "/how-it-works"],
+  ["privacy page", "/privacy"],
   ["listing page (campus pretoria)", "/listings/l-001", { vossie_campus: "pretoria" }],
   ["browse page (campus midrand)", "/browse", { vossie_campus: "midrand" }],
   ["browse page (campus mbombela)", "/browse", { vossie_campus: "mbombela" }],

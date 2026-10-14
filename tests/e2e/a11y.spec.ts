@@ -163,3 +163,20 @@ test("a collection", async ({ page }) => {
   await expect(page.getByText("5 listings", { exact: true })).toBeVisible();
   expect(await seriousIssues(page)).toEqual([]);
 });
+
+for (const path of ["/how-it-works", "/safety", "/trust", "/privacy", "/terms", "/seller-guidelines"]) {
+  test(`the info page ${path}`, async ({ page }) => {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    expect(await seriousIssues(page)).toEqual([]);
+  });
+}
+
+// The 404 page. The branded error page was dropped under the JS stop rule (info and system spec 2.6), so this row checks
+// the 404 page on its own account.
+test("the 404 page", async ({ page }) => {
+  const response = await page.goto("/there-is-no-such-page");
+  expect(response?.status()).toBe(404);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
+  expect(await seriousIssues(page)).toEqual([]);
+});
