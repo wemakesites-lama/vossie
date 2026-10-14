@@ -5744,3 +5744,284 @@
     }
   }
 }
+
+/* --- Community: post bodies (community plan, Task 3, spec decision 9) --- */
+@layer components {
+  /* A Hub post's body (components/hub/Markdown.tsx): lines of about 65 characters, with room between blocks. */
+  .markdown {
+    max-width: 65ch;
+    color: var(--color-ink);
+  }
+
+  .markdown > * + * {
+    margin-top: 14px;
+  }
+
+  .markdown h2 {
+    margin-top: 28px;
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 22px;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
+  .markdown > h2:first-child {
+    margin-top: 0;
+  }
+
+  .markdown ul,
+  .markdown ol {
+    padding-left: 1.4em;
+  }
+
+  .markdown ul {
+    list-style: disc;
+  }
+
+  .markdown ol {
+    list-style: decimal;
+  }
+
+  .markdown li + li {
+    margin-top: 6px;
+  }
+
+  .markdown strong {
+    font-weight: 700;
+  }
+
+  /* Links on white are sky-dark and underlined (community spec 6). Links inside a paragraph are exempt from the 44px
+     target size (WCAG 2.5.8). */
+  .markdown a {
+    color: var(--color-sky-dark);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+/* --- Community: the Looking For board and filter chips (community plan, Task 4, spec 4.1) --- */
+@layer components {
+  /* .page and .board sit on one element, so this padding replaces .page's gutter: it's the whole content edge, 16px on
+     phones and 40px from the tablet step. */
+  .board {
+    padding: 24px 16px 64px;
+  }
+
+  .board-head {
+    display: grid;
+    justify-items: start;
+    gap: 12px;
+  }
+
+  .board-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .board-lede {
+    max-width: 50ch;
+  }
+
+  .board-post {
+    margin-top: 4px;
+  }
+
+  /* LinkTabs' chips: one row that scrolls sideways on phones, out to the screen's edges, and wraps from the tablet
+     step (plan decision 7). The padding keeps focus rings inside the scroll box, which would clip them. */
+  .link-chips {
+    margin-top: 24px;
+  }
+
+  .link-chips ul {
+    display: flex;
+    gap: 8px;
+    margin-inline: -16px;
+    padding: 6px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .link-chips ul::-webkit-scrollbar {
+    display: none;
+  }
+
+  .link-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1.5px solid var(--color-navy);
+    border-radius: 999px;
+    color: var(--color-navy);
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .link-chip:focus-visible {
+    outline-offset: 2px;
+  }
+
+  /* The chosen chip is filled, so it doesn't rely on colour alone. Where the browser supports it, the row starts
+     scrolled to it, as browse's tabs do. */
+  .link-chip[aria-current="page"] {
+    background: var(--color-navy);
+    color: var(--color-white);
+    scroll-initial-target: nearest;
+  }
+
+  .board-section {
+    margin-top: 32px;
+  }
+
+  .board-list {
+    margin-top: 12px;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .board-list > li {
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  /* The title's link covers the whole row (::after), so the row is one target, well over 44px tall. */
+  .board-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 20px;
+    align-items: center;
+    column-gap: 12px;
+    padding-block: 14px;
+  }
+
+  .board-row > :not(.board-row-arrow) {
+    grid-column: 1;
+  }
+
+  .board-row-arrow {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    width: 20px;
+    height: 20px;
+    color: var(--color-navy);
+  }
+
+  .board-row-title {
+    color: var(--color-navy);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .board-row-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  /* The ring goes round the whole row. Without :has() (iOS before 15.4) the link keeps its own ring. */
+  @supports selector(:has(*)) {
+    .board-row-link:focus-visible {
+      outline: none;
+      box-shadow: none;
+    }
+
+    .board-row:has(.board-row-link:focus-visible) {
+      border-radius: 8px;
+      outline: 2.5px solid var(--color-navy);
+      outline-offset: 2px;
+    }
+  }
+
+  .board-row-meta {
+    margin-top: 2px;
+    color: var(--color-muted);
+    font-size: 13px;
+  }
+
+  /* Navy on the grey panel. */
+  .board-none,
+  .board-empty {
+    margin-top: 12px;
+    padding: 20px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .board-empty {
+    display: grid;
+    justify-items: start;
+    gap: 14px;
+    margin-top: 24px;
+    padding: 28px 20px;
+  }
+
+  /* The skeleton has the real chips', heading's and rows' heights (a row is 94px with its padding), so the board lands
+     where the skeleton was. */
+  .board-skeleton-chips {
+    height: 44px;
+    margin-block: 30px 6px;
+    border-radius: 999px;
+  }
+
+  .board-skeleton-heading {
+    width: 12rem;
+    height: 24px;
+    margin-top: 32px;
+  }
+
+  .board-skeleton-row {
+    height: 66px;
+    margin-block: 14px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .board {
+      padding-inline: 40px;
+    }
+
+    .link-chips ul {
+      flex-wrap: wrap;
+      margin-inline: 0;
+      padding-inline: 0;
+      overflow-x: visible;
+    }
+
+    /* The row no longer scrolls from here, so the page itself would be the chip's nearest scroller, and the browser
+       would scroll the whole page down to the chosen chip on load. */
+    .link-chip[aria-current="page"] {
+      scroll-initial-target: none;
+    }
+
+    /* The eleven chips wrap onto two rows from the tablet step. */
+    .board-skeleton-chips {
+      height: 96px;
+      border-radius: var(--radius-card);
+    }
+  }
+
+  /* Desktop: the heading and lede on the left, Post a request on the right. */
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .board-head {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      column-gap: 40px;
+    }
+
+    .board-title,
+    .board-lede {
+      grid-column: 1;
+    }
+
+    .board-post {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      margin-top: 0;
+    }
+  }
+}

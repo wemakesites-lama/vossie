@@ -1,0 +1,92 @@
+import { render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { RequestBoard } from "./RequestBoard";
+
+const viewer = vi.hoisted(() => ({ campus: "all" }));
+const board = vi.hoisted(() => ({ failing: false }));
+
+vi.mock("@/lib/data/viewer", () => ({
+  getViewerContext: async () => ({ campus: viewer.campus, signedIn: false, activity: null }),
+}));
+
+vi.mock("@/lib/data", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/data")>();
+  return {
+    ...actual,
+    getOpenRequests: async (query: Parameters<typeof actual.getOpenRequests>[0]) => {
+      if (board.failing) throw new Error("The requests didn't load");
+      return actual.getOpenRequests(query);
+    },
+  };
+});
+
+afterEach(() => {
+  viewer.campus = "all";
+  board.failing = false;
+});
+
+const show = async (params: Record<string, string> = {}) =>
+  render(await RequestBoard({ searchParams: Promise.resolve(params) }));
+
+/** The request titles in one of the board's sections, in order. */
+const titles = (section: string) =>
+  within(screen.getByRole("region", { name: section }))
+    .getAllByRole("heading", { level: 3 })
+    .map((heading) => heading.textContent);
+
+describe("RequestBoard (community spec 4.1)", () => {
+  it("lists every open request, newest first, under one heading when no campus is chosen", async () => {
+    await show();
+    const all = titles("Open requests");
+    expect(all).toHaveLength(14);
+    expect(all[0]).toBe("Accounting 1 tutor this week");
+    expect(all).not.toContain("Kettle for res");
+    expect(screen.queryByRole("region", { name: "Other campuses" })).toBeNull();
+  });
+
+  it("puts the viewer's campus first, then every other campus", async () => {
+    viewer.campus = "midrand";
+    await show();
+    expect(titles("At Midrand")).toEqual(["Accounting 1 tutor this week", "Birthday cake for Friday"]);
+    expect(titles("Other campuses")).toHaveLength(12);
+  });
+
+  it("says when the viewer's campus has none, and still shows the rest", async () => {
+    viewer.campus = "mbombela";
+    await show();
+    const own = screen.getByRole("region", { name: "At Mbombela" });
+    expect(within(own).getByText("Nothing at Mbombela yet.")).toBeInTheDocument();
+    expect(titles("Other campuses")).toHaveLength(14);
+  });
+
+  it("narrows to the category in the link, its chip current", async () => {
+    await show({ cat: "tech" });
+    const chips = screen.getByRole("navigation", { name: "Categories" });
+    expect(within(chips).getAllByRole("link")).toHaveLength(11);
+    expect(within(chips).getByRole("link", { name: "Tech" })).toHaveAttribute("aria-current", "page");
+    expect(within(chips).getByRole("link", { name: "Tech" })).toHaveAttribute("href", "/looking-for?cat=tech");
+    expect(within(chips).getByRole("link", { name: "All" })).toHaveAttribute("href", "/looking-for");
+    expect(titles("Open requests")).toEqual(["Graphic calculator to borrow for exams", "Laptop charger, Lenovo 65W"]);
+  });
+
+  it("ignores a category it doesn't know", async () => {
+    await show({ cat: "nope" });
+    expect(screen.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page");
+    expect(titles("Open requests")).toHaveLength(14);
+  });
+
+  it("invites the first request when a category has nothing open", async () => {
+    await show({ cat: "tickets-events" });
+    expect(screen.getByText("No requests here yet. Be the first to ask.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Post a request" })).toHaveAttribute("href", "/login?next=%2Flooking-for");
+    expect(screen.queryByRole("region")).toBeNull();
+  });
+
+  it("says so when the requests don't load, with a way to try again, and keeps the chips", async () => {
+    board.failing = true;
+    await show({ cat: "food" });
+    expect(screen.getByText("We couldn't load requests just now.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Try again" })).toHaveAttribute("href", "/looking-for?cat=food");
+    expect(screen.getByRole("navigation", { name: "Categories" })).toBeInTheDocument();
+  });
+});

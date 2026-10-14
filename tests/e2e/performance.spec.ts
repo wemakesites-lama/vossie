@@ -10,6 +10,7 @@ const PAGES: ReadonlyArray<[name: string, path: string, saved?: string]> = [
   ["storefront", "/sellers/tech-corner"],
   ["Saved page", "/saved", "l-001.l-026"],
   ["collection page", "/collections/start-of-semester"],
+  ["Looking For board", "/looking-for"],
 ];
 
 for (const [name, path, saved] of PAGES) {
