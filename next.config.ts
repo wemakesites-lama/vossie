@@ -40,6 +40,11 @@ const nextConfig: NextConfig = {
   experimental: {
     turbopackFileSystemCacheForBuild: false,
     turbopackFileSystemCacheForDev: false,
+    // Experimental, production builds only (decision 63). A low request cost makes Turbopack merge the two small
+    // layout chunks into one on every page: about 0.5 KB brotli less and one request fewer on a first visit. It's a
+    // threshold effect (0 to 5000 merges; 7500 and above, including the default 200000, doesn't), so it can shrink
+    // as the code changes: performance.spec.ts is the guard. Don't add firstPageLoadPriority here: it cancels it.
+    turbopackChunking: { requestCost: 1000 },
   },
 };
 
