@@ -3,8 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { FormStateRow } from "@/lib/data/rows";
 import type { MessageTarget } from "@/lib/messaging/paths";
 import { composerSubject } from "@/lib/messaging/subjects";
+import type { ReportTarget } from "@/lib/types";
 import { makeThread } from "@/tests/helpers/fakes";
 import { composerForm, ComposerView } from "./ComposerView";
+import { reportForm, ReportView } from "./ReportView";
 import { replyForm, ThreadView } from "./ThreadView";
 
 // The forms only need something to post to; the actions have their own tests.
@@ -14,6 +16,7 @@ vi.mock("@/lib/messaging/actions", () => ({
   saleDidntHappen: async () => {},
   sendFirstMessage: async () => {},
   sendReply: async () => {},
+  sendReport: async () => {},
 }));
 
 // Messaging plan amendment 5. Next keeps the last pages hidden in the DOM, so two composers (for two listings) or two
@@ -126,5 +129,50 @@ describe("the thread's field ids (messaging plan amendment 5)", () => {
       expect.arrayContaining(["thread-reply-conv-s1", "thread-reply-conv-s1-hint", "thread-reply-conv-s1-error"]),
     );
     expect(referencesIn(views[1]).map((reference) => reference.id)).toContain("thread-reply-conv-s2");
+  });
+});
+
+describe("the report form's field ids (messaging plan amendment 5)", () => {
+  function showReport(target: ReportTarget, title: string) {
+    const form = reportForm(
+      state("report", { errors: ["reason-missing", "detail-length"], values: { detail: "z".repeat(501) } }),
+      target,
+    );
+    return render(
+      <ReportView target={target} subject={{ title, href: "/", backLabel: "Back" }} already={false} form={form} />,
+    );
+  }
+
+  it("starts each id with what's reported, so two kept report forms never share one", () => {
+    const views = [
+      showReport({ kind: "listing", id: "l-001" }, "Casio fx-991ZA Plus calculator"),
+      showReport({ kind: "listing", id: "l-007" }, "Gaming headset, barely used"),
+      showReport({ kind: "seller", id: "tech-corner" }, "Tech corner"),
+      // A seller whose slug is a listing's id: the kind in front keeps their ids apart.
+      showReport({ kind: "seller", id: "l-001" }, "A shop called L 001"),
+      showReport({ kind: "request", id: "r-001" }, "Accounting 1 tutor this week"),
+    ].map((view) => view.container);
+    for (const view of views) {
+      expect(strays(view)).toEqual([]);
+      // Seven radio buttons' labels and the detail's, the two summary links, the group's and the detail's descriptions.
+      expect(view.querySelectorAll("label[for]")).toHaveLength(8);
+      expect(view.querySelectorAll('a[href^="#"]')).toHaveLength(2);
+      expect(view.querySelectorAll("[aria-describedby]").length).toBeGreaterThanOrEqual(2);
+    }
+    expect(referencesIn(views[3]).map((reference) => reference.id)).toEqual(
+      expect.arrayContaining([
+        "report-reason-seller-l-001-scam",
+        "report-reason-seller-l-001-other",
+        "report-reason-seller-l-001-error",
+        "report-detail-seller-l-001",
+        "report-detail-seller-l-001-hint",
+        "report-detail-seller-l-001-error",
+      ]),
+    );
+    // No field's id repeats across the five forms. (A summary's id is per form, so the five share "report-summary":
+    // each hidden copy has the same words, as a section heading does.)
+    const ids = [...document.querySelectorAll("input[id], textarea[id]")].map((field) => field.id);
+    expect(ids).toHaveLength(5 * 8);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });

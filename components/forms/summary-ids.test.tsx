@@ -4,6 +4,7 @@ import { AccountView, detailsForm } from "@/components/account/AccountView";
 import { PrivacySettingsView } from "@/components/account/PrivacySettingsView";
 import { CodeStep, EmailStep, ProfileStep } from "@/components/auth/SignInSteps";
 import { composerForm, ComposerView } from "@/components/messages/ComposerView";
+import { reportForm, ReportView } from "@/components/messages/ReportView";
 import { replyForm, ThreadView } from "@/components/messages/ThreadView";
 import { campuses } from "@/data/fixtures/campuses";
 import { composerSubject } from "@/lib/messaging/subjects";
@@ -28,6 +29,7 @@ vi.mock("@/lib/messaging/actions", () => ({
   saleDidntHappen: async () => {},
   sendFirstMessage: async () => {},
   sendReply: async () => {},
+  sendReport: async () => {},
 }));
 
 const account: Account = {
@@ -71,6 +73,18 @@ describe("error summary ids (accounts spec 6)", () => {
       },
       "conv-test",
     );
+    const reportWithErrors = reportForm(
+      {
+        key: "s:report:listing:l-001",
+        sessionKey: "s",
+        form: "report:listing:l-001",
+        errors: ["reason-missing"],
+        values: {},
+        notice: null,
+        expiresAt: "2099-01-01T00:00:00.000Z",
+      },
+      { kind: "listing", id: "l-001" },
+    );
     render(
       <>
         <EmailStep next={null} email="" consented={false} errors={oops} samples={null} />
@@ -90,10 +104,16 @@ describe("error summary ids (accounts spec 6)", () => {
           sent={false}
           campusName="Midrand"
         />
+        <ReportView
+          target={{ kind: "listing", id: "l-001" }}
+          subject={{ title: "Casio fx-991ZA Plus calculator", href: "/listings/l-001", backLabel: "Back to the listing" }}
+          already={false}
+          form={reportWithErrors}
+        />
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(7);
+    expect(summaries).toHaveLength(8);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -104,6 +124,7 @@ describe("error summary ids (accounts spec 6)", () => {
       "account-privacy-delete-summary",
       "composer-summary",
       "thread-reply-summary",
+      "report-summary",
     ]);
   });
 });

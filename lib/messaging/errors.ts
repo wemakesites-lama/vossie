@@ -1,6 +1,7 @@
 import type { FormError } from "@/lib/auth/messages";
+import type { ReportTarget } from "@/lib/types";
 import type { MessageTarget } from "./paths";
-import { REPORTS_PER_DAY } from "./rules";
+import { REPORT_REASONS, REPORTS_PER_DAY } from "./rules";
 
 // Messaging's error words (spec 3.1 and 3.4; plan decision 26 for the ones the spec doesn't give), each linked to its
 // field, in the shape D's ErrorSummary and errorFor take.
@@ -21,8 +22,24 @@ export function replyFields(conversationId: string): { body: string } {
   return { body: `thread-reply-${conversationId}` };
 }
 
-/** The report form's fields' ids. The reason links to the first radio button. */
-export const REPORT_FIELDS = { reason: "report-reason-scam", detail: "report-detail" } as const;
+/**
+ * One reason's radio button's id, for the thing reported: "report-reason-listing-l-001-scam". The kind goes first, so a
+ * shop whose slug happens to be a listing's id still gets ids of its own.
+ */
+export function reportReasonId(target: ReportTarget, reason: string): string {
+  return `report-reason-${target.kind}-${target.id}-${reason}`;
+}
+
+/**
+ * The report form's fields' ids, for the thing reported. A missing reason links to the first radio button, so the
+ * reason's id is that button's; the detail's is "report-detail-seller-tech-corner".
+ */
+export function reportFields(target: ReportTarget): { reason: string; detail: string } {
+  return {
+    reason: reportReasonId(target, REPORT_REASONS[0].value),
+    detail: `report-detail-${target.kind}-${target.id}`,
+  };
+}
 
 // A Map, so a stray code such as "toString" finds nothing. "report-rate" belongs to no field.
 const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Map([
