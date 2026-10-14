@@ -158,7 +158,10 @@ Lama can veto any of these at plan review. In this plan, "plan decision N" means
 
 ## Amendments on review
 
-(Empty. The controller adds amendments here; they override the tasks below wherever they differ.)
+The controller adds amendments here; they override the tasks below wherever they differ.
+
+1. **Error summaries need their own id** (D's review, `17dd972`). `ErrorSummary` takes a required `id` prop, and its heading's id is `${id}-title`, because Next keeps earlier pages in the DOM and ids must be unique across them. Every form this plan adds passes its own: the composer `composer-summary`, the thread's reply `thread-reply-summary`, the report form `report-summary` (and any other form, `<page>-<form>-summary`). Each task that adds one also adds that form to `components/forms/summary-ids.test.tsx`, which renders every form at once and checks no id repeats.
+2. **The request page's report link** (recheck item 15). `RequestView` keeps `signInHref(…)` in a local `const signIn` used by both its links; Task 7 edits by meaning.
 
 ## Store design
 
