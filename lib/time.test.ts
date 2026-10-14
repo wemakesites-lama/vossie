@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { longSastDate, sastDate, sastDateTime, sastToday, shortSastDate } from "./time";
+import { longSastDate, sastClock, sastDate, sastDateTime, sastMonthYear, sastToday, shortSastDate } from "./time";
 
 describe("sastDate", () => {
   it("gives the date in South Africa (UTC+2), whatever the server's timezone", () => {
@@ -47,5 +47,19 @@ describe("sastDateTime", () => {
   it("moves to the next day after 22:00 UTC, writing midnight as 00:00", () => {
     expect(sastDateTime("2026-10-14T22:30:00Z")).toBe("Thu 15 Oct · 00:30");
     expect(sastDateTime("2026-10-14T22:00:00Z")).toBe("Thu 15 Oct · 00:00");
+  });
+});
+
+describe("sastMonthYear", () => {
+  it("gives the month in South Africa, in words, for \"Member since\" (accounts spec 3.2)", () => {
+    expect(sastMonthYear("2026-10-14T08:00:00Z")).toBe("October 2026");
+    expect(sastMonthYear("2026-09-30T22:30:00Z")).toBe("October 2026");
+  });
+});
+
+describe("sastClock", () => {
+  it("gives the time of day in South Africa on the 24-hour clock (accounts spec 3.3)", () => {
+    expect(sastClock("2026-10-14T08:42:00Z")).toBe("10:42");
+    expect(sastClock("2026-10-14T22:05:00Z")).toBe("00:05");
   });
 });

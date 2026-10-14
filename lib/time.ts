@@ -65,3 +65,20 @@ export function sastDateTime(iso: string): string {
   const weekday = WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
   return `${weekday} ${dayMonth(date)} · ${SAST_CLOCK.format(moment)}`;
 }
+
+// en-GB writes "October 2026".
+const SAST_MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Africa/Johannesburg",
+  month: "long",
+  year: "numeric",
+});
+
+/** A stored UTC time as its month in South Africa: "October 2026" (accounts spec 3.2). It reads no clock. */
+export function sastMonthYear(iso: string): string {
+  return SAST_MONTH_YEAR.format(new Date(iso));
+}
+
+/** A stored UTC time as the time of day in South Africa, 24-hour: "10:42" (accounts spec 3.3). It reads no clock. */
+export function sastClock(iso: string): string {
+  return SAST_CLOCK.format(new Date(iso));
+}
