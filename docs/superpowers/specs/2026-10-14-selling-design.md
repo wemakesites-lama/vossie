@@ -132,3 +132,22 @@ All `/sell` pages are `noindex` and render per request inside `<Suspense>`, with
 ## 7. Not in this stage
 
 Stats beyond the dashboard's numbers, view counts, bulk actions, scheduled listings, and paid features (there are none).
+
+## 8. Changes on plan review (2026-10-14)
+
+The plan (`docs/superpowers/plans/2026-10-14-selling.md`) refines these points; where they differ, these win.
+
+1. **No test-only routes.** End-to-end tests apply as a new student (who stays waiting) and use the seeded approved seller (`seller@eduvos.com`, Tech corner) for listing flows, only on each test's own listing. Approval itself arrives in stage G.
+2. **Uploads on a real host.** The 32 MB Server Action body works on `next start` but not on many hosts (Vercel's functions take 4.5 MB). Go-live needs direct-to-storage uploads, and the no-JavaScript path then needs its own answer; it's on the go-live checklist.
+3. **No resized copies of deleted photos.** The image optimiser's disk cache is off (`images.maximumDiskCacheSize: 0`), so a deleted photo can't keep being served in another size (POPIA).
+4. **What the metadata stripper removes:**
+   - JPEG: APP1 (Exif and XMP), APP13 (IPTC, which can hold a location) and comments;
+   - PNG: `eXIf`, `tEXt`, `zTXt` and `iTXt`;
+   - WebP: `EXIF` and `XMP `;
+   - in every format: anything after the image's end, such as a phone's appended motion video.
+5. **The dashboard counts the last 7 days** (not "this week"). Only messages about a listing count as enquiries, as the trust page defines them. Replies show as "3 of 4 within 48 hours".
+6. **Sold listings can be relisted,** so a mistaken "Mark sold" can be undone.
+7. **Drafts stay drafts after approval:** the seller publishes them one by one.
+8. **A paused shop** disappears from every list, but its listing and storefront pages stay up, marked paused, so saved links still work.
+9. **The owner on their own paused or sold listing** sees "See similar items", and edits from My listings.
+10. **To fix in stage G:** part C's trust page says "Verified means the Hub … approved their shop". Approval (which lets someone sell) and Verified (a badge the Hub gives after checking) are separate, so the trust page's wording changes with stage G.
