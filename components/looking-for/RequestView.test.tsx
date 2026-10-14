@@ -6,6 +6,9 @@ import { RequestView } from "./RequestView";
 // The async listings are tested on their own; here they stand in (jsdom can't render async components in a tree).
 vi.mock("./RelatedListings", () => ({ RelatedListings: () => <section aria-label="Already on Vossie, stood in" /> }));
 
+// The session's links are async Server Components; here they're the signed-out links (messaging plan, Task 7).
+vi.mock("@/components/messages/ViewerLinks", async () => (await import("@/tests/helpers/viewer-links")).signedOutViewerLinks);
+
 async function show(id: string) {
   const [request, categories, campuses] = await Promise.all([getRequest(id), getCategories(), getCampuses()]);
   const category = categories.find((item) => item.slug === request!.categorySlug)!;
@@ -89,7 +92,7 @@ describe("RequestView (community spec 4.2)", () => {
     expect(screen.getByRole("region", { name: "Already on Vossie, stood in" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Report this request" })).toHaveAttribute(
       "href",
-      "/login?next=%2Flooking-for%2Fr-001",
+      "/login?next=%2Freport%3Frequest%3Dr-001",
     );
   });
 });

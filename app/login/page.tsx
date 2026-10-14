@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { SignIn } from "@/components/auth/SignIn";
 import { SignInSkeleton } from "@/components/auth/SignInSkeleton";
+import { backPathFor } from "@/lib/messaging/paths";
 import { safeNextPath } from "@/lib/next-path";
 
 /** Signing in belongs to one visitor, so search engines leave it out (accounts spec 3.1). */
@@ -25,13 +26,16 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 
 async function SignInForVisitor({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
   const next = safeNextPath((await searchParams).next);
+  // A composer's or a report form's `next` leads back to its listing, shop or request, and a page that needs an
+  // account gets no back link, since it would only come back here (messaging plan decision 4).
+  const back = next ? backPathFor(next) : null;
   return (
     <>
       <SignIn next={next} />
       {/* Back to where the visitor came from, when that's a path on this site (browse and listing spec 5.9). */}
-      {next && (
+      {back && (
         <p className="signin-back">
-          <Link href={next}>{next.startsWith("/listings/") ? "Back to the listing" : "Go back"}</Link>
+          <Link href={back}>{back.startsWith("/listings/") ? "Back to the listing" : "Go back"}</Link>
         </p>
       )}
     </>

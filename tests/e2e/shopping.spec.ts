@@ -50,7 +50,7 @@ test.describe("the seller storefront (spec 4)", () => {
     onlyAt("phone-390", "desktop-1440");
     await page.goto("/sellers/tech-corner");
     await page.getByRole("link", { name: "Message seller" }).click();
-    await expect(page).toHaveURL(/\/login\?next=%2Fsellers%2Ftech-corner$/);
+    await expect(page).toHaveURL(/\/login\?next=%2Fsellers%2Ftech-corner%2Fmessage$/);
     await page.getByRole("link", { name: "Go back" }).click();
     await expect(page).toHaveURL(/\/sellers\/tech-corner$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tech corner");

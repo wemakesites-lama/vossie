@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FlagIcon } from "@/components/icons";
+import { ReportLink } from "@/components/messages/SessionLinks";
 import { budgetLabel, dayMonth, offersSoFarLabel } from "@/lib/format";
 import { signInHref } from "@/lib/next-path";
 import { shortSastDate } from "@/lib/time";
@@ -77,10 +78,10 @@ export function RequestView({ request, category, campusNames }: RequestViewProps
 
       {/* The listing page's report link style. */}
       <p className="listing-report">
-        <Link href={signIn} prefetch={false}>
+        <ReportLink target={{ kind: "request", id: request.id }}>
           <FlagIcon className="size-4" />
           Report this request
-        </Link>
+        </ReportLink>
       </p>
     </div>
   );

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { FlagIcon } from "@/components/icons";
+import { ReportLink } from "@/components/messages/SessionLinks";
 import { priceLabel } from "@/lib/format";
-import { signInHref } from "@/lib/next-path";
 import type { ListingDetail } from "@/lib/types";
 import { AvailabilityBanner } from "./AvailabilityBanner";
 import { CampusNote } from "./CampusNote";
@@ -20,7 +20,6 @@ import { SellerCard } from "./SellerCard";
  */
 export function ListingView({ detail, campusNames }: { detail: ListingDetail; campusNames: ReadonlyMap<string, string> }) {
   const { listing, seller, category, campus, pickupPoint } = detail;
-  const signIn = signInHref(`/listings/${listing.id}`);
 
   return (
     <div className="page listing-page">
@@ -73,10 +72,10 @@ export function ListingView({ detail, campusNames }: { detail: ListingDetail; ca
       <MoreFrom listing={listing} sellerName={seller.name} categoryName={category.name} campusNames={campusNames} />
 
       <p className="listing-report">
-        <Link href={signIn} prefetch={false}>
+        <ReportLink target={{ kind: "listing", id: listing.id }}>
           <FlagIcon className="size-4" />
           Report this listing
-        </Link>
+        </ReportLink>
       </p>
     </div>
   );

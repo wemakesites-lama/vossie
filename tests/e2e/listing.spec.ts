@@ -78,7 +78,8 @@ test("messaging goes through the sign-in page and back", async ({ page }) => {
   onlyAt("phone-390", "desktop-1440");
   await page.goto("/listings/l-001");
   await page.getByRole("link", { name: "Message seller" }).click();
-  await expect(page).toHaveURL(/\/login\?next=%2Flistings%2Fl-001$/);
+  // Through sign-in and on to the composer; the back link goes to the listing (messaging plan decisions 3 and 4).
+  await expect(page).toHaveURL(/\/login\?next=%2Flistings%2Fl-001%2Fmessage$/);
   await expect(page.getByLabel("Your Eduvos email address")).toBeVisible();
   await page.getByRole("link", { name: "Back to the listing" }).click();
   await expect(page).toHaveURL(/\/listings\/l-001$/);

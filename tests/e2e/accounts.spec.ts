@@ -70,7 +70,7 @@ async function signInAsSample(page: Page, label: string, path = "/login") {
 }
 
 test.describe("signing in with an email code (accounts spec 2.2 and 3.1)", () => {
-  test("a first sign-in from a listing asks for a name and campus, then comes back to the listing", async ({
+  test("a first sign-in from a listing's Message seller asks for a name and campus, then goes on to the composer", async ({
     page,
     context,
     baseURL,
@@ -79,7 +79,7 @@ test.describe("signing in with an email code (accounts spec 2.2 and 3.1)", () =>
     await context.addCookies([{ name: "vossie_campus", value: "pretoria", url: baseURL! }]);
     await page.goto("/listings/l-001");
     await page.getByRole("link", { name: "Message seller" }).click();
-    await expect(page).toHaveURL(/\/login\?next=%2Flistings%2Fl-001$/);
+    await expect(page).toHaveURL(/\/login\?next=%2Flistings%2Fl-001%2Fmessage$/);
     const email = newEmail();
     await sendCode(page, email);
     await expect(main(page).getByText(/We sent a code to/).filter({ visible: true })).toContainText(
@@ -92,7 +92,7 @@ test.describe("signing in with an email code (accounts spec 2.2 and 3.1)", () =>
     await expect(field(page, "Your campus")).toHaveValue("pretoria");
     await field(page, "Your first name").fill("Ayanda");
     await button(page, "Continue").click();
-    await expect(page).toHaveURL(/\/listings\/l-001$/);
+    await expect(page).toHaveURL(/\/listings\/l-001\/message$/);
     await expect(accountIcon(page)).toHaveAccessibleName("Your account");
     await expect(accountIcon(page)).toHaveAttribute("href", "/account");
   });
@@ -259,11 +259,11 @@ test.describe("no stale pages after signing in or out (plan decision 2)", () => 
     onlyAt("phone-390", "desktop-1440");
     await page.goto("/listings/l-001");
     await page.getByRole("link", { name: "Message seller" }).click();
-    await expect(page).toHaveURL(/\/login\?next=%2Flistings%2Fl-001$/);
+    await expect(page).toHaveURL(/\/login\?next=%2Flistings%2Fl-001%2Fmessage$/);
     await button(page, "Student, Midrand").click();
-    await expect(page).toHaveURL(/\/listings\/l-001$/);
+    await expect(page).toHaveURL(/\/listings\/l-001\/message$/);
     await page.goBack();
-    await expect(page).toHaveURL(/\/login\?next=%2Flistings%2Fl-001$/);
+    await expect(page).toHaveURL(/\/login\?next=%2Flistings%2Fl-001%2Fmessage$/);
     await expect(main(page).getByText(/You're signed in as/).filter({ visible: true })).toContainText(
       "student@eduvos.com",
     );
@@ -366,8 +366,8 @@ test("a signed-in visitor who follows a sign-in link is told so, with the way ba
   onlyAt("phone-390", "desktop-1440");
   await signInAsSample(page, "Student, Midrand");
   await expect(page).toHaveURL(/\/account$/);
-  await page.goto("/sellers/tech-corner");
-  await page.getByRole("link", { name: "Message seller" }).click();
+  // A sign-in link from a page drawn before signing in. Signed in, Message seller now goes to the composer.
+  await page.goto("/login?next=%2Fsellers%2Ftech-corner");
   await expect(main(page).getByText(/You're signed in as/).filter({ visible: true })).toContainText(
     "student@eduvos.com",
   );

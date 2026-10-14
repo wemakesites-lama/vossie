@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { CheckIcon } from "@/components/icons";
 import { ShareButton } from "@/components/listing/ShareButton";
 import { Photo } from "@/components/listings/Photo";
+import { MessageSellerLink } from "@/components/messages/SessionLinks";
 import { badgeLabel } from "@/lib/format";
-import { signInHref } from "@/lib/next-path";
 import type { Seller } from "@/lib/types";
 
 /**
@@ -37,9 +36,9 @@ export function SellerHero({ seller, campusName }: { seller: Seller; campusName:
         </ul>
       </div>
       <div className="seller-hero-actions">
-        <Link href={signInHref(`/sellers/${seller.slug}`)} prefetch={false} className="btn btn-sky seller-message">
+        <MessageSellerLink target={{ kind: "shop", sellerSlug: seller.slug }} className="btn btn-sky seller-message">
           Message seller
-        </Link>
+        </MessageSellerLink>
         <ShareButton title={seller.name} className="seller-share" />
       </div>
     </div>

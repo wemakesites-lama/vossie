@@ -1,7 +1,10 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { makeSeller } from "@/tests/helpers/fakes";
 import { SellerHero } from "./SellerHero";
+
+// The session's links are async Server Components; here they're the signed-out links (messaging plan, Task 7).
+vi.mock("@/components/messages/ViewerLinks", async () => (await import("@/tests/helpers/viewer-links")).signedOutViewerLinks);
 
 const techCorner = makeSeller({
   slug: "tech-corner",
@@ -30,11 +33,11 @@ describe("SellerHero (shopping spec 4.1)", () => {
     expect(stamps()).toEqual(["Midrand", "Tech", "Verified"]);
   });
 
-  it("sends Message through the sign-in page, back to this shop, and offers Share", () => {
+  it("sends Message through the sign-in page and on to the shop's composer, and offers Share", () => {
     render(<SellerHero seller={techCorner} campusName="Midrand" />);
     expect(screen.getByRole("link", { name: "Message seller" })).toHaveAttribute(
       "href",
-      "/login?next=%2Fsellers%2Ftech-corner",
+      "/login?next=%2Fsellers%2Ftech-corner%2Fmessage",
     );
     expect(screen.getByRole("button", { name: "Share" })).toHaveClass("seller-share");
   });

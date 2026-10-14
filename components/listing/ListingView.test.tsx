@@ -7,6 +7,9 @@ import { ListingView } from "./ListingView";
 vi.mock("./MoreFrom", () => ({ MoreFrom: () => <section aria-label="More from, stood in" /> }));
 vi.mock("./CampusNote", () => ({ CampusNote: () => null }));
 
+// The session's links are async Server Components; here they're the signed-out links (messaging plan, Task 7).
+vi.mock("@/components/messages/ViewerLinks", async () => (await import("@/tests/helpers/viewer-links")).signedOutViewerLinks);
+
 const names = new Map([["midrand", "Midrand"]]);
 
 async function show(id: string) {
@@ -42,7 +45,7 @@ describe("ListingView (spec 5.1)", () => {
     expect(screen.getByRole("region", { name: "More from, stood in" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Report this listing" })).toHaveAttribute(
       "href",
-      "/login?next=%2Flistings%2Fl-001",
+      "/login?next=%2Freport%3Flisting%3Dl-001",
     );
   });
 

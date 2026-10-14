@@ -190,7 +190,7 @@ The four tables, how they fit D's store, and what stages F and G add:
 | Point | `/` | `/browse` | Listing | Storefront | Request | Inbox | Thread | Composer |
 |---|---|---|---|---|---|---|---|---|
 | Start (D's final figures, measured again at `f7e1bee`) | 150,614 | 151,361 | 151,770 | 151,374 | 151,090 | n/a | n/a | n/a |
-| Task 7, the session links | | | | | | | | |
+| Task 7, the session links | 150,614 | 151,361 | 151,770 | 151,374 | 151,090 | n/a | n/a | n/a |
 | Task 13, the header's badge and the strip | | | | | | | | |
 | **Final (Task 17)** | | | | | | | | |
 

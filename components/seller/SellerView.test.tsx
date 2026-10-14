@@ -6,6 +6,9 @@ import { SellerView } from "./SellerView";
 // The async listings are tested on their own; here they stand in (jsdom can't render async components in a tree).
 vi.mock("./SellerListings", () => ({ SellerListings: () => <section aria-label="Listings, stood in" /> }));
 
+// The session's links are async Server Components; here they're the signed-out links (messaging plan, Task 7).
+vi.mock("@/components/messages/ViewerLinks", async () => (await import("@/tests/helpers/viewer-links")).signedOutViewerLinks);
+
 async function show(slug: string) {
   render(<SellerView seller={(await getSeller(slug))!} campusNames={new Map([["midrand", "Midrand"]])} />);
 }
@@ -24,7 +27,7 @@ describe("SellerView (shopping spec 4.1)", () => {
     await show("tech-corner");
     expect(screen.getByRole("link", { name: "Report this seller" })).toHaveAttribute(
       "href",
-      "/login?next=%2Fsellers%2Ftech-corner",
+      "/login?next=%2Freport%3Fseller%3Dtech-corner",
     );
   });
 });

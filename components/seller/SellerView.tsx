@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { FlagIcon } from "@/components/icons";
+import { ReportLink } from "@/components/messages/SessionLinks";
 import { monthYear } from "@/lib/format";
-import { signInHref } from "@/lib/next-path";
 import type { Seller } from "@/lib/types";
 import { SellerHero } from "./SellerHero";
 import { SellerListings } from "./SellerListings";
@@ -16,7 +15,6 @@ type SellerViewProps = {
  * About sits on the left, beside the listings (spec 4.2).
  */
 export function SellerView({ seller, campusNames }: SellerViewProps) {
-  const signIn = signInHref(`/sellers/${seller.slug}`);
   return (
     <div className="page seller-page">
       <SellerHero seller={seller} campusName={campusNames.get(seller.campusSlug) ?? ""} />
@@ -34,10 +32,10 @@ export function SellerView({ seller, campusNames }: SellerViewProps) {
 
       {/* The listing page's report link style. */}
       <p className="listing-report">
-        <Link href={signIn} prefetch={false}>
+        <ReportLink target={{ kind: "seller", id: seller.slug }}>
           <FlagIcon className="size-4" />
           Report this seller
-        </Link>
+        </ReportLink>
       </p>
     </div>
   );
