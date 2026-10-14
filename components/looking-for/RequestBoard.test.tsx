@@ -59,12 +59,22 @@ describe("RequestBoard (community spec 4.1)", () => {
     expect(titles("Other campuses")).toHaveLength(14);
   });
 
-  it("heads the list with Eduvos Online's own name for the online campus", async () => {
+  it("heads the list \"On Eduvos Online\" for the online campus, which has no ground to be \"At\"", async () => {
     viewer.campus = "online";
     await show();
-    expect(titles("At Eduvos Online")).toEqual(["Business Law 2 notes"]);
+    expect(titles("On Eduvos Online")).toEqual(["Business Law 2 notes"]);
+    expect(screen.queryByRole("region", { name: "At Eduvos Online" })).toBeNull();
     expect(titles("Other campuses")).toHaveLength(13);
-    expect(screen.queryByText(/Nothing at/)).toBeNull();
+    expect(screen.queryByText(/Nothing (at|on) /)).toBeNull();
+  });
+
+  it("says \"Nothing on Eduvos Online yet.\" when the online campus has none in the category", async () => {
+    viewer.campus = "online";
+    await show({ cat: "tech" });
+    const own = screen.getByRole("region", { name: "On Eduvos Online" });
+    expect(within(own).getByText("Nothing on Eduvos Online yet.")).toBeInTheDocument();
+    expect(screen.queryByText(/Nothing at Eduvos Online/)).toBeNull();
+    expect(titles("Other campuses")).toEqual(["Graphic calculator to borrow for exams", "Laptop charger, Lenovo 65W"]);
   });
 
   it("says so when the campus has none only because of the category, and Other campuses still follows", async () => {

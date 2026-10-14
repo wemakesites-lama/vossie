@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { LinkTabs } from "@/components/ui/LinkTabs";
 import { getCampuses, getCategories, getOpenRequests } from "@/lib/data";
+import { isOnlineCampus } from "@/lib/campus";
 import { getViewerContext } from "@/lib/data/viewer";
 import { signInHref } from "@/lib/next-path";
 import { boardHref, readRequestCategory, splitByCampus } from "@/lib/requests";
@@ -81,13 +82,17 @@ function BoardLists({ requests, campus, names }: BoardListsProps) {
   }
 
   const campusName = names.campuses.get(campus) ?? "";
+  // Eduvos Online has no ground to be "at": it reads "On Eduvos Online". Every other campus keeps "At …".
+  const online = isOnlineCampus({ slug: campus });
   return (
     <>
-      <BoardSection id="board-own" title={`At ${campusName}`}>
+      <BoardSection id="board-own" title={`${online ? "On" : "At"} ${campusName}`}>
         {split.own.length > 0 ? (
           <RequestList requests={split.own} names={names} />
         ) : (
-          <p className="board-none">Nothing at {campusName} yet.</p>
+          <p className="board-none">
+            Nothing {online ? "on" : "at"} {campusName} yet.
+          </p>
         )}
       </BoardSection>
       {split.others.length > 0 && (
