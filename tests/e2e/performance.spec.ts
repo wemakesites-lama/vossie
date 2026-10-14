@@ -63,3 +63,36 @@ for (const [name, path, saved] of PAGES) {
     expect(bytes.total, "whole first visit").toBeLessThanOrEqual(350 * 1024);
   });
 }
+
+test("a first visit to the account page, signed in, stays inside the JavaScript budget", async ({
+  page,
+  context,
+  browser,
+  baseURL,
+}) => {
+  test.skip(test.info().project.name !== "phone-390", "Measured once, at phone size");
+  // Sign in in a separate browser context, and copy only the session cookie across, so nothing here is cached yet.
+  const other = await browser.newContext();
+  const signingIn = await other.newPage();
+  await signingIn.goto(`${baseURL}/login`);
+  await signingIn.locator("main").getByRole("button", { name: "Student, Midrand", exact: true }).click();
+  await signingIn.waitForURL(/\/account$/);
+  await context.addCookies((await other.cookies()).filter((cookie) => cookie.name === "vossie_session"));
+  await other.close();
+
+  let scriptBrotli = 0;
+  const pending: Array<Promise<void>> = [];
+  page.on("response", (response) => {
+    if (response.request().resourceType() !== "script") return;
+    pending.push(
+      response.body().then((body) => {
+        scriptBrotli += brotliCompressSync(body, { params: { [constants.BROTLI_PARAM_QUALITY]: 5 } }).length;
+      }),
+    );
+  });
+  await page.goto("/account", { waitUntil: "networkidle" });
+  await expect(page.getByRole("heading", { level: 2, name: "Thandi" })).toBeVisible();
+  await Promise.all(pending);
+  console.log(`account page (signed in): ${JSON.stringify({ scriptBrotli })}`);
+  expect(scriptBrotli, "JavaScript, brotli as a host serves it").toBeLessThanOrEqual(150 * 1024);
+});

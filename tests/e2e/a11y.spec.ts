@@ -241,3 +241,86 @@ test("a Hub tip", async ({ page }) => {
   await expect(page.locator(".hub-post-body").getByRole("heading", { level: 2 }).first()).toBeVisible();
   expect(await seriousIssues(page)).toEqual([]);
 });
+
+// --- Sign-in and accounts (accounts plan, Task 14) ---------------------------------------------------------------
+
+/** A new address for each test: every test shares one server and one sample store. */
+const newEmail = () =>
+  `a11y-${test.info().project.name}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}@eduvos.com`;
+
+/** Signs in with a sample account's button (accounts spec 2.8). It lands on /account. */
+async function signInAsSample(page: Page, label = "Student, Midrand") {
+  await page.goto("/login");
+  await page.locator("main").getByRole("button", { name: label, exact: true }).click();
+  await expect(page).toHaveURL(/\/account$/);
+}
+
+/** Step 1 with a new address, ending on step 2. */
+async function toStep2(page: Page) {
+  await page.goto("/login");
+  await page.getByLabel("Your Eduvos email address", { exact: true }).fill(newEmail());
+  await page.getByLabel("I agree to the privacy policy", { exact: true }).check();
+  await page.locator("main").getByRole("button", { name: "Send code", exact: true }).click();
+  await expect(page.getByLabel("6-digit code", { exact: true })).toBeVisible();
+}
+
+test("sign in, step 1, with the sample accounts", async ({ page }) => {
+  await page.goto("/login?next=%2Flistings%2Fl-001");
+  await expect(page.getByRole("heading", { level: 2, name: "Sign in as a sample account" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("sign in, step 1, with errors", async ({ page }) => {
+  await page.goto("/login");
+  await page.locator("main").getByRole("button", { name: "Send code", exact: true }).click();
+  await expect(page.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("sign in, step 2, with the sample code and a wrong code", async ({ page }) => {
+  await toStep2(page);
+  const code = (await page.locator("main .signin-sample-code strong").textContent()) ?? "";
+  await page.getByLabel("6-digit code", { exact: true }).fill(code === "111111" ? "222222" : "111111");
+  await page.locator("main").getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("sign in, step 3", async ({ page }) => {
+  await toStep2(page);
+  const code = (await page.locator("main .signin-sample-code strong").textContent()) ?? "";
+  await page.getByLabel("6-digit code", { exact: true }).fill(code);
+  await page.locator("main").getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByLabel("Your first name", { exact: true })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("the sign-in page when signed in already", async ({ page }) => {
+  await signInAsSample(page);
+  await page.goto("/login?next=%2Fsellers%2Ftech-corner");
+  await expect(page.getByText(/You're signed in as/)).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("your account, after a save that went wrong", async ({ page }) => {
+  await signInAsSample(page);
+  await page.getByLabel("Your first name", { exact: true }).fill("T");
+  await page.locator("main").getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(page.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("privacy settings, with the box missed", async ({ page }) => {
+  await signInAsSample(page);
+  await page.goto("/account/privacy");
+  await page.locator("main").getByRole("button", { name: "Delete my account", exact: true }).click();
+  await expect(page.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("the menu, signed in", async ({ page }) => {
+  await signInAsSample(page);
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Menu" }).getByRole("button", { name: "Sign out" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});

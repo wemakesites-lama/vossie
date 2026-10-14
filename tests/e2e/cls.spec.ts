@@ -6,8 +6,10 @@ type Shift = { value: number; nodes: string[] };
 // results fall, so those pages are measured with one chosen too. Midrand has results; Mbombela has none. Saved reads
 // the `vossie_saved` cookie, so it's measured with listings saved and with none. The Looking For board reads the campus
 // cookie too; Mbombela has no requests of its own. A Hub event's and office hours' action streams in, so both are
-// measured.
-const PAGES: ReadonlyArray<[name: string, path: string, cookies?: Readonly<Record<string, string>>]> = [
+// measured. Account pages are measured signed in, with a sample account.
+const PAGES: ReadonlyArray<
+  [name: string, path: string, cookies?: Readonly<Record<string, string>>, signedIn?: boolean]
+> = [
   ["homepage", "/"],
   ["browse page", "/browse"],
   ["listing page", "/listings/l-001"],
@@ -28,9 +30,12 @@ const PAGES: ReadonlyArray<[name: string, path: string, cookies?: Readonly<Recor
   ["Hub event", "/hub/h-001"],
   ["Hub office hours", "/hub/h-002"],
   ["Hub tip", "/hub/h-013"],
+  ["sign-in page", "/login"],
+  ["account page", "/account", undefined, true],
+  ["privacy settings page", "/account/privacy", undefined, true],
 ];
 
-for (const [name, path, cookies] of PAGES) {
+for (const [name, path, cookies, signedIn] of PAGES) {
   test(`the ${name} holds still while fonts and content arrive (CLS 0.05 or less, spec 11)`, async ({
     page,
     context,
@@ -39,6 +44,12 @@ for (const [name, path, cookies] of PAGES) {
     test.skip(!["phone-390", "desktop-1440"].includes(test.info().project.name), "Measured at 390 and 1440");
     if (cookies) {
       await context.addCookies(Object.entries(cookies).map(([cookie, value]) => ({ name: cookie, value, url: baseURL! })));
+    }
+    if (signedIn) {
+      // Signed in with a sample account's button first. The measure below is a fresh page load, so only it counts.
+      await page.goto("/login");
+      await page.locator("main").getByRole("button", { name: "Student, Midrand", exact: true }).click();
+      await page.waitForURL(/\/account$/);
     }
 
     // Hold the fonts back, so they swap in after first paint: the worst case for shifts.
