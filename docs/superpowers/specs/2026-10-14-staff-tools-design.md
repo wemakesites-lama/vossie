@@ -133,3 +133,18 @@ No client code beyond the shell. Staff pages aren't in the public budget, but ea
 ## 7. Not in this stage
 
 Scheduled jobs (go-live), email to staff, staff accounts management beyond the seeded ones, and analytics.
+
+## 8. Changes on plan review (2026-10-14)
+
+The plan (`docs/superpowers/plans/2026-10-14-staff-tools.md`, with its amendments) refines these points; where they differ, these win. Claude, under decision 54.
+
+1. **Staff pages show the 404 from inside the page,** with status 200 and `noindex`, so the tab says "Page not found" to anyone else. Every action and the CSV route check the role on the server. A true 404 status needs a role check before rendering (a proxy) once sessions are in a real database: a go-live item.
+2. **A declined shop stays waiting,** with the Hub's reason. The seller presses **Send for approval again**, and the shop shows when it was sent again.
+3. **Only the Hub can resume a pause it made.** Sample shops with no owner can't be paused.
+4. **A hidden listing has no way to be shown again** in this stage.
+5. **Hiding or pausing closes every open report on that target.** Reports about requests, or about something deleted, can only be dismissed until stage H adds Hide the request (community actions spec decision 14).
+6. **Two more notification kinds:** other decisions about a shop or listing, and slot requests (to the post's author).
+7. **Badges are worked out only for shops with an owner account.** Overview recalculates them as it renders; buyers see the change within 15 minutes or at the next write.
+8. **Featured's week's break is a preference.** Featured records each campus's row per day. A featured seller sits out for a week when there are enough other Verified sellers to fill the row; otherwise resting sellers fill it after everyone else, so the row never runs empty.
+9. **Pickup points and Hub posts move into the store.** Retiring a pickup point has **Use it again** to undo it, and no new listing can use a retired point.
+10. **Mentors' notes are about the shop's owner** and aren't in the seller's data download; the seller can ask the Information Officer for them. Deleting a student removes their slot requests, and the notifications that named them.

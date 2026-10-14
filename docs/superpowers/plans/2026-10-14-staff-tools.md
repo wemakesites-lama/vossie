@@ -124,7 +124,47 @@ Lama can veto any of these at plan review. In this plan, "plan decision N" means
 
 ## Amendments on review
 
-(Empty. The controller adds amendments here; they override the tasks below wherever they differ.)
+The controller adds amendments here; they override the tasks below wherever they differ. Amendments 1 to 10 come from the plan review (2026-10-14), decided by Claude under decision 54.
+
+1. **Error summary ids** (messaging plan amendment 1). Each task that adds a form with an `ErrorSummary` also adds it to `components/forms/summary-ids.test.tsx`, rendered with one error beside the forms already there, so its "no id repeats" check covers it:
+   - Task 9: `ConfirmAction` (one confirm page);
+   - Task 11: `SellerConfirm` for decline and for pause;
+   - Task 12: `AdminReport`'s Dismiss form, and `ReportConfirm` for hide and for pause;
+   - Task 13: `AdminFeatured`'s pin form, and `AdminPickupPoints` with an add error and a rename error;
+   - Task 14: `PostEditor` for a new post and for an edit;
+   - Task 15: `BookSlotView`;
+   - Task 16: `MentorShop`'s note and check-in forms.
+
+   Mock `@/lib/staff/admin-actions`, `@/lib/staff/hub-actions`, `@/lib/staff/mentor-actions` and `@/lib/hub-actions` the way the file already mocks `@/lib/auth/actions`.
+2. **POPIA: a deleted student's name leaves mentors' notifications.**
+   - **Task 8, `lib/data/staff-privacy.ts`:** in `forgetAccountInStaffTools`, collect the ids of the account's slot requests as they're deleted (`goneBookings`). Then delete every `store.notifications` row with `kind === "booking"` whose `subjectId` is in `goneBookings`. The author's "{name} asked for a slot" names the student; messaging plan decision 14's rule is that a deleted person's name leaves other people's notifications. The module still imports only the store.
+   - **Task 8, `staff-privacy.test.ts`:** in "deletes a student's RSVPs and slot requests…", first add a `booking` notification for `acc-mentor` with `subjectId: "bk-s1"`. Then expect it gone after `forgetAccountInStaffTools("acc-student")`.
+3. **Featured's week's break is a preference, not a rule** (softens spec 2.8; see the spec's section 8). There are 9 eligible sample sellers for 4 places, so a strict break empties every campus's row for four days of each week.
+   - **Task 3:** `drawFeatured` appends `rotate` of the resting, unpinned sellers after `drawn` (own campus first, as for the rest), then slices to `count`.
+   - **Task 3's test:** "leaves resting sellers out of the draw…" becomes "draws resting sellers only after everyone else". With `resting: {a, c}`, b, d and f come first, and a and c after them. A pinned resting seller is still first.
+   - **Task 6's test:** "rests a campus's sellers…" still expects day 2 to share no seller with day 1. Days 3 and 4 have 4 sellers each, and day 3's first is the one seller shown on neither day. Drop the `toEqual([])` and the 2026-10-21 expectation.
+   - **Plan decision 9:** drop its bold sentence.
+   - **Task 19:** the trust page's bullet becomes "A seller who has been featured sits out for a week when there are enough other Verified sellers to fill the row."
+4. **Task 8 Step 1, the account export test.** Do both checks: add `"hubRsvps", "slotRequests"` at the end of the `Object.keys` list, and destructure them beside E's (and F's) keys, then expect each to equal `[]`.
+5. **No new listing on a retired pickup point.** Task 6 also modifies F's `lib/selling/listing-actions.ts`, building `pickupPointIds` from the shop's points that are in use: `const inUse = new Set((await getPickupPoints()).map((p) => p.id)); … pickupPointIds: owner.shop.pickupPointIds.filter((id) => inUse.has(id))`. A listing already on a retired point keeps it until its seller saves it; then they choose a point in use.
+6. **A re-sent shop shows when it was sent again.** Task 4: `OwnStanding` gains `appliedAt` from the profile. Task 18: pass `sentAt={standing?.appliedAt ?? own.shop.createdAt}`.
+7. **Room for stage H's Hide the request** (community actions spec decision 14).
+   - **Plan decision 5 adds:** "Stage H adds Hide the request on the same confirm page (`/admin/reports/[id]/hide`). It reuses `closeReportsOn(…, "hidden", …)`, `ReportOutcome` `"hidden"` and the reporters' `report-handled` notification, so these stay target-generic."
+   - **Task 5's `toView`:** works out `can.hide` with a `switch (row.targetKind)`: `listing` as now, `seller` false, `request` false with the comment "stage H".
+   - **Task 12's `ReportConfirm`:** its hide branch also checks `report.target.kind === "listing"`, so H can add a request branch with its own words and action. Don't rename `hideReportedListing`.
+8. **The reporter's notification** (Task 10, `tellReporter`) links to `/account/privacy#account-privacy-reports-title`, the heading of E's "Reports you've made".
+9. **Metadata that reads the session.** The staff pages' `generateMetadata` reads the session outside `<Suspense>`. Next streams metadata when the page's own content is request-time (`03-api-reference/04-functions/generate-metadata.md`, "With Cache Components"), and `/browse` already does this.
+   - **Task 22:** CLAUDE.md's Code rules gain, after the Suspense rule: "`generateMetadata` may read the session or `searchParams` when the page's own content is request-time inside `<Suspense>`: Next streams the metadata (staff pages and `/browse` do this)."
+   - **Task 11 Step 9:** the build also shows no "runtime data in generateMetadata()" error.
+10. **Kept as the drafter chose:**
+    - Tech corner's badge drops to New seller once Overview recalculates; no third sample enquiry is seeded, since E's fixtures are built and their fixed dates leave the 90-day window anyway.
+    - A dismissal's note is required.
+    - The audit log records that a note was added, never its words.
+    - Mentors see only their own posts in `/hub/manage`.
+    - `/admin/featured` records the day's rows early.
+    - Staff pages show the 404 from inside the page, with status 200, in sample mode; the proxy check is a go-live item.
+
+    Task 22 lists for Lama that a deleted sample staff account, signed in again by its button, doesn't get back Sipho's mentor assignment or Naledi's authorship of h-002, h-007 and h-012.
 
 ## Store design
 
