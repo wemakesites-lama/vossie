@@ -16,7 +16,7 @@ describe("messaging's error words (messaging spec 3.1 and 3.4, plan decision 26)
 
   it("leaves the report limit unlinked, and drops codes it doesn't know", () => {
     expect(messagingErrors(["report-rate", "nonsense", "toString"], REPORT_FIELDS)).toEqual([
-      { message: "You've sent 10 reports today. Try again tomorrow.", fieldId: null },
+      { message: "You've sent 10 reports in the last 24 hours. Try again later.", fieldId: null },
     ]);
   });
 });

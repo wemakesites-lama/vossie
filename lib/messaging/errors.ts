@@ -18,7 +18,10 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
   ["swap-length", { message: "Keep your swap offer under 200 characters.", field: "swapOffer" }],
   ["reason-missing", { message: "Choose a reason.", field: "reason" }],
   ["detail-length", { message: "Keep it under 500 characters.", field: "detail" }],
-  ["report-rate", { message: `You've sent ${REPORTS_PER_DAY} reports today. Try again tomorrow.`, field: "none" }],
+  [
+    "report-rate",
+    { message: `You've sent ${REPORTS_PER_DAY} reports in the last 24 hours. Try again later.`, field: "none" },
+  ],
 ]);
 
 /** The words for a form's error codes, in order, each linked to its field's id when the form has that field. */

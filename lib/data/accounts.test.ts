@@ -140,7 +140,9 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
   it("holds the account, its consent, and when its sessions started and end, with no ids", async () => {
     await createSession({ key: "session-key-1", accountId: "acc-seller", createdAt: NOW, expiresAt: IN_30_DAYS });
     const data = await exportAccountData("acc-seller", NOW);
-    expect(data).toMatchObject({
+    // Messaging adds three keys (messaging plan decision 15), checked below; everything else is compared in full.
+    const { conversations, reports, notifications, ...rest } = data!;
+    expect(rest).toEqual({
       exportedAt: NOW.toISOString(),
       account: {
         email: "seller@eduvos.com",
@@ -153,7 +155,7 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
       consents: [{ policy: "2026-10-draft", agreedAt: "2026-10-14T08:00:00.000Z" }],
       sessions: [{ signedInAt: NOW.toISOString(), expiresAt: IN_30_DAYS.toISOString() }],
     });
-    // Messaging adds three keys (messaging plan decision 15): the sample seller has two conversations with Thandi.
+    // The sample seller has two conversations with Thandi.
     expect(Object.keys(data!)).toEqual([
       "exportedAt",
       "account",
@@ -163,15 +165,30 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
       "reports",
       "notifications",
     ]);
-    expect(data!.conversations.map((row) => [row.with, row.about])).toEqual([
+    expect(conversations.map((row) => [row.with, row.about])).toEqual([
       ["Thandi", "Casio fx-991ZA Plus calculator"],
       ["Thandi", "Gaming headset, barely used"],
     ]);
-    expect(data!.reports).toEqual([]);
-    expect(data!.notifications).toHaveLength(2);
+    expect(reports).toEqual([]);
+    expect(notifications).toHaveLength(2);
     const text = JSON.stringify(data);
     expect(text).not.toContain("session-key-1");
     expect(text).not.toContain("acc-seller");
+  });
+
+  it("settles the 7-day auto-confirm first, so a sale that has confirmed itself exports as confirmed (messaging plan amendment 3, fix 10)", async () => {
+    const afterTheSevenDays = new Date("2026-10-21T10:00:00.000Z");
+    const data = await exportAccountData("acc-student", afterTheSevenDays);
+    expect(data!.exportedAt).toBe(afterTheSevenDays.toISOString());
+    expect(data!.conversations.map((row) => [row.about, row.status])).toEqual([
+      ["Casio fx-991ZA Plus calculator", "confirmed"],
+      ["Gaming headset, barely used", "replied"],
+    ]);
+    // Settling the sale reads its "did the sale happen?" notification, and that happens before the notifications go in.
+    expect(data!.notifications).toMatchObject([
+      { text: "Tech corner marked Casio fx-991ZA Plus calculator as done. Did the sale happen?", read: true },
+      { text: "Tech corner replied about Gaming headset, barely used", read: false },
+    ]);
   });
 
   it("has nothing for an account that doesn't exist", async () => {

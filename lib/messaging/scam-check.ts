@@ -21,13 +21,22 @@ export const SCAM_TIPS: ReadonlyMap<ScamWarning, string> = new Map([
 
 // What each warning looks for, in lower case. Words match whole (\b), so "decode" isn't "code" and "pinout" isn't
 // "pin". A false alarm costs one tap on Send anyway; a missed scam costs more.
+//
+// Paying in advance is a payment word followed, in the same sentence, by "first", "before", "upfront", "in advance"
+// or by the seller saying they'll send it afterwards ("Transfer the money and I'll post it"); "upfront", "prepay" and
+// "eWallet" count on their own. "I'll pay cash when I see it." has none of these.
+const PAYING = "pay|paying|payment|send (?:the )?money|transfer|cash ?send|eft";
+const BEFORE = "first|before|upfront|up front|in advance";
+const THEN_I_SEND = "and (?:i[’']?ll|i will|then i) (?:post|send|ship|courier|deliver)";
+const ON_ITS_OWN = "upfront|up-front|prepay|pre-pay|e-?wallet";
+const ADVANCE = new RegExp(`\\b(?:${PAYING})\\b[^.!?\\n]{0,40}\\b(?:${BEFORE}|${THEN_I_SEND})\\b|\\b(?:${ON_ITS_OWN})\\b`);
 const PATTERNS: ReadonlyArray<readonly [ScamWarning, RegExp]> = [
-  [
-    "advance",
-    /\b(pay|paying|payment|send (the )?money|e-?wallet|eft)\b[^.!?\n]{0,40}\b(first|upfront|up front|in advance)\b|\b(upfront|up-front|prepay|pre-pay)\b/,
-  ],
+  ["advance", ADVANCE],
   ["deposit", /\b(deposits?|booking fees?|holding fees?)\b/],
-  ["bank", /\b(bank(ing)? details|account number|acc(ount)? (no|num)|branch code|card number|cvv|pin)\b/],
+  [
+    "bank",
+    /\b(bank(ing)? details|bank acc(ounts?)?|account number|acc(ount)? (no|num)|branch code|card number|cvv|pin)\b/,
+  ],
   ["courier", /\b(courier|paxi|pudo|postnet|delivery fee|shipping)\b/],
   ["code", /\b(otp|one[- ]time (pin|password|code)|verification code|(send|share|give|forward) (me )?(the|your|that) code)\b/],
 ];

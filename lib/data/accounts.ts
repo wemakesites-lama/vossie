@@ -173,11 +173,10 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
     .sort((a, b) => Date.parse(a.agreedAt) - Date.parse(b.agreedAt))
     .map((row) => ({ policy: row.version, agreedAt: row.agreedAt }));
   const sessions = (await listSessions(accountId)).map((row) => ({ signedInAt: row.createdAt, expiresAt: row.expiresAt }));
-  const [conversations, reports, notifications] = await Promise.all([
-    exportConversations(accountId),
-    exportReports(accountId),
-    exportNotifications(accountId),
-  ]);
+  // Conversations first: exporting them settles any sale that has confirmed itself (messaging plan amendment 3), which
+  // reads that sale's notification, and the notifications must be read after that.
+  const conversations = await exportConversations(accountId, now);
+  const [reports, notifications] = await Promise.all([exportReports(accountId), exportNotifications(accountId)]);
   return {
     exportedAt: now.toISOString(),
     account: {

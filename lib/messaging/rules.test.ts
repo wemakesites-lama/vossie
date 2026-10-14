@@ -22,6 +22,22 @@ describe("clean text (messaging spec 2.12, plan decision 29)", () => {
     expect(cleanText("<b>hi</b> javascript:alert(1)")).toBe("<b>hi</b> javascript:alert(1)");
   });
 
+  it("drops direction-changing and invisible characters (messaging plan amendment 3, fix 5)", () => {
+    expect(cleanText("Hi‮ there​!‎‏⁠﻿⁦⁩‪")).toBe("Hi there!");
+    for (const code of [0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069]) {
+      expect(cleanText(`a${String.fromCodePoint(code)}b`), code.toString(16)).toBe("ab");
+    }
+    for (const code of [0x200b, 0x200e, 0x200f, 0x2060, 0xfeff]) {
+      expect(cleanText(`a${String.fromCodePoint(code)}b`), code.toString(16)).toBe("ab");
+    }
+  });
+
+  it("keeps the zero-width joiner, which emoji sequences need", () => {
+    const family = "👨‍👩‍👧";
+    expect(cleanText(`${family} ok`)).toBe(`${family} ok`);
+    expect(cleanText("a‍b")).toBe("a‍b");
+  });
+
   it("counts each letter or emoji once, where a string's length counts an emoji twice", () => {
     expect(characterCount("Hi 👍")).toBe(4);
     expect("Hi 👍".length).toBe(5);
@@ -31,6 +47,8 @@ describe("clean text (messaging spec 2.12, plan decision 29)", () => {
 describe("messages, swap offers and report detail (FUNCTION-MAP section 6)", () => {
   it("asks for a message, and takes up to 1,000 characters", () => {
     expect(checkMessage(" \n ")).toEqual({ value: "", error: "message-missing" });
+    // Only invisible characters is nothing at all (messaging plan amendment 3, fix 5).
+    expect(checkMessage("​‮ ⁠﻿\n‏")).toEqual({ value: "", error: "message-missing" });
     expect(checkMessage("a".repeat(1000)).error).toBeNull();
     expect(checkMessage("a".repeat(1001))).toEqual({ value: "a".repeat(1001), error: "message-length" });
     expect(checkMessage(` ${"😀".repeat(1000)} `).error).toBeNull();

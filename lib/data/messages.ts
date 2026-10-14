@@ -16,6 +16,7 @@ import {
   countNewNotifications,
   deleteNotifications,
   markConversationNotificationsRead,
+  markSaleNotificationsRead,
   notify,
   notifyAboutMessage,
 } from "./notifications";
@@ -59,14 +60,18 @@ function messagesOf(conversationId: string): MessageRow[] {
     .sort((a, b) => Date.parse(a.sentAt) - Date.parse(b.sentAt));
 }
 
-/** A sale marked done confirms itself 7 days later (spec 2.5). There's no job runner, so every read checks. */
-function settle(row: ConversationRow, now: Date): void {
+/**
+ * A sale marked done confirms itself 7 days later (spec 2.5). There's no job runner, so every read checks. The buyer's
+ * "sale to confirm" notification is read with it (messaging plan amendment 3).
+ */
+async function settle(row: ConversationRow, now: Date): Promise<void> {
   if (row.status !== "done" || !row.completedAt) return;
   const due = autoConfirmAt(row.completedAt);
   if (Date.parse(due) > now.getTime()) return;
   row.status = "confirmed";
   row.confirmedAt = due;
   row.confirmedBy = "auto";
+  if (row.buyerId) await markSaleNotificationsRead(row.buyerId, row.id, now);
 }
 
 /** The buyer as the seller sees them: their first name (spec 2.11), never their email. */
@@ -101,10 +106,15 @@ function addMessage(row: ConversationRow, from: Side, body: string, swapOffer: s
   row.lastMessageAt = now.toISOString();
 }
 
-/** Tells the other side about a message (plan decision 12). A shop with no owner yet has no one to tell. */
-async function tellOtherSide(row: ConversationRow, from: Side, first: boolean, now: Date): Promise<void> {
+/**
+ * Tells the other side about a message (plan decision 12: one unread message notification per conversation per
+ * person). A buyer is still "asking" until someone has replied, so their second message before a reply says "asked"
+ * too (messaging plan amendment 3). A shop with no owner yet has no one to tell.
+ */
+async function tellOtherSide(row: ConversationRow, from: Side, now: Date): Promise<void> {
   const to = from === "buyer" ? (row.sellerGone ? null : shopOwnerId(row.sellerSlug)) : row.buyerId;
   if (!to) return;
+  const first = from === "buyer" && row.status === "asked";
   const sender = from === "buyer" ? buyerName(row) : (await shopOf(row.sellerSlug)).name;
   await notifyAboutMessage({
     accountId: to,
@@ -151,7 +161,7 @@ export async function startConversation(input: NewConversation): Promise<{ conve
   const existing = findRow(input.buyerId, target);
   if (existing) {
     addMessage(existing, "buyer", input.body, input.swapOffer, input.now);
-    await tellOtherSide(existing, "buyer", false, input.now);
+    await tellOtherSide(existing, "buyer", input.now);
     return { conversationId: existing.id, created: false };
   }
   const at = input.now.toISOString();
@@ -172,7 +182,7 @@ export async function startConversation(input: NewConversation): Promise<{ conve
   };
   sampleStore().conversations.set(row.id, row);
   addMessage(row, "buyer", input.body, input.swapOffer, input.now);
-  await tellOtherSide(row, "buyer", true, input.now);
+  await tellOtherSide(row, "buyer", input.now);
   return { conversationId: row.id, created: true };
 }
 
@@ -198,13 +208,13 @@ export async function sendMessage({
   const side = row ? sideOf(row, accountId) : null;
   if (!row || !side) return "not-found";
   if (!otherSideThere(row, side)) return "closed";
-  settle(row, now);
+  await settle(row, now);
   addMessage(row, side, body, null, now);
   if (side === "seller") {
     if (row.status === "asked") row.status = "replied";
     row.firstReplyAt ??= now.toISOString();
   }
-  await tellOtherSide(row, side, false, now);
+  await tellOtherSide(row, side, now);
   return "sent";
 }
 
@@ -213,48 +223,51 @@ export type SaleResult = "done" | "not-allowed";
 type SaleChange = { conversationId: string; accountId: string; now: Date };
 
 /** The conversation, settled, when `accountId` is on `side` of it and it's `status`; otherwise null (plan decision 30). */
-function saleRow({ conversationId, accountId, now }: SaleChange, side: Side, status: ConversationStatus) {
+async function saleRow({ conversationId, accountId, now }: SaleChange, side: Side, status: ConversationStatus) {
   const row = sampleStore().conversations.get(conversationId);
   if (!row || sideOf(row, accountId) !== side) return null;
-  settle(row, now);
+  await settle(row, now);
   return row.status === status ? row : null;
 }
 
-/** The seller's Mark as completed (spec 2.5): Replied becomes Done, and the buyer is asked to confirm. */
+/**
+ * The seller's Mark as completed (spec 2.5): Replied becomes Done, and the buyer is asked to confirm. Not when the
+ * buyer has left: nobody could dispute it, so it wouldn't count (messaging plan amendment 3).
+ */
 export async function markCompleted(change: SaleChange): Promise<SaleResult> {
-  const row = saleRow(change, "seller", "replied");
-  if (!row) return "not-allowed";
+  const row = await saleRow(change, "seller", "replied");
+  if (!row || !row.buyerId) return "not-allowed";
   row.status = "done";
   row.completedAt = change.now.toISOString();
-  if (row.buyerId) {
-    await notify({
-      accountId: row.buyerId,
-      kind: "sale-to-confirm",
-      subjectId: row.id,
-      text: saleNoteText({ shop: (await shopOf(row.sellerSlug)).name, listingTitle: row.listingTitle }),
-      href: threadPath(row.id),
-      now: change.now,
-    });
-  }
+  await notify({
+    accountId: row.buyerId,
+    kind: "sale-to-confirm",
+    subjectId: row.id,
+    text: saleNoteText({ shop: (await shopOf(row.sellerSlug)).name, listingTitle: row.listingTitle }),
+    href: threadPath(row.id),
+    now: change.now,
+  });
   return "done";
 }
 
-/** The buyer's Confirm the sale (spec 2.5): Done becomes Confirmed. */
+/** The buyer's Confirm the sale (spec 2.5): Done becomes Confirmed, and the sale to confirm is read. */
 export async function confirmSale(change: SaleChange): Promise<SaleResult> {
-  const row = saleRow(change, "buyer", "done");
+  const row = await saleRow(change, "buyer", "done");
   if (!row) return "not-allowed";
   row.status = "confirmed";
   row.confirmedAt = change.now.toISOString();
   row.confirmedBy = "buyer";
+  await markSaleNotificationsRead(change.accountId, row.id, change.now);
   return "done";
 }
 
-/** The buyer's It didn't happen (spec 2.5): back to Replied, and the completion doesn't count. */
+/** The buyer's It didn't happen (spec 2.5): back to Replied, no completion counted, and the sale to confirm is read. */
 export async function rejectSale(change: SaleChange): Promise<SaleResult> {
-  const row = saleRow(change, "buyer", "done");
+  const row = await saleRow(change, "buyer", "done");
   if (!row) return "not-allowed";
   row.status = "replied";
   row.completedAt = null;
+  await markSaleNotificationsRead(change.accountId, row.id, change.now);
   return "done";
 }
 
@@ -269,7 +282,7 @@ export async function getInbox(accountId: string, tab: InboxTab, now: Date): Pro
   const rows = [...sampleStore().conversations.values()]
     .filter((row) => sideOf(row, accountId) === side)
     .sort((a, b) => Date.parse(b.lastMessageAt) - Date.parse(a.lastMessageAt));
-  for (const row of rows) settle(row, now);
+  for (const row of rows) await settle(row, now);
   const listingIds = unique(rows.flatMap((row) => (row.listingId ? [row.listingId] : [])));
   const [listings, shops] = await Promise.all([
     getListingsByIds(listingIds),
@@ -302,7 +315,7 @@ export async function getThread(id: string, accountId: string, now: Date): Promi
   const row = sampleStore().conversations.get(id);
   const side = row ? sideOf(row, accountId) : null;
   if (!row || !side) return null;
-  settle(row, now);
+  await settle(row, now);
   const [detail, shop] = await Promise.all([
     row.listingId ? getListingDetail(row.listingId) : Promise.resolve(null),
     shopOf(row.sellerSlug),
@@ -352,7 +365,7 @@ export async function unreadCounts(accountId: string, now: Date): Promise<Unread
   for (const row of sampleStore().conversations.values()) {
     const side = sideOf(row, accountId);
     if (!side) continue;
-    settle(row, now);
+    await settle(row, now);
     const unread = messagesOf(row.id).filter((message) => message.from !== side && message.readAt === null).length;
     messages += unread;
     if (unread > 0) conversations += 1;
@@ -366,6 +379,10 @@ export async function unreadCounts(accountId: string, now: Date): Promise<Unread
  * that side's own messages, unless the other side has gone too or nothing is left in it, when it goes. The
  * conversation's times stay, for the trust badges. Notifications about those conversations go, since they name the
  * account. `shopSlug` is the account's storefront, if it has one.
+ *
+ * Two more things follow from the person having left (messaging plan amendment 3). The other side's remaining
+ * messages are no longer read: their `readAt` was when the deleted person read them. And a sale waiting for a deleted
+ * buyer goes back to Replied, with its completion forgotten, so nobody has to confirm it and it never confirms itself.
  */
 export async function forgetAccountInMessaging(accountId: string, shopSlug: string | null): Promise<void> {
   const { conversations, messages } = sampleStore();
@@ -376,10 +393,19 @@ export async function forgetAccountInMessaging(accountId: string, shopSlug: stri
     if (!side) continue;
     touched.add(row.id);
     for (const [id, message] of messages) {
-      if (message.conversationId === row.id && message.from === side) messages.delete(id);
+      if (message.conversationId !== row.id) continue;
+      if (message.from === side) messages.delete(id);
+      else message.readAt = null;
     }
-    if (side === "buyer") row.buyerId = null;
-    else row.sellerGone = true;
+    if (side === "buyer") {
+      row.buyerId = null;
+      if (row.status === "done") {
+        row.status = "replied";
+        row.completedAt = null;
+      }
+    } else {
+      row.sellerGone = true;
+    }
   }
   for (const id of touched) {
     const row = conversations.get(id)!;
@@ -403,10 +429,16 @@ export type ConversationExport = {
   messages: { from: "you" | "them"; text: string; swapOffer: string | null; sentAt: string }[];
 };
 
-export async function exportConversations(accountId: string): Promise<ConversationExport[]> {
+/**
+ * The account's conversations for its data export, oldest first. A sale that has confirmed itself is settled first, so
+ * the export never says "done" for it (messaging plan amendment 3); that also reads its "sale to confirm" notification,
+ * so export the notifications after this.
+ */
+export async function exportConversations(accountId: string, now: Date): Promise<ConversationExport[]> {
   const rows = [...sampleStore().conversations.values()]
     .filter((row) => sideOf(row, accountId) !== null)
     .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+  for (const row of rows) await settle(row, now);
   return Promise.all(
     rows.map(async (row) => {
       const side = sideOf(row, accountId)!;

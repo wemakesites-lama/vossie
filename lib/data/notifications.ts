@@ -5,7 +5,9 @@ import { sampleStore } from "./store";
 
 // Notifications (messaging spec 2.9 and 3.5; plan decisions 12 and 13): one row per thing that needs an account's
 // attention, its sentence and link fixed when it's made. Server Actions make them (only they make ids); pages read
-// them and mark them read. Times come from the caller.
+// them and mark them read. Times come from the caller. A busy conversation keeps one unread *message* notification
+// per person (plan decision 12); a sale to confirm is its own notification, read once the sale is settled (messaging
+// plan amendment 3).
 
 type NewNotification = {
   accountId: string;
@@ -36,9 +38,9 @@ export async function notify(notification: NewNotification): Promise<void> {
 }
 
 /**
- * Tells `accountId` about a message in a conversation (plan decision 12). While the last such notification is
- * unread, it's brought up to date (its sentence and time) rather than a second one added, so a busy thread doesn't
- * flood the list.
+ * Tells `accountId` about a message in a conversation (plan decision 12). While the last such *message*
+ * notification is unread, it's brought up to date (its sentence and time) rather than a second one added, so a busy
+ * thread doesn't flood the list. Other kinds, a sale to confirm among them, are never folded into it.
  */
 export async function notifyAboutMessage({
   accountId,
@@ -92,6 +94,24 @@ export async function countNewNotifications(accountId: string): Promise<number> 
 export async function markNotificationsRead(accountId: string, now: Date): Promise<void> {
   for (const row of sampleStore().notifications.values()) {
     if (row.accountId === accountId && row.readAt === null) row.readAt = now.toISOString();
+  }
+}
+
+/**
+ * A sale is settled, by the buyer saying yes or no or by the 7 days passing: the buyer's "sale to confirm"
+ * notification for that conversation is read, whether or not they opened it (messaging plan amendment 3). Message
+ * notifications are left as they are.
+ */
+export async function markSaleNotificationsRead(accountId: string, conversationId: string, now: Date): Promise<void> {
+  for (const row of sampleStore().notifications.values()) {
+    if (
+      row.accountId === accountId &&
+      row.kind === "sale-to-confirm" &&
+      row.subjectId === conversationId &&
+      row.readAt === null
+    ) {
+      row.readAt = now.toISOString();
+    }
   }
 }
 

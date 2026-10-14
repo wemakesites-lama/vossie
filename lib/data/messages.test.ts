@@ -111,6 +111,10 @@ describe("starting a conversation (messaging spec 2.1, 2.2 and 2.4)", () => {
     expect(second).toEqual({ conversationId: first.conversationId, created: false });
     expect(await findConversation(buyer.id, { kind: "shop", sellerSlug: "tech-corner" })).toBe(first.conversationId);
     expect(await findConversation(buyer.id, { kind: "listing", listingId: "l-001" })).toBeNull();
+    // Nobody has replied yet, so the second question is still a question (messaging plan amendment 3, fix 4).
+    expect((await getNotifications("acc-seller", 50))[0].text).toBe("Ayanda asked your shop a question");
+    await sendMessage({ conversationId: first.conversationId, accountId: "acc-seller", body: "Yes we do.", now: later(1) });
+    await startConversation({ ...question, body: "And batteries?", now: later(2) });
     expect((await getNotifications("acc-seller", 50))[0].text).toBe("Ayanda replied");
   });
 
@@ -145,6 +149,27 @@ describe("replies and the sale's status (messaging spec 2.5, plan decision 30)",
     expect(await getNotifications(buyer.id, 50)).toMatchObject([
       { text: "Tech corner replied about Casio fx-991ZA Plus calculator", isNew: true, createdAt: later(40).toISOString() },
     ]);
+  });
+
+  it("says the buyer \"asked\" until someone has replied, then \"replied\" (messaging plan amendment 3, fix 4)", async () => {
+    const { buyer, conversationId } = await ayandaAsks();
+    await sendMessage({ conversationId, accountId: buyer.id, body: "Anyone there?", now: later(1) });
+    expect((await getNotifications("acc-seller", 50))[0]).toMatchObject({
+      text: "Ayanda asked about Casio fx-991ZA Plus calculator",
+      createdAt: later(1).toISOString(),
+    });
+    await startConversation({
+      buyerId: buyer.id,
+      listing: CALCULATOR,
+      sellerSlug: "tech-corner",
+      body: "Hello?",
+      swapOffer: null,
+      now: later(2),
+    });
+    expect((await getNotifications("acc-seller", 50))[0].text).toBe("Ayanda asked about Casio fx-991ZA Plus calculator");
+    await sendMessage({ conversationId, accountId: "acc-seller", body: "Yes, it is.", now: later(3) });
+    await sendMessage({ conversationId, accountId: buyer.id, body: "Great, thanks.", now: later(4) });
+    expect((await getNotifications("acc-seller", 50))[0].text).toBe("Ayanda replied about Casio fx-991ZA Plus calculator");
   });
 
   it("lets only the buyer and the shop's owner write, and no one write to a side that has left", async () => {
@@ -201,6 +226,46 @@ describe("replies and the sale's status (messaging spec 2.5, plan decision 30)",
       confirmedBy: "auto",
     });
     expect(await confirmSale({ conversationId: "conv-s2", accountId: "acc-student", now: due })).toBe("not-allowed");
+  });
+
+  it("marks the sale-to-confirm notification read when the buyer confirms, and no message notification (amendment 3, fix 3)", async () => {
+    expect(sampleStore().notifications.get("note-s2")?.readAt).toBeNull();
+    await confirmSale({ conversationId: "conv-s2", accountId: "acc-student", now: later(5) });
+    expect(sampleStore().notifications.get("note-s2")?.readAt).toBe(later(5).toISOString());
+    expect(sampleStore().notifications.get("note-s1")?.readAt).toBeNull();
+    expect((await unreadCounts("acc-student", later(5))).notifications).toBe(1);
+  });
+
+  it("marks the sale-to-confirm notification read when the buyer says it didn't happen, and asks again if it's marked again", async () => {
+    await rejectSale({ conversationId: "conv-s2", accountId: "acc-student", now: later(5) });
+    expect(sampleStore().notifications.get("note-s2")?.readAt).toBe(later(5).toISOString());
+    expect(sampleStore().notifications.get("note-s1")?.readAt).toBeNull();
+    await markCompleted({ conversationId: "conv-s2", accountId: "acc-seller", now: later(10) });
+    const [newest] = await getNotifications("acc-student", 50);
+    expect(newest).toMatchObject({ kind: "sale-to-confirm", isNew: true, createdAt: later(10).toISOString() });
+    expect(newest.id).not.toBe("note-s2");
+    expect((await unreadCounts("acc-student", later(10))).notifications).toBe(2);
+  });
+
+  it("marks the sale-to-confirm notification read when the sale confirms itself, wherever that's noticed", async () => {
+    const due = new Date("2026-10-20T15:00:00.000Z");
+    await getThread("conv-s2", "acc-student", new Date(due.getTime() - 60_000));
+    expect(sampleStore().notifications.get("note-s2")?.readAt).toBeNull();
+    expect(await unreadCounts("acc-student", due)).toMatchObject({ notifications: 1, salesToConfirm: 0 });
+    expect(sampleStore().notifications.get("note-s2")?.readAt).toBe(due.toISOString());
+    expect(sampleStore().notifications.get("note-s1")?.readAt).toBeNull();
+  });
+
+  it("marks it read when the inbox, the thread or a reply is what notices the sale confirmed itself", async () => {
+    const due = new Date("2026-10-20T15:00:00.000Z");
+    await getInbox("acc-student", "buying", due);
+    expect(sampleStore().notifications.get("note-s2")?.readAt).not.toBeNull();
+    resetSampleStore();
+    await getThread("conv-s2", "acc-seller", due);
+    expect(sampleStore().notifications.get("note-s2")?.readAt).not.toBeNull();
+    resetSampleStore();
+    await sendMessage({ conversationId: "conv-s2", accountId: "acc-seller", body: "Thanks!", now: due });
+    expect(sampleStore().notifications.get("note-s2")?.readAt).not.toBeNull();
   });
 });
 
@@ -331,6 +396,70 @@ describe("deleting an account (plan decision 14)", () => {
     expect([...sampleStore().notifications.values()].some((row) => row.subjectId === conversationId)).toBe(false);
   });
 
+  it("won't let the seller mark it completed once the buyer has left (messaging plan amendment 3, fix 1)", async () => {
+    const { buyer, conversationId } = await ayandaAsks();
+    await sendMessage({ conversationId, accountId: "acc-seller", body: "Yes, it is.", now: later(1) });
+    await forgetAccountInMessaging(buyer.id, null);
+    expect(await markCompleted({ conversationId, accountId: "acc-seller", now: later(2) })).toBe("not-allowed");
+    expect(sampleStore().conversations.get(conversationId)).toMatchObject({ status: "replied", completedAt: null });
+    expect([...sampleStore().notifications.values()].some((row) => row.subjectId === conversationId)).toBe(false);
+  });
+
+  it("puts a sale waiting for the deleted buyer back to Replied, forgets the completion and never confirms it", async () => {
+    await forgetAccountInMessaging("acc-student", null);
+    expect(sampleStore().conversations.get("conv-s2")).toMatchObject({
+      buyerId: null,
+      status: "replied",
+      completedAt: null,
+      confirmedAt: null,
+      confirmedBy: null,
+    });
+    const afterTheSevenDays = new Date("2026-11-01T10:00:00.000Z");
+    expect((await getThread("conv-s2", "acc-seller", afterTheSevenDays))?.status).toBe("replied");
+    expect((await getInbox("acc-seller", "selling", afterTheSevenDays)).map((row) => [row.id, row.status])).toEqual([
+      ["conv-s1", "replied"],
+      ["conv-s2", "replied"],
+    ]);
+    expect(await markCompleted({ conversationId: "conv-s2", accountId: "acc-seller", now: afterTheSevenDays })).toBe(
+      "not-allowed",
+    );
+  });
+
+  it("leaves a sale that is already confirmed, and the conversation's times, as they were", async () => {
+    await confirmSale({ conversationId: "conv-s2", accountId: "acc-student", now: later(5) });
+    await forgetAccountInMessaging("acc-student", null);
+    expect(sampleStore().conversations.get("conv-s2")).toMatchObject({
+      buyerId: null,
+      status: "confirmed",
+      completedAt: "2026-10-13T15:00:00.000Z",
+      confirmedAt: later(5).toISOString(),
+      confirmedBy: "buyer",
+      firstReplyAt: "2026-10-12T10:48:00.000Z",
+    });
+  });
+
+  it("clears when the other side read what's left, which was when the deleted person read it (fix 8)", async () => {
+    const { buyer, conversationId } = await ayandaAsks();
+    await sendMessage({ conversationId, accountId: "acc-seller", body: "Yes, it is.", now: later(1) });
+    await markThreadRead(conversationId, buyer.id, later(2));
+    const [reply] = [...sampleStore().messages.values()].filter((row) => row.from === "seller" && row.conversationId === conversationId);
+    expect(reply.readAt).toBe(later(2).toISOString());
+    await forgetAccountInMessaging(buyer.id, null);
+    expect(sampleStore().messages.get(reply.id)).toMatchObject({ from: "seller", readAt: null });
+  });
+
+  it("clears the buyer's remaining messages' readAt when the seller is the one who leaves", async () => {
+    for (const id of ["msg-s1", "msg-s3", "msg-s5"]) {
+      expect(sampleStore().messages.get(id)?.readAt, id).not.toBeNull();
+    }
+    await forgetAccountInMessaging("acc-seller", "tech-corner");
+    expect([...sampleStore().messages.values()].map((row) => [row.id, row.readAt])).toEqual([
+      ["msg-s1", null],
+      ["msg-s3", null],
+      ["msg-s5", null],
+    ]);
+  });
+
   it("removes a seller's messages and keeps the buyer's side", async () => {
     await forgetAccountInMessaging("acc-seller", "tech-corner");
     const thread = (await getThread("conv-s1", "acc-student", NOW))!;
@@ -360,7 +489,7 @@ describe("deleting an account (plan decision 14)", () => {
 
 describe("the data export (plan decision 15)", () => {
   it("gives each conversation with who, about what, its status and both sides' messages, oldest first, with no ids", async () => {
-    const data = await exportConversations("acc-student");
+    const data = await exportConversations("acc-student", NOW);
     expect(data.map((row) => [row.with, row.about, row.status])).toEqual([
       ["Tech corner", "Casio fx-991ZA Plus calculator", "done"],
       ["Tech corner", "Gaming headset, barely used", "replied"],
@@ -380,6 +509,21 @@ describe("the data export (plan decision 15)", () => {
       },
     ]);
     expect(JSON.stringify(data)).not.toMatch(/conv-|msg-|acc-/);
-    expect(await exportConversations("acc-mentor")).toEqual([]);
+    expect(await exportConversations("acc-mentor", NOW)).toEqual([]);
+  });
+
+  it("settles the 7-day auto-confirm first, so a sale that has confirmed itself isn't exported as done (fix 10)", async () => {
+    const due = new Date("2026-10-20T15:00:00.000Z");
+    expect((await exportConversations("acc-student", new Date(due.getTime() - 60_000))).map((row) => row.status)).toEqual([
+      "done",
+      "replied",
+    ]);
+    expect((await exportConversations("acc-student", due)).map((row) => row.status)).toEqual(["confirmed", "replied"]);
+    expect(sampleStore().conversations.get("conv-s2")).toMatchObject({
+      status: "confirmed",
+      confirmedAt: due.toISOString(),
+      confirmedBy: "auto",
+    });
+    expect((await exportConversations("acc-seller", due)).map((row) => row.status)).toEqual(["confirmed", "replied"]);
   });
 });

@@ -3,7 +3,7 @@ import type { ConversationStatus, ReportReason } from "@/lib/types";
 // Messaging's limits and text rules (messaging spec 2 and FUNCTION-MAP section 6). Plain values and functions: safe
 // anywhere on the server and in tests.
 
-/** A message, a swap offer and a report's detail, in characters (code points). */
+/** A message, a swap offer and a report's detail, in characters, counted as code points (`characterCount`). */
 export const MESSAGE_MAX = 1000;
 export const SWAP_OFFER_MAX = 200;
 export const REPORT_DETAIL_MAX = 500;
@@ -12,28 +12,43 @@ export const KEEP_MAX = 4000;
 export const DAY_MS = 24 * 60 * 60 * 1000;
 /** A sale confirms itself 7 days after the seller marks it done (spec 2.5). */
 export const AUTO_CONFIRM_MS = 7 * DAY_MS;
-/** Reports an account can send in 24 hours (plan decision 17). */
+/** Reports an account can send in any 24 hours (plan decision 17): the 11th within a day of the first is refused. */
 export const REPORTS_PER_DAY = 10;
 /** How many notifications /notifications shows (plan decision 12). */
 export const NOTIFICATIONS_SHOWN = 50;
 
-/** How many characters a text has, counting each letter or emoji once, as the limits mean them. */
+/**
+ * How many characters a text has, as the limits mean them (plan decision 8): code points, so a letter or a simple
+ * emoji counts once (a string's `length` counts that emoji twice). An emoji made of several code points joined
+ * together, such as a family or a flag, counts as several.
+ */
 export function characterCount(text: string): number {
   return [...text].length;
 }
 
+// Characters that show nothing or change which way text runs: the direction embeddings, overrides and isolates
+// (U+202A to U+202E, U+2066 to U+2069), the zero-width space (U+200B), the left-to-right and right-to-left marks
+// (U+200E, U+200F), the word joiner (U+2060) and the byte order mark (U+FEFF). They could hide a message, or make a
+// word read as another. The zero-width joiner (U+200D) stays: emoji sequences need it.
+const INVISIBLE = /[‪-‮⁦-⁩​‎‏⁠﻿]/g;
+
 /**
- * User text as it's stored (spec 2.12, plan decision 29): every line break becomes "\n", control characters other than
- * line breaks and tabs go, and the ends are trimmed. Pages render it as text, never as HTML.
+ * User text as it's stored (spec 2.12, plan decision 29, amendment 3): every line break becomes "\n", control
+ * characters other than line breaks and tabs go, so do the invisible and direction-changing ones above, and the ends
+ * are trimmed. A text of nothing else is empty. Pages render it as text, never as HTML.
  */
 export function cleanText(raw: string): string {
   return raw
     .replace(/\r\n?/g, "\n")
     .replace(/[^\P{Cc}\n\t]/gu, "")
+    .replace(INVISIBLE, "")
     .trim();
 }
 
-/** At most `max` characters, cut with "…". Never splits an emoji. */
+/**
+ * At most `max` characters (code points, as `characterCount` counts them), cut with "…". A simple emoji is never
+ * split, but one made of several code points joined together (a family, a flag) can be.
+ */
 export function truncate(text: string, max: number): string {
   const characters = [...text];
   return characters.length <= max ? text : `${characters.slice(0, max - 1).join("").trimEnd()}…`;

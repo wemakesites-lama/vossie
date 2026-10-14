@@ -6,6 +6,7 @@ import {
   getNotifications,
   markConversationNotificationsRead,
   markNotificationsRead,
+  markSaleNotificationsRead,
   notify,
   notifyAboutMessage,
 } from "./notifications";
@@ -108,6 +109,19 @@ describe("marking notifications read (messaging spec 2.9)", () => {
     expect(await countNewNotifications("acc-student")).toBe(0);
     expect(sampleStore().notifications.get("note-s1")?.readAt).toBe(NOW.toISOString());
     expect(await countNewNotifications("acc-seller")).toBe(1);
+  });
+
+  it("marks only a conversation's sale-to-confirm notification read when its sale is settled (amendment 3)", async () => {
+    await notify({ accountId: "acc-student", kind: "message", subjectId: "conv-s2", text: "x", href: "/messages/conv-s2", now: NOW });
+    await markSaleNotificationsRead("acc-seller", "conv-s2", NOW);
+    await markSaleNotificationsRead("acc-student", "conv-s1", NOW);
+    expect(sampleStore().notifications.get("note-s2")?.readAt).toBeNull();
+    await markSaleNotificationsRead("acc-student", "conv-s2", NOW);
+    expect((await getNotifications("acc-student", 50)).map((item) => [item.kind, item.href, item.isNew])).toEqual([
+      ["message", "/messages/conv-s2", true],
+      ["sale-to-confirm", "/messages/conv-s2", false],
+      ["message", "/messages/conv-s1", true],
+    ]);
   });
 
   it("marks one conversation's read when its thread opens", async () => {

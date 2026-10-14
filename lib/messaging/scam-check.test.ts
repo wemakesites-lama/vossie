@@ -19,6 +19,28 @@ describe("the scam check (messaging spec 2.3, plan decision 9)", () => {
     expect(scamWarnings("Send the money in advance")).toEqual(["advance"]);
   });
 
+  it("spots paying in advance said another way (messaging plan amendment 3, fix 2)", () => {
+    expect(scamWarnings("Please pay before I bring it")).toEqual(["advance"]);
+    expect(scamWarnings("Can you EFT me before we meet?")).toEqual(["advance"]);
+    expect(scamWarnings("Transfer the money and I'll post it")).toEqual(["advance"]);
+    expect(scamWarnings("Transfer the money and I will ship it")).toEqual(["advance"]);
+    expect(scamWarnings("Cash send me R200 first")).toEqual(["advance"]);
+    expect(scamWarnings("CashSend R200 before we meet")).toEqual(["advance"]);
+    expect(scamWarnings("eWallet me R200")).toEqual(["advance"]);
+    expect(scamWarnings("Just e-wallet me")).toEqual(["advance"]);
+  });
+
+  it("lets paying cash when you see it through, however it's put", () => {
+    for (const text of [
+      "I'll pay cash when I see it.",
+      "Can I pay when I collect it?",
+      "I'll bring cash to the library entrance. Can you bring the charger?",
+      "I can meet before class. I'll pay when we meet.",
+    ]) {
+      expect(scamWarnings(text), text).toEqual([]);
+    }
+  });
+
   it("spots a deposit or a booking fee", () => {
     expect(scamWarnings("A deposit holds it for you")).toEqual(["deposit"]);
     expect(scamWarnings("There's a R50 booking fee")).toEqual(["deposit"]);
@@ -27,6 +49,13 @@ describe("the scam check (messaging spec 2.3, plan decision 9)", () => {
   it("spots bank details", () => {
     expect(scamWarnings("Send me your banking details")).toEqual(["bank"]);
     expect(scamWarnings("What's your account number and branch code?")).toEqual(["bank"]);
+  });
+
+  it("spots a bank account being named (messaging plan amendment 3, fix 2)", () => {
+    expect(scamWarnings("My bank account is 123")).toEqual(["bank"]);
+    expect(scamWarnings("What's your bank acc?")).toEqual(["bank"]);
+    expect(scamWarnings("Put it in my bank accounts")).toEqual(["bank"]);
+    expect(scamWarnings("The bank accident was on the news")).toEqual([]);
   });
 
   it("spots a courier", () => {
