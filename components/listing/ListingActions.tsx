@@ -6,8 +6,8 @@ import { ShareButton } from "./ShareButton";
 
 /**
  * Message seller, Save and Share (spec 5.4). One set of actions: below the tablet step, CSS fixes them to the bottom
- * of the screen as the dock; from it, they sit in the page. Message leads to the sign-in page, which says sign-in is
- * coming (decision 44). A paused or sold listing offers similar items instead (spec 5.5).
+ * of the screen as the dock; from it, they sit in the page. Message leads to the sign-in page (decision 44); stage E
+ * sends signed-in visitors to the composer instead. A paused or sold listing offers similar items instead (spec 5.5).
  */
 export function ListingActions({
   listing,

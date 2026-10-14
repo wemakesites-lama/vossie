@@ -36,7 +36,7 @@ const PAGES: readonly InfoCase[] = [
     sections: [
       "Who is responsible",
       "What this site stores today",
-      "When sign-in arrives",
+      "Your account",
       "How long we keep it",
       "Who it is shared with",
       "Where it is hosted",

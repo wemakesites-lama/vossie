@@ -18,7 +18,7 @@ const PAGES: ReadonlyArray<[path: string, Page: ComponentType]> = [
 ];
 
 /** Every route a link on these pages may point at: the six pages, and the rest of the site. */
-const ROUTES = new Set([...PAGES.map(([path]) => path), "/", "/browse", "/hub", "/looking-for", "/sell", "/login", "/account"]);
+const ROUTES = new Set([...PAGES.map(([path]) => path), "/", "/browse", "/hub", "/looking-for", "/sell", "/login", "/account", "/account/privacy"]);
 
 type Inspected = { path: string; h1s: number; sectionIds: string[]; contents: string[]; links: string[] };
 

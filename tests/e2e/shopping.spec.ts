@@ -174,7 +174,7 @@ test.describe("Saved (spec 5)", () => {
     onlyAt("phone-390", "desktop-1440");
     await page.goto("/saved");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Saved");
-    await expect(page.getByText("Saved on this device. When sign-in arrives")).toBeVisible();
+    await expect(page.getByText("Saved on this device. Once Vossie is live")).toBeVisible();
     await expect(page.getByRole("heading", { level: 2, name: "Nothing saved yet" })).toBeVisible();
     await page.getByRole("link", { name: "Start browsing" }).click();
     await expect(page).toHaveURL(/\/browse$/);

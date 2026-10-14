@@ -106,12 +106,13 @@ const SECTIONS: readonly InfoSection[] = [
         </p>
         <h3>How do I become a seller?</h3>
         <p>
-          Set up your shop once you can sign in. The Incubation Hub then checks it, and you can start listing.
+          Sign in, then set up your shop from Sell once selling opens. The Incubation Hub checks it, and then you can
+          start listing.
         </p>
         <h3>What can I do on Vossie today?</h3>
         <p>
-          Browse every campus, save listings on your device and share them. Sign-in, messaging and selling arrive in the
-          next stages, so this page describes how they will work.
+          Browse every campus, save listings on your device and share them, and sign in with your Eduvos email.
+          Messaging and selling arrive in the next stages, so this page describes how they will work.
         </p>
       </>
     ),

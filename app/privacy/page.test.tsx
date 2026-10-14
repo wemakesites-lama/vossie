@@ -34,7 +34,7 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
       "Who is responsible",
       "What this site stores today",
-      "When sign-in arrives",
+      "Your account",
       "How long we keep it",
       "Who it is shared with",
       "Where it is hosted",
@@ -60,7 +60,7 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
   it("lists the two cookies and the three browser-only stores by their real names (spec 2.2)", () => {
     render(<PrivacyPage />);
     const today = screen.getByRole("region", { name: "What this site stores today" });
-    expect(within(today).getByText(/stores nothing about you on a server/)).toBeInTheDocument();
+    expect(within(today).getByText(/in its memory only/)).toBeInTheDocument();
     expect(codesAfter(within(today).getByRole("heading", { level: 3, name: "Two first-party cookies" }))).toEqual([
       CAMPUS_COOKIE,
       SAVED_COOKIE,
@@ -104,7 +104,7 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
 
   it("lists what accounts will collect, why and the POPIA section 11 ground, so it needn't be rewritten", () => {
     render(<PrivacyPage />);
-    const accounts = screen.getByRole("region", { name: "When sign-in arrives" });
+    const accounts = screen.getByRole("region", { name: "Your account" });
     const items = within(accounts).getAllByRole("listitem");
     expect(items.length).toBeGreaterThanOrEqual(8);
     expect(within(accounts).getByText("Your Eduvos email address.")).toBeInTheDocument();
@@ -135,6 +135,12 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
       "href",
       "https://inforegulator.org.za",
     );
+  });
+
+  it("sends you to your privacy settings to download your data or delete your account (accounts spec 3.3)", () => {
+    render(<PrivacyPage />);
+    const rights = screen.getByRole("region", { name: "Your rights" });
+    expect(within(rights).getByRole("link", { name: "privacy settings" })).toHaveAttribute("href", "/account/privacy");
   });
 
   it("names every vossie_ cookie and browser store the code uses, so a new one can't slip past the policy", () => {

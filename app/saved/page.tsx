@@ -14,7 +14,7 @@ export default function SavedPage() {
   return (
     <div className="page saved-page">
       <h1 className="saved-title">Saved</h1>
-      <p className="saved-note">Saved on this device. When sign-in arrives, your saves will follow you to any device.</p>
+      <p className="saved-note">Saved on this device. Once Vossie is live, your saves will follow your account to any device.</p>
       <Suspense fallback={<SavedSkeleton />}>
         <SavedList />
       </Suspense>

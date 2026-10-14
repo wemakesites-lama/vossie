@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
 
 export const metadata: Metadata = {
   title: "Privacy policy",
   description:
-    "How Vossie handles your personal information under POPIA: what this site stores today, what accounts will collect, who sees it and your rights. A draft for Eduvos to review.",
+    "How Vossie handles your personal information under POPIA: what this site stores today, what your account holds, who sees it and your rights. A draft for Eduvos to review.",
   // A draft stays out of search results until Eduvos signs it off (controller amendment 1, spec decision 8).
   robots: { index: false },
 };
@@ -36,8 +37,10 @@ const SECTIONS: readonly InfoSection[] = [
     children: (
       <>
         <p>
-          Right now Vossie has no accounts and stores nothing about you on a server. A few small things are kept on your
-          own device, so the site can remember your choices.
+          Vossie is still a preview. If you sign in, the server keeps your account, your sign-ins and your consent in
+          its memory only, so they are wiped whenever it restarts, and no email is sent (the sign-in code shows on the
+          screen). Apart from that, a few small things are kept on your own device, so the site can remember your
+          choices.
         </p>
         <h3>Two first-party cookies</h3>
         <p>
@@ -107,12 +110,12 @@ const SECTIONS: readonly InfoSection[] = [
   },
   {
     id: "privacy-sign-in",
-    title: "When sign-in arrives",
+    title: "Your account",
     children: (
       <>
         <p>
-          Messaging, selling and keeping your saves on every device will need an account. This is what accounts will
-          collect, and why. This section will be updated when accounts go live.
+          Messaging, selling and, later, keeping your saves on every device need an account. This is what your account
+          holds and why, including what messaging and selling will add once they open.
         </p>
         <ul>
           <li>
@@ -162,10 +165,10 @@ const SECTIONS: readonly InfoSection[] = [
     children: (
       <ul>
         <li>
-          The two cookies last up to a year, and some browsers clear them sooner. Your browser keeps the other three
-          until you clear them.
+          The campus and saved cookies last up to a year, and some browsers clear them sooner. The sign-in cookies last
+          up to 30 days, 30 minutes and a minute. Your browser keeps the other three things until you clear them.
         </li>
-        <li>Once accounts exist, your account details stay until you delete your account.</li>
+        <li>Your account details stay until you delete your account.</li>
         <li>
           Deleting your account removes your account, your sign-in sessions and your record of consent straight away,
           along with your shop and listings if you have them.
@@ -234,8 +237,8 @@ const SECTIONS: readonly InfoSection[] = [
           </li>
         </ul>
         <p>
-          Once accounts exist, you will be able to download your data and delete your account yourself, from your
-          account&apos;s privacy settings. Until then, ask the Hub.
+          You can download your data and delete your account yourself, in your account&apos;s{" "}
+          <Link href="/account/privacy">privacy settings</Link>. For anything else, ask the Hub.
         </p>
       </>
     ),
