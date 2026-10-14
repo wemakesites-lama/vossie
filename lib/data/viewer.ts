@@ -1,22 +1,34 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
-import { sampleActivity } from "@/data/fixtures/viewer";
+import { getViewer } from "@/lib/auth/session";
 import { CAMPUS_COOKIE, parseCampusChoice } from "@/lib/campus";
-import type { Viewer } from "@/lib/types";
+import type { Viewer, ViewerActivity } from "@/lib/types";
+import { getAccountActivity } from "./accounts";
 import { getCampuses } from "./index";
 
+/** Activity worth a "Welcome back" strip: any number above zero. Otherwise the strip falls back (accounts spec 3.4). */
+function worthShowing(activity: ViewerActivity | null): ViewerActivity | null {
+  if (!activity) return null;
+  return activity.newMessages + activity.salesToConfirm + activity.savedItemsBack > 0 ? activity : null;
+}
+
 /**
- * Who is looking (spec section 13): the campus from the vossie_campus cookie, and whether they're signed in.
+ * Who is looking (spec section 13): the campus from the vossie_campus cookie and, from the session, whether they're
+ * signed in and what the context strip should say (accounts spec 2.9 and 3.4).
  *
- * Request-time: call it only inside <Suspense>, or the page can't be prerendered. React's cache() makes it one
- * cookie read per request. There are no accounts yet: VOSSIE_SAMPLE_SIGNED_IN=1 shows the signed-in context strip
- * with sample activity, in development only.
+ * Request-time: call it only inside <Suspense>, or the page can't be prerendered. React's cache() makes it one read
+ * per request.
  */
 export const getViewerContext = cache(async (): Promise<Viewer> => {
-  // Every section awaits the viewer before its own error handling, so a failed campus lookup must not escape here.
-  // With no campuses the choice reads as "all campuses", which is what a first visit sees.
-  const [store, campuses] = await Promise.all([cookies(), getCampuses().catch(() => [])]);
+  // Every section awaits the viewer before its own error handling, so a failed campus or session lookup must not
+  // escape here. With no campuses the choice reads as "all campuses"; with no session, signed out.
+  const [store, campuses, account] = await Promise.all([
+    cookies(),
+    getCampuses().catch(() => []),
+    getViewer().catch(() => null),
+  ]);
   const campus = parseCampusChoice(store.get(CAMPUS_COOKIE)?.value, campuses);
-  const signedIn = process.env.NODE_ENV !== "production" && process.env.VOSSIE_SAMPLE_SIGNED_IN === "1";
-  return { campus, signedIn, activity: signedIn ? sampleActivity : null };
+  if (!account) return { campus, signedIn: false, activity: null };
+  const activity = await getAccountActivity(account.id).catch(() => null);
+  return { campus, signedIn: true, activity: worthShowing(activity) };
 });

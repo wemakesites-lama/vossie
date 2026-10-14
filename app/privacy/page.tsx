@@ -54,6 +54,23 @@ const SECTIONS: readonly InfoSection[] = [
             the listing ids to Vossie with each visit so the Saved page can show them; nothing is stored on a server.
           </li>
         </ul>
+        <h3>Three sign-in cookies</h3>
+        <p>
+          These belong to Vossie too. The first two can only be read by Vossie&apos;s server, never by scripts on the
+          page.
+        </p>
+        <ul>
+          <li>
+            <code>vossie_session</code>: a random code that keeps you signed in, for up to 30 days. Signing out or
+            deleting your account ends it.
+          </li>
+          <li>
+            <code>vossie_signin</code>: a random code that holds your place while you sign in, for up to 30 minutes.
+          </li>
+          <li>
+            <code>vossie_flash</code>: a one-off message such as &quot;You&apos;re signed out&quot;, for up to a minute.
+          </li>
+        </ul>
         <h3>Three things kept only in your browser</h3>
         <p>These stay in your browser&apos;s own storage. They are never sent to Vossie.</p>
         <ul>

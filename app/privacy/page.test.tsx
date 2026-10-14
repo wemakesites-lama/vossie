@@ -2,7 +2,9 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { SESSION_COOKIE, SIGN_IN_COOKIE } from "@/lib/auth/cookies";
 import { CAMPUS_COOKIE } from "@/lib/campus";
+import { FLASH_COOKIE } from "@/lib/flash";
 import { LOW_DATA_KEY } from "@/lib/low-data";
 import { RECENT_KEY } from "@/lib/recent-searches";
 import { RECENTLY_VIEWED_KEY } from "@/lib/recently-viewed";
@@ -66,6 +68,16 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     expect(
       codesAfter(within(today).getByRole("heading", { level: 3, name: "Three things kept only in your browser" })),
     ).toEqual([RECENTLY_VIEWED_KEY, RECENT_KEY, LOW_DATA_KEY]);
+  });
+
+  it("names the three sign-in cookies by their real names (accounts spec 2.2, 2.5 and plan decision 12)", () => {
+    render(<PrivacyPage />);
+    const today = screen.getByRole("region", { name: "What this site stores today" });
+    expect(codesAfter(within(today).getByRole("heading", { level: 3, name: "Three sign-in cookies" }))).toEqual([
+      SESSION_COOKIE,
+      SIGN_IN_COOKIE,
+      FLASH_COOKIE,
+    ]);
   });
 
   it("says plainly that the saved ids travel to Vossie with each visit, and that nothing is stored on a server", () => {
