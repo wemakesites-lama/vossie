@@ -298,3 +298,111 @@ export type SearchResult = {
   /** How many match at other campuses, when the query is for one campus. Otherwise 0. */
   elsewhere: number;
 };
+
+// --- Messaging (messaging plan, Task 1) -------------------------------------------------------------------------
+
+/** Where a conversation stands (messaging spec 2.5): asked, the seller replied, marked done, the sale confirmed. */
+export type ConversationStatus = "asked" | "replied" | "done" | "confirmed";
+
+/** The inbox's two tabs (messaging spec 2.10). */
+export type InboxTab = "buying" | "selling";
+
+/** Why something was reported (messaging spec 2.8). */
+export type ReportReason = "scam" | "prohibited" | "misleading" | "offensive" | "harassment" | "spam" | "other";
+
+/** What can be reported: a listing (by id), a seller (by slug) or a request (by id) (messaging spec 2.8). */
+export type ReportTarget = { kind: "listing" | "seller" | "request"; id: string };
+
+/** What a notification is about (messaging spec 2.9). This stage makes the first two; stage G makes the others. */
+export type NotificationKind = "message" | "sale-to-confirm" | "report-handled" | "shop-approved";
+
+/** The shop a conversation is with, as a thread shows it. `image` and `campusSlug` are null once the shop has gone. */
+export type ConversationShop = {
+  slug: string;
+  name: string;
+  image: ImageRef | null;
+  campusSlug: string | null;
+};
+
+/** A row in the inbox (messaging spec 3.2), from the viewer's side. */
+export type ConversationSummary = {
+  id: string;
+  role: "buyer" | "seller";
+  /** The shop's name to the buyer, the buyer's first name to the seller (spec 2.11), or "Deleted account". */
+  otherName: string;
+  /** The listing's title, or null for a question about the shop (messaging plan decision 2). */
+  listingTitle: string | null;
+  /** The listing's photo, or the shop's for a question about the shop. Null once the listing has gone. */
+  image: ImageRef | null;
+  /** The last message's first line. */
+  preview: string;
+  lastFromViewer: boolean;
+  /** ISO 8601 in UTC. */
+  lastMessageAt: string;
+  status: ConversationStatus;
+  /** The other side has written something the viewer hasn't opened. */
+  unread: boolean;
+};
+
+/** One message in a thread (messaging spec 3.3). */
+export type ThreadMessage = {
+  id: string;
+  fromViewer: boolean;
+  /** "You", or the other side's name (messaging spec section 5). */
+  author: string;
+  body: string;
+  swapOffer: string | null;
+  sentAt: string;
+};
+
+/** A thread, from the viewer's side (messaging spec 3.3). */
+export type Thread = {
+  id: string;
+  role: "buyer" | "seller";
+  otherName: string;
+  /** False once the other side has deleted their account (messaging plan decision 21). */
+  otherPresent: boolean;
+  shop: ConversationShop;
+  /** The listing's title when the conversation started, or null for a question about the shop. */
+  listingTitle: string | null;
+  /** The listing as it is now: null for a question about the shop, or once the listing has gone (stage F). */
+  listing: Listing | null;
+  status: ConversationStatus;
+  completedAt: string | null;
+  confirmedAt: string | null;
+  confirmedBy: "buyer" | "auto" | null;
+  /** Oldest first. */
+  messages: ThreadMessage[];
+};
+
+/** A notification as `/notifications` shows it (messaging spec 3.5). */
+export type NotificationItem = {
+  id: string;
+  kind: NotificationKind;
+  text: string;
+  href: string;
+  createdAt: string;
+  /** Not read before this visit. */
+  isNew: boolean;
+};
+
+/** One of the account's reports, for privacy settings (messaging plan decision 18). */
+export type ReportSummary = {
+  kind: ReportTarget["kind"];
+  title: string;
+  reason: ReportReason;
+  createdAt: string;
+  open: boolean;
+};
+
+/** What needs the account's attention (messaging spec 4, `unreadCounts`). */
+export type UnreadCounts = {
+  /** New notifications: the header's badge and the account page. */
+  notifications: number;
+  /** Conversations with a message the account hasn't opened: the account page's Messages row. */
+  conversations: number;
+  /** Messages the account hasn't opened: the homepage's strip. */
+  messages: number;
+  /** Sales a seller marked done that the account, as the buyer, hasn't confirmed: the strip. */
+  salesToConfirm: number;
+};

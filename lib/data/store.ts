@@ -1,8 +1,13 @@
 import { sampleAccounts, sampleConsents } from "@/data/fixtures/accounts";
+import { sampleConversations, sampleMessages, sampleNotifications } from "@/data/fixtures/messages";
 import type {
   AccountRow,
   ConsentRow,
+  ConversationRow,
   FormStateRow,
+  MessageRow,
+  NotificationRow,
+  ReportRow,
   SampleEmailRow,
   SellerProfileRow,
   SessionRow,
@@ -36,10 +41,18 @@ export type SampleStore = {
   sampleEmails: Map<string, SampleEmailRow>;
   /** By `${sessionKey}:${form}`. */
   formStates: Map<string, FormStateRow>;
+  /** By id: a buyer's conversation with a shop (messaging spec section 4). */
+  conversations: Map<string, ConversationRow>;
+  /** By id. */
+  messages: Map<string, MessageRow>;
+  /** By id: reports, for stage G's queue. */
+  reports: Map<string, ReportRow>;
+  /** By id. */
+  notifications: Map<string, NotificationRow>;
 };
 
 /** Bump it when a table is added or a row changes shape, so `next dev` reseeds instead of keeping an old store. */
-export const STORE_VERSION = 1;
+export const STORE_VERSION = 2;
 
 type StoreHolder = { __vossieSampleStore?: SampleStore };
 
@@ -73,5 +86,10 @@ function seedStore(): SampleStore {
     codeSends: new Map(),
     sampleEmails: new Map(),
     formStates: new Map(),
+    // Copies, like the accounts above (messaging plan decision 16).
+    conversations: new Map(structuredClone(sampleConversations).map((row) => [row.id, row])),
+    messages: new Map(structuredClone(sampleMessages).map((row) => [row.id, row])),
+    reports: new Map(),
+    notifications: new Map(structuredClone(sampleNotifications).map((row) => [row.id, row])),
   };
 }
