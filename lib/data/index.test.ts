@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { makeListingRow } from "@/tests/helpers/fakes";
 import {
   getAnnouncements,
   getCampuses,
@@ -32,7 +33,13 @@ import {
   getVerifiedSellers,
   searchListings,
 } from "./index";
+import { resetSampleStore, sampleStore } from "./store";
 import type { SearchQuery } from "@/lib/types";
+
+// The data layer reads the sample store, seeded from the fixtures (selling plan decision 7). A fresh one for each test.
+beforeEach(() => {
+  resetSampleStore();
+});
 
 describe("sample data layer", () => {
   it("returns the 12 Eduvos campuses with Eduvos Online last", async () => {
@@ -499,5 +506,43 @@ describe("Hub data (community spec 5.3)", () => {
       "Study notes",
       "Thrift rack",
     ]);
+  });
+});
+
+describe("the store behind the data layer (selling spec 2.1, plan decisions 2 and 7)", () => {
+  it("shows a new listing straight away: just listed, its shop, its page, its id and search", async () => {
+    sampleStore().listings.set(
+      "l-new",
+      makeListingRow({ id: "l-new", title: "Quokka kettle", createdAt: "2026-10-14T09:00:00.000Z" }),
+    );
+    expect((await getJustListed({ campus: "midrand", limit: 1 })).map((listing) => listing.id)).toEqual(["l-new"]);
+    expect((await getSellerListings("tech-corner")).map((listing) => listing.id)).toEqual(["l-new", "l-001", "l-007"]);
+    expect((await getListingDetail("l-new"))?.seller.name).toBe("Tech corner");
+    expect(await getListingIds()).toContain("l-new");
+    const query: SearchQuery = {
+      q: "quokka",
+      category: null,
+      campus: "all",
+      price: null,
+      pay: null,
+      deals: null,
+      sort: "match",
+    };
+    expect((await searchListings(query)).items[0].id).toBe("l-new");
+  });
+
+  it("drops a paused shop's listings from every list, and keeps their pages and the storefront", async () => {
+    sampleStore().sellerProfiles.get("acc-seller")!.status = "paused";
+    expect(await getSellerListings("tech-corner")).toEqual([]);
+    const midrand = await getJustListed({ campus: "midrand", limit: 20 });
+    expect(midrand.some((listing) => listing.sellerSlug === "tech-corner")).toBe(false);
+    expect((await getListingDetail("l-001"))?.listing.availability).toBe("paused");
+    expect(await getSeller("tech-corner")).toMatchObject({ name: "Tech corner" });
+    expect(await getSellerSlugs()).not.toContain("tech-corner");
+  });
+
+  it("never shows a shop that's waiting for approval", async () => {
+    expect(await getSeller("crochet-corner")).toBeNull();
+    expect(await getSellerSlugs()).not.toContain("crochet-corner");
   });
 });

@@ -1,4 +1,4 @@
-import type { SignInAttemptRow } from "@/lib/data/rows";
+import type { ListingRow, SignInAttemptRow } from "@/lib/data/rows";
 import type { BrowseQuery, ConversationSummary, Listing, Seller, Thread } from "@/lib/types";
 
 /** A listing for tests: an available R100 tech item at Midrand's library. Override what the test is about. */
@@ -127,6 +127,31 @@ export function makeThread(overrides: Partial<Thread> = {}): Thread {
         sentAt: "2026-10-14T10:00:00Z",
       },
     ],
+    ...overrides,
+  };
+}
+
+/** A listing row for tests: Tech corner's available R100 tech item at Midrand's library. Override what the test is about. */
+export function makeListingRow(overrides: Partial<ListingRow> = {}): ListingRow {
+  return {
+    id: "l-test",
+    sellerSlug: "tech-corner",
+    state: "available",
+    kind: "item",
+    title: "Test listing",
+    categorySlug: "tech",
+    condition: "good",
+    priceZar: 100,
+    priceIsFrom: false,
+    payMode: "cash",
+    swapFor: null,
+    description: "A test listing.",
+    handover: "pickup",
+    pickupPointId: "pp-midrand-library",
+    campusSlug: "midrand",
+    photos: [],
+    createdAt: "2026-10-14T08:00:00.000Z",
+    updatedAt: "2026-10-14T08:00:00.000Z",
     ...overrides,
   };
 }

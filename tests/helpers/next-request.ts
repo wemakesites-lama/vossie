@@ -21,6 +21,8 @@ export type FakeRequest = {
   proto: string;
   /** Set when a Server Action called refresh() from next/cache (messaging plan decision 6). */
   refreshed?: boolean;
+  /** The cache tags a Server Action expired with updateTag, in order (selling plan, Task 4). */
+  updatedTags?: string[];
 };
 
 export function resetRequest(request: FakeRequest): void {
@@ -28,6 +30,7 @@ export function resetRequest(request: FakeRequest): void {
   request.sent.clear();
   request.proto = "http";
   request.refreshed = false;
+  request.updatedTags = [];
 }
 
 export function nextHeaders(request: FakeRequest) {
@@ -95,11 +98,19 @@ export async function redirectSignalOf(run: () => Promise<unknown>): Promise<Red
   throw new Error("Expected a redirect, but there was none");
 }
 
-/** Stands in for next/cache: refresh() just notes that it was called (messaging plan, Task 6). */
+/**
+ * Stands in for next/cache (messaging plan, Task 6; selling plan, Task 4): refresh() and updateTag() note what they
+ * were asked, and the cached readers' cacheTag() and cacheLife() do nothing, as there's no cache outside Next.
+ */
 export function nextCache(request: FakeRequest) {
   return {
     refresh: () => {
       request.refreshed = true;
     },
+    updateTag: (tag: string) => {
+      request.updatedTags = [...(request.updatedTags ?? []), tag];
+    },
+    cacheTag: () => {},
+    cacheLife: () => {},
   };
 }

@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { hubPosts } from "@/data/fixtures/hub";
 import { listings } from "@/data/fixtures/listings";
 import { sellers } from "@/data/fixtures/sellers";
@@ -13,6 +13,11 @@ import {
   getHubBanner,
   getJustListed,
 } from "./index";
+import { resetSampleStore } from "./store";
+
+beforeEach(() => {
+  resetSampleStore();
+});
 
 describe("placeholder art (spec section 12)", () => {
   it("exists for every image the data points at", async () => {
