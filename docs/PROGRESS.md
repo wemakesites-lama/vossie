@@ -308,9 +308,66 @@ Review notes that were deliberately not acted on:
 - **Sample mode keeps accounts in the server's memory.** They vanish when the server restarts, the sign-in code shows on the page, and one process holds them all. The go-live checklist has what the real backend must do (keyed hashes for codes, atomic try counting, the `Secure` flag behind a proxy, plus addresses, and a database before more than one instance).
 - **JS room for stages E to G.** The listing page ends at 151,770 B: 535 B under the stop line and 1,830 B under the limit.
 
+## 2026-10-14: Messaging, reports and notifications built, in sample mode (stage E)
+- **Messages** (`/listings/[id]/message`, `/sellers/[slug]/message`, `/messages`, `/messages/[id]`): a signed-in student messages a seller about a listing, with a swap offer when it takes swaps, or asks a shop a question from its storefront. Three safety tips sit beside the composer, and the server checks each message, replies too, for paying in advance, bank details, a deposit, a courier or a code, with Send anyway. The inbox has Buying and Selling; a thread shows who wrote what and when, the status (Asked, Replied, Done, Confirmed), Mark as completed, Confirm the sale and It didn't happen, and confirms a sale itself a week after it's marked done. Refresh reloads; there are no live updates.
+- **Reports** (`/report`, `/report/sent`): seven reasons and a detail for a listing, a seller or a request, one per target and 10 in 24 hours, then a thank-you. Privacy settings list the reports you've made.
+- **Notifications** (`/notifications`): new messages and sales to confirm, marked read on opening. The header's account icon carries a red count of new ones; the account page lists Messages and Notifications with their counts; the homepage strip counts new messages and sales to confirm and links to the inbox.
+- **Every form works without the app's JavaScript** (with its bundle blocked: see the open points for a browser with JavaScript off), and every post makes the browser drop its kept pages (`refresh()`), so Back never shows a page from before your own change.
+- **Privacy:** the policy, the export and deletion take in messages, reports and notifications; deleting an account keeps the other person's side of each conversation, and a sale nobody can dispute doesn't count; how long they're kept is Eduvos's call before launch.
+- **Where the build differed from the plan** is in the plan's "Changes made during the build (2026-10-14)". The ones worth knowing:
+  - Two review fix commits: Tasks 1 to 5 (`3688ea9`: no completing a sale with a buyer who has left, a wider scam check, "asked" until a reply, invisible characters dropped) and Tasks 6 to 11 (`0cc8a4b`: each report form starts empty for its target, a deleted seller's Done sale goes back to Replied, every new link skips prefetch).
+  - Building the composer showed that with JavaScript turned off in the browser, streamed parts stay on their skeletons (amendment 4, below). Building the thread showed that two kept copies of one page share field ids, so each id names its listing, shop or conversation (`5783336`).
+  - A Messages row in the signed-in menu was tried and dropped: 16 B on every page, and the menu scrolled on a 360px phone.
+  - The end-to-end tests needed their own waits and snapshots (20 seconds for a sign-up and a first message under load, a count taken once the page is drawn instead of a retrying `toHaveCount(0)`), and the axe tests for the composer wait for its `<title>`.
+- **Plan decisions Lama may want to revisit:**
+  - Decision 2: the storefront's Message asks the shop a question (`/sellers/[slug]/message`), one per buyer and shop. Stage G decides whether a shop question counts as an enquiry for trust badges.
+  - Decision 10: the header's count is a red badge on the account icon, not a bell, because three icons need 148px and each side of the pennant has 140px at 360px. A bell from the tablet step up is possible.
+  - Decisions 11 and 12: the count is as fresh as the last page load or post (no live updates), and a conversation has one unread message notification however many messages come.
+  - Decision 17 and amendment 3.7: a report per target while it's open, and 10 in 24 hours.
+  - The sample wording (decision 26) and how long messages are kept (decision 27): both are Lama's and Eduvos's to set.
+- **Checks:**
+  - lint and types are clean;
+  - 1,194 unit tests pass, in 181 files;
+  - end to end, 848 pass, 652 are skipped by design and none fail, across 360, 390, 768, 1024 and 1440px;
+  - axe finds no serious or critical issues on the composer (with its tips, its errors and the scam check), the inbox (both tabs), a thread (seller, and buyer with a sale to confirm), the report (with an error, and its thank-you), notifications (new, and none), and the header's badge with the account page's counts.
+- **First visit at 390px, JS brotli:** homepage 150,613 B, browse 151,360 B, listing 151,769 B, storefront 151,373 B, request 151,089 B; signed in: inbox, thread, composer, report, notifications and account 150,613 B each (stop line 152,305 B, never reached; limit 153,600 B). The listing page is the highest, 536 B under the stop line. The stage added no client code, and every page ended 1 B lighter than it started.
+- **Layout shift** (fonts held back, at 390 and 1440px):
+
+  | Page | 390px | 1440px |
+  |---|---|---|
+  | Composer | 0.0003 | 0.0006 |
+  | Inbox | 0.0115 | 0.0003 |
+  | Thread | 0.0009 | 0.0004 |
+  | Report | 0.0212 | 0.0012 |
+  | Notifications | 0.0004 | 0.0006 |
+  | Homepage, signed in | 0.0015 | 0.0026 |
+  | Account | 0.0004 | 0.0003 |
+
+  Run to run the figures move by a few ten-thousandths: an earlier run read the inbox at 0.0101 and the signed-in homepage at 0.0010 and 0.0032, and the report at 0.0016 at 1440px. The notifications page is measured as the sample seller, whose list is whatever the other tests have left, so it moves more: 0.0149 at 390px in the earlier run, 0.0004 in the final one. All are under the limit of 0.05.
+- Review screenshots: `docs/progress/messaging/` (24, at 390 and 1440px).
+
+## 2026-10-14: Open points for Lama after the messaging build
+- **With JavaScript turned off in the browser,** streamed parts, forms included, stay on their skeletons (plan amendment 4). Next puts streamed content in place with a small inline script, so "works without JavaScript" means without the app's bundle, which the tests check. The go-live checklist has a quality item: decide whether a browser with JavaScript off needs the forms.
+- **On a client navigation to a page with dynamic metadata,** such as the composer, the document has no `<title>` for a moment until the metadata streams in. A full load has it at once. Axe can catch the gap; the composer's tests wait for the title. A static title would remove it.
+- **The inbox's times don't line up** when the status pills differ in width. It's cosmetic; fixing it would squeeze the text at 360px.
+- **Phone-size layout shift** on the report (0.0212), notifications (up to 0.0149) and inbox (0.0101 to 0.0115) pages. All are under 0.05. Tightening the skeleton heights at the phone step would reduce them. The notifications figure depends on how many notifications the sample seller has when the test runs.
+- **Sample wording to review** (plan decision 26):
+  - the three tips and the five scam tips: `lib/messaging/scam-check.ts`;
+  - the notification sentences: `lib/messaging/notification-text.ts`;
+  - the errors, including the report limit: `lib/messaging/errors.ts`;
+  - the composer's notes ("This is your listing…", "You've already messaged {shop} about this."): `components/messages/ComposerView.tsx`;
+  - the sale lines on a thread, and the sale's question: `components/messages/SaleActions.tsx`;
+  - the inbox's empty states: `components/messages/InboxView.tsx`; the notifications' "Nothing new.": `components/messages/NotificationsView.tsx`;
+  - the report's reasons, legend, detail hint and "You've reported this {kind} already.": `components/messages/ReportView.tsx`, and the thank-you's words in `app/report/sent/page.tsx`;
+  - the privacy policy's and privacy settings' new sentences: `app/privacy/page.tsx`, `components/account/PrivacySettingsView.tsx`.
+- **A real 404 status:** an unknown or other person's conversation, composer or report target shows the 404 page with status 200, because it's raised inside `<Suspense>` after streaming has started (as for unknown listings, decision 39).
+- **On Vercel,** the sample store lives in one server instance's memory. Conversations and sign-ins may not carry between instances until the real database replaces it.
+- **How long messages, reports and notifications are kept** is Eduvos's call (plan decision 27): the policy says the periods will be set before launch, and in sample mode everything lasts until the server restarts. It is on the go-live checklist, with the scheduled jobs that delete old ones and confirm sales after 7 days.
+- **JS room for stages F and G.** The listing page ends at 151,769 B: 536 B under the stop line and 1,831 B under the limit.
+
 ## Next
-- Lama reviews the screenshots in `docs/progress/accounts/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "accounts review screenshots"`.
-- Then stage E: messaging, reports and notifications (`2026-10-14-messaging-design.md`), on this stage's store and sessions.
+- Lama reviews the screenshots in `docs/progress/messaging/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "messaging review screenshots"`.
+- Then stage F: selling (`2026-10-14-selling-design.md`), whose dashboard counts this stage's enquiries, replies and confirmed sales.
 
 ## Waiting on
 - Eduvos font files and licence confirmation.

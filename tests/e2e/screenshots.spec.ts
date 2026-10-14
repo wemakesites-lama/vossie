@@ -1,4 +1,5 @@
 import { expect, test, type Request } from "@playwright/test";
+import { newBuyer, reply, sellerPage, signUp } from "./helpers/messaging";
 
 test.skip(!process.env.SCREENSHOTS, "Run with SCREENSHOTS=1 to refresh the review screenshots");
 
@@ -387,4 +388,85 @@ test("accounts review screenshots", async ({ page, context }) => {
   await expect(page.locator(".toast")).toHaveText("You're signed out");
   await page.screenshot({ path: file("10-signed-out-toast") });
   await context.clearCookies();
+});
+
+test("messaging review screenshots", async ({ page, browser, baseURL }) => {
+  const project = test.info().project.name;
+  test.skip(!["phone-390", "desktop-1440"].includes(project), "Saved at 390 and 1440 only");
+  // Twelve pages, two browsers and a sign-up, on a server a full run may be busy with.
+  test.setTimeout(120_000);
+  const file = (name: string) => `docs/progress/messaging/${project}-${name}.png`;
+  const main = page.locator("main");
+  const landed = { timeout: 20_000 };
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await signUp(page, newBuyer());
+
+  await page.goto("/listings/l-007/message");
+  await expect(main.getByRole("region", { name: "Stay safe" })).toBeVisible();
+  await expect(page).toHaveTitle("Message Tech corner · Vossie");
+  await page.screenshot({ path: file("01-composer"), fullPage: true });
+
+  await page.getByLabel("Your message", { exact: true }).fill("Hi! Can I pay a deposit to hold it?");
+  await page.getByLabel("Offer a swap (optional)", { exact: true }).fill("A Bluetooth speaker, barely used");
+  await main.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(main.getByRole("alert", { name: "Check this before you send" })).toBeVisible();
+  await page.screenshot({ path: file("02-scam-check"), fullPage: true });
+
+  await main.getByRole("button", { name: "Send anyway", exact: true }).click();
+  await expect(page).toHaveURL(/\/messages\/conv-[0-9a-f-]{36}$/, landed);
+  await expect(main.getByRole("status")).toHaveText("Sent. Sellers usually reply within a day.");
+  const id = page.url().split("/").at(-1)!;
+  await page.screenshot({ path: file("03-thread-sent"), fullPage: true });
+
+  // The seller's side, in a browser of their own at the same size.
+  const seller = await sellerPage(browser, baseURL!);
+  await seller.emulateMedia({ reducedMotion: "reduce" });
+  await seller.setViewportSize(page.viewportSize()!);
+  await seller.goto("/messages?tab=selling");
+  await expect(seller.locator("main .inbox-row").first()).toBeVisible();
+  await seller.screenshot({ path: file("04-inbox-selling"), fullPage: true });
+  await seller.goto(`/messages/${id}`);
+  // No "deposit" here: the scam check runs on the seller's replies too (plan decision 9), and would hold this one.
+  await reply(seller, "Hi! Happy to swap. Can I see the speaker first?\nI'm at the library entrance after 12:00.");
+  await expect(seller.locator("main").getByRole("button", { name: "Mark as completed" })).toBeVisible();
+  await seller.screenshot({ path: file("05-thread-seller"), fullPage: true });
+  await seller.locator("main").getByRole("button", { name: "Mark as completed" }).click();
+  await expect(seller.locator("main .status-pill").filter({ visible: true })).toHaveText("Done");
+  await seller.context().close();
+
+  // Opening the thread marks its notifications read (plan decision 12), so the pages that show something new are shot
+  // first, and the thread (06) after them. The buyer has two new notifications here: the reply and the sale to confirm.
+  await page.goto("/");
+  await expect(page.locator(".site-header .hdr-badge-alert")).toBeVisible();
+  await page.screenshot({ path: file("07-header-badge") });
+
+  await page.goto("/messages");
+  await expect(main.locator(".inbox-row").first()).toBeVisible();
+  await page.screenshot({ path: file("08-inbox"), fullPage: true });
+
+  await page.goto("/account");
+  await expect(main.getByRole("link", { name: /^Notifications/ })).toBeVisible();
+  await page.screenshot({ path: file("09-account"), fullPage: true });
+
+  await page.goto("/notifications");
+  await expect(main.getByText("New", { exact: true }).first()).toBeVisible();
+  await page.screenshot({ path: file("10-notifications"), fullPage: true });
+
+  await page.goto(`/messages/${id}`);
+  await expect(page.getByRole("region", { name: "Did the sale happen?" })).toBeVisible();
+  await page.screenshot({ path: file("06-sale-to-confirm"), fullPage: true });
+
+  await page.goto("/report?listing=l-001");
+  await main.getByRole("button", { name: "Send report", exact: true }).click();
+  await expect(main.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  // Send report is low on the page on a phone, so the header has folded to its crest, which a full-page shot would
+  // draw over the reasons. Back to the top first.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: file("11-report"), fullPage: true });
+
+  await main.getByRole("radio", { name: "Misleading listing" }).check();
+  await main.getByRole("button", { name: "Send report", exact: true }).click();
+  await expect(main.getByRole("heading", { level: 1, name: "Report sent" })).toBeVisible();
+  await page.screenshot({ path: file("12-report-sent") });
 });

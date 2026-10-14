@@ -212,9 +212,57 @@ The four tables, how they fit D's store, and what stages F and G add:
 | Start (D's final figures, measured again at `f7e1bee`) | 150,614 | 151,361 | 151,770 | 151,374 | 151,090 | n/a | n/a | n/a |
 | Task 7, the session links | 150,614 | 151,361 | 151,770 | 151,374 | 151,090 | n/a | n/a | n/a |
 | Task 13, the header's badge and the strip | 150,613 | 151,360 | 151,769 | 151,373 | 151,089 | n/a | n/a | n/a |
-| **Final (Task 17)** | | | | | | | | |
+| **Final (Task 17)** | **150,613** | **151,360** | **151,769** | **151,373** | **151,089** | **150,613** | **150,613** | **150,613** |
 
-The stop line used: 152,305 B (decision 52). Unit tests at the start: 978 (153 files). End to end at the start: 734 pass, 541 skipped (D's final run, `docs/PROGRESS.md`). The storefront's and request page's start figures weren't in PROGRESS; they were measured at `f7e1bee` with `performance.spec.ts` (sign-in 150,614 B and account 150,614 B match D's). The highest page is the listing page, 535 B under the stop line.
+The stop line used: 152,305 B (decision 52). Unit tests at the start: 978 (153 files); at the end 1,194 (181 files). End to end at the start: 734 pass, 541 skipped (D's final run, `docs/PROGRESS.md`); at the end 848 pass, 652 skipped, none fail. The storefront's and request page's start figures weren't in PROGRESS; they were measured at `f7e1bee` with `performance.spec.ts` (sign-in 150,614 B and account 150,614 B match D's). The highest page is the listing page, 535 B under the stop line at the start and 536 B at the end (151,769 B; 1,831 B under the limit). The stage added no client code, so the stop rule never fired: the only change to any page's JS is 1 B lighter, from Task 13's strip link. Signed in, the report, notifications and account pages are also 150,613 B (Task 16 measured them with the inbox, thread and composer).
+
+## Changes made during the build (2026-10-14)
+
+Where the build differed from the tasks as written, with the commit that made each change. Tasks 1 (`73b4998`), 2 (`4885432`), 3 (`22c2fb4`), 4 (`ae0c67c`), 5 (`a93d667`), 6 (`f314043`), 7 (`d7c3559`), 12 (`1376c89`) and 14 (`88b1f2e`) record no differences of their own; the reviews below changed some of Tasks 1 to 11's files. Side sessions committed other work between these commits (the specs and plans for stages G, H and I, and `VOSSIE_NOINDEX`, decision 68, `d484971`). Task 14's `robots.ts` edit sits beside decision 68's switch, which landed first.
+
+**The amendments** (they override the tasks): 1 and 2 (`30e8053`, before Task 2), 3 (`84e1279`, from the review of Tasks 1 to 5), 4 (`2c4d93f`, found in Task 8), 5 (`9bc0663`, found in Task 10) and 6 (`bb12517`, from the review of Tasks 6 to 11).
+
+**The review of Tasks 1 to 5** (`3688ea9`, amendment 3). One fix commit, after Task 7:
+- A sale nobody can dispute doesn't count: `markCompleted` refuses when the buyer has left, and deleting a buyer whose sale is Done puts it back to Replied.
+- The scam check catches more ways to say it ("before", "transfer", "cash send", "eWallet", "bank account", "bank acc").
+- A sale to confirm is its own notification, marked read when the sale is confirmed or rejected; plan decision 12 now speaks of message notifications only.
+- A buyer's second message before any reply notifies the seller as "asked", not "replied".
+- `cleanText` drops invisible and direction-changing characters (and keeps U+200D).
+- The comments say what's counted (code points); the report limit says "in the last 24 hours".
+- Deletion clears `readAt` on the other side's messages, a deleted side shows as "Deleted account" with "This person has left Vossie, so you can't reply.", the export settles auto-confirms first, and the account export test is strict again.
+
+**Tasks 8 to 11**
+- **"Works without JavaScript" means without the app's bundle** (`2c4d93f`, found in Task 8, amendment 4). Next reveals streamed `<Suspense>` content with a small inline script, so with JavaScript turned off in the browser the composer's form (and every other request-time part) stays on its skeleton. The e2e tests block the bundle instead, which the plan's promise meant. It's in `docs/PROGRESS.md`'s open points and the go-live checklist.
+- **Field ids name their item** (`5783336`, amendment 5, found in Task 10): `composer-message-l-001`, `composer-swap-tech-corner`, `thread-reply-conv-s1`. Next keeps the last pages hidden in the DOM, and a label or an error summary's link goes to the first element with an id, which may be on a hidden page. Tasks 8 and 10's ids and `errors.ts` changed; Task 11's report form (`5fbd3b2`) was written with them. `components/messages/field-ids.test.tsx` renders two of each page's views side by side.
+- **The thread's and the report's back link** (`3978fb7`, `5fbd3b2`): `.thread-column > .msg-crumb` and `.report-column > .msg-crumb` get `justify-self: start`. In a grid the link stretched across the column, under the header's pennant. The composer's back link sits in a block and needed none.
+- **The report's radio buttons have no `aria-invalid`** (`5fbd3b2`). It isn't allowed on a radio, so the fieldset carries the error and the `aria-describedby`, where the conventions say each invalid field has `aria-invalid`.
+
+**Task 13** (`8070e04`)
+- **A Messages row in the signed-in menu was tried and dropped.** It cost 16 B on every page and made the menu scroll on 360px phones. The account icon's badge, the account page's rows and the strip's link carry messaging instead.
+- Every page ended 1 B lighter, not only the homepage the plan named: the header's home link prefetches `/`, so the strip's chunk reaches every page (as D's toast did).
+
+**The review of Tasks 6 to 11** (`0cc8a4b`, amendment 6)
+- Each report form starts empty for its target (the form's `key` names it).
+- A sale nobody can dispute doesn't count from either side: a deleted seller puts a Done sale back to Replied, the buyer sees no sale buttons, and `confirmSale` and `rejectSale` refuse.
+- Every link the plan adds has `prefetch={false}`: the composer's See similar items, the inbox's Browse and the report thank-you's link. The new test helper `tests/helpers/next-link.tsx` (not in the file map) lets component tests see each link's `prefetch`.
+- The composer offers an existing conversation first, even when the listing has since been paused or sold.
+- Small fixes: the report action's comment, the report reason's error id coming from `reportFields()`, and `LinkProps` declared once.
+
+**Task 15** (`54dbfe5`), where the tests differ from the plan's:
+- The strip check waits for `.context-strip` to have a count of 1 before it counts "1 new message": React puts a streamed section in place a moment after the load, and until then the signed-out fallback sits beside it.
+- Sign-up and a first message wait 20 seconds to land (`POST_LANDS` in `tests/e2e/helpers/messaging.ts`), not the 5 an assertion gets: a full run shares one server across five projects and every other spec.
+- Where the plan retried `toHaveCount(0)` to show something is absent, the tests wait for the page to be drawn and then take a snapshot (`expect(await …count()).toBe(0)`). A retrying check passes at once on a page that isn't drawn yet, so it can't show that something is absent.
+- The report-form test moves from one target's form to another's with `window.next.router.push`: a link to `/report` from a report page isn't there to click, and the router is the way a test makes a client navigation without one (amendment 6.1).
+
+**Task 16** (`3c510ab`)
+- The composer's axe tests wait for the page's `<title>` first. A client navigation shows the page before its `generateMetadata` arrives, so for a moment the document has no title, and axe's document-title rule caught it once. A full load has it at once. It's in `docs/PROGRESS.md`'s open points.
+- The axe test for the notifications page uses a buyer of their own, not the sample student, because opening `/notifications` marks the sample student's notifications read, and the signed-in homepage's row counts on them still being new.
+- `performance.spec.ts`'s signed-in test became a loop over six pages (`SIGNED_IN_PAGES`).
+
+**Task 17** (this commit)
+- The screenshot test's seller reply reads "Happy to swap. Can I see the speaker first?", not "No deposit needed…": the scam check runs on the seller's replies too (plan decision 9) and held the reply.
+- The pages that show something new (the header's badge, the inbox, the account page and `/notifications`) are shot before the thread (06), since opening a thread marks its notifications read; the files keep the plan's numbers. The report's shot scrolls to the top first, so the crest the header folds to doesn't draw over the reasons.
+- `docs/PROGRESS.md`, the decisions log (decision 70), the go-live checklist, `CLAUDE.md` and the spec follow the build. Where the spec's section 9 already said what the plan's list asked for, only the build's additions went in (items 11 to 23).
 
 ## Conventions for every task
 

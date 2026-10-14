@@ -1,7 +1,7 @@
 # Vossie messaging, reports and notifications: design spec
 
 - **Date:** 2026-10-14
-- **Status:** Approved under Lama's standing goal (2026-10-14): "make recommended decisions where needed and continue working in the same manner". Each decision is Claude's recommendation, logged in the decisions log.
+- **Status:** Built (2026-10-14), in sample mode. Approved under Lama's standing goal (2026-10-14): "make recommended decisions where needed and continue working in the same manner". Each decision is Claude's recommendation, logged in the decisions log (decision 70 for the changes made on plan review and during the build).
 - **Scope:** stage E. In-app messages between buyers and sellers, swap offers, the sale status that feeds trust badges, reports, and notifications. It builds on stage D's sample store and sessions (`2026-10-14-accounts-design.md`).
 
 ## Related documents
@@ -144,9 +144,9 @@ No client code beyond the shell: forms post to Server Actions. The header's coun
 
 Live updates, push or email notifications, attachments, blocking a user, and the staff side of reports (stage G).
 
-## 9. Changes on plan review (2026-10-14)
+## 9. Changes on plan review and during the build (2026-10-14)
 
-The plan (`docs/superpowers/plans/2026-10-14-messaging.md`) refines these points; where they differ, these win.
+The plan (`docs/superpowers/plans/2026-10-14-messaging.md`) refines these points, and so did its build and reviews (items 11 to 23, with the commit for each in the plan's "Changes made during the build"); where they differ, these win.
 
 1. **Shops answer, not people.** A conversation belongs to a shop (its slug); whoever owns the shop answers. The storefront's Message goes to `/sellers/[slug]/message`, a question with no listing, one per buyer and shop. Stage G decides whether shop questions count as enquiries for trust badges.
 2. **Messaging the same listing again:** the Message link goes straight to the existing thread, and the composer shows a note instead of redirecting (a redirect would trap Back).
@@ -158,3 +158,19 @@ The plan (`docs/superpowers/plans/2026-10-14-messaging.md`) refines these points
 8. **Deleting an account** removes its messages, notifications and reports. The other person keeps their side of each conversation, with the deleted side named "Deleted account", the note "This person has left Vossie, so you can't reply." and no reply form. A sale waiting for the deleted buyer's confirmation goes back to Replied. A conversation with neither side left, or with nothing left in it, is deleted. The data export gains conversations, reports and notifications, with no ids.
 9. **How long messages are kept is Eduvos's call** (a go-live item). In sample mode they last until the server restarts.
 10. **Testing:** until stage F, the seller in end-to-end tests is the sample Tech corner account, used only on each test's own conversation.
+11. **A sale nobody can dispute doesn't count, from either side.** Item 8 names the buyer; the seller is the same. `markCompleted` refuses when the buyer has left. When either side's account is deleted while a sale is Done, it goes back to Replied and the completion is forgotten, so it never confirms itself. `confirmSale` and `rejectSale` refuse when the seller has gone, and the buyer sees no sale buttons then.
+12. **Notifications:**
+    - One unread *message* notification per conversation per person; a sale to confirm is its own notification, and it's marked read when the sale is confirmed (by the buyer or by itself) or rejected.
+    - A buyer's second message before any reply still tells the seller "{Name} asked about {title}", not "replied".
+    - Opening a thread marks that conversation's notifications read, and opening `/notifications` marks them all read, so a page that shows what's new is drawn before either is opened. The page shows the newest 50.
+13. **The scam check catches more ways to say it.** Paying in advance also matches "before" (with first, upfront, in advance), "transfer", "cash send" and "eWallet" on their own; bank details also match "bank account" and "bank acc". "I'll pay cash when I see it." still passes.
+14. **Message text** loses `\r\n`, control characters other than line breaks and tabs, and invisible and direction-changing characters (U+202A to U+202E, U+2066 to U+2069, U+200B, U+200E, U+200F, U+2060 and U+FEFF), and is trimmed. U+200D stays, since emoji need it, and a message of only those characters counts as empty. The limits count code points, so an emoji family counts as several characters.
+15. **Reports:** the limit's message says what it counts ("You've sent 10 reports in the last 24 hours. Try again later."). Each report form starts empty for its target, because `/report?listing=A` and `/report?seller=B` are one page to the router. A report keeps its target's title for stage G's queue.
+16. **Deletion and export:** deleting an account clears the read time on the other side's remaining messages, since it was when the deleted person read them. The data export settles any sale due to confirm itself first, so it never says "done" for a sale that has already confirmed.
+17. **The composer offers an existing conversation first,** even when the listing has since been paused or sold ("You've already messaged {shop} about this." with Open the conversation), before it says the listing isn't available.
+18. **Every link this stage adds skips prefetch** (`prefetch={false}`), calls to action included, so no page pays for another route's chunk (decision 53).
+19. **Field ids are unique per item** (`composer-message-l-001`, `thread-reply-conv-s1`, `report-reason-listing-l-001`), because Next keeps the last pages hidden in the DOM and a label or an error summary's link would otherwise find the first element with that id.
+20. **What "works without JavaScript" means.** It means without the app's bundle (blocked or failed), which the end-to-end tests check. Next reveals streamed parts with a small inline script, so with JavaScript turned off in the browser the request-time parts, the forms included, stay on their skeletons. An unknown or other person's conversation, composer or report target shows the 404 page with status 200, because it's raised inside `<Suspense>` after streaming has started (as for unknown listings, decision 39).
+21. **The header, the menu and the strip.** The signed-in menu has no Messages row: one was tried, cost 16 B on every page and made the menu scroll on a 360px phone. The account icon carries the badge (item 5), the account page lists Messages and Notifications with their counts (replacing 3.6's single Messages row), and the homepage strip counts new messages and sales to confirm and links to the inbox.
+22. **Search engines:** `/messages`, `/notifications`, `/report`, `/listings/*/message` and `/sellers/*/message` are in `robots.txt`'s disallow list, and every new page is `noindex`.
+23. **Performance:** the stage added no client code. Every page ended 1 B lighter than it started, from the strip's Open inbox link (now `/messages`, with no prefetch), and the signed-in messaging pages are 150,613 B each, against a stop line of 152,305 B.
