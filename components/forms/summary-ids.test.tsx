@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import { AccountView, detailsForm } from "@/components/account/AccountView";
 import { PrivacySettingsView } from "@/components/account/PrivacySettingsView";
 import { CodeStep, EmailStep, ProfileStep } from "@/components/auth/SignInSteps";
+import { composerForm, ComposerView } from "@/components/messages/ComposerView";
 import { campuses } from "@/data/fixtures/campuses";
+import { composerSubject } from "@/lib/messaging/subjects";
 import type { Account } from "@/lib/types";
 
 // The forms only need something to post to; the actions have their own tests.
@@ -18,6 +20,7 @@ vi.mock("@/lib/auth/actions", () => ({
   updateDetails: async () => {},
   verifyCode: async () => {},
 }));
+vi.mock("@/lib/messaging/actions", () => ({ sendFirstMessage: async () => {} }));
 
 const account: Account = {
   id: "acc-student",
@@ -34,7 +37,17 @@ const oops = [{ message: "Something is wrong.", fieldId: null }];
 describe("error summary ids (accounts spec 6)", () => {
   // Next keeps the last pages hidden in the DOM, so the sign-in steps, the account page and the privacy settings page
   // can all be there together. Every id, and so every summary's, must be unique across them.
-  it("never repeats an id when every form shows a summary at once", () => {
+  it("never repeats an id when every form shows a summary at once", async () => {
+    const composer = (await composerSubject({ kind: "listing", listingId: "l-007" }))!;
+    const composerWithErrors = composerForm({
+      key: "s:composer:listing:l-007",
+      sessionKey: "s",
+      form: "composer:listing:l-007",
+      errors: ["message-missing"],
+      values: {},
+      notice: null,
+      expiresAt: "2099-01-01T00:00:00.000Z",
+    });
     render(
       <>
         <EmailStep next={null} email="" consented={false} errors={oops} samples={null} />
@@ -46,10 +59,11 @@ describe("error summary ids (accounts spec 6)", () => {
           details={{ ...detailsForm(account, null), errors: oops }}
         />
         <PrivacySettingsView consent={null} deleteErrors={oops} />
+        <ComposerView subject={composer} status={{ kind: "open" }} form={composerWithErrors} />
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(5);
+    expect(summaries).toHaveLength(6);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -58,6 +72,7 @@ describe("error summary ids (accounts spec 6)", () => {
       "signin-profile-summary",
       "account-details-summary",
       "account-privacy-delete-summary",
+      "composer-summary",
     ]);
   });
 });
