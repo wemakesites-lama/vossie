@@ -1,5 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import { longSastDate, sastClock, sastDate, sastDateTime, sastMonthYear, sastToday, shortSastDate } from "./time";
+import {
+  inboxTime,
+  longSastDate,
+  messageTime,
+  sastClock,
+  sastDate,
+  sastDateTime,
+  sastMonthYear,
+  sastToday,
+  shortSastDate,
+} from "./time";
 
 describe("sastDate", () => {
   it("gives the date in South Africa (UTC+2), whatever the server's timezone", () => {
@@ -61,5 +71,32 @@ describe("sastClock", () => {
   it("gives the time of day in South Africa on the 24-hour clock (accounts spec 3.3)", () => {
     expect(sastClock("2026-10-14T08:42:00Z")).toBe("10:42");
     expect(sastClock("2026-10-14T22:05:00Z")).toBe("00:05");
+  });
+});
+
+describe("inboxTime (messaging spec 3.2, plan decision 28)", () => {
+  // Wednesday 14 October 2026, 15:00 in South Africa.
+  const now = new Date("2026-10-14T13:00:00Z");
+
+  it("gives the time today, the weekday this past week, then the date", () => {
+    expect(inboxTime("2026-10-14T12:05:00Z", now)).toBe("14:05");
+    expect(inboxTime("2026-10-12T08:00:00Z", now)).toBe("Mon");
+    expect(inboxTime("2026-10-08T08:00:00Z", now)).toBe("Thu");
+    expect(inboxTime("2026-10-07T08:00:00Z", now)).toBe("7 Oct");
+    expect(inboxTime("2025-12-30T08:00:00Z", now)).toBe("30 Dec 2025");
+  });
+
+  it("counts days in South Africa, so 22:30 UTC the night before is already today", () => {
+    expect(inboxTime("2026-10-13T22:30:00Z", now)).toBe("00:30");
+    expect(inboxTime("2026-10-13T21:59:00Z", now)).toBe("Tue");
+  });
+});
+
+describe("messageTime (messaging spec 3.3)", () => {
+  it("gives the time today, and the date and time otherwise", () => {
+    const now = new Date("2026-10-14T13:00:00Z");
+    expect(messageTime("2026-10-14T06:42:00Z", now)).toBe("08:42");
+    expect(messageTime("2026-10-12T08:00:00Z", now)).toBe("12 Oct, 10:00");
+    expect(messageTime("2025-12-30T08:00:00Z", now)).toBe("30 Dec 2025, 10:00");
   });
 });

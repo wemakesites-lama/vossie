@@ -82,3 +82,37 @@ export function sastMonthYear(iso: string): string {
 export function sastClock(iso: string): string {
   return SAST_CLOCK.format(new Date(iso));
 }
+
+// --- Messaging (messaging plan, Task 2, plan decision 28) ---------------------------------------------------------
+
+// en-GB writes the short weekday as "Mon".
+const SAST_WEEKDAY = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Johannesburg", weekday: "short" });
+
+/** Whole days from one South African date (YYYY-MM-DD) to a later one. */
+function daysBetween(earlier: string, later: string): number {
+  return Math.round((Date.parse(`${later}T00:00:00Z`) - Date.parse(`${earlier}T00:00:00Z`)) / 86_400_000);
+}
+
+/** "12 Oct", or "12 Oct 2025" when it isn't `now`'s year, in South Africa. */
+function dateForMessages(iso: string, now: Date): string {
+  const year = sastDate(new Date(iso)).slice(0, 4);
+  return year === sastDate(now).slice(0, 4) ? shortSastDate(iso) : `${shortSastDate(iso)} ${year}`;
+}
+
+/**
+ * When a conversation last moved, for the inbox (messaging spec 3.2): "14:05" today, "Mon" in the six days before,
+ * "12 Oct" earlier this year and "12 Oct 2025" before that, in South Africa. `now` comes from the caller, which reads
+ * the clock only after `await connection()`.
+ */
+export function inboxTime(iso: string, now: Date): string {
+  const days = daysBetween(sastDate(new Date(iso)), sastDate(now));
+  if (days <= 0) return sastClock(iso);
+  if (days < 7) return SAST_WEEKDAY.format(new Date(iso));
+  return dateForMessages(iso, now);
+}
+
+/** When a message was sent, in a thread (messaging spec 3.3): "14:05" today, otherwise "12 Oct, 14:05". */
+export function messageTime(iso: string, now: Date): string {
+  if (sastDate(new Date(iso)) === sastDate(now)) return sastClock(iso);
+  return `${dateForMessages(iso, now)}, ${sastClock(iso)}`;
+}
