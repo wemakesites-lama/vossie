@@ -1,28 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-const PLACEHOLDERS: Array<[path: string, title: string]> = [
-  ["/sell", "Start selling"],
-];
-
 /** Routes don't change with width, so one phone and one desktop size are enough. */
 function onlyAtPhoneAndDesktop() {
   test.skip(!["phone-390", "desktop-1440"].includes(test.info().project.name), "Covered at 390 and 1440");
 }
 
-test.describe("placeholder routes", () => {
-  for (const [path, title] of PLACEHOLDERS) {
-    test(`${path} renders inside the shell`, async ({ page }) => {
-      onlyAtPhoneAndDesktop();
-      const response = await page.goto(path);
-      expect(response?.status()).toBe(200);
-      await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
-      await expect(page).toHaveTitle(`${title} · Vossie`);
-      await expect(page.getByText("Coming in the next stage")).toBeVisible();
-      await expect(page.getByRole("banner")).toBeVisible();
-      await expect(page.getByRole("contentinfo")).toBeAttached();
-    });
-  }
-
+test.describe("routes", () => {
   test("unknown listing, collection, seller, request and Hub post links show the 404 page", async ({ page }) => {
     onlyAtPhoneAndDesktop();
     await page.goto("/listings/nope");

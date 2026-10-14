@@ -99,7 +99,7 @@ test.describe("menu", () => {
     await menu.getByRole("link", { name: "Sell" }).click();
     await expect(page).toHaveURL(/\/sell$/);
     await expect(menu).toBeHidden();
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Start selling");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Turn your hustle into a campus-wide business");
   });
 
   test("hands focus back through the menu-to-picker chain", async ({ page }) => {

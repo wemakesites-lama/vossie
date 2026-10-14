@@ -7710,3 +7710,199 @@
     font-size: 14px;
   }
 }
+
+/* --- Selling: the frame, the pitch, waiting and the dashboard (selling plan, Task 9, spec 2.7, 2.8 and section 3) --- */
+@layer components {
+  /* .page and .sell-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
+  .sell-page {
+    padding: 24px 16px 64px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .sell-page {
+      padding: 40px 40px 96px;
+    }
+  }
+
+  /* One readable column, centred in the page column. */
+  .sell-column {
+    display: grid;
+    gap: 32px;
+    max-width: 44rem;
+    margin-inline: auto;
+  }
+
+  .sell-head {
+    display: grid;
+    justify-items: start;
+    gap: 12px;
+  }
+
+  .sell-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .sell-lede {
+    max-width: 36rem;
+    color: var(--color-ink);
+    font-size: 18px;
+  }
+
+  .sell-section {
+    display: grid;
+    gap: 12px;
+  }
+
+  .sell-section-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 22px;
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  /* Links in the selling pages' text are sky-dark on white (4.7:1), underlined. */
+  .sell-section p a,
+  .sell-note a {
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .sell-cards {
+    display: grid;
+    gap: 12px;
+    counter-reset: sell-step;
+  }
+
+  .sell-cards li {
+    padding: 14px 16px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+    color: var(--color-ink);
+  }
+
+  .sell-cards strong {
+    color: var(--color-navy);
+  }
+
+  .sell-numbered li {
+    counter-increment: sell-step;
+  }
+
+  .sell-numbered li::before {
+    content: counter(sell-step) ". ";
+    color: var(--color-navy);
+    font-weight: 700;
+  }
+
+  .sell-note {
+    color: var(--color-muted);
+  }
+
+  .sell-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+  }
+
+  .sell-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 4px 14px;
+    border-radius: 999px;
+    background: var(--color-pale);
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  /* Danger red on panel is 6.0:1. */
+  .sell-status-paused {
+    background: var(--color-panel);
+    color: var(--color-danger);
+  }
+
+  .sell-numbers {
+    display: grid;
+    gap: 12px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .sell-numbers {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .sell-numbers div {
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    padding: 16px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+  }
+
+  .sell-numbers dt {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  .sell-numbers dd {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 28px;
+    line-height: 1;
+  }
+
+  .sell-badge {
+    color: var(--color-navy);
+    font-weight: 700;
+  }
+
+  .sell-rows {
+    display: grid;
+    border-top: 1.5px solid var(--color-line);
+  }
+
+  .sell-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 56px;
+    border-bottom: 1.5px solid var(--color-line);
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .sell-row svg {
+    flex: none;
+    width: 20px;
+    height: 20px;
+  }
+
+  .sell-pause {
+    display: grid;
+    justify-items: start;
+    gap: 12px;
+    padding-top: 24px;
+    border-top: 1.5px solid var(--color-line);
+  }
+
+  /* While /sell streams in: about the pitch's height, so the footer doesn't jump. Task 17 checks it. */
+  .sell-skeleton-head {
+    height: 13rem;
+  }
+
+  .sell-skeleton-body {
+    height: 34rem;
+  }
+}
