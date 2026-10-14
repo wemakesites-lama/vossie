@@ -224,9 +224,55 @@ Review notes that were deliberately not acted on:
 - **The sample Featured draw doesn't match the trust page yet.** The page says a featured seller sits out for a week and needs something listed. `drawFeatured` (`lib/featured.ts`) does neither today; the staff tools spec adds both when it builds the real draw.
 - **Later stages may add to `robots.txt`.** Messages, notifications and reports are signed-in pages that a crawler only meets behind sign-in links, so none needs listing, but add them if you'd like it explicit. Staff pages stay unlisted on purpose.
 
+## 2026-10-14: Community pages built (Looking For and the Hub)
+- **Looking For** (`/looking-for`): the board opens on your campus ("At Midrand", then "Other campuses"; the online campus reads "On Eduvos Online") with category chips. Each row shows where, what, the budget, when it was posted and the offers. Empty and error states; Post a request goes to the sign-in placeholder.
+- **A request** (`/looking-for/[id]`): the facts as pills, the asker's words (no names: "Asked by a student at Midrand"), the offers and Offer to help (to sign-in), "This request is closed" when it is, up to four listings already on Vossie in the same category, and Report.
+- **The Hub** (`/hub`): the story, the Verified sellers (A to Z, linking to their shops) and one feed: upcoming events and office hours, soonest first, then tips, with a tab for each.
+- **A Hub post** (`/hub/[id]`): the cover, the facts, a markdown body rendered on the server (links inside the site only), RSVP or Request a slot through sign-in, "has passed" once the day is over, and More from the Hub.
+- **Data:** 16 requests (14 open and 2 closed; the homepage's 7 unchanged) and 18 Hub posts (8 events, 4 office hours and 6 tips, two of them past). What's on is derived from the posts, and its RSVP and Book links, like the homepage's request rows, open the new pages. The Looking For band now leads with a campus's own request at seven more campuses (plan decision 1). The sitemap lists every request and Hub post.
+- **Decisions:** 64 (Looking For) and 65 (the Hub), which also carry the plan decisions that changed the spec. The spec matches the build.
+- **Where the build differed from the plan** is in the plan's "Changes made during the build (2026-10-14)". The ones worth knowing:
+  - The plan's five code blocks (`data/fixtures/requests.ts`, `data/fixtures/hub.ts`, `lib/requests.ts`, `lib/hub.ts` and `lib/markdown.ts`) were `{{…}}` placeholders, because the plan's drafter was stopped at the usage limit. The first agent improvised them; the controller filled the plan from the drafter's checked prototypes (`a6bcd6a`), and a second agent replaced the improvised files with the plan's versions.
+  - Turbopack's `requestCost` option (decision 63, `580d1e6`) made every page 528 B lighter before Task 3, so the stop line was never close.
+  - The plan's CSS for the current chip scrolled the whole page 312px on tablet and desktop (`scroll-initial-target`); it is off from the tablet step (`6ce9c28`).
+  - The review of Tasks 1 to 4 (`5dd9ef5`) fixed links with parentheses in the markdown, added an 8,000-character guard on parsing (it was quadratic), added two board tests and made the Verified sellers' cards even heights.
+  - The online campus's heading read "At Eduvos Online". It now reads "On Eduvos Online", and its empty line "Nothing on Eduvos Online yet." (every other campus keeps "At …").
+- **Plan decisions Lama may want to revisit:** none came up in review. The ones with an effect Lama can see:
+  - Decision 1: the homepage's Looking For band leads with the viewer's own request at seven more campuses.
+  - Decision 19: the board's Post a request always comes back to `/looking-for`, even from a category view, because the heading is prerendered.
+  - Decision 20: the 16 requests, the 18 posts and the Hub's story are sample wording for Lama and the Hub to change.
+- **Checks:**
+  - lint and types are clean;
+  - 753 unit tests pass, in 127 files;
+  - end to end, 646 pass, 464 are skipped by design and none fail, across 360, 390, 768, 1024 and 1440px;
+  - axe finds no serious or critical issues on the new pages and states.
+- **First visit at 390px, JS brotli:** homepage 150,554 B, browse 151,301 B, listing 151,710 B, board 150,554 B, request 151,030 B, Hub 150,554 B, Hub post 150,554 B (limit 153,600 B; stop line 152,305 B, never reached). The other pages: How it works 150,554 B, storefront 151,314 B, Saved 151,189 B, collection 151,030 B. The listing page is the highest, 595 B under the stop line.
+- **Layout shift** (fonts held back, at 390 and 1440px):
+
+  | Page | 390px | 1440px |
+  |---|---|---|
+  | Looking For board | 0.0021 | 0.0022 |
+  | Board, campus Mbombela | 0.0018 | 0.0019 |
+  | A request | 0.0244 | 0.0004 |
+  | Hub | 0.0003 | 0.0012 |
+  | Hub event | 0.0004 | 0.0004 |
+  | Hub office hours | 0.0172 | 0.0003 |
+  | Hub tip | 0.0172 | 0.0003 |
+
+  The earlier run (Task 10) read request 0.0249 and 0.0003, office hours 0.0175 and 0.0004, tip 0.0169 and 0.0005 at the two sizes: the figures move by a few ten-thousandths from run to run, and all are well under the limit of 0.05.
+- Review screenshots: `docs/progress/community/`.
+
+## 2026-10-14: Open points for Lama after the community build
+- **The sitemap lists closed requests and past Hub posts.** It includes every request id and every post id, so the two closed requests and the two past posts (and, as days pass, every event that has ended) are listed. A reviewer noted it. Lama may want them out later; it is on the go-live checklist. The site isn't public yet, so nothing is indexed meanwhile.
+- **Everything on these pages is sample content.** The 16 requests with their offers counts, the 18 posts with their "going" numbers and places, and the Hub's story are made up. The Hub and Lama replace them, and staff tools (stage G) will let the Hub write posts.
+- **Markdown parsing stops at 8,000 characters.** Sample bodies are far shorter (spec limit 4,000). It was quadratic on long lines, and staff will be writing bodies from stage G. Revisit when the editor exists.
+- **Sample dates run out.** The events end on 11 February 2027. Until then the feed always has something; after that its events section says "Nothing planned right now. Check back soon." The end-to-end tests never assume a date, but the screenshot of an event page (`08-hub-event`) shows RSVP only while the first event, "Pitch night" on 14 October 2026, is still ahead: retaken later, it shows "This event has passed" (the test accepts either).
+- **Request and office-hours pages have the most layout shift of the new pages,** 0.0244 at 390px for a request and 0.0172 for office hours and tips. All are under the 0.05 limit; the board, the Hub and an event page are under 0.003.
+- **JS room for the signed-in stages.** The listing page, the highest, ends at 151,710 B: 595 B under the stop line and 1,890 B under the limit. Decision 63's `requestCost` is experimental and a threshold effect, so later code can shrink the saving; `performance.spec.ts` is the guard.
+
 ## Next
-- Lama reviews the screenshots in `docs/progress/info-system/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "info and system review screenshots"`.
-- Part B (Looking For and the Hub) builds next, then stage D (accounts). The plan for stage E (messaging) is being drafted. After that come F (selling) and G (staff tools) (decisions 54 and 55).
+- Lama reviews the screenshots in `docs/progress/community/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "community review screenshots"`.
+- Stage D (sign-in and accounts) builds next. The plans for D and E are written, and F's is being drafted. After that come F (selling) and G (staff tools) (decisions 54 and 55).
 
 ## Waiting on
 - Eduvos font files and licence confirmation.

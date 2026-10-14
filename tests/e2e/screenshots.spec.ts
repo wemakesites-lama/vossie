@@ -248,3 +248,75 @@ test("info and system review screenshots", async ({ page }) => {
   await expect(title).toHaveText("We couldn't find that page");
   await page.screenshot({ path: file("08-not-found") });
 });
+
+test("community review screenshots", async ({ page, context, baseURL }) => {
+  const project = test.info().project.name;
+  test.skip(!["phone-390", "desktop-1440"].includes(project), "Saved at 390 and 1440 only");
+  const file = (name: string) => `docs/progress/community/${project}-${name}.png`;
+
+  /** Scroll the whole page so every lazy photo loads, then come back to the top. */
+  async function settle() {
+    await page.evaluate(async () => {
+      for (let y = 0; y < document.body.scrollHeight; y += 600) {
+        window.scrollTo(0, y);
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      window.scrollTo(0, 0);
+      await document.fonts.ready;
+    });
+  }
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+
+  // The board, the feed and a post's action stream in behind skeletons, so each shot waits for something the finished
+  // page shows.
+  const title = page.getByRole("heading", { level: 1 });
+
+  await page.goto("/looking-for");
+  await expect(page.getByRole("region", { name: "Open requests" })).toBeVisible();
+  await settle();
+  await page.screenshot({ path: file("01-board"), fullPage: true });
+
+  await context.addCookies([{ name: "vossie_campus", value: "midrand", url: baseURL! }]);
+  await page.goto("/looking-for");
+  await expect(page.getByRole("region", { name: "At Midrand" })).toBeVisible();
+  await page.screenshot({ path: file("02-board-campus") });
+  await context.clearCookies();
+
+  await page.goto("/looking-for?cat=tickets-events");
+  await expect(page.getByText("No requests here yet. Be the first to ask.")).toBeVisible();
+  await page.screenshot({ path: file("03-board-empty") });
+
+  await page.goto("/looking-for/r-001");
+  await expect(title).toBeVisible();
+  await settle();
+  await page.screenshot({ path: file("04-request"), fullPage: true });
+
+  await page.goto("/looking-for/r-015");
+  await expect(page.getByText("This request is closed")).toBeVisible();
+  await page.screenshot({ path: file("05-request-closed") });
+
+  await page.goto("/hub");
+  await expect(page.getByRole("list", { name: "Tips" })).toBeVisible();
+  await settle();
+  await page.screenshot({ path: file("06-hub"), fullPage: true });
+
+  await page.goto("/hub?type=tips#hub-feed");
+  await expect(page.getByRole("list", { name: "Tips" })).toBeVisible();
+  await page.screenshot({ path: file("07-hub-tips") });
+
+  await page.goto("/hub/h-001");
+  await expect(page.locator(".hub-post-action").getByText(/RSVP|This event has passed/)).toBeVisible();
+  await settle();
+  await page.screenshot({ path: file("08-hub-event"), fullPage: true });
+
+  await page.goto("/hub/h-013");
+  await expect(title).toBeVisible();
+  await settle();
+  await page.screenshot({ path: file("09-hub-tip"), fullPage: true });
+
+  await page.goto("/hub/h-012");
+  await expect(page.getByText("These office hours have passed")).toBeVisible();
+  // Full page: at 1440px the "have passed" line sits below the first screen.
+  await page.screenshot({ path: file("10-hub-past"), fullPage: true });
+});

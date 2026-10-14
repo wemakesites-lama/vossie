@@ -2,7 +2,7 @@
 
 Every page and view the marketplace needs before it can go live, plus the work that isn't a screen. Drawn from the app's routes, the old demo's function map (`FUNCTION-MAP.md`) and the homepage spec's "Not in this stage" list.
 
-Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections) and after the info, legal and system pages (part C). Update the status column as each stage lands.
+Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) and after Looking For and the Hub (part B). Update the status column as each stage lands.
 
 **Status key**
 - **Built:** done.
@@ -20,10 +20,10 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Listing: gallery, phone dock, collect box, seller card, more from the seller, paused and sold states, Share | `/listings/[id]` | Built |
 | Seller storefront: header, badges, about, their listings, contact, report | `/sellers/[slug]` | Built |
 | Collection: a curated list, e.g. "Res essentials" | `/collections/[slug]` | Built |
-| Looking For board | `/looking-for` | Placeholder |
-| A single Looking For request | `/looking-for/[id]` | Missing |
-| Hub feed: tips, events, office hours | `/hub` | Placeholder |
-| Hub post, with RSVP and book-a-slot | `/hub/[id]` | Missing |
+| Looking For board | `/looking-for` | Built (posting a request waits for accounts) |
+| A single Looking For request | `/looking-for/[id]` | Built (offers wait for accounts) |
+| Hub feed: tips, events, office hours | `/hub` | Built |
+| Hub post, with RSVP and book-a-slot | `/hub/[id]` | Built (RSVP and booking wait for accounts) |
 | How it works, Safety | `/how-it-works`, `/safety` | Built |
 | Privacy policy | `/privacy` | Built as a draft; Eduvos signs off the wording |
 | How trust works (the badges, and how Featured is picked) | `/trust` | Built |
@@ -77,7 +77,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Hub post editor and the office-hours queue | `/hub/new`, `/hub/manage` | Missing |
 | Mentor dashboard, seller detail, notes, check-ins, CSV export | `/mentor/*` | Missing; can follow launch |
 
-**Totals:** about 45 screens and views. 14 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, and the privacy policy, terms of use and seller guidelines as drafts), and 31 are placeholders or missing. Most of the missing ones are the signed-in half of the product.
+**Totals:** about 45 screens and views. 18 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, the privacy policy, terms of use and seller guidelines as drafts, and Looking For's board and request pages and the Hub's feed and post pages, which read today and send acting to sign-in), and 27 are placeholders or missing. Most of the missing ones are the signed-in half of the product.
 
 ## 6. Work that isn't a screen
 
@@ -107,7 +107,8 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] Eduvos fonts and the licence.
 - [ ] The official crest SVG.
 - [ ] Real pickup points for each campus.
-- [ ] Real Hub events.
+- [ ] Real Hub events, tips and story. The 18 posts and the Hub's two paragraphs are sample wording.
+- [ ] Real Looking For requests. The 16 requests (and the offers counts on them) are samples to remove.
 - [ ] Info pages say what's true today; update them as stages land (How it works' "What can I do on Vossie today?", the trust page's sample notes, the privacy page's "When sign-in arrives").
 - [ ] Remove every sample listing and the development sign-in switch.
 
@@ -117,7 +118,8 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] A Content Security Policy (it needs per-request nonces, which make pages dynamic).
 - [ ] HSTS: add `includeSubDomains` and preload once the domain is settled.
 - [ ] Decide how to keep the campus choice and saves past Safari's 7-day limit on cookies written by the page (decision 58).
-- [x] robots.txt and a sitemap (2026-10-14). Looking For requests and Hub posts join the sitemap when part B builds them (`app/sitemap.ts` says how).
+- [x] robots.txt and a sitemap (2026-10-14). Looking For requests and Hub posts joined the sitemap when part B built them.
+- [ ] Decide whether the sitemap should keep listing closed requests and past Hub posts. It lists every one today (a reviewer noted it); a closed request or a past event may be better out of it.
 - [x] Share images for WhatsApp: a default card (`app/opengraph-image.tsx`) for every page, and listings and sellers have their own (2026-10-14). All use `next/og`'s built-in font until Eduvos's font files arrive.
 - [x] `metadataBase` comes from `NEXT_PUBLIC_SITE_URL` (`lib/site-url.ts`), so share cards, `robots.txt` and the sitemap all follow it (2026-10-14).
 - [ ] Set `NEXT_PUBLIC_SITE_URL` to the live domain in the host's build environment (see `.env.example`). Until it is set, share cards, `robots.txt` and the sitemap name `http://localhost:3000`, and a production build warns.
@@ -148,7 +150,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 ## 8. Suggested order
 
 1. **Done (2026-10-13):** browse and listing pages.
-2. **The other public pages:** the storefront, Saved and collections (2026-10-14), and the info, legal and system pages (2026-10-14) are done. Next: the Looking For board and Hub to read (part B). The branded error page was dropped under the JS stop rule, so Next's default shows.
+2. **Done (2026-10-14): the other public pages.** The storefront, Saved, collections, the info, legal and system pages, and Looking For and the Hub (to read) are done. The branded error page was dropped under the JS stop rule, so Next's default shows. Next is item 3, starting with stage D (sign-in and accounts): it turns every "sign in to do that" link on these pages into the real flow.
 3. **Supabase, sign-in, and account and privacy.**
 4. **Selling:** onboarding, listing form and dashboard, plus the minimum admin (approvals and moderation).
 5. **Messaging:** composer, inbox, conversations, reports and notifications.

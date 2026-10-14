@@ -58,6 +58,7 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 
 ## Privacy (POPIA)
 - Collect the minimum. This stage stores nothing on a server: the campus choice and saved listings are first-party cookies, and recent searches stay in the browser.
+- Looking For requests never name the asker: they say "Asked by a student at {campus}". Sellers are businesses and show their names (community spec decision 2).
 - The footer sign-up shows a confirmation only. It sends and stores nothing until there is a real, consented mailing list.
 - Every cookie and browser-storage key is named `vossie_…`, and the privacy page must name each one: a test (`app/privacy/page.test.tsx`) finds them in the code and fails until it does.
 - Photos of people need their consent.

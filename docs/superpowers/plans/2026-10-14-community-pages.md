@@ -125,17 +125,52 @@ These override the tasks below wherever they differ.
 - **Where bytes move:** nowhere, by design. Every new component is a Server Component and the helpers are server-only. Each new page brings its own small route chunk; the request page's "Already on Vossie" cards bring the Save hearts, which other pages already load.
 - **Recording.** `tests/e2e/performance.spec.ts` prints each page's `scriptBrotli`. Tasks 4 to 7 add their page to it, run it at 390px and record the figures in their commit messages. Task 8 re-measures the homepage.
 
-**As built** (fill in during the build):
+**As built** (first visit at 390px, brotli quality 5):
 
 | Point | `/` | `/browse` | Listing | Board | Request | Hub | Hub post |
 |---|---|---|---|---|---|---|---|
-| Start (the shopping plan's final figures) | | | | | | | |
-| Task 4, the board | | | | | | | |
-| Task 5, a request | | | | | | | |
-| Task 6, the Hub | | | | | | | |
-| Task 7, a Hub post | | | | | | | |
-| Task 8, homepage links | | | | | | | |
-| **Final** | | | | | | | |
+| Start (amendment 3: part C's final figures) | 151,082 B | 151,829 B | 152,238 B | | | | |
+| After `580d1e6` (decision 63, Turbopack's `requestCost`) | 150,554 B | 151,301 B | 151,710 B | | | | |
+| Task 4, the board (`6ce9c28`) | | | | 150,554 B | | | |
+| Task 5, a request (`cef9f53`) | | | | | 151,030 B | | |
+| Task 6, the Hub (`cef9f53`) | | | | | | 150,554 B | |
+| Task 7, a Hub post (`d21126e`) | | | | | | | 150,554 B |
+| Task 8, homepage links (`6bdcf61`) | 150,554 B | | | | | | |
+| **Final** (Task 11's run) | **150,554 B** | **151,301 B** | **151,710 B** | **150,554 B** | **151,030 B** | **150,554 B** | **150,554 B** |
+
+- **The stop line was never reached.** It stayed at 152,305 B (decision 52), and nothing was accepted under it. The highest page ends at the listing page's 151,710 B: 595 B under the line and 1,890 B under the limit (153,600 B).
+- **`580d1e6` moved the start before Task 3.** `requestCost` (decision 63) took 528 B off every page, so the ledger's later rows are measured against the lighter figures.
+- **Tasks 4 to 8 logged only their own page.** No existing page moved (as designed): the board, the Hub and a Hub post equal `/`, and the request page equals the collection page, which also shows the Save hearts.
+- **The final run, the other pages:** How it works (the info page) 150,554 B, storefront 151,314 B, Saved 151,189 B and collection 151,030 B.
+
+## Changes made during the build (2026-10-14)
+
+The tasks above were built as written, except for these. The commits run from `6ef9c5f` (this plan's first commit) to the one that holds this section.
+
+- **The plan's five code blocks (`6ef9c5f`, `a6bcd6a`).** The controller assembled this plan from its drafter's task drafts after the drafter was stopped at the usage limit (`6ef9c5f`). Five code blocks were left as `{{…}}` placeholders: the two fixtures (`data/fixtures/requests.ts` and `data/fixtures/hub.ts`), `lib/requests.ts`, `lib/hub.ts` and `lib/markdown.ts`.
+  - The first Tasks 1 and 2 implementer wrote those files itself.
+  - The controller then filled the plan from the drafter's checked prototypes (`a6bcd6a`), and a second agent replaced the improvised files with the plan's versions, because later tests depend on their wording.
+- **Tasks 1 and 2 (`7304411`):** committed together, because eight files carry both. 672 unit tests.
+- **Amendments (`3116b44`):** part C landed first, so shared files differed from what the tasks quote; the sitemap gained requests and Hub posts in Task 2; the start figures; the privacy guard test.
+- **`580d1e6` (decision 63):** Turbopack's `requestCost` option made every page 528 B lighter before Task 3, so the ledger's start moved (listing 152,238 B to 151,710 B) and the stop line was never near.
+- **Task 3 (`bc8b9c8`):** its CSS shipped with Task 4, because `app/globals.css` carries both.
+- **Task 4 (`6ce9c28`): a fix to the plan's CSS.** The current chip's `scroll-initial-target` scrolled the whole page 312px on tablet and desktop, where the chip row stops scrolling. It is turned off from the tablet step.
+- **Tasks 5 and 6 (`cef9f53`):** one commit, because `app/globals.css` and two end-to-end specs carry both. 731 unit tests. No existing page's JS moved.
+- **Task 7 (`d21126e`) and Task 8 (`6bdcf61`):** built as written.
+- **Review of Tasks 1 to 4 (`5dd9ef5`):**
+  - the markdown link pattern allows one level of balanced parentheses, so `/browse?q=(x)` stays one link and a dropped `javascript:` link leaves no stray `)`; percent-encoded paths are tested;
+  - parsing stops at 8,000 characters, because it was quadratic on long lines and stage G lets staff write bodies;
+  - two board tests (Eduvos Online, and a campus emptied by the category filter);
+  - the Verified sellers' cards share their row's height.
+- **Task 9 (`0f99284`) and Task 10 (`3a7e4f0`):** built as written, with no locator changes; all pass at every size they run at. Axe finds no serious or critical issues on the ten new pages and states. Layout shift (fonts held back) in Task 10's run, 390 and 1440px: board 0.0021 and 0.0022, board at Mbombela 0.0018 and 0.0020, request 0.0249 and 0.0003, Hub 0.0003 and 0.0013, event 0.0004 and 0.0003, office hours 0.0175 and 0.0004, tip 0.0169 and 0.0005. The full suite was 646 passing, 459 skipped and none failing.
+- **The wording fix (its own commit, ahead of Task 11):** on the board, a viewer whose campus is Eduvos Online saw "At Eduvos Online", which reads oddly for an online campus. It now reads "On Eduvos Online", with "Nothing on Eduvos Online yet." as its empty line, using `isOnlineCampus` from `lib/campus.ts`. Every other campus keeps "At …". The unit test that pinned the old heading was changed first, and one for the empty line was added. The end-to-end tests never pinned it, and the plan's tasks quote only "At Midrand", "At Mbombela" and "Nothing at Mbombela yet.", which are unchanged.
+- **Task 11:**
+  - **The screenshots** are as written, except that `10-hub-past` is a full-page shot: at 1440px the "These office hours have passed" line sits below the first screen, so the viewport shot didn't show what its name says. Each shot waited for something the finished page shows. The run wrote 20 PNGs, and 13 of them were opened (every shot at one size or both): they show what their names say.
+  - **The decisions log has two rows, 64 and 65,** instead of the plan's three. The plan decisions that changed the spec (1 and 8 for Looking For; 2, 3, 6, 7 and 9 for the Hub) are folded into them, and the rows say the decisions were made under Lama's standing goal (decision 54), not "at plan review".
+  - **The spec:** besides the edits Step 2 lists, it records the sitemap, the "On Eduvos Online" wording, the Verified sellers' A to Z order (plan decision 11), the markdown parser's parentheses and 8,000-character limit, and that the desktop offers panel sits beside the request (plan decision 18).
+  - **The go-live checklist:** the four pages are Built, the totals are 18 built and 27 not, and three items were added: real Hub events, tips and story; real Looking For requests; and a decision on whether the sitemap keeps closed requests and past posts.
+  - **`CLAUDE.md`:** Step 3's privacy bullet (requests never name the asker) is the controller's to add. The Task 11 agent doesn't edit `CLAUDE.md`.
+  - **The final run:** lint and types clean; 753 unit tests in 127 files; end to end, 646 pass, 464 are skipped by design and none fail. The skipped count grew by 5 from Task 10's 459: the new screenshots test, which runs only with `SCREENSHOTS=1`.
 
 ## Conventions for every task
 
