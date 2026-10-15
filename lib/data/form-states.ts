@@ -25,3 +25,21 @@ export async function saveFormState(state: Omit<FormStateRow, "key">, now: Date)
 export async function clearFormState(sessionKey: string, form: string): Promise<void> {
   sampleStore().formStates.delete(keyFor(sessionKey, form));
 }
+
+/**
+ * Takes a one-time state, for the first post to ask (selling plan amendment 14.1). The check and the mark are one step,
+ * with nothing awaited between them, so two posts sent together can't both be first. `first` is true for the post
+ * that took it; `state` is a copy of the row, which a later post finds as the first left it (saved again with
+ * `taken: true`). Null when there is none: it was never made, has run out, or belongs to another session.
+ */
+export async function takeFormState(
+  sessionKey: string,
+  form: string,
+  now: Date,
+): Promise<{ first: boolean; state: FormStateRow } | null> {
+  const row = sampleStore().formStates.get(keyFor(sessionKey, form));
+  if (!row || Date.parse(row.expiresAt) <= now.getTime()) return null;
+  const first = !row.taken;
+  row.taken = true;
+  return { first, state: structuredClone(row) };
+}

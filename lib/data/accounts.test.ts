@@ -18,7 +18,7 @@ import { saveFormState } from "./form-states";
 import { storePhotos } from "./photos";
 import { createReport } from "./reports";
 import { createSession } from "./sessions";
-import { emptyDraft, saveOnboardingDraft } from "./shops";
+import { changeShopSlug, emptyDraft, saveOnboardingDraft } from "./shops";
 import { recordCodeSent, saveSampleEmail, saveSignInAttempt } from "./sign-in";
 import { resetSampleStore, sampleStore } from "./store";
 
@@ -188,6 +188,12 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
     const text = JSON.stringify(data);
     expect(text).not.toContain("session-key-1");
     expect(text).not.toContain("acc-seller");
+  });
+
+  it("holds the links the shop has left behind, as addresses (selling plan amendment 14.2)", async () => {
+    await changeShopSlug("acc-seller", "gadgets", NOW);
+    const data = await exportAccountData("acc-seller", NOW);
+    expect(data!.shop).toMatchObject({ link: "gadgets", previousLinks: ["/sellers/tech-corner"] });
   });
 
   it("holds the wizard's draft for a student who hasn't sent their application yet (selling plan amendment 9.6)", async () => {

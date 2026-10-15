@@ -6,7 +6,7 @@ import type { ListingRow } from "@/lib/data/rows";
 import { isId } from "@/lib/messaging/paths";
 import { characterCount } from "@/lib/messaging/rules";
 import { listingFieldIds, listingFieldPrefix, sellingErrors } from "@/lib/selling/errors";
-import { listingForm } from "@/lib/selling/form-state";
+import { issueListingToken, listingForm } from "@/lib/selling/form-state";
 import { requireShopOwner } from "@/lib/selling/owner";
 import { editListingPath, NEW_LISTING_PATH } from "@/lib/selling/paths";
 import { ALT_MAX } from "@/lib/selling/rules";
@@ -45,11 +45,13 @@ export async function ListingForm({ params }: { params?: Promise<{ id: string }>
   const owner = await requireShopOwner(id ? editListingPath(id) : NEW_LISTING_PATH);
   const listing = id && isId(id) ? await getOwnListing(owner.shop.slug, id) : null;
   if (id && !listing) notFound();
-  const [state, categories, campuses, pickupPoints] = await Promise.all([
+  // A new listing's form gets a one-time token, made now, at request time (amendment 14.1).
+  const [state, categories, campuses, pickupPoints, once] = await Promise.all([
     readFormState(listingForm(listing?.id ?? null)),
     getCategories(),
     getCampuses(),
     getPickupPoints(),
+    listing ? null : issueListingToken(),
   ]);
   const spots = pickupPoints.filter((point) => owner.shop.pickupPointIds.includes(point.id));
   const values = state ? state.values : valuesOf(listing, spots[0]?.id ?? null);
@@ -67,6 +69,7 @@ export async function ListingForm({ params }: { params?: Promise<{ id: string }>
   return (
     <ListingFormView
       listingId={listing?.id ?? null}
+      once={once}
       state={listing?.state ?? null}
       waiting={owner.status === "pending"}
       values={values}

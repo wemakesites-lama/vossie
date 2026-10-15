@@ -11,7 +11,15 @@ import { characterCount, keepTyped } from "@/lib/messaging/rules";
 import { PHOTOS_PER_LISTING } from "@/lib/photos/rules";
 import { done, field, fieldList, fileList } from "./action-helpers";
 import { listingFieldPrefix } from "./errors";
-import { clearForm, listingForm, MY_LISTINGS_FORM } from "./form-state";
+import {
+  clearForm,
+  leaveListingToken,
+  listingForm,
+  MY_LISTINGS_FORM,
+  sentListing,
+  takeListingToken,
+  type ListingSent,
+} from "./form-state";
 import { requireShopOwner } from "./owner";
 import { editListingPath, myListingsPath, NEW_LISTING_PATH, parseListingsTab, tabFor } from "./paths";
 import { applyPhotoMove, parsePhotoMove, photoOrder, resolveToken } from "./photo-order";
@@ -89,10 +97,20 @@ function typedValues(
   return values;
 }
 
+/** A new listing's form sent again (amendment 14.1): back to where the first send went, with the notice it left. */
+async function sentAgain(sent: ListingSent, now: Date): Promise<never> {
+  await writeFormState(MY_LISTINGS_FORM, { errors: [], values: { listing: sent.listing }, notice: sent.notice }, now);
+  done(sent.path);
+}
+
 /**
  * The listing form (selling spec 2.10): Save and publish, Save as draft, and the photo buttons. Photos are checked,
  * stripped and stored first, so a save that fails, or a photo button pressed without the app's JavaScript, keeps
  * them (plan decisions 9 and 11). A shop waiting for approval saves drafts only (plan decision 4).
+ *
+ * A new listing is made once, however many times its form is sent (amendment 14.1): the form carries a one-time token,
+ * and only the first save to take it makes a listing. A later one goes where the first went; one with no token, or a
+ * made-up or run-out one, is refused with the form's error and what was typed.
  */
 export async function saveListingForm(formData: FormData): Promise<void> {
   const posted = field(formData, "listing");
@@ -103,6 +121,11 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   const id = existing?.id ?? null;
   const form = listingForm(id);
   const formPath = id ? editListingPath(id) : NEW_LISTING_PATH;
+
+  // A token that has made its listing already: go where that save went, before any photo is stored or checked.
+  const once = id ? "" : field(formData, "once");
+  const earlier = once ? await sentListing(once, now) : null;
+  if (earlier) await sentAgain(earlier, now);
 
   const context: ListingContext = {
     categorySlugs: (await getCategories()).map((category) => category.slug),
@@ -164,6 +187,20 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   }
 
   const intent = owner.status !== "pending" && field(formData, "intent") !== "draft" ? "publish" : "draft";
+  // Only now, with a listing about to be made, is the token taken. Taking it is one step, so of two posts sent together
+  // only one makes the listing; the other goes to My listings, or where the first says it went.
+  if (!existing) {
+    const token = await takeListingToken(once, now);
+    if (token.kind === "none") {
+      const values = typedValues(formData, order, alts, context);
+      await writeFormState(form, { errors: ["form-expired"], values, notice: null }, now);
+      done(formPath);
+    }
+    if (token.kind === "again") {
+      if (token.sent) await sentAgain(token.sent, now);
+      done(myListingsPath(intent === "draft" ? "drafts" : "available"));
+    }
+  }
   const saved = await saveOwnListing({
     sellerSlug: owner.shop.slug,
     ownerId: owner.account.id,
@@ -181,8 +218,10 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   else if (existing && existing.state !== "draft") notice = "saved";
   // A paused shop's listings are hidden, so a publish isn't seen until the shop resumes (amendment 11.6).
   else if (owner.status === "paused") notice = "saved-shop-paused";
+  const path = myListingsPath(tabFor(saved.state));
+  if (!existing) await leaveListingToken(once, { path, listing: saved.id, notice }, now);
   await writeFormState(MY_LISTINGS_FORM, { errors: [], values: { listing: saved.id }, notice }, now);
-  done(myListingsPath(tabFor(saved.state)));
+  done(path);
 }
 
 const NOTICE_FOR = { paused: "paused", available: "resumed", sold: "sold" } as const;

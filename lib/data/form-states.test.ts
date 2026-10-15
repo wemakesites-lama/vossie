@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { clearFormState, getFormState, saveFormState } from "./form-states";
+import { clearFormState, getFormState, saveFormState, takeFormState } from "./form-states";
 import { resetSampleStore, sampleStore } from "./store";
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
@@ -40,5 +40,43 @@ describe("form state (accounts plan decision 3)", () => {
     await saveFormState(details("mine"), NOW);
     await clearFormState("mine", "details");
     expect(await getFormState("mine", "details", NOW)).toBeNull();
+  });
+});
+
+describe("taking a one-time state (selling plan amendment 14.1)", () => {
+  it("lets the first caller take it, and shows every later caller what the first left", async () => {
+    await saveFormState({ ...details("mine"), errors: [], values: {} }, NOW);
+    const first = await takeFormState("mine", "details", NOW);
+    expect(first).toMatchObject({ first: true, state: { taken: true } });
+    // The first leaves its answer by saving the state again, kept as taken.
+    await saveFormState({ ...details("mine"), errors: [], values: { path: "/sell/listings" }, taken: true }, NOW);
+    const later = await takeFormState("mine", "details", NOW);
+    expect(later).toMatchObject({ first: false, state: { taken: true, values: { path: "/sell/listings" } } });
+    // A state saved the ordinary way was never taken.
+    await saveFormState(details("mine"), NOW);
+    expect((await getFormState("mine", "details", NOW))?.taken).toBeUndefined();
+  });
+
+  it("is one step: of two takes started together, only one is first", async () => {
+    await saveFormState(details("mine"), NOW);
+    const takes = await Promise.all([1, 2, 3].map(() => takeFormState("mine", "details", NOW)));
+    expect(takes.filter((taken) => taken?.first)).toHaveLength(1);
+    expect(takes.filter((taken) => taken && !taken.first)).toHaveLength(2);
+  });
+
+  it("finds nothing for a state that was never made, belongs to another session, or has run out", async () => {
+    await saveFormState(details("mine"), NOW);
+    expect(await takeFormState("mine", "other-form", NOW)).toBeNull();
+    expect(await takeFormState("other", "details", NOW)).toBeNull();
+    expect(await takeFormState("mine", "details", new Date(IN_10_MINUTES))).toBeNull();
+    // None of those took it.
+    expect(await takeFormState("mine", "details", NOW)).toMatchObject({ first: true });
+  });
+
+  it("hands out a copy", async () => {
+    await saveFormState(details("mine"), NOW);
+    const taken = await takeFormState("mine", "details", NOW);
+    taken!.state.values.firstName = "changed";
+    expect((await getFormState("mine", "details", NOW))?.values.firstName).toBe("T");
   });
 });

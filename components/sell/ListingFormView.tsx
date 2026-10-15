@@ -14,6 +14,8 @@ import { PhotoFieldset } from "./PhotoFieldset";
 type ListingFormViewProps = {
   /** Null for a new listing. */
   listingId: string | null;
+  /** A new listing's one-time token, which makes it once however many times the form is sent (amendment 14.1). */
+  once: string | null;
   /** The listing's state now, for the main button's words (plan decision 3). */
   state: ListingState | null;
   /** The shop is waiting for approval: drafts only (plan decision 4). */
@@ -35,7 +37,7 @@ type ListingFormViewProps = {
  * prefix, and the form is keyed by its listing, because Next keeps earlier pages in the DOM (amendments 1 to 3).
  */
 export function ListingFormView(props: ListingFormViewProps) {
-  const { listingId, state, waiting, values, photos, errors, categories, spots, campusName } = props;
+  const { listingId, once, state, waiting, values, photos, errors, categories, spots, campusName } = props;
   const prefix = listingFieldPrefix(listingId);
   // The photo marked invalid is the first whose description is too long, where that error links (amendment 11.5).
   const longAlt = photos.findIndex((photo) => photo.invalid);
@@ -59,6 +61,8 @@ export function ListingFormView(props: ListingFormViewProps) {
           Save
         </button>
         {listingId && <input type="hidden" name="listing" value={listingId} />}
+        {/* A server-drawn field, no script: only the first save that brings a token makes the listing. */}
+        {!listingId && once && <input type="hidden" name="once" value={once} />}
         <RadioGroup
           id={ids.kind}
           name="kind"

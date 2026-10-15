@@ -267,10 +267,14 @@ export async function restoreSampleShop(accountId: string): Promise<boolean> {
   return restored;
 }
 
-/** The shop in the account's data export (plan decision 22): pickup points by name, the photo by its address, no ids. */
+/**
+ * The shop in the account's data export (plan decision 22): pickup points by name, the photo by its address, no ids.
+ * `previousLinks` are the addresses the shop has left (amendment 14.2), as the page was at, such as "/sellers/tech-corner".
+ */
 export type ShopExport = {
   name: string;
   link: string;
+  previousLinks: string[];
   status: SellerStatus;
   tagline: string;
   category: string;
@@ -381,6 +385,7 @@ export async function exportShop(accountId: string): Promise<SellingExport> {
     shop: {
       name: shop.name,
       link: shop.slug,
+      previousLinks: shop.previousSlugs.map((slug) => `/sellers/${slug}`),
       status,
       tagline: shop.tagline,
       category: categoryName(shop.categorySlug),

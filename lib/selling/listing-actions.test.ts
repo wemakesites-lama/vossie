@@ -10,7 +10,7 @@ import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { DAY_MS, KEEP_MAX } from "@/lib/messaging/rules";
 import { ascii, containsText, GPS, pngBytes } from "@/tests/helpers/image-bytes";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
-import { listingForm, MY_LISTINGS_FORM } from "./form-state";
+import { issueListingToken, listingForm, LISTING_TOKEN_TTL_MS, MY_LISTINGS_FORM, takeListingToken, takeNotice } from "./form-state";
 import { changeListingState, deleteListingForm, saveListingForm } from "./listing-actions";
 
 const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
@@ -48,9 +48,13 @@ async function signedInAs(accountId: string) {
 
 const photoFile = (bytes: Uint8Array<ArrayBuffer>, name = "photo.png") => new File([bytes], name, { type: "image/png" });
 
-/** A good listing form for Tech corner: a desk fan at the library, to publish. */
-const fanForm = (overrides: Record<string, string | string[] | File | File[]> = {}) =>
+/** A new-listing form's one-time token, as the form draws it for whoever is signed in ("" when nobody is). */
+const freshToken = async () => (await issueListingToken()) ?? "";
+
+/** A good listing form for Tech corner: a desk fan at the library, to publish, with a new token as the form carries. */
+const fanForm = async (overrides: Record<string, string | string[] | File | File[]> = {}) =>
   form({
+    once: await freshToken(),
     kind: "item",
     title: "Desk fan",
     category: "res-living",
@@ -69,7 +73,7 @@ const fan = async () => (await listOwnListings("tech-corner")).find((row) => row
 describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
   it("publishes a new listing and lands on Available, saying so", async () => {
     await signedInAs("acc-seller");
-    const redirect = await redirectSignalOf(() => saveListingForm(fanForm()));
+    const redirect = await redirectSignalOf(async () => saveListingForm(await fanForm()));
     expect([redirect.url, redirect.type, request.refreshed]).toEqual(["/sell/listings", "replace", true]);
     const row = (await fan())!;
     expect(row).toMatchObject({ state: "available", priceZar: 150, campusSlug: "midrand", photos: [] });
@@ -79,17 +83,17 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
 
   it("saves a draft, and a waiting shop's Save and publish as a draft too", async () => {
     await signedInAs("acc-seller");
-    expect(await redirectOf(() => saveListingForm(fanForm({ intent: "draft" })))).toBe("/sell/listings?tab=drafts");
+    expect(await redirectOf(async () => saveListingForm(await fanForm({ intent: "draft" })))).toBe("/sell/listings?tab=drafts");
     expect((await fan())?.state).toBe("draft");
     expect((await readFormState(MY_LISTINGS_FORM))?.notice).toBe("drafted");
     await signedInAs("acc-pending");
-    await redirectOf(() => saveListingForm(fanForm({ pickup: "pp-pretoria-library" })));
+    await redirectOf(async () => saveListingForm(await fanForm({ pickup: "pp-pretoria-library" })));
     expect((await listOwnListings("crochet-corner"))[0]).toMatchObject({ title: "Desk fan", state: "draft" });
   });
 
   it("keeps everything typed, the errors and the uploaded photo when a save fails", async () => {
     await signedInAs("acc-seller");
-    const failing = fanForm({ title: "", price: "lots", newPhotos: photoFile(pngBytes()) });
+    const failing = await fanForm({ title: "", price: "lots", newPhotos: photoFile(pngBytes()) });
     expect(await redirectOf(() => saveListingForm(failing))).toBe("/sell/listings/new");
     const state = (await readFormState(listingForm(null)))!;
     expect(state.errors).toEqual(["title-missing", "price-invalid"]);
@@ -101,7 +105,7 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
 
   it("strips each upload, puts the photos in the order posted, and keeps each one's description", async () => {
     await signedInAs("acc-seller");
-    const posted = fanForm({
+    const posted = await fanForm({
       photo: ["new:1", "new:0"],
       newPhotos: [photoFile(pngBytes({ exif: true }), "back.png"), photoFile(pngBytes({ text: true }), "front.png")],
       "alt:new:1": " The fan from the front ",
@@ -116,7 +120,7 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
 
   it("moves a photo without saving the listing, keeping what was typed, and comes back to the photos", async () => {
     await signedInAs("acc-seller");
-    const moving = fanForm({
+    const moving = await fanForm({
       listing: "l-001",
       title: "Typed but not saved",
       photo: [COVER, BACK, CASE],
@@ -133,7 +137,7 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
   it("refuses a file that isn't a photo, and photos past the sixth", async () => {
     await signedInAs("acc-seller");
     const files = [ascii("GIF89a"), pngBytes(), pngBytes(), pngBytes(), pngBytes()].map((bytes) => photoFile(bytes));
-    await redirectOf(() => saveListingForm(fanForm({ listing: "l-001", photo: [COVER, BACK, CASE], newPhotos: files })));
+    await redirectOf(async () => saveListingForm(await fanForm({ listing: "l-001", photo: [COVER, BACK, CASE], newPhotos: files })));
     const state = (await readFormState(listingForm("l-001")))!;
     expect(state.errors).toEqual(["photo-type", "photo-count"]);
     expect(state.values.photos.split("\n")).toHaveLength(6);
@@ -142,7 +146,7 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
   it("drops photos that aren't the seller's own", async () => {
     const [theirs] = await storePhotos("acc-student", [{ type: "image/png", bytes: pngBytes() }], NOW);
     await signedInAs("acc-seller");
-    await redirectOf(() => saveListingForm(fanForm({ photo: [theirs, "/placeholders/listing/food.svg"] })));
+    await redirectOf(async () => saveListingForm(await fanForm({ photo: [theirs, "/placeholders/listing/food.svg"] })));
     expect((await fan())?.photos).toEqual([]);
   });
 
@@ -150,9 +154,9 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
     await signedInAs("acc-seller");
     const [theirs] = await storePhotos("acc-seller", [{ type: "image/png", bytes: pngBytes() }], NOW);
     await attachPhotos("acc-seller", [theirs], "listing:l-002");
-    await redirectOf(() => saveListingForm(fanForm({ photo: [theirs] })));
+    await redirectOf(async () => saveListingForm(await fanForm({ photo: [theirs] })));
     expect((await fan())?.photos).toEqual([]);
-    await redirectOf(() => saveListingForm(fanForm({ listing: "l-001", photo: [COVER, theirs] })));
+    await redirectOf(async () => saveListingForm(await fanForm({ listing: "l-001", photo: [COVER, theirs] })));
     expect((await getOwnListing("tech-corner", "l-001"))?.photos.map((photo) => photo.src)).toEqual([COVER]);
     // The photo still belongs to the listing it was given to.
     expect(sampleStore().photos.get(photoIdOf(theirs)!)?.use).toBe("listing:l-002");
@@ -163,7 +167,7 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
     const [waiting] = await storePhotos("acc-seller", [{ type: "image/png", bytes: pngBytes() }], NOW);
     const nextDay = new Date(NOW.getTime() + DAY_MS + 60_000);
     vi.setSystemTime(nextDay);
-    await redirectOf(() => saveListingForm(fanForm({ listing: "l-001", photo: [COVER, waiting, BACK] })));
+    await redirectOf(async () => saveListingForm(await fanForm({ listing: "l-001", photo: [COVER, waiting, BACK] })));
     expect((await getOwnListing("tech-corner", "l-001"))?.photos.map((photo) => photo.src)).toEqual([COVER, BACK]);
     expect(await getPhoto(photoIdOf(waiting)!, nextDay)).toBeNull();
   });
@@ -172,7 +176,7 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
     await signedInAs("acc-seller");
     const [waiting] = await storePhotos("acc-seller", [{ type: "image/png", bytes: pngBytes() }], NOW);
     vi.setSystemTime(new Date(NOW.getTime() + DAY_MS + 60_000));
-    const moving = fanForm({ listing: "l-001", photo: [COVER, waiting, BACK], photoMove: `${BACK}:cover` });
+    const moving = await fanForm({ listing: "l-001", photo: [COVER, waiting, BACK], photoMove: `${BACK}:cover` });
     await redirectOf(() => saveListingForm(moving));
     expect((await readFormState(listingForm("l-001")))?.values.photos).toBe([BACK, COVER].join("\n"));
   });
@@ -180,7 +184,7 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
   it("keeps only bounded values when a save fails: a choice that isn't one of its choices is kept as nothing (amendment 10.2)", async () => {
     await signedInAs("acc-seller");
     const huge = "x".repeat(1_000_000);
-    const failing = fanForm({
+    const failing = await fanForm({
       title: huge,
       price: huge,
       swapFor: huge,
@@ -204,8 +208,8 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
 
   it("keeps a good choice as it was typed when a save fails (amendment 10.2)", async () => {
     await signedInAs("acc-seller");
-    await redirectOf(() =>
-      saveListingForm(fanForm({ title: "", kind: "service", condition: "fair", free: "yes", from: "yes", handover: "online" })),
+    await redirectOf(async () =>
+      saveListingForm(await fanForm({ title: "", kind: "service", condition: "fair", free: "yes", from: "yes", handover: "online" })),
     );
     expect((await readFormState(listingForm(null)))!.values).toMatchObject({
       kind: "service",
@@ -223,7 +227,7 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
     await signedInAs("acc-seller");
     const six = [COVER, BACK, CASE, "/placeholders/photo/4.svg", "/placeholders/photo/5.svg", "/placeholders/photo/6.svg"];
     sampleStore().listings.get("l-001")!.photos = six.map((src) => ({ src, alt: "" }));
-    const posted = fanForm({
+    const posted = await fanForm({
       listing: "l-001",
       photo: six,
       newPhotos: photoFile(pngBytes()),
@@ -241,23 +245,158 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
   it("tells a paused shop that buyers will see a published listing when the shop resumes, not now (amendment 11.6)", async () => {
     await signedInAs("acc-seller");
     await setShopPaused("acc-seller", true);
-    await redirectOf(() => saveListingForm(fanForm()));
+    await redirectOf(async () => saveListingForm(await fanForm()));
     expect((await fan())?.state).toBe("available");
     expect((await readFormState(MY_LISTINGS_FORM))?.notice).toBe("saved-shop-paused");
     // A draft says what it always says.
-    await redirectOf(() => saveListingForm(fanForm({ title: "Kettle", intent: "draft" })));
+    await redirectOf(async () => saveListingForm(await fanForm({ title: "Kettle", intent: "draft" })));
     expect((await readFormState(MY_LISTINGS_FORM))?.notice).toBe("drafted");
   });
 
   it("saves changes to a listing, and keeps a sold one sold", async () => {
     await signedInAs("acc-seller");
-    expect(await redirectOf(() => saveListingForm(fanForm({ listing: "l-001", title: "Desk fan" })))).toBe(
+    expect(await redirectOf(async () => saveListingForm(await fanForm({ listing: "l-001", title: "Desk fan" })))).toBe(
       "/sell/listings",
     );
     expect((await readFormState(MY_LISTINGS_FORM))?.notice).toBe("saved");
     await setOwnListingState("tech-corner", "l-001", "sold", NOW);
-    expect(await redirectOf(() => saveListingForm(fanForm({ listing: "l-001" })))).toBe("/sell/listings?tab=sold");
+    expect(await redirectOf(async () => saveListingForm(await fanForm({ listing: "l-001" })))).toBe("/sell/listings?tab=sold");
     expect((await getOwnListing("tech-corner", "l-001"))?.state).toBe("sold");
+  });
+});
+
+describe("a new listing is made once, however many times its form is sent (selling plan amendment 14.1)", () => {
+  const desks = async () => (await listOwnListings("tech-corner")).filter((row) => row.title === "Desk fan");
+  const send = (overrides: Record<string, string | string[] | File | File[]>) =>
+    redirectSignalOf(async () => saveListingForm(await fanForm(overrides)));
+
+  it("makes one listing from two posts with one token, and sends the second where the first went, with its notice", async () => {
+    await signedInAs("acc-seller");
+    const once = await freshToken();
+    expect((await send({ once })).url).toBe("/sell/listings");
+    const [row] = await desks();
+    // My listings took the first notice when it was shown.
+    expect(await takeNotice(MY_LISTINGS_FORM)).toMatchObject({ notice: "published", values: { listing: row.id } });
+    const again = await send({ once, title: "Desk fan, second go" });
+    expect([again.url, again.type, request.refreshed]).toEqual(["/sell/listings", "replace", true]);
+    expect(await desks()).toHaveLength(1);
+    expect((await listOwnListings("tech-corner")).some((listing) => listing.title === "Desk fan, second go")).toBe(false);
+    // Said again, so the second page shows what the first did.
+    expect(await readFormState(MY_LISTINGS_FORM)).toMatchObject({ notice: "published", values: { listing: row.id } });
+    // Only the save that made the listing told buyers' pages.
+    expect(request.updatedTags).toEqual(["listings"]);
+  });
+
+  it("sends a second post of a draft to Drafts, with the draft's notice", async () => {
+    await signedInAs("acc-seller");
+    const once = await freshToken();
+    await send({ once, intent: "draft" });
+    expect((await send({ once, intent: "draft" })).url).toBe("/sell/listings?tab=drafts");
+    expect(await desks()).toHaveLength(1);
+    expect((await readFormState(MY_LISTINGS_FORM))?.notice).toBe("drafted");
+  });
+
+  it("makes one listing when two posts are sent together, as a browser without the app's JavaScript can", async () => {
+    await signedInAs("acc-seller");
+    const once = await freshToken();
+    const results = await Promise.all([send({ once }), send({ once }), send({ once })]);
+    expect(results.map((signal) => signal.url)).toEqual(["/sell/listings", "/sell/listings", "/sell/listings"]);
+    expect(await desks()).toHaveLength(1);
+    expect(request.updatedTags).toEqual(["listings"]);
+  });
+
+  it("sends a post that comes while the first is still saving to My listings, by its own button, and makes nothing", async () => {
+    await signedInAs("acc-seller");
+    const once = await freshToken();
+    // The first has taken the token and has not said where it went.
+    expect(await takeListingToken(once, NOW)).toEqual({ kind: "first" });
+    expect((await send({ once })).url).toBe("/sell/listings");
+    expect((await send({ once, intent: "draft" })).url).toBe("/sell/listings?tab=drafts");
+    expect(await desks()).toHaveLength(0);
+    expect(await readFormState(MY_LISTINGS_FORM)).toBeNull();
+  });
+
+  it("does the second post's work for nothing: no photo is stored, and nothing is checked (amendment 14.1)", async () => {
+    await signedInAs("acc-seller");
+    const once = await freshToken();
+    await send({ once, newPhotos: photoFile(pngBytes()) });
+    const stored = sampleStore().photos.size;
+    expect(stored).toBe(1);
+    // The same post again, even one that would fail its checks, stores nothing and goes where the first went.
+    expect((await send({ once, title: "", newPhotos: photoFile(pngBytes()) })).url).toBe("/sell/listings");
+    expect(sampleStore().photos.size).toBe(stored);
+    expect(await readFormState(listingForm(null))).toBeNull();
+  });
+
+  it("gives each token its own listing, so two forms open at once each make one", async () => {
+    await signedInAs("acc-seller");
+    await send({ title: "Desk fan" });
+    await send({ title: "Desk fan" });
+    expect(await desks()).toHaveLength(2);
+  });
+
+  it("refuses a post with no token, a made-up one or a badly shaped one: its error, what was typed and its photos kept", async () => {
+    await signedInAs("acc-seller");
+    for (const once of ["", "00000000-0000-4000-8000-000000000000", "not-a-token"]) {
+      const photo = photoFile(pngBytes());
+      expect((await send({ once, newPhotos: photo })).url, once).toBe("/sell/listings/new");
+      const state = (await readFormState(listingForm(null)))!;
+      expect(state.errors, once).toEqual(["form-expired"]);
+      expect(state.values, once).toMatchObject({ title: "Desk fan", price: "150", category: "res-living" });
+      expect(state.values.photos, once).toMatch(/^\/photos\/ph-/);
+      expect(await desks(), once).toHaveLength(0);
+    }
+    expect(await readFormState(MY_LISTINGS_FORM)).toBeNull();
+    expect(request.updatedTags).toEqual([]);
+  });
+
+  it("refuses a token that has run out, and one drawn for another session", async () => {
+    await signedInAs("acc-seller");
+    const old = await freshToken();
+    vi.setSystemTime(new Date(NOW.getTime() + LISTING_TOKEN_TTL_MS + 1000));
+    expect((await send({ once: old })).url).toBe("/sell/listings/new");
+    expect((await readFormState(listingForm(null)))?.errors).toEqual(["form-expired"]);
+    // Another browser's session can't use it either.
+    const mine = await freshToken();
+    request.cookies.clear();
+    await createSession({
+      key: hashToken("token-2"),
+      accountId: "acc-seller",
+      createdAt: NOW,
+      expiresAt: IN_30_DAYS,
+    });
+    request.cookies.set(SESSION_COOKIE, "token-2");
+    expect((await send({ once: mine })).url).toBe("/sell/listings/new");
+    expect(await desks()).toHaveLength(0);
+  });
+
+  it("lets the form be sent again with the token the page draws after a refusal", async () => {
+    await signedInAs("acc-seller");
+    await send({ once: "" });
+    expect((await send({})).url).toBe("/sell/listings");
+    expect(await desks()).toHaveLength(1);
+  });
+
+  it("keeps the token when a save fails its checks or a photo button is pressed, so the same form can go on", async () => {
+    await signedInAs("acc-seller");
+    const once = await freshToken();
+    expect((await send({ once, title: "" })).url).toBe("/sell/listings/new");
+    const photo = "/placeholders/photo/2.svg";
+    expect((await send({ once, photo: [photo], photoMove: `${photo}:remove` })).url).toBe(
+      "/sell/listings/new#new-photos-title",
+    );
+    expect(await desks()).toHaveLength(0);
+    expect((await send({ once })).url).toBe("/sell/listings");
+    expect(await desks()).toHaveLength(1);
+  });
+
+  it("needs no token to save changes to a listing, which saving twice can't duplicate", async () => {
+    await signedInAs("acc-seller");
+    for (const once of ["", "00000000-0000-4000-8000-000000000000"]) {
+      expect((await send({ once, listing: "l-001", title: "Desk fan" })).url, once).toBe("/sell/listings");
+    }
+    expect((await getOwnListing("tech-corner", "l-001"))?.title).toBe("Desk fan");
+    expect((await listOwnListings("tech-corner")).filter((row) => row.title === "Desk fan")).toHaveLength(1);
   });
 });
 
@@ -294,7 +433,7 @@ describe("My listings' buttons and Delete listing (selling spec 2.9, plan decisi
 
   it("deletes a listing and its photos, saying so", async () => {
     await signedInAs("acc-seller");
-    await redirectOf(() => saveListingForm(fanForm({ newPhotos: photoFile(pngBytes()) })));
+    await redirectOf(async () => saveListingForm(await fanForm({ newPhotos: photoFile(pngBytes()) })));
     const row = (await fan())!;
     expect(await redirectOf(() => deleteListingForm(form({ listing: row.id })))).toBe("/sell/listings");
     expect(await getOwnListing("tech-corner", row.id)).toBeNull();
@@ -306,7 +445,7 @@ describe("My listings' buttons and Delete listing (selling spec 2.9, plan decisi
 
   it("never touches another shop's listing", async () => {
     await signedInAs("acc-seller");
-    expect(await redirectOf(() => saveListingForm(fanForm({ listing: "l-004" })))).toBe("/sell/listings");
+    expect(await redirectOf(async () => saveListingForm(await fanForm({ listing: "l-004" })))).toBe("/sell/listings");
     await redirectOf(() => changeListingState(form({ listing: "l-004", to: "paused", tab: "available" })));
     await redirectOf(() => deleteListingForm(form({ listing: "l-004" })));
     expect(sampleStore().listings.get("l-004")).toMatchObject({
@@ -317,9 +456,9 @@ describe("My listings' buttons and Delete listing (selling spec 2.9, plan decisi
   });
 
   it("sends a signed-out visitor to sign in, and a student with no shop to /sell", async () => {
-    expect(await redirectOf(() => saveListingForm(fanForm()))).toBe("/login?next=%2Fsell%2Flistings%2Fnew");
+    expect(await redirectOf(async () => saveListingForm(await fanForm()))).toBe("/login?next=%2Fsell%2Flistings%2Fnew");
     await signedInAs("acc-student");
-    expect(await redirectOf(() => saveListingForm(fanForm()))).toBe("/sell");
+    expect(await redirectOf(async () => saveListingForm(await fanForm()))).toBe("/sell");
     expect(await redirectOf(() => changeListingState(form({ listing: "l-001", to: "paused", tab: "available" })))).toBe(
       "/sell",
     );

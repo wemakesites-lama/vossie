@@ -120,6 +120,8 @@ export type FormStateRow = {
   values: Record<string, string>;
   notice: string | null;
   expiresAt: string;
+  /** Set when a one-time state has been taken by a post (`takeFormState`; selling plan amendment 14.1). */
+  taken?: true;
 };
 
 // --- Messaging (messaging plan, Task 1; "Store design") ------------------------------------------------------------

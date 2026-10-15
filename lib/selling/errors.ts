@@ -48,6 +48,11 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
   // Edit shop: a photo chosen with a save that went wrong isn't kept, so it's asked for again (amendment 13.6).
   ["photo-again", { message: "Choose your photo again.", field: "photos" }],
   ["alt-length", { message: `Keep each photo's description to ${ALT_MAX} characters.`, field: "alt" }],
+  // A new listing's form with no token, a made-up one or one that has run out (amendment 14.1). It belongs to no field.
+  [
+    "form-expired",
+    { message: "This form is out of date, so nothing was saved. Your answers are kept: check them and save again.", field: "none" },
+  ],
 ]);
 
 /** The words for a form's error codes, in order, each linked to its field's id when the form has that field. */

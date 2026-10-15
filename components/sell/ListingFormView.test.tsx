@@ -37,6 +37,7 @@ type Props = Parameters<typeof ListingFormView>[0];
 const view = (overrides: Partial<Props> = {}) => (
   <ListingFormView
     listingId={null}
+    once={null}
     state={null}
     waiting={false}
     values={values}
@@ -75,6 +76,23 @@ describe("the listing form (selling spec 2.10, plan decision 26)", () => {
     expect(screen.getByRole("button", { name: "Save changes" })).toBeInTheDocument();
     expect(document.querySelector('input[name="listing"]')).toHaveValue("l-001");
     expect(screen.getByLabelText("Title")).toHaveAttribute("id", "edit-l-001-title");
+  });
+
+  it("carries a new listing's one-time token as a hidden field, and an edit carries none (amendment 14.1)", () => {
+    const { unmount } = show({ once: "11111111-1111-4111-8111-111111111111" });
+    const hidden = document.querySelector<HTMLInputElement>('input[name="once"]');
+    expect(hidden).toHaveAttribute("type", "hidden");
+    expect(hidden).toHaveValue("11111111-1111-4111-8111-111111111111");
+    expect(document.querySelector('input[name="listing"]')).toBeNull();
+    unmount();
+    // Saving the same listing twice changes nothing, so an edit has no use for one.
+    show({ listingId: "l-001", once: "11111111-1111-4111-8111-111111111111" });
+    expect(document.querySelector('input[name="once"]')).toBeNull();
+  });
+
+  it("draws no token field when it has no token", () => {
+    show({ once: null });
+    expect(document.querySelector('input[name="once"]')).toBeNull();
   });
 
   it("offers a shop waiting for approval drafts only (plan decision 4)", () => {

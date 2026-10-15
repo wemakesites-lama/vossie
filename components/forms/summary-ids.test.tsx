@@ -99,6 +99,7 @@ const shopProfile = () => (
 const listingForm = (listingId: string | null) => (
   <ListingFormView
     listingId={listingId}
+    once={listingId ? null : "11111111-1111-4111-8111-111111111111"}
     state={listingId ? "available" : null}
     waiting={false}
     values={{ kind: "item", payMode: "cash", handover: "pickup", pickup: "pp-midrand-library" }}

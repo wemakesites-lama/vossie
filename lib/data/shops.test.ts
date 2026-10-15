@@ -277,6 +277,16 @@ describe("the data export (plan decision 22)", () => {
     expect(await exportShop("acc-student")).toEqual({ shop: null, listings: [], onboardingDraft: null });
   });
 
+  it("lists the links a shop has left, as addresses, since they are the seller's data (amendment 14.2)", async () => {
+    expect((await exportShop("acc-seller")).shop?.previousLinks).toEqual([]);
+    expect(await changeShopSlug("acc-seller", "gadgets", NOW)).toBe("changed");
+    const { shop } = await exportShop("acc-seller");
+    expect(shop).toMatchObject({ link: "gadgets", previousLinks: ["/sellers/tech-corner"] });
+    // A waiting shop's link follows its name and was never public, so it has none to list.
+    await updateShop("acc-pending", { ...details, name: "Crochet nook", campusSlug: "pretoria" }, NOW);
+    expect((await exportShop("acc-pending")).shop?.previousLinks).toEqual([]);
+  });
+
   it("says when each listing was first published, and none for a draft that never was", async () => {
     sampleStore().listings.set(
       "l-draft",

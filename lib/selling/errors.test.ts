@@ -30,6 +30,12 @@ describe("selling's error words (plan decisions 24 and 27)", () => {
     ]);
   });
 
+  it("words a new-listing form that is out of date, and links it to no field (amendment 14.1)", () => {
+    expect(sellingErrors(["form-expired"], listingFieldIds("new"))).toEqual([
+      { message: "This form is out of date, so nothing was saved. Your answers are kept: check them and save again.", fieldId: null },
+    ]);
+  });
+
   it("leaves an error unlinked when the form has no such field, and drops codes it doesn't know", () => {
     expect(sellingErrors(["guidelines-missing"], { name: "x" })).toEqual([
       { message: "Tick the box to say you've read the seller guidelines.", fieldId: null },

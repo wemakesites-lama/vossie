@@ -1,7 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { saveFormState } from "@/lib/data/form-states";
-import { resetSampleStore } from "@/lib/data/store";
+import { resetSampleStore, sampleStore } from "@/lib/data/store";
+import { takeListingToken } from "@/lib/selling/form-state";
 import { ListingForm } from "./ListingForm";
 
 const viewer = vi.hoisted(() => ({ id: null as string | null, sessionKey: null as string | null }));
@@ -102,6 +103,29 @@ describe("the listing form's request-time part (selling spec 2.10 and section 3)
     expect(screen.getByLabelText("Add photos")).not.toHaveAttribute("aria-invalid");
     expect(document.getElementById("edit-l-001-alt-error")).toHaveTextContent(message);
     expect(document.getElementById("edit-l-001-photos-error")).toBeNull();
+  });
+
+  it("gives a new listing's form a one-time token, kept for the session, and a different one each time (amendment 14.1)", async () => {
+    viewer.sessionKey = "session-1";
+    const tokenOnPage = () => document.querySelector<HTMLInputElement>('input[name="once"]')!.value;
+    const { unmount } = render(await ListingForm({}));
+    const first = tokenOnPage();
+    expect(document.querySelector('input[name="once"]')).toHaveAttribute("type", "hidden");
+    unmount();
+    render(await ListingForm({}));
+    const second = tokenOnPage();
+    expect(second).not.toBe(first);
+    // Both are the session's to take, once.
+    expect(await takeListingToken(first, new Date())).toEqual({ kind: "first" });
+    expect(await takeListingToken(first, new Date())).toMatchObject({ kind: "again" });
+    expect(await takeListingToken(second, new Date())).toEqual({ kind: "first" });
+  });
+
+  it("gives an edit form no token", async () => {
+    viewer.sessionKey = "session-1";
+    render(await ListingForm(editing("l-001")));
+    expect(document.querySelector('input[name="once"]')).toBeNull();
+    expect([...sampleStore().formStates.keys()]).toEqual([]);
   });
 
   it("is a 404 for another shop's listing", async () => {
