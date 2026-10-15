@@ -1,7 +1,7 @@
 # Vossie selling: design spec
 
 - **Date:** 2026-10-14
-- **Status:** Approved under Lama's standing goal (2026-10-14): "make recommended decisions where needed and continue working in the same manner". Each decision is Claude's recommendation, logged in the decisions log.
+- **Status:** Built (2026-10-15), in sample mode. Approved under Lama's standing goal (2026-10-14): "make recommended decisions where needed and continue working in the same manner". Each decision is Claude's recommendation, logged in the decisions log. Section 8 holds what the plan review and the build changed; it wins over the decisions above.
 - **Scope:** stage F, the seller's side:
   - the "Sell on Vossie" pitch;
   - becoming a seller, and waiting for approval;
@@ -133,9 +133,9 @@ All `/sell` pages are `noindex` and render per request inside `<Suspense>`, with
 
 Stats beyond the dashboard's numbers, view counts, bulk actions, scheduled listings, and paid features (there are none).
 
-## 8. Changes on plan review (2026-10-14)
+## 8. Changes on plan review and build (2026-10-14 to 2026-10-15)
 
-The plan (`docs/superpowers/plans/2026-10-14-selling.md`) refines these points; where they differ, these win.
+The plan (`docs/superpowers/plans/2026-10-14-selling.md`) and the build refine these points; where they differ, these win. Items 1 to 10 came at plan review; items 11 to 21 came from the plan's decisions and its amendments while building, and the plan's "Changes made during the build" gives each with its commit.
 
 1. **No test-only routes.** End-to-end tests apply as a new student (who stays waiting) and use the seeded approved seller (`seller@eduvos.com`, Tech corner) for listing flows, only on each test's own listing. Approval itself arrives in stage G.
 2. **Uploads on a real host.** The 32 MB Server Action body works on `next start` but not on many hosts (Vercel's functions take 4.5 MB). Go-live needs direct-to-storage uploads, and the no-JavaScript path then needs its own answer; it's on the go-live checklist.
@@ -151,3 +151,14 @@ The plan (`docs/superpowers/plans/2026-10-14-selling.md`) refines these points; 
 8. **A paused shop** disappears from every list, but its listing and storefront pages stay up, marked paused, so saved links still work.
 9. **The owner on their own paused or sold listing** sees "See similar items", and edits from My listings.
 10. **To fix in stage G:** part C's trust page says "Verified means the Hub … approved their shop". Approval (which lets someone sell) and Verified (a badge the Hub gives after checking) are separate, so the trust page's wording changes with stage G.
+11. **A shop's status stays on its owner's seller profile** (the account's link to its shop), and the shop's details live on a `sellers` row. A waiting shop has a link, made from its name and following it, but no storefront until approval; its drafts have no pages. Sample shops with no owner account are always open (plan decisions 1 and 16).
+12. **Listings have one state:** draft, available, paused or sold. Save and publish makes a new listing or a draft available; on a paused or sold listing the button says Save changes and keeps the state; Save as draft always makes a draft. A listing's date is when it was first published and doesn't change if it is saved back as a draft and published again. Drafts pass the same checks as published listings, and a shop waiting for approval can only save drafts (plan decisions 3 to 5; amendment 9.2).
+13. **The photo field is one list of saved and new photos.** Without the app's JavaScript its buttons post the form and the server does the work; with it, photos are re-encoded in the browser (WebP; JPEG on Safari, which can't encode WebP), one at a time, and a save waits up to 15 seconds for that, then sends once with the last button pressed (plan decisions 9 and 10; amendments 11 and 13).
+14. **Photos are cached on the device only** (`private, max-age=31536000, immutable`) and sent with `nosniff`, so no shared cache or CDN keeps a photo after its listing is deleted. A photo uploaded on a form that hasn't saved yet waits a day, up to 12 per account (amendment 9, items 4 and 5; plan decision 11).
+15. **A new listing is made once, however many times its form is sent.** The new-listing form carries a one-time token, good for an hour; a second post with the same token goes where the first went and makes nothing (amendment 14.1).
+16. **The wizard's Back is a link;** step 4 comes back with the new campus's pickup points; Send for approval goes to the first step with a problem; a student on Eduvos Online, who has no pickup points, resumes at the review (plan decision 15; amendment 10.4).
+17. **The shop's link changes once,** and the change carries the shop's listings, conversations and reports with it. The old link can't be taken by another shop (it stays reserved) and shows the 404, so a saved link never opens someone else's shop; the data export lists previous links. A new campus moves the shop's listings, and a pickup point the new campus doesn't have moves to its first one (plan decisions 16 and 17; amendments 13.7 and 14.2).
+18. **Prices are whole rand,** from R1 to R100,000 ("R1 200", "1,200" and "R250,00" are fine; "99,99" is refused). Shop names are compared in any alphabet, without case, accents or punctuation (amendment 8, items 5 and 6).
+19. **The dashboard counts only conversations that still have their seller,** so a shop that comes back, or a new shop that reuses a deleted shop's link, doesn't inherit enquiries and sales its owner can't open (amendment 9.1).
+20. **The owner's links:** the owner of a listing sees Edit listing on its page, and on their own storefront Edit shop, streamed in from the server with no client code; everyone else sees Message seller (plan decision 19). The account page's Selling row goes to the dashboard (plan decision 21).
+21. **Sample-mode limits** (not for go-live): pages Next re-renders after a write are kept on disk while the store is in memory, so restarting `next start` without a rebuild serves an earlier server's pages; a missing storefront answers 200 to a plain request and 404 to a browser's. The hosted preview takes request bodies of 4.5 MB at most, and a photo may not show from another server instance (plan decision 8; amendments 6, 10.9 and 14.4).

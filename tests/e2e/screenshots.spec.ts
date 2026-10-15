@@ -1,5 +1,6 @@
-import { expect, test, type Request } from "@playwright/test";
-import { newBuyer, reply, sellerPage, signUp } from "./helpers/messaging";
+import { expect, test, type Page, type Request } from "@playwright/test";
+import { button, field, newBuyer, reply, sellerPage, signInAsSample, signUp, signUpHere } from "./helpers/messaging";
+import { newSeller, photoWithLocation, POST_LANDS, uniqueWord } from "./helpers/selling";
 
 test.skip(!process.env.SCREENSHOTS, "Run with SCREENSHOTS=1 to refresh the review screenshots");
 
@@ -469,4 +470,85 @@ test("messaging review screenshots", async ({ page, browser, baseURL }) => {
   await main.getByRole("button", { name: "Send report", exact: true }).click();
   await expect(main.getByRole("heading", { level: 1, name: "Report sent" })).toBeVisible();
   await page.screenshot({ path: file("12-report-sent") });
+});
+
+test("selling review screenshots", async ({ page, browser, baseURL }) => {
+  const project = test.info().project.name;
+  test.skip(!["phone-390", "desktop-1440"].includes(project), "Saved at 390 and 1440 only");
+  // A new student through the wizard, then the sample seller's pages in a second browser, on a server a full run may be
+  // busy with.
+  test.setTimeout(150_000);
+  const file = (name: string) => `docs/progress/selling/${project}-${name}.png`;
+  const main = page.locator("main");
+  // Back to the top first: after a focus jump to an error summary the header has folded to its crest, which a full-page
+  // shot would draw over the form.
+  const shot = async (on: Page, name: string, fullPage = true) => {
+    await on.evaluate(() => window.scrollTo(0, 0));
+    await on.screenshot({ path: file(name), fullPage });
+  };
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+
+  await page.goto("/sell");
+  await expect(main.getByRole("link", { name: "Start selling" }).filter({ visible: true }).first()).toBeVisible();
+  await shot(page, "01-pitch");
+
+  // A new student through the wizard: nothing of the sample accounts changes.
+  await page.goto("/login?next=%2Fsell%2Fonboarding");
+  await signUpHere(page, newSeller());
+  await expect(page).toHaveURL(/\/sell\/onboarding$/, POST_LANDS);
+  await button(page, "Continue").click();
+  await expect(main.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  await shot(page, "02-wizard-step-1-error");
+  await field(page, "Shop name").fill(`Bakes ${uniqueWord()}`.slice(0, 60));
+  await field(page, "Main category").selectOption({ label: "Food" });
+  await button(page, "Continue").click();
+  await expect(page).toHaveURL(/step=2$/, POST_LANDS);
+  await field(page, "About your shop").fill("I bake between lectures.\nMuffins on Mondays.");
+  await button(page, "Continue").click();
+  await expect(page).toHaveURL(/step=3$/, POST_LANDS);
+  await field(page, "Shop photo (optional)").setInputFiles(photoWithLocation("shop.png"));
+  await button(page, "Continue").click();
+  await expect(page).toHaveURL(/step=4$/, POST_LANDS);
+  await expect(main.getByText(/^Step 4 of 5/).filter({ visible: true })).toBeVisible();
+  await shot(page, "03-wizard-step-4");
+  await main.getByRole("checkbox", { name: "Library entrance" }).check();
+  await button(page, "Continue").click();
+  await expect(page).toHaveURL(/step=5$/, POST_LANDS);
+  await expect(main.getByRole("region", { name: "Your answers" })).toBeVisible();
+  await shot(page, "04-wizard-review");
+  await main.getByRole("checkbox", { name: "I've read the seller guidelines" }).check();
+  await button(page, "Send for approval").click();
+  await expect(page).toHaveURL(/\/sell$/, POST_LANDS);
+  await expect(page.getByRole("heading", { level: 1, name: "The Hub is checking your shop" })).toBeVisible();
+  await shot(page, "05-waiting");
+
+  // The sample seller in a browser of their own: only read, so the sample stays as it is.
+  const context = await browser.newContext({ baseURL, viewport: page.viewportSize()!, reducedMotion: "reduce" });
+  const seller = await context.newPage();
+  const sellerMain = seller.locator("main");
+  const sellerShot = (name: string, fullPage = true) => shot(seller, name, fullPage);
+  await signInAsSample(seller, "Seller, Tech corner", "/sell");
+  await expect(sellerMain.getByRole("region", { name: "In the last 7 days" })).toBeVisible();
+  await sellerShot("06-dashboard");
+  await seller.goto("/sell/listings");
+  await expect(sellerMain.getByRole("navigation", { name: "Listings by state" })).toBeVisible();
+  await sellerShot("07-my-listings");
+  await seller.goto("/sell/listings/l-001/edit");
+  await expect(sellerMain.getByText("Photo 3", { exact: true }).filter({ visible: true }).first()).toBeVisible();
+  await sellerShot("08-listing-form");
+  await seller.goto("/sell/listings/new");
+  await button(seller, "Save and publish").click();
+  await expect(sellerMain.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  await sellerShot("09-listing-form-errors");
+  await seller.goto("/sell/listings/l-001/delete");
+  await expect(seller.getByRole("heading", { level: 1 })).toContainText("Delete");
+  await sellerShot("10-delete");
+  await seller.goto("/sell/profile");
+  await expect(seller.getByRole("heading", { level: 1 })).toBeVisible();
+  await sellerShot("11-edit-shop");
+  await seller.goto("/listings/l-001");
+  await expect(seller.getByRole("link", { name: "Edit listing" }).filter({ visible: true })).toBeVisible();
+  await sellerShot("12-listing-owner", false);
+  await context.close();
 });

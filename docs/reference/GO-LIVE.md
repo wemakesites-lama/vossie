@@ -2,7 +2,7 @@
 
 Every page and view the marketplace needs before it can go live, plus the work that isn't a screen. Drawn from the app's routes, the old demo's function map (`FUNCTION-MAP.md`) and the homepage spec's "Not in this stage" list.
 
-Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) after Looking For and the Hub (part B), after sign-in and accounts, in sample mode (stage D), and after messaging, reports and notifications, in sample mode (stage E). Update the status column as each stage lands.
+Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) after Looking For and the Hub (part B), after sign-in and accounts, in sample mode (stage D), after messaging, reports and notifications, in sample mode (stage E), and after selling, in sample mode (stage F). Update the status column as each stage lands.
 
 **Status key**
 - **Built:** done.
@@ -65,13 +65,13 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 
 | Screen or view | Route | Status |
 |---|---|---|
-| "Sell on Vossie" pitch, for people who aren't selling yet | `/sell` | Placeholder |
-| Become-a-seller steps: basics, about, contact, campus and pickup points, review | `/sell/onboarding` | Missing |
-| Waiting-for-approval state | `/sell` | Missing |
-| Seller dashboard: status, today's numbers, stats | `/sell` | Missing |
-| My listings: available, paused or sold; edit; delete with a confirm step | `/sell/listings` | Missing |
-| Create and edit a listing: photos (compressed, location removed, alt text), price, swap terms, pickup point | `/sell/listings/new`, `/sell/listings/[id]/edit` | Missing |
-| Edit seller profile | `/sell/profile` | Missing |
+| "Sell on Vossie" pitch, for people who aren't selling yet | `/sell` | **Built (sample mode)** |
+| Become-a-seller steps: basics, about, photo, campus and pickup points, review | `/sell/onboarding` | **Built (sample mode)**: no contact step (decision 57) |
+| Waiting-for-approval state | `/sell` | **Built (sample mode)**: the shop can prepare drafts; approval is stage G's |
+| Seller dashboard: status, the last 7 days' numbers, the badge's next step | `/sell` | **Built (sample mode)**: enquiries, replies within 48 hours and confirmed sales; no view counts |
+| My listings: available, paused, sold or drafts; edit; delete with a confirm step | `/sell/listings` | **Built (sample mode)**, with drafts |
+| Create and edit a listing: photos (compressed, location removed, alt text), price, swap terms, pickup point | `/sell/listings/new`, `/sell/listings/[id]/edit` | **Built (sample mode)** |
+| Edit seller profile | `/sell/profile` | **Built (sample mode)**, with the shop's link changeable once |
 
 ## 5. Staff tools
 
@@ -81,7 +81,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Hub post editor and the office-hours queue | `/hub/new`, `/hub/manage` | Missing |
 | Mentor dashboard, seller detail, notes, check-ins, CSV export | `/mentor/*` | Missing; can follow launch |
 
-**Totals:** about 45 screens and views, one of them (the WhatsApp handoff) cut. 26 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, the privacy policy, terms of use and seller guidelines as drafts, Looking For's board and request pages and the Hub's feed and post pages, which read today and send acting to sign-in, and, in sample mode, sign-in, your account and privacy settings, and messaging: the composer, inbox, thread, notifications and report pages), and 18 are placeholders or missing. Most of the missing ones are the signed-in half of the product.
+**Totals:** about 45 screens and views, one of them (the WhatsApp handoff) cut. 33 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, the privacy policy, terms of use and seller guidelines as drafts, Looking For's board and request pages and the Hub's feed and post pages, which read today and send acting to sign-in, and, in sample mode, sign-in, your account and privacy settings, messaging (the composer, inbox, thread, notifications and report pages) and selling (the pitch, the application steps and waiting page, the dashboard, My listings, the listing form and Edit shop)), and 11 are placeholders or missing. Most of the missing ones are the signed-in half of the product.
 
 ## 6. Work that isn't a screen
 
@@ -101,6 +101,10 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] Live updates and the header's count without a page load (Supabase Realtime), if wanted: messaging spec 2.6 left them out.
 - [ ] A scheduled job for the 7-day auto-confirm (it's checked on read today) and for deleting old messages, reports and notifications once Eduvos sets how long they're kept.
 - [ ] A limit on messages per account (reports have one: 10 in 24 hours).
+- [ ] Supabase tables for shops, listings and onboarding drafts, and Supabase Storage for photos, replace the sample store's (`lib/data/shops.ts`, `own-listings.ts`, `photos.ts`, `catalog.ts`); `/photos/[id]` goes. Storage's own resizing (or a cache handler that can purge) replaces next/image's, with a purge when a photo is deleted (selling plan decision 12).
+- [ ] Photos uploaded straight to storage from the browser (signed upload links), not through a Server Action: many hosts cap a request body far below the 32 MB set in `next.config.ts` (Vercel's functions take 4.5 MB). The no-JavaScript path then needs its own answer.
+- [ ] Storage quotas per account (sample mode keeps only each account's newest 12 waiting photos), and a look at photos of people (consent, CLAUDE.md).
+- [ ] Stage G: approving, declining and staff-pausing shops (with a reason the seller sees), Verified, hiding listings, and the Featured rules (approved, something listed, a week's break).
 
 ### POPIA and legal (Eduvos signs these off)
 - [ ] Final privacy policy, with a named Information Officer. A draft is live at `/privacy`; Eduvos's legal team reviews it.
@@ -162,7 +166,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 
 ## 7. Decisions for Lama and Eduvos
 
-- [ ] **Who can sell?** Any signed-in student, or only sellers the Hub has approved? An approval queue suits a hustle selling braids but is heavy for one textbook. This choice shapes onboarding and the admin tools, and who can make offers on Looking For requests (stage H: approved shops only).
+- [ ] **Who can sell?** Sellers the Hub approves (selling spec 2.7), built that way; a lighter path for one-off sales is still open. An approval queue suits a hustle selling braids but is heavy for one textbook. The choice also shapes the admin tools, and who can make offers on Looking For requests (stage H: approved shops only).
 - [ ] **Which email proves someone is a student?** The demo's `@vossie.net` was a stand-in.
 - [ ] **Plus addresses.** `thandi+1@eduvos.com` counts as a new address, which gets round the per-email code limit and allows several accounts per student. Decide with Eduvos whether to treat plus addresses as the same person, or reject them, once its mail system is known.
 - [ ] **Who moderates reports and approvals,** and how fast do they respond?
@@ -176,7 +180,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 1. **Done (2026-10-13):** browse and listing pages.
 2. **Done (2026-10-14): the other public pages.** The storefront, Saved, collections, the info, legal and system pages, and Looking For and the Hub (to read) are done. The branded error page was dropped under the JS stop rule, so Next's default shows. Next is item 3, starting with stage D (sign-in and accounts): it turns every "sign in to do that" link on these pages into the real flow.
 3. **Done in sample mode (2026-10-14): sign-in, account and privacy.** Supabase and an email service replace the sample store at go-live.
-4. **Selling:** onboarding, listing form and dashboard, plus the minimum admin (approvals and moderation).
+4. **Done in sample mode (2026-10-15): onboarding, the listing form and the dashboard.** The minimum admin is stage G.
 5. **Done in sample mode (2026-10-14): messaging, reports and notifications.** Supabase replaces the sample store at go-live.
    - Stage E builds messaging, then stage F selling. Stage G adds the staff tools: admin, the Hub's posting tools and the mentors' dashboard. Stage H adds community actions: posting Looking For requests, offers, following shops and the offline page. Stage I adds saved-search alerts.
 6. **Launch readiness:** legal sign-off, domain, monitoring, content, and the pilot.
