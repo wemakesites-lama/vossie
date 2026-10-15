@@ -66,17 +66,21 @@ for (const [name, path, saved] of PAGES) {
 }
 
 // Pages for a signed-in visitor, measured on a first visit with only the session cookie copied in, so nothing is
-// cached yet (accounts plan, Task 14; messaging plan, Task 16).
-const SIGNED_IN_PAGES: ReadonlyArray<[name: string, path: string, account: string]> = [
+// cached yet (accounts plan, Task 14; messaging plan, Task 16). The listing form's two pages are the only routes with
+// the photo field's client code (selling plan, Task 12); a row's fourth value is a field's label that must show first,
+// so the streamed form and its code are in the figure.
+const SIGNED_IN_PAGES: ReadonlyArray<[name: string, path: string, account: string, field?: string]> = [
   ["account page", "/account", "Student, Midrand"],
   ["inbox page", "/messages", "Student, Midrand"],
   ["thread page", "/messages/conv-s1", "Seller, Tech corner"],
   ["composer page", "/listings/l-002/message", "Student, Midrand"],
   ["report page", "/report?listing=l-002", "Student, Midrand"],
   ["notifications page", "/notifications", "Seller, Tech corner"],
+  ["new listing form", "/sell/listings/new", "Seller, Tech corner", "Add photos"],
+  ["edit listing form", "/sell/listings/l-001/edit", "Seller, Tech corner", "Add photos"],
 ];
 
-for (const [name, path, account] of SIGNED_IN_PAGES) {
+for (const [name, path, account, field] of SIGNED_IN_PAGES) {
   test(`a first visit to the ${name}, signed in, stays inside the JavaScript budget`, async ({
     page,
     context,
@@ -105,6 +109,7 @@ for (const [name, path, account] of SIGNED_IN_PAGES) {
     });
     await page.goto(path, { waitUntil: "networkidle" });
     await expect(page.locator("main h1")).toBeVisible();
+    if (field) await expect(page.getByLabel(field)).toBeVisible();
     await Promise.all(pending);
     console.log(`${name} (signed in): ${JSON.stringify({ scriptBrotli })}`);
     expect(scriptBrotli, "JavaScript, brotli as a host serves it").toBeLessThanOrEqual(150 * 1024);
