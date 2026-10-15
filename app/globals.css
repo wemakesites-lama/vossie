@@ -6924,3 +6924,208 @@
     color: var(--color-danger);
   }
 }
+
+/* --- Messaging: shared parts (messaging plan, Task 8, spec 2.3, 3.1 and 3.3) --- */
+@layer components {
+  .msg-crumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    color: var(--color-sky-dark);
+    font-weight: 600;
+  }
+
+  .msg-crumb svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .msg-summary {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px;
+    border: 1.5px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+
+  .msg-summary-photo {
+    flex: none;
+    width: 72px;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+
+  .msg-summary-text {
+    display: grid;
+    flex: 1;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .msg-summary-title {
+    color: var(--color-navy);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  /* Underlined, so colour isn't the only sign it's a link, and a 44px target (CLAUDE.md). */
+  a.msg-summary-title {
+    display: inline-flex;
+    align-items: center;
+    justify-self: start;
+    min-height: 44px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .msg-summary-meta {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  /* D's .form-input, grown to the rows it's given, and only taller by hand. */
+  .msg-textarea {
+    min-height: 0;
+    line-height: 1.5;
+    resize: vertical;
+  }
+
+  /* The tips: navy on pale is 11:1; links on pale are navy (CLAUDE.md). */
+  .msg-tips {
+    padding: 16px 18px;
+    border-radius: var(--radius-card);
+    background: var(--color-pale);
+    color: var(--color-navy);
+  }
+
+  .msg-tips-title {
+    font-weight: 700;
+  }
+
+  .msg-tips ul {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+    padding-left: 1.25rem;
+    list-style: disc;
+  }
+
+  .msg-tips a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* The scam check: D's error summary's frame, in danger red (6.6:1 on white). */
+  .msg-check {
+    display: grid;
+    gap: 10px;
+    padding: 16px 18px;
+    border: 2px solid var(--color-danger);
+    border-radius: var(--radius-card);
+    background: var(--color-white);
+  }
+
+  .msg-check-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 22px;
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  .msg-check-list {
+    display: grid;
+    gap: 6px;
+    padding-left: 1.25rem;
+    list-style: disc;
+  }
+
+  .msg-check-hint {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  .msg-check .btn {
+    justify-self: start;
+  }
+}
+
+/* --- Messaging: the composer (messaging plan, Task 8, spec 3.1) --- */
+@layer components {
+  /* .page and .composer-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
+  .composer-page {
+    padding: 16px 16px 64px;
+  }
+
+  .composer-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .composer-layout {
+    display: grid;
+    gap: 24px;
+    margin-top: 20px;
+  }
+
+  .composer-main {
+    display: grid;
+    gap: 20px;
+    min-width: 0;
+  }
+
+  .composer-note {
+    display: grid;
+    gap: 12px;
+    justify-items: start;
+  }
+
+  .composer-skeleton {
+    display: grid;
+    gap: 16px;
+  }
+
+  .composer-skeleton-crumb {
+    width: 10rem;
+    height: 44px;
+  }
+
+  .composer-skeleton-title {
+    width: 70%;
+    height: var(--text-section);
+  }
+
+  .composer-skeleton-summary {
+    height: 98px;
+    border-radius: var(--radius-card);
+  }
+
+  .composer-skeleton-form {
+    height: 24rem;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .composer-page {
+      padding-inline: 40px;
+    }
+  }
+
+  /* Desktop: the form on the left, the tips beside it (spec 2.3). */
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .composer-layout {
+      grid-template-columns: minmax(0, 40rem) 18rem;
+      column-gap: 48px;
+      align-items: start;
+    }
+  }
+}
