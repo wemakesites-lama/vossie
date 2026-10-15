@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ConversationRow } from "./rows";
-import { shopStats } from "./shop-stats";
+import { recentCounts, shopStats } from "./shop-stats";
 import { resetSampleStore, sampleStore } from "./store";
 
 const NOW = new Date("2026-10-14T10:00:00.000Z");
@@ -83,5 +83,31 @@ describe("the dashboard's numbers (selling spec 2.8, plan decision 18)", () => {
     expect(stats.week.salesConfirmed).toBe(2);
     expect(stats.record.salesConfirmed).toBe(3);
     expect([...sampleStore().conversations.values()].filter((row) => row.status === "done")).toHaveLength(2);
+  });
+
+  it("counts any window, such as the mentor dashboard's 14 days (staff tools plan decision 15)", async () => {
+    sampleStore().conversations.clear();
+    add({ createdAt: ago(24 * 10), firstReplyAt: ago(24 * 10 - 1) });
+    add({ createdAt: ago(24 * 15) });
+    add({ createdAt: ago(24 * 20), status: "confirmed", confirmedAt: ago(24 * 13), confirmedBy: "buyer" });
+    expect(await recentCounts("tech-corner", 14, NOW)).toEqual({
+      enquiries: 1,
+      due: 1,
+      repliedInTime: 1,
+      salesConfirmed: 1,
+    });
+  });
+
+  it("leaves a deleted shop's conversations out of any window too (amendment 5)", async () => {
+    sampleStore().conversations.clear();
+    add({ sellerGone: true, createdAt: ago(24 * 2), firstReplyAt: ago(24 * 2 - 1) });
+    add({ sellerGone: true, status: "confirmed", confirmedAt: ago(24), confirmedBy: "buyer" });
+    add({ sellerSlug: "hair-studio", createdAt: ago(24 * 2) });
+    expect(await recentCounts("tech-corner", 14, NOW)).toEqual({
+      enquiries: 0,
+      due: 0,
+      repliedInTime: 0,
+      salesConfirmed: 0,
+    });
   });
 });

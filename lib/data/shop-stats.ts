@@ -34,17 +34,29 @@ function counts(rows: readonly ConversationRow[], enquiriesSince: number, salesS
   return { enquiries: enquiries.length, due: due.length, repliedInTime: inTime.length, salesConfirmed: sales.length };
 }
 
+/** The shop's conversations. One whose shop was deleted (`sellerGone`) belongs to no shop, whatever link it names. */
+function conversationsOf(sellerSlug: string): ConversationRow[] {
+  return [...sampleStore().conversations.values()].filter((row) => row.sellerSlug === sellerSlug && !row.sellerGone);
+}
+
 /**
  * A shop's last 7 days, and its record for the badges: 90 days of enquiries, and every sale. A conversation whose shop
  * was deleted (`sellerGone`) belongs to no shop, whatever link it names.
  */
 export async function shopStats(sellerSlug: string, now: Date): Promise<ShopStats> {
-  const rows = [...sampleStore().conversations.values()].filter(
-    (row) => row.sellerSlug === sellerSlug && !row.sellerGone,
-  );
+  const rows = conversationsOf(sellerSlug);
   const weekStart = now.getTime() - WEEK_MS;
   return {
     week: counts(rows, weekStart, weekStart, now),
     record: counts(rows, now.getTime() - RECORD_MS, Number.NEGATIVE_INFINITY, now),
   };
+}
+
+/**
+ * A shop's enquiries and sales over the last `days` days: the mentor dashboard's 14 (staff tools plan decision 15).
+ * Like shopStats, it leaves out conversations whose shop was deleted (amendment 5).
+ */
+export async function recentCounts(sellerSlug: string, days: number, now: Date): Promise<EnquiryCounts> {
+  const since = now.getTime() - days * DAY_MS;
+  return counts(conversationsOf(sellerSlug), since, since, now);
 }
