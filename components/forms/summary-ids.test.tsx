@@ -4,6 +4,7 @@ import { AccountView, detailsForm } from "@/components/account/AccountView";
 import { PrivacySettingsView } from "@/components/account/PrivacySettingsView";
 import { CodeStep, EmailStep, ProfileStep } from "@/components/auth/SignInSteps";
 import { ComposerView } from "@/components/messages/ComposerView";
+import { ReportView } from "@/components/messages/ReportView";
 import { ThreadView } from "@/components/messages/ThreadView";
 import { campuses } from "@/data/fixtures/campuses";
 import { composerSubject } from "@/lib/messaging/subjects";
@@ -28,6 +29,7 @@ vi.mock("@/lib/messaging/actions", () => ({
   saleDidntHappen: async () => {},
   sendFirstMessage: async () => {},
   sendReply: async () => {},
+  sendReport: async () => {},
 }));
 
 const account: Account = {
@@ -70,10 +72,16 @@ describe("error summary ids (accounts spec 6)", () => {
           sent={false}
           campusName="Midrand"
         />
+        <ReportView
+          target={{ kind: "listing", id: "l-001" }}
+          subject={{ title: "Casio fx-991ZA Plus calculator", href: "/listings/l-001", backLabel: "Back to the listing" }}
+          already={false}
+          form={{ reason: "", detail: "", errors: oops }}
+        />
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(7);
+    expect(summaries).toHaveLength(8);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -84,6 +92,7 @@ describe("error summary ids (accounts spec 6)", () => {
       "account-privacy-delete-summary",
       "composer-summary",
       "thread-reply-summary",
+      "report-summary",
     ]);
   });
 });

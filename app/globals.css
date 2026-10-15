@@ -7500,3 +7500,61 @@
     }
   }
 }
+
+/* --- Messaging: report (messaging plan, Task 11, spec 3.4) --- */
+@layer components {
+  /* .page and .report-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
+  .report-page {
+    padding: 16px 16px 64px;
+  }
+
+  .report-column {
+    display: grid;
+    gap: 16px;
+    max-width: 36rem;
+  }
+
+  .report-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .report-subject {
+    color: var(--color-navy);
+    font-size: 18px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .report-reasons {
+    display: grid;
+    gap: 2px;
+  }
+
+  .report-reasons legend {
+    margin-bottom: 6px;
+  }
+
+  /* The thank-you has no back link above its heading, so it starts 24px down, as the inbox does. */
+  .report-sent {
+    padding-top: 8px;
+  }
+
+  /* Holds the button's height while the way back streams in, so nothing moves. */
+  .report-back {
+    min-height: 44px;
+  }
+
+  .report-skeleton-form {
+    height: 34rem;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .report-page {
+      padding-inline: 40px;
+    }
+  }
+}
