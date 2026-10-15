@@ -7659,3 +7659,21 @@
     }
   }
 }
+
+/* --- Messaging: the header's badge (messaging plan, Task 13, plan decision 10) --- */
+@layer components {
+  /* New notifications: white on danger red (6.6:1), apart from Saved's sky count beside it. */
+  .hdr-badge-alert {
+    background: var(--color-danger);
+    color: var(--color-white);
+  }
+}
+
+/* --- Messaging: the account page's counts (messaging plan, Task 13, spec 3.6) --- */
+@layer components {
+  /* A count that needs attention: danger red, 6.6:1 on white. */
+  .account-row-count {
+    color: var(--color-danger);
+    font-weight: 700;
+  }
+}

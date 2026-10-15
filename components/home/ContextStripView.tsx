@@ -83,7 +83,8 @@ function SignedInStrip({ activity, viewed }: { activity: ViewerActivity; viewed:
         ))}
       </ul>
       {viewed.length > 0 && <ViewedThumbs viewed={viewed} />}
-      <Link href="/account" className="context-link">
+      {/* No prefetch (CLAUDE.md, decision 53). The inbox is messaging's (messaging spec 3.6). */}
+      <Link href="/messages" prefetch={false} className="context-link">
         Open inbox
       </Link>
     </div>

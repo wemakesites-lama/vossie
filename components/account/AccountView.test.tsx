@@ -29,8 +29,14 @@ const state = (fields: Partial<FormStateRow>): FormStateRow => ({
   ...fields,
 });
 
-function renderAccount(who: Account = account, formState: FormStateRow | null = null) {
-  return render(<AccountView account={who} campuses={campuses} details={detailsForm(who, formState)} />);
+function renderAccount(
+  who: Account = account,
+  formState: FormStateRow | null = null,
+  counts = { conversations: 0, notifications: 0 },
+) {
+  return render(
+    <AccountView account={who} campuses={campuses} details={detailsForm(who, formState)} counts={counts} />,
+  );
 }
 
 describe("Your account (accounts spec 3.2)", () => {
@@ -69,10 +75,12 @@ describe("Your account (accounts spec 3.2)", () => {
     expect(screen.getByRole("combobox", { name: "Your campus" })).toHaveValue("");
   });
 
-  it("links to Saved, selling and privacy settings, and offers Sign out", () => {
+  it("links to messages, notifications, Saved, selling and privacy settings, and offers Sign out (messaging spec 3.6)", () => {
     renderAccount();
     const pages = screen.getByRole("navigation", { name: "Your account's pages" });
     expect(within(pages).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
+      ["Messages", "/messages"],
+      ["Notifications", "/notifications"],
       ["Saved", "/saved"],
       ["Start selling", "/sell"],
       ["Privacy settings", "/account/privacy"],
@@ -97,5 +105,11 @@ describe("Your account (accounts spec 3.2)", () => {
   it("names a mentor's or an admin's Hub role (plan decision 16)", () => {
     renderAccount({ ...account, roles: ["admin"] });
     expect(screen.getByText("Hub role").nextElementSibling).toHaveTextContent("Admin");
+  });
+
+  it("says how many conversations are unread and how many notifications are new (messaging spec 3.6)", () => {
+    renderAccount(account, null, { conversations: 2, notifications: 3 });
+    expect(screen.getByRole("link", { name: /^Messages\s*,\s*2 unread$/ })).toHaveAttribute("href", "/messages");
+    expect(screen.getByRole("link", { name: /^Notifications\s*,\s*3 new$/ })).toHaveAttribute("href", "/notifications");
   });
 });

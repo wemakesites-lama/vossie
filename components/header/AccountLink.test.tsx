@@ -11,9 +11,20 @@ vi.mock("@/lib/auth/session", () => ({
   },
 }));
 
+const notifications = vi.hoisted(() => ({ count: 0, failing: false }));
+
+vi.mock("@/lib/data/notifications", () => ({
+  countNewNotifications: async () => {
+    if (notifications.failing) throw new Error("The store didn't answer");
+    return notifications.count;
+  },
+}));
+
 afterEach(() => {
   viewer.account = null;
   viewer.failing = false;
+  notifications.count = 0;
+  notifications.failing = false;
 });
 
 describe("the header's account icon (accounts spec 3.4)", () => {
@@ -40,5 +51,37 @@ describe("the header's account icon (accounts spec 3.4)", () => {
     viewer.failing = true;
     render(await HeaderAccount());
     expect(screen.getByRole("link", { name: "Sign in" })).toBeInTheDocument();
+  });
+
+  it("shows a red badge with the number of new notifications, keeping the name (messaging plan decision 10)", () => {
+    render(<AccountLink signedIn unread={2} />);
+    const link = screen.getByRole("link", { name: "Your account" });
+    expect(link).toHaveAccessibleDescription("2 new notifications");
+    expect(link.querySelector(".hdr-badge")).toHaveClass("hdr-badge-alert");
+  });
+
+  it("says one notification, caps the number at 99+, and has no badge signed out or with nothing new", () => {
+    const { unmount } = render(<AccountLink signedIn unread={1} />);
+    expect(screen.getByRole("link", { name: "Your account" })).toHaveAccessibleDescription("1 new notification");
+    unmount();
+    const many = render(<AccountLink signedIn unread={120} />);
+    expect(screen.getByRole("link", { name: "Your account" })).toHaveAccessibleDescription("99+ new notifications");
+    many.unmount();
+    const none = render(<AccountLink signedIn unread={0} />);
+    expect(none.container.querySelector(".hdr-badge")).toBeNull();
+    none.unmount();
+    render(<AccountLink signedIn={false} unread={3} />);
+    expect(screen.getByRole("link", { name: "Sign in" })).not.toHaveAttribute("aria-describedby");
+  });
+
+  it("counts the session's new notifications, and shows no badge when the count fails", async () => {
+    viewer.account = { id: "acc-student" };
+    notifications.count = 2;
+    const { unmount } = render(await HeaderAccount());
+    expect(screen.getByRole("link", { name: "Your account" })).toHaveAccessibleDescription("2 new notifications");
+    unmount();
+    notifications.failing = true;
+    render(await HeaderAccount());
+    expect(screen.getByRole("link", { name: "Your account" })).not.toHaveAttribute("aria-describedby");
   });
 });
