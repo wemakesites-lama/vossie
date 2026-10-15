@@ -1,5 +1,5 @@
 import type { SignInAttemptRow } from "@/lib/data/rows";
-import type { BrowseQuery, Listing, Seller } from "@/lib/types";
+import type { BrowseQuery, ConversationSummary, Listing, Seller } from "@/lib/types";
 
 /** A listing for tests: an available R100 tech item at Midrand's library. Override what the test is about. */
 export function makeListing(overrides: Partial<Listing> = {}): Listing {
@@ -77,6 +77,23 @@ export function makeSignInAttempt(overrides: Partial<SignInAttemptRow> = {}): Si
     campusSlug: "",
     postedAt: null,
     expiresAt: "2099-01-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+/** An inbox row for tests: an unread-free "Asked" question about a test listing. Override what the test is about. */
+export function makeSummary(overrides: Partial<ConversationSummary> = {}): ConversationSummary {
+  return {
+    id: "conv-test",
+    role: "buyer",
+    otherName: "Tech corner",
+    listingTitle: "Test listing",
+    image: { src: "/placeholders/listing/tech.svg", alt: "Test listing" },
+    preview: "Is it still available?",
+    lastFromViewer: false,
+    lastMessageAt: "2026-10-14T10:00:00Z",
+    status: "asked",
+    unread: false,
     ...overrides,
   };
 }
