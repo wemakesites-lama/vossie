@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { saveFormState } from "@/lib/data/form-states";
+import { setShopPaused } from "@/lib/data/shops";
 import { resetSampleStore } from "@/lib/data/store";
 import { MY_LISTINGS_FORM } from "@/lib/selling/form-state";
 import { redirectOf } from "@/tests/helpers/next-request";
@@ -58,6 +59,13 @@ describe("My listings' and Delete listing's request-time parts (selling spec 2.9
     first.unmount();
     render(await MyListings({ searchParams: Promise.resolve({}) }));
     expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("tells the owner of a paused shop that buyers can't see its listings (amendment 11.6)", async () => {
+    viewer.id = "acc-seller";
+    await setShopPaused("acc-seller", true);
+    render(await MyListings({ searchParams: Promise.resolve({}) }));
+    expect(screen.getByText(/^Your shop is paused, so buyers can't see your listings/)).toBeInTheDocument();
   });
 
   it("sends a student without a shop to /sell, and a signed-out visitor to sign in", async () => {

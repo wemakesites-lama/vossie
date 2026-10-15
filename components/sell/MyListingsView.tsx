@@ -13,6 +13,8 @@ type MyListingsViewProps = {
   rows: readonly ListingRow[];
   /** The shop is waiting for approval, so everything is a draft (plan decision 4). */
   waiting: boolean;
+  /** The shop is paused, so buyers see none of its listings (amendment 11.6). */
+  paused: boolean;
   notice: string | null;
   /** The listing the notice is about, for its link. */
   noticeListing: string | null;
@@ -28,11 +30,12 @@ const EMPTY: Readonly<Record<ListingsTab, string>> = {
 /**
  * My listings (selling spec 2.9): the last action's notice, the four tabs as links with their counts, and the open
  * tab's listings, each with its photo, title, price, last update and actions. Each button and link names its listing.
+ * While the shop is paused, buyers can't see the listing, so the notice offers no look at it as a buyer.
  */
-export function MyListingsView({ tab, rows, waiting, notice, noticeListing }: MyListingsViewProps) {
+export function MyListingsView({ tab, rows, waiting, paused, notice, noticeListing }: MyListingsViewProps) {
   const open = LISTINGS_TABS.find((item) => item.tab === tab)!;
   const shown = rows.filter((row) => row.state === open.state);
-  const linkable = rows.some((row) => row.id === noticeListing && row.state !== "draft");
+  const linkable = !paused && rows.some((row) => row.id === noticeListing && row.state !== "draft");
   return (
     <>
       {notice && (
@@ -52,6 +55,9 @@ export function MyListingsView({ tab, rows, waiting, notice, noticeListing }: My
         <p className="form-notice">
           Your shop is waiting for the Hub, so your listings stay drafts until it&apos;s approved.
         </p>
+      )}
+      {paused && (
+        <p className="form-notice">Your shop is paused, so buyers can&apos;t see your listings until you resume it.</p>
       )}
 
       <nav aria-label="Listings by state" className="sell-tabs">

@@ -67,6 +67,41 @@ describe("the listing form's request-time part (selling spec 2.10 and section 3)
     expect(tokens()).toEqual(["/placeholders/photo/3.svg"]);
   });
 
+  it("shows a too-long description where it is: linked, marked invalid, and its message by the photos (amendment 11.5)", async () => {
+    viewer.sessionKey = "session-1";
+    const long = "x".repeat(126);
+    await saveFormState(
+      {
+        sessionKey: "session-1",
+        form: "listing:l-001",
+        errors: ["alt-length"],
+        values: {
+          kind: "item",
+          photos: ["/placeholders/photo/2.svg", "/placeholders/photo/3.svg", "/placeholders/photo/4.svg"].join("\n"),
+          "alt:/placeholders/photo/2.svg": "Fine",
+          "alt:/placeholders/photo/3.svg": long,
+          "alt:/placeholders/photo/4.svg": long,
+        },
+        notice: null,
+        expiresAt: "2099-01-01T00:00:00.000Z",
+      },
+      new Date(),
+    );
+    render(await ListingForm(editing("l-001")));
+    const message = "Keep each photo's description to 125 characters.";
+    expect(screen.getByRole("link", { name: message })).toHaveAttribute("href", "#edit-l-001-alt-2");
+    const second = screen.getByRole("textbox", { name: "Describe photo 2" });
+    expect(second).toHaveAttribute("id", "edit-l-001-alt-2");
+    expect(second).toHaveAttribute("aria-invalid", "true");
+    expect(second).toHaveAccessibleDescription(/Up to 125 characters\.$/);
+    // Only the first one is marked, where the link lands; the file input isn't.
+    expect(screen.getByRole("textbox", { name: "Describe photo 1" })).not.toHaveAttribute("aria-invalid");
+    expect(screen.getByRole("textbox", { name: "Describe photo 3" })).not.toHaveAttribute("aria-invalid");
+    expect(screen.getByLabelText("Add photos")).not.toHaveAttribute("aria-invalid");
+    expect(document.getElementById("edit-l-001-alt-error")).toHaveTextContent(message);
+    expect(document.getElementById("edit-l-001-photos-error")).toBeNull();
+  });
+
   it("is a 404 for another shop's listing", async () => {
     await expect(ListingForm(editing("l-004"))).rejects.toThrow("notFound");
   });

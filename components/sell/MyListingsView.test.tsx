@@ -15,7 +15,9 @@ const rows = [
 ];
 
 const show = (tab: ListingsTab, extra: Partial<Parameters<typeof MyListingsView>[0]> = {}) =>
-  render(<MyListingsView tab={tab} rows={rows} waiting={false} notice={null} noticeListing={null} {...extra} />);
+  render(
+    <MyListingsView tab={tab} rows={rows} waiting={false} paused={false} notice={null} noticeListing={null} {...extra} />,
+  );
 
 // The title is also in each control's sr-only name, so look for the one in the listing's own line.
 const itemFor = (title: string) => screen.getByText(title, { selector: ".sell-item-title" }).closest("li")!;
@@ -59,7 +61,7 @@ describe("My listings (selling spec 2.9)", () => {
   });
 
   it("says when a tab is empty", () => {
-    render(<MyListingsView tab="sold" rows={[]} waiting={false} notice={null} noticeListing={null} />);
+    render(<MyListingsView tab="sold" rows={[]} waiting={false} paused={false} notice={null} noticeListing={null} />);
     expect(screen.getByText("Nothing sold yet.")).toBeInTheDocument();
   });
 
@@ -69,6 +71,17 @@ describe("My listings (selling spec 2.9)", () => {
     expect(notice).toHaveTextContent("Published. Buyers can find it now.");
     expect(within(notice).getByRole("link", { name: "See it as buyers do" })).toHaveAttribute("href", "/listings/l-a");
     expect(screen.getByText(/Your shop is waiting for the Hub/)).toBeInTheDocument();
+    expect(screen.queryByText(/Your shop is paused/)).toBeNull();
+  });
+
+  it("tells a paused shop buyers can't see its listings, and offers no look as a buyer (amendment 11.6)", () => {
+    const notice = "Saved. Your shop is paused, so buyers will see it when you resume your shop.";
+    show("available", { paused: true, notice, noticeListing: "l-a" });
+    expect(screen.getByRole("status")).toHaveTextContent(notice);
+    expect(screen.queryByRole("link", { name: "See it as buyers do" })).toBeNull();
+    expect(
+      screen.getByText("Your shop is paused, so buyers can't see your listings until you resume it."),
+    ).toBeInTheDocument();
   });
 
   // Next treats /sell/listings and /sell/listings?tab=paused as one page, so a kept page's rows meet the next tab's
@@ -76,7 +89,9 @@ describe("My listings (selling spec 2.9)", () => {
   it("carries nothing over when the same page is shown for another tab", () => {
     const { rerender } = show("available");
     const fan = itemFor("Desk fan");
-    rerender(<MyListingsView tab="paused" rows={rows} waiting={false} notice={null} noticeListing={null} />);
+    rerender(
+      <MyListingsView tab="paused" rows={rows} waiting={false} paused={false} notice={null} noticeListing={null} />,
+    );
     expect(fan.isConnected).toBe(false);
     expect(screen.queryByText("Desk fan")).toBeNull();
     expect(itemFor("Kettle").querySelector('input[name="tab"]')).toHaveValue("paused");

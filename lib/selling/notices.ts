@@ -3,6 +3,8 @@
 
 const NOTICES: ReadonlyMap<string, string> = new Map([
   ["published", "Published. Buyers can find it now."],
+  // Publish, Resume or Relist while the shop is paused: buyers see none of its listings yet (amendment 11.6).
+  ["saved-shop-paused", "Saved. Your shop is paused, so buyers will see it when you resume your shop."],
   ["saved", "Your changes are saved."],
   ["drafted", "Saved as a draft. Only you can see it."],
   ["paused", "Paused. Buyers can't see it until you resume it."],

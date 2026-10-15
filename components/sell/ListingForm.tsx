@@ -4,12 +4,15 @@ import { getCampuses, getCategories, getPickupPoints } from "@/lib/data";
 import { getOwnListing } from "@/lib/data/own-listings";
 import type { ListingRow } from "@/lib/data/rows";
 import { isId } from "@/lib/messaging/paths";
+import { characterCount } from "@/lib/messaging/rules";
 import { listingFieldIds, listingFieldPrefix, sellingErrors } from "@/lib/selling/errors";
 import { listingForm } from "@/lib/selling/form-state";
 import { requireShopOwner } from "@/lib/selling/owner";
 import { editListingPath, NEW_LISTING_PATH } from "@/lib/selling/paths";
+import { ALT_MAX } from "@/lib/selling/rules";
 import { thumbSrc } from "@/lib/selling/thumbs";
 import { ListingFormView } from "./ListingFormView";
+import type { SavedPhoto } from "./PhotoField";
 
 /** The form's values for a listing, or a new one's: an item, for cash, picked up at the shop's first pickup point. */
 function valuesOf(listing: ListingRow | null, firstSpot: string | null): Record<string, string> {
@@ -50,10 +53,17 @@ export async function ListingForm({ params }: { params?: Promise<{ id: string }>
   ]);
   const spots = pickupPoints.filter((point) => owner.shop.pickupPointIds.includes(point.id));
   const values = state ? state.values : valuesOf(listing, spots[0]?.id ?? null);
-  const photos = (values.photos ?? "")
+  const codes = state?.errors ?? [];
+  const photos: SavedPhoto[] = (values.photos ?? "")
     .split("\n")
     .filter(Boolean)
     .map((src) => ({ src, alt: values[`alt:${src}`] ?? "", thumb: thumbSrc(src) }));
+  // A description that's too long is shown where it is: the error links to the first one, marked invalid (amendment
+  // 11.5).
+  const longAlt = codes.includes("alt-length")
+    ? photos.findIndex((photo) => characterCount(photo.alt) > ALT_MAX)
+    : -1;
+  if (longAlt >= 0) photos[longAlt].invalid = true;
   return (
     <ListingFormView
       listingId={listing?.id ?? null}
@@ -61,7 +71,7 @@ export async function ListingForm({ params }: { params?: Promise<{ id: string }>
       waiting={owner.status === "pending"}
       values={values}
       photos={photos}
-      errors={sellingErrors(state?.errors ?? [], listingFieldIds(listingFieldPrefix(listing?.id ?? null)))}
+      errors={sellingErrors(codes, listingFieldIds(listingFieldPrefix(listing?.id ?? null), longAlt))}
       categories={categories}
       spots={spots}
       campusName={campuses.find((campus) => campus.slug === owner.shop.campusSlug)?.name ?? ""}

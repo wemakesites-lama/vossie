@@ -45,7 +45,7 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
   ["photo-size", { message: `Each photo must be ${PHOTO_MAX_MB} MB or less.`, field: "photos" }],
   ["photo-count", { message: `You can add up to ${PHOTOS_PER_LISTING} photos.`, field: "photos" }],
   ["photo-unreadable", { message: "We couldn't read one of the photos. Try another.", field: "photos" }],
-  ["alt-length", { message: `Keep each photo's description to ${ALT_MAX} characters.`, field: "photos" }],
+  ["alt-length", { message: `Keep each photo's description to ${ALT_MAX} characters.`, field: "alt" }],
 ]);
 
 /** The words for a form's error codes, in order, each linked to its field's id when the form has that field. */
@@ -80,8 +80,12 @@ export function listingFieldPrefix(listingId: string | null): string {
   return listingId ? `edit-${listingId}` : "new";
 }
 
-/** The listing form's field ids. A radio group's id is its first radio's. */
-export function listingFieldIds(prefix: string) {
+/**
+ * The listing form's field ids. A radio group's id is its first radio's. A photo's description that is too long is
+ * shown where it is (amendment 11.5): `longAlt` is the first such photo's place (from 0), its description field's id
+ * is `alt`, and with none (-1) `alt` is the file input's, as the other photo errors' are (plan decision 24).
+ */
+export function listingFieldIds(prefix: string, longAlt = -1) {
   return {
     kind: `${prefix}-kind`,
     title: `${prefix}-title`,
@@ -94,5 +98,6 @@ export function listingFieldIds(prefix: string) {
     handover: `${prefix}-handover`,
     pickup: `${prefix}-pickup`,
     photos: `${prefix}-photos`,
+    alt: longAlt < 0 ? `${prefix}-photos` : `${prefix}-alt-${longAlt + 1}`,
   } as const;
 }

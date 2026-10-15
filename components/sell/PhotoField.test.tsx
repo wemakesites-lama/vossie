@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { SavedPhoto } from "./PhotoField";
 import { PhotoFieldset } from "./PhotoFieldset";
 
 const A = "/photos/ph-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -36,29 +37,55 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.doUnmock(SHRINK);
 });
 
 const tokens = () => [...document.querySelectorAll<HTMLInputElement>('input[name="photo"]')].map((input) => input.value);
 const names = (input: HTMLInputElement) => [...(input.files ?? [])].map((file) => file.name);
+const previews = () => [...document.querySelectorAll("img")].map((img) => img.getAttribute("src"));
 
-function show(photos = saved) {
-  const submitted = vi.fn();
+/** What a save posted: the files in the input as it went, and the button it went with. */
+type Post = { files: string[]; intent: string | null };
+
+/** The photos in a form with a Save button. Returns what the form posts. */
+function show(photos: SavedPhoto[] = saved) {
+  const posted: Post[] = [];
   render(
     <form
       onSubmit={(event) => {
+        // A form action skips a submit that something before it held (prevented), as React's does.
+        if (!event.nativeEvent.defaultPrevented) {
+          const submitter = (event.nativeEvent as SubmitEvent).submitter;
+          posted.push({ files: names(screen.getByLabelText("Add photos")), intent: submitter?.getAttribute("value") ?? null });
+        }
         event.preventDefault();
-        submitted();
       }}
     >
-      <PhotoFieldset prefix="edit-l-001" photos={photos} error={undefined} />
+      <PhotoFieldset prefix="edit-l-001" photos={photos} error={undefined} altError={undefined} />
+      <button type="submit" name="intent" value="publish">
+        Save
+      </button>
     </form>,
   );
   // jsdom's file input takes only a real FileList, which only a real DataTransfer makes.
   const input = screen.getByLabelText<HTMLInputElement>("Add photos");
   Object.defineProperty(input, "files", { configurable: true, writable: true, value: [] });
-  return submitted;
+  return posted;
+}
+
+/** A stand-in for lib/photos/shrink.ts whose shrinks each wait to be let go, in the order they started. */
+function slowShrink() {
+  const started: string[] = [];
+  const waiting: Array<() => void> = [];
+  vi.doMock(SHRINK, () => ({
+    shrink: (file: File) => {
+      started.push(file.name);
+      return new Promise<File>((resolve) => waiting.push(() => resolve(shrunkCopy(file))));
+    },
+  }));
+  return { started, finish: (index: number) => waiting[index]() };
 }
 
 /** Picks these files in the file input, as the browser does: they replace whatever it held. */
@@ -82,11 +109,16 @@ describe("the photo field (selling spec 2.3, 2.5 and section 4, plan decisions 9
     expect(screen.getByRole("button", { name: "Move earlier (photo 2)" })).toHaveAttribute("type", "submit");
     expect(screen.getByRole("group", { name: "Photos" })).toBeInTheDocument();
     expect(screen.getByLabelText("Add photos")).toHaveAccessibleDescription(/^Up to 6 JPG, PNG or WebP photos, 5 MB each\./);
+    // A photo button without JavaScript comes back here, above the photos (amendment 11.4).
+    expect(screen.getByText("Photos", { selector: "legend" })).toHaveAttribute("id", "edit-l-001-photos-title");
+    expect(screen.getByRole("textbox", { name: "Describe photo 1" })).toHaveAccessibleDescription(
+      "Describe each photo for people who can't see it. Leave it empty to use the title. Up to 125 characters.",
+    );
   });
 
   it("moves a photo in place, says so, and keeps focus on it, without posting the form", async () => {
     const user = userEvent.setup();
-    const submitted = show();
+    const posted = show();
     await user.click(screen.getByRole("button", { name: "Make cover (photo 3)" }));
     expect(tokens()).toEqual([C, A, B]);
     expect(screen.getByRole("status")).toHaveTextContent("That photo is the cover now.");
@@ -94,15 +126,53 @@ describe("the photo field (selling spec 2.3, 2.5 and section 4, plan decisions 9
     await user.click(screen.getByRole("button", { name: "Move later (photo 2)" }));
     expect(tokens()).toEqual([C, B, A]);
     expect(screen.getByRole("status")).toHaveTextContent("Moved to photo 3 of 3.");
-    expect(submitted).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Move later (photo 1)" }));
+    expect(tokens()).toEqual([B, C, A]);
+    expect(screen.getByRole("status")).toHaveTextContent("Moved to photo 2 of 3.");
+    await user.click(screen.getByRole("button", { name: "Move earlier (photo 2)" }));
+    expect(tokens()).toEqual([C, B, A]);
+    expect(screen.getByRole("status")).toHaveTextContent("That photo is the cover now.");
+    expect(posted).toEqual([]);
   });
 
-  it("removes a photo", async () => {
+  it("removes a photo, and puts focus on the photo now in its place, or the file input when none is left (amendment 11.9)", async () => {
     const user = userEvent.setup();
     show();
     await user.click(screen.getByRole("button", { name: "Remove (photo 2)" }));
     expect(tokens()).toEqual([A, C]);
     expect(screen.getByRole("status")).toHaveTextContent("Photo removed. 2 left.");
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Make cover (photo 2)" }));
+    // The last photo: focus goes to the one before it.
+    await user.click(screen.getByRole("button", { name: "Remove (photo 2)" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Remove (photo 1)" }));
+    await user.click(screen.getByRole("button", { name: "Remove (photo 1)" }));
+    expect(tokens()).toEqual([]);
+    expect(document.activeElement).toBe(screen.getByLabelText("Add photos"));
+  });
+
+  it("announces a status again when it repeats, by clearing it first (amendment 11.8)", async () => {
+    const user = userEvent.setup();
+    show();
+    const status = screen.getByRole("status");
+    const said: string[] = [];
+    new MutationObserver((records) => {
+      for (const record of records) for (const node of record.addedNodes) said.push(node.textContent ?? "");
+    }).observe(status, { childList: true, subtree: true, characterData: true });
+    await user.click(screen.getByRole("button", { name: "Make cover (photo 2)" }));
+    // The photo that was the cover is photo 2 now: making it the cover again says the same words.
+    await user.click(screen.getByRole("button", { name: "Make cover (photo 2)" }));
+    expect(tokens()).toEqual([A, B, C]);
+    expect(said).toEqual(["That photo is the cover now.", "That photo is the cover now."]);
+  });
+
+  it("marks a description the server found too long, and it stays with its photo (amendment 11.5)", async () => {
+    const user = userEvent.setup();
+    show([saved[0], { ...saved[1], invalid: true }, saved[2]]);
+    expect(screen.getByRole("textbox", { name: "Describe photo 2" })).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("textbox", { name: "Describe photo 1" })).not.toHaveAttribute("aria-invalid");
+    await user.click(screen.getByRole("button", { name: "Make cover (photo 2)" }));
+    expect(screen.getByRole("textbox", { name: "Describe photo 1" })).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("textbox", { name: "Describe photo 2" })).not.toHaveAttribute("aria-invalid");
   });
 
   it("adds picked photos as new ones, numbered by their place in the file input, says what it left out, then shrinks them", async () => {
@@ -116,10 +186,95 @@ describe("the photo field (selling spec 2.3, 2.5 and section 4, plan decisions 9
     // The previews and the file input don't wait for the shrinking code: until it's done, the originals are there.
     expect(screen.getByText("Photo 3")).toBeInTheDocument();
     expect(tokens()).toEqual([A, "new:0", "new:1"]);
-    expect(screen.getByRole("status")).toHaveTextContent("2 photos added. 1 wasn't a JPG, PNG or WebP.");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "2 photos added. 1 wasn't a JPG, PNG or WebP. Getting your photos ready…",
+    );
     expect(input.files).toEqual([picked[0], picked[2]]);
     await waitFor(() => expect(names(input)).toEqual(["desk.webp", "side.webp"]));
     expect(tokens()).toEqual([A, "new:0", "new:1"]);
+    expect(screen.getByRole("status")).toHaveTextContent("Your photos are ready.");
+  });
+
+  it("keeps a picked file with no type or an unusual one, for the server's signature check (amendment 11.7)", async () => {
+    show([]);
+    const picked = [
+      new File(["a"], "camera-upload", { type: "" }),
+      new File(["b"], "old.jpg", { type: "image/jpg" }),
+      new File(["c"], "cat.gif", { type: "image/gif" }),
+    ];
+    const input = pick(picked);
+    expect(tokens()).toEqual(["new:0", "new:1"]);
+    expect(input.files).toEqual(picked.slice(0, 2));
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "2 photos added. 1 wasn't a JPG, PNG or WebP. Getting your photos ready…",
+    );
+    // Let the shrinking finish here, so the next test's first pick loads its own stand-in.
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Your photos are ready."));
+  });
+
+  it("shrinks one photo at a time, and shows each one's shrunk copy as soon as it's ready (amendment 11.2)", async () => {
+    const { started, finish } = slowShrink();
+    show([]);
+    const input = pick([new File(["a"], "desk.png", { type: "image/png" }), new File(["b"], "side.jpg", { type: "image/jpeg" })]);
+    await waitFor(() => expect(started).toEqual(["desk.png"]));
+    // Another pick waits its turn too.
+    pick([new File(["c"], "back.jpg", { type: "image/jpeg" })]);
+    finish(0);
+    await waitFor(() => expect(started).toEqual(["desk.png", "side.jpg"]));
+    expect(previews()).toEqual(["blob:desk.webp", "blob:side.jpg", "blob:back.jpg"]);
+    expect(names(input)).toEqual(["desk.webp", "side.jpg", "back.jpg"]);
+    expect(screen.getByRole("status")).toHaveTextContent("1 photo added. Getting your photo ready…");
+    finish(1);
+    await waitFor(() => expect(started).toEqual(["desk.png", "side.jpg", "back.jpg"]));
+    // Only when the last is done are they all ready.
+    expect(screen.getByRole("status")).toHaveTextContent("Getting your photo ready…");
+    finish(2);
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Your photo is ready."));
+    expect(names(input)).toEqual(["desk.webp", "side.webp", "back.webp"]);
+  });
+
+  it("frees each preview's object URL once its picture has loaded, the shrunk copy's too (amendment 11.2)", async () => {
+    const revoked: string[] = [];
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, writable: true, value: (url: string) => revoked.push(url) });
+    show([]);
+    pick([new File(["a"], "desk.png", { type: "image/png" })]);
+    const img = document.querySelector("img")!;
+    fireEvent.load(img);
+    expect(revoked).toEqual(["blob:desk.png"]);
+    await waitFor(() => expect(img).toHaveAttribute("src", "blob:desk.webp"));
+    fireEvent.load(img);
+    expect(revoked).toEqual(["blob:desk.png", "blob:desk.webp"]);
+  });
+
+  it("holds a save while photos are being shrunk, then posts the shrunk files with the same button, once (amendment 11.1)", async () => {
+    const user = userEvent.setup();
+    const { started, finish } = slowShrink();
+    const posted = show([]);
+    pick([new File(["a"], "desk.png", { type: "image/png" })]);
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    // Pressed again while it waits: still one save.
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(started).toEqual(["desk.png"]));
+    expect(posted).toEqual([]);
+    finish(0);
+    await waitFor(() => expect(posted).toEqual([{ files: ["desk.webp"], intent: "publish" }]));
+    // Nothing is held once the photos are ready.
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(posted).toHaveLength(2);
+  });
+
+  it("lets a held save go after 15 seconds with the originals, which the server strips (amendment 11.1)", async () => {
+    // A shrink that never finishes. It starts with the real clock, so the shrinking code has loaded before the test ends.
+    const { started } = slowShrink();
+    const posted = show([]);
+    pick([new File(["a"], "desk.png", { type: "image/png" })]);
+    await waitFor(() => expect(started).toEqual(["desk.png"]));
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await vi.advanceTimersByTimeAsync(14_999);
+    expect(posted).toEqual([]);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(posted).toEqual([{ files: ["desk.png"], intent: "publish" }]);
   });
 
   it("takes no more than 6 photos, and says how many it left out", async () => {
@@ -161,10 +316,9 @@ describe("the photo field (selling spec 2.3, 2.5 and section 4, plan decisions 9
     const picked = [new File(["a"], "desk.png", { type: "image/png" })];
     const input = pick(picked);
     expect(screen.getByText("Photo 1 (the cover)")).toBeInTheDocument();
-    // Give the failed import time to settle: nothing changes.
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    // The originals are what will go, so they're ready: a save isn't held for them.
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Your photo is ready."));
     expect(input.files).toEqual(picked);
     expect(tokens()).toEqual(["new:0"]);
-    expect(screen.getByRole("status")).toHaveTextContent("1 photo added.");
   });
 });

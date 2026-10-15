@@ -38,4 +38,14 @@ describe("selling's error words (plan decisions 24 and 27)", () => {
     expect(listingFieldPrefix("l-001")).toBe("edit-l-001");
     expect(listingFieldIds("edit-l-001").title).toBe("edit-l-001-title");
   });
+
+  it("links a too-long description to the first photo whose description is too long, not the file input (amendment 11.5)", () => {
+    expect(sellingErrors(["alt-length", "photo-size"], listingFieldIds("edit-l-001", 2))).toEqual([
+      { message: "Keep each photo's description to 125 characters.", fieldId: "edit-l-001-alt-3" },
+      // The other photo errors still go to the file input (plan decision 24).
+      { message: "Each photo must be 5 MB or less.", fieldId: "edit-l-001-photos" },
+    ]);
+    // With no photo to point at, it goes to the file input, as before.
+    expect(listingFieldIds("new").alt).toBe("new-photos");
+  });
 });

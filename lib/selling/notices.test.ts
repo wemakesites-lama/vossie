@@ -7,6 +7,12 @@ describe("notices after an action (plan decision 27)", () => {
     expect(noticeText("shop-paused")).toBe("Your shop is paused. Buyers can't see your listings until you resume it.");
   });
 
+  it("tells a paused shop's seller when buyers will see what they published (amendment 11.6)", () => {
+    expect(noticeText("saved-shop-paused")).toBe(
+      "Saved. Your shop is paused, so buyers will see it when you resume your shop.",
+    );
+  });
+
   it("shows nothing for anything else, so form state can never put its own words on the page", () => {
     for (const code of [null, undefined, "", "toString", "<b>hi</b>"]) expect(noticeText(code)).toBeNull();
   });

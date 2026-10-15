@@ -15,20 +15,34 @@ export function fitWithin(width: number, height: number, max: number): [number, 
 const encode = (canvas: HTMLCanvasElement, type: string, quality: number) =>
   new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
 
+/** The decoded photo drawn at its new size and encoded: WebP, else JPEG on white. Null when there's nothing to give. */
+async function reencode(bitmap: ImageBitmap, to: ShrinkTo): Promise<Blob | null> {
+  const canvas = document.createElement("canvas");
+  const [width, height] = fitWithin(bitmap.width, bitmap.height, to.side);
+  [canvas.width, canvas.height] = [width, height];
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+  context.drawImage(bitmap, 0, 0, width, height);
+  const webp = await encode(canvas, "image/webp", to.quality);
+  if (webp?.type === "image/webp") return webp;
+  // JPEG has no transparency, and a transparent pixel would turn black: white goes down first.
+  context.fillStyle = "#fff";
+  context.fillRect(0, 0, width, height);
+  context.drawImage(bitmap, 0, 0, width, height);
+  return encode(canvas, "image/jpeg", to.quality);
+}
+
 /**
- * The photo with its longest side at most `to.side` (1,600px), re-encoded as WebP at `to.quality` (0.8), or JPEG where
- * the browser can't encode WebP (Safari), which leaves every bit of hidden data behind. Even a small photo is
- * re-encoded. A photo the browser can't decode comes back as it is, for the server to check and strip.
+ * The photo with its longest side at most `to.side` (1,600px), turned the way its Exif says, re-encoded as WebP at
+ * `to.quality` (0.8), or JPEG on white where the browser can't encode WebP (Safari), which leaves every bit of hidden
+ * data behind. Even a small photo is re-encoded. Anything that doesn't work (a photo the browser can't decode, a
+ * browser that refuses the orientation option, no 2D context, no blob) gives the original back, for the server to
+ * check and strip (amendment 11.3). The decoded photo is let go as soon as it's drawn, whatever happens.
  */
 export async function shrink(file: File, to: ShrinkTo): Promise<File> {
   try {
-    const bitmap = await createImageBitmap(file);
-    const canvas = document.createElement("canvas");
-    [canvas.width, canvas.height] = fitWithin(bitmap.width, bitmap.height, to.side);
-    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    bitmap.close();
-    let blob = await encode(canvas, "image/webp", to.quality);
-    if (blob?.type !== "image/webp") blob = await encode(canvas, "image/jpeg", to.quality);
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const blob = await reencode(bitmap, to).finally(() => bitmap.close());
     if (!blob) return file;
     const name = `${file.name.replace(/\.[^.]*$/, "") || "photo"}.${blob.type === "image/webp" ? "webp" : "jpg"}`;
     return new File([blob], name, { type: blob.type });

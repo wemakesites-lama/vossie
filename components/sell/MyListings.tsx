@@ -20,6 +20,7 @@ export async function MyListings({ searchParams }: MyListingsProps) {
       tab={tab}
       rows={rows}
       waiting={owner.status === "pending"}
+      paused={owner.status === "paused"}
       notice={noticeText(state?.notice)}
       noticeListing={state?.values.listing ?? null}
     />

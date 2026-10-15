@@ -5,6 +5,7 @@ import { hashToken } from "@/lib/auth/secrets";
 import { getOwnListing, listOwnListings, setOwnListingState } from "@/lib/data/own-listings";
 import { attachPhotos, getPhoto, photoIdOf, storePhotos } from "@/lib/data/photos";
 import { createSession } from "@/lib/data/sessions";
+import { setShopPaused } from "@/lib/data/shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { DAY_MS, KEEP_MAX } from "@/lib/messaging/rules";
 import { ascii, containsText, GPS, pngBytes } from "@/tests/helpers/image-bytes";
@@ -121,7 +122,8 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
       photo: [COVER, BACK, CASE],
       photoMove: `${CASE}:cover`,
     });
-    expect(await redirectOf(() => saveListingForm(moving))).toBe("/sell/listings/l-001/edit#edit-l-001-photos");
+    // Back to the photos' legend, above the list, not the file input below it (amendment 11.4).
+    expect(await redirectOf(() => saveListingForm(moving))).toBe("/sell/listings/l-001/edit#edit-l-001-photos-title");
     const state = (await readFormState(listingForm("l-001")))!;
     expect(state.values).toMatchObject({ title: "Typed but not saved", photos: [CASE, COVER, BACK].join("\n") });
     expect((await getOwnListing("tech-corner", "l-001"))?.title).toBe("Casio fx-991ZA Plus calculator");
@@ -236,6 +238,17 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
     expect(shown[5]).toMatch(/^\/photos\/ph-/);
   });
 
+  it("tells a paused shop that buyers will see a published listing when the shop resumes, not now (amendment 11.6)", async () => {
+    await signedInAs("acc-seller");
+    await setShopPaused("acc-seller", true);
+    await redirectOf(() => saveListingForm(fanForm()));
+    expect((await fan())?.state).toBe("available");
+    expect((await readFormState(MY_LISTINGS_FORM))?.notice).toBe("saved-shop-paused");
+    // A draft says what it always says.
+    await redirectOf(() => saveListingForm(fanForm({ title: "Kettle", intent: "draft" })));
+    expect((await readFormState(MY_LISTINGS_FORM))?.notice).toBe("drafted");
+  });
+
   it("saves changes to a listing, and keeps a sold one sold", async () => {
     await signedInAs("acc-seller");
     expect(await redirectOf(() => saveListingForm(fanForm({ listing: "l-001", title: "Desk fan" })))).toBe(
@@ -263,6 +276,20 @@ describe("My listings' buttons and Delete listing (selling spec 2.9, plan decisi
     await move("draft", "available");
     expect((await getOwnListing("tech-corner", "l-001"))?.state).toBe("available");
     expect(request.updatedTags).toEqual(["listings", "listings", "listings", "listings"]);
+  });
+
+  it("tells a paused shop the truth on Resume and Relist, and keeps Pause's and Mark sold's words (amendment 11.6)", async () => {
+    await signedInAs("acc-seller");
+    await setShopPaused("acc-seller", true);
+    const move = async (to: string, tab: string) => {
+      await redirectOf(() => changeListingState(form({ listing: "l-001", to, tab })));
+      return (await readFormState(MY_LISTINGS_FORM))?.notice;
+    };
+    expect(await move("paused", "available")).toBe("paused");
+    expect(await move("available", "paused")).toBe("saved-shop-paused");
+    expect(await move("sold", "available")).toBe("sold");
+    expect(await move("available", "sold")).toBe("saved-shop-paused");
+    expect((await getOwnListing("tech-corner", "l-001"))?.state).toBe("available");
   });
 
   it("deletes a listing and its photos, saying so", async () => {

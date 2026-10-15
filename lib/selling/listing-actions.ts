@@ -145,13 +145,14 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   const photoErrors: string[] = [...uploadErrors];
   if (tooMany && !photoErrors.includes("photo-count")) photoErrors.push("photo-count");
 
-  // A photo button: apply it, keep everything typed, and come back to the photos.
+  // A photo button: apply it, keep everything typed, and come back to the photos: to their legend, above the list,
+  // not the file input below it (amendment 11.4). The error summary's links still go to the file input.
   if (move) {
     const token = resolveToken(move.token, stored);
     const moved = token ? applyPhotoMove(order, { token, op: move.op }) : order;
     const state = { errors: photoErrors, values: typedValues(formData, moved, alts, context), notice: null };
     await writeFormState(form, state, now);
-    done(`${formPath}#${listingFieldPrefix(id)}-photos`);
+    done(`${formPath}#${listingFieldPrefix(id)}-photos-title`);
   }
 
   const check = checkListing(listingInput(formData), context);
@@ -178,6 +179,8 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   let notice = "published";
   if (saved.state === "draft") notice = "drafted";
   else if (existing && existing.state !== "draft") notice = "saved";
+  // A paused shop's listings are hidden, so a publish isn't seen until the shop resumes (amendment 11.6).
+  else if (owner.status === "paused") notice = "saved-shop-paused";
   await writeFormState(MY_LISTINGS_FORM, { errors: [], values: { listing: saved.id }, notice }, now);
   done(myListingsPath(tabFor(saved.state)));
 }
@@ -195,7 +198,9 @@ export async function changeListingState(formData: FormData): Promise<void> {
     const row = await setOwnListingState(owner.shop.slug, id, to, now);
     if (row) {
       listingsChanged();
-      await writeFormState(MY_LISTINGS_FORM, { errors: [], values: { listing: row.id }, notice: NOTICE_FOR[to] }, now);
+      // Resume and Relist don't put a paused shop's listing in front of buyers (amendment 11.6).
+      const notice = to === "available" && owner.status === "paused" ? "saved-shop-paused" : NOTICE_FOR[to];
+      await writeFormState(MY_LISTINGS_FORM, { errors: [], values: { listing: row.id }, notice }, now);
     }
   }
   done(myListingsPath(tab));

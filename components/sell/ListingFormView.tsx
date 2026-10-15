@@ -37,7 +37,9 @@ type ListingFormViewProps = {
 export function ListingFormView(props: ListingFormViewProps) {
   const { listingId, state, waiting, values, photos, errors, categories, spots, campusName } = props;
   const prefix = listingFieldPrefix(listingId);
-  const ids = listingFieldIds(prefix);
+  // The photo marked invalid is the first whose description is too long, where that error links (amendment 11.5).
+  const longAlt = photos.findIndex((photo) => photo.invalid);
+  const ids = listingFieldIds(prefix, longAlt);
   const errorOf = (field: keyof typeof ids) => errorFor(errors, ids[field]);
   const priceError = errorOf("price");
   const publishLabel = state === "paused" || state === "sold" ? "Save changes" : "Save and publish";
@@ -196,6 +198,7 @@ export function ListingFormView(props: ListingFormViewProps) {
           prefix={prefix}
           photos={photos}
           error={errorOf("photos")}
+          altError={longAlt < 0 ? undefined : errorOf("alt")}
         />
         <div className="sell-form-buttons">
           {!waiting && (
