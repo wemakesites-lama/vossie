@@ -65,6 +65,7 @@ export async function ListingForm({ params }: { params?: Promise<{ id: string }>
       categories={categories}
       spots={spots}
       campusName={campuses.find((campus) => campus.slug === owner.shop.campusSlug)?.name ?? ""}
+      round={state?.expiresAt}
     />
   );
 }

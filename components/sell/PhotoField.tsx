@@ -41,19 +41,28 @@ const encode = (canvas: HTMLCanvasElement, type: string) =>
 /**
  * The browser's part (selling spec 2.3, plan decision 10): the longest side at most 1,600px, re-encoded as WebP at
  * 0.8, or JPEG where the browser can't encode WebP (Safari), which leaves every bit of hidden data behind. A photo the
- * browser can't decode goes as it is, for the server to check and strip.
+ * browser can't decode, or can't draw (no canvas memory left), goes as it is, for the server to check and strip.
  */
 async function shrink(file: File): Promise<File> {
   try {
     const bitmap = await createImageBitmap(file);
     const scale = Math.min(1, SHRINK_MAX_SIDE / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const width = (canvas.width = Math.max(1, Math.round(bitmap.width * scale)));
+    const height = (canvas.height = Math.max(1, Math.round(bitmap.height * scale)));
+    // No 2D context throws here, and the photo goes as it is.
+    const context = canvas.getContext("2d")!;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(bitmap, 0, 0, width, height);
     bitmap.close();
     let blob = await encode(canvas, "image/webp");
-    if (blob?.type !== "image/webp") blob = await encode(canvas, "image/jpeg");
+    if (blob?.type !== "image/webp") {
+      // JPEG has no transparency: what was see-through goes white (behind the photo), not black.
+      context.globalCompositeOperation = "destination-over";
+      context.fillStyle = "#fff";
+      context.fillRect(0, 0, width, height);
+      blob = await encode(canvas, "image/jpeg");
+    }
     if (!blob) return file;
     const name = `${file.name.replace(/\.[^.]*$/, "") || "photo"}.${blob.type === "image/webp" ? "webp" : "jpg"}`;
     return new File([blob], name, { type: blob.type });
@@ -93,6 +102,9 @@ export function PhotoField({ prefix, photos, error }: PhotoFieldProps) {
   const made = useRef(0);
   const inputId = `${prefix}-photos`;
 
+  // Words the same as the last ones gain or lose a no-break space at the end, so the status line changes and a screen
+  // reader says them again.
+  const say = (words: string) => setStatus((last) => (last.endsWith("\u00a0") ? words : `${words}\u00a0`));
   const tokenOf = (item: Item) => item.src ?? newPhotoToken(files.indexOf(item.file!));
 
   /** Puts these files in the file input, so the plain form posts them. */
@@ -103,18 +115,23 @@ export function PhotoField({ prefix, photos, error }: PhotoFieldProps) {
   }
 
   async function pick(event: ChangeEvent<HTMLInputElement>) {
-    // The browser has swapped the input's files for this pick; the ones already chosen are put back below.
     const picked = [...(event.currentTarget.files ?? [])];
+    // The browser has swapped the input's files for this pick. The files already chosen go straight back, so a save
+    // while these are made ready posts only files the list names; these join them once they're ready.
+    putInInput(files);
     if (busy) {
-      putInInput(files);
-      setStatus(`${WAIT} Then add more.`);
+      say(`${WAIT} Then add more.`);
       return;
     }
-    const fitting = picked.filter((file) => PHOTO_TYPES.includes(file.type as PhotoType));
+    // An empty file is left out, as the server leaves it out, so "new:<n>" means the same file to both. A file of no
+    // known type is the server's to check, by its signature.
+    const fitting = picked.filter((file) => file.size > 0 && (!file.type || PHOTO_TYPES.includes(file.type as PhotoType)));
     const taken = fitting.slice(0, Math.max(0, PHOTOS_PER_LISTING - items.length));
     setBusy(true);
-    setStatus("Getting your photos ready…");
-    const shrunk = await Promise.all(taken.map(shrink));
+    say("Getting your photos ready…");
+    // One at a time, so only one photo is ever decoded in memory.
+    const shrunk: File[] = [];
+    for (const file of taken) shrunk.push(await shrink(file));
     const nextFiles = [...files, ...shrunk];
     putInInput(nextFiles);
     setFiles(nextFiles);
@@ -124,7 +141,7 @@ export function PhotoField({ prefix, photos, error }: PhotoFieldProps) {
     });
     setItems([...items, ...added]);
     setBusy(false);
-    setStatus(pickedMessage(taken.length, picked.length - fitting.length, fitting.length - taken.length));
+    say(pickedMessage(taken.length, picked.length - fitting.length, fitting.length - taken.length));
   }
 
   function press(event: MouseEvent<HTMLButtonElement>, item: Item, op: PhotoOp) {
@@ -132,7 +149,7 @@ export function PhotoField({ prefix, photos, error }: PhotoFieldProps) {
     event.preventDefault();
     // While picked photos are being made ready, the list stays as it is, so they land after the photos it shows.
     if (busy) {
-      setStatus(WAIT);
+      say(WAIT);
       return;
     }
     const from = items.indexOf(item);
@@ -145,19 +162,18 @@ export function PhotoField({ prefix, photos, error }: PhotoFieldProps) {
       const nextFiles = files.filter((file) => file !== item.file);
       putInInput(nextFiles);
       setFiles(nextFiles);
-      URL.revokeObjectURL(item.thumb);
     }
     // The list is drawn at once, so focus can move to the photo's new place.
     flushSync(() => setItems(next));
     const rows = [...(listRef.current?.children ?? [])] as HTMLElement[];
     if (op === "remove") {
-      setStatus(`Photo removed. ${next.length} left.`);
+      say(`Photo removed. ${next.length} left.`);
       // Focus goes to the photo that took its place (or the one before it), or to Add photos when none is left.
       (rows[Math.min(from, rows.length - 1)]?.querySelector("button") ?? inputRef.current)?.focus();
       return;
     }
     const at = keys.indexOf(item.key);
-    setStatus(at === 0 ? "That photo is the cover now." : `Moved to photo ${at + 1} of ${next.length}.`);
+    say(at === 0 ? "That photo is the cover now." : `Moved to photo ${at + 1} of ${next.length}.`);
     // Focus stays with the photo: on the same button if it still has it, otherwise on its first.
     const row = rows.find((each) => each.dataset.key === item.key);
     (row?.querySelector<HTMLButtonElement>(`[data-op="${op}"]`) ?? row?.querySelector("button"))?.focus();
@@ -174,7 +190,9 @@ export function PhotoField({ prefix, photos, error }: PhotoFieldProps) {
       {items.length > 0 && (
         <>
           <p id={`${prefix}-alt-hint`} className="form-hint">
-            Describe each photo for people who can&apos;t see it. Leave it empty to use the title.
+            {/* ALT_MAX, written out: lib/selling/rules.ts would bring more code to the browser. */}
+            Describe each photo for people who can&apos;t see it. Up to 125 characters. Leave it empty to use the
+            title.
           </p>
           <ol ref={listRef} className="sell-photos">
             {items.map((item, index) => {
@@ -186,8 +204,16 @@ export function PhotoField({ prefix, photos, error }: PhotoFieldProps) {
               return (
                 <li key={item.key} data-key={item.key} className="sell-photo">
                   <input type="hidden" name="photo" value={token} />
+                  {/* A new photo's object address is let go once it's drawn; the picture stays. */}
                   {/* eslint-disable-next-line @next/next/no-img-element -- a blob or /_next/image address (plan decision 13). */}
-                  <img src={item.thumb} alt="" width={96} height={96} className="sell-thumb" />
+                  <img
+                    src={item.thumb}
+                    alt=""
+                    width={96}
+                    height={96}
+                    onLoad={item.file ? () => URL.revokeObjectURL(item.thumb) : undefined}
+                    className="sell-thumb"
+                  />
                   <div className="sell-photo-body">
                     <p className="sell-photo-title">
                       Photo {index + 1}

@@ -25,6 +25,8 @@ type ListingFormViewProps = {
   /** The shop's pickup spots. */
   spots: readonly PickupPoint[];
   campusName: string;
+  /** A value that changes with every post (the form state's expiry), or nothing before the first. */
+  round?: string;
 };
 
 /**
@@ -33,7 +35,7 @@ type ListingFormViewProps = {
  * and Save and publish (Save changes on a paused or sold listing) and Save as draft.
  */
 export function ListingFormView(props: ListingFormViewProps) {
-  const { listingId, state, waiting, values, photos, errors, categories, spots, campusName } = props;
+  const { listingId, state, waiting, values, photos, errors, categories, spots, campusName, round } = props;
   const prefix = listingFieldPrefix(listingId);
   const ids = listingFieldIds(prefix);
   const errorOf = (field: keyof typeof ids) => errorFor(errors, ids[field]);
@@ -194,10 +196,12 @@ export function ListingFormView(props: ListingFormViewProps) {
             required={false}
           />
         )}
-        {/* Keyed by the server's photos: after a save that failed, the photos just uploaded come back as saved ones,
-            and the field starts again from them rather than keeping files the form has already sent. */}
+        {/* Keyed by every post and by the server's photos and descriptions: after a save that failed, the photos just
+            uploaded come back as saved ones, and the field starts again from them rather than keeping files the form
+            has already sent (or the server refused). React resets the form after a post, so each description's
+            default must be the one just typed, which only a fresh field has. */}
         <PhotoField
-          key={photos.map((photo) => photo.src).join(" ")}
+          key={[round, ...photos.map((photo) => `${photo.src}\u0000${photo.alt}`)].join("\n")}
           prefix={prefix}
           photos={photos}
           error={errorOf("photos")}
