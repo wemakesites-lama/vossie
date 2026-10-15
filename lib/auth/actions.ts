@@ -11,6 +11,7 @@ import {
   updateAccountDetails,
 } from "@/lib/data/accounts";
 import type { SignInAttemptRow, SignInError } from "@/lib/data/rows";
+import { restoreSampleShop } from "@/lib/data/shops";
 import {
   deleteSignInAttempt,
   getSignInAttempt,
@@ -19,6 +20,7 @@ import {
   saveSampleEmail,
   saveSignInAttempt,
 } from "@/lib/data/sign-in";
+import { sellersChanged } from "@/lib/data/tags";
 import { safeNextPath, signInHref } from "@/lib/next-path";
 import { ATTEMPT_TTL_MS, CODE_TTL_MS, CODES_PER_HOUR, isSampleMode, MAX_WRONG_TRIES, POLICY_VERSION } from "./config";
 import { deleteCookie, readCookieValue, SESSION_COOKIE, setFlash, SIGN_IN_COOKIE, setPrivateCookie } from "./cookies";
@@ -261,6 +263,8 @@ export async function signInAsSample(formData: FormData): Promise<void> {
   if (!isSampleMode()) backToSignIn(next);
   const account = await restoreSampleAccount(normaliseEmail(text(formData, "email")));
   if (!account) backToSignIn(next);
+  // A sample shop deleted with its account comes back with it, and its sample listings (selling plan, Task 7).
+  if (await restoreSampleShop(account.id)) sellersChanged();
   const now = new Date();
   await endAttempt(now);
   await startSession(account.id, now);
@@ -309,6 +313,8 @@ export async function deleteAccount(formData: FormData): Promise<void> {
     redirect("/account/privacy", RedirectType.replace);
   }
   await deleteAccountData(account.id);
+  // Its shop and listings have left the catalog (selling plan decision 22).
+  if (account.seller) sellersChanged();
   await deleteCookie(SESSION_COOKIE);
   await setFlash("deleted");
   redirect("/");

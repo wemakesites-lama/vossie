@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createAccount, findAccountByEmail, getLatestConsent } from "@/lib/data/accounts";
+import { createAccount, deleteAccountData, findAccountByEmail, getLatestConsent } from "@/lib/data/accounts";
 import { getSampleEmail, recordCodeSent } from "@/lib/data/sign-in";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
@@ -387,5 +387,13 @@ describe("the sample accounts' buttons (accounts spec 2.8)", () => {
     vi.stubEnv("VOSSIE_SAMPLE_MODE", "0");
     expect(await redirectOf(() => signInAsSample(form({ email: "student@eduvos.com" })))).toBe("/login");
     expect(request.cookies.has(SESSION_COOKIE)).toBe(false);
+  });
+
+  it("brings a deleted sample seller's shop and its listings back with the account (selling plan, Task 7)", async () => {
+    await deleteAccountData("acc-seller");
+    expect(sampleStore().sellers.has("tech-corner")).toBe(false);
+    await redirectOf(() => signInAsSample(form({ email: "seller@eduvos.com" })));
+    expect(sampleStore().sellers.get("tech-corner")?.ownerId).toBe("acc-seller");
+    expect(sampleStore().listings.has("l-001")).toBe(true);
   });
 });
