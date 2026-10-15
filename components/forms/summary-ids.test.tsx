@@ -8,9 +8,11 @@ import { reportForm, ReportView } from "@/components/messages/ReportView";
 import { replyForm, ThreadView } from "@/components/messages/ThreadView";
 import { ListingFormView } from "@/components/sell/ListingFormView";
 import { OnboardingView } from "@/components/sell/OnboardingView";
+import { ShopProfileView } from "@/components/sell/ShopProfileView";
 import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
 import { pickupPoints } from "@/data/fixtures/pickup-points";
+import { sampleSellerRows } from "@/data/fixtures/shops";
 import { composerSubject } from "@/lib/messaging/subjects";
 import type { Account } from "@/lib/types";
 import { makeThread } from "@/tests/helpers/fakes";
@@ -35,7 +37,11 @@ vi.mock("@/lib/messaging/actions", () => ({
   sendReply: async () => {},
   sendReport: async () => {},
 }));
-vi.mock("@/lib/selling/shop-actions", () => ({ saveOnboardingStep: async () => {}, sendForApproval: async () => {} }));
+vi.mock("@/lib/selling/shop-actions", () => ({
+  saveOnboardingStep: async () => {},
+  saveShopProfile: async () => {},
+  sendForApproval: async () => {},
+}));
 vi.mock("@/lib/selling/listing-actions", () => ({ saveListingForm: async () => {} }));
 
 const account: Account = {
@@ -71,6 +77,21 @@ const wizardStep = (step: 1 | 2 | 3 | 4 | 5) => (
     campuses={campuses}
     categories={categories}
     pickupPoints={pickupPoints}
+  />
+);
+
+/** Edit shop, with a summary showing and the link field there (an approved shop that hasn't changed its link). */
+const shopProfile = () => (
+  <ShopProfileView
+    shop={structuredClone(sampleSellerRows.find((shop) => shop.slug === "tech-corner")!)}
+    status="approved"
+    typed={null}
+    errors={oops}
+    notice={null}
+    campuses={campuses}
+    categories={categories}
+    pickupPoints={pickupPoints}
+    host="vossie.test"
   />
 );
 
@@ -161,12 +182,13 @@ describe("error summary ids (accounts spec 6)", () => {
         {wizardStep(3)}
         {wizardStep(4)}
         {wizardStep(5)}
+        {shopProfile()}
         {listingForm(null)}
         {listingForm("l-001")}
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(15);
+    expect(summaries).toHaveLength(16);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -183,6 +205,7 @@ describe("error summary ids (accounts spec 6)", () => {
       "onb-step-3-summary",
       "onb-step-4-summary",
       "onb-step-5-summary",
+      "profile-summary",
       "new-summary",
       "edit-l-001-summary",
     ]);

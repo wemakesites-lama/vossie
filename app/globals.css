@@ -8198,3 +8198,29 @@
     font-weight: 600;
   }
 }
+
+/* --- Selling: edit shop's link (selling plan, Task 13, spec 2.11) --- */
+@layer components {
+  .sell-slug {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+  }
+
+  .sell-slug span {
+    color: var(--color-muted);
+    overflow-wrap: anywhere;
+  }
+
+  .sell-slug .form-input {
+    flex: 1 1 12rem;
+    width: auto;
+  }
+
+  .sell-slug-now {
+    color: var(--color-ink);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+}
