@@ -6593,7 +6593,10 @@
   .link-button {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     min-height: 44px;
+    /* A short word such as "Back" still gets a 44px target (CLAUDE.md). */
+    min-width: 44px;
     color: var(--color-sky-dark);
     font-weight: 600;
     text-decoration: underline;

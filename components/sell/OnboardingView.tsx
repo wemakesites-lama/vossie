@@ -32,7 +32,8 @@ function BackLink({ step }: { step: OnboardingStep }) {
 
 /**
  * One step of the wizard (selling spec 2.6): its progress in words, its errors, and a plain form posting to
- * saveOnboardingStep, or the review and Send for approval. Continue comes first in each form, so Enter continues.
+ * saveOnboardingStep, or the review and Send for approval. Continue is the first submit button in every form with a
+ * text field, so Enter continues (step 3, the photo, has none, so its Remove photo can come first).
  */
 export function OnboardingView({ step, draft, errors, campuses, categories, pickupPoints }: OnboardingViewProps) {
   return (
