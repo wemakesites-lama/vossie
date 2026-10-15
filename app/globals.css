@@ -8553,3 +8553,70 @@
     }
   }
 }
+
+/* --- Staff tools: Overview and a shop's review (staff tools plan, Task 11, spec 2.3) --- */
+@layer components {
+  .staff-counts {
+    display: grid;
+    gap: 12px;
+  }
+
+  .staff-count {
+    display: grid;
+    justify-items: start;
+    gap: 6px;
+    padding: 18px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+  }
+
+  /* Navy on the grey panel is 11.8:1. */
+  .staff-count-number {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 40px;
+    line-height: 1;
+  }
+
+  .staff-count-label {
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+
+  .staff-standing {
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .staff-facts {
+    display: grid;
+    gap: 12px;
+  }
+
+  .staff-facts dt {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  .staff-facts dd {
+    overflow-wrap: anywhere;
+  }
+
+  .staff-prewrap {
+    white-space: pre-wrap;
+  }
+
+  .staff-inline-form {
+    max-width: 24rem;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .staff-counts {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .staff-facts {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+}

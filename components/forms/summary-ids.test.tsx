@@ -9,10 +9,12 @@ import { replyForm, ThreadView } from "@/components/messages/ThreadView";
 import { ListingFormView } from "@/components/sell/ListingFormView";
 import { OnboardingView } from "@/components/sell/OnboardingView";
 import { ShopProfileView } from "@/components/sell/ShopProfileView";
+import { SellerConfirm } from "@/components/staff/SellerConfirm";
 import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
 import { pickupPoints } from "@/data/fixtures/pickup-points";
 import { sampleSellerRows } from "@/data/fixtures/shops";
+import { getShopForReview } from "@/lib/data/staff-shops";
 import { composerSubject } from "@/lib/messaging/subjects";
 import type { Account } from "@/lib/types";
 import { makeThread } from "@/tests/helpers/fakes";
@@ -43,6 +45,7 @@ vi.mock("@/lib/selling/shop-actions", () => ({
   sendForApproval: async () => {},
 }));
 vi.mock("@/lib/selling/listing-actions", () => ({ saveListingForm: async () => {} }));
+vi.mock("@/lib/staff/admin-actions", () => ({ declineSeller: async () => {}, pauseSeller: async () => {} }));
 
 const account: Account = {
   id: "acc-student",
@@ -152,6 +155,8 @@ describe("error summary ids (accounts spec 6)", () => {
       },
       { kind: "listing", id: "l-001" },
     );
+    const crochet = (await getShopForReview("crochet-corner"))!;
+    const tech = (await getShopForReview("tech-corner"))!;
     render(
       <>
         <EmailStep next={null} email="" consented={false} errors={oops} samples={null} />
@@ -186,10 +191,12 @@ describe("error summary ids (accounts spec 6)", () => {
         {shopProfile()}
         {listingForm(null)}
         {listingForm("l-001")}
+        <SellerConfirm kind="decline" review={crochet} reason="" errors={oops} />
+        <SellerConfirm kind="pause" review={tech} reason="" errors={oops} />
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(16);
+    expect(summaries).toHaveLength(18);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -209,6 +216,8 @@ describe("error summary ids (accounts spec 6)", () => {
       "profile-summary",
       "new-summary",
       "edit-l-001-summary",
+      "decline-crochet-corner-summary",
+      "pause-tech-corner-summary",
     ]);
   });
 });
