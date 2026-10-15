@@ -1,7 +1,7 @@
 # Vossie messaging, reports and notifications: design spec
 
 - **Date:** 2026-10-14
-- **Status:** Approved under Lama's standing goal (2026-10-14): "make recommended decisions where needed and continue working in the same manner". Each decision is Claude's recommendation, logged in the decisions log.
+- **Status:** Built (2026-10-15), in sample mode. Approved under Lama's standing goal (2026-10-14): "make recommended decisions where needed and continue working in the same manner". Each decision is Claude's recommendation, logged in the decisions log.
 - **Scope:** stage E. In-app messages between buyers and sellers, swap offers, the sale status that feeds trust badges, reports, and notifications. It builds on stage D's sample store and sessions (`2026-10-14-accounts-design.md`).
 
 ## Related documents
@@ -20,9 +20,9 @@ A signed-in student can message a seller about a listing (or offer a swap), keep
 
 ## 2. Decisions
 
-1. **The composer is a page, not a sheet:** `/listings/[id]/message`. A sheet needs client code on every listing page; a page works before the app's JavaScript arrives and adds no bytes to the listing page. On the listing page, signed-in visitors' **Message seller** goes there; signed-out visitors still go to sign-in with `next` set to the composer.
-2. **One conversation per buyer and listing.** Messaging the same listing again opens the existing thread.
-3. **Scam tips sit beside the composer, and the server checks the message.** Three short tips are always shown. When a message mentions paying in advance, bank details, a deposit, a courier, or a code, sending it shows "Check this before you send" with the tip that applies, and a **Send anyway** button. The check runs on the server, so no client code is needed.
+1. **The composer is a page, not a sheet:** `/listings/[id]/message`. A sheet needs client code on every listing page; a page works before the app's JavaScript arrives and adds no bytes to the listing page. On the listing page, signed-in visitors' **Message seller** goes there; signed-out visitors still go to sign-in with `next` set to the composer. The storefront's Message opens `/sellers/[slug]/message`, a question to the shop with no listing (plan decision 2). Signed-out Report links go through sign-in to the report form, as Message goes to the composer (plan decision 3).
+2. **One conversation per buyer and listing.** Messaging the same listing again opens the existing thread: the signed-in Message link goes straight to it, and a composer opened anyway shows "You've already messaged {shop} about this." with **Open the conversation** (plan decision 5).
+3. **Scam tips sit beside the composer, and the server checks the message.** Three short tips are always shown. When a message mentions paying in advance, bank details, a deposit, a courier, or a code, sending it shows "Check this before you send" with the tip that applies, and a **Send anyway** button. The check runs on the server, so no client code is needed. It runs on replies too, and the warning takes focus on its page load (plan decision 9).
 4. **Swap offers are part of the first message:** when the listing takes swaps, the composer has an optional "Offer a swap" field (200 characters). It shows in the thread as a highlighted offer.
 5. **Sale status, per conversation** (the old demo's rules):
 
@@ -36,20 +36,21 @@ A signed-in student can message a seller about a listing (or offer a swap), keep
    - "It didn't happen" from the buyer reopens it as Replied and doesn't count.
    - The 7 days are checked when the conversation is read: there's no job runner yet.
    - Confirmed sales and first-reply times are stored for the trust badges (stage G recalculates them).
-6. **No live updates.** A thread refreshes when you open it or send. A **Refresh** link sits by the header of the thread. Live updates need a realtime connection (Supabase) and client code; they come later.
+6. **No live updates.** A thread refreshes when you open it or send. A **Refresh** link sits by the header of the thread. Live updates need a realtime connection (Supabase) and client code; they come later. Refresh is a full page load, on the inbox too, and every post makes the browser drop the pages it keeps for Back (plan decisions 6 and 19).
 7. **The WhatsApp handoff is cut.** In-app messages cover it, and handing over a phone number exposes personal data (POPIA). The decisions log records it, and the go-live checklist row closes.
 8. **Reports are pages too:**
    - `/report?listing=l-001`, `/report?seller=tech-corner` or `/report?request=r-001`;
    - seven reasons (scam or fraud, prohibited item, misleading listing, offensive content, harassment, spam, something else) and optional detail (500 characters);
    - then a thank-you that says what happens next.
    - Reporting needs sign-in, so reports can be followed up and abuse limited. The existing "Report this listing/seller/request" links point here for signed-in visitors.
+   - One report per account per target while it's open (a repeat goes straight to the thank-you), and 10 in 24 hours (plan decision 17, amendment 3).
 9. **Notifications are a page, `/notifications`**, plus a count on the header. Kinds:
    - a new message;
    - a sale to confirm;
    - your report was handled (stage G);
    - your shop was approved (stage F/G).
 
-   Opening the page marks them read. The header's count comes from a small Server Component passed into the header as a slot, inside `<Suspense>`, so the header stays prerendered and no client code is added.
+   Opening the page marks them read. The header's count comes from a small Server Component passed into the header as a slot, inside `<Suspense>`, so the header stays prerendered and no client code is added. The count is a red badge on the account icon, and it's as fresh as the last full page load or post (plan decisions 10 and 11). A conversation has one unread message notification per person at a time; a sale to confirm is a notification of its own (plan decision 12, amendment 3).
 10. **The inbox has two tabs,** Buying and Selling (`?tab=selling`), as links. A seller's enquiries live under Selling, which replaces the old demo's separate enquiries page.
 11. **Names:** buyers appear to sellers by first name; sellers appear by their shop name. Emails are never shown to the other party.
 12. **Messages are plain text:** line breaks are kept, nothing is rendered as HTML, and links aren't made clickable. That's safer for scams.
@@ -60,9 +61,9 @@ A signed-in student can message a seller about a listing (or offer a swap), keep
 
 ### 3.1 The composer (`/listings/[id]/message`)
 - Requires an account (`requireAccount`); a seller can't message their own listing (it says so and links to the listing).
-- A listing summary (photo, title, price, seller, campus), an h1 "Message {shop name}", a textarea (1,000 characters, a count under it), the swap field when it applies, **Send**, and the three tips.
+- A listing summary (photo, title, price, seller, campus), an h1 "Message {shop name}", a textarea (1,000 characters, with the hint "Up to 1,000 characters." in place of a live count, plan decision 8), the swap field when it applies, **Send**, and the three tips.
 - Errors: "Write a message first.", "Keep it under 1,000 characters.".
-- After sending: the thread, with a toast-like note "Sent. Sellers usually reply within a day." shown once (a flash cookie, read on the server).
+- After sending: the thread, with the note "Sent. Sellers usually reply within a day." shown once. It comes from the form state, read and cleared as the thread renders, not from a flash cookie (plan decision 7).
 - A paused or sold listing can't be messaged: it says so and links back.
 
 ### 3.2 The inbox (`/messages`)
@@ -77,7 +78,8 @@ A signed-in student can message a seller about a listing (or offer a swap), keep
   - The swap offer is a pale callout.
 - A reply form at the bottom (1,000 characters).
 - The seller sees **Mark as completed** once there's been a reply; the buyer then sees **Confirm the sale** and **It didn't happen**.
-- Opening the thread marks it read.
+- Opening the thread marks it read, and its notifications.
+- A thread whose other side has left says "This person has left Vossie, so you can't reply." in place of the reply form (plan decision 21, amendment 3).
 
 ### 3.4 Report (`/report`)
 - Requires an account. The h1 "Report this listing" (or seller, or request), the reasons as radio buttons, the detail, and **Send report**.
@@ -91,7 +93,8 @@ A signed-in student can message a seller about a listing (or offer a swap), keep
 ### 3.6 Changes to existing pages
 - **Listing page:** for signed-in visitors, Message seller links to the composer, and Report links to `/report?listing=`. The actions bar stays a Server Component. The link target depends on the session, so it's read inside `<Suspense>` in a small part of the bar, and the fallback is the signed-out link.
 - **Storefront, request page:** Message and Report likewise.
-- **Account page:** a Messages row with the unread count.
+- **Account page:** a Messages row with the unread count, and a Notifications row with the new count.
+- **Privacy settings:** "Reports you've made" (plan decision 18). Deleting an account keeps the other side's messages (plan decision 14, section 9.8).
 - **Context strip:** new messages and sales to confirm come from the store.
 
 ---
@@ -158,3 +161,13 @@ The plan (`docs/superpowers/plans/2026-10-14-messaging.md`) refines these points
 8. **Deleting an account** removes its messages, notifications and reports. The other person keeps their side of each conversation, with the deleted side named "Deleted account", the note "This person has left Vossie, so you can't reply." and no reply form. A sale waiting for the deleted buyer's confirmation goes back to Replied. A conversation with neither side left, or with nothing left in it, is deleted. The data export gains conversations, reports and notifications, with no ids.
 9. **How long messages are kept is Eduvos's call** (a go-live item). In sample mode they last until the server restarts.
 10. **Testing:** until stage F, the seller in end-to-end tests is the sample Tech corner account, used only on each test's own conversation.
+
+## 10. Changes in the build (2026-10-15)
+
+The plan's "Changes made during the build" has the detail and the commits. The ones a visitor or reviewer can see:
+
+1. **The listing page's "See similar items" and the inbox's empty Browse** don't prefetch, like every other link messaging adds (decision 53).
+2. **The report form's reasons carry no `aria-invalid`.** A lint rule doesn't allow it on a radio; the error joins the group's `aria-describedby` instead, so it is still announced.
+3. **A thread, composer or report target that doesn't exist** shows the branded 404 page, but with HTTP status 200: `notFound()` inside `<Suspense>` runs after streaming has started. These pages are `noindex` and sign-in only, so nothing is listed by mistake.
+4. **The privacy policy says** a shop keeps the times of a deleted buyer's conversation, without their name (for the trust badges, plan decision 14).
+5. **Opening `/notifications` marks every notification read,** including any beyond the 50 it shows.

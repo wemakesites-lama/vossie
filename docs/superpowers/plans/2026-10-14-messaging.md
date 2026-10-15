@@ -203,10 +203,47 @@ The four tables, how they fit D's store, and what stages F and G add:
 |---|---|---|---|---|---|---|---|---|
 | Start (D's final figures, measured again at `f7e1bee`) | 150,614 | 151,361 | 151,770 | 151,374 | 151,090 | n/a | n/a | n/a |
 | Task 7, the session links | 150,614 | 151,361 | 151,770 | 151,374 | 151,090 | n/a | n/a | n/a |
-| Task 13, the header's badge and the strip | | | | | | | | |
-| **Final (Task 17)** | | | | | | | | |
+| Task 13, the header's badge and the strip (`206b04c`) | 150,613 | 151,360 | 151,769 | 151,373 | 151,089 | not measured | not measured | not measured |
+| **Final (Task 17)** | 150,613 | 151,360 | 151,769 | 151,373 | 151,089 | 150,613 | 150,613 | 150,613 |
 
 The stop line used: 152,305 B (decision 52). Unit tests at the start: 978 (153 files). End to end at the start: 734 pass, 541 skipped (D's final run, `docs/PROGRESS.md`). The storefront's and request page's start figures weren't in PROGRESS; they were measured at `f7e1bee` with `performance.spec.ts` (sign-in 150,614 B and account 150,614 B match D's). The highest page is the listing page, 535 B under the stop line.
+
+**At the end:** the listing page is still the highest, at 151,769 B, 536 B under the stop line. Task 16 added the signed-in pages to `performance.spec.ts` (inbox, thread, composer, report and notifications, all 150,613 B, as the account page). The other pages in the final run: Saved 151,248 B, collection 151,089 B; info, sign-in, board, Hub and Hub post 150,613 B. Unit tests at the end: 1,175 (180 files). End to end at the end: 828 pass, 642 skipped, 5 fail, all from the cloud container (see Task 17 below).
+
+## Changes made during the build (2026-10-14 to 2026-10-15)
+
+Where the build differed from the tasks as written, with the commit that made each change. Tasks 1 to 7 were built on 2026-10-14 (`73b4998`, `4885432`, `22c2fb4`, `ae0c67c`, `a93d667`, `f314043`, `d7c3559`) and Tasks 8 to 17 on 2026-10-15 in a Claude Code cloud session (`a045119` to `fdd08fd`, then Task 17).
+
+**Tasks 1 to 7**
+- **Amendments 1 to 3 above** are the differences: an id for each error summary, the request page's local `signIn` link, and the review of Tasks 1 to 5 (`3688ea9`, after Task 7, with the plan's amendment in `84e1279`).
+- **"See similar items"** (a paused or sold listing's action) gained `prefetch={false}` (`d7c3559`, Task 7), like every link this plan adds (decision 53).
+
+**Tasks 8 to 14** (`a045119`, `64d7c96`, `f505df2`, `1c9e14c`, `a632648`, `206b04c`, `2937d91`)
+- **Error summary ids** follow amendment 1: `composer-summary`, `thread-reply-summary` and `report-summary`. Each task added its form to `components/forms/summary-ids.test.tsx`.
+- **The inbox's empty Browse link** gained `prefetch={false}` (`64d7c96`), which the plan's code left out.
+- **The report form's radios carry no `aria-invalid`** (`1c9e14c`). The lint rule for radios rejects it; the error is announced through the group's `aria-describedby` instead.
+- **`.report-sent` has `padding-top: 8px`** (`1c9e14c`), which the plan's CSS didn't have.
+- **A missing thread, composer target or report target gives the 404 page with HTTP 200.** `notFound()` inside `<Suspense>` runs after streaming has started (`not-found.md`). The pages are `noindex` and need sign-in, so nothing is indexed by mistake. Not changed.
+- **Task 13's JS** matched the plan: every page 1 B lighter than at the start (`206b04c`).
+
+**Task 15** (`00778b8`) was built as written.
+
+**The review of Tasks 8 to 14** (`38d23a7`)
+- The report page's back link is as wide as its words, not the column.
+- The privacy policy says a shop keeps the times of a deleted buyer's conversation, without their name (plan decision 14).
+- The notifications test checks that other accounts' notifications stay unread.
+
+**Task 16** (`fdd08fd`)
+- **The inbox and notifications skeletons** were resized to match their content, which cut their layout shift.
+- **`cls.spec.ts`:** the notifications row measures the sample student (who has notifications to show), and its sign-in waits for `networkidle` before the page under test loads.
+- **`a11y.spec.ts`:** the inbox test uses `exact: true` on its locators and clears cookies between the two accounts it signs in as.
+- **One extra end-to-end test** checks that switching the inbox's tabs leaves no repeated ids in the DOM (none found).
+
+**Task 17**
+- **The review screenshots' order changed.** Opening a thread marks its notifications read, so the plan's order (the thread's sale to confirm, then the header's badge) found no badge. The badge, the inbox, the account page and the notifications come first (`06` to `09`), then the thread (`10-sale-to-confirm`). The seller's reply no longer says "No deposit needed": "deposit" trips the scam check, which runs on replies too (plan decision 9). The import leaves out `sendFirstMessage`, which the test doesn't use (lint).
+- **Layout shift figures from the cloud container aren't comparable with earlier ones.** The container has no Arial (so `Geist Fallback`'s `local(Arial)` fails) and no Arial Narrow for the display font. Text drawn before the font swap wraps differently and reflows. That makes `cls.spec.ts` fail there for `/privacy` at 390 (0.098), Hub office hours at 390 (0.168) and privacy settings at 1440 (0.14), and puts the composer, report and notifications at 390 near or over 0.05. All three earlier failures fail the same way at `903abb6`, before this session's work, and serving the CSS with `local("Liberation Sans")` in place of `local(Arial)` drops them to 0.0006, 0.0058 and 0.0175. Lama re-runs `pnpm e2e tests/e2e/cls.spec.ts` on the Mac.
+- **The final full run** (`pnpm e2e --workers=4`): 828 pass, 642 skipped, 5 fail. Four are layout shift from the missing fonts: `/privacy` at 390 (0.0982), Hub office hours at 390 (0.1575), privacy settings at 1440 (0.1156), and the listing page with campus Pretoria at 390 (0.0780; it passed in Task 16's run). Run alone three times, Pretoria read 0.0780, 0.0780 and 0.0367 here, and 0.0780, 0 and 0.0367 at `903abb6`: the same figure before this stage's pages existed. The fifth, `responsive.spec.ts` "the main controls are reachable with the keyboard" at 1440, timed out under load and passed three times alone.
+- **Playwright in the container** used `PLAYWRIGHT_BROWSERS_PATH` pointing at an alias of the container's Chromium 1194 (the repo expects 1248). The repo's config is unchanged.
 
 ## Conventions for every task
 

@@ -308,9 +308,60 @@ Review notes that were deliberately not acted on:
 - **Sample mode keeps accounts in the server's memory.** They vanish when the server restarts, the sign-in code shows on the page, and one process holds them all. The go-live checklist has what the real backend must do (keyed hashes for codes, atomic try counting, the `Secure` flag behind a proxy, plus addresses, and a database before more than one instance).
 - **JS room for stages E to G.** The listing page ends at 151,770 B: 535 B under the stop line and 1,830 B under the limit.
 
+## 2026-10-14: Alongside stage E (a hidden deployment, and the plans for F to H)
+- **`VOSSIE_NOINDEX=1` hides the whole site from search engines** (decision 68, `d484971`): every response says `X-Robots-Tag: noindex, nofollow`, and robots.txt disallows everything with no sitemap. Off unless set, and read at build time. Lama wants the Vercel deployment public but out of search results until launch; the go-live checklist has unsetting it.
+- **Stage H's spec, community actions** (`2026-10-14-community-actions-design.md`, decision 67, `3551bfc`): posting Looking For requests, offers from approved shops (as messaging conversations), following shops, and the offline page.
+- **Stage F's plan, selling** (`2026-10-14-selling.md`, 18 tasks, `6a2fc9b`), with the spec's changes on plan review.
+- **Stage G's plan, staff tools** (`2026-10-14-staff-tools.md`, 22 tasks, `903abb6`), written before review.
+
+## 2026-10-15: Messaging, reports and notifications built, in sample mode (stage E)
+- **Messages** (`/listings/[id]/message`, `/sellers/[slug]/message`, `/messages`, `/messages/[id]`): a signed-in student messages a seller about a listing, with a swap offer when it takes swaps, or asks a shop a question from its storefront. Three safety tips sit beside the composer, and the server checks each message for paying in advance, bank details, a deposit, a courier or a code, with Send anyway. The inbox has Buying and Selling; a thread shows who wrote what and when, the status (Asked, Replied, Done, Confirmed), Mark as completed, Confirm the sale and It didn't happen, and confirms a sale itself a week after it's marked done. Refresh reloads; there are no live updates.
+- **Reports** (`/report`, `/report/sent`): seven reasons and a detail for a listing, a seller or a request, one per target and 10 in 24 hours, then a thank-you. Privacy settings list the reports you've made.
+- **Notifications** (`/notifications`): new messages and sales to confirm, marked read on opening. The header's account icon carries a red count of new ones; the account page lists Messages and Notifications with their counts; the homepage strip counts new messages and sales to confirm.
+- **Every form works without the app's JavaScript**, and every post makes the browser drop its kept pages (`refresh()`), so Back never shows a page from before your own change.
+- **Privacy:** the policy, the export and deletion take in messages, reports and notifications; deleting an account keeps the other person's side of each conversation; how long they're kept is Eduvos's call before launch.
+- **Built in two sessions:** Tasks 1 to 7 on 2026-10-14, Tasks 8 to 17 on 2026-10-15 in a Claude Code cloud session (`a045119` to `fdd08fd`, then the docs).
+- **Where the build differed from the plan** is in the plan's "Changes made during the build". The ones worth knowing:
+  - The review of Tasks 1 to 5 (`3688ea9`, amendment 3): no completing a sale with a buyer who has left, a wider scam check, a sale to confirm as a notification of its own, "asked" until the first reply, invisible characters dropped, and the deleted side named "Deleted account".
+  - The review of Tasks 8 to 14 (`38d23a7`): the report page's back link is as wide as its words; the privacy policy says a shop keeps a deleted buyer's conversation times without their name; the notifications test checks other accounts stay unread.
+  - Every link the plan's code left prefetching ("See similar items", the inbox's empty Browse) has `prefetch={false}`.
+  - The report form's radios carry no `aria-invalid` (a lint rule); the error is announced through the group's `aria-describedby`.
+  - A thread, composer or report target that doesn't exist shows the 404 page with HTTP status 200, because `notFound()` runs after streaming has started. The pages are `noindex` and need sign-in.
+  - Task 16 resized the inbox and notifications skeletons to their content.
+- **Plan decisions Lama may want to revisit:** none came up in review. The ones with an effect Lama can see: the red badge on the account icon instead of a bell (plan decision 10), the count fresh only as of the last page load or post (11), and the sample wording in plan decision 26 (the tips, notification sentences, empty states, sale lines and report words).
+- **Checks:**
+  - lint and types are clean;
+  - 1,175 unit tests pass, in 180 files;
+  - end to end, 828 pass, 642 are skipped by design and 5 fail, all from the cloud container, not the code (see the open points): four layout-shift checks and one keyboard test that timed out under load and passes alone;
+  - axe finds no serious or critical issues on the composer, inbox, thread, report and notifications pages, signed in.
+- **First visit at 390px, JS brotli:** homepage 150,613 B, browse 151,360 B, listing 151,769 B, storefront 151,373 B, request 151,089 B, Saved 151,248 B, collection 151,089 B; info, sign-in, board, Hub and Hub post 150,613 B; signed in: account, inbox, thread, composer, report and notifications 150,613 B (stop line 152,305 B, never reached; limit 153,600 B). The listing page is the highest, 536 B under the stop line. Every page is 1 B lighter than at the start of the stage.
+- **Layout shift** (fonts held back, at 390 and 1440px, the final run; measured in the cloud container, so see the open points):
+
+  | Page | 390px | 1440px |
+  |---|---|---|
+  | Homepage (signed in: the badge and the strip) | 0.0016 | 0.0042 |
+  | Composer | 0.0311 | 0.0049 |
+  | Inbox | 0.0242 | 0.0029 |
+  | Thread | 0.0006 | 0.0006 |
+  | Report | 0.0497 | 0.0013 |
+  | Notifications | 0.0474 | 0.0093 |
+
+  Task 16's run read the composer 0.0513 at 390 (0.0311 in other runs) and notifications 0.047 to 0.070. At 390 the composer, report and notifications pages sit near the limit here because of the missing fallback fonts; the Mac's figures will be lower.
+- Review screenshots: `docs/progress/messaging/` (24, at 390 and 1440px).
+
+## 2026-10-15: Open points for Lama after the messaging build
+- **Re-run the layout-shift test on the Mac: `pnpm e2e tests/e2e/cls.spec.ts`.** The cloud container that built Tasks 8 to 17 has no Arial (so `Geist Fallback`'s `local(Arial)` fails) and no Arial Narrow for the display font. Text drawn before the fonts arrive wraps differently and then reflows, so layout shift there is higher than on a Mac and isn't comparable with earlier figures. It fails `/privacy` at 390 (0.098), Hub office hours at 390 (0.157 to 0.168), privacy settings at 1440 (0.116 to 0.14) and, in two of three runs, the listing page with campus Pretoria at 390 (0.078). The same failures, with the same figures, happen at `903abb6`, before this stage's pages, and serving the CSS with `local("Liberation Sans")` in place of `local(Arial)` drops the first three to 0.0006, 0.0058 and 0.0175. The new pages at 390 (composer, report, notifications) sit near 0.05 there for the same reason.
+- **A suggestion, not built:** a metric-adjusted fallback for the display font (`size-adjust` and the ascent and descent overrides on a local face), so text drawn before the font arrives takes the same room on any machine. Any phone without Arial Narrow sees the same reflow.
+- **Screen readers may not announce "Sent."** on a thread. The note is a `role="status"` that is already in the page when it loads, and some screen readers announce a status only when it changes. Worth a check with VoiceOver; moving focus to it, or adding it after load, would need client code.
+- **Opening `/notifications` marks every notification read,** including any beyond the 50 it shows. Harmless today; worth knowing when stage G adds its own kinds.
+- **The signed-in Message and Report links stream in 71 to 171 ms** after the page on a production server. An earlier note of "a few seconds" was load on the test machine.
+- **Messages live in the server's memory** in sample mode, like accounts. The go-live checklist has the real tables, a messages-per-account limit, a scheduled job for the 7-day auto-confirm and for deleting old messages, and Eduvos's retention periods.
+- **Playwright in the cloud container** needs `PLAYWRIGHT_BROWSERS_PATH` pointing at an alias of the container's Chromium 1194 (the repo expects 1248). The repo's config is unchanged; on the Mac nothing is needed.
+
 ## Next
-- Lama reviews the screenshots in `docs/progress/accounts/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "accounts review screenshots"`.
-- Then stage E: messaging, reports and notifications (`2026-10-14-messaging-design.md`), on this stage's store and sessions.
+- Lama reviews the screenshots in `docs/progress/messaging/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "messaging review screenshots"`.
+- Lama re-runs `pnpm e2e tests/e2e/cls.spec.ts` on the Mac (see the open points above).
+- Then stage F: selling (`2026-10-14-selling-design.md`), whose dashboard counts this stage's enquiries, replies and confirmed sales.
 
 ## Waiting on
 - Eduvos font files and licence confirmation.

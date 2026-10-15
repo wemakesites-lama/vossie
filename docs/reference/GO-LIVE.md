@@ -2,7 +2,7 @@
 
 Every page and view the marketplace needs before it can go live, plus the work that isn't a screen. Drawn from the app's routes, the old demo's function map (`FUNCTION-MAP.md`) and the homepage spec's "Not in this stage" list.
 
-Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) after Looking For and the Hub (part B), and after sign-in and accounts, in sample mode (stage D). Update the status column as each stage lands.
+Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) after Looking For and the Hub (part B), and after sign-in and accounts, in sample mode (stage D). Updated 2026-10-15, after messaging, reports and notifications, in sample mode (stage E). Update the status column as each stage lands.
 
 **Status key**
 - **Built:** done.
@@ -41,9 +41,9 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | First sign-in: your name and campus | `/login`, step 3 | **Built** |
 | "Sign in to do that" sheet, which returns you to what you were doing | links | **Built as links** to `/login?next=…` (decision 44); signed-in visitors see a note with the way back |
 | Account summary and sign out | `/account` | **Built** |
-| Privacy settings: consent record, download my data, reports I've made, delete my account (required by POPIA) | `/account/privacy` | **Built** (the list of reports you've made waits for stage E) |
+| Privacy settings: consent record, download my data, reports I've made, delete my account (required by POPIA) | `/account/privacy` | **Built** |
 | Saved listings, and followed sellers once accounts exist | `/saved` | Built (followed sellers: stage H, on Saved's Shops tab) |
-| Header: "Sign in" when signed out, and an inbox icon with an unread count | shell | **Built** (the unread count waits for stage E) |
+| Header: "Sign in" when signed out, and an inbox icon with an unread count | shell | **Built** (a red badge for new notifications on the account icon, messaging plan decision 10) |
 | Post, edit, close, reopen and delete a Looking For request | `/looking-for/new`, `/looking-for/[id]/edit`, `/looking-for/[id]/delete` | Designed (stage H) |
 | Your requests | `/account/requests` | Designed (stage H) |
 | Offer to help with a request (shops only) | `/looking-for/[id]/offer` | Designed (stage H) |
@@ -52,13 +52,13 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 
 | Screen or view | Route | Status |
 |---|---|---|
-| Message composer, with live scam tips | sheet | Missing |
-| Propose a swap (inside the composer) | sheet | Missing |
-| Inbox | `/messages` | Missing |
-| Conversation thread, with its status (Asked, Replied, Done, Confirmed), "mark completed" and "confirm the sale" | `/messages/[id]` | Missing |
-| Notifications panel | sheet | Missing |
-| Report a listing or a profile (7 reasons, then a thank-you) | sheet | Missing |
-| WhatsApp handoff | `/go/whatsapp/[slug]` | Missing; decide whether to keep it |
+| Message composer, with live scam tips | `/listings/[id]/message`, `/sellers/[slug]/message` | **Built as a page; the scam check runs on the server when you send** (sample mode) |
+| Propose a swap (inside the composer) | `/listings/[id]/message` | **Built** (a text offer; offering one of your own listings waits for stage F) |
+| Inbox | `/messages` | **Built** (sample mode) |
+| Conversation thread, with its status (Asked, Replied, Done, Confirmed), "mark completed" and "confirm the sale" | `/messages/[id]` | **Built** (sample mode) |
+| Notifications panel | `/notifications` | **Built as a page** (sample mode) |
+| Report a listing or a profile (7 reasons, then a thank-you) | `/report`, `/report/sent` | **Built**, requests too (sample mode) |
+| WhatsApp handoff | `/go/whatsapp/[slug]` | **Cut** (decision 57) |
 
 ## 4. Selling
 
@@ -80,7 +80,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Hub post editor and the office-hours queue | `/hub/new`, `/hub/manage` | Missing |
 | Mentor dashboard, seller detail, notes, check-ins, CSV export | `/mentor/*` | Missing; can follow launch |
 
-**Totals:** about 45 screens and views. 21 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, the privacy policy, terms of use and seller guidelines as drafts, Looking For's board and request pages and the Hub's feed and post pages, which read today and send acting to sign-in, and, in sample mode, sign-in, your account and privacy settings), and 24 are placeholders or missing. Most of the missing ones are the signed-in half of the product.
+**Totals:** about 45 screens and views. 27 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, the privacy policy, terms of use and seller guidelines as drafts, Looking For's board and request pages and the Hub's feed and post pages, which read today and send acting to sign-in, and, in sample mode, sign-in, your account, privacy settings, the composer with its swap offer, the inbox, a thread, notifications and reports), 1 was cut (the WhatsApp handoff), and 17 are placeholders, designed or missing. Most of the missing ones are the signed-in half of the product.
 
 ## 6. Work that isn't a screen
 
@@ -94,6 +94,10 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] **Keyed hashes for codes.** Sign-in codes and tokens are stored as plain SHA-256 hashes (a code is salted with its attempt's key, which sits in the same row). A 6-digit code has only a million values, so a leaked store gives the codes away. The real backend hashes them with a server secret (HMAC).
 - [ ] **Counting tries.** The real backend counts a wrong try (atomically) before it compares the code, so guesses sent in parallel can't get past 5 tries. The same goes for the 5 codes an hour: `recordWrongTry` and `reserveCodeSend` in `lib/data/sign-in.ts` say what each needs (a single `UPDATE … RETURNING`, and a single upsert or a per-email lock).
 - [ ] **The store's scope.** The sample store lives in one server process. Running more than one instance, or serverless functions, needs the real database first.
+- [ ] Supabase tables for conversations, messages, reports and notifications replace the sample store's (`lib/data/messages.ts`, `notifications.ts`, `reports.ts`).
+- [ ] Live updates and the header's count without a page load (Supabase Realtime), if wanted: spec 2.6 left them out.
+- [ ] A scheduled job for the 7-day auto-confirm (it's checked on read today) and for deleting old messages, reports and notifications once Eduvos sets how long they're kept.
+- [ ] A limit on messages per account (reports have one: 10 in 24 hours).
 - [ ] Scheduled jobs: the nightly Featured draw, recalculating trust badges, confirming sales automatically after 7 days, and closing old Looking For requests (stage H leaves them open).
 
 ### POPIA and legal (Eduvos signs these off)
@@ -110,6 +114,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] How consent is recorded.
 - [ ] The data export and deletion flows.
 - [ ] Where the data is hosted. The old demo ran in Ireland; sending data abroad needs adequate safeguards (section 72).
+- [ ] Eduvos sets how long messages, reports and notifications are kept; the privacy policy says so.
 - [ ] The privacy policy's "Vossie is still a preview" sentence comes out once accounts move to the real backend.
 
 ### Content
@@ -158,7 +163,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] **Which email proves someone is a student?** The demo's `@vossie.net` was a stand-in.
 - [ ] **Plus addresses.** `thandi+1@eduvos.com` counts as a new address, which gets round the per-email code limit and allows several accounts per student. Decide with Eduvos whether to treat plus addresses as the same person, or reject them, once its mail system is known.
 - [ ] **Who moderates reports and approvals,** and how fast do they respond?
-- [ ] **In-app messages, a WhatsApp handoff, or both?** And do new messages send an email?
+- [ ] **Do new messages send an email?** In-app messages only (decision 57); email notifications are still to decide.
 - [ ] **Do Looking For and the Hub go live on day one?** If not, their homepage sections are hidden.
 - [ ] **All 13 campuses at once, or a pilot campus first?**
 
@@ -168,7 +173,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 2. **Done (2026-10-14): the other public pages.** The storefront, Saved, collections, the info, legal and system pages, and Looking For and the Hub (to read) are done. The branded error page was dropped under the JS stop rule, so Next's default shows. Next is item 3, starting with stage D (sign-in and accounts): it turns every "sign in to do that" link on these pages into the real flow.
 3. **Done in sample mode (2026-10-14): sign-in, account and privacy.** Supabase and an email service replace the sample store at go-live.
 4. **Selling:** onboarding, listing form and dashboard, plus the minimum admin (approvals and moderation).
-5. **Messaging:** composer, inbox, conversations, reports and notifications.
+5. **Done in sample mode (2026-10-15): messaging, reports and notifications.** Supabase replaces the sample store at go-live.
    - Stage E builds messaging, then stage F selling. Stage G adds the staff tools: admin, the Hub's posting tools and the mentors' dashboard. Stage H adds community actions: posting Looking For requests, offers, following shops and the offline page.
 6. **Launch readiness:** legal sign-off, domain, monitoring, content, and the pilot.
 
