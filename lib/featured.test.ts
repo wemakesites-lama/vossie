@@ -42,4 +42,31 @@ describe("drawFeatured (spec 7.10)", () => {
     expect(drawn).toHaveLength(4);
     expect(drawn.slice(0, 2).map((s) => s.campusSlug)).toEqual(["pretoria", "pretoria"]);
   });
+
+  it("puts pinned sellers first, in the order they were pinned, then fills the rest from the draw (staff tools spec 2.8)", () => {
+    const drawn = drawFeatured(sellers, "pretoria", "2026-10-12", 4, { pinned: ["f", "a"] });
+    expect(drawn.map((s) => s.slug).slice(0, 2)).toEqual(["f", "a"]);
+    expect(drawn).toHaveLength(4);
+    expect(new Set(drawn.map((s) => s.slug)).size).toBe(4);
+    expect(drawn.slice(2).map((s) => s.campusSlug)).toEqual(["pretoria", "pretoria"]);
+  });
+
+  it("draws resting sellers only after everyone else, and a pin ignores the break (staff tools plan amendment 3)", () => {
+    const rested = drawFeatured(sellers, "all", "2026-10-12", 10, { resting: new Set(["a", "c"]) }).map((s) => s.slug);
+    expect(rested).toHaveLength(5);
+    expect(rested.slice(0, 3).sort()).toEqual(["b", "d", "f"]);
+    expect(rested.slice(3).sort()).toEqual(["a", "c"]);
+    const pinned = drawFeatured(sellers, "all", "2026-10-12", 10, { pinned: ["a"], resting: new Set(["a"]) });
+    expect(pinned[0].slug).toBe("a");
+  });
+
+  it("ignores a pin for a seller who can't be featured, and never shows more than the places", () => {
+    expect(drawFeatured(sellers, "all", "2026-10-12", 4, { pinned: ["e", "nobody"] }).map((s) => s.slug)).not.toContain(
+      "e",
+    );
+    expect(drawFeatured(sellers, "all", "2026-10-12", 2, { pinned: ["a", "b", "c"] }).map((s) => s.slug)).toEqual([
+      "a",
+      "b",
+    ]);
+  });
 });
