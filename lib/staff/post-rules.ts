@@ -131,7 +131,10 @@ export function checkPost(
   let startsAt: string | null = null;
   let place: string | null = null;
   if (kind === "event" || kind === "office-hours") {
-    const day = parseDay(input.date);
+    // A post is dated in this century: a mistyped year ("0999") isn't saved as a real date.
+    const parsed = parseDay(input.date);
+    const year = parsed ? Number(parsed.slice(0, 4)) : 0;
+    const day = parsed && year >= 2000 && year <= 2100 ? parsed : null;
     if (!day) errors.push("post-date-missing");
     if (!CLOCK.test(input.time.trim())) errors.push("post-time-missing");
     if (day) startsAt = sastToUtc(day, input.time);

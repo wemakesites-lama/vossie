@@ -68,6 +68,13 @@ describe("the Hub's post editor (staff tools spec 2.4)", () => {
     expect(checkPost(input({ campus: "all" }), CAMPUSES).value?.campusSlug).toBe("all");
   });
 
+  it("refuses a year outside this century, so a mistyped one isn't saved", () => {
+    for (const date of ["0999-01-01", "1999-12-31", "2101-01-01"]) {
+      expect(checkPost(input({ date }), CAMPUSES).errors, date).toContain("post-date-missing");
+    }
+    expect(checkPost(input({ date: "2026-11-19" }), CAMPUSES).errors).not.toContain("post-date-missing");
+  });
+
   it("lists every problem in the form's order, and keeps nothing", () => {
     const result = checkPost(
       input({ title: "", campus: "atlantis", date: "2026-02-30", time: "25:00", place: " ", capacity: "0", summary: "", body: "" }),

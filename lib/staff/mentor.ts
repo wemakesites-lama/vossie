@@ -60,15 +60,25 @@ export const CSV_BOM = "\uFEFF";
 // and a tab or a carriage return, which some spreadsheets skip before reading the rest as a formula.
 const FORMULA_START = /^[=+\-@\t\r]/;
 
+// Full-width forms (＝, ＋) and leading spaces are read the same way by some spreadsheets, so the test looks past them.
+const startsFormula = (part: string) => FORMULA_START.test(part.normalize("NFKC").trimStart());
+
 /**
  * One CSV cell (RFC 4180). Text that starts with =, +, -, @, a tab or a carriage return gets an apostrophe first, so a
- * spreadsheet never runs a shop's name as a formula. A cell with a comma, a quote or a line break is quoted, its
- * quotes doubled. Numbers are written as they are.
+ * spreadsheet never runs a shop's name as a formula. So does each part after a semicolon: Excel splits cells on ";"
+ * where that's the list separator (much of Europe, and South African Windows set to a decimal comma), and quotes
+ * don't stop it there. A cell with a comma, a semicolon, a quote or a line break is quoted, its quotes doubled.
+ * Numbers are written as they are.
  */
 export function csvCell(value: string | number): string {
   let text = String(value);
-  if (typeof value === "string" && FORMULA_START.test(text)) text = `'${text}`;
-  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  if (typeof value === "string") {
+    text = text
+      .split(";")
+      .map((part) => (startsFormula(part) ? `'${part}` : part))
+      .join(";");
+  }
+  return /[",;\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
 const CSV_HEADER = [

@@ -66,6 +66,13 @@ describe("the mentor dashboard's flags (staff tools spec 2.6, plan decision 15)"
 describe("the dashboard's CSV (staff tools spec 2.6, plan decision 17, amendment 29)", () => {
   it("quotes a cell with a comma, a quote or a line break, doubling its quotes", () => {
     expect(csvCell("Bakes, cakes")).toBe('"Bakes, cakes"');
+    // Where ";" splits cells (Excel in many locales), each part is checked too, and the cell is quoted.
+    expect(csvCell("x;=1+1;")).toBe(`"x;'=1+1;"`);
+    expect(csvCell("y;=cmd|' /C calc'!A0;")).toBe(`"y;'=cmd|' /C calc'!A0;"`);
+    expect(csvCell("Bakes; cakes")).toBe('"Bakes; cakes"');
+    // Full-width forms and leading spaces don't hide a formula.
+    expect(csvCell("\uFF1D1+1")).toBe("'\uFF1D1+1");
+    expect(csvCell(" =1+1")).toBe("' =1+1");
     expect(csvCell('Say "hi"')).toBe('"Say ""hi"""');
     expect(csvCell("Two\nlines")).toBe('"Two\nlines"');
     expect(csvCell("Tech corner")).toBe("Tech corner");
@@ -106,7 +113,7 @@ describe("the dashboard's CSV (staff tools spec 2.6, plan decision 17, amendment
       CSV_BOM +
         "Shop,Campus,Mentor,Badge,Status,Enquiries (14 days),Due for a reply,Replied within 48 hours," +
         "Sales confirmed (14 days),Flags\r\n" +
-        "Tech corner,Midrand,Naledi,Responsive,Paused,4,4,1,2,Slow replies (under 50% in 48 hours); Shop paused\r\n",
+        'Tech corner,Midrand,Naledi,Responsive,Paused,4,4,1,2,"Slow replies (under 50% in 48 hours); Shop paused"\r\n',
     );
     expect(mentorCsv([], new Map())).toMatch(/^\uFEFFShop,.*,Flags\r\n$/);
   });
