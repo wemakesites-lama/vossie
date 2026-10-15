@@ -9,8 +9,10 @@ vi.mock("./SellerListings", () => ({ SellerListings: () => <section aria-label="
 // The session's links are async Server Components; here they're the signed-out links (messaging plan, Task 7).
 vi.mock("@/components/messages/ViewerLinks", async () => (await import("@/tests/helpers/viewer-links")).signedOutViewerLinks);
 
-async function show(slug: string) {
-  render(<SellerView seller={(await getSeller(slug))!} campusNames={new Map([["midrand", "Midrand"]])} />);
+async function show(slug: string, paused = false) {
+  render(
+    <SellerView seller={(await getSeller(slug))!} campusNames={new Map([["midrand", "Midrand"]])} paused={paused} />,
+  );
 }
 
 describe("SellerView (shopping spec 4.1)", () => {
@@ -29,5 +31,11 @@ describe("SellerView (shopping spec 4.1)", () => {
       "href",
       "/login?next=%2Freport%3Fseller%3Dtech-corner",
     );
+  });
+
+  it("tells buyers a paused shop isn't taking orders, with no Message (selling plan amendment 10)", async () => {
+    await show("tech-corner", true);
+    expect(screen.getByText("Not taking orders right now")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Message seller" })).toBeNull();
   });
 });

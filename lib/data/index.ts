@@ -40,6 +40,7 @@ import {
   publicListing,
   publicListingIds,
   sellerFor,
+  shopStatus,
   storefrontRow,
   toSeller,
 } from "./catalog";
@@ -340,6 +341,17 @@ export async function getSeller(slug: string): Promise<Seller | null> {
   tagSellers();
   const row = storefrontRow(slug);
   return row ? toSeller(row) : null;
+}
+
+/**
+ * Whether a storefront's shop is paused (selling plan decision 2, amendment 10): its storefront stays up but takes no
+ * new messages. False for an open shop and for a slug with no storefront.
+ */
+export async function isShopPaused(slug: string): Promise<boolean> {
+  "use cache";
+  tagSellers();
+  const row = storefrontRow(slug);
+  return row !== null && shopStatus(row) === "paused";
 }
 
 /** Open shops' slugs, for prerendering and the sitemap. A paused shop's storefront renders on its first request. */

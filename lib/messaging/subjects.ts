@@ -1,4 +1,4 @@
-import { getCampuses, getListingDetail, getRequest, getSeller } from "@/lib/data";
+import { getCampuses, getListingDetail, getRequest, getSeller, isShopPaused } from "@/lib/data";
 import type { Account, Listing, ReportTarget, Seller } from "@/lib/types";
 import { targetPath, type MessageTarget } from "./paths";
 
@@ -14,7 +14,10 @@ export type ComposerSubject = {
   campusName: string;
   /** The composer offers a swap when the listing takes swaps (spec 2.4). */
   swaps: boolean;
-  /** A paused or sold listing can't be messaged (spec 3.1). */
+  /**
+   * A paused or sold listing can't be messaged (spec 3.1), nor can a paused shop (selling plan amendment 10). Replies
+   * in a conversation already started still go.
+   */
   open: boolean;
 };
 
@@ -31,10 +34,14 @@ export async function composerSubject(target: MessageTarget): Promise<ComposerSu
       open: detail.listing.availability === "available",
     };
   }
-  const [seller, campuses] = await Promise.all([getSeller(target.sellerSlug), getCampuses()]);
+  const [seller, campuses, paused] = await Promise.all([
+    getSeller(target.sellerSlug),
+    getCampuses(),
+    isShopPaused(target.sellerSlug),
+  ]);
   if (!seller) return null;
   const campusName = campuses.find((campus) => campus.slug === seller.campusSlug)?.name ?? "";
-  return { target, listing: null, seller, campusName, swaps: false, open: true };
+  return { target, listing: null, seller, campusName, swaps: false, open: !paused };
 }
 
 /** The account's storefront's slug, when it has one (an approved or paused shop; a pending one has none yet). */

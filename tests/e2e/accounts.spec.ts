@@ -175,12 +175,13 @@ test.describe("sample accounts (accounts spec 2.8)", () => {
     await expect(main(page).getByText("Hub role", { exact: true })).toBeVisible();
   });
 
-  test("a sample account follows next too, and the seller's points at their shop", async ({ page }) => {
+  test("a sample account follows next too, and the seller's points at their shop's pages", async ({ page }) => {
     onlyAt("phone-390", "desktop-1440");
     await signInAsSample(page, "Seller, Tech corner", "/login?next=%2Fsaved");
     await expect(page).toHaveURL(/\/saved$/);
     await page.goto("/account");
-    await expect(main(page).getByRole("link", { name: "Your shop" })).toHaveAttribute("href", "/sellers/tech-corner");
+    // Your shop goes to the dashboard (selling plan decision 21).
+    await expect(main(page).getByRole("link", { name: "Your shop" })).toHaveAttribute("href", "/sell");
   });
 });
 

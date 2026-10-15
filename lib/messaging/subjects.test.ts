@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { setShopPaused } from "@/lib/data/shops";
+import { resetSampleStore } from "@/lib/data/store";
 import { composerSubject, reportSubject, shopSlugOf } from "./subjects";
+
+beforeEach(() => {
+  resetSampleStore();
+});
 
 describe("what a first message is about (messaging spec 3.1, plan decision 2)", () => {
   it("knows a listing's seller, campus, whether it takes swaps and whether it's open", async () => {
@@ -25,6 +31,15 @@ describe("what a first message is about (messaging spec 3.1, plan decision 2)", 
       open: true,
     });
     expect(await composerSubject({ kind: "shop", sellerSlug: "nope" })).toBeNull();
+  });
+
+  it("closes a paused shop to new messages, about the shop or its listings (selling plan amendment 10)", async () => {
+    expect(await setShopPaused("acc-seller", true)).toBe("paused");
+    expect(await composerSubject({ kind: "shop", sellerSlug: "tech-corner" })).toMatchObject({ open: false });
+    expect(await composerSubject({ kind: "listing", listingId: "l-001" })).toMatchObject({ open: false });
+    expect(await composerSubject({ kind: "shop", sellerSlug: "hair-studio" })).toMatchObject({ open: true });
+    expect(await setShopPaused("acc-seller", false)).toBe("approved");
+    expect(await composerSubject({ kind: "shop", sellerSlug: "tech-corner" })).toMatchObject({ open: true });
   });
 
   it("knows the account's own storefront, when it has one", () => {

@@ -87,7 +87,7 @@ describe("the composer (messaging spec 3.1)", () => {
     expect(hidden(container)).toEqual([["shop", "tech-corner"]]);
   });
 
-  it("says why there's no form: your own listing, a listing that isn't available, a conversation already", async () => {
+  it("says why there's no form: your own listing, a listing or shop that isn't available, a conversation already", async () => {
     const { unmount } = await show({ kind: "listing", listingId: "l-001" }, { kind: "own" });
     expect(screen.getByText("This is your listing, so you can't message yourself.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Send" })).toBeNull();
@@ -96,6 +96,12 @@ describe("the composer (messaging spec 3.1)", () => {
     expect(screen.getByText("This listing isn't available right now, so it can't be messaged.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "See similar items" })).toHaveAttribute("href", "/browse?cat=tech");
     again.unmount();
+    // A paused shop (selling plan amendment 10).
+    const shop = await show({ kind: "shop", sellerSlug: "tech-corner" }, { kind: "unavailable" });
+    expect(screen.getByText("This shop isn't taking orders right now, so it can't be messaged.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "See similar items" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Send" })).toBeNull();
+    shop.unmount();
     await show({ kind: "listing", listingId: "l-001" }, { kind: "existing", conversationId: "conv-s2" });
     expect(screen.getByText("You've already messaged Tech corner about this.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open the conversation" })).toHaveAttribute("href", "/messages/conv-s2");

@@ -9,8 +9,8 @@ import { composerForm, ComposerView, type ComposerStatus } from "./ComposerView"
 /**
  * The composer for this request's visitor (messaging spec 3.1). Request-time: it reads the session, so each page puts
  * it inside <Suspense>. An unknown listing or shop is the 404; a signed-out visitor goes to sign-in and back (accounts
- * spec 2.10). Its own listing or shop, a listing that isn't available, and a conversation already started each get a
- * note instead of the form (plan decision 5).
+ * spec 2.10). Its own listing or shop, a listing that isn't available or a paused shop (selling plan amendment 10), and
+ * a conversation already started each get a note instead of the form (plan decision 5).
  */
 export async function Composer({ target }: { target: MessageTarget }) {
   const subject = await composerSubject(target);

@@ -8,16 +8,18 @@ import { SellerListings } from "./SellerListings";
 type SellerViewProps = {
   seller: Seller;
   campusNames: ReadonlyMap<string, string>;
+  /** A paused shop keeps its storefront but takes no new messages (selling plan decision 2, amendment 10). */
+  paused: boolean;
 };
 
 /**
  * A seller's storefront (shopping spec 4): the poster band, About, their listings and the report link. On desktop
  * About sits on the left, beside the listings (spec 4.2).
  */
-export function SellerView({ seller, campusNames }: SellerViewProps) {
+export function SellerView({ seller, campusNames, paused }: SellerViewProps) {
   return (
     <div className="page seller-page">
-      <SellerHero seller={seller} campusName={campusNames.get(seller.campusSlug) ?? ""} />
+      <SellerHero seller={seller} campusName={campusNames.get(seller.campusSlug) ?? ""} paused={paused} />
 
       <div className="seller-layout">
         <section aria-labelledby="seller-about-title" className="seller-about">

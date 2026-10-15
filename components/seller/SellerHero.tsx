@@ -5,12 +5,15 @@ import { MessageSellerLink } from "@/components/messages/SessionLinks";
 import { badgeLabel } from "@/lib/format";
 import type { Seller } from "@/lib/types";
 
+type SellerHeroProps = { seller: Seller; campusName: string; paused?: boolean };
+
 /**
  * The storefront's poster band (shopping spec 4.1, layout A): the seller's photo, name and tagline on navy stars, with
  * stamps for the campus, the category, Verified and the trust badge, then Message and Share. Small text on the stars is
- * white; sky only fills the Verified stamp and the Message pill, which carry navy text.
+ * white; sky only fills the Verified stamp and the Message pill, which carry navy text. A paused shop takes no new
+ * messages: Message's place says so, as a paused listing's page does (selling plan decision 2, amendment 10).
  */
-export function SellerHero({ seller, campusName }: { seller: Seller; campusName: string }) {
+export function SellerHero({ seller, campusName, paused = false }: SellerHeroProps) {
   return (
     <div className="seller-hero surface-navy texture-stars">
       <Photo
@@ -36,9 +39,13 @@ export function SellerHero({ seller, campusName }: { seller: Seller; campusName:
         </ul>
       </div>
       <div className="seller-hero-actions">
-        <MessageSellerLink target={{ kind: "shop", sellerSlug: seller.slug }} className="btn btn-sky seller-message">
-          Message seller
-        </MessageSellerLink>
+        {paused ? (
+          <p className="availability-banner seller-paused">Not taking orders right now</p>
+        ) : (
+          <MessageSellerLink target={{ kind: "shop", sellerSlug: seller.slug }} className="btn btn-sky seller-message">
+            Message seller
+          </MessageSellerLink>
+        )}
         <ShareButton title={seller.name} className="seller-share" />
       </div>
     </div>

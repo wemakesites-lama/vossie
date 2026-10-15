@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { SellerView } from "@/components/seller/SellerView";
-import { getCampuses, getSeller, getSellerSlugs } from "@/lib/data";
+import { getCampuses, getSeller, getSellerSlugs, isShopPaused } from "@/lib/data";
 
 /**
  * The tab title is the seller's name ("Tech corner · Vossie"; the layout adds the suffix) and the description their
@@ -35,7 +35,13 @@ export default function SellerPage({ params }: PageProps<"/sellers/[slug]">) {
 
 async function SellerDetails({ params }: Pick<PageProps<"/sellers/[slug]">, "params">) {
   const { slug } = await params;
-  const [seller, campuses] = await Promise.all([getSeller(slug), getCampuses()]);
+  const [seller, campuses, paused] = await Promise.all([getSeller(slug), getCampuses(), isShopPaused(slug)]);
   if (!seller) notFound();
-  return <SellerView seller={seller} campusNames={new Map(campuses.map((campus) => [campus.slug, campus.name]))} />;
+  return (
+    <SellerView
+      seller={seller}
+      campusNames={new Map(campuses.map((campus) => [campus.slug, campus.name]))}
+      paused={paused}
+    />
+  );
 }

@@ -37,6 +37,7 @@ const SELLERS: ReadonlyArray<[string, () => Promise<unknown>]> = [
   ["getVerifiedSellers", () => data.getVerifiedSellers()],
   ["getSeller", () => data.getSeller("tech-corner")],
   ["getSellerSlugs", () => data.getSellerSlugs()],
+  ["isShopPaused", () => data.isShopPaused("tech-corner")],
 ];
 
 describe("the data layer's cache tags (selling plan decision 6)", () => {

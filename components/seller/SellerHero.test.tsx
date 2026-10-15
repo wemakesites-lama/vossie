@@ -41,4 +41,11 @@ describe("SellerHero (shopping spec 4.1)", () => {
     );
     expect(screen.getByRole("button", { name: "Share" })).toHaveClass("seller-share");
   });
+
+  it("says a paused shop isn't taking orders, in Message's place, and keeps Share (selling plan amendment 10)", () => {
+    render(<SellerHero seller={techCorner} campusName="Midrand" paused />);
+    expect(screen.getByText("Not taking orders right now")).toHaveClass("availability-banner", "seller-paused");
+    expect(screen.queryByRole("link", { name: "Message seller" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Share" })).toBeInTheDocument();
+  });
 });

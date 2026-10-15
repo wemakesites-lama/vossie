@@ -88,9 +88,9 @@ describe("Your account (accounts spec 3.2)", () => {
     expect(screen.getByRole("button", { name: "Sign out" })).toHaveAttribute("type", "submit");
   });
 
-  it("points a seller at their shop, and says when it's waiting or paused (plan decision 16)", () => {
+  it("points a seller at their shop's pages, and says when it's waiting or paused (selling plan decision 21)", () => {
     const approved = renderAccount({ ...account, seller: { status: "approved", sellerSlug: "tech-corner" } });
-    expect(screen.getByRole("link", { name: "Your shop" })).toHaveAttribute("href", "/sellers/tech-corner");
+    expect(screen.getByRole("link", { name: "Your shop" })).toHaveAttribute("href", "/sell");
     approved.unmount();
     const pending = renderAccount({ ...account, seller: { status: "pending", sellerSlug: null } });
     expect(screen.getByRole("link", { name: /^Your shop\s*,\s*Waiting for the Hub's approval$/ })).toHaveAttribute(
@@ -99,7 +99,7 @@ describe("Your account (accounts spec 3.2)", () => {
     );
     pending.unmount();
     renderAccount({ ...account, seller: { status: "paused", sellerSlug: "tech-corner" } });
-    expect(screen.getByRole("link", { name: /^Your shop\s*,\s*Paused$/ })).toHaveAttribute("href", "/sellers/tech-corner");
+    expect(screen.getByRole("link", { name: /^Your shop\s*,\s*Paused$/ })).toHaveAttribute("href", "/sell");
   });
 
   it("names a mentor's or an admin's Hub role (plan decision 16)", () => {

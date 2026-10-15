@@ -56,7 +56,11 @@ export function ComposerView({ subject, status, form }: ComposerViewProps) {
     case "unavailable":
       main = (
         <div className="composer-note">
-          <p className="form-notice">This listing isn&apos;t available right now, so it can&apos;t be messaged.</p>
+          <p className="form-notice">
+            {listing
+              ? "This listing isn't available right now, so it can't be messaged."
+              : "This shop isn't taking orders right now, so it can't be messaged."}
+          </p>
           {listing && (
             <Link href={`/browse?cat=${listing.categorySlug}`} prefetch={false} className="btn btn-outline text-navy">
               See similar items

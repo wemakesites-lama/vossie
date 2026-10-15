@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetSampleStore } from "@/lib/data/store";
 import { getAccount } from "@/lib/data/accounts";
+import { setShopPaused } from "@/lib/data/shops";
 import { Composer } from "./Composer";
 
 const session = vi.hoisted(() => ({ accountId: "acc-mentor" }));
@@ -41,6 +42,13 @@ describe("the composer for this visitor (messaging spec 3.1, plan decision 5)", 
     unmount();
     render(await Composer({ target: { kind: "shop", sellerSlug: "tech-corner" } }));
     expect(screen.getByText("This is your shop, so you can't message yourself.")).toBeInTheDocument();
+  });
+
+  it("tells a buyer a paused shop takes no new messages (selling plan amendment 10)", async () => {
+    await setShopPaused("acc-seller", true);
+    render(await Composer({ target: { kind: "shop", sellerSlug: "tech-corner" } }));
+    expect(screen.getByText("This shop isn't taking orders right now, so it can't be messaged.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Send" })).toBeNull();
   });
 
   it("is the 404 for a listing or shop that doesn't exist", async () => {

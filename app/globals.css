@@ -8234,3 +8234,14 @@
     overflow-wrap: anywhere;
   }
 }
+
+/* --- Selling: a paused shop's storefront (selling plan, Task 14, amendment 10) --- */
+@layer components {
+  /* In Message's place on the band: the paused listing's banner (navy on pale), as tall as the pill it replaces. */
+  .seller-paused {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    min-height: 48px;
+  }
+}

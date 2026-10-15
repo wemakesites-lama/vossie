@@ -5,6 +5,7 @@ import { hashToken } from "@/lib/auth/secrets";
 import { findConversation, getThread } from "@/lib/data/messages";
 import { createReport } from "@/lib/data/reports";
 import { createSession } from "@/lib/data/sessions";
+import { setShopPaused } from "@/lib/data/shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { confirmTheSale, markAsCompleted, saleDidntHappen, sendFirstMessage, sendReply, sendReport } from "./actions";
@@ -135,6 +136,30 @@ describe("the composer's Send (messaging spec 3.1)", () => {
     const thread = (await getThread(idOf(url), "acc-mentor", NOW))!;
     expect(thread).toMatchObject({ listing: null, listingTitle: null, shop: { slug: "tech-corner" } });
     expect(thread.messages[0].swapOffer).toBeNull();
+  });
+
+  it("starts no conversation with a paused shop, while replies in its conversations still go (selling plan amendment 10)", async () => {
+    await setShopPaused("acc-seller", true);
+    await signedInAs("acc-mentor");
+    expect(await redirectOf(() => sendFirstMessage(form({ shop: "tech-corner", body: "Open again soon?" })))).toBe(
+      "/sellers/tech-corner/message",
+    );
+    expect(await redirectOf(() => sendFirstMessage(form({ listing: "l-001", body: "Still for sale?" })))).toBe(
+      "/listings/l-001/message",
+    );
+    expect(sampleStore().conversations.size).toBe(2);
+    await signedInAs("acc-student");
+    expect(await redirectOf(() => sendReply(form({ conversation: "conv-s1", body: "Is the headset still yours?" })))).toBe(
+      "/messages/conv-s1",
+    );
+    await signedInAs("acc-seller");
+    expect(await redirectOf(() => sendReply(form({ conversation: "conv-s1", body: "Yes, once I'm back." })))).toBe(
+      "/messages/conv-s1",
+    );
+    expect((await getThread("conv-s1", "acc-seller", NOW))?.messages.slice(-2)).toMatchObject([
+      { body: "Is the headset still yours?" },
+      { author: "You", body: "Yes, once I'm back." },
+    ]);
   });
 });
 
