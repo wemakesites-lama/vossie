@@ -365,9 +365,81 @@ Review notes that were deliberately not acted on:
 - **How long messages, reports and notifications are kept** is Eduvos's call (plan decision 27): the policy says the periods will be set before launch, and in sample mode everything lasts until the server restarts. It is on the go-live checklist, with the scheduled jobs that delete old ones and confirm sales after 7 days.
 - **JS room for stages F and G.** The listing page ends at 151,769 B: 536 B under the stop line and 1,831 B under the limit.
 
+## 2026-10-15: Selling built, in sample mode (stage F)
+- **Listings and sellers now come from the sample store,** seeded from the fixtures (four new tables: shops, listings, photos and the wizard's drafts) and tagged, so a write shows on the next request. A new listing appears in browse, on its page, on the storefront and in collections straight away. A paused shop is out of every list but keeps its storefront and its listings' pages, marked paused; a shop waiting for approval has no storefront.
+- **Becoming a seller** (`/sell`, `/sell/onboarding`): the pitch, then five steps (basics, about, photo, campus and pickup points, review) and Send for approval. The step is in the link, the draft is in the store, Back is a link, and step 4 shows the pickup points of the campus chosen, with no client code. The waiting page says the Hub is checking and lets the seller prepare drafts. The sample "Seller waiting for approval" shows it (Lerato's "Crochet corner").
+- **The dashboard** (`/sell`): live or paused, the last 7 days' enquiries, replies within 48 hours ("2 of 2") and confirmed sales, the badge and what the next one needs, the shop's pages, and Pause my shop. There are no view counts.
+- **Listings** (`/sell/listings`, `/sell/listings/new`, `/sell/listings/[id]/edit`, `/sell/listings/[id]/delete`): four tabs (Available, Paused, Sold, Drafts), Pause, Resume, Mark sold, Relist and Delete with a confirmation; the listing form with every field of the listing model, Save and publish or Save as draft. A new listing is made once however many times its form is sent.
+- **Photos:** with the app's JavaScript, shrunk and re-encoded in the browser (WebP, JPEG on Safari), one at a time, with a save held up to 15 seconds for them; on the server, checked by signature, 5 MB each, 6 per listing, and stripped of hidden data every time (an allowlist per format); served from `/photos/[id]` with `nosniff` and a device-only cache, and resized by next/image with no copies kept on the server's disk. The photo field's buttons (Move earlier, Move later, Make cover, Remove) work without JavaScript too.
+- **Edit shop** (`/sell/profile`), with the link changeable once (the old link stays reserved and shows the 404). The listing page shows its owner Edit listing, the storefront Edit shop, and the account page's Your shop goes to the dashboard.
+- **Privacy:** the policy, How it works, the export and deletion take in shops, listings, photos and the wizard's draft; deleting an account removes the shop, its listings, every photo it uploaded and the draft, and conversations keep the listing's title and say it was removed. The export lists each listing's photos as web addresses, the shop's previous links and the wizard's draft.
+- **Every form works without the app's JavaScript** (with its bundle blocked; see the open points for JavaScript fully off), and every post ends with `refresh()` and a replace redirect, so Back never shows a page from before your own change.
+- **Where the build differed from the plan** is in the plan's "Changes made during the build" (`docs/superpowers/plans/2026-10-14-selling.md`), with each change's commit. The ones worth knowing:
+  - Six review fix commits, one for each batch of reviews: the stripper became an allowlist per format and prices whole rand (`8ede2af`); gone sellers' conversations don't count, a first publish happens once and photos are cached on the device only (`f282661`); no listing points at a tidied photo and notices show once (`532c240`); Save waits for the shrink (`cbd8d89`); a held save posts once, and an old shop link stays reserved (`a088ee3`); a new listing is made once (`9ba055a`).
+  - The listing form's bytes: the first build of `PhotoField` was 620 B over the stop line, so the shrinking moved to code loaded on the first pick and everything fixed moved to the server (`PhotoFieldset.tsx`). No feature was cut.
+  - Part A of this task: the selling pages' column is at least a screen tall less the header, so the footer stays below the first screen while a page streams in (amendment 15.1; `app/globals.css`, its own commit).
+  - Two things the plan didn't foresee, now in the spec's section 8: a new listing needs a one-time token, and an old shop link must stay reserved.
+- **Plan decisions Lama may want to revisit:**
+  - Decision 2: a paused shop's listings still have pages, marked paused, so saved links land somewhere.
+  - Decision 3: a sold listing can be relisted.
+  - Decision 4: a shop waiting for approval can only save drafts, and once approved the seller publishes each one by hand.
+  - Decision 12: no resized photos on the server's disk (a resize per uncached request; fine for a preview).
+  - Decision 16: the shop's link changes once, and old links then show the 404.
+  - Decision 18: the dashboard counts the last 7 days, and only a buyer's first message about a listing is an enquiry.
+  - Decision 27, the sample wording: the pitch (`components/sell/SellPitch.tsx`), the waiting page (`ShopWaiting.tsx`), the dashboard and the badge's progress (`Dashboard.tsx`, `lib/selling/badges.ts`), every error (`lib/selling/errors.ts`), the notices (`lib/selling/notices.ts`), the hints and empty states in each view, and Lerato's "Crochet corner" (`data/fixtures/shops.ts`).
+- **Checks:**
+  - lint and types are clean;
+  - 1,555 unit tests pass, in 215 files;
+  - end to end, 953 pass, 768 are skipped by design and none fail, across 360, 390, 768, 1024 and 1440px, with the tests that change listings run last (`selling-writes`, at 390px). Skipped includes the review screenshots, which run only with `SCREENSHOTS=1`;
+  - axe finds no serious or critical issues on the pitch, the waiting page, the dashboard, My listings in every tab and with its notices, Delete listing, each wizard step with an error, the listing form (new, edit, and for a paused, sold and draft listing, with its errors), Edit shop, and the owner's own listing page and storefront.
+- **First visit at 390px, JS brotli:** homepage 150,613 B, browse 151,360 B, listing 151,769 B, storefront 151,373 B, `/sell` 150,613 B; signed in: new listing form 152,287 B, edit listing form 152,287 B, every other selling page 150,613 B, the owner's storefront 151,373 B and listing page 151,769 B (stop line 152,305 B, never passed; limit 153,600 B). Every page that isn't a listing form is exactly as stage E left it. The only new client code is `PhotoField`, loaded by the two listing form routes alone (1,675 B compressed), plus the shrinking code, which loads on the first photo picked and never on a first visit. The listing forms are the highest pages, 18 B under the stop line and 1,313 B under the limit; the listing page is 536 B under it.
+- **Layout shift** (fonts held back 800 ms, at 390 and 1440px):
+
+  | Page | 390px | 1440px |
+  |---|---|---|
+  | The pitch (`/sell`, signed out) | 0.0494 | 0.0036 |
+  | Dashboard | 0.0005 | 0.0005 |
+  | Waiting for approval | 0.0010 | 0.0005 |
+  | My listings | 0.0008 | 0.0005 |
+  | My listings, nothing paused | 0.0003 | 0.0003 |
+  | My listings, shop waiting | 0.0003 | 0.0003 |
+  | Delete listing | 0.0005 | 0.0005 |
+  | New listing form | 0.0003 | 0.0003 |
+  | Edit listing form | 0.0003 | 0.0003 |
+  | Edit shop | 0.0003 | 0.0003 |
+  | Wizard, step 1 | 0.0003 | 0.0004 |
+  | Wizard, step 4 | 0.0003 | 0.0004 |
+  | Storefront, owner's view | 0.0010 | 0.0005 |
+  | Listing page, owner's view | 0.0110 | 0.0062 |
+
+  Run to run the figures move by a few ten-thousandths; the pitch read 0.0443 at 390px and 0.0026 at 1440px in an earlier run. All are under the limit of 0.05.
+
+  On a slowed connection (350 ms latency, 60 KB/s, a throwaway script), the footer entering the first screen as a skeleton gave way used to shift My listings' empty tabs by 0.0856 at 390px and 0.0498 at 1440px, My listings while waiting by 0.0274 and 0.0211, and wizard step 4 by 0.0218 at 390px. After Part A's minimum height, no selling page's footer moves at either size. What remains on that connection is the announcement bar's 0.0024 to 0.0027 at 1440px, on every page, and the pitch's headline (0.0184 at 390px).
+- Review screenshots: `docs/progress/selling/` (24, at 390 and 1440px).
+
+## 2026-10-15: Open points for Lama after the selling build
+- **The pitch's headline moves the page at 390px.** At 390px it takes three lines in the fallback font and two in the display font, so everything under it moves up a line when the font arrives: 0.0494 here (0.0443 in an earlier run), under 0.05 but close. A shorter headline, or a reserved third line on phones, would end it. It's Lama's call (amendment 15.2); the words are `components/sell/SellPitch.tsx`.
+- **A short selling page now has blank space under it.** The selling pages' column is at least a screen tall less the header, so the footer sits about 120px below the first screen on an empty tab or a short step. It's what stops the footer moving on a slow connection; if Lama prefers a snugger footer, the `--sell-header` and `min-height` lines in `app/globals.css` (`.sell-page`) are the place.
+- **Preview limits** (amendment 6, https://vossie-pi.vercel.app): a request body over 4.5 MB fails on Vercel before it reaches the action. With the app's JavaScript, photos are re-encoded small, so a normal listing fits; without it, large originals fail. The sample store, uploaded photos included, lives in one server instance's memory, so a photo may not show from another instance. The go-live checklist has direct-to-storage uploads.
+- **Vercel's image optimiser** (amendment 9.4): `/photos/[id]` is cached on the device only, and `images.maximumDiskCacheSize: 0` keeps nothing on a server of ours, but whether Vercel's own optimiser keeps resized copies of a deleted photo is a go-live check, with a purge when a photo is deleted.
+- **A slow connection can show the skeleton instead of the 404** (amendment 10.9). An unknown listing id on the Delete listing page, with the app's JavaScript blocked, shows the page's skeleton, not the 404, because `notFound()` is raised after streaming has started and the status is 200, as on every request-time page here. The go-live proxy check covers status codes.
+- **JavaScript fully off** (amendment 13.10): the listing page's body is blank for everyone, because it streams inside `<Suspense fallback={null}>` (it was so before this stage; Opera Mini's extreme mode is common on cheap phones). Forms and the rest work with the bundle blocked, which the tests check.
+- **A visitor may see a listing as it was before a write** (amendment 13.10): the cache keeps serving a page while it refreshes (stale-while-revalidate), so one visit after an edit can show the old page.
+- **"Answer five short questions" on How it works** might read better as "five short steps", since the wizard is five steps (amendment 13.10). The words are in `app/how-it-works/page.tsx`.
+- **Sample mode, after a restart** (amendment 14.4): `next start` keeps the pages Next re-rendered after a write in `.next/server/route-cache`, so restarting it without a rebuild gives a fresh sample store with an earlier server's pages. Rebuild after a restart (`pnpm e2e` always does); the real database ends it. A missing storefront answers 200 to a plain request and 404 to a browser's (amendment 10.9's known item).
+- **A manual screen-reader check is still to do** (amendment 13.9): that the photo field's statuses are announced, and announced again when the same one repeats ("Photo 3 is the cover now." after "Photo 2 is the cover now."), and "Saving once your photos are ready…" on each Save press during a hold. The tests check the words and the live region, not what VoiceOver or TalkBack say.
+- **Unused files, for Lama to delete or keep:** `components/ComingSoon.tsx` and `components/ComingSoon.test.tsx` (the selling pitch replaced its last use), and `data/fixtures/viewer.ts`, which held the old `VOSSIE_SAMPLE_SIGNED_IN` sample activity and has had no user since stage D. Neither was deleted.
+- **Edit shop asks for a picked photo again after a failed save** (amendment 13.6's fallback). "Remove photo" comes back ticked, but a shop photo chosen before the error has to be chosen again ("Choose your photo again."). The listing form keeps its photos as waiting uploads; making Edit shop do the same is a small change if Lama wants it.
+- **The new listing's one-time token lasts an hour** (amendment 14.1), longer than form state's usual 10 minutes, so a seller slow with photos isn't turned away. After an hour a token has run out, and a post with it is refused with the form's error, their typed values and photos kept.
+- **Previous shop links show in the data export as `/sellers/<slug>`** (amendment 14.2). They're the seller's data, so they're listed.
+- **JS headroom:** the listing forms have 18 B left under the stop line (152,287 B against 152,305 B; 1,313 B under the limit). Any client change to `PhotoField` needs a trade-off or Lama's acceptance of a new stop line. Every other page has at least 536 B.
+- **Trust page wording for stage G** (spec section 8, item 10): part C's trust page says "Verified means the Hub … approved their shop". Approval and Verified are separate, so it changes with stage G. Stage G also needs to read `lib/data/catalog.ts`, `firstPublishedAt` and `previousSlugs`; the plan's amendment 9 notes (`e3e08b7`) say what changed for stages G, H and I.
+- **Docs still uncommitted, waiting for Lama:** the positioning and editorial spec (`2026-10-15-positioning-and-editorial-design.md`), the Supabase spec and plan (`2026-10-15-supabase-backend-design.md`, `2026-10-15-supabase-foundation.md`), and the lines two other sessions added to this file and to the decisions log (the positioning section and decision 71; the Supabase section and Next bullet). Stage F's own decision is row 72 because row 71 is reserved for the positioning decision; this section and row 72 were written from snippet files for the same reason.
+- **JS room for stage G and later.** The listing page ends at 151,769 B (536 B under the stop line, 1,831 B under the limit) and the listing forms at 152,287 B.
+
 ## Next
-- Lama reviews the screenshots in `docs/progress/messaging/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "messaging review screenshots"`.
-- Then stage F: selling (`2026-10-14-selling-design.md`), whose dashboard counts this stage's enquiries, replies and confirmed sales.
+- Lama reviews the screenshots in `docs/progress/selling/` (24, at 390 and 1440px), and the messaging ones in `docs/progress/messaging/` if not yet seen. To retake the selling ones, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "selling review screenshots"`; the messaging ones use `-g "messaging review screenshots"`.
+- Then stage G: staff tools (`2026-10-14-staff-tools-design.md`, plan `2026-10-14-staff-tools.md`): approving the waiting shops (Lerato's "Crochet corner" and any new application), Verified, hiding listings and the Featured rules. Its plan's recheck reads selling's code first: `lib/data/catalog.ts` (what buyers see), `lib/data/shops.ts`, `SellerRow.previousSlugs`, `ListingRow.firstPublishedAt` and `takeFormState`.
 
 ## Waiting on
 - Eduvos font files and licence confirmation.
