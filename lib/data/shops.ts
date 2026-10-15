@@ -4,7 +4,7 @@ import { sampleListingRows, sampleSellerRows, sampleShopOwners } from "@/data/fi
 import { nameKey, SLUG_MAX, slugify } from "@/lib/selling/rules";
 import { sastDate } from "@/lib/time";
 import type { Condition, Handover, ImageRef, ListingKind, ListingState, PayMode, SellerStatus } from "@/lib/types";
-import { deletePhotosOf, deletePhotosUsedBy, claimPhotos } from "./photos";
+import { claimPhotosNow, deletePhotosOf, deletePhotosUsedByNow } from "./photos";
 import type { ListingRow, OnboardingDraftRow, SellerRow } from "./rows";
 import { sampleStore } from "./store";
 
@@ -36,9 +36,14 @@ export async function getShopOf(accountId: string): Promise<OwnShop | null> {
 
 /** Whether another shop on `campusSlug` has this name (plan decision 16). `exceptSlug` is the shop being edited. */
 export async function isShopNameTaken(name: string, campusSlug: string, exceptSlug: string | null): Promise<boolean> {
+  return nameTakenNow(name, campusSlug, exceptSlug === null ? null : (sampleStore().sellers.get(exceptSlug) ?? null));
+}
+
+/** isShopNameTaken with no await, for a writer's last check before it writes. `except` is the shop being edited. */
+function nameTakenNow(name: string, campusSlug: string, except: SellerRow | null): boolean {
   const key = nameKey(name);
   for (const row of sampleStore().sellers.values()) {
-    if (row.slug !== exceptSlug && row.campusSlug === campusSlug && nameKey(row.name) === key) return true;
+    if (row !== except && row.campusSlug === campusSlug && nameKey(row.name) === key) return true;
   }
   return false;
 }
@@ -89,7 +94,7 @@ function moveShop(from: string, to: string): void {
   }
 }
 
-/** What the wizard and Edit shop set (selling spec 2.6 and 2.11). */
+/** What the wizard sets (selling spec 2.6). */
 export type ShopDetails = {
   name: string;
   tagline: string;
@@ -102,13 +107,39 @@ export type ShopDetails = {
 };
 
 /**
+ * Edit shop's photo: keep the one the shop has when the edit saves (which another post may have changed since the form
+ * was read), remove it, or a photo just stored for this edit.
+ */
+export type ShopPhotoEdit = "keep" | "remove" | ImageRef;
+
+/** What Edit shop sets (selling spec 2.11). */
+export type ShopEdit = Omit<ShopDetails, "image"> & {
+  image: ShopPhotoEdit;
+  /** The one change of link (an approved or paused shop's), or null to leave the link as it is. */
+  slug: string | null;
+};
+
+/** A shop write's outcome: the shop as saved, or why nothing was saved. */
+export type ShopWrite<E extends string> = { shop: SellerRow; error: null } | { shop: null; error: E };
+
+export type ShopEditError = "name-taken" | "slug-used" | "slug-taken";
+
+/**
  * Sends an application (selling spec 2.6 and 2.7): a new shop with a link made from its name, and a seller profile
  * waiting for the Hub, with no storefront yet (plan decision 1). The draft goes, and its photo becomes the shop's.
- * Null when the account already has a shop.
+ * "name-taken" when another shop on the campus has the name by now; null when the account already has a shop.
+ * From the checks to the last write there's no await, so a post at the same time can't come between (amendment 15).
  */
-export async function createShop(accountId: string, details: ShopDetails, now: Date): Promise<SellerRow | null> {
+export async function createShop(
+  accountId: string,
+  details: ShopDetails,
+  now: Date,
+): Promise<ShopWrite<"name-taken"> | null> {
   const store = sampleStore();
   if (store.sellerProfiles.has(accountId)) return null;
+  if (nameTakenNow(details.name, details.campusSlug, null)) return { shop: null, error: "name-taken" };
+  const photo = details.image;
+  const image = photo && claimPhotosNow(accountId, [photo.src], "shop").has(photo.src) ? { ...photo } : null;
   const at = now.toISOString();
   const row: SellerRow = {
     slug: freeSlug(slugify(details.name), null),
@@ -121,7 +152,7 @@ export async function createShop(accountId: string, details: ShopDetails, now: D
     badge: "new-seller",
     about: details.about,
     since: sastDate(now).slice(0, 7),
-    image: details.image ? { ...details.image } : null,
+    image,
     pickupPointIds: [...details.pickupPointIds],
     slugChanged: false,
     createdAt: at,
@@ -130,31 +161,49 @@ export async function createShop(accountId: string, details: ShopDetails, now: D
   store.sellers.set(row.slug, row);
   store.sellerProfiles.set(accountId, { accountId, status: "pending", sellerSlug: null, appliedAt: at });
   store.onboardingDrafts.delete(accountId);
-  if (row.image) await claimPhotos(accountId, [row.image.src], "shop");
-  await deletePhotosUsedBy(accountId, "draft");
-  return structuredClone(row);
+  deletePhotosUsedByNow(accountId, "draft");
+  return { shop: structuredClone(row), error: null };
 }
 
 /**
- * Edit shop (selling spec 2.11). While the shop waits for approval its link follows its name (plan decision 16). Its
- * listings follow its campus, and a pickup whose point it no longer uses moves to its first point, or online when it
- * has none (plan decision 17). A replaced or removed photo is deleted. Null when the account has no shop.
+ * Edit shop (selling spec 2.11), and with it an approved or paused shop's one change of link. While the shop waits
+ * for approval its link follows its name, and a link asked for is ignored (plan decision 16). Its listings follow its
+ * campus, and a pickup whose point it no longer uses moves to its first point, or online when it has none (plan
+ * decision 17). A replaced or removed photo is deleted, and the shop keeps no photo it doesn't show.
+ *
+ * Nothing is saved when another shop on the campus has the name by now ("name-taken"), or the link can't change
+ * ("slug-used", "slug-taken"); a link that is already the one asked for (a double click) isn't a change. From reading
+ * the row to the last write there's no await, so a post at the same time (a double click, another tab, another
+ * seller) can't come between this one's checks and its writes (amendment 15). Null when the account has no shop.
  */
-export async function updateShop(accountId: string, details: ShopDetails, now: Date): Promise<SellerRow | null> {
+export async function updateShop(
+  accountId: string,
+  edit: ShopEdit,
+  now: Date,
+): Promise<ShopWrite<ShopEditError> | null> {
   const store = sampleStore();
   const own = liveShopOf(accountId);
   if (!own) return null;
-  const { row } = own;
-  const oldPhoto = row.image?.src ?? null;
-  row.name = details.name;
-  row.tagline = details.tagline;
-  row.categorySlug = details.categorySlug;
-  row.about = details.about;
-  row.image = details.image ? { ...details.image } : null;
-  row.campusSlug = details.campusSlug;
-  row.pickupPointIds = [...details.pickupPointIds];
+  const { row, status } = own;
+  if (nameTakenNow(edit.name, edit.campusSlug, row)) return { shop: null, error: "name-taken" };
+  const slug = status === "pending" ? null : edit.slug;
+  const change = slug === null ? "same" : linkChange(row, slug);
+  if (change === "used") return { shop: null, error: "slug-used" };
+  if (change === "taken") return { shop: null, error: "slug-taken" };
+  // The new photo is claimed first; the shop's others are deleted after, keeping only the one it shows.
+  const photo = edit.image;
+  if (photo === "remove") row.image = null;
+  else if (photo !== "keep" && claimPhotosNow(accountId, [photo.src], "shop").has(photo.src)) row.image = { ...photo };
+  deletePhotosUsedByNow(accountId, "shop", new Set(row.image ? [row.image.src] : []));
+  row.name = edit.name;
+  row.tagline = edit.tagline;
+  row.categorySlug = edit.categorySlug;
+  row.about = edit.about;
+  row.campusSlug = edit.campusSlug;
+  row.pickupPointIds = [...edit.pickupPointIds];
   row.updatedAt = now.toISOString();
-  if (own.status === "pending") moveShop(row.slug, freeSlug(slugify(row.name), row.slug));
+  if (slug !== null && change === "free") spendLinkChange(row, slug);
+  if (status === "pending") moveShop(row.slug, freeSlug(slugify(row.name), row.slug));
   for (const listing of store.listings.values()) {
     if (listing.sellerSlug !== row.slug) continue;
     listing.campusSlug = row.campusSlug;
@@ -163,15 +212,25 @@ export async function updateShop(accountId: string, details: ShopDetails, now: D
       if (listing.pickupPointId === null) listing.handover = "online";
     }
   }
-  const newPhoto = row.image?.src ?? null;
-  if (newPhoto !== oldPhoto) {
-    await deletePhotosUsedBy(accountId, "shop", new Set(newPhoto ? [newPhoto] : []));
-    if (newPhoto) await claimPhotos(accountId, [newPhoto], "shop");
-  }
-  return structuredClone(row);
+  return { shop: structuredClone(row), error: null };
 }
 
 export type SlugChange = "changed" | "same" | "used" | "taken";
+
+/** Whether an approved or paused shop's link can become `slug`: "free" when it can. */
+function linkChange(row: SellerRow, slug: string): Exclude<SlugChange, "changed"> | "free" {
+  if (row.slug === slug) return "same";
+  if (row.slugChanged) return "used";
+  return slugInUse(slug) ? "taken" : "free";
+}
+
+/** The one change of link: the shop moves, and its old link is retired (plan decision 16). */
+function spendLinkChange(row: SellerRow, slug: string): void {
+  const from = row.slug;
+  moveShop(from, slug);
+  sampleStore().retiredSlugs.add(from);
+  row.slugChanged = true;
+}
 
 /**
  * The seller's one change of link (selling spec 2.11), for an approved or paused shop. Old links then 404. Null when
@@ -181,13 +240,9 @@ export async function changeShopSlug(accountId: string, slug: string, now: Date)
   const own = liveShopOf(accountId);
   if (!own || own.status === "pending") return null;
   const { row } = own;
-  if (row.slug === slug) return "same";
-  if (row.slugChanged) return "used";
-  if (slugInUse(slug)) return "taken";
-  const from = row.slug;
-  moveShop(from, slug);
-  sampleStore().retiredSlugs.add(from);
-  row.slugChanged = true;
+  const change = linkChange(row, slug);
+  if (change !== "free") return change;
+  spendLinkChange(row, slug);
   row.updatedAt = now.toISOString();
   return "changed";
 }
@@ -224,11 +279,14 @@ export async function getOnboardingDraft(accountId: string): Promise<OnboardingD
   return row ? structuredClone(row) : null;
 }
 
-/** Saves the wizard's answers (selling spec 2.2). Its photo becomes the draft's, and one it no longer uses goes. */
+/**
+ * Saves the wizard's answers (selling spec 2.2). Its photo becomes the draft's, and one it no longer uses goes: claimed
+ * first, then the others deleted, with no await between, so two posts at once (a double click) leave one (amendment 15).
+ */
 export async function saveOnboardingDraft(draft: OnboardingDraftRow): Promise<void> {
   sampleStore().onboardingDrafts.set(draft.accountId, structuredClone(draft));
-  await deletePhotosUsedBy(draft.accountId, "draft", new Set(draft.photoSrc ? [draft.photoSrc] : []));
-  if (draft.photoSrc) await claimPhotos(draft.accountId, [draft.photoSrc], "draft");
+  if (draft.photoSrc) claimPhotosNow(draft.accountId, [draft.photoSrc], "draft");
+  deletePhotosUsedByNow(draft.accountId, "draft", new Set(draft.photoSrc ? [draft.photoSrc] : []));
 }
 
 /**

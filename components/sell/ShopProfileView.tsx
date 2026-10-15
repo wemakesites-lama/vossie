@@ -129,6 +129,8 @@ function LinkField({
         who saved one will need the new one.
       </p>
       <FieldError id={`${IDS.slug}-error`} message={error} />
+      {/* The link as the form shows it, so a change from a tab drawn before another change is refused (slug-used). */}
+      <input type="hidden" name="slugWas" value={shop.slug} />
       <div className="sell-slug">
         <span aria-hidden="true">{`${host}/sellers/`}</span>
         <input
@@ -137,6 +139,7 @@ function LinkField({
           type="text"
           defaultValue={typed}
           autoComplete="off"
+          autoCapitalize="none"
           spellCheck={false}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy(`${IDS.slug}-hint`, error && `${IDS.slug}-error`)}

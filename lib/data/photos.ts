@@ -82,6 +82,14 @@ export async function photoSrcsOf(ownerId: string, use: string | null): Promise<
  * listing or the shop uses, anyone else's photo, or a placeholder.
  */
 export async function claimPhotos(ownerId: string, srcs: Iterable<string>, use: string): Promise<Set<string>> {
+  return claimPhotosNow(ownerId, srcs, use);
+}
+
+/**
+ * claimPhotos with no await, for a writer that reads its row and writes it, photos and all, in one synchronous run, so
+ * a post at the same time can't come between (selling plan amendment 15). The real database does it in a transaction.
+ */
+export function claimPhotosNow(ownerId: string, srcs: Iterable<string>, use: string): Set<string> {
   const { photos } = sampleStore();
   const claimed = new Set<string>();
   for (const src of srcs) {
@@ -101,6 +109,11 @@ export async function deletePhotosUsedBy(
   use: string,
   keep: ReadonlySet<string> = new Set(),
 ): Promise<void> {
+  deletePhotosUsedByNow(ownerId, use, keep);
+}
+
+/** deletePhotosUsedBy with no await, as claimPhotosNow. */
+export function deletePhotosUsedByNow(ownerId: string, use: string, keep: ReadonlySet<string> = new Set()): void {
   const { photos } = sampleStore();
   for (const [id, row] of photos) {
     if (row.ownerId === ownerId && row.use === use && !keep.has(photoSrc(id))) photos.delete(id);

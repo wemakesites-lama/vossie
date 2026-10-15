@@ -7,7 +7,6 @@ import { getCampuses, getCategories, getPickupPoints } from "@/lib/data";
 import { storePhotos, type Upload } from "@/lib/data/photos";
 import type { OnboardingDraftRow } from "@/lib/data/rows";
 import {
-  changeShopSlug,
   createShop,
   emptyDraft,
   getOnboardingDraft,
@@ -17,6 +16,7 @@ import {
   saveOnboardingDraft,
   setShopPaused,
   updateShop,
+  type ShopPhotoEdit,
 } from "@/lib/data/shops";
 import { sellersChanged } from "@/lib/data/tags";
 import { keepTyped } from "@/lib/messaging/rules";
@@ -180,7 +180,7 @@ export async function sendForApproval(formData: FormData): Promise<void> {
     await writeFormState(onboardingForm(5), { errors: ["guidelines-missing"], values: {}, notice: null }, now);
     done(onboardingPath(5));
   }
-  const shop = await createShop(
+  const made = await createShop(
     account.id,
     {
       name: draft.name,
@@ -193,8 +193,13 @@ export async function sendForApproval(formData: FormData): Promise<void> {
     },
     now,
   );
+  // Another shop on the campus took the name since the check above: back to step 1, with nothing made.
+  if (made?.error) {
+    await writeFormState(onboardingForm(1), { errors: [made.error], values: {}, notice: null }, now);
+    done(onboardingPath(1));
+  }
   // Null when another post made the account's shop first: nothing changed here.
-  if (shop) sellersChanged();
+  if (made) sellersChanged();
   done(SELL_PATH);
 }
 
@@ -206,7 +211,7 @@ export async function sendForApproval(formData: FormData): Promise<void> {
 export async function saveShopProfile(formData: FormData): Promise<void> {
   const owner = await requireShopOwner(PROFILE_PATH);
   const now = new Date();
-  const { account, shop, status } = owner;
+  const { account } = owner;
   const errors: string[] = [];
 
   const name = checkShopName(field(formData, "name"));
@@ -214,16 +219,22 @@ export async function saveShopProfile(formData: FormData): Promise<void> {
   const categorySlug = field(formData, "category");
   const categoryKnown = await isCategory(categorySlug);
   const about = checkAbout(field(formData, "about"));
+  // A file chosen as well as Remove the photo wins: choosing it is the newer intent.
   const removePhoto = field(formData, "removePhoto") === "yes";
-  const photo = removePhoto ? { upload: null, errors: [] } : await readShopPhoto(formData);
+  const photo = await readShopPhoto(formData);
   const place = await readCampusAndSpots(formData);
   const typedSlug = field(formData, "slug").trim().toLowerCase();
-  const changeSlug = status !== "pending" && !shop.slugChanged && typedSlug !== "" && typedSlug !== shop.slug;
   const slug = checkSlug(typedSlug);
+  // The link the form showed, posted with it. It comes from the browser, so it's checked like any link, and one that
+  // isn't a link counts for nothing.
+  const shown = checkSlug(field(formData, "slugWas"));
+  const slugWas = shown.error ? null : shown.value;
   // The shop as it is now, read again after the form: a post sent twice (a double click) may find that the first has
-  // already changed the link, so the shop's own new link isn't "taken", and its name and photo are at the new link.
-  const current = (await getShopOf(account.id))?.shop ?? shop;
-  const linkIsNowOurs = typedSlug === current.slug;
+  // already changed the link, and another tab may have changed it since this form was drawn.
+  const { shop: current, status } = (await getShopOf(account.id)) ?? owner;
+  // A change of link is a link typed other than the shop's now and the one the form showed. The one the form showed,
+  // when the link has changed since (in another tab), leaves the link as it is now and saves the rest.
+  const changeSlug = status !== "pending" && typedSlug !== "" && typedSlug !== current.slug && typedSlug !== slugWas;
 
   /** Back to the form with its errors and everything typed, having saved nothing. */
   const sendBack = async (problems: string[]): Promise<never> => {
@@ -249,26 +260,20 @@ export async function saveShopProfile(formData: FormData): Promise<void> {
   if (!categoryKnown) errors.push("category-missing");
   if (about.error) errors.push(about.error);
   errors.push(...photo.errors, ...place.errors);
-  if (changeSlug && !linkIsNowOurs) {
+  if (changeSlug) {
     if (current.slugChanged) errors.push("slug-used");
     else if (slug.error) errors.push(slug.error);
     else if (await isSlugTaken(slug.value)) errors.push("slug-taken");
   }
   if (errors.length > 0) await sendBack(errors);
 
-  // The link first: if another post took it or spent the one change since the check above, nothing else has been
-  // saved yet. "same" means an earlier post (a double click) already made this change, so the rest is saved.
-  if (changeSlug) {
-    const change = await changeShopSlug(account.id, slug.value, now);
-    if (change === "used") await sendBack(["slug-used"]);
-    else if (change !== "changed" && change !== "same") await sendBack(["slug-taken"]);
-  }
-  let image = removePhoto ? null : current.image;
+  // "keep" is the photo the shop has when it saves, which another post may have changed since this one read it.
+  let image: ShopPhotoEdit = removePhoto ? "remove" : "keep";
   if (photo.upload) {
     const [src] = await storePhotos(account.id, [photo.upload], now);
     image = { src, alt: "" };
   }
-  await updateShop(
+  const saved = await updateShop(
     account.id,
     {
       name: name.value,
@@ -278,9 +283,14 @@ export async function saveShopProfile(formData: FormData): Promise<void> {
       image,
       campusSlug: place.campusSlug,
       pickupPointIds: place.pickupPointIds,
+      slug: changeSlug ? slug.value : null,
     },
     now,
   );
+  if (!saved) done(SELL_PATH);
+  // Another post got there since the checks above (another shop took the name, or the link changed or was taken), so
+  // nothing was saved; a photo stored for this edit waits a day, as on any form that didn't save (plan decision 11).
+  if (saved.error) await sendBack([saved.error]);
   sellersChanged();
   await writeFormState(PROFILE_FORM, { errors: [], values: {}, notice: "shop-saved" }, now);
   done(PROFILE_PATH);

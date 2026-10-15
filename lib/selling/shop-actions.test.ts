@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SESSION_COOKIE } from "@/lib/auth/cookies";
 import { readFormState } from "@/lib/auth/form-state";
 import { hashToken } from "@/lib/auth/secrets";
-import { getPhoto, photoIdOf } from "@/lib/data/photos";
+import { getPhoto, photoIdOf, photoSrcsOf } from "@/lib/data/photos";
 import { createSession } from "@/lib/data/sessions";
 import { emptyDraft, getOnboardingDraft, getShopOf, saveOnboardingDraft } from "@/lib/data/shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
@@ -13,8 +13,24 @@ import { DASHBOARD_FORM, onboardingForm, PROFILE_FORM } from "./form-state";
 import { pauseShop, resumeShop, saveOnboardingStep, saveShopProfile, sendForApproval } from "./shop-actions";
 
 const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
+/** The session token of the browser a post comes from, when a test sends posts from two browsers at once. */
+const browser = await vi.hoisted(async () => new (await import("node:async_hooks")).AsyncLocalStorage<string>());
 
-vi.mock("next/headers", async () => (await import("@/tests/helpers/next-request")).nextHeaders(request));
+vi.mock("next/headers", async () => {
+  const headers = (await import("@/tests/helpers/next-request")).nextHeaders(request);
+  return {
+    ...headers,
+    // A post from fromBrowser() carries that browser's session cookie, whatever another post at the same time has.
+    cookies: async () => {
+      const jar = await headers.cookies();
+      const token = browser.getStore();
+      if (token === undefined) return jar;
+      // Imported here, not in the factory: lib/auth/cookies imports next/headers itself.
+      const { SESSION_COOKIE: session } = await import("@/lib/auth/cookies");
+      return { ...jar, get: (name: string) => (name === session ? { name, value: token } : jar.get(name)) };
+    },
+  };
+});
 vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
 vi.mock("next/cache", async () => (await import("@/tests/helpers/next-request")).nextCache(request));
@@ -41,6 +57,20 @@ function form(fields: Record<string, string | string[] | File>): FormData {
 async function signedInAs(accountId: string) {
   await createSession({ key: hashToken("token-1"), accountId, createdAt: NOW, expiresAt: IN_30_DAYS });
   request.cookies.set(SESSION_COOKIE, "token-1");
+}
+
+/** A stored session for `accountId` in a second browser, whose posts go through fromBrowser(token, …). */
+async function sessionIn(token: string, accountId: string) {
+  await createSession({ key: hashToken(token), accountId, createdAt: NOW, expiresAt: IN_30_DAYS });
+}
+
+/** Runs `run` as a post (or a read) from the browser holding `token`. */
+const fromBrowser = <T,>(token: string, run: () => Promise<T>): Promise<T> => browser.run(token, run);
+
+/** The shop's photo is stored with the shop's use (or is a placeholder, or none), and the shop keeps no other. */
+async function expectOnlyTheShopsPhoto(accountId: string) {
+  const src = (await getShopOf(accountId))?.shop.image?.src ?? null;
+  expect(await photoSrcsOf(accountId, "shop")).toEqual(new Set(src && photoIdOf(src) ? [src] : []));
 }
 
 const photoFile = (bytes: Uint8Array<ArrayBuffer>, name = "shop.png") => new File([bytes], name, { type: "image/png" });
@@ -107,6 +137,14 @@ describe("the onboarding wizard (selling spec 2.6, plan decision 15)", () => {
     expect(sampleStore().photos.size).toBe(0);
   });
 
+  it("keeps one draft photo when step 3 is sent twice at once with a file (a double click)", async () => {
+    await signedInAs("acc-student");
+    const step3 = () => form({ step: "3", photo: photoFile(pngBytes()) });
+    await Promise.all([redirectOf(() => saveOnboardingStep(step3())), redirectOf(() => saveOnboardingStep(step3()))]);
+    const src = (await getOnboardingDraft("acc-student"))!.photoSrc!;
+    expect(await photoSrcsOf("acc-student", "draft")).toEqual(new Set([src]));
+  });
+
   it("asks for spots on the campus it showed, and comes back with another campus's spots", async () => {
     await signedInAs("acc-student");
     const step4 = (fields: Record<string, string | string[]>) =>
@@ -152,6 +190,20 @@ describe("the onboarding wizard (selling spec 2.6, plan decision 15)", () => {
     expect(await redirectOf(() => sendForApproval(form({})))).toBe("/sell/onboarding?step=5");
     expect((await readFormState(onboardingForm(5)))?.errors).toEqual(["guidelines-missing"]);
     expect(await getShopOf("acc-student")).toBeNull();
+  });
+
+  it("lets only one of two students sending at once take a name on a campus; the other goes back to step 1", async () => {
+    await sessionIn("token-m", "acc-mentor");
+    await sessionIn("token-a", "acc-admin");
+    await saveOnboardingDraft({ ...finishedDraft(), accountId: "acc-mentor" });
+    await saveOnboardingDraft({ ...finishedDraft(), accountId: "acc-admin" });
+    const send = (token: string) => fromBrowser(token, () => redirectOf(() => sendForApproval(form({ guidelines: "yes" }))));
+    const [mentor, admin] = await Promise.all([send("token-m"), send("token-a")]);
+    expect([mentor, admin].sort()).toEqual(["/sell", "/sell/onboarding"]);
+    const named = [...sampleStore().sellers.values()].filter((row) => row.name === "Zola's Bakes");
+    expect(named).toHaveLength(1);
+    const loser = named[0].ownerId === "acc-mentor" ? "token-a" : "token-m";
+    expect((await fromBrowser(loser, () => readFormState(onboardingForm(1))))?.errors).toEqual(["name-taken"]);
   });
 
   it("treats a step outside 1 to 5 as step 1", async () => {
@@ -263,6 +315,44 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     expect(request.updatedTags).toEqual(["sellers"]);
   });
 
+  it("lets only one of two shops take a name on a campus when both save it at once", async () => {
+    await sessionIn("token-s", "acc-seller");
+    await sessionIn("token-p", "acc-pending");
+    const hookClub = () => profile({ name: "Hook club" });
+    const [seller, pending] = await Promise.all([
+      fromBrowser("token-s", () => redirectOf(() => saveShopProfile(hookClub()))),
+      fromBrowser("token-p", () => redirectOf(() => saveShopProfile(hookClub()))),
+    ]);
+    expect([seller, pending]).toEqual(["/sell/profile", "/sell/profile"]);
+    const named = [...sampleStore().sellers.values()].filter((row) => row.name === "Hook club");
+    expect(named).toHaveLength(1);
+    const loser = named[0].ownerId === "acc-seller" ? "token-p" : "token-s";
+    expect((await fromBrowser(loser, () => readFormState(PROFILE_FORM)))?.errors).toEqual(["name-taken"]);
+  });
+
+  it("tells a tab drawn before the link changed that the change is spent, saving nothing", async () => {
+    await signedInAs("acc-seller");
+    await redirectOf(() => saveShopProfile(profile({ slug: "gadgets", slugWas: "tech-corner" })));
+    // The other tab still shows tech-corner, and its seller types another link.
+    await redirectOf(() => saveShopProfile(profile({ slug: "gizmos", slugWas: "tech-corner", tagline: "Old tab." })));
+    expect(await readFormState(PROFILE_FORM)).toMatchObject({ errors: ["slug-used"], values: { slug: "gizmos" } });
+    expect((await getShopOf("acc-seller"))?.shop).toMatchObject({ slug: "gadgets", tagline: "Calculators, tested." });
+    // Left as the tab showed it, the link stays as it is now, and the rest saves.
+    await redirectOf(() => saveShopProfile(profile({ slug: "tech-corner", slugWas: "tech-corner", tagline: "Old tab." })));
+    expect((await readFormState(PROFILE_FORM))?.notice).toBe("shop-saved");
+    expect((await getShopOf("acc-seller"))?.shop).toMatchObject({ slug: "gadgets", tagline: "Old tab." });
+  });
+
+  it("checks the link the form was drawn with like any link, ignoring one that isn't", async () => {
+    await signedInAs("acc-seller");
+    // A link that isn't one can't stand for what the form showed: the typed link is a change, made once.
+    await redirectOf(() => saveShopProfile(profile({ slug: "gadgets", slugWas: "Gadgets!" })));
+    expect((await getShopOf("acc-seller"))?.shop).toMatchObject({ slug: "gadgets", slugChanged: true });
+    await redirectOf(() => saveShopProfile(profile({ slug: "gizmos", slugWas: "../gizmos", tagline: "Tampered." })));
+    expect((await readFormState(PROFILE_FORM))?.errors).toEqual(["slug-used"]);
+    expect((await getShopOf("acc-seller"))?.shop.slug).toBe("gadgets");
+  });
+
   it("leaves a waiting shop's link alone when one is posted: it follows the name until approval", async () => {
     await signedInAs("acc-pending");
     const waiting = profile({ name: "Crochet corner", campus: "pretoria", pointsCampus: "pretoria" });
@@ -314,6 +404,38 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     await redirectOf(() => saveShopProfile(profile({ removePhoto: "yes" })));
     expect((await getShopOf("acc-seller"))?.shop.image).toBeNull();
     expect(await getPhoto(photoIdOf(src)!)).toBeNull();
+  });
+
+  for (const order of ["the removal first", "the edit first"]) {
+    it(`never leaves the shop on a deleted photo when a removal and an edit cross (${order})`, async () => {
+      await signedInAs("acc-seller");
+      await redirectOf(() => saveShopProfile(profile({ photo: photoFile(pngBytes()) })));
+      const remove = () => redirectOf(() => saveShopProfile(profile({ removePhoto: "yes", tagline: "Removed." })));
+      const edit = () => redirectOf(() => saveShopProfile(profile({ tagline: "Edited." })));
+      await Promise.all(order === "the removal first" ? [remove(), edit()] : [edit(), remove()]);
+      expect((await getShopOf("acc-seller"))?.shop.image).toBeNull();
+      await expectOnlyTheShopsPhoto("acc-seller");
+    });
+  }
+
+  it("keeps one shop photo when a new photo is sent twice at once (a double click)", async () => {
+    await signedInAs("acc-seller");
+    const upload = () => profile({ photo: photoFile(pngBytes()) });
+    await Promise.all([redirectOf(() => saveShopProfile(upload())), redirectOf(() => saveShopProfile(upload()))]);
+    expect((await getShopOf("acc-seller"))?.shop.image?.src).toMatch(/^\/photos\/ph-/);
+    await expectOnlyTheShopsPhoto("acc-seller");
+  });
+
+  it("takes a new photo over Remove the photo when both are sent, as choosing the file came last", async () => {
+    await signedInAs("acc-seller");
+    await redirectOf(() => saveShopProfile(profile({ photo: photoFile(pngBytes()) })));
+    const old = (await getShopOf("acc-seller"))!.shop.image!.src;
+    await redirectOf(() => saveShopProfile(profile({ removePhoto: "yes", photo: photoFile(pngBytes()) })));
+    const now = (await getShopOf("acc-seller"))?.shop.image?.src;
+    expect(now).toMatch(/^\/photos\/ph-/);
+    expect(now).not.toBe(old);
+    expect(await getPhoto(photoIdOf(old)!)).toBeNull();
+    await expectOnlyTheShopsPhoto("acc-seller");
   });
 
   it("sends a student with no shop to /sell, changing nobody's shop", async () => {

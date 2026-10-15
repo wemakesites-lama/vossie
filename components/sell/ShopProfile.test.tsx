@@ -70,6 +70,11 @@ describe("Edit shop (selling spec 2.11)", () => {
     const slug = screen.getByRole("textbox", { name: "Your shop's link" });
     expect(slug).toHaveValue("tech-corner");
     expect(slug).toHaveAccessibleDescription(/Links to the old address stop working/);
+    // A link is lower case: phones mustn't capitalise or correct it.
+    expect(slug).toHaveAttribute("autocapitalize", "none");
+    expect(slug).toHaveAttribute("spellcheck", "false");
+    // The link the form shows goes with the post, so a change from a tab drawn before another change is caught.
+    expect(document.querySelector('input[type="hidden"][name="slugWas"]')).toHaveValue("tech-corner");
     unmount();
     show({ shop: { ...row("tech-corner"), slugChanged: true } });
     expect(screen.queryByRole("textbox", { name: "Your shop's link" })).toBeNull();

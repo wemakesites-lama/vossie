@@ -17,6 +17,7 @@ import {
   setShopPaused,
   updateShop,
   type ShopDetails,
+  type ShopEdit,
 } from "./shops";
 import { shopStats } from "./shop-stats";
 import { resetSampleStore, sampleStore } from "./store";
@@ -33,9 +34,13 @@ const details: ShopDetails = {
   pickupPointIds: ["pp-midrand-library"],
 };
 
+/** Edit shop's form with the same details, keeping the photo and the link. */
+const edit: ShopEdit = { ...details, image: "keep", slug: null };
+
 const upload = () => ({ type: "image/png" as const, bytes: pngBytes() });
-const applyAs = (accountId: string, overrides: Partial<ShopDetails> = {}) =>
-  createShop(accountId, { ...details, ...overrides }, NOW);
+/** The new shop, or null when nothing was made. */
+const applyAs = async (accountId: string, overrides: Partial<ShopDetails> = {}) =>
+  (await createShop(accountId, { ...details, ...overrides }, NOW))?.shop ?? null;
 
 /** What stage G's approval will do: the shop's link becomes its storefront. */
 function approve(accountId: string): void {
@@ -103,21 +108,21 @@ describe("applying to sell (selling spec 2.6 and 2.7, plan decisions 1 and 16)",
 
 describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () => {
   it("changes the details, and a waiting shop's link follows its name", async () => {
-    const shop = await updateShop(
+    const saved = await updateShop(
       "acc-pending",
-      { ...details, name: "Hook club", campusSlug: "pretoria", pickupPointIds: ["pp-pretoria-library"] },
+      { ...edit, name: "Hook club", campusSlug: "pretoria", pickupPointIds: ["pp-pretoria-library"] },
       NOW,
     );
-    expect(shop).toMatchObject({ slug: "hook-club", name: "Hook club", categorySlug: "food" });
+    expect(saved?.shop).toMatchObject({ slug: "hook-club", name: "Hook club", categorySlug: "food" });
     expect(sampleStore().sellers.has("crochet-corner")).toBe(false);
   });
 
   it("keeps an approved shop's link whatever its name", async () => {
-    expect((await updateShop("acc-seller", { ...details, name: "Gadget corner" }, NOW))?.slug).toBe("tech-corner");
+    expect((await updateShop("acc-seller", { ...edit, name: "Gadget corner" }, NOW))?.shop?.slug).toBe("tech-corner");
   });
 
   it("moves its listings to a new campus, and a pickup to one of its spots, or online when it has none", async () => {
-    const pretoria = { ...details, name: "Tech corner", campusSlug: "pretoria", pickupPointIds: ["pp-pretoria-reception"] };
+    const pretoria = { ...edit, name: "Tech corner", campusSlug: "pretoria", pickupPointIds: ["pp-pretoria-reception"] };
     await updateShop("acc-seller", pretoria, NOW);
     expect(sampleStore().listings.get("l-001")).toMatchObject({
       campusSlug: "pretoria",
@@ -134,10 +139,55 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
 
   it("swaps the shop's photo, deleting the old one", async () => {
     const [first, second] = await storePhotos("acc-seller", [upload(), upload()], NOW);
-    await updateShop("acc-seller", { ...details, image: { src: first, alt: "" } }, NOW);
-    await updateShop("acc-seller", { ...details, image: { src: second, alt: "" } }, NOW);
+    await updateShop("acc-seller", { ...edit, image: { src: first, alt: "" } }, NOW);
+    await updateShop("acc-seller", { ...edit, image: { src: second, alt: "" } }, NOW);
     expect(await getPhoto(photoIdOf(first)!)).toBeNull();
     expect(await photoSrcsOf("acc-seller", "shop")).toEqual(new Set([second]));
+  });
+
+  it("keeps the photo the shop has when the edit saves, not one it had when the edit began", async () => {
+    const [first] = await storePhotos("acc-seller", [upload()], NOW);
+    await updateShop("acc-seller", { ...edit, image: { src: first, alt: "" } }, NOW);
+    await updateShop("acc-seller", { ...edit, image: "remove" }, NOW);
+    expect((await updateShop("acc-seller", { ...edit, tagline: "Kept." }, NOW))?.shop?.image).toBeNull();
+    expect(await photoSrcsOf("acc-seller", "shop")).toEqual(new Set());
+  });
+
+  it("keeps one shop photo when two new ones arrive at once, deleting the one replaced", async () => {
+    const [first, second] = await storePhotos("acc-seller", [upload(), upload()], NOW);
+    await Promise.all([
+      updateShop("acc-seller", { ...edit, image: { src: first, alt: "" } }, NOW),
+      updateShop("acc-seller", { ...edit, image: { src: second, alt: "" } }, NOW),
+    ]);
+    expect((await getShopOf("acc-seller"))?.shop.image?.src).toBe(second);
+    expect(await photoSrcsOf("acc-seller", "shop")).toEqual(new Set([second]));
+  });
+
+  it("refuses a name another shop on the campus has by the time it saves, saving nothing", async () => {
+    const saved = await updateShop("acc-pending", { ...edit, name: "TECH corner!", tagline: "Lost." }, NOW);
+    expect(saved).toEqual({ shop: null, error: "name-taken" });
+    expect((await getShopOf("acc-pending"))?.shop).toMatchObject({ name: "Crochet corner", slug: "crochet-corner" });
+    expect(await createShop("acc-student", { ...details, name: "Tech Corner" }, NOW)).toEqual({
+      shop: null,
+      error: "name-taken",
+    });
+    expect(await getShopOf("acc-student")).toBeNull();
+  });
+
+  it("changes the link with the rest of the edit, or saves nothing when the link can't change", async () => {
+    const saved = await updateShop("acc-seller", { ...edit, name: "Tech corner", tagline: "New.", slug: "gadgets" }, NOW);
+    expect(saved?.shop).toMatchObject({ slug: "gadgets", slugChanged: true, tagline: "New." });
+    expect(sampleStore().listings.get("l-001")?.sellerSlug).toBe("gadgets");
+    // Asked again (a double click), the link is already the one asked for: the rest saves.
+    const again = await updateShop("acc-seller", { ...edit, name: "Tech corner", tagline: "Again.", slug: "gadgets" }, NOW);
+    expect(again?.shop).toMatchObject({ slug: "gadgets", tagline: "Again." });
+    const spent = await updateShop("acc-seller", { ...edit, name: "Tech corner", tagline: "No.", slug: "gizmos" }, NOW);
+    expect(spent).toEqual({ shop: null, error: "slug-used" });
+    resetSampleStore();
+    const taken = await updateShop("acc-seller", { ...edit, name: "Tech corner", tagline: "No.", slug: "hair-studio" }, NOW);
+    expect(taken).toEqual({ shop: null, error: "slug-taken" });
+    expect((await getShopOf("acc-seller"))?.shop).toMatchObject({ slug: "tech-corner", slugChanged: false });
+    expect((await getShopOf("acc-seller"))?.shop.tagline).not.toBe("No.");
   });
 
   it("changes an approved shop's link once, and its listings, profile, conversations and reports go with it", async () => {
@@ -188,17 +238,19 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
   it("edits the shop at its new link when the link changes while the edit is on its way", async () => {
     const [, edited] = await Promise.all([
       changeShopSlug("acc-seller", "gadgets", NOW),
-      updateShop("acc-seller", { ...details, name: "Tech corner", tagline: "At the new link." }, NOW),
+      updateShop("acc-seller", { ...edit, name: "Tech corner", tagline: "At the new link." }, NOW),
     ]);
-    expect(edited).toMatchObject({ slug: "gadgets", tagline: "At the new link." });
+    expect(edited?.shop).toMatchObject({ slug: "gadgets", tagline: "At the new link." });
     expect(sampleStore().sellers.get("gadgets")?.tagline).toBe("At the new link.");
   });
 
   it("retires a changed link for good, so no other shop gets it and old links 404", async () => {
     await changeShopSlug("acc-seller", "gadgets", NOW);
     expect(await isSlugTaken("tech-corner")).toBe(true);
-    expect((await applyAs("acc-student", { name: "Tech corner" }))?.slug).toBe("tech-corner-2");
-    expect((await updateShop("acc-pending", { ...details, name: "Tech corner" }, NOW))?.slug).toBe("tech-corner-3");
+    // On other campuses, as "Tech corner" is still taken at Midrand.
+    expect((await applyAs("acc-student", { name: "Tech corner", campusSlug: "pretoria" }))?.slug).toBe("tech-corner-2");
+    const elsewhere = { ...edit, name: "Tech corner", campusSlug: "bedfordview", pickupPointIds: [] };
+    expect((await updateShop("acc-pending", elsewhere, NOW))?.shop?.slug).toBe("tech-corner-3");
     approve("acc-student");
     expect(await changeShopSlug("acc-student", "tech-corner", NOW)).toBe("taken");
     expect(sampleStore().sellers.has("tech-corner")).toBe(false);
