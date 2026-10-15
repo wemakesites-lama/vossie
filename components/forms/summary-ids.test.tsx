@@ -9,11 +9,15 @@ import { replyForm, ThreadView } from "@/components/messages/ThreadView";
 import { ListingFormView } from "@/components/sell/ListingFormView";
 import { OnboardingView } from "@/components/sell/OnboardingView";
 import { ShopProfileView } from "@/components/sell/ShopProfileView";
+import { AdminReport } from "@/components/staff/AdminReport";
+import { ReportConfirm } from "@/components/staff/ReportConfirm";
 import { SellerConfirm } from "@/components/staff/SellerConfirm";
 import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
 import { pickupPoints } from "@/data/fixtures/pickup-points";
 import { sampleSellerRows } from "@/data/fixtures/shops";
+import { createReport } from "@/lib/data/reports";
+import { getReport } from "@/lib/data/staff-reports";
 import { getShopForReview } from "@/lib/data/staff-shops";
 import { composerSubject } from "@/lib/messaging/subjects";
 import type { Account } from "@/lib/types";
@@ -45,7 +49,13 @@ vi.mock("@/lib/selling/shop-actions", () => ({
   sendForApproval: async () => {},
 }));
 vi.mock("@/lib/selling/listing-actions", () => ({ saveListingForm: async () => {} }));
-vi.mock("@/lib/staff/admin-actions", () => ({ declineSeller: async () => {}, pauseSeller: async () => {} }));
+vi.mock("@/lib/staff/admin-actions", () => ({
+  declineSeller: async () => {},
+  dismissReport: async () => {},
+  hideReportedListing: async () => {},
+  pauseReportedShop: async () => {},
+  pauseSeller: async () => {},
+}));
 
 const account: Account = {
   id: "acc-student",
@@ -157,6 +167,15 @@ describe("error summary ids (accounts spec 6)", () => {
     );
     const crochet = (await getShopForReview("crochet-corner"))!;
     const tech = (await getShopForReview("tech-corner"))!;
+    const reportId = await createReport({
+      reporterId: "acc-student",
+      target: { kind: "listing", id: "l-001" },
+      targetTitle: "Casio fx-991ZA Plus calculator",
+      reason: "scam",
+      detail: "",
+      now: new Date("2026-10-14T08:42:00.000Z"),
+    });
+    const report = (await getReport(reportId))!;
     render(
       <>
         <EmailStep next={null} email="" consented={false} errors={oops} samples={null} />
@@ -193,10 +212,13 @@ describe("error summary ids (accounts spec 6)", () => {
         {listingForm("l-001")}
         <SellerConfirm kind="decline" review={crochet} reason="" errors={oops} />
         <SellerConfirm kind="pause" review={tech} reason="" errors={oops} />
+        <AdminReport report={report} note="" errors={oops} />
+        <ReportConfirm kind="hide" report={report} reason="" errors={oops} />
+        <ReportConfirm kind="pause" report={report} reason="" errors={oops} />
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(18);
+    expect(summaries).toHaveLength(21);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -218,6 +240,9 @@ describe("error summary ids (accounts spec 6)", () => {
       "edit-l-001-summary",
       "decline-crochet-corner-summary",
       "pause-tech-corner-summary",
+      `dismiss-${reportId}-summary`,
+      `hide-${reportId}-summary`,
+      `report-pause-${reportId}-summary`,
     ]);
   });
 });
