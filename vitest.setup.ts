@@ -42,8 +42,21 @@ vi.mock("next/image", async () => {
         className: props.className,
         loading: props.loading,
       }),
+    // The listing form's thumbnails (selling plan decision 13): the real one points at /_next/image; here, at the photo.
+    getImageProps: (props: { src: string; alt: string }) => ({ props: { src: props.src, alt: props.alt } }),
   };
 });
+
+// The data layer's "use cache" functions tag what they return (lib/data/tags.ts), and cacheTag needs Next's runtime,
+// so in unit tests tagging does nothing. Server Action tests stand next/cache in with tests/helpers/next-request.ts,
+// which records what they expire (selling plan, Task 4).
+vi.mock("next/cache", () => ({
+  cacheTag: () => {},
+  cacheLife: () => {},
+  updateTag: () => {},
+  revalidateTag: () => {},
+  refresh: () => {},
+}));
 
 // --- jsdom gaps ------------------------------------------------------------
 

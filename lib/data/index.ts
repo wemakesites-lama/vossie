@@ -4,10 +4,8 @@ import { categories } from "@/data/fixtures/categories";
 import { collections } from "@/data/fixtures/collections";
 import { heroSlides } from "@/data/fixtures/hero";
 import { hubBanner, hubPosts } from "@/data/fixtures/hub";
-import { listings } from "@/data/fixtures/listings";
 import { pickupPoints } from "@/data/fixtures/pickup-points";
 import { requests } from "@/data/fixtures/requests";
-import { sellers } from "@/data/fixtures/sellers";
 import { trendingSearches } from "@/data/fixtures/trending";
 import { findListings } from "@/lib/browse/results";
 import { ALL_CAMPUSES } from "@/lib/campus";
@@ -36,9 +34,20 @@ import type {
   Seller,
   TrendingSearches,
 } from "@/lib/types";
+import {
+  listedListings,
+  liveSellerRows,
+  publicListing,
+  publicListingIds,
+  sellerFor,
+  storefrontRow,
+  toSeller,
+} from "./catalog";
+import { tagListings, tagSellers } from "./tags";
 
-// Sample data for this stage (spec section 13). Switching to Supabase changes only this file:
-// keep the signatures, query the tables, and give each function cacheLife() and cacheTag().
+// The data layer (spec section 13). Listings and sellers come from the sample store, through lib/data/catalog.ts,
+// tagged so a write shows on the next request (selling spec 2.1); the rest is still read from the fixtures. Switching
+// to Supabase changes only this file and the catalog: keep the signatures, query the tables, keep the tags.
 
 export async function getCampuses(): Promise<readonly Campus[]> {
   "use cache";
@@ -70,11 +79,6 @@ function campusFirst<T extends { campusSlug: string }>(items: readonly T[], camp
   return [...own, ...others].slice(0, limit);
 }
 
-/** Listings people can buy or book. Paused and sold listings never appear in lists (browse and listing spec 5.5). */
-function available(items: readonly Listing[]): Listing[] {
-  return items.filter((listing) => listing.availability === "available");
-}
-
 /** Newest first: ISO times in UTC sort as text. */
 function newestFirst(a: Pick<Listing, "createdAt">, b: Pick<Listing, "createdAt">): number {
   return b.createdAt.localeCompare(a.createdAt);
@@ -104,9 +108,10 @@ const COLLECTION_LIMIT = 48;
  */
 export async function getCollectionListings(slug: string): Promise<readonly Listing[]> {
   "use cache";
+  tagListings();
   const collection = collections.find((item) => item.slug === slug);
   if (!collection) return [];
-  return available(listings)
+  return listedListings()
     .filter((listing) => matchesRule(listing, collection.rule))
     .sort(newestFirst)
     .slice(0, COLLECTION_LIMIT);
@@ -115,7 +120,8 @@ export async function getCollectionListings(slug: string): Promise<readonly List
 /** The newest listings at one campus, or at every campus for "all" (spec 7.8). */
 export async function getJustListed({ campus, limit }: CampusQuery): Promise<readonly Listing[]> {
   "use cache";
-  return available(listings)
+  tagListings();
+  return listedListings()
     .filter((listing) => campus === ALL_CAMPUSES || listing.campusSlug === campus)
     .sort(newestFirst)
     .slice(0, limit);
@@ -124,7 +130,9 @@ export async function getJustListed({ campus, limit }: CampusQuery): Promise<rea
 /** Today's featured sellers (spec 7.10). `day` is the SAST date, so the draw changes at midnight in South Africa. */
 export async function getFeatured({ campus, day }: { campus: CampusChoice; day: string }): Promise<readonly Seller[]> {
   "use cache";
-  return drawFeatured(sellers, campus, day);
+  tagSellers();
+  // Only open shops take part (plan decision 2). Stage G adds pins, the week's break and "something listed".
+  return drawFeatured(liveSellerRows().map(toSeller), campus, day);
 }
 
 /** Open requests only: closed ones never appear in lists (community spec 4.3). */
@@ -172,7 +180,8 @@ export async function getRelatedListings({
   limit: number;
 }): Promise<readonly Listing[]> {
   "use cache";
-  const sameCategory = available(listings)
+  tagListings();
+  const sameCategory = listedListings()
     .filter((listing) => listing.categorySlug === categorySlug)
     .sort(newestFirst);
   return campusFirst(sameCategory, campusSlug, limit);
@@ -181,7 +190,8 @@ export async function getRelatedListings({
 /** Free & swaps (spec 7.12): the free and swap-only listings, the visitor's campus first. */
 export async function getFreeAndSwaps({ campus, limit }: CampusQuery): Promise<readonly FreeSwapItem[]> {
   "use cache";
-  const items = available(listings)
+  tagListings();
+  const items = listedListings()
     .filter((listing) => listing.priceZar === 0 || listing.payMode === "swap")
     .sort(newestFirst)
     .map(
@@ -245,7 +255,11 @@ export async function getHubPostIds(): Promise<readonly string[]> {
 /** The Hub's Verified sellers (community spec 5.1), A to Z by name so no one is favoured (plan decision 11). */
 export async function getVerifiedSellers(): Promise<readonly Seller[]> {
   "use cache";
-  return sellers.filter((seller) => seller.verified).sort((a, b) => a.name.localeCompare(b.name));
+  tagSellers();
+  return liveSellerRows()
+    .filter((row) => row.verified)
+    .map(toSeller)
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function getHubBanner(): Promise<HubBanner> {
@@ -256,9 +270,10 @@ export async function getHubBanner(): Promise<HubBanner> {
 /** Everything a listing page needs (browse and listing spec 6.3), for any listing, paused and sold ones included. */
 export async function getListingDetail(id: string): Promise<ListingDetail | null> {
   "use cache";
-  const listing = listings.find((item) => item.id === id);
+  tagListings();
+  const listing = publicListing(id);
   if (!listing) return null;
-  const seller = sellers.find((item) => item.slug === listing.sellerSlug);
+  const seller = sellerFor(listing.sellerSlug);
   const category = categories.find((item) => item.slug === listing.categorySlug);
   const campus = campuses.find((item) => item.slug === listing.campusSlug);
   if (!seller || !category || !campus) return null;
@@ -276,7 +291,8 @@ export async function getMoreFrom(
   limit: number,
 ): Promise<MoreFrom> {
   "use cache";
-  const others = available(listings)
+  tagListings();
+  const others = listedListings()
     .filter((item) => item.id !== listing.id)
     .sort(newestFirst);
   const fromSeller = others.filter((item) => item.sellerSlug === listing.sellerSlug);
@@ -298,31 +314,43 @@ export async function getPickupPoints(): Promise<readonly PickupPoint[]> {
  */
 export async function searchListings(query: SearchQuery): Promise<SearchResult> {
   "use cache";
-  return findListings(listings, query, {
-    sellers: new Map(sellers.map((seller) => [seller.slug, seller.name])),
+  tagListings();
+  return findListings(listedListings(), query, {
+    sellers: new Map(liveSellerRows().map((row) => [row.slug, row.name])),
     categories: new Map(categories.map((category) => [category.slug, category.name])),
   });
 }
 
+/**
+ * Every listing with a page (plan decision 2): drafts and waiting shops' listings have none. For prerendering and the
+ * sitemap.
+ */
 export async function getListingIds(): Promise<readonly string[]> {
   "use cache";
-  return listings.map((listing) => listing.id);
+  tagListings();
+  return publicListingIds();
 }
 
+/** A storefront's seller: an approved or paused shop (plan decision 2). */
 export async function getSeller(slug: string): Promise<Seller | null> {
   "use cache";
-  return sellers.find((seller) => seller.slug === slug) ?? null;
+  tagSellers();
+  const row = storefrontRow(slug);
+  return row ? toSeller(row) : null;
 }
 
+/** Open shops' slugs, for prerendering and the sitemap. A paused shop's storefront renders on its first request. */
 export async function getSellerSlugs(): Promise<readonly string[]> {
   "use cache";
-  return sellers.map((seller) => seller.slug);
+  tagSellers();
+  return liveSellerRows().map((row) => row.slug);
 }
 
 /** A storefront's listings (shopping spec 4.1): the seller's available listings, newest first. */
 export async function getSellerListings(slug: string): Promise<readonly Listing[]> {
   "use cache";
-  return available(listings)
+  tagListings();
+  return listedListings()
     .filter((listing) => listing.sellerSlug === slug)
     .sort(newestFirst);
 }
@@ -334,6 +362,6 @@ export async function getSellerListings(slug: string): Promise<readonly Listing[
  */
 export async function getListingsByIds(ids: readonly string[]): Promise<readonly Listing[]> {
   "use cache";
-  const byId = new Map(listings.map((listing) => [listing.id, listing]));
-  return ids.flatMap((id) => byId.get(id) ?? []);
+  tagListings();
+  return ids.flatMap((id) => publicListing(id) ?? []);
 }

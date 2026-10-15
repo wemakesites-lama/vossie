@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getCollectionListings } from "./index";
+import { resetSampleStore } from "./store";
 
 // No sample collection comes near 48 listings, so this swaps in 50 available Res & living listings at R100 to test the
 // cut. The factory loads makeListing with import() because vi.mock is hoisted above this file's imports. l-01 is the
@@ -15,6 +16,12 @@ vi.mock("@/data/fixtures/listings", async () => {
     }),
   );
   return { listings };
+});
+
+// The store seeds from the fixtures, so a fresh store here seeds from the mocked listings (selling plan decision 7).
+// They're all Tech corner's (makeListing's default seller), whose shop is open.
+beforeEach(() => {
+  resetSampleStore();
 });
 
 describe("getCollectionListings limit (shopping spec 6.2)", () => {
