@@ -85,7 +85,7 @@ async function nothingChanged(path: string, now: Date): Promise<never> {
 /** Tells a shop's owner about the Hub's decision (plan decision 7). A sample shop has no owner to tell. */
 async function tellOwner(
   decision: ShopDecision,
-  what: "declined" | "paused" | "resumed" | "verified" | "unverified",
+  what: "declined" | "paused" | "resumed" | "lifted" | "verified" | "unverified",
   now: Date,
 ): Promise<void> {
   if (!decision.ownerId) return;
@@ -235,7 +235,8 @@ export async function resumeSeller(formData: FormData): Promise<void> {
     subjectId: decision.ownerId,
     now,
   });
-  await tellOwner(decision, "resumed", now);
+  // The seller's own pause stays under the Hub's, so buyers still can't see the shop.
+  await tellOwner(decision, decision.stillPausedBySeller ? "lifted" : "resumed", now);
   sellersChanged();
   await leaveNotice("resumed", now);
   done(path);

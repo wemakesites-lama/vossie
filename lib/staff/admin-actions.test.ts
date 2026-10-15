@@ -162,6 +162,18 @@ describe("sellers (staff tools spec 2.3)", () => {
     ]);
   });
 
+  it("says the shop is still paused when the Hub lifts its pause over a seller's own", async () => {
+    await asAdmin();
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, { status: "paused", pausedBy: "seller" });
+    await redirectOf(() => pauseSeller(form({ shop: "tech-corner", reason: "Reported twice." })));
+    vi.advanceTimersByTime(1000);
+    await redirectOf(() => resumeSeller(form({ shop: "tech-corner" })));
+    expect(sampleStore().sellerProfiles.get("acc-seller")).toMatchObject({ status: "paused", pausedBy: "seller" });
+    expect((await newest("acc-seller")).text).toBe(
+      "The Hub lifted its pause on Tech corner. It's still paused as you set it: resume it from Sell when you're ready.",
+    );
+  });
+
   it("assigns a mentor, or none, only from the accounts with the mentor role", async () => {
     await asAdmin();
     await redirectOf(() => assignMentor(form({ shop: "tech-corner", mentor: "" })));

@@ -172,7 +172,7 @@ export async function staffPauseShop(slug: string, reason: string): Promise<Shop
 }
 
 /** The Hub's Resume (spec 2.3): only a pause the Hub made (plan decision 3). */
-export async function staffResumeShop(slug: string): Promise<ShopDecision | null> {
+export async function staffResumeShop(slug: string): Promise<(ShopDecision & { stillPausedBySeller: boolean }) | null> {
   const shop = owned(slug);
   if (!shop || shop.profile.status !== "paused" || shop.profile.pausedBy !== "staff") return null;
   const sellerPausedToo = shop.profile.sellerPausedToo === true;
@@ -182,7 +182,7 @@ export async function staffResumeShop(slug: string): Promise<ShopDecision | null
       ? { status: "paused", pausedBy: "seller", staffReason: null, sellerPausedToo: false }
       : { status: "approved", pausedBy: null, staffReason: null, sellerPausedToo: false },
   );
-  return decided(shop.row);
+  return { ...decided(shop.row), stillPausedBySeller: sellerPausedToo };
 }
 
 /** The accounts with the mentor role, by first name, for the seller page's choice (plan decision 15). */

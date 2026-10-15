@@ -137,7 +137,7 @@ describe("Verified, the Hub's pause and mentors (staff tools spec 2.3 and 2.6, p
     expect(profile).toMatchObject({ status: "paused", pausedBy: "staff", staffReason: "Selling exam answers." });
     expect((await shopStanding("acc-seller"))?.pausedByHub).toBe(true);
     expect(await staffPauseShop("tech-corner", "Again.")).toBeNull();
-    expect(await staffResumeShop("tech-corner")).toMatchObject({ ownerId: "acc-seller" });
+    expect(await staffResumeShop("tech-corner")).toMatchObject({ ownerId: "acc-seller", stillPausedBySeller: false });
     expect(profile).toMatchObject({ status: "approved", pausedBy: null, staffReason: null });
     expect(await staffResumeShop("tech-corner")).toBeNull();
 
@@ -152,7 +152,7 @@ describe("Verified, the Hub's pause and mentors (staff tools spec 2.3 and 2.6, p
     Object.assign(profile, { status: "paused", pausedBy: "seller" });
     await staffPauseShop("tech-corner", "Reported twice.");
     expect(profile).toMatchObject({ status: "paused", pausedBy: "staff", sellerPausedToo: true });
-    await staffResumeShop("tech-corner");
+    expect(await staffResumeShop("tech-corner")).toMatchObject({ stillPausedBySeller: true });
     expect(profile).toMatchObject({ status: "paused", pausedBy: "seller", staffReason: null, sellerPausedToo: false });
     // The seller's own pause is theirs to end again.
     expect(await staffResumeShop("tech-corner")).toBeNull();
