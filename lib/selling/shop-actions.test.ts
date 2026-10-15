@@ -6,7 +6,8 @@ import { getPhoto, photoIdOf } from "@/lib/data/photos";
 import { createSession } from "@/lib/data/sessions";
 import { emptyDraft, getOnboardingDraft, getShopOf, saveOnboardingDraft } from "@/lib/data/shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
-import { ascii, containsText, GPS, pngBytes } from "@/tests/helpers/image-bytes";
+import { PHOTO_MAX_BYTES } from "@/lib/photos/rules";
+import { ascii, containsText, GPS, pngBytes, pngChunk, pngFile } from "@/tests/helpers/image-bytes";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { DASHBOARD_FORM, onboardingForm, PROFILE_FORM } from "./form-state";
 import { pauseShop, resumeShop, saveOnboardingStep, saveShopProfile, sendForApproval } from "./shop-actions";
@@ -153,6 +154,15 @@ describe("the onboarding wizard (selling spec 2.6, plan decision 15)", () => {
     expect(await getShopOf("acc-student")).toBeNull();
   });
 
+  it("treats a step outside 1 to 5 as step 1", async () => {
+    await signedInAs("acc-student");
+    const redirect = await redirectOf(() =>
+      saveOnboardingStep(form({ step: "9", name: "Zola's Bakes", category: "food", about: "Not step 2." })),
+    );
+    expect(redirect).toBe("/sell/onboarding?step=2");
+    expect(await getOnboardingDraft("acc-student")).toMatchObject({ name: "Zola's Bakes", about: "" });
+  });
+
   it("sends anyone with a shop to /sell, and anyone signed out to sign in first", async () => {
     expect(await redirectOf(() => saveOnboardingStep(form({ step: "2", about: "Hi" })))).toBe(
       "/login?next=%2Fsell%2Fonboarding%3Fstep%3D2",
@@ -211,6 +221,89 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     expect((await getShopOf("acc-seller"))?.shop).toMatchObject({ slug: "gadgets", slugChanged: true });
     await redirectOf(() => saveShopProfile(profile({ slug: "gizmos" })));
     expect((await getShopOf("acc-seller"))?.shop.slug).toBe("gadgets");
+  });
+
+  it("takes a link change sent twice at once (a double click) as one change, and saves the rest", async () => {
+    await signedInAs("acc-seller");
+    const twice = () => profile({ slug: "gadgets", tagline: "Tested twice." });
+    await Promise.all([redirectOf(() => saveShopProfile(twice())), redirectOf(() => saveShopProfile(twice()))]);
+    expect((await getShopOf("acc-seller"))?.shop).toMatchObject({ slug: "gadgets", tagline: "Tested twice." });
+    // Both posts saved; neither came back with an error.
+    expect(request.updatedTags).toEqual(["sellers", "sellers"]);
+    expect(await readFormState(PROFILE_FORM)).toMatchObject({ errors: [], notice: "shop-saved" });
+  });
+
+  it("doesn't refuse the shop's own new link to a second post that read the shop before the change", async () => {
+    await signedInAs("acc-seller");
+    // The second post carries a photo, so it reads the shop, then waits on the file while the first changes the link.
+    const first = profile({ slug: "gadgets" });
+    const second = profile({ slug: "gadgets", tagline: "With a photo.", photo: photoFile(pngBytes()) });
+    await Promise.all([redirectOf(() => saveShopProfile(second)), redirectOf(() => saveShopProfile(first))]);
+    const own = await getShopOf("acc-seller");
+    expect(own?.shop.slug).toBe("gadgets");
+    expect(request.updatedTags).toEqual(["sellers", "sellers"]);
+    expect((await readFormState(PROFILE_FORM))?.errors).toEqual([]);
+    expect(own?.shop.image?.src).toMatch(/^\/photos\/ph-/);
+  });
+
+  it("says the one change is spent when two different link changes race", async () => {
+    await signedInAs("acc-seller");
+    // The second post read the shop first, then waits on its photo while the first changes the link.
+    const second = profile({ slug: "gizmos", tagline: "Lost.", photo: photoFile(pngBytes()) });
+    await Promise.all([
+      redirectOf(() => saveShopProfile(second)),
+      redirectOf(() => saveShopProfile(profile({ slug: "gadgets" }))),
+    ]);
+    expect(await readFormState(PROFILE_FORM)).toMatchObject({
+      errors: ["slug-used"],
+      values: { slug: "gizmos", tagline: "Lost." },
+    });
+    expect((await getShopOf("acc-seller"))?.shop).toMatchObject({ slug: "gadgets", slugChanged: true });
+    expect((await getShopOf("acc-seller"))?.shop.tagline).not.toBe("Lost.");
+    expect(request.updatedTags).toEqual(["sellers"]);
+  });
+
+  it("leaves a waiting shop's link alone when one is posted: it follows the name until approval", async () => {
+    await signedInAs("acc-pending");
+    const waiting = profile({ name: "Crochet corner", campus: "pretoria", pointsCampus: "pretoria" });
+    waiting.set("pickupPoint", "pp-pretoria-library");
+    waiting.set("slug", "hooks-and-yarn");
+    expect(await redirectOf(() => saveShopProfile(waiting))).toBe("/sell/profile");
+    expect((await readFormState(PROFILE_FORM))?.notice).toBe("shop-saved");
+    expect((await getShopOf("acc-pending"))?.shop).toMatchObject({ slug: "crochet-corner", slugChanged: false });
+    expect(sampleStore().sellers.has("hooks-and-yarn")).toBe(false);
+  });
+
+  it("lets a paused shop change its link", async () => {
+    await signedInAs("acc-seller");
+    await redirectOf(() => pauseShop());
+    await redirectOf(() => saveShopProfile(profile({ slug: "gadgets" })));
+    expect(await getShopOf("acc-seller")).toMatchObject({ status: "paused", shop: { slug: "gadgets" } });
+  });
+
+  it("refuses a link a shop has left, which buyers may still have saved", async () => {
+    await signedInAs("acc-seller");
+    sampleStore().retiredSlugs.add("old-gadgets");
+    await redirectOf(() => saveShopProfile(profile({ slug: "old-gadgets" })));
+    expect((await readFormState(PROFILE_FORM))?.errors).toEqual(["slug-taken"]);
+    expect((await getShopOf("acc-seller"))?.shop).toMatchObject({ slug: "tech-corner", slugChanged: false });
+  });
+
+  it("refuses an oversized or unreadable shop photo, storing nothing", async () => {
+    await signedInAs("acc-seller");
+    const before = (await getShopOf("acc-seller"))!.shop.image;
+    const big = new File([new Uint8Array(PHOTO_MAX_BYTES + 1)], "big.png", { type: "image/png" });
+    await redirectOf(() => saveShopProfile(profile({ photo: big, tagline: "Big." })));
+    expect((await readFormState(PROFILE_FORM))?.errors).toEqual(["photo-size"]);
+    // A PNG's signature with no image in it.
+    const broken = photoFile(pngFile(pngChunk("IEND", new Uint8Array())), "broken.png");
+    await redirectOf(() => saveShopProfile(profile({ photo: broken, tagline: "Broken." })));
+    expect((await readFormState(PROFILE_FORM))?.errors).toEqual(["photo-unreadable"]);
+    expect(sampleStore().photos.size).toBe(0);
+    expect((await getShopOf("acc-seller"))?.shop).toMatchObject({
+      image: before,
+      tagline: "Calculators, headsets and chargers, tested before you buy.",
+    });
   });
 
   it("swaps the shop photo, or goes back to the category's picture", async () => {

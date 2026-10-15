@@ -21,6 +21,7 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
   ["guidelines-missing", { message: "Tick the box to say you've read the seller guidelines.", field: "guidelines" }],
   ["slug-format", { message: "Use 3 to 40 lower-case letters, numbers and single hyphens.", field: "slug" }],
   ["slug-taken", { message: "Another shop has that link. Try another.", field: "slug" }],
+  ["slug-used", { message: "You've already changed your link once, so it can't change again.", field: "slug" }],
   // A listing, in the form's order. "category-missing" serves a shop too.
   ["kind-missing", { message: "Choose an item or a service.", field: "kind" }],
   ["title-missing", { message: "Give your listing a title.", field: "title" }],

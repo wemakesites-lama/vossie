@@ -14,15 +14,24 @@ import { sampleStore } from "./store";
 
 export type OwnShop = { shop: SellerRow; status: SellerStatus };
 
-/** The account's shop and its status, or null when it has none. */
-export async function getShopOf(accountId: string): Promise<OwnShop | null> {
+/**
+ * The account's shop row itself (not a copy) and its status, read with no await, so a writer that changes the row in
+ * the same synchronous run can't act on a copy another post has made stale (two posts at once, such as a double click).
+ */
+function liveShopOf(accountId: string): { row: SellerRow; status: SellerStatus } | null {
   const store = sampleStore();
   const profile = store.sellerProfiles.get(accountId);
   if (!profile) return null;
   for (const row of store.sellers.values()) {
-    if (row.ownerId === accountId) return { shop: structuredClone(row), status: profile.status };
+    if (row.ownerId === accountId) return { row, status: profile.status };
   }
   return null;
+}
+
+/** The account's shop and its status, or null when it has none. */
+export async function getShopOf(accountId: string): Promise<OwnShop | null> {
+  const own = liveShopOf(accountId);
+  return own ? { shop: structuredClone(own.row), status: own.status } : null;
 }
 
 /** Whether another shop on `campusSlug` has this name (plan decision 16). `exceptSlug` is the shop being edited. */
@@ -133,9 +142,9 @@ export async function createShop(accountId: string, details: ShopDetails, now: D
  */
 export async function updateShop(accountId: string, details: ShopDetails, now: Date): Promise<SellerRow | null> {
   const store = sampleStore();
-  const own = await getShopOf(accountId);
+  const own = liveShopOf(accountId);
   if (!own) return null;
-  const row = store.sellers.get(own.shop.slug)!;
+  const { row } = own;
   const oldPhoto = row.image?.src ?? null;
   row.name = details.name;
   row.tagline = details.tagline;
@@ -169,14 +178,15 @@ export type SlugChange = "changed" | "same" | "used" | "taken";
  * the account has no shop, or its shop is still waiting (its link follows its name).
  */
 export async function changeShopSlug(accountId: string, slug: string, now: Date): Promise<SlugChange | null> {
-  const own = await getShopOf(accountId);
+  const own = liveShopOf(accountId);
   if (!own || own.status === "pending") return null;
-  if (own.shop.slug === slug) return "same";
-  if (own.shop.slugChanged) return "used";
+  const { row } = own;
+  if (row.slug === slug) return "same";
+  if (row.slugChanged) return "used";
   if (slugInUse(slug)) return "taken";
-  moveShop(own.shop.slug, slug);
-  sampleStore().retiredSlugs.add(own.shop.slug);
-  const row = sampleStore().sellers.get(slug)!;
+  const from = row.slug;
+  moveShop(from, slug);
+  sampleStore().retiredSlugs.add(from);
   row.slugChanged = true;
   row.updatedAt = now.toISOString();
   return "changed";

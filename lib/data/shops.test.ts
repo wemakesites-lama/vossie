@@ -169,6 +169,31 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     expect(await changeShopSlug("acc-pending", "lerato", NOW)).toBeNull();
   });
 
+  it("makes one change when two arrive at once: the second finds it made, or the change spent", async () => {
+    const twice = await Promise.all([
+      changeShopSlug("acc-seller", "gadgets", NOW),
+      changeShopSlug("acc-seller", "gadgets", NOW),
+    ]);
+    expect(twice).toEqual(["changed", "same"]);
+    resetSampleStore();
+    const different = await Promise.all([
+      changeShopSlug("acc-seller", "gadgets", NOW),
+      changeShopSlug("acc-seller", "gizmos", NOW),
+    ]);
+    expect(different).toEqual(["changed", "used"]);
+    expect([...sampleStore().sellers.keys()]).toContain("gadgets");
+    expect(sampleStore().sellers.has("gizmos")).toBe(false);
+  });
+
+  it("edits the shop at its new link when the link changes while the edit is on its way", async () => {
+    const [, edited] = await Promise.all([
+      changeShopSlug("acc-seller", "gadgets", NOW),
+      updateShop("acc-seller", { ...details, name: "Tech corner", tagline: "At the new link." }, NOW),
+    ]);
+    expect(edited).toMatchObject({ slug: "gadgets", tagline: "At the new link." });
+    expect(sampleStore().sellers.get("gadgets")?.tagline).toBe("At the new link.");
+  });
+
   it("retires a changed link for good, so no other shop gets it and old links 404", async () => {
     await changeShopSlug("acc-seller", "gadgets", NOW);
     expect(await isSlugTaken("tech-corner")).toBe(true);

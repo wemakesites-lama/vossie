@@ -34,7 +34,7 @@ export async function readUploads(
 
 async function check(file: File, hasRoom: boolean): Promise<Upload | UploadError> {
   if (!hasRoom) return "photo-count";
-  // The size is checked before a byte is read, so an oversized file costs no memory here.
+  // The size is checked before a byte is read, so an oversized file isn't copied or parsed.
   if (file.size > PHOTO_MAX_BYTES) return "photo-size";
   const bytes = new Uint8Array(await file.arrayBuffer());
   const type = photoTypeOf(bytes);

@@ -11,6 +11,7 @@ import {
   createShop,
   emptyDraft,
   getOnboardingDraft,
+  getShopOf,
   isShopNameTaken,
   isSlugTaken,
   saveOnboardingDraft,
@@ -219,6 +220,10 @@ export async function saveShopProfile(formData: FormData): Promise<void> {
   const typedSlug = field(formData, "slug").trim().toLowerCase();
   const changeSlug = status !== "pending" && !shop.slugChanged && typedSlug !== "" && typedSlug !== shop.slug;
   const slug = checkSlug(typedSlug);
+  // The shop as it is now, read again after the form: a post sent twice (a double click) may find that the first has
+  // already changed the link, so the shop's own new link isn't "taken", and its name and photo are at the new link.
+  const current = (await getShopOf(account.id))?.shop ?? shop;
+  const linkIsNowOurs = typedSlug === current.slug;
 
   /** Back to the form with its errors and everything typed, having saved nothing. */
   const sendBack = async (problems: string[]): Promise<never> => {
@@ -237,18 +242,28 @@ export async function saveShopProfile(formData: FormData): Promise<void> {
 
   // In the form's order, so the error summary reads top to bottom.
   if (name.error) errors.push(name.error);
-  else if (place.campusSlug && (await isShopNameTaken(name.value, place.campusSlug, shop.slug))) errors.push("name-taken");
+  else if (place.campusSlug && (await isShopNameTaken(name.value, place.campusSlug, current.slug))) {
+    errors.push("name-taken");
+  }
   if (tagline.error) errors.push(tagline.error);
   if (!categoryKnown) errors.push("category-missing");
   if (about.error) errors.push(about.error);
   errors.push(...photo.errors, ...place.errors);
-  if (changeSlug && slug.error) errors.push(slug.error);
-  else if (changeSlug && (await isSlugTaken(slug.value))) errors.push("slug-taken");
+  if (changeSlug && !linkIsNowOurs) {
+    if (current.slugChanged) errors.push("slug-used");
+    else if (slug.error) errors.push(slug.error);
+    else if (await isSlugTaken(slug.value)) errors.push("slug-taken");
+  }
   if (errors.length > 0) await sendBack(errors);
 
-  // The link first: if another post took it since the check above, nothing else has been saved yet.
-  if (changeSlug && (await changeShopSlug(account.id, slug.value, now)) !== "changed") await sendBack(["slug-taken"]);
-  let image = removePhoto ? null : shop.image;
+  // The link first: if another post took it or spent the one change since the check above, nothing else has been
+  // saved yet. "same" means an earlier post (a double click) already made this change, so the rest is saved.
+  if (changeSlug) {
+    const change = await changeShopSlug(account.id, slug.value, now);
+    if (change === "used") await sendBack(["slug-used"]);
+    else if (change !== "changed" && change !== "same") await sendBack(["slug-taken"]);
+  }
+  let image = removePhoto ? null : current.image;
   if (photo.upload) {
     const [src] = await storePhotos(account.id, [photo.upload], now);
     image = { src, alt: "" };
