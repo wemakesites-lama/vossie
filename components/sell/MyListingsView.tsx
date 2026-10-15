@@ -73,8 +73,8 @@ export function MyListingsView({ tab, rows, waiting, notice, noticeListing }: My
         </ul>
       </nav>
 
-      <section aria-labelledby="sell-list-title" className="sell-section">
-        <h2 id="sell-list-title" className="sr-only">
+      <section aria-labelledby={`sell-list-${tab}-title`} className="sell-section">
+        <h2 id={`sell-list-${tab}-title`} className="sr-only">
           {open.label}
         </h2>
         {shown.length === 0 ? (
