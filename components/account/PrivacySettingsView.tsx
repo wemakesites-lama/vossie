@@ -48,8 +48,10 @@ export function PrivacySettingsView({ consent, deleteErrors, reports }: PrivacyS
         </h2>
         <p>
           A file of what Vossie holds about you: your account, your consent, when you signed in, your conversations,
-          your reports and your notifications. If you sell, it holds your shop and your listings too, with each
-          photo&apos;s address so you can download it.
+          your reports and your notifications. If you sell, it holds your shop and your listings too, and the address
+          of each photo you uploaded on this site (it starts with /photos/), so you can open and save your photos before
+          you delete your account. It doesn&apos;t yet hold a shop you&apos;re still setting up and haven&apos;t sent to
+          the Hub.
         </p>
         {/* A file from a route handler, not a page, so a plain link. */}
         <p>

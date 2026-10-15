@@ -40,8 +40,9 @@ const SECTIONS: readonly InfoSection[] = [
           Vossie is still a preview. If you sign in, the server keeps your account, your sign-ins, your consent, your
           messages, your reports, your notifications and, if you sell, your shop, your listings and their photos in its
           memory only, so they are wiped whenever it restarts, and no email is sent (the sign-in code shows on the
-          screen). Apart from that, a few small things are kept on your own device, so the site can remember your
-          choices.
+          screen). The one exception: so pages load quickly, the server saves a copy of each public page it shows,
+          such as a listing or a shop&apos;s page, and a copy can outlast a restart (see How long we keep it). Apart
+          from that, a few small things are kept on your own device, so the site can remember your choices.
         </p>
         <h3>Two first-party cookies</h3>
         <p>
@@ -150,7 +151,7 @@ const SECTIONS: readonly InfoSection[] = [
             photo, campus, pickup points and what you list, shown to buyers; your answers while you set the shop up; and
             your application while the Hub checks it. Your browser makes listing photos smaller when it can, and hidden
             data such as your location is removed from every photo before Vossie keeps it. Allowed under POPIA section
-            11: needed to run your shop.
+            11: needed to run your shop. Only add photos of people who have agreed to it.
           </li>
           <li>
             <strong>If you are in the Hub&apos;s programme: mentors&apos; notes.</strong> Mentors can keep private notes
@@ -185,13 +186,21 @@ const SECTIONS: readonly InfoSection[] = [
           name, for its reply and sales badges.
         </li>
         <li>
+          A photo you add to a form but never save is kept for at least a day, so a failed save doesn&apos;t lose it,
+          and is deleted after that; Vossie keeps no more than your newest 12 of these. Removing a photo and saving, or
+          deleting a listing, deletes that photo straight away.
+        </li>
+        <li>
           A browser that has already shown one of your photos may keep its own copy for up to a year, on that device.
           Vossie can&apos;t reach it there.
         </li>
         <li>
           While Vossie is a preview, messages, reports, notifications, shops, listings and photos live in the
-          server&apos;s memory and go whenever it restarts. Eduvos will set how long they are kept before launch, and
-          this policy will say so.
+          server&apos;s memory and go whenever it restarts. The server also saves copies of public pages, such as a
+          listing or a shop&apos;s page, so they load quickly. When you change or delete something, the old copy stops
+          being shown, but if the server restarts before someone opens that page again, the old copy (without its
+          photos) can stay on the server, and be shown again, until the page is next rebuilt. Eduvos will set how long
+          they are kept before launch, and this policy will say so.
         </li>
         <li>
           Server logs are kept for a short time. The hosting service decides how long, and this policy will say once it

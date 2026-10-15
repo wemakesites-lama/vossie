@@ -106,8 +106,8 @@ const SECTIONS: readonly InfoSection[] = [
         </p>
         <h3>How do I become a seller?</h3>
         <p>
-          Sign in, press Start selling on Sell, and set up your shop in five short steps. The Incubation Hub checks it,
-          and you can prepare listings while it does.
+          Sign in, go to Sell and set up your shop in five short steps. The Incubation Hub checks it, and while it does
+          you can save listings as drafts, ready to publish once your shop is approved.
         </p>
         <h3>What can I do on Vossie today?</h3>
         <p>
