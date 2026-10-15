@@ -160,7 +160,9 @@ export function AccountView({ account, campuses, details, counts }: AccountViewP
   );
 }
 
-/** "Start selling" or "Your shop" (spec 3.2, plan decision 16). Stage F points these at its own pages. */
+/**
+ * "Start selling" or "Your shop" (spec 3.2, plan decision 16). Stage F points them at /sell (selling plan decision 21).
+ */
 function SellingRow({ seller }: { seller: Account["seller"] }) {
   if (!seller) {
     return (
@@ -175,12 +177,8 @@ function SellingRow({ seller }: { seller: Account["seller"] }) {
   if (waiting) detail = "Waiting for the Hub's approval";
   else if (seller.status === "paused") detail = "Paused";
   return (
-    // No prefetch on the storefront: its chunk carries Share and the hearts (decision 53).
-    <Link
-      href={waiting ? "/sell" : `/sellers/${seller.sellerSlug}`}
-      prefetch={waiting ? undefined : false}
-      className="account-row"
-    >
+    // Your shop's pages: the dashboard, or the waiting page (selling plan decision 21).
+    <Link href="/sell" prefetch={false} className="account-row">
       <span>
         Your shop
         {detail && (
