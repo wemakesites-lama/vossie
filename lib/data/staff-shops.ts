@@ -1,5 +1,5 @@
 import type { ListingState } from "@/lib/types";
-import { listedListings, shopStatus } from "./catalog";
+import { hubPaused, listedListings, shopStatus } from "./catalog";
 import type { ListingRow, SellerProfileRow, SellerRow } from "./rows";
 import { sampleStore } from "./store";
 
@@ -156,10 +156,10 @@ export async function resendForApproval(accountId: string, now: Date): Promise<b
   return true;
 }
 
-/** Verify, or take Verified away (spec 2.3), on any shop with a storefront, sample shops included. */
+/** Verify, or take Verified away (spec 2.3), on a shop that isn't waiting or paused by the Hub, sample shops too. */
 export async function setVerified(slug: string, verified: boolean): Promise<ShopDecision | null> {
   const row = sampleStore().sellers.get(slug);
-  if (!row || shopStatus(row) === "pending" || row.verified === verified) return null;
+  if (!row || shopStatus(row) === "pending" || hubPaused(row) || row.verified === verified) return null;
   row.verified = verified;
   return decided(row);
 }

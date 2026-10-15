@@ -54,7 +54,7 @@ export function SaleActions({ thread }: { thread: Thread }) {
       </section>
     );
   }
-  if (status === "replied" && role === "seller" && otherPresent) {
+  if (status === "replied" && role === "seller" && otherPresent && !thread.hubPaused) {
     return (
       <form action={markAsCompleted} className="thread-sale thread-sale-mark">
         <ConversationField id={id} />

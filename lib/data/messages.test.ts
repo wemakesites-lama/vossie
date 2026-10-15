@@ -557,6 +557,18 @@ describe("a shop the Hub has paused (decisions log row 74, staff tools plan amen
     });
   });
 
+  it("can't mark a sale as completed while it lasts, so the buyer isn't contacted", async () => {
+    const { conversationId } = await ayandaAsks();
+    expect(await sendMessage({ conversationId, accountId: "acc-seller", body: "Yes, it is.", now: later(1) })).toBe(
+      "sent",
+    );
+    hubPause();
+    const notes = sampleStore().notifications.size;
+    expect(await markCompleted({ conversationId, accountId: "acc-seller", now: later(2) })).toBe("not-allowed");
+    expect(sampleStore().conversations.get(conversationId)?.status).toBe("replied");
+    expect(sampleStore().notifications.size).toBe(notes);
+  });
+
   it("leaves a seller's own pause as it was: replies still go", async () => {
     const { conversationId } = await ayandaAsks();
     Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, { status: "paused", pausedBy: "seller" });

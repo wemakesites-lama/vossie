@@ -250,7 +250,8 @@ async function saleRow({ conversationId, accountId, now }: SaleChange, side: Sid
  */
 export async function markCompleted(change: SaleChange): Promise<SaleResult> {
   const row = await saleRow(change, "seller", "replied");
-  if (!row || !row.buyerId) return "not-allowed";
+  // A shop the Hub has paused can't reach its buyers, a sale to confirm included (decisions log row 74).
+  if (!row || !row.buyerId || shopHubPaused(row.sellerSlug)) return "not-allowed";
   row.status = "done";
   row.completedAt = change.now.toISOString();
   await notify({
