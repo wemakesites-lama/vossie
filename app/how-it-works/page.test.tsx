@@ -58,6 +58,9 @@ describe("How it works (info and system spec 3)", () => {
       "What can I do on Vossie today?",
     ]);
     expect(within(questions).getByText(/Browse every campus, save listings on your device and share them/)).toBeInTheDocument();
+    // Selling is built (selling plan, Task 15): nothing says it's still coming, or promises how long approval takes.
+    expect(within(questions).getByText(/set up a shop of your own/)).toBeInTheDocument();
+    expect(within(questions).queryByText(/selling opens|Selling arrives|working days/i)).toBeNull();
   });
 
   it("is not a draft", () => {

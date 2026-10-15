@@ -53,8 +53,8 @@ const SECTIONS: readonly InfoSection[] = [
             from your phone.
           </li>
           <li>
-            <strong>Get checked by the Hub.</strong> The Eduvos Incubation Hub looks at every new seller before they can
-            list.
+            <strong>Get checked by the Hub.</strong> The Eduvos Incubation Hub looks at every new shop before its
+            listings go live.
           </li>
           <li>
             <strong>List what you have.</strong> Add clear photos, an honest description and a fair price in rand. Say
@@ -106,13 +106,15 @@ const SECTIONS: readonly InfoSection[] = [
         </p>
         <h3>How do I become a seller?</h3>
         <p>
-          Sign in, then set up your shop from Sell once selling opens. The Incubation Hub checks it, and then you can
-          start listing.
+          Sign in, press Start selling on Sell, and set up your shop in five short steps. The Incubation Hub checks it,
+          and you can prepare listings while it does.
         </p>
         <h3>What can I do on Vossie today?</h3>
         <p>
           Browse every campus, save listings on your device and share them, sign in with your Eduvos email, message
-          sellers and report a problem. Selling arrives in the next stage, so this page describes how it will work.
+          sellers, report a problem and set up a shop of your own. While Vossie is a preview, your account and what you
+          add with it, such as messages, a shop and listings, live in the server&apos;s memory, so they can disappear
+          when the server restarts.
         </p>
       </>
     ),
