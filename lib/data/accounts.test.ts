@@ -145,7 +145,8 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
     const data = await exportAccountData("acc-seller", NOW);
     // Messaging adds three keys (messaging plan decision 15) and selling three (selling plan decision 22 and
     // amendment 9.6), checked below; everything else is compared in full.
-    const { conversations, reports, notifications, shop, listings, onboardingDraft, ...rest } = data!;
+    const { conversations, reports, notifications, shop, listings, onboardingDraft, hubRsvps, slotRequests, ...rest } =
+      data!;
     expect(rest).toEqual({
       exportedAt: NOW.toISOString(),
       account: {
@@ -171,6 +172,8 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
       "shop",
       "listings",
       "onboardingDraft",
+      "hubRsvps",
+      "slotRequests",
     ]);
     expect(conversations.map((row) => [row.with, row.about])).toEqual([
       ["Thandi", "Casio fx-991ZA Plus calculator"],
@@ -185,6 +188,9 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
     ]);
     // The sample seller's shop is sent already, so the wizard has nothing left.
     expect(onboardingDraft).toBeNull();
+    // Sipho has no RSVPs or slot requests (staff tools plan amendment 4).
+    expect(hubRsvps).toEqual([]);
+    expect(slotRequests).toEqual([]);
     const text = JSON.stringify(data);
     expect(text).not.toContain("session-key-1");
     expect(text).not.toContain("acc-seller");
@@ -314,6 +320,13 @@ describe("deleting an account (accounts spec 2.13)", () => {
     expect(store.photos.size).toBe(0);
     // The buyers keep their side of each conversation, with the listing's title (messaging plan decision 14).
     expect(store.conversations.get("conv-s2")?.listingTitle).toBe("Casio fx-991ZA Plus calculator");
+  });
+
+  it("forgets the account in the staff tools: notes about its shop and its slot requests go (staff tools plan, Task 8)", async () => {
+    await deleteAccountData("acc-seller");
+    expect(sampleStore().mentorNotes.size).toBe(0);
+    await deleteAccountData("acc-student");
+    expect(sampleStore().hubBookings.size).toBe(0);
   });
 });
 

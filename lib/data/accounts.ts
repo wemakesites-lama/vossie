@@ -7,6 +7,7 @@ import { exportConversations, forgetAccountInMessaging, unreadCounts, type Conve
 import { exportNotifications, type NotificationExport } from "./notifications";
 import { deleteReportsBy, exportReports, type ReportExport } from "./reports";
 import { exportShop, forgetShopOf, type ListingExport, type OnboardingDraftExport, type ShopExport } from "./shops";
+import { exportStaffToolsData, forgetAccountInStaffTools, type StaffToolsExport } from "./staff-privacy";
 import { sampleStore } from "./store";
 
 // Accounts, their shops and their consent (accounts spec section 4), shaped like the Supabase calls that will replace
@@ -169,6 +170,9 @@ export type AccountExport = {
   listings: ListingExport[];
   /** The onboarding wizard's answers so far, for a student who hasn't sent their application yet. */
   onboardingDraft: OnboardingDraftExport | null;
+  /** The Hub's events the account said it's going to, and its office-hours slot requests (staff tools plan decision 16). */
+  hubRsvps: StaffToolsExport["hubRsvps"];
+  slotRequests: StaffToolsExport["slotRequests"];
 };
 
 /** The account's data, as the export gives it. Null when the account has gone. */
@@ -185,6 +189,7 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
   const conversations = await exportConversations(accountId, now);
   const [reports, notifications] = await Promise.all([exportReports(accountId), exportNotifications(accountId)]);
   const selling = await exportShop(accountId);
+  const hub = await exportStaffToolsData(accountId);
   return {
     exportedAt: now.toISOString(),
     account: {
@@ -203,6 +208,8 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
     shop: selling.shop,
     listings: selling.listings,
     onboardingDraft: selling.onboardingDraft,
+    hubRsvps: hub.hubRsvps,
+    slotRequests: hub.slotRequests,
   };
 }
 
@@ -223,6 +230,8 @@ export async function deleteAccountData(accountId: string): Promise<void> {
   await deleteReportsBy(accountId);
   // Then its shop, the shop's listings, every photo it uploaded and its wizard draft (selling plan decision 22).
   await forgetShopOf(accountId);
+  // Then the staff tools: notes about it, its RSVPs and slot requests go; the audit log forgets it (staff tools plan, Task 8).
+  await forgetAccountInStaffTools(accountId);
   store.accounts.delete(accountId);
   store.sellerProfiles.delete(accountId);
   for (const [id, row] of store.consents) {

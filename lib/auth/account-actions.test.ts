@@ -124,13 +124,19 @@ describe("deleting the account (accounts spec 2.13)", () => {
     await signedInAs("acc-seller");
     await redirectOf(() => deleteAccount(form({ confirm: "yes" })));
     expect(sampleStore().sellers.has("tech-corner")).toBe(false);
-    expect(request.updatedTags).toEqual(["sellers"]);
+    expect(request.updatedTags).toEqual(["sellers", "hub"]);
   });
 
-  it("expires nothing for an account with no shop, as buyers see nothing change", async () => {
+  it("expires only the Hub's tag for an account with no shop, as buyers see no shop change", async () => {
     await signedInAs("acc-student");
     await redirectOf(() => deleteAccount(form({ confirm: "yes" })));
-    expect(request.updatedTags).toEqual([]);
+    expect(request.updatedTags).toEqual(["hub"]);
+  });
+
+  it("expires the Hub's cached posts, since the account's RSVPs went with it (staff tools plan, Task 8)", async () => {
+    await signedInAs("acc-student");
+    await redirectOf(() => deleteAccount(form({ confirm: "yes" })));
+    expect(request.updatedTags).toContain("hub");
   });
 
   it("expires nothing when the box wasn't ticked", async () => {
