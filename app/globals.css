@@ -7358,3 +7358,145 @@
     }
   }
 }
+
+/* --- Messaging: a thread (messaging plan, Task 10, spec 3.3 and section 5) --- */
+@layer components {
+  /* .page and .thread-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
+  .thread-page {
+    padding: 16px 16px 64px;
+  }
+
+  .thread-column {
+    display: grid;
+    gap: 20px;
+    max-width: 48rem;
+  }
+
+  .thread-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .thread-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .thread-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  /* Yours on the right in navy, theirs on the left on panel (spec 3.3). Who and when are words above the text. */
+  .thread-message {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 16px;
+  }
+
+  .thread-message[data-from="you"] {
+    justify-self: end;
+    border-bottom-right-radius: 4px;
+    background: var(--color-navy);
+    color: var(--color-white);
+  }
+
+  .thread-message[data-from="them"] {
+    justify-self: start;
+    border-bottom-left-radius: 4px;
+    background: var(--color-panel);
+    color: var(--color-ink);
+  }
+
+  .thread-meta {
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* Muted on panel is 5.4:1. On navy the meta stays white. */
+  .thread-message[data-from="them"] .thread-meta {
+    color: var(--color-muted);
+  }
+
+  /* Line breaks are kept (spec 2.12); a long word or address wraps instead of widening the page. */
+  .thread-text {
+    margin-top: 2px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  /* The swap offer: a pale callout, navy on pale, in either bubble (spec 3.3). */
+  .thread-swap {
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--color-pale);
+    color: var(--color-navy);
+    overflow-wrap: anywhere;
+  }
+
+  .thread-sale {
+    display: grid;
+    gap: 10px;
+    justify-items: start;
+    padding: 16px 18px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+  }
+
+  .thread-sale-ask {
+    background: var(--color-pale);
+    color: var(--color-navy);
+  }
+
+  .thread-sale-title {
+    font-family: var(--vos-font-display);
+    font-size: 22px;
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  .thread-sale-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .thread-reply {
+    display: grid;
+    gap: 16px;
+    padding-top: 20px;
+    border-top: 1.5px solid var(--color-line);
+  }
+
+  .thread-skeleton-bubble {
+    justify-self: end;
+    width: 70%;
+    height: 72px;
+    border-radius: 16px;
+  }
+
+  .thread-skeleton-theirs {
+    justify-self: start;
+  }
+
+  .thread-skeleton-reply {
+    height: 13rem;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .thread-page {
+      padding-inline: 40px;
+    }
+
+    .thread-message {
+      max-width: 70%;
+    }
+  }
+}

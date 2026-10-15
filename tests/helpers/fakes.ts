@@ -1,5 +1,5 @@
 import type { SignInAttemptRow } from "@/lib/data/rows";
-import type { BrowseQuery, ConversationSummary, Listing, Seller } from "@/lib/types";
+import type { BrowseQuery, ConversationSummary, Listing, Seller, Thread } from "@/lib/types";
 
 /** A listing for tests: an available R100 tech item at Midrand's library. Override what the test is about. */
 export function makeListing(overrides: Partial<Listing> = {}): Listing {
@@ -94,6 +94,39 @@ export function makeSummary(overrides: Partial<ConversationSummary> = {}): Conve
     lastMessageAt: "2026-10-14T10:00:00Z",
     status: "asked",
     unread: false,
+    ...overrides,
+  };
+}
+
+/** A thread for tests: the buyer's view of an Asked conversation with Tech corner about a test listing. */
+export function makeThread(overrides: Partial<Thread> = {}): Thread {
+  return {
+    id: "conv-test",
+    role: "buyer",
+    otherName: "Tech corner",
+    otherPresent: true,
+    shop: {
+      slug: "tech-corner",
+      name: "Tech corner",
+      image: { src: "/placeholders/seller/tech-corner.svg", alt: "The tech corner at work" },
+      campusSlug: "midrand",
+    },
+    listingTitle: "Test listing",
+    listing: makeListing({ id: "l-test", title: "Test listing" }),
+    status: "asked",
+    completedAt: null,
+    confirmedAt: null,
+    confirmedBy: null,
+    messages: [
+      {
+        id: "msg-1",
+        fromViewer: true,
+        author: "You",
+        body: "Is it still available?",
+        swapOffer: null,
+        sentAt: "2026-10-14T10:00:00Z",
+      },
+    ],
     ...overrides,
   };
 }
