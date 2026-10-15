@@ -47,3 +47,15 @@ export async function shopStats(sellerSlug: string, now: Date): Promise<ShopStat
     record: counts(rows, now.getTime() - RECORD_MS, Number.NEGATIVE_INFINITY, now),
   };
 }
+
+/**
+ * A shop's enquiries and sales over the last `days` days: the mentor dashboard's 14 (staff tools plan decision 15).
+ * It reads the same rows as shopStats, so a conversation whose owner has gone counts for no shop (amendment 11).
+ */
+export async function recentCounts(sellerSlug: string, days: number, now: Date): Promise<EnquiryCounts> {
+  const rows = [...sampleStore().conversations.values()].filter(
+    (row) => row.sellerSlug === sellerSlug && !row.sellerGone,
+  );
+  const since = now.getTime() - days * DAY_MS;
+  return counts(rows, since, since, now);
+}
