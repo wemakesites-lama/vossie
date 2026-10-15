@@ -5207,6 +5207,10 @@
   .seller-message {
     flex: 1;
     min-height: 48px;
+    /* Message seller and the owner's Edit shop (about 45px narrower) take the same room from the tablet step, where the
+       buttons are as wide as their words, so Share doesn't move when the owner's link streams in (Task 17). It's a
+       little wider than Message seller's words in either font. */
+    min-width: 11.5rem;
   }
 
   .seller-share {
@@ -7897,7 +7901,9 @@
     border-top: 1.5px solid var(--color-line);
   }
 
-  /* While /sell streams in: about the pitch's height, so the footer doesn't jump. Task 17 checks it. */
+  /* While /sell streams in: about the pitch's height. Task 17 checked it: the footer is below the first screen both
+     before and after at 390 and 1440, so it doesn't move (the pitch is 1,065px high at 390, the dashboard 1,117px,
+     the waiting page 756px, against this skeleton's 784px). */
   .sell-skeleton-head {
     height: 13rem;
   }
@@ -8222,5 +8228,41 @@
     color: var(--color-ink);
     font-weight: 600;
     overflow-wrap: anywhere;
+  }
+}
+
+/* --- Selling: layout shift and focus (selling plan, Task 17, amendments 10.8 and 13.9) --- */
+@layer components {
+  /* Delete listing's confirmation while it streams in: the height it measured on a production build (a four-line
+     warning on a phone, 16rem from the tablet step), so the footer doesn't move when it arrives. */
+  .sell-skeleton-delete {
+    height: 17.25rem;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .sell-skeleton-delete {
+      height: 16rem;
+    }
+  }
+
+  /* An error summary's link jumps to the field, and the field's label, hint and error sit above it. The page-wide
+     scroll-margin (just the sticky header) left the label under the header: off the top of a phone's screen, behind
+     the crest on a desktop. A field that shows an error gets room for them as well: up to about 11rem on a phone,
+     where hints wrap most, and 8rem from the tablet step, never more than 30% of a short screen. A radio or a box
+     inside a group is a field here too. */
+  .form-field:has(.form-error) :is(input, select, textarea) {
+    scroll-margin-top: calc(72px + min(11rem, 30svh));
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .form-field:has(.form-error) :is(input, select, textarea) {
+      scroll-margin-top: calc(86px + min(8rem, 30svh));
+    }
+  }
+
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .form-field:has(.form-error) :is(input, select, textarea) {
+      scroll-margin-top: calc(130px + min(8rem, 30svh));
+    }
   }
 }

@@ -18,8 +18,10 @@ export function ShopWaiting({ shopName, sentAt }: ShopWaitingProps) {
       <header className="sell-head">
         <p className="eyebrow">Your shop</p>
         <h1 className="sell-title">The Hub is checking your shop</h1>
+        {/* One piece of text, not five: a text node that starts mid-line counts as shifted when a font swap moves it
+            to the next line (layout shift 0.07 on a phone, Task 17). */}
         <p className="sell-lede">
-          You sent {shopName} for approval on {longSastDate(sentAt)}. The Hub usually takes up to two working days.
+          {`You sent ${shopName} for approval on ${longSastDate(sentAt)}. The Hub usually takes up to two working days.`}
         </p>
       </header>
 

@@ -77,6 +77,16 @@ const SIGNED_IN_PAGES: ReadonlyArray<[name: string, path: string, account: strin
   ["notifications page", "/notifications", "Seller, Tech corner"],
   ["new listing form", "/sell/listings/new", "Seller, Tech corner"],
   ["edit listing form", "/sell/listings/l-001/edit", "Seller, Tech corner"],
+  // Every other selling page, and the owner's views of the listing page and storefront, have no client code of their own
+  // (Task 17 checks it): they should come to the same figure as a page with none.
+  ["dashboard", "/sell", "Seller, Tech corner"],
+  ["waiting page", "/sell", "Seller waiting for approval"],
+  ["my listings page", "/sell/listings", "Seller, Tech corner"],
+  ["delete listing page", "/sell/listings/l-001/delete", "Seller, Tech corner"],
+  ["edit shop page", "/sell/profile", "Seller, Tech corner"],
+  ["onboarding page", "/sell/onboarding", "Student, Midrand"],
+  ["storefront, its owner's view", "/sellers/tech-corner", "Seller, Tech corner"],
+  ["listing page, its owner's view", "/listings/l-001", "Seller, Tech corner"],
 ];
 
 for (const [name, path, account] of SIGNED_IN_PAGES) {

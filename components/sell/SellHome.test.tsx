@@ -86,6 +86,16 @@ describe("/sell (selling spec section 3)", () => {
     expect(screen.getByRole("link", { name: "New listing" })).toHaveAttribute("href", "/sell/listings/new");
   });
 
+  it("says when the shop was sent in one piece of text, so a line break in a new font can't make words jump (Task 17)", async () => {
+    // React gives each {…} in a paragraph its own text node, and a node that starts mid-line counts as shifted when a
+    // font swap moves it to the next line (layout shift 0.07 on a phone). One node starts where the paragraph does.
+    viewer.id = "acc-pending";
+    render(await SellHome());
+    const lede = screen.getByText(/You sent Crochet corner for approval/);
+    expect([...lede.childNodes].filter((node) => node.nodeType === Node.TEXT_NODE)).toHaveLength(1);
+    expect(lede.childNodes).toHaveLength(1);
+  });
+
   it("shows an approved seller the dashboard: this week's numbers and the next badge (spec 2.8)", async () => {
     viewer.id = "acc-seller";
     render(await SellHome());

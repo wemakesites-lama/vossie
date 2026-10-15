@@ -196,10 +196,10 @@ export function PhotoField(props: PhotoFieldProps) {
   /**
    * The file input's ref, which also holds the form's submit while photos are being shrunk (amendments 11.1 and 13.1):
    * a capture-phase listener on the form, so it runs before React's form action, added here rather than in an effect.
-   * A press while a save is held only changes the button it goes with, so the form is sent once. The held save waits
-   * for the newest shrinking, photos picked while it waits included, then is sent with the last button pressed (Save
-   * as draft pressed while it waits saves a draft); after 15 seconds it goes with whatever the input holds (the server
-   * strips originals).
+   * A press while a save is held only changes the button it goes with (and says again that it waits), so the form is
+   * sent once. The held save waits for the newest shrinking, photos picked while it waits included, then is sent with
+   * the last button pressed (Save as draft pressed while it waits saves a draft); after 15 seconds it goes with
+   * whatever the input holds (the server strips originals).
    */
   function attach(element: HTMLInputElement | null) {
     inputRef.current = element;
@@ -212,8 +212,10 @@ export function PhotoField(props: PhotoFieldProps) {
       event.preventDefault();
       const waiting = held.current;
       held.current = event;
-      if (waiting) return;
+      // Said on every press, not only the first: photos picked while the save waits put their own words on the line
+      // (amendment 14.3).
       say(words.held);
+      if (waiting) return;
       Promise.race([shrunk(), new Promise((go) => setTimeout(go, HOLD_MS))]).then(() => {
         const { submitter } = held.current!;
         // Nothing is held now, so the submit below goes through, even with a shrink still running after 15 seconds.

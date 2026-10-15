@@ -7,7 +7,9 @@ type Shift = { value: number; nodes: string[] };
 // the `vossie_saved` cookie, so it's measured with listings saved and with none. The Looking For board reads the campus
 // cookie too; Mbombela has no requests of its own. A Hub event's and office hours' action streams in, so both are
 // measured. Account pages are measured signed in, with a sample account. Messaging's pages are measured signed in too:
-// the seller for a thread and notifications, which the seller only reads.
+// the seller for a thread and notifications, which the seller only reads. Selling pages are measured as the sample
+// account they belong to: Tech corner's seller for the dashboard, the forms and the owner's own pages, and the shop
+// waiting for approval for its pages. The sample seller and student are only read here (selling plan, Task 17).
 const PAGES: ReadonlyArray<
   [name: string, path: string, cookies?: Readonly<Record<string, string>>, signIn?: string]
 > = [
@@ -40,6 +42,20 @@ const PAGES: ReadonlyArray<
   ["thread page", "/messages/conv-s1", undefined, "Seller, Tech corner"],
   ["report page", "/report?listing=l-002", undefined, "Student, Midrand"],
   ["notifications page", "/notifications", undefined, "Seller, Tech corner"],
+  ["sell page", "/sell"],
+  ["sell page (dashboard)", "/sell", undefined, "Seller, Tech corner"],
+  ["sell page (waiting for approval)", "/sell", undefined, "Seller waiting for approval"],
+  ["my listings page", "/sell/listings", undefined, "Seller, Tech corner"],
+  ["my listings page (nothing paused)", "/sell/listings?tab=paused", undefined, "Seller, Tech corner"],
+  ["my listings page (shop waiting for approval)", "/sell/listings", undefined, "Seller waiting for approval"],
+  ["delete listing page", "/sell/listings/l-001/delete", undefined, "Seller, Tech corner"],
+  ["new listing form", "/sell/listings/new", undefined, "Seller, Tech corner"],
+  ["edit listing form", "/sell/listings/l-001/edit", undefined, "Seller, Tech corner"],
+  ["edit shop page", "/sell/profile", undefined, "Seller, Tech corner"],
+  ["onboarding, step 1", "/sell/onboarding", undefined, "Student, Midrand"],
+  ["onboarding, step 4", "/sell/onboarding?step=4", undefined, "Student, Midrand"],
+  ["storefront (its owner's view)", "/sellers/tech-corner", undefined, "Seller, Tech corner"],
+  ["listing page (its owner's view)", "/listings/l-001", undefined, "Seller, Tech corner"],
 ];
 
 for (const [name, path, cookies, signIn] of PAGES) {

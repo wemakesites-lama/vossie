@@ -1,10 +1,12 @@
 import { expect, test, type APIResponse, type Page } from "@playwright/test";
 import { containsText, GPS } from "../helpers/image-bytes";
+import { seriousIssues } from "./helpers/axe";
 import { button, field, main, signInAsSample } from "./helpers/messaging";
 import {
   browseFor,
   cardsFor,
   fillListing,
+  idOfEditLink,
   notFoundHeading,
   photoWithLocation,
   POST_LANDS,
@@ -218,4 +220,60 @@ test("Back after publishing shows the storefront with the new listing, not a kep
   await expect(page).toHaveURL(/\/sellers\/tech-corner$/);
   await expect(cardsFor(page, word)).toHaveCount(1);
   expect(await page.evaluate(() => (window as unknown as { kept?: boolean }).kept)).toBe(true);
+});
+
+test("axe finds nothing serious on My listings in every state, with its notices, or on the forms for a paused, sold and draft listing (Task 17)", async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+  const word = uniqueWord();
+  const title = `Lamp ${word}`;
+  const draft = `Lamp draft ${word}`;
+  await signInAsSample(page, "Seller, Tech corner", "/sell");
+  const id = await publishListing(page, title);
+
+  // Available, with the notice the save left.
+  await expect(main(page).getByRole("status")).toContainText("Published.");
+  expect(await seriousIssues(page), "available, with a notice").toEqual([]);
+
+  // Paused: its row and its form, which says Save changes and keeps the state.
+  await main(page).getByRole("button", { name: `Pause ${title}` }).click();
+  await expect(main(page).getByRole("status")).toContainText("Paused.", POST_LANDS);
+  expect(await seriousIssues(page), "after Pause, with a notice").toEqual([]);
+  await page.goto("/sell/listings?tab=paused");
+  await expect(main(page).getByRole("button", { name: `Resume ${title}` })).toBeVisible();
+  expect(await seriousIssues(page), "the paused tab").toEqual([]);
+  await page.goto(`/sell/listings/${id}/edit`);
+  await expect(button(page, "Save changes")).toBeVisible();
+  expect(await seriousIssues(page), "the form for a paused listing").toEqual([]);
+
+  // Sold: its row, with Relist, and its form.
+  await page.goto("/sell/listings?tab=paused");
+  await main(page).getByRole("button", { name: `Mark sold ${title}` }).click();
+  await expect(main(page).getByRole("status")).toContainText("Marked as sold.", POST_LANDS);
+  await page.goto("/sell/listings?tab=sold");
+  await expect(main(page).getByRole("button", { name: `Relist ${title}` })).toBeVisible();
+  expect(await seriousIssues(page), "the sold tab").toEqual([]);
+  await page.goto(`/sell/listings/${id}/edit`);
+  await expect(button(page, "Save changes")).toBeVisible();
+  expect(await seriousIssues(page), "the form for a sold listing").toEqual([]);
+
+  // A draft: its row, and its form, which offers Save and publish and Save as draft.
+  await page.goto("/sell/listings/new");
+  await fillListing(page, draft);
+  await button(page, "Save as draft").click();
+  await expect(page).toHaveURL(/\/sell\/listings\?tab=drafts$/, POST_LANDS);
+  await expect(main(page).getByRole("status")).toBeVisible();
+  expect(await seriousIssues(page), "the drafts tab, with a notice").toEqual([]);
+  const draftId = await idOfEditLink(page, draft);
+  await page.goto(`/sell/listings/${draftId}/edit`);
+  await expect(button(page, "Save and publish")).toBeVisible();
+  expect(await seriousIssues(page), "the form for a draft").toEqual([]);
+
+  // Both made here go again, so nothing is left in the sample seller's shop.
+  for (const gone of [id, draftId]) {
+    await page.goto(`/sell/listings/${gone}/delete`);
+    await button(page, "Delete listing").click();
+    await expect(main(page).getByRole("status")).toHaveText("Deleted.", POST_LANDS);
+  }
 });

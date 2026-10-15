@@ -395,6 +395,44 @@ describe("the photo field (selling spec 2.3, 2.5 and section 4, plan decisions 9
     expect(screen.getByRole("status")).toHaveTextContent("Saving once your photos are ready…");
   });
 
+  it("says a held save will go again when Save is pressed once more after a photo was picked while it waited (amendment 14.3)", async () => {
+    const user = userEvent.setup();
+    const { started, finish } = slowShrink();
+    const posted = show([]);
+    pick([new File(["a"], "desk.png", { type: "image/png" })]);
+    await waitFor(() => expect(started).toEqual(["desk.png"]));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Saving once your photos are ready…");
+    // The new pick's words replace the save's: it's said what was added and that the photos are being readied.
+    pick([new File(["b"], "side.jpg", { type: "image/jpeg" })]);
+    expect(screen.getByRole("status")).toHaveTextContent("1 photo added. Getting your photo ready…");
+    // Pressing Save again says the save is waiting, though the save itself was already held.
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Saving once your photos are ready…");
+    // And each press says it afresh: the line is emptied, then filled, so a screen reader announces it again
+    // (amendment 11.8). A MutationObserver sees both changes, as a browser's accessibility tree would.
+    const changes: string[] = [];
+    const status = screen.getByRole("status");
+    const watch = new MutationObserver((records) => {
+      for (const record of records) {
+        if (record.removedNodes.length > 0) changes.push("cleared");
+        if (record.addedNodes.length > 0) changes.push(`set: ${status.textContent}`);
+      }
+    });
+    watch.observe(status, { childList: true, characterData: true, subtree: true });
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(changes).not.toEqual([]));
+    watch.disconnect();
+    expect(changes).toEqual(["cleared", "set: Saving once your photos are ready…"]);
+    // Still one save.
+    finish(0);
+    await waitFor(() => expect(started).toEqual(["desk.png", "side.jpg"]));
+    finish(1);
+    await waitFor(() => expect(posted).not.toEqual([]));
+    await settle();
+    expect(posted).toEqual([{ files: ["desk.webp", "side.webp"], intent: "publish" }]);
+  });
+
   it("lets a held save go after 15 seconds with the originals, which the server strips (amendment 11.1)", async () => {
     // A shrink that never finishes. It starts with the real clock, so the shrinking code has loaded before the test ends.
     const { started } = slowShrink();
