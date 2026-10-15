@@ -171,6 +171,12 @@ The controller adds amendments here; they override the tasks below wherever they
     - `getPhoto(id, now)` takes a required `now`.
     - `/photos/[id]` sends `private, max-age=31536000, immutable`; a photo G hides with its listing is still only on devices that already had it.
     - `shopStats` skips conversations with `sellerGone`; G's badge recalculation should read the same rows the same way (`recalculateBadges`), so the dashboard and the badge agree.
+12. **The review of Tasks 1 to 3** (the controller's reviewer; nothing Critical; Claude, under decision 54, 2026-10-15). A fix task runs after Task 6 and before Task 7, test first.
+    1. **The CSV guard holds in any spreadsheet** (important, hard to exploit: a shop named `Bakes;=1+1;` runs as a formula where Excel splits on `;`). `csvCell` always wraps a text cell in double quotes, doubling quotes inside, and keeps the apostrophe prefix, widened to `/^[=+\-@\t\r]/`. Tests: `"Bakes;=1+1;"` and `"\t=1"` come out quoted and prefixed; the "writes the table…" line becomes the quoted form.
+    2. **The CSV opens right in Excel:** `mentorCsv` starts with a UTF-8 byte-order mark (`"﻿"`), so "Zoë's Café" isn't garbled; Task 16's route sends the body as is. Test the first character.
+    3. **Unit tests run in UTC.** A Vitest global setup (or the `test` script) sets `TZ=UTC`, so a timezone bug can't hide behind this Mac's SAST clock. If any existing test then fails, it has found a real timezone bug: fix the code, not the test, and report it. Add the year-end case `sastToUtc("2027-01-01", "00:30")` → `"2026-12-31T22:30:00.000Z"`.
+    4. **Limits tested from both sides:** `earnedBadge` with exactly 3 enquiries all answered is Responsive; `checkPointName` passes "AB" and 60 characters; `checkTime` passes 100 characters; the Featured draw de-duplicates pins (`["a", "a"]`) and puts the own campus first among resting sellers.
+    5. **For Task 14:** a new event or office hours, or a changed date, must start after now (checked in the action when a post is created or its date changes, not in `checkPost`, so a past post like h-012 can still be edited). Error words: "Choose a date and time that hasn't passed."
 
 ## Store design
 
