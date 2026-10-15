@@ -1,13 +1,18 @@
 import type {
+  AuditAction,
+  AuditTargetKind,
+  BookingStatus,
   Condition,
   ConversationStatus,
   Handover,
+  HubPost,
   ImageRef,
   ListingKind,
   ListingState,
   NotificationKind,
   PayMode,
   PhotoType,
+  ReportOutcome,
   ReportReason,
   ReportTarget,
   SellerStatus,
@@ -35,6 +40,14 @@ export type SellerProfileRow = {
   status: SellerStatus;
   sellerSlug: string | null;
   appliedAt: string;
+  /** When the Hub declined the application (staff tools plan decision 2). Absent or null while it hasn't. */
+  declinedAt?: string | null;
+  /** Who paused a paused shop (staff tools plan decision 3): a seller can only resume their own pause. */
+  pausedBy?: "seller" | "staff" | null;
+  /** The Hub's reason for a decline or a pause, which the seller sees. */
+  staffReason?: string | null;
+  /** The mentor assigned to the shop (staff tools spec 2.6). Absent or null when there's none. */
+  mentorId?: string | null;
 };
 
 export type ConsentRow = {
@@ -180,6 +193,13 @@ export type ReportRow = {
   /** Stage G closes it and records what was done. */
   status: "open" | "closed";
   createdAt: string;
+  /** What the Hub did (staff tools spec 2.3), once it's closed. */
+  outcome?: ReportOutcome | null;
+  /** The dismissal's note, or the hide's or pause's reason. */
+  note?: string | null;
+  closedAt?: string | null;
+  /** The staff member who closed it, or null once their account is deleted. */
+  closedBy?: string | null;
 };
 
 /** A notification (messaging spec 2.9 and 3.5; plan decisions 12 and 13). */
@@ -268,6 +288,9 @@ export type ListingRow = {
    */
   firstPublishedAt: string | null;
   updatedAt: string;
+  /** Why the Hub hid it (staff tools spec 2.3, plan decision 4). Absent or null while it isn't hidden. */
+  hiddenReason?: string | null;
+  hiddenAt?: string | null;
 };
 
 /** An uploaded photo (selling spec 2.4), keyed by its id: "ph-" and a UUID. */
@@ -295,4 +318,114 @@ export type OnboardingDraftRow = {
   campusSlug: string;
   pickupPointIds: string[];
   updatedAt: string;
+};
+
+// --- Staff tools (staff tools plan, Task 1; "Store design") ------------------------------------------------------
+
+/**
+ * One staff action (staff tools spec 2.2, plan decision 6). Only lib/data/audit.ts adds them, and nothing changes one,
+ * except deleting an account, which forgets the person in it (lib/data/staff-privacy.ts).
+ */
+export type AuditRow = {
+  id: string;
+  at: string;
+  staffId: string | null;
+  staffName: string;
+  action: AuditAction;
+  targetKind: AuditTargetKind;
+  /** A shop's slug, or a listing's, report's, pickup point's, post's or slot request's id; "" once forgotten. */
+  targetId: string;
+  targetName: string;
+  detail: string;
+  /** The student it was about (a shop's owner, a reporter, a slot request's student), or null. */
+  subjectId: string | null;
+};
+
+/** A seller pinned to one campus's Featured row for one day (staff tools spec 2.8). */
+export type FeaturedPinRow = {
+  id: string;
+  sellerSlug: string;
+  /** A campus slug, or "all" for visitors who haven't chosen one. */
+  campusSlug: string;
+  /** YYYY-MM-DD in South Africa. */
+  day: string;
+  /** The admin who pinned it, or null once their account is deleted. */
+  pinnedBy: string | null;
+  createdAt: string;
+};
+
+/** A campus's Featured row as first shown on a day (plan decision 9), keyed by `${campusSlug}:${day}`. */
+export type FeaturedDrawRow = {
+  key: string;
+  campusSlug: string;
+  day: string;
+  /** In the row's order, pins first. */
+  sellerSlugs: string[];
+};
+
+/** An approved place to hand things over (staff tools spec 2.3), keyed by id. */
+export type PickupPointRow = {
+  id: string;
+  campusSlug: string;
+  /** 2 to 60 characters, unique on its campus. */
+  name: string;
+  /** When it was retired, or null while it's in use. */
+  retiredAt: string | null;
+  createdAt: string;
+};
+
+/** A mentor's note or check-in about a shop's owner (staff tools spec 2.6, plan decision 16). */
+export type MentorNoteRow = {
+  id: string;
+  /** The shop owner's account. */
+  ownerId: string;
+  kind: "note" | "check-in";
+  /** A check-in's date, YYYY-MM-DD in South Africa; null for a note. */
+  checkInOn: string | null;
+  text: string;
+  /** Who wrote it, or null once their account is deleted. */
+  authorId: string | null;
+  /** Their first name then, or "Deleted account". */
+  authorName: string;
+  createdAt: string;
+};
+
+/**
+ * A Hub post in the store (staff tools spec 2.4, plan decision 11): part B's HubPost with its draft state and author.
+ * For an event, `going` is the count before anyone said they're going on Vossie (the samples' numbers, 0 for a new
+ * post); pages add the RSVPs (plan decision 13).
+ */
+export type HubPostRow = Omit<HubPost, "publishedAt"> & {
+  /** False while it's a draft: only staff see it (staff tools spec 2.4). */
+  published: boolean;
+  /** When it was first published, or null while it never has been. */
+  publishedAt: string | null;
+  /** The staff member who wrote it, or null for a sample post or once their account is deleted. */
+  authorId: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** A student going to an event (staff tools spec 2.5), keyed by `${postId}:${accountId}`. */
+export type HubRsvpRow = {
+  key: string;
+  postId: string;
+  accountId: string;
+  createdAt: string;
+};
+
+/** A request for an office-hours slot (staff tools spec 2.5), keyed by id ("bk-" and a UUID). */
+export type HubBookingRow = {
+  id: string;
+  postId: string;
+  accountId: string;
+  /** What they'd like help with, up to 300 characters. */
+  help: string;
+  /** A time that suits, up to 100 characters. */
+  time: string;
+  status: BookingStatus;
+  createdAt: string;
+  answeredAt: string | null;
+  /** The staff member who answered, or null. */
+  answeredBy: string | null;
 };

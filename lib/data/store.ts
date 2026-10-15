@@ -1,16 +1,25 @@
 import { sampleAccounts, sampleConsents } from "@/data/fixtures/accounts";
 import { sampleConversations, sampleMessages, sampleNotifications } from "@/data/fixtures/messages";
 import { sampleListingRows, sampleSellerRows } from "@/data/fixtures/shops";
+import { sampleHubBookings, sampleHubPostRows, sampleMentorNotes, samplePickupPointRows } from "@/data/fixtures/staff";
 import type {
   AccountRow,
+  AuditRow,
   ConsentRow,
   ConversationRow,
+  FeaturedDrawRow,
+  FeaturedPinRow,
   FormStateRow,
+  HubBookingRow,
+  HubPostRow,
+  HubRsvpRow,
   ListingRow,
+  MentorNoteRow,
   MessageRow,
   NotificationRow,
   OnboardingDraftRow,
   PhotoRow,
+  PickupPointRow,
   ReportRow,
   SampleEmailRow,
   SellerProfileRow,
@@ -62,10 +71,26 @@ export type SampleStore = {
   photos: Map<string, PhotoRow>;
   /** By account id: the onboarding wizard's answers so far (selling spec 2.2). */
   onboardingDrafts: Map<string, OnboardingDraftRow>;
+  /** By id: every staff action (staff tools spec 2.2). Only lib/data/audit.ts adds to it. */
+  auditLog: Map<string, AuditRow>;
+  /** By id: sellers pinned to a campus's Featured row for a day (staff tools spec 2.8). */
+  featuredPins: Map<string, FeaturedPinRow>;
+  /** By `${campusSlug}:${day}`: each campus's Featured row as first shown that day (staff tools plan decision 9). */
+  featuredDraws: Map<string, FeaturedDrawRow>;
+  /** By id: the approved pickup points, retired ones included (staff tools spec 2.3). */
+  pickupPoints: Map<string, PickupPointRow>;
+  /** By id: mentors' notes and check-ins (staff tools spec 2.6). */
+  mentorNotes: Map<string, MentorNoteRow>;
+  /** By id: the Hub's posts, drafts included (staff tools spec 2.4). */
+  hubPosts: Map<string, HubPostRow>;
+  /** By `${postId}:${accountId}`: who's going to an event (staff tools spec 2.5). */
+  hubRsvps: Map<string, HubRsvpRow>;
+  /** By id: office-hours slot requests (staff tools spec 2.5). */
+  hubBookings: Map<string, HubBookingRow>;
 };
 
 /** Bump it when a table is added or a row changes shape, so `next dev` reseeds instead of keeping an old store. */
-export const STORE_VERSION = 5;
+export const STORE_VERSION = 6;
 
 type StoreHolder = { __vossieSampleStore?: SampleStore };
 
@@ -109,5 +134,14 @@ function seedStore(): SampleStore {
     listings: new Map(structuredClone(sampleListingRows).map((row) => [row.id, row])),
     photos: new Map(),
     onboardingDrafts: new Map(),
+    // The staff tools' seeds (staff tools plan, Task 1). Copies, like the rest.
+    auditLog: new Map(),
+    featuredPins: new Map(),
+    featuredDraws: new Map(),
+    pickupPoints: new Map(structuredClone(samplePickupPointRows).map((row) => [row.id, row])),
+    mentorNotes: new Map(structuredClone(sampleMentorNotes).map((row) => [row.id, row])),
+    hubPosts: new Map(structuredClone(sampleHubPostRows).map((row) => [row.id, row])),
+    hubRsvps: new Map(),
+    hubBookings: new Map(structuredClone(sampleHubBookings).map((row) => [row.id, row])),
   };
 }

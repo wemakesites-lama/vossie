@@ -200,7 +200,7 @@ The eight tables, the fields added to earlier rows, and who touches them:
 
 | Point | `/` | `/browse` | Listing | Storefront | Hub event | Hub office hours | `/sell` (signed out) |
 |---|---|---|---|---|---|---|---|
-| Start (F's final figures) | | | | | | – | |
+| Start (F's final figures) | 150,613 | 151,360 | 151,769 | 151,373 | not in F's ledger; Task 15 measures it | – | 150,613 |
 | Task 15, RSVP and Request a slot | | | | | | | |
 | Task 17, Featured, badges, retired points | | | | | | | |
 | Task 18, `/sell`, the account page | | | | | | | |
@@ -208,7 +208,7 @@ The eight tables, the fields added to earlier rows, and who touches them:
 
 Staff pages, signed in (Task 21): Overview ________ B, Sellers ________ B, Hub tools ________ B, Mentor dashboard ________ B.
 
-The stop line used: ________ B. Unit tests at the start: ________. End to end at the start: ________ pass, ________ skipped.
+The stop line used: 152,305 B (decision 52); limit 153,600 B. The listing forms (new and edit), measured signed in as the sample seller, are the highest pages at the start: 152,287 B, 18 B under the stop line, so any client change to `PhotoField` needs Lama's say; every other page has at least 536 B (the listing page, 151,769 B). The Start figures are F's final ledger row (`622800a`, `docs/PROGRESS.md`); `performance.spec.ts` was not run again for Task 1, which adds no page or client code. Unit tests at the start: 1,555 (215 files). End to end at the start: 953 pass, 768 skipped (F's final run in `docs/PROGRESS.md`; not run again for Task 1).
 
 ## Conventions for every task
 
