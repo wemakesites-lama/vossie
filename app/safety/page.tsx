@@ -94,8 +94,8 @@ const SECTIONS: readonly InfoSection[] = [
       <>
         <p>
           If a listing or a person worries you, report it. Every listing and every seller&apos;s page has a Report link.
-          Reporting needs an account, so the link takes you to sign in first. A member of the Hub team reads every
-          report, and can hide a listing or pause an account.
+          Reporting needs an account: signed out, the link takes you to sign in first, then to the report. A member of
+          the Hub team reads every report, and can hide a listing or pause an account.
         </p>
         <p>
           If you&apos;re in danger, get somewhere safe and tell campus security. If a crime has happened, call the police
@@ -115,7 +115,7 @@ export default function SafetyPage() {
     <InfoPage
       title="Safety"
       lede="Meet in a safe place, check before you pay, and trust your gut."
-      updated="2026-10-14"
+      updated="2026-10-15"
       sections={SECTIONS}
     />
   );

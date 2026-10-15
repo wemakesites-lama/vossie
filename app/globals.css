@@ -7677,3 +7677,29 @@
     font-weight: 700;
   }
 }
+
+/* --- Messaging: reports you've made (messaging plan, Task 14, plan decision 18) --- */
+@layer components {
+  .account-reports {
+    display: grid;
+    border-top: 1.5px solid var(--color-line);
+  }
+
+  .account-reports li {
+    display: grid;
+    gap: 2px;
+    padding-block: 12px;
+    border-bottom: 1.5px solid var(--color-line);
+  }
+
+  .account-report-title {
+    color: var(--color-navy);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .account-report-meta {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+}

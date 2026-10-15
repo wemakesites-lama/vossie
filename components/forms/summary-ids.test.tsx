@@ -60,7 +60,7 @@ describe("error summary ids (accounts spec 6)", () => {
           details={{ ...detailsForm(account, null), errors: oops }}
           counts={{ conversations: 0, notifications: 0 }}
         />
-        <PrivacySettingsView consent={null} deleteErrors={oops} />
+        <PrivacySettingsView consent={null} deleteErrors={oops} reports={[]} />
         <ComposerView
           subject={subject}
           status={{ kind: "open" }}

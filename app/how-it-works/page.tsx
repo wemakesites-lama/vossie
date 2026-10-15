@@ -111,8 +111,8 @@ const SECTIONS: readonly InfoSection[] = [
         </p>
         <h3>What can I do on Vossie today?</h3>
         <p>
-          Browse every campus, save listings on your device and share them, and sign in with your Eduvos email.
-          Messaging and selling arrive in the next stages, so this page describes how they will work.
+          Browse every campus, save listings on your device and share them, sign in with your Eduvos email, message
+          sellers and report a problem. Selling arrives in the next stage, so this page describes how it will work.
         </p>
       </>
     ),
@@ -124,7 +124,7 @@ export default function HowItWorksPage() {
     <InfoPage
       title="How Vossie works"
       lede="Find it, message the seller, meet on campus, then pay or swap."
-      updated="2026-10-14"
+      updated="2026-10-15"
       sections={SECTIONS}
     />
   );
