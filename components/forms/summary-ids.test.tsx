@@ -6,7 +6,11 @@ import { CodeStep, EmailStep, ProfileStep } from "@/components/auth/SignInSteps"
 import { ComposerView } from "@/components/messages/ComposerView";
 import { ReportView } from "@/components/messages/ReportView";
 import { ThreadView } from "@/components/messages/ThreadView";
+import { OnboardingView } from "@/components/sell/OnboardingView";
 import { campuses } from "@/data/fixtures/campuses";
+import { categories } from "@/data/fixtures/categories";
+import { pickupPoints } from "@/data/fixtures/pickup-points";
+import { emptyDraft } from "@/lib/data/shops";
 import { composerSubject } from "@/lib/messaging/subjects";
 import type { Account } from "@/lib/types";
 import { makeThread } from "@/tests/helpers/fakes";
@@ -31,6 +35,7 @@ vi.mock("@/lib/messaging/actions", () => ({
   sendReply: async () => {},
   sendReport: async () => {},
 }));
+vi.mock("@/lib/selling/shop-actions", () => ({ saveOnboardingStep: async () => {}, sendForApproval: async () => {} }));
 
 const account: Account = {
   id: "acc-student",
@@ -79,10 +84,22 @@ describe("error summary ids (accounts spec 6)", () => {
           already={false}
           form={{ reason: "", detail: "", errors: oops }}
         />
+        {/* Each of the wizard's steps is its own page, so all five can be kept at once (selling plan decision 23). */}
+        {([1, 2, 3, 4, 5] as const).map((step) => (
+          <OnboardingView
+            key={step}
+            step={step}
+            draft={{ ...emptyDraft("acc-student", "midrand", new Date("2026-10-14T08:00:00Z")), photoSrc: "/photos/ph-1" }}
+            errors={oops}
+            campuses={campuses}
+            categories={categories}
+            pickupPoints={pickupPoints}
+          />
+        ))}
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(8);
+    expect(summaries).toHaveLength(13);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -94,6 +111,11 @@ describe("error summary ids (accounts spec 6)", () => {
       "composer-summary",
       "thread-reply-summary",
       "report-summary",
+      "onb-step-1-summary",
+      "onb-step-2-summary",
+      "onb-step-3-summary",
+      "onb-step-4-summary",
+      "onb-step-5-summary",
     ]);
   });
 });

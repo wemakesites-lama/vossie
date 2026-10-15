@@ -7913,3 +7913,112 @@
     height: 34rem;
   }
 }
+
+/* --- Selling: forms (selling plan, Task 10, spec 2.6 and section 4) --- */
+@layer components {
+  .sell-progress {
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .sell-fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .sell-choices {
+    display: grid;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .sell-choices-row {
+      grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+      column-gap: 24px;
+    }
+  }
+
+  .sell-textarea {
+    min-height: 9rem;
+    line-height: 1.5;
+    resize: vertical;
+  }
+
+  /* The browser's own file button sits inside the field's box, which keeps the 48px height. */
+  .sell-file {
+    padding-block: 9px;
+  }
+
+  .sell-form-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 24px;
+  }
+
+  .sell-thumb {
+    flex: none;
+    width: 96px;
+    height: 96px;
+    border-radius: var(--radius-card);
+    background: var(--color-pale);
+    object-fit: cover;
+  }
+
+  .sell-photo-now {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--color-muted);
+  }
+
+  .sell-review {
+    display: grid;
+    border-top: 1.5px solid var(--color-line);
+  }
+
+  .sell-review div {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 16px;
+    padding-block: 12px;
+    border-bottom: 1.5px solid var(--color-line);
+  }
+
+  .sell-review dt {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  .sell-review dd {
+    color: var(--color-ink);
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+
+  .sell-review dt,
+  .sell-review dd:nth-of-type(1) {
+    grid-column: 1;
+  }
+
+  .sell-review dd:nth-of-type(2) {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+
+  .sell-review a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .sell-skeleton-form {
+    height: 32rem;
+  }
+}
