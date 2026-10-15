@@ -1,25 +1,41 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { saveFormState } from "@/lib/data/form-states";
 import { emptyDraft, saveOnboardingDraft } from "@/lib/data/shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
+import { DASHBOARD_FORM } from "@/lib/selling/form-state";
+import { prefetchingLinks } from "@/tests/helpers/next-link";
 import { SellHome } from "./SellHome";
 
-const viewer = vi.hoisted(() => ({ id: null as string | null }));
+const viewer = vi.hoisted(() => ({ id: null as string | null, sessionKey: null as string | null }));
 
 // The session is the sample account named here; everything else is the real sample store.
 vi.mock("@/lib/auth/session", async () => {
   const { getAccount } = await import("@/lib/data/accounts");
-  return { getViewer: async () => (viewer.id ? getAccount(viewer.id) : null), getSessionKey: async () => null };
+  return {
+    getViewer: async () => (viewer.id ? getAccount(viewer.id) : null),
+    getSessionKey: async () => viewer.sessionKey,
+  };
 });
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
+// next/link draws a plain <a> in jsdom; this one shows `prefetch` as data, for the test that checks every link.
+vi.mock("next/link", async () => (await import("@/tests/helpers/next-link")).nextLinkShowingPrefetch);
 vi.mock("@/lib/selling/shop-actions", () => ({ pauseShop: async () => {}, resumeShop: async () => {} }));
 
 beforeEach(() => {
   resetSampleStore();
   viewer.id = null;
+  viewer.sessionKey = null;
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-10-14T10:00:00.000Z"));
 });
+
+/** What the last Pause my shop or Resume left in this browser's form state. */
+const leaveNotice = (notice: string) =>
+  saveFormState(
+    { sessionKey: "s", form: DASHBOARD_FORM, errors: [], values: {}, notice, expiresAt: "2099-01-01T00:00:00.000Z" },
+    new Date("2026-10-14T09:00:00.000Z"),
+  );
 
 describe("/sell (selling spec section 3)", () => {
   it("pitches to a signed-out visitor, with Start selling through sign-in to the wizard", async () => {
@@ -42,6 +58,26 @@ describe("/sell (selling spec section 3)", () => {
     );
   });
 
+  it("resumes at the first step not answered, and an Online student at the review (amendment 10.4)", async () => {
+    viewer.id = "acc-student";
+    const answered = { name: "Zola's Bakes", categorySlug: "food", about: "I bake between lectures." };
+    // Midrand has pickup points to choose, and none is chosen yet: back to the photo step, then the points.
+    await saveOnboardingDraft({ ...emptyDraft("acc-student", "midrand", new Date()), ...answered });
+    const first = render(await SellHome());
+    expect(screen.getByRole("link", { name: "Continue setting up your shop" })).toHaveAttribute(
+      "href",
+      "/sell/onboarding?step=3",
+    );
+    first.unmount();
+    // Eduvos Online has none to choose, so everything is answered: straight to the review.
+    await saveOnboardingDraft({ ...emptyDraft("acc-student", "online", new Date()), ...answered });
+    render(await SellHome());
+    expect(screen.getByRole("link", { name: "Continue setting up your shop" })).toHaveAttribute(
+      "href",
+      "/sell/onboarding?step=5",
+    );
+  });
+
   it("tells a seller waiting for approval that the Hub is checking their shop (spec 2.7)", async () => {
     viewer.id = "acc-pending";
     render(await SellHome());
@@ -60,6 +96,28 @@ describe("/sell (selling spec section 3)", () => {
     expect(within(week).getByText("Replied within 48 hours").nextElementSibling).toHaveTextContent("2 of 2");
     expect(within(week).getByText("Sales confirmed").nextElementSibling).toHaveTextContent("0");
     expect(screen.getByText("1 more enquiry and 5 more confirmed sales for Trusted.")).toBeInTheDocument();
+  });
+
+  it("says what the last action did once: a second visit shows no notice (amendment 10.6)", async () => {
+    viewer.id = "acc-seller";
+    viewer.sessionKey = "s";
+    await leaveNotice("shop-resumed");
+    const first = render(await SellHome());
+    expect(screen.getByRole("status")).toHaveTextContent("Your shop is live again.");
+    first.unmount();
+    render(await SellHome());
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("never prefetches: the pitch, the waiting page and the dashboard have only links with prefetch off (amendment 10.7)", async () => {
+    // The header, menu, footer and homepage prefetch /sell on every page, so nothing on it may prefetch in turn.
+    for (const id of [null, "acc-student", "acc-pending", "acc-seller"]) {
+      viewer.id = id;
+      const { container, unmount } = render(await SellHome());
+      expect(container.querySelectorAll("a[data-prefetch]").length, String(id)).toBeGreaterThan(0);
+      expect(prefetchingLinks(container), String(id)).toEqual([]);
+      unmount();
+    }
   });
 
   it("shows a paused shop as paused, with Resume", async () => {

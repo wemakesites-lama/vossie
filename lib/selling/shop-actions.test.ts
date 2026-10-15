@@ -6,6 +6,7 @@ import { getPhoto, photoIdOf } from "@/lib/data/photos";
 import { createSession } from "@/lib/data/sessions";
 import { emptyDraft, getOnboardingDraft, getShopOf, saveOnboardingDraft } from "@/lib/data/shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
+import { KEEP_MAX } from "@/lib/messaging/rules";
 import { ascii, containsText, GPS, pngBytes } from "@/tests/helpers/image-bytes";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { DASHBOARD_FORM, onboardingForm, PROFILE_FORM } from "./form-state";
@@ -134,6 +135,21 @@ describe("the onboarding wizard (selling spec 2.6, plan decision 15)", () => {
     expect(await step4({ campus: "online", pointsCampus: "pretoria" })).toBe("/sell/onboarding?step=5");
   });
 
+  it("starts step 5 clean: a good Continue on step 4 clears what an earlier Send for approval left there (amendment 10.5)", async () => {
+    await signedInAs("acc-student");
+    await saveOnboardingDraft(finishedDraft());
+    await redirectOf(() => sendForApproval(form({})));
+    expect((await readFormState(onboardingForm(5)))?.errors).toEqual(["guidelines-missing"]);
+    // A Continue that stays on step 4 with a problem leaves step 5 as it was; only a good one clears it.
+    const step4 = (fields: Record<string, string | string[]>) =>
+      redirectOf(() => saveOnboardingStep(form({ step: "4", ...fields })));
+    expect(await step4({ campus: "pretoria", pointsCampus: "pretoria" })).toBe("/sell/onboarding?step=4");
+    expect((await readFormState(onboardingForm(5)))?.errors).toEqual(["guidelines-missing"]);
+    const good = { campus: "midrand", pointsCampus: "midrand", pickupPoint: "pp-midrand-library" };
+    expect(await step4(good)).toBe("/sell/onboarding?step=5");
+    expect(await readFormState(onboardingForm(5))).toBeNull();
+  });
+
   it("sends a finished draft for approval: the shop waits for the Hub, and the seller lands on /sell", async () => {
     await signedInAs("acc-student");
     await saveOnboardingDraft(finishedDraft());
@@ -226,6 +242,15 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     });
     expect((await getShopOf("acc-seller"))?.shop.tagline).toBe("Calculators, headsets and chargers, tested before you buy.");
     expect(request.updatedTags).toEqual([]);
+  });
+
+  it("keeps only bounded values when a save fails: a category that isn't one is kept as nothing (amendment 10.2)", async () => {
+    await signedInAs("acc-seller");
+    const huge = "x".repeat(1_000_000);
+    await redirectOf(() => saveShopProfile(profile({ category: huge, name: huge, about: huge, slug: huge })));
+    const { values } = (await readFormState(PROFILE_FORM))!;
+    expect(values.category).toBe("");
+    for (const [name, value] of Object.entries(values)) expect(value.length, name).toBeLessThanOrEqual(KEEP_MAX);
   });
 
   it("changes the link once, and never to one another shop has", async () => {

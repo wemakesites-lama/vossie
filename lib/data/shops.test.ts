@@ -76,10 +76,10 @@ describe("applying to sell (selling spec 2.6 and 2.7, plan decisions 1 and 16)",
     const [photo] = await storePhotos("acc-student", [upload()], NOW);
     await saveOnboardingDraft({ ...emptyDraft("acc-student", "midrand", NOW), name: "Zola's Bakes", photoSrc: photo });
     expect((await getOnboardingDraft("acc-student"))?.photoSrc).toBe(photo);
-    expect(await photoSrcsOf("acc-student", "draft")).toEqual(new Set([photo]));
+    expect(await photoSrcsOf("acc-student", "draft", NOW)).toEqual(new Set([photo]));
     await applyAs("acc-student", { image: { src: photo, alt: "" } });
     expect(await getOnboardingDraft("acc-student")).toBeNull();
-    expect(await photoSrcsOf("acc-student", "shop")).toEqual(new Set([photo]));
+    expect(await photoSrcsOf("acc-student", "shop", NOW)).toEqual(new Set([photo]));
   });
 
   it("deletes a draft's photo once another replaces it", async () => {
@@ -87,7 +87,7 @@ describe("applying to sell (selling spec 2.6 and 2.7, plan decisions 1 and 16)",
     await saveOnboardingDraft({ ...emptyDraft("acc-student", "midrand", NOW), photoSrc: first });
     await saveOnboardingDraft({ ...emptyDraft("acc-student", "midrand", NOW), photoSrc: second });
     expect(await getPhoto(photoIdOf(first)!, NOW)).toBeNull();
-    expect(await photoSrcsOf("acc-student", "draft")).toEqual(new Set([second]));
+    expect(await photoSrcsOf("acc-student", "draft", NOW)).toEqual(new Set([second]));
   });
 });
 
@@ -127,7 +127,7 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     await updateShop("acc-seller", { ...details, image: { src: first, alt: "" } }, NOW);
     await updateShop("acc-seller", { ...details, image: { src: second, alt: "" } }, NOW);
     expect(await getPhoto(photoIdOf(first)!, NOW)).toBeNull();
-    expect(await photoSrcsOf("acc-seller", "shop")).toEqual(new Set([second]));
+    expect(await photoSrcsOf("acc-seller", "shop", NOW)).toEqual(new Set([second]));
   });
 
   it("changes an approved shop's link once, and its listings, profile, conversations and reports go with it", async () => {

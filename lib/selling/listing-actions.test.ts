@@ -3,9 +3,10 @@ import { SESSION_COOKIE } from "@/lib/auth/cookies";
 import { readFormState } from "@/lib/auth/form-state";
 import { hashToken } from "@/lib/auth/secrets";
 import { getOwnListing, listOwnListings, setOwnListingState } from "@/lib/data/own-listings";
-import { getPhoto, photoIdOf, storePhotos } from "@/lib/data/photos";
+import { attachPhotos, getPhoto, photoIdOf, storePhotos } from "@/lib/data/photos";
 import { createSession } from "@/lib/data/sessions";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
+import { DAY_MS, KEEP_MAX } from "@/lib/messaging/rules";
 import { ascii, containsText, GPS, pngBytes } from "@/tests/helpers/image-bytes";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { listingForm, MY_LISTINGS_FORM } from "./form-state";
@@ -143,6 +144,98 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
     expect((await fan())?.photos).toEqual([]);
   });
 
+  it("never uses a photo of another of the seller's listings (amendment 10.7)", async () => {
+    await signedInAs("acc-seller");
+    const [theirs] = await storePhotos("acc-seller", [{ type: "image/png", bytes: pngBytes() }], NOW);
+    await attachPhotos("acc-seller", [theirs], "listing:l-002");
+    await redirectOf(() => saveListingForm(fanForm({ photo: [theirs] })));
+    expect((await fan())?.photos).toEqual([]);
+    await redirectOf(() => saveListingForm(fanForm({ listing: "l-001", photo: [COVER, theirs] })));
+    expect((await getOwnListing("tech-corner", "l-001"))?.photos.map((photo) => photo.src)).toEqual([COVER]);
+    // The photo still belongs to the listing it was given to.
+    expect(sampleStore().photos.get(photoIdOf(theirs)!)?.use).toBe("listing:l-002");
+  });
+
+  it("drops a waiting photo a day old from a listing saved the next day, and keeps the other photos (amendment 10.1)", async () => {
+    await signedInAs("acc-seller");
+    const [waiting] = await storePhotos("acc-seller", [{ type: "image/png", bytes: pngBytes() }], NOW);
+    const nextDay = new Date(NOW.getTime() + DAY_MS + 60_000);
+    vi.setSystemTime(nextDay);
+    await redirectOf(() => saveListingForm(fanForm({ listing: "l-001", photo: [COVER, waiting, BACK] })));
+    expect((await getOwnListing("tech-corner", "l-001"))?.photos.map((photo) => photo.src)).toEqual([COVER, BACK]);
+    expect(await getPhoto(photoIdOf(waiting)!, nextDay)).toBeNull();
+  });
+
+  it("drops it from the photo buttons' answer too, so the form never shows a photo that has gone (amendment 10.1)", async () => {
+    await signedInAs("acc-seller");
+    const [waiting] = await storePhotos("acc-seller", [{ type: "image/png", bytes: pngBytes() }], NOW);
+    vi.setSystemTime(new Date(NOW.getTime() + DAY_MS + 60_000));
+    const moving = fanForm({ listing: "l-001", photo: [COVER, waiting, BACK], photoMove: `${BACK}:cover` });
+    await redirectOf(() => saveListingForm(moving));
+    expect((await readFormState(listingForm("l-001")))?.values.photos).toBe([BACK, COVER].join("\n"));
+  });
+
+  it("keeps only bounded values when a save fails: a choice that isn't one of its choices is kept as nothing (amendment 10.2)", async () => {
+    await signedInAs("acc-seller");
+    const huge = "x".repeat(1_000_000);
+    const failing = fanForm({
+      title: huge,
+      price: huge,
+      swapFor: huge,
+      description: huge,
+      kind: huge,
+      category: huge,
+      condition: huge,
+      free: huge,
+      from: huge,
+      payMode: huge,
+      handover: huge,
+      pickup: huge,
+    });
+    await redirectOf(() => saveListingForm(failing));
+    const { values } = (await readFormState(listingForm(null)))!;
+    for (const name of ["kind", "category", "condition", "free", "from", "payMode", "handover", "pickup"]) {
+      expect(values[name], name).toBe("");
+    }
+    for (const [name, value] of Object.entries(values)) expect(value.length, name).toBeLessThanOrEqual(KEEP_MAX);
+  });
+
+  it("keeps a good choice as it was typed when a save fails (amendment 10.2)", async () => {
+    await signedInAs("acc-seller");
+    await redirectOf(() =>
+      saveListingForm(fanForm({ title: "", kind: "service", condition: "fair", free: "yes", from: "yes", handover: "online" })),
+    );
+    expect((await readFormState(listingForm(null)))!.values).toMatchObject({
+      kind: "service",
+      category: "res-living",
+      condition: "fair",
+      free: "yes",
+      from: "yes",
+      payMode: "cash",
+      handover: "online",
+      pickup: "pp-midrand-library",
+    });
+  });
+
+  it("applies a Remove before it works out the room, so a full listing takes the new photo (amendment 10.3)", async () => {
+    await signedInAs("acc-seller");
+    const six = [COVER, BACK, CASE, "/placeholders/photo/4.svg", "/placeholders/photo/5.svg", "/placeholders/photo/6.svg"];
+    sampleStore().listings.get("l-001")!.photos = six.map((src) => ({ src, alt: "" }));
+    const posted = fanForm({
+      listing: "l-001",
+      photo: six,
+      newPhotos: photoFile(pngBytes()),
+      photoMove: `${six[5]}:remove`,
+    });
+    await redirectOf(() => saveListingForm(posted));
+    const state = (await readFormState(listingForm("l-001")))!;
+    expect(state.errors).toEqual([]);
+    const shown = state.values.photos.split("\n");
+    expect(shown).toHaveLength(6);
+    expect(shown.slice(0, 5)).toEqual(six.slice(0, 5));
+    expect(shown[5]).toMatch(/^\/photos\/ph-/);
+  });
+
   it("saves changes to a listing, and keeps a sold one sold", async () => {
     await signedInAs("acc-seller");
     expect(await redirectOf(() => saveListingForm(fanForm({ listing: "l-001", title: "Desk fan" })))).toBe(
@@ -180,6 +273,8 @@ describe("My listings' buttons and Delete listing (selling spec 2.9, plan decisi
     expect(await getOwnListing("tech-corner", row.id)).toBeNull();
     expect(await getPhoto(photoIdOf(row.photos[0].src)!, NOW)).toBeNull();
     expect((await readFormState(MY_LISTINGS_FORM))?.notice).toBe("deleted");
+    // What buyers see changed, so the listings tag expires (amendment 10.7).
+    expect(request.updatedTags).toEqual(["listings", "listings"]);
   });
 
   it("never touches another shop's listing", async () => {

@@ -1,23 +1,29 @@
 import { connection } from "next/server";
-import { readFormState } from "@/lib/auth/form-state";
 import { getViewer } from "@/lib/auth/session";
+import { getPickupPoints } from "@/lib/data";
 import type { OnboardingDraftRow } from "@/lib/data/rows";
 import { shopStats } from "@/lib/data/shop-stats";
 import { getOnboardingDraft, getShopOf } from "@/lib/data/shops";
 import { signInHref } from "@/lib/next-path";
 import { badgeProgress } from "@/lib/selling/badges";
-import { DASHBOARD_FORM } from "@/lib/selling/form-state";
+import { DASHBOARD_FORM, takeNotice } from "@/lib/selling/form-state";
 import { noticeText } from "@/lib/selling/notices";
 import { onboardingPath, type OnboardingStep } from "@/lib/selling/paths";
+import type { PickupPoint } from "@/lib/types";
 import { Dashboard } from "./Dashboard";
 import { SellPitch } from "./SellPitch";
 import { ShopWaiting } from "./ShopWaiting";
 
-/** Where a half-done application picks up: the first step not yet answered (step 3's photo is optional). */
-function resumeStep(draft: OnboardingDraftRow): OnboardingStep {
+/**
+ * Where a half-done application picks up: the first step not yet answered (step 3's photo is optional). Step 3 is
+ * where it picks up only when the draft's campus has pickup points to choose; Eduvos Online has none, so everything
+ * is answered and the student resumes at the review (amendment 10.4).
+ */
+function resumeStep(draft: OnboardingDraftRow, pickupPoints: readonly PickupPoint[]): OnboardingStep {
   if (!draft.name || !draft.categorySlug) return 1;
   if (!draft.about) return 2;
-  if (draft.pickupPointIds.length === 0) return 3;
+  const hasPoints = pickupPoints.some((point) => point.campusSlug === draft.campusSlug);
+  if (hasPoints && draft.pickupPointIds.length === 0) return 3;
   return 5;
 }
 
@@ -31,13 +37,15 @@ export async function SellHome() {
   const own = await getShopOf(account.id);
   if (!own) {
     const draft = await getOnboardingDraft(account.id);
-    return <SellPitch startHref={onboardingPath(draft ? resumeStep(draft) : 1)} resuming={draft !== null} />;
+    const step = draft ? resumeStep(draft, await getPickupPoints()) : 1;
+    return <SellPitch startHref={onboardingPath(step)} resuming={draft !== null} />;
   }
   if (own.status === "pending") return <ShopWaiting shopName={own.shop.name} sentAt={own.shop.createdAt} />;
   // The week's numbers read the clock (decision 26).
   await connection();
   const now = new Date();
-  const [stats, state] = await Promise.all([shopStats(own.shop.slug, now), readFormState(DASHBOARD_FORM)]);
+  // The notice is taken as it is shown, so a second visit says nothing (amendment 10.6).
+  const [stats, state] = await Promise.all([shopStats(own.shop.slug, now), takeNotice(DASHBOARD_FORM)]);
   return (
     <Dashboard
       shop={{ name: own.shop.name, slug: own.shop.slug, badge: own.shop.badge }}

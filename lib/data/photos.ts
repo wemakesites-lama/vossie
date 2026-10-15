@@ -70,9 +70,16 @@ export async function getPhoto(id: string, now: Date): Promise<Pick<PhotoRow, "t
   return row && !isStale(row, now.getTime()) ? { type: row.type, bytes: row.bytes } : null;
 }
 
-/** The addresses of `ownerId`'s photos with this use; null means waiting on a form. */
-export async function photoSrcsOf(ownerId: string, use: string | null): Promise<Set<string>> {
-  const rows = [...sampleStore().photos.values()].filter((row) => row.ownerId === ownerId && row.use === use);
+/**
+ * The addresses of `ownerId`'s photos with this use; null means waiting on a form. A waiting photo a day old or more
+ * is left out, even if no upload has come along to tidy it away yet: it's gone, and nothing may point at it
+ * (amendment 10.1).
+ */
+export async function photoSrcsOf(ownerId: string, use: string | null, now: Date): Promise<Set<string>> {
+  const nowMs = now.getTime();
+  const rows = [...sampleStore().photos.values()].filter(
+    (row) => row.ownerId === ownerId && row.use === use && !isStale(row, nowMs),
+  );
   return new Set(rows.map((row) => photoSrc(row.id)));
 }
 

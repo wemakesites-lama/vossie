@@ -1,11 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { saveFormState } from "@/lib/data/form-states";
 import { resetSampleStore } from "@/lib/data/store";
+import { MY_LISTINGS_FORM } from "@/lib/selling/form-state";
 import { redirectOf } from "@/tests/helpers/next-request";
 import { DeleteListing } from "./DeleteListing";
 import { MyListings } from "./MyListings";
 
-const viewer = vi.hoisted(() => ({ id: null as string | null }));
+const viewer = vi.hoisted(() => ({ id: null as string | null, sessionKey: null as string | null }));
 
 vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
@@ -16,7 +18,7 @@ vi.mock("@/lib/auth/session", async () => {
   const getViewer = async () => (viewer.id ? getAccount(viewer.id) : null);
   return {
     getViewer,
-    getSessionKey: async () => null,
+    getSessionKey: async () => viewer.sessionKey,
     requireAccount: async (next: string) => (await getViewer()) ?? redirect(signInHref(next)),
   };
 });
@@ -25,6 +27,7 @@ vi.mock("@/lib/selling/listing-actions", () => ({ changeListingState: async () =
 beforeEach(() => {
   resetSampleStore();
   viewer.id = null;
+  viewer.sessionKey = null;
 });
 
 describe("My listings' and Delete listing's request-time parts (selling spec 2.9 and section 3)", () => {
@@ -34,6 +37,27 @@ describe("My listings' and Delete listing's request-time parts (selling spec 2.9
     // The title is also in each control's sr-only name, so look for the one in the listing's own line.
     expect(screen.getByText("Casio fx-991ZA Plus calculator", { selector: ".sell-item-title" })).toBeInTheDocument();
     expect(screen.queryByText("Box braids, shoulder length")).toBeNull();
+  });
+
+  it("says what the last action did once: a second visit shows no notice (amendment 10.6)", async () => {
+    viewer.id = "acc-seller";
+    viewer.sessionKey = "s";
+    await saveFormState(
+      {
+        sessionKey: "s",
+        form: MY_LISTINGS_FORM,
+        errors: [],
+        values: { listing: "l-001" },
+        notice: "paused",
+        expiresAt: "2099-01-01T00:00:00.000Z",
+      },
+      new Date("2026-10-14T08:00:00.000Z"),
+    );
+    const first = render(await MyListings({ searchParams: Promise.resolve({}) }));
+    expect(screen.getByRole("status")).toHaveTextContent("Paused. Buyers can't see it until you resume it.");
+    first.unmount();
+    render(await MyListings({ searchParams: Promise.resolve({}) }));
+    expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("sends a student without a shop to /sell, and a signed-out visitor to sign in", async () => {

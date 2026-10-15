@@ -34,6 +34,15 @@ describe("the selling forms' parts (selling spec section 4)", () => {
     expect(screen.getByRole("radio", { name: "Swap" })).toBeChecked();
   });
 
+  it("joins a radio group's error to the group, not to its radios, which can't be invalid (amendment 10.7)", () => {
+    render(
+      <RadioGroup id="t-pay" name="payMode" legend="How do you want to be paid?" options={choices} defaultValue="" error="Choose one." />,
+    );
+    // The role doesn't support aria-invalid, so no radio carries it.
+    for (const radio of screen.getAllByRole("radio")) expect(radio).not.toHaveAttribute("aria-invalid");
+    expect(screen.getByRole("group", { name: "How do you want to be paid?" })).toHaveAccessibleDescription("Error: Choose one.");
+  });
+
   it("groups boxes under a legend, ticking the chosen ones", () => {
     render(
       <CheckList id="t-spots" name="pickupPoint" legend="Pickup points" options={choices} chosen={["swap"]} hint="One or more." />,

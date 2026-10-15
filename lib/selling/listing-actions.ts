@@ -15,7 +15,17 @@ import { clearForm, listingForm, MY_LISTINGS_FORM } from "./form-state";
 import { requireShopOwner } from "./owner";
 import { editListingPath, myListingsPath, NEW_LISTING_PATH, parseListingsTab, tabFor } from "./paths";
 import { applyPhotoMove, parsePhotoMove, photoOrder, resolveToken } from "./photo-order";
-import { ALT_MAX, checkListing, cleanLine, type ListingInput } from "./rules";
+import {
+  ALT_MAX,
+  checkListing,
+  cleanLine,
+  CONDITION_CHOICES,
+  HANDOVER_CHOICES,
+  KIND_CHOICES,
+  PAY_CHOICES,
+  type ListingContext,
+  type ListingInput,
+} from "./rules";
 import { readUploads } from "./uploads";
 
 // The listing Server Actions (selling spec 2.9 and 2.10): the listing form's save and photo buttons, My listings'
@@ -40,28 +50,39 @@ function listingInput(formData: FormData): ListingInput {
   };
 }
 
+const valuesOf = (choices: ReadonlyArray<{ value: string }>) => choices.map((choice) => choice.value);
+const KINDS = valuesOf(KIND_CHOICES);
+const CONDITIONS = valuesOf(CONDITION_CHOICES);
+const PAY_MODES = valuesOf(PAY_CHOICES);
+const HANDOVERS = valuesOf(HANDOVER_CHOICES);
+
+/** A choice field's posted value when it is one of its choices, else nothing: form state holds no stranger's text. */
+const known = (raw: string, choices: readonly string[]) => (choices.includes(raw) ? raw : "");
+
 /**
  * What the form shows again after a failed save or a photo button (plan decision 9): all that was typed, the photos
- * in order, and each one's description.
+ * in order, and each one's description. Form state keeps only bounded values (amendment 10.2): typed text is cut at
+ * `keepTyped`'s limit, and a choice field is kept only when it is one of its known choices.
  */
 function typedValues(
   formData: FormData,
   order: readonly string[],
   alts: ReadonlyMap<string, string>,
+  context: ListingContext,
 ): Record<string, string> {
   const values: Record<string, string> = {
-    kind: field(formData, "kind"),
+    kind: known(field(formData, "kind"), KINDS),
     title: keepTyped(field(formData, "title")),
-    category: field(formData, "category"),
-    condition: field(formData, "condition"),
+    category: known(field(formData, "category"), context.categorySlugs),
+    condition: known(field(formData, "condition"), CONDITIONS),
     price: keepTyped(field(formData, "price")),
-    free: field(formData, "free"),
-    from: field(formData, "from"),
-    payMode: field(formData, "payMode"),
+    free: known(field(formData, "free"), ["yes"]),
+    from: known(field(formData, "from"), ["yes"]),
+    payMode: known(field(formData, "payMode"), PAY_MODES),
     swapFor: keepTyped(field(formData, "swapFor")),
     description: keepTyped(field(formData, "description")),
-    handover: field(formData, "handover"),
-    pickup: field(formData, "pickup"),
+    handover: known(field(formData, "handover"), HANDOVERS),
+    pickup: known(field(formData, "pickup"), context.pickupPointIds),
     photos: order.join("\n"),
   };
   for (const src of order) values[`alt:${src}`] = keepTyped(alts.get(src) ?? "");
@@ -83,13 +104,22 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   const form = listingForm(id);
   const formPath = id ? editListingPath(id) : NEW_LISTING_PATH;
 
+  const context: ListingContext = {
+    categorySlugs: (await getCategories()).map((category) => category.slug),
+    pickupPointIds: owner.shop.pickupPointIds,
+  };
+
+  // A photo button posts its move. Remove is applied before anything else, so the room it makes is there for a new
+  // file chosen in the same post (amendment 10.3).
+  const move = parsePhotoMove(field(formData, "photoMove"));
+  const removing = move?.op === "remove" ? move.token : null;
+
   // Photos: the listing's own, and photos this seller uploaded on a form that hasn't saved yet. Anything else is dropped.
-  const tokens = fieldList(formData, "photo");
-  const allowed = new Set([
-    ...(existing?.photos.map((photo) => photo.src) ?? []),
-    ...(await photoSrcsOf(owner.account.id, null)),
-  ]);
-  const room = PHOTOS_PER_LISTING - new Set(tokens.filter((token) => allowed.has(token))).size;
+  const tokens = fieldList(formData, "photo").filter((token) => token !== removing);
+  const ownSrcs = existing?.photos.map((photo) => photo.src) ?? [];
+  const waitingBefore = await photoSrcsOf(owner.account.id, null, now);
+  const room =
+    PHOTOS_PER_LISTING - new Set(tokens.filter((token) => ownSrcs.includes(token) || waitingBefore.has(token))).size;
   const { uploads, errors: uploadErrors } = await readUploads(fileList(formData, "newPhotos"), room);
   const queue = await storePhotos(
     owner.account.id,
@@ -97,7 +127,16 @@ export async function saveListingForm(formData: FormData): Promise<void> {
     now,
   );
   const stored = uploads.map((upload) => (upload ? (queue.shift() ?? null) : null));
-  const { order, tooMany } = photoOrder(tokens, allowed, stored);
+  // Storing tidied away waiting photos a day old and any past an account's newest 12, so what a form may use is read
+  // again now: a saved listing never points at a photo that has gone (amendment 10.1).
+  const allowed = new Set([...ownSrcs, ...(await photoSrcsOf(owner.account.id, null, now))]);
+  // A new file that was removed in this post is left out, though it was posted.
+  const removedSrc = removing ? resolveToken(removing, stored) : null;
+  const { order, tooMany } = photoOrder(
+    tokens,
+    allowed,
+    stored.map((src) => (src === removedSrc ? null : src)),
+  );
   const alts = new Map<string, string>();
   for (const token of tokens) {
     const src = resolveToken(token, stored);
@@ -107,23 +146,19 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   if (tooMany && !photoErrors.includes("photo-count")) photoErrors.push("photo-count");
 
   // A photo button: apply it, keep everything typed, and come back to the photos.
-  const move = parsePhotoMove(field(formData, "photoMove"));
   if (move) {
     const token = resolveToken(move.token, stored);
     const moved = token ? applyPhotoMove(order, { token, op: move.op }) : order;
-    await writeFormState(form, { errors: photoErrors, values: typedValues(formData, moved, alts), notice: null }, now);
+    const state = { errors: photoErrors, values: typedValues(formData, moved, alts, context), notice: null };
+    await writeFormState(form, state, now);
     done(`${formPath}#${listingFieldPrefix(id)}-photos`);
   }
 
-  const categories = await getCategories();
-  const check = checkListing(listingInput(formData), {
-    categorySlugs: categories.map((category) => category.slug),
-    pickupPointIds: owner.shop.pickupPointIds,
-  });
+  const check = checkListing(listingInput(formData), context);
   const errors: string[] = [...check.errors, ...photoErrors];
   if ([...alts.values()].some((alt) => characterCount(alt) > ALT_MAX)) errors.push("alt-length");
   if (errors.length > 0 || !check.value) {
-    await writeFormState(form, { errors, values: typedValues(formData, order, alts), notice: null }, now);
+    await writeFormState(form, { errors, values: typedValues(formData, order, alts, context), notice: null }, now);
     done(formPath);
   }
 

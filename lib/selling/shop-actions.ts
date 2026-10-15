@@ -21,7 +21,7 @@ import {
 import { sellersChanged } from "@/lib/data/tags";
 import { keepTyped } from "@/lib/messaging/rules";
 import { done, field, fieldList, fileList } from "./action-helpers";
-import { DASHBOARD_FORM, onboardingForm, PROFILE_FORM } from "./form-state";
+import { clearForm, DASHBOARD_FORM, onboardingForm, PROFILE_FORM } from "./form-state";
 import { requireShopOwner } from "./owner";
 import { onboardingPath, parseStep, PROFILE_PATH, SELL_PATH, type OnboardingStep } from "./paths";
 import { checkAbout, checkShopName, checkSlug, checkTagline } from "./rules";
@@ -142,6 +142,9 @@ export async function saveOnboardingStep(formData: FormData): Promise<void> {
   draft.updatedAt = now.toISOString();
   await saveOnboardingDraft(draft);
   await writeFormState(onboardingForm(step), { errors, values: {}, notice: null }, now);
+  // Step 5 starts clean: an error an earlier Send for approval left there shouldn't greet the student before they press
+  // anything (amendment 10.5).
+  if (step === 4 && errors.length === 0) await clearForm(onboardingForm(5));
   done(errors.length > 0 || stay ? onboardingPath(step) : onboardingPath((step + 1) as OnboardingStep));
 }
 
@@ -201,7 +204,9 @@ export async function saveShopProfile(formData: FormData): Promise<void> {
 
   const name = checkShopName(field(formData, "name"));
   const tagline = checkTagline(field(formData, "tagline"));
-  const categorySlug = field(formData, "category");
+  // A category that isn't one is nothing (amendment 10.2: form state keeps only bounded values).
+  const typedCategory = field(formData, "category");
+  const categorySlug = (await isCategory(typedCategory)) ? typedCategory : "";
   const about = checkAbout(field(formData, "about"));
   const removePhoto = field(formData, "removePhoto") === "yes";
   const photo = removePhoto ? { upload: null, errors: [] } : await readShopPhoto(formData);
@@ -214,7 +219,7 @@ export async function saveShopProfile(formData: FormData): Promise<void> {
   if (name.error) errors.push(name.error);
   else if (place.campusSlug && (await isShopNameTaken(name.value, place.campusSlug, shop.slug))) errors.push("name-taken");
   if (tagline.error) errors.push(tagline.error);
-  if (!(await isCategory(categorySlug))) errors.push("category-missing");
+  if (!categorySlug) errors.push("category-missing");
   if (about.error) errors.push(about.error);
   errors.push(...photo.errors, ...place.errors);
   if (changeSlug && slug.error) errors.push(slug.error);

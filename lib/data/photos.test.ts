@@ -25,7 +25,7 @@ describe("stored photos (selling spec 2.4, plan decision 11)", () => {
     const [src] = await storePhotos("acc-seller", [upload()], NOW);
     expect(src).toMatch(/^\/photos\/ph-[0-9a-f-]{36}$/);
     expect(await getPhoto(photoIdOf(src)!, NOW)).toEqual({ type: "image/png", bytes: pngBytes() });
-    expect(await photoSrcsOf("acc-seller", null)).toEqual(new Set([src]));
+    expect(await photoSrcsOf("acc-seller", null, NOW)).toEqual(new Set([src]));
     expect(await getPhoto("ph-nope", NOW)).toBeNull();
   });
 
@@ -42,6 +42,17 @@ describe("stored photos (selling spec 2.4, plan decision 11)", () => {
     expect(sampleStore().photos.has(photoIdOf(waiting)!)).toBe(true);
   });
 
+  it("leaves a waiting photo a day old out of what an account may use, but not one that has a use (amendment 10.1)", async () => {
+    const [old, fresh, used] = await storePhotos("acc-seller", [upload(), upload(), upload()], NOW);
+    sampleStore().photos.get(photoIdOf(old)!)!.createdAt = "2026-10-13T07:59:00.000Z";
+    sampleStore().photos.get(photoIdOf(used)!)!.createdAt = "2026-10-13T07:59:00.000Z";
+    await attachPhotos("acc-seller", [used], "shop");
+    expect(await photoSrcsOf("acc-seller", null, NOW)).toEqual(new Set([fresh]));
+    expect(await photoSrcsOf("acc-seller", "shop", NOW)).toEqual(new Set([used]));
+    // Looking doesn't tidy: the old photo is still there until the next upload does it.
+    expect(sampleStore().photos.has(photoIdOf(old)!)).toBe(true);
+  });
+
   it("reads a photo's id from its address, and none from a placeholder's or a made-up one", () => {
     expect(photoSrc("ph-1")).toBe("/photos/ph-1");
     expect(photoIdOf("/placeholders/listing/tech.svg")).toBeNull();
@@ -52,15 +63,15 @@ describe("stored photos (selling spec 2.4, plan decision 11)", () => {
     const [mine] = await storePhotos("acc-seller", [upload()], NOW);
     const [theirs] = await storePhotos("acc-student", [upload()], NOW);
     await attachPhotos("acc-seller", [mine, theirs, "/placeholders/listing/tech.svg"], "listing:l-001");
-    expect(await photoSrcsOf("acc-seller", "listing:l-001")).toEqual(new Set([mine]));
-    expect(await photoSrcsOf("acc-student", null)).toEqual(new Set([theirs]));
+    expect(await photoSrcsOf("acc-seller", "listing:l-001", NOW)).toEqual(new Set([mine]));
+    expect(await photoSrcsOf("acc-student", null, NOW)).toEqual(new Set([theirs]));
   });
 
   it("deletes a use's photos except the ones it keeps, and every photo an account uploaded", async () => {
     const [a, b] = await storePhotos("acc-seller", [upload(), upload()], NOW);
     await attachPhotos("acc-seller", [a, b], "shop");
     await deletePhotosUsedBy("acc-seller", "shop", new Set([b]));
-    expect(await photoSrcsOf("acc-seller", "shop")).toEqual(new Set([b]));
+    expect(await photoSrcsOf("acc-seller", "shop", NOW)).toEqual(new Set([b]));
     await deletePhotosOf("acc-seller");
     expect(sampleStore().photos.size).toBe(0);
   });
@@ -70,6 +81,6 @@ describe("stored photos (selling spec 2.4, plan decision 11)", () => {
     await storePhotos("acc-seller", [upload()], NOW);
     expect(await getPhoto(photoIdOf(old)!, NOW)).toBeNull();
     const many = await storePhotos("acc-student", Array.from({ length: 14 }, upload), NOW);
-    expect(await photoSrcsOf("acc-student", null)).toEqual(new Set(many.slice(2)));
+    expect(await photoSrcsOf("acc-student", null, NOW)).toEqual(new Set(many.slice(2)));
   });
 });

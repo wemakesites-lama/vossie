@@ -134,7 +134,7 @@ describe("a shop's own listings (selling spec 2.9 and 2.10, plan decision 3)", (
   it("makes its photos its own, and deletes the ones it stops using, and the rest with it", async () => {
     const [a, b] = await storePhotos("acc-seller", [upload(), upload()], NOW);
     const row = (await save({ photos: [{ src: a, alt: "" }, { src: b, alt: "The plug" }] }))!;
-    expect(await photoSrcsOf("acc-seller", `listing:${row.id}`)).toEqual(new Set([a, b]));
+    expect(await photoSrcsOf("acc-seller", `listing:${row.id}`, NOW)).toEqual(new Set([a, b]));
     await save({ id: row.id, photos: [{ src: b, alt: "" }] });
     expect(await getPhoto(photoIdOf(a)!, NOW)).toBeNull();
     expect(await deleteOwnListing("tech-corner", "acc-seller", row.id)).toBe(true);
