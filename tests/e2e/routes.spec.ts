@@ -79,4 +79,22 @@ test.describe("routes", () => {
       await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
     }
   });
+
+  test("the selling pages send a signed-out visitor to sign in, and back again (selling spec section 3)", async ({
+    page,
+    baseURL,
+  }) => {
+    onlyAtPhoneAndDesktop();
+    for (const path of [
+      "/sell/onboarding?step=2",
+      "/sell/listings",
+      "/sell/listings/new",
+      "/sell/listings/l-001/edit",
+      "/sell/listings/l-001/delete",
+      "/sell/profile",
+    ]) {
+      await page.goto(path);
+      await expect(page, path).toHaveURL(`${baseURL}/login?next=${encodeURIComponent(path)}`);
+    }
+  });
 });

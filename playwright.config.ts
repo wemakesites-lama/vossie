@@ -23,6 +23,11 @@ const desktop = (width: number, height: number) => ({
   viewport: { width, height },
 });
 
+// The tests that publish, change or delete listings run after every other test (selling plan decision 25), so the
+// counts other tests check (36 listings in browse, "2 listings" on Tech corner's storefront) never move under them.
+const SELLING_WRITES = /selling-writes\.spec\.ts$/;
+const DEVICE_PROJECTS = ["phone-360", "phone-390", "tablet-768", "laptop-1024", "desktop-1440"];
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
@@ -44,10 +49,16 @@ export default defineConfig({
     timeout: 240_000,
   },
   projects: [
-    { name: "phone-360", use: phone(360, 780) },
-    { name: "phone-390", use: phone(390, 844) },
-    { name: "tablet-768", use: { ...desktop(768, 1024), screen: { width: 768, height: 1024 }, hasTouch: true } },
-    { name: "laptop-1024", use: desktop(1024, 768) },
-    { name: "desktop-1440", use: desktop(1440, 900) },
+    { name: "phone-360", use: phone(360, 780), testIgnore: SELLING_WRITES },
+    { name: "phone-390", use: phone(390, 844), testIgnore: SELLING_WRITES },
+    {
+      name: "tablet-768",
+      use: { ...desktop(768, 1024), screen: { width: 768, height: 1024 }, hasTouch: true },
+      testIgnore: SELLING_WRITES,
+    },
+    { name: "laptop-1024", use: desktop(1024, 768), testIgnore: SELLING_WRITES },
+    { name: "desktop-1440", use: desktop(1440, 900), testIgnore: SELLING_WRITES },
+    // After the five above (selling plan decision 25). Run it alone with --project=selling-writes --no-deps.
+    { name: "selling-writes", use: phone(390, 844), testMatch: SELLING_WRITES, dependencies: DEVICE_PROJECTS },
   ],
 });
