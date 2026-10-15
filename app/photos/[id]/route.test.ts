@@ -20,7 +20,7 @@ describe("a stored photo (selling spec 2.4)", () => {
     const response = await get(src.split("/").at(-1)!);
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("image/png");
-    expect(response.headers.get("Cache-Control")).toBe("public, max-age=31536000, immutable");
+    expect(response.headers.get("Cache-Control")).toBe("private, max-age=31536000, immutable");
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(pngBytes());
   });
 

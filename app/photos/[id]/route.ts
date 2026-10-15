@@ -27,7 +27,9 @@ export async function GET(_request: Request, { params }: RouteContext<"/photos/[
     headers: {
       "Content-Type": photo.type,
       "Content-Length": String(photo.bytes.byteLength),
-      "Cache-Control": "public, max-age=31536000, immutable",
+      // Private: browsers keep a photo for a year (its id is never reused), but a shared cache in front of the site
+      // doesn't, so a photo deleted with its listing or account (POPIA) isn't kept there.
+      "Cache-Control": "private, max-age=31536000, immutable",
       // Uploaded bytes: never sniffed as another type, shown rather than run when opened on their own (the same
       // policy Next's image optimizer sends), and saved under a name made from the id. next.config.ts also sends
       // nosniff on every path; it's here too so the photo doesn't depend on that.
