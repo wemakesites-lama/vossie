@@ -28,7 +28,7 @@ const NOTICES: ReadonlyMap<string, string> = new Map([
   ["dismissed", "Dismissed. The reporter has been told."],
   ["hidden", "Hidden. Its seller and everyone who reported it have been told."],
   ["listing-shown", "Shown again. Its seller has been told."],
-  ["report-paused", "Paused. The seller and everyone who reported it have been told."],
+  ["report-paused", "Paused. The seller and everyone who reported the shop or its listings have been told."],
   ["pinned", "Pinned. They take one of the four places that day."],
   ["unpinned", "Pin removed."],
   ["point-added", "Pickup point added."],
@@ -36,7 +36,7 @@ const NOTICES: ReadonlyMap<string, string> = new Map([
   ["point-retired", "Retired. Listings that use it keep it, marked no longer used."],
   ["point-restored", "It's in use again."],
   ["post-published", "Published. It's on the Hub's feed."],
-  ["post-draft", "Saved as a draft. Only Hub staff can see it."],
+  ["post-draft", "Saved as a draft. Only you and the admins can see it."],
   ["booking-accepted", "Accepted. The student has been told."],
   ["booking-declined", "Declined. The student has been told."],
   // A request for office hours whose day is over has no Accept or Decline (amendment 23).

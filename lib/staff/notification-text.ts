@@ -9,7 +9,7 @@ export function shopApprovedText(shop: string): string {
 
 /** The Hub's other decisions about a shop, with the "shop-update" kind. */
 export function shopDecisionText(
-  decision: "declined" | "paused" | "resumed" | "verified" | "unverified",
+  decision: "declined" | "paused" | "resumed" | "resumed-own-pause" | "verified" | "unverified",
   shop: string,
 ): string {
   switch (decision) {
@@ -19,6 +19,12 @@ export function shopDecisionText(
       return `The Hub paused ${shop}. See why on your dashboard.`;
     case "resumed":
       return `The Hub resumed ${shop}. Buyers can see it again.`;
+    case "resumed-own-pause":
+      // The Hub's pause had taken over the seller's own: lifting it puts theirs back (amendments 29 and 32).
+      return (
+        `The Hub lifted its pause on ${shop}. Your own pause is back: ` +
+        "resume the shop on your dashboard when you're ready."
+      );
     case "verified":
       return `${shop} is now Verified by the Hub.`;
     case "unverified":

@@ -16,6 +16,9 @@ describe("the sentences staff actions send (staff tools spec 2.3 and 2.4, plan d
       "The Hub didn't approve Crochet corner yet. See why, and send it again.",
     );
     expect(shopDecisionText("paused", "Crochet corner")).toBe("The Hub paused Crochet corner. See why on your dashboard.");
+    expect(shopDecisionText("resumed-own-pause", "Crochet corner")).toBe(
+      "The Hub lifted its pause on Crochet corner. Your own pause is back: resume the shop on your dashboard when you're ready.",
+    );
     expect(shopDecisionText("resumed", "Crochet corner")).toBe("The Hub resumed Crochet corner. Buyers can see it again.");
     expect(shopDecisionText("verified", "Crochet corner")).toBe("Crochet corner is now Verified by the Hub.");
     expect(shopDecisionText("unverified", "Crochet corner")).toBe("Crochet corner is no longer Verified by the Hub.");
