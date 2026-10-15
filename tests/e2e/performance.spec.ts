@@ -66,7 +66,8 @@ for (const [name, path, saved] of PAGES) {
 }
 
 // Pages for a signed-in visitor, measured on a first visit with only the session cookie copied in, so nothing is
-// cached yet (accounts plan, Task 14; messaging plan, Task 16). The seller reads the thread and notifications.
+// cached yet (accounts plan, Task 14; messaging plan, Task 16). The seller reads the thread and notifications. The
+// listing form's two pages are the only routes with selling's client code, the photo field (selling plan, Task 12).
 const SIGNED_IN_PAGES: ReadonlyArray<[name: string, path: string, account: string]> = [
   ["account page", "/account", "Student, Midrand"],
   ["inbox page", "/messages", "Student, Midrand"],
@@ -74,6 +75,8 @@ const SIGNED_IN_PAGES: ReadonlyArray<[name: string, path: string, account: strin
   ["composer page", "/listings/l-002/message", "Student, Midrand"],
   ["report page", "/report?listing=l-002", "Student, Midrand"],
   ["notifications page", "/notifications", "Seller, Tech corner"],
+  ["new listing form", "/sell/listings/new", "Seller, Tech corner"],
+  ["edit listing form", "/sell/listings/l-001/edit", "Seller, Tech corner"],
 ];
 
 for (const [name, path, account] of SIGNED_IN_PAGES) {

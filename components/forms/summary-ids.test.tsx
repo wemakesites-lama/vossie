@@ -6,6 +6,7 @@ import { CodeStep, EmailStep, ProfileStep } from "@/components/auth/SignInSteps"
 import { composerForm, ComposerView } from "@/components/messages/ComposerView";
 import { reportForm, ReportView } from "@/components/messages/ReportView";
 import { replyForm, ThreadView } from "@/components/messages/ThreadView";
+import { ListingFormView } from "@/components/sell/ListingFormView";
 import { OnboardingView } from "@/components/sell/OnboardingView";
 import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
@@ -35,6 +36,7 @@ vi.mock("@/lib/messaging/actions", () => ({
   sendReport: async () => {},
 }));
 vi.mock("@/lib/selling/shop-actions", () => ({ saveOnboardingStep: async () => {}, sendForApproval: async () => {} }));
+vi.mock("@/lib/selling/listing-actions", () => ({ saveListingForm: async () => {} }));
 
 const account: Account = {
   id: "acc-student",
@@ -69,6 +71,21 @@ const wizardStep = (step: 1 | 2 | 3 | 4 | 5) => (
     campuses={campuses}
     categories={categories}
     pickupPoints={pickupPoints}
+  />
+);
+
+/** The listing form, new or editing one listing, with a summary showing (selling plan amendment 1). */
+const listingForm = (listingId: string | null) => (
+  <ListingFormView
+    listingId={listingId}
+    state={listingId ? "available" : null}
+    waiting={false}
+    values={{ kind: "item", payMode: "cash", handover: "pickup", pickup: "pp-midrand-library" }}
+    photos={[{ src: "/placeholders/listing/tech.svg", alt: "", thumb: "/placeholders/listing/tech.svg" }]}
+    errors={oops}
+    categories={categories}
+    spots={pickupPoints.filter((point) => point.campusSlug === "midrand")}
+    campusName="Midrand"
   />
 );
 
@@ -144,10 +161,12 @@ describe("error summary ids (accounts spec 6)", () => {
         {wizardStep(3)}
         {wizardStep(4)}
         {wizardStep(5)}
+        {listingForm(null)}
+        {listingForm("l-001")}
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(13);
+    expect(summaries).toHaveLength(15);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -164,6 +183,8 @@ describe("error summary ids (accounts spec 6)", () => {
       "onb-step-3-summary",
       "onb-step-4-summary",
       "onb-step-5-summary",
+      "new-summary",
+      "edit-l-001-summary",
     ]);
   });
 });
