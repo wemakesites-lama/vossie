@@ -1,0 +1,124 @@
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
+import { authClient, type AuthClient } from "./auth";
+
+// The sign-in client (backend spec 5; M1 of the phase A review). The type tests are checked by `pnpm typecheck`; the
+// behaviour tests run with Supabase's two client makers and Next's request APIs replaced, so nothing reaches a network.
+
+vi.mock("server-only", () => ({}));
+
+const calls = vi.hoisted(() => ({
+  createClient: vi.fn(),
+  createServerClient: vi.fn(),
+  signInWithOtp: vi.fn(),
+  verifyOtp: vi.fn(),
+  signOut: vi.fn(),
+  realIp: "196.25.1.1" as string | null,
+}));
+
+vi.mock("@supabase/supabase-js", () => ({
+  createClient: (...args: unknown[]) => {
+    calls.createClient(...args);
+    return { auth: { signInWithOtp: calls.signInWithOtp } };
+  },
+}));
+vi.mock("@supabase/ssr", () => ({
+  createServerClient: (...args: unknown[]) => {
+    calls.createServerClient(...args);
+    return { auth: { verifyOtp: calls.verifyOtp, signOut: calls.signOut } };
+  },
+}));
+vi.mock("next/headers", () => ({
+  headers: async () => new Headers(calls.realIp ? { "x-real-ip": calls.realIp } : {}),
+  cookies: async () => ({ getAll: () => [], set: () => {} }),
+}));
+vi.mock("@/lib/auth/cookies", () => ({ isHttps: async () => true }));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  calls.realIp = "196.25.1.1";
+  vi.stubEnv("SUPABASE_URL", "http://127.0.0.1:55321");
+  vi.stubEnv("SUPABASE_SECRET_KEY", "sb_secret_TESTVALUEtestvalue");
+});
+
+describe("the sign-in client's type (backend spec 5)", () => {
+  it("has the three sign-in calls and nothing else", () => {
+    expectTypeOf<keyof AuthClient>().toEqualTypeOf<"sendSignInCode" | "verifySignInCode" | "signOutHere">();
+    expectTypeOf<AuthClient>().not.toHaveProperty("auth");
+    expectTypeOf<AuthClient>().not.toHaveProperty("admin");
+    expectTypeOf<AuthClient>().not.toHaveProperty("from");
+    expectTypeOf<AuthClient>().not.toHaveProperty("rpc");
+    expectTypeOf<AuthClient>().not.toHaveProperty("storage");
+    expectTypeOf<Awaited<ReturnType<typeof authClient>>>().toEqualTypeOf<AuthClient>();
+  });
+
+  it("refuses a query or an admin call through it", () => {
+    const query = (client: AuthClient) => {
+      // @ts-expect-error The sign-in client is for signing in only (spec decision 5).
+      return client.from("profiles");
+    };
+    const admin = (client: AuthClient) => {
+      // @ts-expect-error No .auth, so no .auth.admin with the secret key's powers.
+      return client.auth.admin.deleteUser("someone");
+    };
+    expectTypeOf(query).toBeFunction();
+    expectTypeOf(admin).toBeFunction();
+  });
+});
+
+describe("the sign-in client (backend spec 5)", () => {
+  it("sends the code from a cookieless client on the implicit flow, so no code-verifier cookie is set", async () => {
+    calls.signInWithOtp.mockResolvedValue({ data: {}, error: null });
+    const result = await (await authClient()).sendSignInCode("thandi@eduvos.com");
+    expect(result).toEqual({ ok: true });
+    expect(calls.createServerClient).not.toHaveBeenCalled();
+    expect(calls.createClient).toHaveBeenCalledWith("http://127.0.0.1:55321", "sb_secret_TESTVALUEtestvalue", {
+      auth: { flowType: "implicit", persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      global: { headers: { "Sb-Forwarded-For": "196.25.1.1" } },
+    });
+    expect(calls.signInWithOtp).toHaveBeenCalledWith({ email: "thandi@eduvos.com", options: { shouldCreateUser: true } });
+  });
+
+  it("checks the code through the cookie client, as an email code, and gives back only the account's id", async () => {
+    calls.verifyOtp.mockResolvedValue({ data: { user: { id: "user-1" }, session: { access_token: "secret" } }, error: null });
+    const result = await (await authClient()).verifySignInCode("thandi@eduvos.com", "123456");
+    expect(result).toEqual({ ok: true, userId: "user-1" });
+    expect(calls.verifyOtp).toHaveBeenCalledWith({ email: "thandi@eduvos.com", token: "123456", type: "email" });
+    const [url, key, options] = calls.createServerClient.mock.calls[0];
+    expect([url, key]).toEqual(["http://127.0.0.1:55321", "sb_secret_TESTVALUEtestvalue"]);
+    expect(options).toMatchObject({
+      cookieOptions: { name: "vossie_auth", httpOnly: true, sameSite: "lax", secure: true, path: "/" },
+      global: { headers: { "Sb-Forwarded-For": "196.25.1.1" } },
+    });
+  });
+
+  it("passes on Auth's refusal as its code and status, never its message", async () => {
+    calls.verifyOtp.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { code: "otp_expired", status: 403, message: "Token has expired or is invalid" },
+    });
+    expect(await (await authClient()).verifySignInCode("thandi@eduvos.com", "000000")).toEqual({
+      ok: false,
+      code: "otp_expired",
+      status: 403,
+    });
+    calls.signInWithOtp.mockResolvedValue({ data: {}, error: { code: "over_email_send_rate_limit", status: 429, message: "…" } });
+    expect(await (await authClient()).sendSignInCode("thandi@eduvos.com")).toEqual({
+      ok: false,
+      code: "over_email_send_rate_limit",
+      status: 429,
+    });
+  });
+
+  it("signs out this browser only", async () => {
+    calls.signOut.mockResolvedValue({ error: null });
+    expect(await (await authClient()).signOutHere()).toEqual({ ok: true });
+    expect(calls.signOut).toHaveBeenCalledWith({ scope: "local" });
+  });
+
+  it("sends no forwarded address when the request has none", async () => {
+    calls.realIp = null;
+    calls.signInWithOtp.mockResolvedValue({ data: {}, error: null });
+    await (await authClient()).sendSignInCode("thandi@eduvos.com");
+    expect(calls.createClient.mock.calls[0][2]).toMatchObject({ global: { headers: {} } });
+  });
+});
