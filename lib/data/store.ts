@@ -1,15 +1,20 @@
 import { sampleAccounts, sampleConsents } from "@/data/fixtures/accounts";
 import { sampleConversations, sampleMessages, sampleNotifications } from "@/data/fixtures/messages";
+import { sampleListingRows, sampleSellerRows } from "@/data/fixtures/shops";
 import type {
   AccountRow,
   ConsentRow,
   ConversationRow,
   FormStateRow,
+  ListingRow,
   MessageRow,
   NotificationRow,
+  OnboardingDraftRow,
+  PhotoRow,
   ReportRow,
   SampleEmailRow,
   SellerProfileRow,
+  SellerRow,
   SessionRow,
   SignInAttemptRow,
 } from "./rows";
@@ -49,10 +54,18 @@ export type SampleStore = {
   reports: Map<string, ReportRow>;
   /** By id. */
   notifications: Map<string, NotificationRow>;
+  /** By slug: every shop's details (selling spec 2.1). Its status is on its owner's seller profile (plan decision 1). */
+  sellers: Map<string, SellerRow>;
+  /** By id: every listing, drafts included. */
+  listings: Map<string, ListingRow>;
+  /** By id: uploaded photos (selling spec 2.4). */
+  photos: Map<string, PhotoRow>;
+  /** By account id: the onboarding wizard's answers so far (selling spec 2.2). */
+  onboardingDrafts: Map<string, OnboardingDraftRow>;
 };
 
 /** Bump it when a table is added or a row changes shape, so `next dev` reseeds instead of keeping an old store. */
-export const STORE_VERSION = 2;
+export const STORE_VERSION = 3;
 
 type StoreHolder = { __vossieSampleStore?: SampleStore };
 
@@ -91,5 +104,10 @@ function seedStore(): SampleStore {
     messages: new Map(structuredClone(sampleMessages).map((row) => [row.id, row])),
     reports: new Map(),
     notifications: new Map(structuredClone(sampleNotifications).map((row) => [row.id, row])),
+    // The listing and seller fixtures as rows (selling plan decision 7). Copies, like the rest.
+    sellers: new Map(structuredClone(sampleSellerRows).map((row) => [row.slug, row])),
+    listings: new Map(structuredClone(sampleListingRows).map((row) => [row.id, row])),
+    photos: new Map(),
+    onboardingDrafts: new Map(),
   };
 }

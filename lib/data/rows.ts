@@ -1,10 +1,18 @@
 import type {
+  Condition,
   ConversationStatus,
+  Handover,
+  ImageRef,
+  ListingKind,
+  ListingState,
   NotificationKind,
+  PayMode,
+  PhotoType,
   ReportReason,
   ReportTarget,
   SellerStatus,
   StaffRole,
+  TrustBadge,
 } from "@/lib/types";
 
 // The sample store's rows (accounts spec section 4), shaped like the Supabase tables that will replace them: ids are
@@ -185,4 +193,94 @@ export type NotificationRow = {
   href: string;
   createdAt: string;
   readAt: string | null;
+};
+
+// --- Selling (selling plan, Task 1; "Store design") -------------------------------------------------------------
+
+/**
+ * A shop (selling spec 2.1 and 2.6), keyed by its slug. Its status lives on its owner's seller profile (plan decision
+ * 1); a shop with no owner is a sample shop and is always open.
+ */
+export type SellerRow = {
+  slug: string;
+  /** The account that owns it, or null for a sample shop no account owns. */
+  ownerId: string | null;
+  /** 2 to 60 characters, unique on its campus (selling spec 2.6). */
+  name: string;
+  /** Up to 80 characters; "" for none. */
+  tagline: string;
+  categorySlug: string;
+  campusSlug: string;
+  verified: boolean;
+  badge: TrustBadge | null;
+  /** Up to 600 characters; line breaks kept. */
+  about: string;
+  /** YYYY-MM: the month the shop started. */
+  since: string;
+  /** The shop's photo, or null for its category's picture (selling spec 2.6, step 3). */
+  image: ImageRef | null;
+  /** The approved pickup points on its campus that the shop uses (selling spec 2.6, step 4). */
+  pickupPointIds: string[];
+  /** Whether the seller has changed the link (selling spec 2.11: once). */
+  slugChanged: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** A listing (selling spec 2.10; browse and listing spec 6.1), keyed by id. */
+export type ListingRow = {
+  id: string;
+  /** The shop's slug. */
+  sellerSlug: string;
+  /** Plan decision 3. */
+  state: ListingState;
+  kind: ListingKind;
+  title: string;
+  categorySlug: string;
+  /** Items only; null for services. */
+  condition: Condition | null;
+  /** Rand: 0 when free, null when swap-only. */
+  priceZar: number | null;
+  priceIsFrom: boolean;
+  payMode: PayMode;
+  /** Set exactly when it takes swaps. */
+  swapFor: string | null;
+  description: string;
+  handover: Handover;
+  /** One of the shop's pickup points when the handover is a pickup; otherwise null. */
+  pickupPointId: string | null;
+  /** The shop's campus. */
+  campusSlug: string;
+  /** In order: the first is the cover. An empty alt means "the title" (selling spec 2.5). */
+  photos: ImageRef[];
+  /** When it was first published; while it's still a draft, when it was made (plan decision 3). */
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** An uploaded photo (selling spec 2.4), keyed by its id: "ph-" and a UUID. */
+export type PhotoRow = {
+  id: string;
+  /** The account that uploaded it. */
+  ownerId: string;
+  /** "listing:<id>", "shop" or "draft" once used; null while it waits on a form that hasn't saved (plan decision 11). */
+  use: string | null;
+  type: PhotoType;
+  /** The file with its metadata stripped. Never changed once stored. */
+  bytes: Uint8Array<ArrayBuffer>;
+  createdAt: string;
+};
+
+/** The onboarding wizard's answers so far (selling spec 2.2 and 2.6), keyed by the account's id. */
+export type OnboardingDraftRow = {
+  accountId: string;
+  name: string;
+  tagline: string;
+  categorySlug: string;
+  about: string;
+  /** The shop photo's address ("/photos/ph-…"), or null for the category's picture. */
+  photoSrc: string | null;
+  campusSlug: string;
+  pickupPointIds: string[];
+  updatedAt: string;
 };
