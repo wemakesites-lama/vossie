@@ -34,9 +34,14 @@ function counts(rows: readonly ConversationRow[], enquiriesSince: number, salesS
   return { enquiries: enquiries.length, due: due.length, repliedInTime: inTime.length, salesConfirmed: sales.length };
 }
 
-/** A shop's last 7 days, and its record for the badges: 90 days of enquiries, and every sale. */
+/**
+ * A shop's last 7 days, and its record for the badges: 90 days of enquiries, and every sale. A conversation whose shop
+ * was deleted (`sellerGone`) belongs to no shop, whatever link it names.
+ */
 export async function shopStats(sellerSlug: string, now: Date): Promise<ShopStats> {
-  const rows = [...sampleStore().conversations.values()].filter((row) => row.sellerSlug === sellerSlug);
+  const rows = [...sampleStore().conversations.values()].filter(
+    (row) => row.sellerSlug === sellerSlug && !row.sellerGone,
+  );
   const weekStart = now.getTime() - WEEK_MS;
   return {
     week: counts(rows, weekStart, weekStart, now),

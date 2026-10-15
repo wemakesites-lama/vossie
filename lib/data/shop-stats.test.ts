@@ -65,6 +65,14 @@ describe("the dashboard's numbers (selling spec 2.8, plan decision 18)", () => {
     expect(stats.record.enquiries).toBe(1);
   });
 
+  it("leaves out conversations whose shop was deleted, so they never count for a later shop", async () => {
+    sampleStore().conversations.clear();
+    add({ sellerGone: true, createdAt: ago(10), firstReplyAt: ago(9) });
+    add({ sellerGone: true, status: "confirmed", confirmedAt: ago(5), confirmedBy: "buyer" });
+    const none = { enquiries: 0, due: 0, repliedInTime: 0, salesConfirmed: 0 };
+    expect(await shopStats("tech-corner", NOW)).toEqual({ week: none, record: none });
+  });
+
   it("counts sales the buyer confirmed, and ones marked done 7 days ago, writing nothing", async () => {
     sampleStore().conversations.clear();
     add({ status: "confirmed", confirmedAt: ago(24), confirmedBy: "buyer" });

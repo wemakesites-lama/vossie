@@ -62,10 +62,16 @@ export type SampleStore = {
   photos: Map<string, PhotoRow>;
   /** By account id: the onboarding wizard's answers so far (selling spec 2.2). */
   onboardingDrafts: Map<string, OnboardingDraftRow>;
+  /**
+   * Links buyers could see that no shop has any more: an approved or paused shop's link after its one change, or
+   * after the shop was deleted. No other shop takes one, so an old link 404s rather than landing on a stranger's shop
+   * (selling plan decision 16); only a sample shop coming back takes back its own.
+   */
+  retiredSlugs: Set<string>;
 };
 
 /** Bump it when a table is added or a row changes shape, so `next dev` reseeds instead of keeping an old store. */
-export const STORE_VERSION = 3;
+export const STORE_VERSION = 4;
 
 type StoreHolder = { __vossieSampleStore?: SampleStore };
 
@@ -109,5 +115,6 @@ function seedStore(): SampleStore {
     listings: new Map(structuredClone(sampleListingRows).map((row) => [row.id, row])),
     photos: new Map(),
     onboardingDrafts: new Map(),
+    retiredSlugs: new Set(),
   };
 }

@@ -115,4 +115,20 @@ describe("a shop's own listings (selling spec 2.9 and 2.10, plan decision 3)", (
     expect(await getPhoto(photoIdOf(b)!)).toBeNull();
     expect(await getOwnListing("tech-corner", row.id)).toBeNull();
   });
+
+  it("keeps only photos it could take or already had, never another listing's, the shop's or a made-up one", async () => {
+    const [waiting, other, shop] = await storePhotos("acc-seller", [upload(), upload(), upload()], NOW);
+    const [theirs] = await storePhotos("acc-student", [upload()], NOW);
+    const first = (await save({ photos: [{ src: other, alt: "" }] }))!;
+    sampleStore().photos.get(photoIdOf(shop)!)!.use = "shop";
+    const photos = [waiting, other, shop, theirs, "/placeholders/listing/tech.svg", "/photos/ph-made-up"];
+    const row = (await save({ photos: photos.map((src) => ({ src, alt: "" })) }))!;
+    expect(row.photos.map((photo) => photo.src)).toEqual([waiting]);
+    expect(sampleStore().listings.get(row.id)?.photos).toEqual([{ src: waiting, alt: "" }]);
+    expect(await photoSrcsOf("acc-seller", `listing:${first.id}`)).toEqual(new Set([other]));
+    expect(await photoSrcsOf("acc-seller", "shop")).toEqual(new Set([shop]));
+    const cover = { src: "/placeholders/photo/3.svg", alt: "The cover" };
+    const sample = (await save({ id: "l-001", photos: [cover, { src: other, alt: "" }] }))!;
+    expect(sample.photos).toEqual([cover]);
+  });
 });

@@ -27,6 +27,7 @@ describe("the sample store (accounts spec 2.1)", () => {
     expect(store.listings.size).toBe(38);
     expect(store.photos.size).toBe(0);
     expect(store.onboardingDrafts.size).toBe(0);
+    expect(store.retiredSlugs.size).toBe(0);
   });
 
   it("is one store for the whole process, so a module loaded again still shares it", async () => {

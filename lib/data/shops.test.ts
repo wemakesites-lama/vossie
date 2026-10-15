@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { pngBytes } from "@/tests/helpers/image-bytes";
+import { deleteAccountData, restoreSampleAccount } from "./accounts";
 import { getPhoto, photoIdOf, photoSrcsOf, storePhotos } from "./photos";
 import {
   changeShopSlug,
@@ -10,12 +11,14 @@ import {
   getOnboardingDraft,
   getShopOf,
   isShopNameTaken,
+  isSlugTaken,
   restoreSampleShop,
   saveOnboardingDraft,
   setShopPaused,
   updateShop,
   type ShopDetails,
 } from "./shops";
+import { shopStats } from "./shop-stats";
 import { resetSampleStore, sampleStore } from "./store";
 
 const NOW = new Date("2026-10-14T08:00:00.000Z");
@@ -33,6 +36,14 @@ const details: ShopDetails = {
 const upload = () => ({ type: "image/png" as const, bytes: pngBytes() });
 const applyAs = (accountId: string, overrides: Partial<ShopDetails> = {}) =>
   createShop(accountId, { ...details, ...overrides }, NOW);
+
+/** What stage G's approval will do: the shop's link becomes its storefront. */
+function approve(accountId: string): void {
+  const store = sampleStore();
+  const shop = [...store.sellers.values()].find((row) => row.ownerId === accountId)!;
+  const profile = store.sellerProfiles.get(accountId)!;
+  store.sellerProfiles.set(accountId, { ...profile, status: "approved", sellerSlug: shop.slug });
+}
 
 beforeEach(() => {
   resetSampleStore();
@@ -157,6 +168,60 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     expect(await changeShopSlug("acc-seller", "tech-corner", NOW)).toBe("same");
     expect(await changeShopSlug("acc-pending", "lerato", NOW)).toBeNull();
   });
+
+  it("retires a changed link for good, so no other shop gets it and old links 404", async () => {
+    await changeShopSlug("acc-seller", "gadgets", NOW);
+    expect(await isSlugTaken("tech-corner")).toBe(true);
+    expect((await applyAs("acc-student", { name: "Tech corner" }))?.slug).toBe("tech-corner-2");
+    expect((await updateShop("acc-pending", { ...details, name: "Tech corner" }, NOW))?.slug).toBe("tech-corner-3");
+    approve("acc-student");
+    expect(await changeShopSlug("acc-student", "tech-corner", NOW)).toBe("taken");
+    expect(sampleStore().sellers.has("tech-corner")).toBe(false);
+  });
+});
+
+describe("a deleted shop's link (plan decision 16)", () => {
+  it("is retired, so a new shop with the deleted one's name gets another link and none of its history", async () => {
+    await deleteAccountData("acc-seller");
+    expect(await isSlugTaken("tech-corner")).toBe(true);
+    const shop = (await applyAs("acc-student", { name: "Tech corner" }))!;
+    expect(shop.slug).toBe("tech-corner-2");
+    const none = { enquiries: 0, due: 0, repliedInTime: 0, salesConfirmed: 0 };
+    expect(await shopStats(shop.slug, NOW)).toEqual({ week: none, record: none });
+    expect(await shopStats("tech-corner", NOW)).toEqual({ week: none, record: none });
+    approve("acc-student");
+    expect(await changeShopSlug("acc-student", "tech-corner", NOW)).toBe("taken");
+  });
+
+  it("is freed when the shop never left the waiting list, as nobody could have seen it", async () => {
+    await deleteAccountData("acc-pending");
+    expect(await isSlugTaken("crochet-corner")).toBe(false);
+    expect((await applyAs("acc-student", { name: "Crochet corner" }))?.slug).toBe("crochet-corner");
+  });
+
+  it("comes back to its own sample shop when the sample seller signs in again, and the newer shop keeps its own", async () => {
+    await deleteAccountData("acc-seller");
+    await applyAs("acc-student", { name: "Tech corner" });
+    await restoreSampleAccount("seller@eduvos.com");
+    expect(await restoreSampleShop("acc-seller")).toBe(true);
+    expect(await getShopOf("acc-seller")).toMatchObject({ shop: { slug: "tech-corner" }, status: "approved" });
+    expect(sampleStore().sellerProfiles.get("acc-seller")?.sellerSlug).toBe("tech-corner");
+    expect(sampleStore().listings.get("l-001")?.sellerSlug).toBe("tech-corner");
+    expect((await getShopOf("acc-student"))?.shop.slug).toBe("tech-corner-2");
+    expect(await isSlugTaken("tech-corner")).toBe(true);
+  });
+
+  it("brings the waiting sample shop back under the next free link when its old one has gone to a new shop", async () => {
+    await deleteAccountData("acc-pending");
+    await applyAs("acc-student", { name: "Crochet corner" });
+    await restoreSampleAccount("pending@eduvos.com");
+    expect(await restoreSampleShop("acc-pending")).toBe(true);
+    expect(await getShopOf("acc-pending")).toMatchObject({
+      shop: { slug: "crochet-corner-2", name: "Crochet corner" },
+      status: "pending",
+    });
+    expect((await getShopOf("acc-student"))?.shop.slug).toBe("crochet-corner");
+  });
 });
 
 describe("pausing the shop (selling spec 2.8)", () => {
@@ -166,6 +231,17 @@ describe("pausing the shop (selling spec 2.8)", () => {
     expect(await setShopPaused("acc-seller", false)).toBe("approved");
     expect(await setShopPaused("acc-pending", true)).toBeNull();
     expect(await setShopPaused("acc-student", true)).toBeNull();
+  });
+
+  it("refuses a seller profile with no shop behind it", async () => {
+    sampleStore().sellerProfiles.set("acc-student", {
+      accountId: "acc-student",
+      status: "approved",
+      sellerSlug: "gone",
+      appliedAt: NOW.toISOString(),
+    });
+    expect(await setShopPaused("acc-student", true)).toBeNull();
+    expect(sampleStore().sellerProfiles.get("acc-student")?.status).toBe("approved");
   });
 });
 

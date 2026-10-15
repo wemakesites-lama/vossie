@@ -34,17 +34,26 @@ export async function isShopNameTaken(name: string, campusSlug: string, exceptSl
   return false;
 }
 
-export async function isSlugTaken(slug: string): Promise<boolean> {
-  return sampleStore().sellers.has(slug);
+/**
+ * Whether a shop has this link, or had it where buyers could see it (plan decision 16). A link an approved or paused
+ * shop has left, by its one change or by being deleted, is retired for good: buyers' saved links, conversations and
+ * reports may still name it, so it must 404 rather than land on another shop and pick up that shop's history.
+ */
+function slugInUse(slug: string): boolean {
+  const { sellers, retiredSlugs } = sampleStore();
+  return sellers.has(slug) || retiredSlugs.has(slug);
 }
 
-/** A link no other shop has, from `base`: "crochet-corner", then "crochet-corner-2" and so on. `own` keeps its own. */
+export async function isSlugTaken(slug: string): Promise<boolean> {
+  return slugInUse(slug);
+}
+
+/** A link no shop has or had, from `base`: "crochet-corner", then "crochet-corner-2" and so on. `own` keeps its own. */
 function freeSlug(base: string, own: string | null): string {
-  const { sellers } = sampleStore();
   for (let n = 1; ; n += 1) {
     const suffix = n === 1 ? "" : `-${n}`;
     const slug = `${base.slice(0, SLUG_MAX - suffix.length).replace(/-+$/, "")}${suffix}`;
-    if (slug === own || !sellers.has(slug)) return slug;
+    if (slug === own || !slugInUse(slug)) return slug;
   }
 }
 
@@ -164,18 +173,23 @@ export async function changeShopSlug(accountId: string, slug: string, now: Date)
   if (!own || own.status === "pending") return null;
   if (own.shop.slug === slug) return "same";
   if (own.shop.slugChanged) return "used";
-  if (sampleStore().sellers.has(slug)) return "taken";
+  if (slugInUse(slug)) return "taken";
   moveShop(own.shop.slug, slug);
+  sampleStore().retiredSlugs.add(own.shop.slug);
   const row = sampleStore().sellers.get(slug)!;
   row.slugChanged = true;
   row.updatedAt = now.toISOString();
   return "changed";
 }
 
-/** Pause my shop and Resume (selling spec 2.8): approved to paused and back. The new status, or null when it can't. */
+/**
+ * Pause my shop and Resume (selling spec 2.8): approved to paused and back. The new status, or null when it can't,
+ * or when the account has no shop.
+ */
 export async function setShopPaused(accountId: string, paused: boolean): Promise<SellerStatus | null> {
+  const own = await getShopOf(accountId);
   const profile = sampleStore().sellerProfiles.get(accountId);
-  if (!profile || profile.status !== (paused ? "approved" : "paused")) return null;
+  if (!own || !profile || own.status !== (paused ? "approved" : "paused")) return null;
   profile.status = paused ? "paused" : "approved";
   return profile.status;
 }
@@ -209,16 +223,19 @@ export async function saveOnboardingDraft(draft: OnboardingDraftRow): Promise<vo
 
 /**
  * Deleting an account (plan decision 22): its shop, the shop's listings, every photo it uploaded and its wizard
- * draft. True when it had a shop. Its seller profile goes with the account (D); its conversations stay for the
- * buyers, with each listing's title (messaging plan decision 14).
+ * draft. True when it had a shop. Its seller profile goes with the account (D), after this; its conversations stay
+ * for the buyers, with each listing's title (messaging plan decision 14). A shop buyers could see retires its link
+ * (plan decision 16); a waiting shop's link was never public, so it's free again.
  */
 export async function forgetShopOf(accountId: string): Promise<boolean> {
   const store = sampleStore();
+  const waiting = store.sellerProfiles.get(accountId)?.status === "pending";
   let hadShop = false;
   for (const [slug, row] of store.sellers) {
     if (row.ownerId !== accountId) continue;
     hadShop = true;
     store.sellers.delete(slug);
+    if (!waiting) store.retiredSlugs.add(slug);
     for (const [id, listing] of store.listings) {
       if (listing.sellerSlug === slug) store.listings.delete(id);
     }
@@ -230,19 +247,26 @@ export async function forgetShopOf(accountId: string): Promise<boolean> {
 
 /**
  * Brings a sample account's shop and its sample listings back from the fixtures, once deleted (D's plan decision 15:
- * a sample account's button puts it back). True when it did.
+ * a sample account's button puts it back). An approved shop gets its own link back: deleting it retired the link, so
+ * no other shop can have taken it. A waiting shop's link was freed, so when another shop has it by now, it takes the
+ * next free one, as a waiting shop's link follows its name anyway (plan decision 16). True when it did.
  */
 export async function restoreSampleShop(accountId: string): Promise<boolean> {
   const store = sampleStore();
   if ([...store.sellers.values()].some((row) => row.ownerId === accountId)) return false;
   let restored = false;
-  for (const [slug, owner] of sampleShopOwners) {
-    const seed = sampleSellerRows.find((row) => row.slug === slug);
-    if (owner !== accountId || !seed || store.sellers.has(slug)) continue;
-    store.sellers.set(slug, structuredClone(seed));
+  for (const [seedSlug, owner] of sampleShopOwners) {
+    const seed = sampleSellerRows.find((row) => row.slug === seedSlug);
+    if (owner !== accountId || !seed) continue;
+    const slug = store.sellers.has(seedSlug) ? freeSlug(seedSlug, null) : seedSlug;
+    store.sellers.set(slug, { ...structuredClone(seed), slug });
+    store.retiredSlugs.delete(slug);
+    // The profile's storefront always names the shop's own link, never another shop's.
+    const profile = store.sellerProfiles.get(accountId);
+    if (profile?.sellerSlug) profile.sellerSlug = slug;
     for (const listing of sampleListingRows) {
-      if (listing.sellerSlug === slug && !store.listings.has(listing.id)) {
-        store.listings.set(listing.id, structuredClone(listing));
+      if (listing.sellerSlug === seedSlug && !store.listings.has(listing.id)) {
+        store.listings.set(listing.id, { ...structuredClone(listing), sellerSlug: slug });
       }
     }
     restored = true;

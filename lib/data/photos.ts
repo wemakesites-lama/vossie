@@ -69,13 +69,23 @@ export async function photoSrcsOf(ownerId: string, use: string | null): Promise<
   return new Set(rows.map((row) => photoSrc(row.id)));
 }
 
-/** Gives `ownerId`'s photos at these addresses a use. Anyone else's photos, and placeholders, are left alone. */
-export async function claimPhotos(ownerId: string, srcs: Iterable<string>, use: string): Promise<void> {
+/**
+ * Gives `ownerId`'s photos at these addresses a use, and gives back the addresses that now have it. It takes a photo
+ * waiting on a form, one that has this use already, or the wizard's photo becoming the shop's; never a photo another
+ * listing or the shop uses, anyone else's photo, or a placeholder.
+ */
+export async function claimPhotos(ownerId: string, srcs: Iterable<string>, use: string): Promise<Set<string>> {
   const { photos } = sampleStore();
+  const claimed = new Set<string>();
   for (const src of srcs) {
     const row = photos.get(photoIdOf(src) ?? "");
-    if (row?.ownerId === ownerId) row.use = use;
+    if (row?.ownerId !== ownerId) continue;
+    if (row.use === null || row.use === use || (row.use === "draft" && use === "shop")) {
+      row.use = use;
+      claimed.add(src);
+    }
   }
+  return claimed;
 }
 
 /** Deletes `ownerId`'s photos with this use, except those at the addresses in `keep`. */

@@ -39,8 +39,9 @@ export type ListingSave = {
 
 /**
  * Saves a new or changed listing (plan decision 3) on its shop's campus. The photos it uses become its own, and the
- * ones it no longer uses are deleted. A draft's `createdAt` moves to when it's first published. Null when `id` isn't
- * one of the shop's listings, or the shop has gone.
+ * ones it no longer uses are deleted. It keeps only photos it already had or could take (lib/data/photos.ts): never
+ * another listing's, the shop's, anyone else's or a made-up address. A draft's `createdAt` moves to when it's first
+ * published. Null when `id` isn't one of the shop's listings, or the shop has gone.
  */
 export async function saveOwnListing(save: ListingSave): Promise<ListingRow | null> {
   const { listings, sellers } = sampleStore();
@@ -50,20 +51,22 @@ export async function saveOwnListing(save: ListingSave): Promise<ListingRow | nu
   const at = save.now.toISOString();
   const state = nextState(existing?.state ?? null, save.intent);
   const firstPublish = state !== "draft" && (!existing || existing.state === "draft");
+  const id = existing?.id ?? `l-${randomUUID()}`;
+  const had = new Set(existing?.photos.map((photo) => photo.src));
+  const claimed = await claimPhotos(save.ownerId, save.photos.map((photo) => photo.src), listingPhotoUse(id));
+  const photos = save.photos.filter((photo) => had.has(photo.src) || claimed.has(photo.src));
   const row: ListingRow = {
-    id: existing?.id ?? `l-${randomUUID()}`,
+    id,
     sellerSlug: save.sellerSlug,
     state,
     ...save.fields,
     campusSlug: shop.campusSlug,
-    photos: save.photos.map((photo) => ({ src: photo.src, alt: photo.alt })),
+    photos: photos.map((photo) => ({ src: photo.src, alt: photo.alt })),
     createdAt: !existing || firstPublish ? at : existing.createdAt,
     updatedAt: at,
   };
   listings.set(row.id, row);
-  const srcs = new Set(row.photos.map((photo) => photo.src));
-  await claimPhotos(save.ownerId, srcs, listingPhotoUse(row.id));
-  await deletePhotosUsedBy(save.ownerId, listingPhotoUse(row.id), srcs);
+  await deletePhotosUsedBy(save.ownerId, listingPhotoUse(row.id), new Set(row.photos.map((photo) => photo.src)));
   return copy(row);
 }
 

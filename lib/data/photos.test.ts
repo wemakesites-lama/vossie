@@ -43,6 +43,22 @@ describe("stored photos (selling spec 2.4, plan decision 11)", () => {
     expect(await photoSrcsOf("acc-student", null)).toEqual(new Set([theirs]));
   });
 
+  it("takes only a waiting photo, one it has already, or the wizard's photo for the shop, and says which it took", async () => {
+    const [waiting, listed, shop, draft] = await storePhotos("acc-seller", [upload(), upload(), upload(), upload()], NOW);
+    await claimPhotos("acc-seller", [listed], "listing:l-001");
+    await claimPhotos("acc-seller", [shop], "shop");
+    await claimPhotos("acc-seller", [draft], "draft");
+    expect(await claimPhotos("acc-seller", [waiting, listed, shop], "listing:l-007")).toEqual(new Set([waiting]));
+    expect(await claimPhotos("acc-seller", [waiting], "listing:l-007")).toEqual(new Set([waiting]));
+    expect(await claimPhotos("acc-seller", [listed], "shop")).toEqual(new Set());
+    expect(await claimPhotos("acc-seller", [shop], "draft")).toEqual(new Set());
+    expect(await claimPhotos("acc-seller", [draft], "listing:l-001")).toEqual(new Set());
+    expect(await claimPhotos("acc-seller", [draft], "shop")).toEqual(new Set([draft]));
+    expect(await photoSrcsOf("acc-seller", "listing:l-001")).toEqual(new Set([listed]));
+    expect(await photoSrcsOf("acc-seller", "listing:l-007")).toEqual(new Set([waiting]));
+    expect(await photoSrcsOf("acc-seller", "shop")).toEqual(new Set([shop, draft]));
+  });
+
   it("deletes a use's photos except the ones it keeps, and every photo an account uploaded", async () => {
     const [a, b] = await storePhotos("acc-seller", [upload(), upload()], NOW);
     await claimPhotos("acc-seller", [a, b], "shop");
