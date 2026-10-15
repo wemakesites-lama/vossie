@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { ascii, concatBytes, containsText, GPS, jpegBytes, pngBytes, webpBytes } from "@/tests/helpers/image-bytes";
+import {
+  ascii,
+  concatBytes,
+  containsText,
+  GPS,
+  jpegBytes,
+  jpegSegment,
+  pngBytes,
+  pngChunk,
+  pngFile,
+  riffChunk,
+  webpBytes,
+  webpFile,
+} from "@/tests/helpers/image-bytes";
 import type { PhotoType } from "@/lib/types";
 import { stripMetadata } from "./strip-metadata";
 
@@ -17,6 +30,62 @@ describe("stripping a JPEG (selling spec 2.3, plan decision 11)", () => {
     const stripped = stripMetadata(jpegBytes({ others: true, adobe: true }), "image/jpeg")!;
     expect(containsText(stripped, GPS)).toBe(false);
     expect(stripped).toEqual(jpegBytes({ adobe: true }));
+  });
+
+  it("keeps JFIF's 14 bytes and not its thumbnail, and drops a JFXX thumbnail whole", () => {
+    for (const thumbnail of ["jfif", "jfxx"] as const) {
+      const original = jpegBytes({ thumbnail });
+      expect(containsText(original, GPS), thumbnail).toBe(true);
+      expect(stripMetadata(original, "image/jpeg"), thumbnail).toEqual(jpegBytes());
+    }
+  });
+
+  it("keeps Adobe's 12 bytes and nothing after them", () => {
+    const stripped = stripMetadata(jpegBytes({ adobe: true, adobeTail: true }), "image/jpeg")!;
+    expect(containsText(stripped, GPS)).toBe(false);
+    expect(stripped).toEqual(jpegBytes({ adobe: true }));
+  });
+
+  it("drops a JFIF or Adobe segment too short to be one", () => {
+    // jpegBytes() is SOI (2 bytes), then its 18-byte JFIF segment.
+    const rest = jpegBytes().subarray(20);
+    const short = concatBytes(
+      Uint8Array.of(0xff, 0xd8),
+      jpegSegment(0xe0, ascii("JFIF\0")),
+      jpegSegment(0xee, ascii("Adobe\0d")),
+      rest,
+    );
+    expect(stripMetadata(short, "image/jpeg")).toEqual(concatBytes(Uint8Array.of(0xff, 0xd8), rest));
+  });
+
+  it("drops segments under markers no decoder reads", () => {
+    const start = Uint8Array.of(0xff, 0xd8);
+    // 0x02 to 0xBF are reserved, and 0xF0 to 0xFD are JPEG extensions (JPG0 to JPG13).
+    const odd = [0x02, 0xbf, 0xf0, 0xf7, 0xfd].map((marker) => jpegSegment(marker, ascii(GPS)));
+    expect(stripMetadata(concatBytes(start, ...odd, jpegBytes().subarray(2)), "image/jpeg")).toEqual(jpegBytes());
+  });
+
+  it("refuses a JPEG with no image: a frame (SOF) must come before the first scan (SOS), and a scan before EOI", () => {
+    const start = Uint8Array.of(0xff, 0xd8);
+    const end = Uint8Array.of(0xff, 0xd9);
+    const tables = jpegSegment(0xdb, new Uint8Array(65));
+    const frame = jpegSegment(0xc0, Uint8Array.of(8, 0, 1, 0, 1, 1, 1, 0x11, 0));
+    const huffman = jpegSegment(0xc4, new Uint8Array(20));
+    const scan = concatBytes(jpegSegment(0xda, Uint8Array.of(1, 1, 0, 0, 0x3f, 0)), Uint8Array.of(0x12, 0x34));
+    expect(stripMetadata(concatBytes(start, end), "image/jpeg")).toBeNull();
+    expect(stripMetadata(concatBytes(start, tables, huffman, scan, end), "image/jpeg")).toBeNull();
+    expect(stripMetadata(concatBytes(start, tables, huffman, scan, frame, end), "image/jpeg")).toBeNull();
+    expect(stripMetadata(concatBytes(start, tables, frame, huffman, end), "image/jpeg")).toBeNull();
+    // DHT (C4), JPG (C8) and DAC (CC) sit among the frame markers but aren't frames.
+    for (const marker of [0xc4, 0xc8, 0xcc]) {
+      const notFrame = jpegSegment(marker, Uint8Array.of(8, 0, 1, 0, 1, 1, 1, 0x11, 0));
+      expect(stripMetadata(concatBytes(start, notFrame, huffman, scan, end), "image/jpeg"), `${marker}`).toBeNull();
+    }
+    const whole = concatBytes(start, tables, frame, huffman, scan, end);
+    expect(stripMetadata(whole, "image/jpeg")).toEqual(whole);
+    // A progressive frame (C2) counts too.
+    const progressive = concatBytes(start, tables, jpegSegment(0xc2, new Uint8Array(9)), huffman, scan, end);
+    expect(stripMetadata(progressive, "image/jpeg")).toEqual(progressive);
   });
 
   it("gives back a photo with no metadata unchanged, and a second strip changes nothing", () => {
@@ -56,9 +125,9 @@ describe("stripping a JPEG (selling spec 2.3, plan decision 11)", () => {
   it("gets through a long run of fill bytes without looping, and refuses it when nothing follows", () => {
     const fill = new Uint8Array(1_000_000).fill(0xff);
     expect(stripMetadata(concatBytes(Uint8Array.of(0xff, 0xd8), fill), "image/jpeg")).toBeNull();
-    expect(stripMetadata(concatBytes(Uint8Array.of(0xff, 0xd8), fill, Uint8Array.of(0xd9)), "image/jpeg")).toEqual(
-      Uint8Array.of(0xff, 0xd8, 0xff, 0xd9),
-    );
+    // The fill, then the rest of the photo from its first marker's code (after SOI and that marker's FF).
+    const filled = concatBytes(Uint8Array.of(0xff, 0xd8), fill, jpegBytes().subarray(3));
+    expect(stripMetadata(filled, "image/jpeg")).toEqual(jpegBytes());
   });
 
   it("refuses every file cut short", () => {
@@ -94,6 +163,20 @@ describe("stripping a PNG (selling spec 2.3, plan decision 11)", () => {
     // IEND is the last 12 bytes.
     expect(stripMetadata(whole.subarray(0, whole.length - 12), "image/png")).toBeNull();
     expect(stripMetadata(whole.subarray(0, 40), "image/png")).toBeNull();
+  });
+
+  it("refuses a PNG with no image: IHDR first and 13 bytes long, and an IDAT before IEND", () => {
+    const end = pngChunk("IEND", new Uint8Array(0));
+    const header = pngChunk("IHDR", Uint8Array.of(0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, 0));
+    const pixels = pngChunk("IDAT", Uint8Array.of(0x78, 0x9c, 0x63, 0x60, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01));
+    const physical = pngChunk("pHYs", Uint8Array.of(0, 0, 0x0b, 0x13, 0, 0, 0x0b, 0x13, 1));
+    expect(stripMetadata(pngFile(end), "image/png")).toBeNull();
+    expect(stripMetadata(pngFile(header, end), "image/png")).toBeNull();
+    expect(stripMetadata(pngFile(header, physical, end, pixels), "image/png")).toBeNull();
+    expect(stripMetadata(pngFile(physical, header, pixels, end), "image/png")).toBeNull();
+    const longHeader = pngChunk("IHDR", Uint8Array.of(0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, 0, 0));
+    expect(stripMetadata(pngFile(longHeader, pixels, end), "image/png")).toBeNull();
+    expect(stripMetadata(pngFile(header, pixels, end), "image/png")).toEqual(pngFile(header, pixels, end));
   });
 
   it("refuses every file cut short, a chunk that claims more than the file holds, and a wrong signature", () => {
@@ -141,6 +224,23 @@ describe("stripping a WebP (selling spec 2.3, plan decision 11)", () => {
     expect(stripMetadata(lying, "image/webp")).toBeNull();
   });
 
+  it("refuses a WebP with no image: VP8, VP8L or VP8X first, and an image or a frame in it", () => {
+    const header = riffChunk("VP8X", Uint8Array.of(0x10, 0, 0, 0, 7, 0, 0, 7, 0, 0));
+    const lossless = riffChunk("VP8L", Uint8Array.of(0x2f, 7, 0xc0, 0x01, 0x10));
+    const alpha = riffChunk("ALPH", Uint8Array.of(0, 1, 2));
+    const profile = riffChunk("ICCP", ascii("<html><script>alert(1)</script></html>"));
+    expect(stripMetadata(webpFile(), "image/webp")).toBeNull();
+    expect(stripMetadata(webpFile(profile), "image/webp")).toBeNull();
+    expect(stripMetadata(webpFile(header, alpha, profile), "image/webp")).toBeNull();
+    expect(stripMetadata(webpFile(alpha, lossless), "image/webp")).toBeNull();
+    expect(stripMetadata(webpFile(profile, header, lossless), "image/webp")).toBeNull();
+    for (const image of [lossless, riffChunk("VP8 ", new Uint8Array(10)), riffChunk("ANMF", new Uint8Array(16))]) {
+      expect(stripMetadata(webpFile(header, image), "image/webp")).toEqual(webpFile(header, image));
+    }
+    expect(stripMetadata(webpFile(lossless), "image/webp")).toEqual(webpFile(lossless));
+    expect(stripMetadata(webpFile(riffChunk("VP8 ", new Uint8Array(10))), "image/webp")).not.toBeNull();
+  });
+
   it("refuses every file cut short, stray bytes inside the RIFF, and a wrong signature", () => {
     const whole = webpBytes({ exif: true, xmp: true, others: true });
     for (let length = 0; length < whole.length; length++) {
@@ -161,6 +261,73 @@ describe("stripping a WebP (selling spec 2.3, plan decision 11)", () => {
     const wave = simple.slice();
     wave.set(ascii("WAVE"), 8);
     expect(stripMetadata(wave, "image/webp")).toBeNull();
+  });
+});
+
+/** `head`, then `count` copies of `unit`, then `tail`, built in one buffer. */
+function repeated(head: Uint8Array, unit: Uint8Array, count: number, tail: Uint8Array): Uint8Array<ArrayBuffer> {
+  const out = new Uint8Array(head.length + unit.length * count + tail.length);
+  out.set(head, 0);
+  for (let index = 0; index < count; index++) out.set(unit, head.length + index * unit.length);
+  out.set(tail, head.length + unit.length * count);
+  return out;
+}
+
+describe("stripping a file of many tiny parts (selling spec 2.3)", () => {
+  // About 5 MB (the upload limit) of parts as small as the format allows, all kept, after one that's dropped. The
+  // bounds are generous for a slow machine: each strip takes tens of milliseconds and a few MB, where copying each
+  // part on its own and joining them took up to a second and hundreds of MB.
+  const MAX_MS = 750;
+  const MAX_HEAP_MB = 32;
+  const check = (original: Uint8Array, type: PhotoType, expected: Uint8Array) => {
+    const heap = process.memoryUsage().heapUsed;
+    const start = performance.now();
+    const stripped = stripMetadata(original, type);
+    const ms = performance.now() - start;
+    const heapMb = (process.memoryUsage().heapUsed - heap) / 2 ** 20;
+    // Buffer compares the bytes in one go; toEqual would walk them one by one for seconds.
+    expect(stripped !== null && Buffer.from(stripped).equals(Buffer.from(expected))).toBe(true);
+    expect(ms).toBeLessThan(MAX_MS);
+    expect(heapMb).toBeLessThan(MAX_HEAP_MB);
+  };
+
+  it("strips a JPEG of a million tiny segments quickly and in little memory", () => {
+    const photo = jpegBytes();
+    const comment = Uint8Array.of(0xff, 0xfe, 0, 2);
+    const head = photo.subarray(0, photo.length - 2);
+    const end = Uint8Array.of(0xff, 0xd9);
+    // An empty table, a restart marker between segments, and a scan with one byte of data.
+    const unit = Uint8Array.of(0xff, 0xdb, 0, 2, 0xff, 0xd0, 0xff, 0xda, 0, 2, 0x11);
+    const count = 450_000;
+    check(
+      repeated(concatBytes(head, comment), unit, count, end),
+      "image/jpeg",
+      repeated(head, unit, count, end),
+    );
+  });
+
+  it("strips a PNG of 430,000 empty chunks quickly and in little memory", () => {
+    const photo = pngBytes();
+    // The signature and IHDR are the first 33 bytes.
+    const head = photo.subarray(0, 33);
+    const tail = photo.subarray(33);
+    const text = pngChunk("tEXt", new Uint8Array(0));
+    const bits = pngChunk("sBIT", new Uint8Array(0));
+    const count = 430_000;
+    check(repeated(concatBytes(head, text), bits, count, tail), "image/png", repeated(head, bits, count, tail));
+  });
+
+  it("strips a WebP of 650,000 empty chunks quickly and in little memory", () => {
+    const header = riffChunk("VP8X", Uint8Array.of(0x10, 0, 0, 0, 7, 0, 0, 7, 0, 0));
+    const xmp = riffChunk("XMP ", new Uint8Array(0));
+    const profile = riffChunk("ICCP", new Uint8Array(0));
+    const image = riffChunk("VP8L", Uint8Array.of(0x2f, 7, 0xc0, 0x01, 0x10));
+    const count = 650_000;
+    check(
+      webpFile(repeated(concatBytes(header, xmp), profile, count, image)),
+      "image/webp",
+      webpFile(repeated(header, profile, count, image)),
+    );
   });
 });
 

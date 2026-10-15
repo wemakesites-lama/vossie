@@ -37,7 +37,7 @@ const u32le = (n: number) => [n & 0xff, (n >>> 8) & 0xff, (n >>> 16) & 0xff, (n 
 // --- JPEG ---------------------------------------------------------------------------------------------------------
 
 /** FF, the marker, a length that counts itself, then the payload. */
-function segment(marker: number, payload: Uint8Array): Uint8Array<ArrayBuffer> {
+export function jpegSegment(marker: number, payload: Uint8Array): Uint8Array<ArrayBuffer> {
   return concatBytes(Uint8Array.of(0xff, marker, ...u16be(payload.length + 2)), payload);
 }
 
@@ -54,11 +54,22 @@ export type JpegOptions = {
   others?: boolean;
   /** Adobe's APP14 (its colour transform), which decoders need and the stripper keeps. */
   adobe?: boolean;
+  /** Bytes after Adobe's 12 (GPS), which the stripper cuts off. Needs `adobe`. */
+  adobeTail?: boolean;
+  /**
+   * A thumbnail: in JFIF's own segment (7 by 1 RGB pixels whose bytes are GPS), or in a JFXX segment after it (a
+   * whole JPEG with its own Exif).
+   */
+  thumbnail?: "jfif" | "jfxx";
   /** Extra FF bytes before a marker, which the format allows. */
   fill?: boolean;
   /** Data after the end of the image, as some phones append (a motion photo's video). */
   trailer?: boolean;
 };
+
+/** JFIF's 14 bytes: its name, version 1.02, no units, a 1:1 pixel shape, and the thumbnail's width and height. */
+const jfif = (thumbnailWidth = 0, thumbnailHeight = 0) =>
+  concatBytes(ascii("JFIF\0"), Uint8Array.of(1, 2, 0, 0, 1, 0, 1, thumbnailWidth, thumbnailHeight));
 
 /**
  * A baseline JPEG's structure: SOI, JFIF, the metadata asked for, a colour profile, the tables, a frame, one scan
@@ -67,27 +78,38 @@ export type JpegOptions = {
 export function jpegBytes(options: JpegOptions = {}): Uint8Array<ArrayBuffer> {
   return concatBytes(
     Uint8Array.of(0xff, 0xd8),
-    segment(0xe0, concatBytes(ascii("JFIF\0"), Uint8Array.of(1, 2, 0, 0, 1, 0, 1, 0, 0))),
-    options.exif ? segment(0xe1, concatBytes(ascii("Exif\0\0MM\0*"), ascii(GPS))) : EMPTY,
-    options.xmp
-      ? segment(0xe1, concatBytes(ascii("http://ns.adobe.com/xap/1.0/\0"), ascii(`<x:xmpmeta>${GPS}</x:xmpmeta>`)))
+    options.thumbnail === "jfif" ? jpegSegment(0xe0, concatBytes(jfif(7, 1), ascii(GPS))) : jpegSegment(0xe0, jfif()),
+    // Extension code 0x10: a thumbnail stored as a JPEG.
+    options.thumbnail === "jfxx"
+      ? jpegSegment(0xe0, concatBytes(ascii("JFXX\0"), Uint8Array.of(0x10), jpegBytes({ exif: true })))
       : EMPTY,
-    options.iptc ? segment(0xed, concatBytes(ascii("Photoshop 3.0"), Uint8Array.of(0), ascii(`8BIM ${GPS}`))) : EMPTY,
-    options.comment ? segment(0xfe, ascii(`Taken at ${GPS}`)) : EMPTY,
+    options.exif ? jpegSegment(0xe1, concatBytes(ascii("Exif\0\0MM\0*"), ascii(GPS))) : EMPTY,
+    options.xmp
+      ? jpegSegment(0xe1, concatBytes(ascii("http://ns.adobe.com/xap/1.0/\0"), ascii(`<x:xmpmeta>${GPS}</x:xmpmeta>`)))
+      : EMPTY,
+    options.iptc
+      ? jpegSegment(0xed, concatBytes(ascii("Photoshop 3.0"), Uint8Array.of(0), ascii(`8BIM ${GPS}`)))
+      : EMPTY,
+    options.comment ? jpegSegment(0xfe, ascii(`Taken at ${GPS}`)) : EMPTY,
     options.others
       ? concatBytes(
-          segment(0xeb, concatBytes(ascii("JP"), Uint8Array.of(0, 0, 0, 0, 0, 1), ascii(`jumbc2pa ${GPS}`))),
-          segment(0xec, concatBytes(ascii("Ducky"), Uint8Array.of(0, 1), ascii(GPS))),
-          segment(0xe2, concatBytes(ascii("MPF\0"), ascii(GPS))),
+          jpegSegment(0xeb, concatBytes(ascii("JP"), Uint8Array.of(0, 0, 0, 0, 0, 1), ascii(`jumbc2pa ${GPS}`))),
+          jpegSegment(0xec, concatBytes(ascii("Ducky"), Uint8Array.of(0, 1), ascii(GPS))),
+          jpegSegment(0xe2, concatBytes(ascii("MPF\0"), ascii(GPS))),
         )
       : EMPTY,
-    segment(0xe2, concatBytes(ascii("ICC_PROFILE\0"), Uint8Array.of(1, 1, 0, 0))),
-    options.adobe ? segment(0xee, concatBytes(ascii("Adobe"), Uint8Array.of(0, 100, 0, 0, 0, 0, 1))) : EMPTY,
+    jpegSegment(0xe2, concatBytes(ascii("ICC_PROFILE\0"), Uint8Array.of(1, 1, 0, 0))),
+    options.adobe
+      ? jpegSegment(
+          0xee,
+          concatBytes(ascii("Adobe"), Uint8Array.of(0, 100, 0, 0, 0, 0, 1), options.adobeTail ? ascii(GPS) : EMPTY),
+        )
+      : EMPTY,
     options.fill ? Uint8Array.of(0xff, 0xff) : EMPTY,
-    segment(0xdb, new Uint8Array(65)),
-    segment(0xc0, Uint8Array.of(8, 0, 1, 0, 1, 1, 1, 0x11, 0)),
-    segment(0xc4, new Uint8Array(20)),
-    segment(0xda, Uint8Array.of(1, 1, 0, 0, 0x3f, 0)),
+    jpegSegment(0xdb, new Uint8Array(65)),
+    jpegSegment(0xc0, Uint8Array.of(8, 0, 1, 0, 1, 1, 1, 0x11, 0)),
+    jpegSegment(0xc4, new Uint8Array(20)),
+    jpegSegment(0xda, Uint8Array.of(1, 1, 0, 0, 0x3f, 0)),
     Uint8Array.of(0x12, 0xff, 0x00, 0x34, 0xff, 0xd0, 0x56),
     Uint8Array.of(0xff, 0xd9),
     options.trailer ? ascii(`ftypmp42 ${GPS}`) : EMPTY,
@@ -96,7 +118,12 @@ export function jpegBytes(options: JpegOptions = {}): Uint8Array<ArrayBuffer> {
 
 // --- PNG ----------------------------------------------------------------------------------------------------------
 
-function pngChunk(type: string, data: Uint8Array): Uint8Array<ArrayBuffer> {
+/** A PNG's signature, then the chunks given. */
+export function pngFile(...chunks: readonly Uint8Array[]): Uint8Array<ArrayBuffer> {
+  return concatBytes(Uint8Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a), ...chunks);
+}
+
+export function pngChunk(type: string, data: Uint8Array): Uint8Array<ArrayBuffer> {
   const body = concatBytes(ascii(type), data);
   return concatBytes(Uint8Array.of(...u32be(data.length)), body, Uint8Array.of(...u32be(crc32(body))));
 }
@@ -123,7 +150,7 @@ export function pngBytes({ width = 8, height = 8, ...options }: PngOptions = {})
   const row = [0, ...Array.from({ length: width }, () => [0x29, 0xab, 0xe2]).flat()];
   const pixels = deflateSync(Uint8Array.from(Array.from({ length: height }, () => row).flat()));
   return concatBytes(
-    Uint8Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a),
+    pngFile(),
     pngChunk("IHDR", Uint8Array.of(...u32be(width), ...u32be(height), 8, 2, 0, 0, 0)),
     options.exif ? pngChunk("eXIf", concatBytes(ascii("MM\0*"), ascii(GPS))) : EMPTY,
     options.text ? pngChunk("tEXt", concatBytes(ascii("Comment\0"), ascii(GPS))) : EMPTY,
@@ -147,7 +174,7 @@ export function pngBytes({ width = 8, height = 8, ...options }: PngOptions = {})
 // --- WebP ---------------------------------------------------------------------------------------------------------
 
 /** A RIFF chunk: its code, its little-endian size, the data, and a padding byte when the size is odd. */
-function riffChunk(code: string, data: Uint8Array): Uint8Array<ArrayBuffer> {
+export function riffChunk(code: string, data: Uint8Array): Uint8Array<ArrayBuffer> {
   return concatBytes(ascii(code), Uint8Array.of(...u32le(data.length)), data, data.length % 2 ? Uint8Array.of(0) : EMPTY);
 }
 
@@ -170,13 +197,18 @@ export function webpBytes(options: WebpOptions = {}): Uint8Array<ArrayBuffer> {
   const header = options.exif || options.xmp || options.others || options.extended;
   // VP8X's first byte holds the flags: alpha 0x10, EXIF 0x08, XMP 0x04. Then 3 reserved bytes, then the canvas size.
   const flags = 0x10 | (options.exif ? 0x08 : 0) | (options.xmp ? 0x04 : 0);
-  const body = concatBytes(
-    ascii("WEBP"),
+  const file = webpFile(
     header ? riffChunk("VP8X", Uint8Array.of(flags, 0, 0, 0, 7, 0, 0, 7, 0, 0)) : EMPTY,
     riffChunk("VP8L", Uint8Array.of(0x2f, 7, 0xc0, 0x01, 0x10, 0x8d, 0x24, 0x49, 0x12, 0x20, 0x80, 0x88, 0x08)),
     options.exif ? riffChunk("EXIF", concatBytes(ascii("MM\0*"), ascii(GPS))) : EMPTY,
     options.xmp ? riffChunk("XMP ", ascii(`<x:xmpmeta>${GPS}</x:xmpmeta>`)) : EMPTY,
     options.others ? riffChunk("C2PA", ascii(`jumbc2pa ${GPS}`)) : EMPTY,
   );
-  return concatBytes(ascii("RIFF"), Uint8Array.of(...u32le(body.length)), body, options.trailer ? ascii(GPS) : EMPTY);
+  return concatBytes(file, options.trailer ? ascii(GPS) : EMPTY);
+}
+
+/** A WebP made of the chunks given, with its RIFF size worked out. */
+export function webpFile(...chunks: readonly Uint8Array[]): Uint8Array<ArrayBuffer> {
+  const body = concatBytes(ascii("WEBP"), ...chunks);
+  return concatBytes(ascii("RIFF"), Uint8Array.of(...u32le(body.length)), body);
 }

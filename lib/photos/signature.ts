@@ -10,7 +10,8 @@ const WEBP = [0x57, 0x45, 0x42, 0x50];
 
 /**
  * A photo's real type from its first bytes (selling spec 2.3), whatever its name or the browser says it is. Null for
- * anything else: GIF, SVG, HEIC, or a file pretending.
+ * anything else: GIF, SVG, HEIC, or a file pretending. The first bytes are all it reads: the stripper
+ * (strip-metadata.ts), which every upload goes through next, refuses a file whose structure doesn't hold an image.
  */
 export function photoTypeOf(bytes: Uint8Array): PhotoType | null {
   if (startsWith(bytes, 0, JPEG)) return "image/jpeg";
