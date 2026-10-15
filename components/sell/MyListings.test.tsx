@@ -1,0 +1,61 @@
+import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { resetSampleStore } from "@/lib/data/store";
+import { redirectOf } from "@/tests/helpers/next-request";
+import { DeleteListing } from "./DeleteListing";
+import { MyListings } from "./MyListings";
+
+const viewer = vi.hoisted(() => ({ id: null as string | null }));
+
+vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
+vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
+vi.mock("@/lib/auth/session", async () => {
+  const { getAccount } = await import("@/lib/data/accounts");
+  const { redirect } = await import("next/navigation");
+  const { signInHref } = await import("@/lib/next-path");
+  const getViewer = async () => (viewer.id ? getAccount(viewer.id) : null);
+  return {
+    getViewer,
+    getSessionKey: async () => null,
+    requireAccount: async (next: string) => (await getViewer()) ?? redirect(signInHref(next)),
+  };
+});
+vi.mock("@/lib/selling/listing-actions", () => ({ changeListingState: async () => {}, deleteListingForm: async () => {} }));
+
+beforeEach(() => {
+  resetSampleStore();
+  viewer.id = null;
+});
+
+describe("My listings' and Delete listing's request-time parts (selling spec 2.9 and section 3)", () => {
+  it("shows the signed-in seller's own listings on the tab asked for", async () => {
+    viewer.id = "acc-seller";
+    render(await MyListings({ searchParams: Promise.resolve({ tab: "available" }) }));
+    // The title is also in each control's sr-only name, so look for the one in the listing's own line.
+    expect(screen.getByText("Casio fx-991ZA Plus calculator", { selector: ".sell-item-title" })).toBeInTheDocument();
+    expect(screen.queryByText("Box braids, shoulder length")).toBeNull();
+  });
+
+  it("sends a student without a shop to /sell, and a signed-out visitor to sign in", async () => {
+    expect(await redirectOf(() => MyListings({ searchParams: Promise.resolve({ tab: "sold" }) }))).toBe(
+      "/login?next=%2Fsell%2Flistings%3Ftab%3Dsold",
+    );
+    viewer.id = "acc-student";
+    expect(await redirectOf(() => MyListings({ searchParams: Promise.resolve({}) }))).toBe("/sell");
+  });
+
+  it("asks before deleting one of the seller's listings, with Keep it back to its tab", async () => {
+    viewer.id = "acc-seller";
+    render(await DeleteListing({ params: Promise.resolve({ id: "l-001" }) }));
+    expect(screen.getByText("Casio fx-991ZA Plus calculator")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete listing" })).toHaveAttribute("type", "submit");
+    expect(screen.getByRole("link", { name: "Keep it" })).toHaveAttribute("href", "/sell/listings");
+    expect(document.querySelector('input[name="listing"]')).toHaveValue("l-001");
+  });
+
+  it("is a 404 for another shop's listing, or one that doesn't exist", async () => {
+    viewer.id = "acc-seller";
+    await expect(DeleteListing({ params: Promise.resolve({ id: "l-004" }) })).rejects.toThrow("notFound");
+    await expect(DeleteListing({ params: Promise.resolve({ id: "Nope!" }) })).rejects.toThrow("notFound");
+  });
+});

@@ -8015,3 +8015,127 @@
     height: 32rem;
   }
 }
+
+/* --- Selling: my listings (selling plan, Task 11, spec 2.9) --- */
+@layer components {
+  .sell-crumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    color: var(--color-sky-dark);
+    font-weight: 600;
+  }
+
+  .sell-tabs ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .sell-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1.5px solid var(--color-field);
+    border-radius: 999px;
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .sell-tab[aria-current="page"] {
+    border-color: var(--color-navy);
+    background: var(--color-navy);
+    color: var(--color-white);
+  }
+
+  .sell-tab-count {
+    font-weight: 400;
+  }
+
+  /* The notice's "See it as buyers do" is navy on pale like the text round it, so the underline is what marks it. */
+  .sell-column .form-notice a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .sell-list {
+    display: grid;
+    border-top: 1.5px solid var(--color-line);
+  }
+
+  .sell-item {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    align-items: center;
+    gap: 12px 16px;
+    padding-block: 16px;
+    border-bottom: 1.5px solid var(--color-line);
+  }
+
+  .sell-item .sell-thumb {
+    width: 64px;
+    height: 64px;
+  }
+
+  .sell-item-alone {
+    padding: 16px;
+    border: 1.5px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+
+  .sell-item-title {
+    color: var(--color-navy);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .sell-item-meta {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  .sell-item-actions {
+    display: flex;
+    flex-wrap: wrap;
+    grid-column: 1 / -1;
+    gap: 8px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .sell-item {
+      grid-template-columns: 64px 1fr auto;
+    }
+
+    .sell-item-actions {
+      grid-column: auto;
+      justify-content: flex-end;
+    }
+  }
+
+  .sell-action {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--color-panel);
+    color: var(--color-navy);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  /* Danger red on panel is 6.0:1. */
+  .sell-action-danger {
+    color: var(--color-danger);
+  }
+
+  .sell-empty {
+    padding: 24px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+    color: var(--color-muted);
+  }
+}
