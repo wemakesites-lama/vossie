@@ -12732,7 +12732,7 @@ vi.mock("@/lib/selling/shop-actions", () => ({
     });
     viewer.id = "acc-seller";
     render(await SellHome());
-    expect(screen.getByText("Paused by the Hub: buyers can't see your listings")).toBeInTheDocument();
+    expect(screen.getByText("Paused by the Hub: your listings are off every list")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Why the Hub paused it" })).toHaveTextContent("Selling exam answers.");
     expect(screen.queryByRole("button", { name: "Resume my shop" })).toBeNull();
   });
@@ -12744,7 +12744,7 @@ In `components/sell/Dashboard.test.tsx` (F Task 9), add this test at the end of 
 
   it("leaves the Pause form out when the Hub paused the shop (staff tools plan decision 3)", () => {
     render(<Dashboard shop={shop} paused stats={stats} badgeLine="" notice={null} hubPause="Selling exam answers." />);
-    expect(screen.getByText("Paused by the Hub: buyers can't see your listings")).toBeInTheDocument();
+    expect(screen.getByText("Paused by the Hub: your listings are off every list")).toBeInTheDocument();
     expect(screen.getByText(/Only the Hub can resume it/)).toBeInTheDocument();
     expect(screen.queryByRole("button")).toBeNull();
   });
@@ -12927,13 +12927,13 @@ In `components/sell/Dashboard.tsx` (F Task 9):
 ```
 
 2. Change the function's parameters to `{ shop, paused, stats, badgeLine, notice, hubPause = null }`, and add `const byHub = hubPause !== null;` as its first line.
-3. Replace the `sell-status` paragraph's text `{paused ? "Paused: buyers can't see your listings" : "Your shop is live"}` with:
+3. Replace the `sell-status` paragraph's text `{paused ? "Paused: your listings are off every list" : "Your shop is live"}` with:
 
 ```tsx
           {byHub
-            ? "Paused by the Hub: buyers can't see your listings"
+            ? "Paused by the Hub: your listings are off every list"
             : paused
-              ? "Paused: buyers can't see your listings"
+              ? "Paused: your listings are off every list"
               : "Your shop is live"}
 ```
 
@@ -13574,7 +13574,7 @@ test("an admin pauses the shop behind a report: its owner sees why with no Resum
   await admin.context().close();
 
   await owner.goto("/sell");
-  await expect(main(owner).getByText("Paused by the Hub: buyers can't see your listings")).toBeVisible();
+  await expect(main(owner).getByText("Paused by the Hub: your listings are off every list")).toBeVisible();
   await expect(main(owner).getByText("Asked buyers for a deposit.")).toBeVisible();
   await expect(button(owner, "Resume my shop")).toHaveCount(0);
   await ownerContext.close();

@@ -358,10 +358,65 @@ Review notes that were deliberately not acted on:
 - **Messages live in the server's memory** in sample mode, like accounts. The go-live checklist has the real tables, a messages-per-account limit, a scheduled job for the 7-day auto-confirm and for deleting old messages, and Eduvos's retention periods.
 - **Playwright in the cloud container** needs `PLAYWRIGHT_BROWSERS_PATH` pointing at an alias of the container's Chromium 1194 (the repo expects 1248). The repo's config is unchanged; on the Mac nothing is needed.
 
+## 2026-10-15: Selling built, in sample mode (stage F)
+- **Listings and sellers now come from the sample store**, seeded from the fixtures and tagged, so a change shows on the next request: new listings appear in browse, on their page, on the storefront and in collections straight away. A paused shop's listings leave every list, but its storefront and listing pages stay up, marked paused, and it takes no new messages (replies still go).
+- **Becoming a seller** (`/sell`, `/sell/onboarding`): the pitch, then five steps (basics, about, photo, campus and pickup points, review) and Send for approval; the waiting page says the Hub is checking and lets the seller prepare drafts. The sample "Seller waiting for approval" shows it. Approving is stage G's.
+- **The dashboard** (`/sell`): live or paused, the last 7 days' enquiries, replies within 48 hours and confirmed sales, the badge and what the next one needs, the shop's pages, and Pause my shop.
+- **Listings** (`/sell/listings`, `/sell/listings/new`, `/sell/listings/[id]/edit`, `/sell/listings/[id]/delete`): four tabs (Available, Paused, Sold, Drafts), Pause, Resume, Mark sold, Relist and Delete with a confirmation; the listing form with every field of the listing model, Save and publish or Save as draft.
+- **Photos**: shrunk and re-encoded in the browser (WebP, JPEG on Safari) when the app's JavaScript runs; checked by signature, 5 MB each, 6 per listing, and on the server every file keeps only what a decoder needs (location, thumbnails and every other hidden part go); served privately from `/photos/[id]` and resized by next/image, with no copies kept on the server's disk. The photo field's buttons work without JavaScript too.
+- **Edit shop** (`/sell/profile`), with the link changeable once; a link buyers saw is never given to another shop. The listing page and storefront show their owner Edit listing and Edit shop; the account page's Your shop goes to `/sell`.
+- **Privacy:** the policy, privacy settings, the export and deletion take in shops, listings and photos.
+- **Built in one session** (2026-10-15, a Claude Code cloud session): Tasks 1 to 17, each reviewed, `5fd86a2` to `d856cb3`, then the docs.
+- **Where the build differed from the plan** is in the plan's "Changes made during the build". The ones worth knowing:
+  - **The photo stripper keeps a list** of what a decoder needs rather than dropping a list of known metadata (amendment 8). Its review dropped JFIF and JFXX thumbnails, refused files with no image, and moved it to one preallocated buffer: a crafted 5 MB file had cost about 300 MB.
+  - **Posts at the same time can't corrupt a shop** (two tabs, a double click): each write checks and writes with no await between (`74d2c99`, `a936c89`).
+  - **Photos are cached privately**, so a shared cache never keeps one that was deleted (`65cc89f`).
+  - "R250,00" is no longer read as R25,000, and shop names in non-Latin scripts no longer collide (`82c392b`).
+  - **A paused shop takes no new messages** (amendment 10), and its owner still sees Edit shop on its storefront (`ced2860`).
+  - **The end-to-end tests that change listings** (`selling-writes`) run last as the teardown of a `setup` project, so they still run when a device test fails. A filtered run (`pnpm e2e <file>`) runs them too unless you add `--no-deps`.
+  - **Matched fallbacks for the display font** (decision 71), so headings don't rewrap when it loads. CSS only.
+- **Plan decisions Lama may want to revisit:** decision 70's figure (below); the sample wording in plan decision 27 (the pitch, the waiting page, the dashboard's lines, the hints, errors, notices and empty states, and Lerato's "Crochet corner"). See the open points.
+- **Unused files, for Lama to delete or keep:** `components/ComingSoon.tsx` and `components/ComingSoon.test.tsx` (the selling pitch replaced its last use).
+- **Checks:**
+  - lint and types are clean;
+  - 1,472 unit tests pass, in 213 files (1,175 in 180 at the start of the stage);
+  - end to end (`pnpm e2e --workers=4`, 13.2 minutes), 900 pass, 707 are skipped by design and 3 fail, all layout shift from the cloud container's missing Arial, not the code: `/privacy` at 390 (0.0816), Hub office hours at 390 (0.1515) and privacy settings at 1440 (0.1179), the same three as stage E. All four `selling-writes` tests pass, last;
+  - axe finds no serious or critical issues on the pitch, the wizard's steps, the waiting page, the dashboard, each My listings tab, Delete listing, the listing form (with photos, a photo picked and errors), Edit shop (with an error), and the owner's listing and storefront.
+- **First visit at 390px, JS brotli:** homepage 150,613 B, browse 151,360 B, listing 151,769 B, storefront 151,373 B, `/sell` 150,613 B, Saved 151,248 B, collection and request 151,089 B; info, sign-in, board, Hub and Hub post 150,613 B; signed in: every page from D and E 150,613 B, new and edit listing forms 153,086 B (stop line 152,305 B, limit 153,600 B). Every public page is where stage E left it; the listing page is still the highest, 536 B under the line. The two form pages are 781 B over the line and 514 B under the limit: Lama accepted 152,950 B for them (decision 70), and Task 12's review fixes added 136 B.
+- **Layout shift** (fonts held back, at 390 and 1440px, a fresh run of `cls.spec.ts` in the cloud container, so see the open points):
+
+  | Page | 390px | 1440px |
+  |---|---|---|
+  | Sell pitch | 0.0184 | 0.0025 |
+  | Waiting for approval | 0.0003 | 0.0002 |
+  | Dashboard | 0.0005 | 0.0006 |
+  | My listings | 0.0008 | 0.0003 |
+  | Delete listing | 0.0019 | 0.0003 |
+  | New listing form | 0.0003 | 0.0002 |
+  | Edit listing form | 0.0003 | 0.0002 |
+  | Edit shop | 0.0003 | 0.0002 |
+  | Onboarding, step 1 | 0.0003 | 0.0002 |
+  | Listing page (signed out; it changed in Task 14) | 0.0000 | 0.0002 |
+  | Storefront (signed out; it changed in Task 14) | 0.0003 | 0.0002 |
+
+  The same run failed the three pages stage E's did, for the same reason (no Arial in the container): `/privacy` at 390 (0.0816), Hub office hours at 390 (0.1515) and privacy settings at 1440 (0.1179).
+- Review screenshots: `docs/progress/selling/` (26, at 390 and 1440px).
+
+## 2026-10-15: Open points for Lama after the selling build
+- **Decision 70: the listing form's two pages are 153,086 B.** You accepted 152,950 B; the review's fixes to the photo field (no unready photos posted, one photo shrunk at a time, descriptions kept after a failed save) added 136 B. Still 514 B under the limit, and only on those two signed-in pages. Veto it if you'd rather trim.
+- **The data export and the wizard's draft.** The export gives each photo as `/photos/…`, not a full web address, and leaves out an unfinished become-a-seller draft. Both are on the go-live checklist; whether the draft belongs in the export (POPIA section 23) is your call.
+- **"Buyers pay you when you meet"** on the pitch doesn't fit an Eduvos Online shop, which has no pickup.
+- **Sample wording** (plan decision 27) is for you to change: the pitch's benefits and steps (`components/sell/SellPitch.tsx`), the waiting page (`ShopWaiting.tsx`), the dashboard's lines and the badge progress (`Dashboard.tsx`, `lib/selling/badges.ts`), the errors (`lib/selling/errors.ts`), the notices after each action (`lib/selling/notices.ts`), the hints and empty states, and Lerato's "Crochet corner" (`data/fixtures/shops.ts`).
+- **`components/ComingSoon.tsx` and its test are unused** now. Delete them or keep them for a later placeholder.
+- **Re-run the layout-shift test on the Mac: `pnpm e2e tests/e2e/cls.spec.ts`.** The cloud container still has no Arial, so `Geist Fallback`'s `local(Arial)` fails and the body text reflows when Geist arrives: `/privacy` at 390, Hub office hours at 390 and privacy settings at 1440 fail here, and all three read 0.0011 or less with Arial. Decision 71 fixed the display font's half of this. **An optional follow-up:** adding `local("Liberation Sans")` to Geist's fallback would make the test pass in the container too.
+- **Go-live notes from the build** are on the checklist (`docs/reference/GO-LIVE.md`): a deleted listing's or shop's page can reappear after a restart, because Next keeps public page copies on disk and `updateTag`'s expiry in memory, per instance (POPIA); one stale response can follow a write (Next's two clocks); a CDN must purge `/photos/*` and `/_next/image` on delete; the 32 MB body limit applies to every Server Action; expired unsaved photos stay servable until the next upload; the real database needs a unique index on a shop's (campus, name) and transactions; a phone photo posted without JavaScript may show sideways; the wizard in two tabs can undo itself; stage G must rewrite notifications that name a changed shop link; and "apply, then the Hub approves" can only be tested end to end once stage G exists.
+- **Playwright in the cloud container** needs `PLAYWRIGHT_BROWSERS_PATH` pointing at an alias of the installed Chromium, as in stage E. On the Mac nothing is needed.
+
 ## Next
-- Lama reviews the screenshots in `docs/progress/messaging/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "messaging review screenshots"`.
+- Lama reviews the screenshots in `docs/progress/selling/`. To retake them, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "selling review screenshots" --no-deps`.
 - Lama re-runs `pnpm e2e tests/e2e/cls.spec.ts` on the Mac (see the open points above).
-- Then stage F: selling (`2026-10-14-selling-design.md`), whose dashboard counts this stage's enquiries, replies and confirmed sales.
+- Then the review of stage G's plan (`docs/superpowers/plans/2026-10-14-staff-tools.md`, committed before review): recheck it against stage F as built, as this stage's plan was rechecked against D and E.
+- Then stage G: staff tools (`2026-10-14-staff-tools-design.md`): approving the waiting shops, Verified, hiding listings and the Featured rules.
 
 ## Waiting on
 - Eduvos font files and licence confirmation.

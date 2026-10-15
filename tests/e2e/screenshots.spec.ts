@@ -1,5 +1,6 @@
 import { expect, test, type Request } from "@playwright/test";
-import { newBuyer, reply, sellerPage, signUp } from "./helpers/messaging";
+import { field, newBuyer, reply, sellerPage, signInAsSample, signUp, signUpHere } from "./helpers/messaging";
+import { newSeller, photoWithLocation, uniqueWord } from "./helpers/selling";
 
 test.skip(!process.env.SCREENSHOTS, "Run with SCREENSHOTS=1 to refresh the review screenshots");
 
@@ -458,4 +459,79 @@ test("messaging review screenshots", async ({ page, browser, baseURL }) => {
   await main.getByRole("button", { name: "Send report", exact: true }).click();
   await expect(main.getByRole("heading", { level: 1, name: "Report sent" })).toBeVisible();
   await page.screenshot({ path: file("12-report-sent") });
+});
+
+// Nothing here publishes or changes a listing (selling plan decision 25): the new student's shop waits for the Hub, so
+// buyers never see it, and the sample seller's pages are only read (the listing form posted empty saves nothing).
+test("selling review screenshots", async ({ page, browser, baseURL }) => {
+  const project = test.info().project.name;
+  test.skip(!["phone-390", "desktop-1440"].includes(project), "Saved at 390 and 1440 only");
+  const file = (name: string) => `docs/progress/selling/${project}-${name}.png`;
+  const main = page.locator("main");
+  const shot = (name: string) => page.screenshot({ path: file(name), fullPage: true });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+
+  await page.goto("/sell");
+  await expect(main.getByRole("link", { name: "Start selling" })).toBeVisible();
+  await shot("01-pitch");
+
+  // A new student through the wizard: nothing of the sample accounts changes.
+  await page.goto("/login?next=%2Fsell%2Fonboarding");
+  await signUpHere(page, newSeller());
+  await expect(page).toHaveURL(/\/sell\/onboarding$/);
+  await main.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  await shot("02-wizard-step-1-error");
+  await field(page, "Shop name").fill(`Bakes ${uniqueWord()}`.slice(0, 60));
+  await field(page, "Main category").selectOption({ label: "Food" });
+  await main.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page).toHaveURL(/step=2$/);
+  await field(page, "About your shop").fill("I bake between lectures.\nMuffins on Mondays.");
+  await main.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page).toHaveURL(/step=3$/);
+  await field(page, "Shop photo (optional)").setInputFiles(photoWithLocation("shop.png"));
+  await main.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page).toHaveURL(/step=4$/);
+  await expect(main.getByText("Step 4 of 5", { exact: false })).toBeVisible();
+  await shot("03-wizard-step-4");
+  await main.getByRole("checkbox", { name: "Library entrance" }).check();
+  await main.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(main.getByRole("region", { name: "Your answers" })).toBeVisible();
+  await shot("04-wizard-review");
+  await main.getByRole("checkbox", { name: "I've read the seller guidelines" }).check();
+  await main.getByRole("button", { name: "Send for approval", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "The Hub is checking your shop" })).toBeVisible();
+  await shot("05-waiting");
+
+  // The sample seller in a browser of their own: only read, so the sample stays as it is.
+  const context = await browser.newContext({ baseURL, viewport: page.viewportSize()!, reducedMotion: "reduce" });
+  const seller = await context.newPage();
+  const sellerMain = seller.locator("main");
+  const sellerShot = (name: string) => seller.screenshot({ path: file(name), fullPage: true });
+  await signInAsSample(seller, "Seller, Tech corner", "/sell");
+  await expect(sellerMain.getByRole("region", { name: "In the last 7 days" })).toBeVisible();
+  await sellerShot("06-dashboard");
+  await seller.goto("/sell/listings");
+  await expect(sellerMain.getByRole("navigation", { name: "Listings by state" })).toBeVisible();
+  await sellerShot("07-my-listings");
+  await seller.goto("/sell/listings/l-001/edit");
+  await expect(sellerMain.getByText("Photo 3", { exact: true })).toBeVisible();
+  await sellerShot("08-listing-form");
+  await seller.goto("/sell/listings/new");
+  await sellerMain.getByRole("button", { name: "Save and publish", exact: true }).click();
+  await expect(seller.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  await sellerShot("09-listing-form-errors");
+  await seller.goto("/sell/listings/l-001/delete");
+  await expect(sellerMain.getByRole("button", { name: "Delete listing" })).toBeVisible();
+  await sellerShot("10-delete");
+  await seller.goto("/sell/profile");
+  await expect(field(seller, "Your shop's link")).toBeVisible();
+  await sellerShot("11-edit-shop");
+  await seller.goto("/listings/l-001");
+  await expect(seller.getByRole("link", { name: "Edit listing" }).filter({ visible: true })).toBeVisible();
+  await seller.screenshot({ path: file("12-listing-owner") });
+  await seller.goto("/sellers/tech-corner");
+  await expect(seller.getByRole("link", { name: "Edit shop" }).filter({ visible: true })).toBeVisible();
+  await seller.screenshot({ path: file("13-storefront-owner") });
+  await context.close();
 });

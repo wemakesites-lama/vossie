@@ -41,6 +41,10 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - Never read `cookies()`, `headers()` or `searchParams` outside `<Suspense>`.
 - Who's signed in comes only from `getViewer()` or `requireAccount()` (`lib/auth/session.ts`), inside `<Suspense>`. Forms are plain `<form action={serverAction}>`: the action checks its input, takes identity from the session, keeps errors in the store (never the URL) and ends with `redirect()`. Only `lib/data` touches the sample store.
 - Messaging's Server Actions end every write with `done()` (`refresh()`, then a `replace` redirect; `lib/messaging/actions.ts`), so the browser drops its kept pages. Message text is React text, never HTML, and links in it aren't made clickable.
+- Listings and sellers come from the sample store through `lib/data/catalog.ts`; every cached reader is tagged (`lib/data/tags.ts`), and a selling write calls `listingsChanged()` or `sellersChanged()` (`updateTag`) before `done()` (`lib/selling/action-helpers.ts`). Fixtures stay the seed: `data/fixtures/shops.ts` turns them into rows.
+- Uploaded photos go in only through `lib/photos` (the signature check and the metadata stripper) and `lib/data/photos.ts`, and come out only through `/photos/[id]` (`private` cache headers) and `next/image`, whose disk cache is off (`images.maximumDiskCacheSize: 0`), so a deleted photo is never served again from the server.
+- The listing form's `PhotoField` is the only selling client component, and only its two routes load it: links to `/sell/…` pages never prefetch, and `/sell` itself has no client component (the header prefetches it on every page).
+- End-to-end tests that publish, change or delete listings go in `tests/e2e/selling-writes.spec.ts`, which runs after every other test (the teardown of the `setup` project) and deletes its own listings, passed or failed.
 - No `Date.now()`, `new Date()` or `Math.random()` while prerendering.
 - Client hooks that suspend while Next builds App Shells (`usePathname()`, `useParams()`) are read only inside `<Suspense>` in shared layout code (see `components/ui/NavLink.tsx`).
 - Dynamic routes:
@@ -59,11 +63,12 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - Links that would prefetch a route with client components cost that route's chunk on every page they appear on. Use `prefetch={false}` unless there's a reason (decision 53). The header's home link prefetches `/`, so client code used only on the homepage costs bytes on every page.
 
 ## Privacy (POPIA)
-- Collect the minimum. Sample mode keeps accounts, sessions, consent, sign-ins, messages, reports and notifications in the server's memory only, wiped on restart; the campus choice and saved listings are first-party cookies, and recent searches stay in the browser.
+- Collect the minimum. Sample mode keeps accounts, sessions, consent, sign-ins, messages, reports, notifications, shops, listings and photos in the server's memory only, wiped on restart; the campus choice and saved listings are first-party cookies, and recent searches stay in the browser.
 - Looking For requests never name the asker: they say "Asked by a student at {campus}". Sellers are businesses and show their names (community spec decision 2).
 - The footer sign-up shows a confirmation only. It sends and stores nothing until there is a real, consented mailing list.
 - Every cookie and browser-storage key is named `vossie_…`, and the privacy page must name each one: a test (`app/privacy/page.test.tsx`) finds them in the code and fails until it does.
 - Photos of people need their consent.
+- Photos lose their hidden data (location included) before they're stored: the server strips every upload (`lib/photos/strip-metadata.ts`), and the listing form's browser re-encodes its photos first.
 
 ## Time
 - SAST (UTC+2, no daylight saving). Store UTC, render in `Africa/Johannesburg`. Never rely on the server's timezone.

@@ -1,7 +1,8 @@
 # Vossie selling: design spec
 
 - **Date:** 2026-10-14
-- **Status:** Approved under Lama's standing goal (2026-10-14): "make recommended decisions where needed and continue working in the same manner". Each decision is Claude's recommendation, logged in the decisions log.
+- **Status:** Built (2026-10-15), in sample mode. Sections 8 and 9 say where the plan and the build refined it.
+- **Approved** under Lama's standing goal (2026-10-14): "make recommended decisions where needed and continue working in the same manner". Each decision is Claude's recommendation, logged in the decisions log.
 - **Scope:** stage F, the seller's side:
   - the "Sell on Vossie" pitch;
   - becoming a seller, and waiting for approval;
@@ -38,7 +39,7 @@ A student can apply to sell, the Hub can approve them (stage G), and an approved
    - A draft is kept in the store between steps.
 3. **Photos have two paths.**
    - **With the app's JavaScript:** a small client component on the listing form shrinks each photo before upload. The longest side becomes 1,600px, it's re-encoded as WebP at quality 0.8, and drawing to a canvas drops the hidden metadata, location included. It also shows previews and lets the seller reorder them and add alt text.
-   - **Without JavaScript:** the plain file input uploads the originals. The server strips the metadata itself: it removes JPEG's APP1 Exif and XMP segments, PNG's `eXIf` and text chunks, and WebP's `EXIF` and `XMP ` chunks.
+   - **Without JavaScript:** the plain file input uploads the originals. The server strips the metadata itself, on every file, re-encoded or not: it keeps only what a decoder needs (section 8, item 4).
    - That stripper is a small, tested function in `lib/photos/strip-metadata.ts`, so no image library has to be installed.
    - The server accepts JPEG, PNG and WebP up to 5 MB each and up to 6 photos per listing. It checks each file's signature, not just its name.
    - Server Actions' body limit is raised to 32 MB (`serverActions.bodySizeLimit`) for this.
@@ -54,7 +55,7 @@ A student can apply to sell, the Hub can approve them (stage G), and an approved
    Contact details aren't asked for: buyers use in-app messages (stage E, decision 7).
 7. **Waiting for approval:** `/sell` shows "The Hub is checking your shop", what happens next, and that they can prepare listings now. Those listings save as drafts, invisible until the shop is approved. The admin approves in stage G. In sample mode, the `pending@eduvos.com` account is the test case.
 8. **The dashboard (`/sell`, approved shops):**
-   - a status line ("Your shop is live", or "Paused: buyers can't see your listings");
+   - a status line ("Your shop is live", or "Paused: your listings are off every list");
    - this week's numbers: new enquiries, replied within 48 hours, sales confirmed;
    - the trust badge, and what the next one needs ("2 more confirmed sales for Trusted");
    - quick links: New listing, My listings, Messages (Selling), Edit shop, View your shop;
@@ -140,14 +141,30 @@ The plan (`docs/superpowers/plans/2026-10-14-selling.md`) refines these points; 
 1. **No test-only routes.** End-to-end tests apply as a new student (who stays waiting) and use the seeded approved seller (`seller@eduvos.com`, Tech corner) for listing flows, only on each test's own listing. Approval itself arrives in stage G.
 2. **Uploads on a real host.** The 32 MB Server Action body works on `next start` but not on many hosts (Vercel's functions take 4.5 MB). Go-live needs direct-to-storage uploads, and the no-JavaScript path then needs its own answer; it's on the go-live checklist.
 3. **No resized copies of deleted photos.** The image optimiser's disk cache is off (`images.maximumDiskCacheSize: 0`), so a deleted photo can't keep being served in another size (POPIA).
-4. **What the metadata stripper removes:**
-   - JPEG: APP1 (Exif and XMP), APP13 (IPTC, which can hold a location) and comments;
-   - PNG: `eXIf`, `tEXt`, `zTXt` and `iTXt`;
-   - WebP: `EXIF` and `XMP `;
-   - in every format: anything after the image's end, such as a phone's appended motion video.
+4. **What the metadata stripper keeps** (changed in the build, plan amendment 8: it keeps a list rather than dropping one, because phones and editors hide data in more places than any list of removals names):
+   - JPEG: the frame, table and scan segments, plus APP0's JFIF (its 14-byte core, with no thumbnail), APP2's `ICC_PROFILE` and APP14's `Adobe` (its 12 bytes). Everything else goes: Exif and XMP (APP1), IPTC (APP13, which can hold a location), C2PA content credentials (APP11), JFXX thumbnails, makers' segments and comments;
+   - PNG: the image and colour chunks (`IHDR`, `PLTE`, `IDAT`, `IEND`, `tRNS`, `cHRM`, `gAMA`, `iCCP`, `sBIT`, `sRGB`, `cICP`, `mDCV`, `cLLI`, `bKGD`, `pHYs`) and the animation chunks (`acTL`, `fcTL`, `fdAT`). `eXIf`, the text chunks, `tIME`, `caBX` and unknown chunks go;
+   - WebP: `VP8X` (its Exif and XMP flags cleared), `VP8 `, `VP8L`, `ALPH`, `ANIM`, `ANMF` and `ICCP`. `EXIF`, `XMP `, `C2PA` and unknown chunks go;
+   - in every format: anything after the image's end, such as a phone's appended motion video. A file with no image in it is refused.
 5. **The dashboard counts the last 7 days** (not "this week"). Only messages about a listing count as enquiries, as the trust page defines them. Replies show as "3 of 4 within 48 hours".
 6. **Sold listings can be relisted,** so a mistaken "Mark sold" can be undone.
 7. **Drafts stay drafts after approval:** the seller publishes them one by one.
 8. **A paused shop** disappears from every list, but its listing and storefront pages stay up, marked paused, so saved links still work.
 9. **The owner on their own paused or sold listing** sees "See similar items", and edits from My listings.
 10. **To fix in stage G:** part C's trust page says "Verified means the Hub … approved their shop". Approval (which lets someone sell) and Verified (a badge the Hub gives after checking) are separate, so the trust page's wording changes with stage G.
+
+## 9. Changes in the build (2026-10-15)
+
+The plan's decisions and the build refined these points too; where they differ from sections 2 and 3, these win. The plan's "Changes made during the build" has every change with its commit.
+
+1. **A shop's status stays on its owner's seller profile;** its details are a row of their own. A waiting shop has a link but no storefront until approval; the 28 sample shops no account owns are always open (plan decision 1).
+2. **A paused shop keeps its storefront** ("Nothing listed right now") **and its listings' pages,** marked paused; its listings leave every list. It takes no new messages: its storefront says "Not taking orders right now" in Message's place, and the server refuses a first message while replies in existing conversations still go. Its owner still sees Edit shop on the storefront (plan decision 2, amendments 10 and 16).
+3. **Listings have one state:** draft, available, paused or sold. Save and publish says Save changes on a paused or sold listing and keeps its state; a sold listing can be relisted; drafts pass the same checks as published listings; a listing is dated once, when it's first published, so a draft round trip doesn't put it back at the top of Just listed (plan decisions 3 and 5, amendment 13).
+4. **Photos.** Resized copies aren't kept on the server's disk (plan decision 12), and `/photos/[id]` sends photos as private, so a shared cache in front of the site never keeps one deleted with its listing or account (amendment 12). The photo field is one list of saved and new photos; without the app's JavaScript its buttons post the form; Safari's photos are re-encoded as JPEG (plan decisions 9 and 10). Photos uploaded on a form that hasn't saved are kept for at least a day, the newest 12 per account, and a form's own upload never trims a photo the form names (amendment 13).
+5. **The wizard's Back is a link;** step 4 comes back with the new campus's pickup points without client code; Send for approval goes to the first step with a problem; each step has its own page title, so a screen reader hears the step change (plan decision 15).
+6. **Shop names and links.** A name is unique on its campus compared without case, accents or punctuation, keeping letters from every script. A waiting shop's link follows its name; the one change of link carries the shop's listings, conversations and reports with it; a link buyers saw is never given to another shop. A new campus moves the shop's listings (plan decisions 16 and 17, amendments 11 and 15).
+7. **The dashboard counts the last 7 days,** enquiries about listings only, and "replied within 48 hours" as "3 of 4"; the status line for a paused shop is "Paused: your listings are off every list" (plan decision 18, amendment 14).
+8. **Prices** take "R1 200" and "1,200" but a separator only between groups of three, so "R250,00" isn't read as R25,000.
+9. **The account page's Selling row** goes to `/sell` (the dashboard or the waiting page), not the storefront (plan decision 21).
+10. **The end-to-end tests that change listings run after all others,** as the teardown of a setup project; no test approves a shop (approval is stage G's), so listing flows use the sample seller (plan decision 25).
+11. **The listing form's two pages** carry 153,086 B of JS on a first visit at 390px, over the 152,305 B stop line and under the 153,600 B limit. Lama accepted 152,950 B for those two pages only; Task 12's review fixes added 136 B, which Lama may still veto (decision 70). The display font has matched fallbacks, so headings don't rewrap when it loads (decision 71).
