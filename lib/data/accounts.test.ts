@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { makeSignInAttempt } from "@/tests/helpers/fakes";
+import { pngBytes } from "@/tests/helpers/image-bytes";
 import {
   createAccount,
   deleteAccountData,
@@ -14,6 +15,7 @@ import {
   updateAccountDetails,
 } from "./accounts";
 import { saveFormState } from "./form-states";
+import { storePhotos } from "./photos";
 import { createReport } from "./reports";
 import { createSession } from "./sessions";
 import { recordCodeSent, saveSampleEmail, saveSignInAttempt } from "./sign-in";
@@ -140,8 +142,9 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
   it("holds the account, its consent, and when its sessions started and end, with no ids", async () => {
     await createSession({ key: "session-key-1", accountId: "acc-seller", createdAt: NOW, expiresAt: IN_30_DAYS });
     const data = await exportAccountData("acc-seller", NOW);
-    // Messaging adds three keys (messaging plan decision 15), checked below; everything else is compared in full.
-    const { conversations, reports, notifications, ...rest } = data!;
+    // Messaging adds three keys (messaging plan decision 15) and selling two (selling plan decision 22), checked below;
+    // everything else is compared in full.
+    const { conversations, reports, notifications, shop, listings, ...rest } = data!;
     expect(rest).toEqual({
       exportedAt: NOW.toISOString(),
       account: {
@@ -164,6 +167,8 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
       "conversations",
       "reports",
       "notifications",
+      "shop",
+      "listings",
     ]);
     expect(conversations.map((row) => [row.with, row.about])).toEqual([
       ["Thandi", "Casio fx-991ZA Plus calculator"],
@@ -171,6 +176,8 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
     ]);
     expect(reports).toEqual([]);
     expect(notifications).toHaveLength(2);
+    expect(shop).toMatchObject({ name: "Tech corner", link: "tech-corner", status: "approved" });
+    expect(listings.map((row) => row.title)).toEqual(["Casio fx-991ZA Plus calculator", "Gaming headset, barely used"]);
     const text = JSON.stringify(data);
     expect(text).not.toContain("session-key-1");
     expect(text).not.toContain("acc-seller");
@@ -269,6 +276,17 @@ describe("deleting an account (accounts spec 2.13)", () => {
     ]);
     expect(store.reports.size).toBe(0);
     expect(store.notifications.size).toBe(0);
+  });
+
+  it("removes the account's shop, its listings and its photos (selling plan decision 22)", async () => {
+    await storePhotos("acc-seller", [{ type: "image/png", bytes: pngBytes() }], NOW);
+    await deleteAccountData("acc-seller");
+    const store = sampleStore();
+    expect(store.sellers.has("tech-corner")).toBe(false);
+    expect(store.listings.has("l-001")).toBe(false);
+    expect(store.photos.size).toBe(0);
+    // The buyers keep their side of each conversation, with the listing's title (messaging plan decision 14).
+    expect(store.conversations.get("conv-s2")?.listingTitle).toBe("Casio fx-991ZA Plus calculator");
   });
 });
 
