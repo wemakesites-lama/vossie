@@ -1,0 +1,134 @@
+import { randomUUID } from "node:crypto";
+import { drawFeatured } from "@/lib/featured";
+import { addDays } from "@/lib/staff/rules";
+import type { CampusChoice, Seller } from "@/lib/types";
+import { listedListings, liveSellerRows, toSeller } from "./catalog";
+import type { FeaturedPinRow } from "./rows";
+import { sampleStore } from "./store";
+
+// Featured today from the store (staff tools spec 2.8, plan decision 9). Who may be featured: Verified, open (approved,
+// not paused) and with at least one listed listing. Pins for the campus and day come first, in the order they were
+// made, and ignore the week's break; the other places come from the fair daily draw, the campus's own first. A
+// campus's row is recorded the first time it's drawn that day (by `${campus}:${day}`, "all" for visitors who haven't
+// chosen one), so it stays the same all day and a seller shown there sits out that campus's next six days. The break
+// is a preference (plan amendment 3): resting sellers come after everyone else rather than being left out, so a row
+// is only short when there aren't enough eligible sellers at all. Adding or removing a pin for a day forgets that
+// campus's row for the day, so the next view draws again.
+
+/** The homepage's four places (homepage spec 7.10). */
+export const FEATURED_PLACES = 4;
+/** A seller shown in a campus's row sits out its draws for this many days after (the trust page's week's break). */
+export const REST_DAYS = 6;
+/** Rows older than this are tidied away as new ones are drawn. */
+const KEEP_DAYS = 7;
+
+const drawKey = (campus: string, day: string) => `${campus}:${day}`;
+
+function eligibleSellers(): Seller[] {
+  const listed = new Set(listedListings().map((listing) => listing.sellerSlug));
+  return liveSellerRows()
+    .filter((row) => row.verified && listed.has(row.slug))
+    .map(toSeller);
+}
+
+/** The sellers an admin may pin (spec 2.8), by name. */
+export async function featuredChoices(): Promise<Seller[]> {
+  return eligibleSellers().sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function pinsFor(campus: string, day: string): FeaturedPinRow[] {
+  return [...sampleStore().featuredPins.values()].filter((pin) => pin.campusSlug === campus && pin.day === day);
+}
+
+function tidy(day: string): void {
+  const { featuredDraws, featuredPins } = sampleStore();
+  const oldest = addDays(day, -KEEP_DAYS);
+  for (const [key, row] of featuredDraws) {
+    if (row.day < oldest) featuredDraws.delete(key);
+  }
+  for (const [id, pin] of featuredPins) {
+    if (pin.day < oldest) featuredPins.delete(id);
+  }
+}
+
+/**
+ * A campus's Featured row for a SAST day (spec 2.8): the recorded row when there is one, else a new draw, recorded. A
+ * seller who has stopped being eligible since drops out, and the place stays empty until tomorrow (plan decision 9).
+ */
+export async function featuredFor(campus: CampusChoice, day: string): Promise<Seller[]> {
+  const store = sampleStore();
+  const eligible = eligibleSellers();
+  const key = drawKey(campus, day);
+  let row = store.featuredDraws.get(key);
+  if (!row) {
+    const resting = new Set<string>();
+    for (let back = 1; back <= REST_DAYS; back += 1) {
+      for (const slug of store.featuredDraws.get(drawKey(campus, addDays(day, -back)))?.sellerSlugs ?? []) resting.add(slug);
+    }
+    const pinned = pinsFor(campus, day).map((pin) => pin.sellerSlug);
+    const drawn = drawFeatured(eligible, campus, day, FEATURED_PLACES, { pinned, resting });
+    row = { key, campusSlug: campus, day, sellerSlugs: drawn.map((seller) => seller.slug) };
+    store.featuredDraws.set(key, row);
+    tidy(day);
+  }
+  const bySlug = new Map(eligible.map((seller) => [seller.slug, seller]));
+  return row.sellerSlugs.flatMap((slug) => bySlug.get(slug) ?? []);
+}
+
+/** A pin (spec 2.8), or why not: a seller who can't be featured, already pinned there that day, or 4 pins already. */
+export async function addPin({
+  sellerSlug,
+  campusSlug,
+  day,
+  staffId,
+  now,
+}: {
+  sellerSlug: string;
+  campusSlug: string;
+  day: string;
+  staffId: string;
+  now: Date;
+}): Promise<FeaturedPinRow | "not-eligible" | "taken" | "full"> {
+  if (!eligibleSellers().some((seller) => seller.slug === sellerSlug)) return "not-eligible";
+  const pins = pinsFor(campusSlug, day);
+  if (pins.some((pin) => pin.sellerSlug === sellerSlug)) return "taken";
+  if (pins.length >= FEATURED_PLACES) return "full";
+  const pin: FeaturedPinRow = {
+    id: `pin-${randomUUID()}`,
+    sellerSlug,
+    campusSlug,
+    day,
+    pinnedBy: staffId,
+    createdAt: now.toISOString(),
+  };
+  const store = sampleStore();
+  store.featuredPins.set(pin.id, pin);
+  store.featuredDraws.delete(drawKey(campusSlug, day));
+  return { ...pin };
+}
+
+/** Removes a pin, and that campus's row for its day, so it's drawn again. The pin, or null when there's none. */
+export async function removePin(id: string): Promise<FeaturedPinRow | null> {
+  const store = sampleStore();
+  const pin = store.featuredPins.get(id);
+  if (!pin) return null;
+  store.featuredPins.delete(id);
+  store.featuredDraws.delete(drawKey(pin.campusSlug, pin.day));
+  return { ...pin };
+}
+
+/** A pin as the admin's Featured page lists it. */
+export type PinView = FeaturedPinRow & { sellerName: string; pinnedByName: string };
+
+/** Pins from `fromDay` on, soonest first, then by campus, then in the order made. */
+export async function listPins(fromDay: string): Promise<PinView[]> {
+  const store = sampleStore();
+  return [...store.featuredPins.values()]
+    .filter((pin) => pin.day >= fromDay)
+    .sort((a, b) => a.day.localeCompare(b.day) || a.campusSlug.localeCompare(b.campusSlug))
+    .map((pin) => ({
+      ...pin,
+      sellerName: store.sellers.get(pin.sellerSlug)?.name ?? pin.sellerSlug,
+      pinnedByName: (pin.pinnedBy ? store.accounts.get(pin.pinnedBy)?.firstName : undefined) ?? "Deleted account",
+    }));
+}

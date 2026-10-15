@@ -623,7 +623,6 @@ describe("the cache tags (selling spec 2.1, plan decision 6, amendment 8.13)", (
     getJustListed: () => getJustListed({ campus: "all", limit: 4 }),
     getRelatedListings: () => getRelatedListings({ categorySlug: "tech", campusSlug: "midrand", limit: 4 }),
     getFreeAndSwaps: () => getFreeAndSwaps({ campus: "all", limit: 4 }),
-    getListingDetail: () => getListingDetail("l-001"),
     getMoreFrom: () =>
       getMoreFrom({ id: "l-001", sellerSlug: "tech-corner", categorySlug: "tech", campusSlug: "midrand" }, 4),
     searchListings: () => searchListings(query),
@@ -634,7 +633,6 @@ describe("the cache tags (selling spec 2.1, plan decision 6, amendment 8.13)", (
   const sellerReaders: Record<string, () => Promise<unknown>> = {
     getSeller: () => getSeller("tech-corner"),
     getSellerSlugs: () => getSellerSlugs(),
-    getFeatured: () => getFeatured({ campus: "midrand", day: "2026-10-12" }),
     getVerifiedSellers: () => getVerifiedSellers(),
   };
 
@@ -644,5 +642,42 @@ describe("the cache tags (selling spec 2.1, plan decision 6, amendment 8.13)", (
 
   it.each(Object.entries(sellerReaders))("tags %s with sellers", async (_, read) => {
     expect(await tagsOf(read)).toEqual([["sellers"]]);
+  });
+
+  it("tags a listing's page with listings, sellers and pickup points (staff tools plan decision 10)", async () => {
+    expect(await tagsOf(() => getListingDetail("l-001"))).toEqual([["listings", "sellers"], ["pickup-points"]]);
+  });
+
+  it("tags the pickup points in use with pickup points, and doesn't cache Featured at all (plan decisions 9 and 10)", async () => {
+    expect(await tagsOf(() => getPickupPoints())).toEqual([["pickup-points"]]);
+    // Featured reads and records the day's row per request, so it passes no tag.
+    expect(await tagsOf(() => getFeatured({ campus: "midrand", day: "2026-10-12" }))).toEqual([]);
+  });
+});
+
+describe("Featured and pickup points from the store (staff tools plan decisions 9 and 10)", () => {
+  it("offers only the points in use, and still names a retired point on its listing's page", async () => {
+    sampleStore().pickupPoints.get("pp-midrand-library")!.retiredAt = "2026-10-14T08:00:00.000Z";
+    expect((await getPickupPoints()).map((point) => point.id)).not.toContain("pp-midrand-library");
+    expect((await getListingDetail("l-001"))?.pickupPoint).toEqual({
+      id: "pp-midrand-library",
+      campusSlug: "midrand",
+      name: "Library entrance",
+      retired: true,
+    });
+  });
+
+  it("features today's row from the store, pins first", async () => {
+    sampleStore().featuredPins.set("pin-1", {
+      id: "pin-1",
+      sellerSlug: "nail-bar",
+      campusSlug: "midrand",
+      day: "2026-10-14",
+      pinnedBy: "acc-admin",
+      createdAt: "2026-10-14T08:00:00.000Z",
+    });
+    const row = await getFeatured({ campus: "midrand", day: "2026-10-14" });
+    expect(row.map((seller) => seller.slug)[0]).toBe("nail-bar");
+    expect(row).toHaveLength(4);
   });
 });

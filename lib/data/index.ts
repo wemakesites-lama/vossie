@@ -4,13 +4,11 @@ import { categories } from "@/data/fixtures/categories";
 import { collections } from "@/data/fixtures/collections";
 import { heroSlides } from "@/data/fixtures/hero";
 import { hubBanner, hubPosts } from "@/data/fixtures/hub";
-import { pickupPoints } from "@/data/fixtures/pickup-points";
 import { requests } from "@/data/fixtures/requests";
 import { trendingSearches } from "@/data/fixtures/trending";
 import { findListings } from "@/lib/browse/results";
 import { ALL_CAMPUSES } from "@/lib/campus";
 import { matchesRule } from "@/lib/collections";
-import { drawFeatured } from "@/lib/featured";
 import { orderHubPosts, toHubEvent } from "@/lib/hub";
 import type {
   Announcement,
@@ -43,7 +41,9 @@ import {
   storefrontRow,
   toSeller,
 } from "./catalog";
-import { tagListings, tagSellers } from "./tags";
+import { featuredFor } from "./featured";
+import { pickupPointById, pointsInUse } from "./pickup-points";
+import { tagListings, tagPickupPoints, tagSellers } from "./tags";
 
 // The data layer (spec section 13). Listings and sellers come from the sample store, through lib/data/catalog.ts,
 // tagged so a write shows on the next request (selling spec 2.1); the rest is still read from the fixtures. Switching
@@ -127,12 +127,13 @@ export async function getJustListed({ campus, limit }: CampusQuery): Promise<rea
     .slice(0, limit);
 }
 
-/** Today's featured sellers (spec 7.10). `day` is the SAST date, so the draw changes at midnight in South Africa. */
+/**
+ * Today's featured sellers (spec 7.10; staff tools spec 2.8). `day` is the SAST date, so the row changes at midnight in
+ * South Africa. Not cached: it reads and records the day's row in the store (staff tools plan decision 9), and the
+ * homepage's section renders per request already, after connection().
+ */
 export async function getFeatured({ campus, day }: { campus: CampusChoice; day: string }): Promise<readonly Seller[]> {
-  "use cache";
-  tagSellers();
-  // Only open shops take part (plan decision 2). Stage G adds pins, the week's break and "something listed".
-  return drawFeatured(liveSellerRows().map(toSeller), campus, day);
+  return featuredFor(campus, day);
 }
 
 /** Open requests only: closed ones never appear in lists (community spec 4.3). */
@@ -271,13 +272,15 @@ export async function getHubBanner(): Promise<HubBanner> {
 export async function getListingDetail(id: string): Promise<ListingDetail | null> {
   "use cache";
   tagListings();
+  tagPickupPoints();
   const listing = publicListing(id);
   if (!listing) return null;
   const seller = sellerFor(listing.sellerSlug);
   const category = categories.find((item) => item.slug === listing.categorySlug);
   const campus = campuses.find((item) => item.slug === listing.campusSlug);
   if (!seller || !category || !campus) return null;
-  const pickupPoint = pickupPoints.find((point) => point.id === listing.pickupPointId) ?? null;
+  // Retired or not: a listing keeps its point, marked "no longer used" (staff tools plan decision 10).
+  const pickupPoint = pickupPointById(listing.pickupPointId);
   return { listing, seller, category, campus, pickupPoint };
 }
 
@@ -303,9 +306,11 @@ export async function getMoreFrom(
   return { from: "category", items: [...ownCampus, ...elsewhere].slice(0, limit) };
 }
 
+/** The pickup points in use (staff tools plan decision 10): what onboarding, Edit shop and the listing form offer. */
 export async function getPickupPoints(): Promise<readonly PickupPoint[]> {
   "use cache";
-  return pickupPoints;
+  tagPickupPoints();
+  return pointsInUse();
 }
 
 /**

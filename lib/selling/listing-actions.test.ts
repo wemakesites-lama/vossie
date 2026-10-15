@@ -91,6 +91,17 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
     expect((await listOwnListings("crochet-corner"))[0]).toMatchObject({ title: "Desk fan", state: "draft" });
   });
 
+  it("offers no retired pickup point to a save, though a listing already on one keeps it until it's saved (staff tools amendment 5)", async () => {
+    await signedInAs("acc-seller");
+    sampleStore().pickupPoints.get("pp-midrand-library")!.retiredAt = NOW.toISOString();
+    expect((await getOwnListing("tech-corner", "l-001"))?.pickupPointId).toBe("pp-midrand-library");
+    expect(await redirectOf(async () => saveListingForm(await fanForm()))).toBe("/sell/listings/new");
+    expect((await readFormState(listingForm(null)))?.errors).toEqual(["pickup-missing"]);
+    expect(await fan()).toBeUndefined();
+    await redirectOf(async () => saveListingForm(await fanForm({ pickup: "pp-midrand-reception" })));
+    expect((await fan())?.pickupPointId).toBe("pp-midrand-reception");
+  });
+
   it("keeps everything typed, the errors and the uploaded photo when a save fails", async () => {
     await signedInAs("acc-seller");
     const failing = await fanForm({ title: "", price: "lots", newPhotos: photoFile(pngBytes()) });

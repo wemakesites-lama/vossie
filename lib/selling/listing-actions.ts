@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { writeFormState } from "@/lib/auth/form-state";
-import { getCategories } from "@/lib/data";
+import { getCategories, getPickupPoints } from "@/lib/data";
 import { deleteOwnListing, getOwnListing, saveOwnListing, setOwnListingState } from "@/lib/data/own-listings";
 import { photoSrcsOf, storePhotos, type Upload } from "@/lib/data/photos";
 import { listingsChanged } from "@/lib/data/tags";
@@ -127,9 +127,12 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   const earlier = once ? await sentListing(once, now) : null;
   if (earlier) await sentAgain(earlier, now);
 
+  // A save offers only the shop's pickup points that are still in use. A listing already on a retired point keeps it
+  // until its seller saves it, and then chooses a point in use (staff tools plan amendment 5).
+  const inUse = new Set((await getPickupPoints()).map((point) => point.id));
   const context: ListingContext = {
     categorySlugs: (await getCategories()).map((category) => category.slug),
-    pickupPointIds: owner.shop.pickupPointIds,
+    pickupPointIds: owner.shop.pickupPointIds.filter((id) => inUse.has(id)),
   };
 
   // A photo button posts its move. Remove is applied before anything else, so the room it makes is there for a new
