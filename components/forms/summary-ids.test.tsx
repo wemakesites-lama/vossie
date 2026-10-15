@@ -8,9 +8,11 @@ import { ReportView } from "@/components/messages/ReportView";
 import { ThreadView } from "@/components/messages/ThreadView";
 import { ListingFormView } from "@/components/sell/ListingFormView";
 import { OnboardingView } from "@/components/sell/OnboardingView";
+import { ShopProfileView } from "@/components/sell/ShopProfileView";
 import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
 import { pickupPoints } from "@/data/fixtures/pickup-points";
+import { sampleSellerRows } from "@/data/fixtures/shops";
 import { emptyDraft } from "@/lib/data/shops";
 import { composerSubject } from "@/lib/messaging/subjects";
 import type { Account } from "@/lib/types";
@@ -36,7 +38,11 @@ vi.mock("@/lib/messaging/actions", () => ({
   sendReply: async () => {},
   sendReport: async () => {},
 }));
-vi.mock("@/lib/selling/shop-actions", () => ({ saveOnboardingStep: async () => {}, sendForApproval: async () => {} }));
+vi.mock("@/lib/selling/shop-actions", () => ({
+  saveOnboardingStep: async () => {},
+  saveShopProfile: async () => {},
+  sendForApproval: async () => {},
+}));
 vi.mock("@/lib/selling/listing-actions", () => ({ saveListingForm: async () => {} }));
 
 const account: Account = {
@@ -113,10 +119,21 @@ describe("error summary ids (accounts spec 6)", () => {
             campusName="Midrand"
           />
         ))}
+        <ShopProfileView
+          shop={sampleSellerRows.find((row) => row.slug === "tech-corner")!}
+          status="approved"
+          typed={null}
+          errors={oops}
+          notice={null}
+          campuses={campuses}
+          categories={categories}
+          pickupPoints={pickupPoints}
+          host="vossie.test"
+        />
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(15);
+    expect(summaries).toHaveLength(16);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -135,6 +152,7 @@ describe("error summary ids (accounts spec 6)", () => {
       "onb-step-5-summary",
       "new-summary",
       "edit-l-001-summary",
+      "profile-summary",
     ]);
   });
 });
