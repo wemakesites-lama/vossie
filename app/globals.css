@@ -8281,3 +8281,275 @@
     }
   }
 }
+
+/* --- Staff tools: the frame, tables and confirm pages (staff tools plan, Task 9, spec 2.9 and 3) --- */
+@layer components {
+  /* .page and .staff-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
+  .staff-page {
+    padding: 24px 16px 64px;
+  }
+
+  .staff-head {
+    display: grid;
+    gap: 6px;
+  }
+
+  .staff-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: clamp(2rem, 1.7rem + 1.2vw, 2.75rem);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  /* The sections wrap onto more lines on a phone, so nothing scrolls sideways. 44px tall, 8px apart. */
+  .staff-nav ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  .staff-nav-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1.5px solid var(--color-field);
+    border-radius: 999px;
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  /* The open section: white on navy (12.6:1). */
+  .staff-nav-link[aria-current="page"] {
+    border-color: var(--color-navy);
+    background: var(--color-navy);
+    color: var(--color-white);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .staff-nav-link:not([aria-current="page"]):hover {
+      border-color: var(--color-navy);
+    }
+  }
+
+  .staff-notice {
+    margin-top: 20px;
+  }
+
+  .staff-body {
+    display: grid;
+    gap: 36px;
+    margin-top: 28px;
+  }
+
+  .staff-section {
+    display: grid;
+    gap: 14px;
+  }
+
+  .staff-section-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 24px;
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  .staff-empty,
+  .staff-muted {
+    color: var(--color-muted);
+  }
+
+  .staff-muted {
+    font-size: 14px;
+  }
+
+  /* Links in staff text are underlined, so colour isn't the only sign of them. Sky-dark on white is 4.7:1. */
+  .staff-body p a:not(.btn):not(.link-button),
+  .staff-table td a:not(.btn):not(.staff-row-action) {
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* Tables (plan decision 20). Below the tablet step each row is a card and each cell names its column. */
+  .staff-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .staff-caption {
+    margin-bottom: 10px;
+    color: var(--color-navy);
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .staff-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .staff-table tbody,
+  .staff-table tr,
+  .staff-table td {
+    display: block;
+  }
+
+  .staff-table tr {
+    padding: 12px 16px;
+    border: 1.5px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+
+  .staff-table tr + tr {
+    margin-top: 10px;
+  }
+
+  .staff-table td {
+    padding-block: 4px;
+    overflow-wrap: anywhere;
+  }
+
+  /* Muted on white is 5.9:1. */
+  .staff-cell-label {
+    display: block;
+    color: var(--color-muted);
+    font-size: 13px;
+  }
+
+  /* A row's buttons and links: 44px tall, 8px apart. */
+  .staff-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .staff-row-action {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1.5px solid var(--color-field);
+    border-radius: 999px;
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .staff-row-action-danger {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+  }
+
+  /* Confirm pages (plan decision 18). */
+  .staff-confirm {
+    display: grid;
+    gap: 18px;
+    max-width: 40rem;
+  }
+
+  .staff-confirm-lead {
+    color: var(--color-ink);
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .staff-confirm-list {
+    display: grid;
+    gap: 6px;
+    padding-left: 1.25rem;
+    list-style: disc;
+  }
+
+  .staff-textarea {
+    min-height: 7rem;
+    resize: vertical;
+  }
+
+  .staff-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 20px;
+  }
+
+  /* The static shell's shapes (plan decision 1), about the frame's height. */
+  .staff-skeleton-eyebrow {
+    width: 8rem;
+    height: 18px;
+  }
+
+  .staff-skeleton-title {
+    width: min(22rem, 80%);
+    height: 44px;
+    margin-top: 8px;
+  }
+
+  .staff-skeleton-nav {
+    height: 44px;
+    margin-top: 20px;
+  }
+
+  .staff-skeleton-body {
+    height: 24rem;
+    margin-top: 28px;
+    border-radius: var(--radius-panel);
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .staff-page {
+      padding-inline: 40px;
+    }
+
+    .staff-table thead {
+      position: static;
+      display: table-header-group;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip-path: none;
+      white-space: normal;
+    }
+
+    .staff-table tbody {
+      display: table-row-group;
+    }
+
+    .staff-table tr {
+      display: table-row;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .staff-table tr + tr {
+      margin-top: 0;
+    }
+
+    .staff-table th,
+    .staff-table td {
+      display: table-cell;
+      padding: 12px 16px 12px 0;
+      border-bottom: 1.5px solid var(--color-line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .staff-table th {
+      color: var(--color-muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .staff-cell-label {
+      display: none;
+    }
+  }
+}
