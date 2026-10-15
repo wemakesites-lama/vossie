@@ -9,6 +9,7 @@ type Shift = { value: number; nodes: string[] };
 // measured. Account pages are measured signed in, with a sample account. Messaging's pages are measured signed in too:
 // the seller for a thread, which the seller only reads. Notifications are the student's: the seller's grow with every
 // conversation the other tests start, past what any skeleton could hold, while no test adds to the student's two.
+// Selling pages are measured as the sample account they belong to.
 const PAGES: ReadonlyArray<
   [name: string, path: string, cookies?: Readonly<Record<string, string>>, signIn?: string]
 > = [
@@ -41,6 +42,15 @@ const PAGES: ReadonlyArray<
   ["thread page", "/messages/conv-s1", undefined, "Seller, Tech corner"],
   ["report page", "/report?listing=l-002", undefined, "Student, Midrand"],
   ["notifications page", "/notifications", undefined, "Student, Midrand"],
+  ["sell page", "/sell"],
+  ["sell page (waiting for approval)", "/sell", undefined, "Seller waiting for approval"],
+  ["sell page (dashboard)", "/sell", undefined, "Seller, Tech corner"],
+  ["my listings page", "/sell/listings", undefined, "Seller, Tech corner"],
+  ["delete listing page", "/sell/listings/l-001/delete", undefined, "Seller, Tech corner"],
+  ["new listing form", "/sell/listings/new", undefined, "Seller, Tech corner"],
+  ["edit listing form", "/sell/listings/l-001/edit", undefined, "Seller, Tech corner"],
+  ["edit shop page", "/sell/profile", undefined, "Seller, Tech corner"],
+  ["onboarding, step 1", "/sell/onboarding", undefined, "Student, Midrand"],
 ];
 
 for (const [name, path, cookies, signIn] of PAGES) {

@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { newBuyer, reply, sellerPage, sendFirstMessage, signUp } from "./helpers/messaging";
+import { newBuyer, reply, sellerPage, sendFirstMessage, signUp, signUpHere } from "./helpers/messaging";
+import { photoWithLocation } from "./helpers/selling";
 
 test.use({ reducedMotion: "reduce" });
 
@@ -55,8 +56,9 @@ test("the campus picker", async ({ page }) => {
   expect(await seriousIssues(page)).toEqual([]);
 });
 
-test("a placeholder page", async ({ page }) => {
+test("the selling pitch", async ({ page }) => {
   await page.goto("/sell");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Turn your hustle into a campus-wide business");
   expect(await seriousIssues(page)).toEqual([]);
 });
 
@@ -423,4 +425,107 @@ test("the header with a new notification's badge, and the account page's counts"
   await page.goto("/account");
   await expect(page.getByRole("link", { name: /^Notifications\s*,\s*1 new$/ })).toBeVisible();
   expect(await seriousIssues(page)).toEqual([]);
+});
+
+// --- Selling (selling plan, Task 17) -------------------------------------------------------------------------------
+// The pitch is checked above, with the other public pages. Nothing here writes what buyers see (plan decision 25): the
+// pages are only read, a form posted with errors keeps them in this browser's form state, and a photo picked without
+// saving stays in the browser. Tech corner is never paused here.
+
+test("waiting for approval, with the drafts tab and the drafts-only listing form", async ({ page }) => {
+  await signInAsSample(page, "Seller waiting for approval");
+  await page.goto("/sell");
+  await expect(page.getByRole("heading", { level: 1, name: "The Hub is checking your shop" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+  await page.goto("/sell/listings?tab=drafts");
+  await expect(page.getByRole("link", { name: /^Drafts/ })).toHaveAttribute("aria-current", "page");
+  expect(await seriousIssues(page)).toEqual([]);
+  await page.goto("/sell/listings/new");
+  await expect(page.locator("main").getByText(/Your shop is waiting for the Hub/)).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("the dashboard, each tab of my listings and delete's confirmation", async ({ page }) => {
+  await signInAsSample(page, "Seller, Tech corner");
+  await page.goto("/sell");
+  await expect(page.getByRole("region", { name: "In the last 7 days" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+  for (const [path, tab] of [
+    ["/sell/listings", "Available"],
+    ["/sell/listings?tab=paused", "Paused"],
+    ["/sell/listings?tab=sold", "Sold"],
+    ["/sell/listings?tab=drafts", "Drafts"],
+  ]) {
+    await page.goto(path);
+    await expect(
+      page.getByRole("navigation", { name: "Listings by state" }).getByRole("link", { name: new RegExp(`^${tab}`) }),
+    ).toHaveAttribute("aria-current", "page");
+    expect(await seriousIssues(page)).toEqual([]);
+  }
+  await page.goto("/sell/listings/l-001/delete");
+  await expect(page.locator("main").getByRole("button", { name: "Delete listing" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("the listing form, with its photos, with a photo picked, and with errors", async ({ page }) => {
+  await signInAsSample(page, "Seller, Tech corner");
+  await page.goto("/sell/listings/l-001/edit");
+  await expect(page.locator("main").getByText("Photo 3", { exact: true })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+  // A post with no title fails its checks, so nothing is saved; the errors sit in this browser's form state.
+  await page.getByLabel("Title", { exact: true }).fill("");
+  await page.locator("main").getByRole("button", { name: "Save and publish", exact: true }).click();
+  await expect(page.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+  // A new listing saved empty changes nothing in the store but this browser's form state.
+  await page.goto("/sell/listings/new");
+  await page.locator("main").getByRole("button", { name: "Save and publish", exact: true }).click();
+  await expect(page.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+  // A photo picked and not saved: the photo field shows it with its buttons and description.
+  // Picked again until the photo field's JavaScript has arrived and takes it (under load it can come after the pick).
+  await page.goto("/sell/listings/new");
+  await expect(async () => {
+    await page.getByLabel("Add photos", { exact: true }).setInputFiles(photoWithLocation());
+    await expect(page.locator("main").getByText("Photo 1 (the cover)")).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("edit shop, and with an error", async ({ page }) => {
+  await signInAsSample(page, "Seller, Tech corner");
+  await page.goto("/sell/profile");
+  await expect(page.getByLabel("Your shop's link", { exact: true })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+  // A name that's too short fails its checks, so nothing is saved.
+  await page.getByLabel("Shop name", { exact: true }).fill("T");
+  await page.locator("main").getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(page.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("the listing page and the storefront as their owner", async ({ page }) => {
+  await signInAsSample(page, "Seller, Tech corner");
+  await page.goto("/listings/l-001");
+  await expect(page.getByRole("link", { name: "Edit listing" }).filter({ visible: true })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+  await page.goto("/sellers/tech-corner");
+  await expect(page.getByRole("link", { name: "Edit shop" }).filter({ visible: true })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("the wizard's steps, with an error", async ({ page }) => {
+  // A new student, so no sample account gets a draft (accounts plan decision 22).
+  const email = `a11y-sell-${test.info().project.name}-${Date.now().toString(36)}@eduvos.com`;
+  await page.goto("/login?next=%2Fsell%2Fonboarding");
+  await signUpHere(page, { email, firstName: "Zola" });
+  await expect(page).toHaveURL(/\/sell\/onboarding$/);
+  await page.locator("main").getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+  for (const step of [2, 3, 4, 5]) {
+    await page.goto(`/sell/onboarding?step=${step}`);
+    await expect(page.locator("main").getByText(`Step ${step} of 5`, { exact: false })).toBeVisible();
+    expect(await seriousIssues(page)).toEqual([]);
+  }
 });
