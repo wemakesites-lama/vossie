@@ -62,5 +62,7 @@ describe("the sample shops (selling plan, Task 1)", () => {
     ]);
     expect(sampleListingRows.find((row) => row.id === "l-016")?.state).toBe("paused");
     expect(sampleListingRows.find((row) => row.id === "l-026")?.state).toBe("sold");
+    // None is a draft, so each was first published when it was made (selling plan amendment 13).
+    expect(sampleListingRows.filter((row) => row.publishedAt !== row.createdAt)).toEqual([]);
   });
 });

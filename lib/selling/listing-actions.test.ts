@@ -4,6 +4,7 @@ import { readFormState } from "@/lib/auth/form-state";
 import { hashToken } from "@/lib/auth/secrets";
 import { getOwnListing, listOwnListings, setOwnListingState } from "@/lib/data/own-listings";
 import { getPhoto, photoIdOf, storePhotos } from "@/lib/data/photos";
+import { getJustListed } from "@/lib/data";
 import { createSession } from "@/lib/data/sessions";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { makeListingRow } from "@/tests/helpers/fakes";
@@ -138,6 +139,27 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
     expect(state.values.photos.split("\n")).toHaveLength(6);
   });
 
+  it("never lets the form's own upload trim away a waiting photo it names", async () => {
+    const waiting = () => ({ type: "image/png" as const, bytes: pngBytes() });
+    const [first] = await storePhotos("acc-seller", [waiting()], NOW);
+    await storePhotos("acc-seller", Array.from({ length: 11 }, waiting), NOW);
+    await signedInAs("acc-seller");
+    const described = { [`alt:${first}`]: "The fan from the front", newPhotos: photoFile(pngBytes()) };
+    // A photo button first: the form comes back showing the named photo, which must still be there.
+    const moving = fanForm({ ...described, photo: [first, "new:0"], photoMove: "new:0:cover" });
+    await redirectOf(() => saveListingForm(moving));
+    const [added, shown] = (await readFormState(listingForm(null)))!.values.photos.split("\n");
+    expect(shown).toBe(first);
+    expect(await getPhoto(photoIdOf(first)!)).not.toBeNull();
+    // Then the save, with another new photo: the named one is kept, described.
+    await redirectOf(() => saveListingForm(fanForm({ ...described, photo: [first, added, "new:0"] })));
+    const photos = (await fan())!.photos;
+    expect(photos.map((photo) => photo.src).slice(0, 2)).toEqual([first, added]);
+    expect(photos[0].alt).toBe("The fan from the front");
+    expect(photos).toHaveLength(3);
+    expect(await getPhoto(photoIdOf(first)!)).not.toBeNull();
+  });
+
   it("drops photos that aren't the seller's own", async () => {
     const [theirs] = await storePhotos("acc-student", [{ type: "image/png", bytes: pngBytes() }], NOW);
     await signedInAs("acc-seller");
@@ -155,6 +177,28 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
     await redirectOf(() => saveListingForm(fanForm({ listing: "l-001", title: "Casio", photo: [fanPhoto.src] })));
     expect((await getOwnListing("tech-corner", "l-001"))?.photos).toEqual([]);
     expect((await fan())?.photos).toEqual([fanPhoto]);
+  });
+
+  it("keeps a listed item where it was in Just listed after Save as draft, then Save and publish", async () => {
+    const before = (await getJustListed({ campus: "midrand", limit: 50 })).map((listing) => listing.id);
+    await signedInAs("acc-seller");
+    await redirectOf(() => saveListingForm(fanForm({ listing: "l-007", title: "Gaming headset", intent: "draft" })));
+    await redirectOf(() => saveListingForm(fanForm({ listing: "l-007", title: "Gaming headset" })));
+    expect(await getOwnListing("tech-corner", "l-007")).toMatchObject({
+      state: "available",
+      createdAt: "2026-10-11T09:15:00Z",
+      updatedAt: NOW.toISOString(),
+    });
+    expect((await getJustListed({ campus: "midrand", limit: 50 })).map((listing) => listing.id)).toEqual(before);
+  });
+
+  it("saves a new draft without telling buyers' pages anything changed", async () => {
+    await signedInAs("acc-seller");
+    await redirectOf(() => saveListingForm(fanForm({ intent: "draft" })));
+    expect(request.updatedTags).toEqual([]);
+    const draft = (await fan())!;
+    await redirectOf(() => saveListingForm(fanForm({ listing: draft.id, intent: "draft" })));
+    expect(request.updatedTags).toEqual(["listings"]);
   });
 
   it("saves changes to a listing, and keeps a sold one sold", async () => {

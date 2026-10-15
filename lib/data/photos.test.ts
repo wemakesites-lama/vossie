@@ -75,4 +75,11 @@ describe("stored photos (selling spec 2.4, plan decision 11)", () => {
     const many = await storePhotos("acc-student", Array.from({ length: 14 }, upload), NOW);
     expect(await photoSrcsOf("acc-student", null)).toEqual(new Set(many.slice(2)));
   });
+
+  it("never trims a waiting photo the posting form names, only the oldest of the rest", async () => {
+    const [named, older, ...rest] = await storePhotos("acc-seller", Array.from({ length: 12 }, upload), NOW);
+    const [added] = await storePhotos("acc-seller", [upload()], NOW, new Set([named]));
+    expect(await photoSrcsOf("acc-seller", null)).toEqual(new Set([named, ...rest, added]));
+    expect(await getPhoto(photoIdOf(older)!)).toBeNull();
+  });
 });

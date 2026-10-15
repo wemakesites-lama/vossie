@@ -84,6 +84,8 @@ export const sampleListingRows: readonly ListingRow[] = listings.map(
       ...listing.morePhotos.map((photo) => ({ ...photo })),
     ],
     createdAt: listing.createdAt,
+    // No sample listing is a draft: each was published when it was made.
+    publishedAt: listing.createdAt,
     updatedAt: listing.createdAt,
   }),
 );

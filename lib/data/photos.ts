@@ -38,9 +38,15 @@ export function listingPhotoUse(listingId: string): string {
 
 /**
  * Stores photos for `ownerId`, waiting on a form (no use yet), and gives back their addresses in order. Tidies away
- * waiting photos more than a day old, and keeps each account's newest 12.
+ * waiting photos more than a day old, and keeps each account's newest 12, trimming only photos not at the addresses
+ * in `keep`: the ones the posting form names, so its own upload never deletes a photo it shows (it names at most 6).
  */
-export async function storePhotos(ownerId: string, uploads: readonly Upload[], now: Date): Promise<string[]> {
+export async function storePhotos(
+  ownerId: string,
+  uploads: readonly Upload[],
+  now: Date,
+  keep: ReadonlySet<string> = new Set(),
+): Promise<string[]> {
   const { photos } = sampleStore();
   const srcs = uploads.map((upload) => {
     const id = `ph-${randomUUID()}`;
@@ -53,7 +59,8 @@ export async function storePhotos(ownerId: string, uploads: readonly Upload[], n
   }
   // The store keeps insertion order, so the oldest waiting photos come first.
   const waiting = [...photos.values()].filter((row) => row.use === null && row.ownerId === ownerId);
-  for (const row of waiting.slice(0, Math.max(0, waiting.length - LOOSE_PHOTOS_PER_ACCOUNT))) photos.delete(row.id);
+  const spare = waiting.filter((row) => !keep.has(photoSrc(row.id)));
+  for (const row of spare.slice(0, Math.max(0, waiting.length - LOOSE_PHOTOS_PER_ACCOUNT))) photos.delete(row.id);
   return srcs;
 }
 

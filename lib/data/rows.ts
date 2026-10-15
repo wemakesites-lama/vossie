@@ -253,8 +253,13 @@ export type ListingRow = {
   campusSlug: string;
   /** In order: the first is the cover. An empty alt means "the title" (selling spec 2.5). */
   photos: ImageRef[];
-  /** When it was first published; while it's still a draft, when it was made (plan decision 3). */
+  /**
+   * When it was first published, which is when buyers see it as listed (Just listed, newest first); while it has never
+   * been published, when it was made (plan decision 3).
+   */
   createdAt: string;
+  /** When it was first published; null until then. A round trip to drafts keeps it (selling plan amendment 13). */
+  publishedAt: string | null;
   updatedAt: string;
 };
 

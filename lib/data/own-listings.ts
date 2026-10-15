@@ -40,8 +40,9 @@ export type ListingSave = {
 /**
  * Saves a new or changed listing (plan decision 3) on its shop's campus. The photos it uses become its own, and the
  * ones it no longer uses are deleted. It keeps only photos it already had or could take (lib/data/photos.ts): never
- * another listing's, the shop's, anyone else's or a made-up address. A draft's `createdAt` moves to when it's first
- * published. Null when `id` isn't one of the shop's listings, or the shop has gone.
+ * another listing's, the shop's, anyone else's or a made-up address. A listing's `createdAt` moves to when it's first
+ * published, once: a listing taken back to drafts and published again keeps its first date, so a round trip never
+ * puts it back at the top of Just listed. Null when `id` isn't one of the shop's listings, or the shop has gone.
  */
 export async function saveOwnListing(save: ListingSave): Promise<ListingRow | null> {
   const { listings, sellers } = sampleStore();
@@ -50,7 +51,7 @@ export async function saveOwnListing(save: ListingSave): Promise<ListingRow | nu
   if (!shop || (save.id && existing?.sellerSlug !== save.sellerSlug)) return null;
   const at = save.now.toISOString();
   const state = nextState(existing?.state ?? null, save.intent);
-  const firstPublish = state !== "draft" && (!existing || existing.state === "draft");
+  const firstPublish = state !== "draft" && !existing?.publishedAt;
   const id = existing?.id ?? `l-${randomUUID()}`;
   const had = new Set(existing?.photos.map((photo) => photo.src));
   const claimed = await claimPhotos(save.ownerId, save.photos.map((photo) => photo.src), listingPhotoUse(id));
@@ -63,6 +64,7 @@ export async function saveOwnListing(save: ListingSave): Promise<ListingRow | nu
     campusSlug: shop.campusSlug,
     photos: photos.map((photo) => ({ src: photo.src, alt: photo.alt })),
     createdAt: !existing || firstPublish ? at : existing.createdAt,
+    publishedAt: firstPublish ? at : (existing?.publishedAt ?? null),
     updatedAt: at,
   };
   listings.set(row.id, row);

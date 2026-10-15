@@ -93,12 +93,15 @@ export async function saveListingForm(formData: FormData): Promise<void> {
     ...(existing?.photos.map((photo) => photo.src) ?? []),
     ...(await photoSrcsOf(owner.account.id, null)),
   ]);
-  const room = PHOTOS_PER_LISTING - new Set(tokens.filter((token) => allowed.has(token))).size;
+  const named = new Set(tokens.filter((token) => allowed.has(token)));
+  const room = PHOTOS_PER_LISTING - named.size;
   const { uploads, errors: uploadErrors } = await readUploads(fileList(formData, "newPhotos"), room);
+  // The photos this form names are spared the trim of waiting photos its own upload sets off.
   const queue = await storePhotos(
     owner.account.id,
     uploads.filter((upload): upload is Upload => upload !== null),
     now,
+    named,
   );
   const stored = uploads.map((upload) => (upload ? (queue.shift() ?? null) : null));
   const { order, tooMany } = photoOrder(tokens, allowed, stored);
@@ -146,7 +149,8 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   // Null only when the shop went between the check above and the save.
   if (!saved) done(myListingsPath());
   await clearForm(form);
-  listingsChanged();
+  // A new draft is nowhere buyers look, so their pages have nothing to drop.
+  if (existing || saved.state !== "draft") listingsChanged();
   let notice = "published";
   if (saved.state === "draft") notice = "drafted";
   else if (existing && existing.state !== "draft") notice = "saved";

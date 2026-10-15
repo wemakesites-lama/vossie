@@ -66,6 +66,7 @@ describe("a shop's own listings (selling spec 2.9 and 2.10, plan decision 3)", (
       campusSlug: "midrand",
       title: "Desk fan",
       createdAt: NOW.toISOString(),
+      publishedAt: NOW.toISOString(),
       updatedAt: NOW.toISOString(),
     });
     expect(await getOwnListing("tech-corner", row.id)).toEqual(row);
@@ -73,13 +74,42 @@ describe("a shop's own listings (selling spec 2.9 and 2.10, plan decision 3)", (
 
   it("dates a draft from when it's first published, then keeps that date", async () => {
     const draft = (await save({ intent: "draft" }))!;
-    expect((await save({ id: draft.id, now: LATER }))).toMatchObject({ state: "available", createdAt: LATER.toISOString() });
+    expect(draft).toMatchObject({ createdAt: NOW.toISOString(), publishedAt: null });
+    expect(await save({ id: draft.id, now: LATER })).toMatchObject({
+      state: "available",
+      createdAt: LATER.toISOString(),
+      publishedAt: LATER.toISOString(),
+    });
     const edited = await save({
       id: draft.id,
       now: new Date("2026-10-16T08:00:00.000Z"),
       fields: { ...fields, title: "Desk fan, white" },
     });
     expect(edited).toMatchObject({ title: "Desk fan, white", createdAt: LATER.toISOString() });
+  });
+
+  it("never dates a listing again after a round trip to drafts: it was listed when first published", async () => {
+    const listed = (await save())!;
+    await save({ id: listed.id, intent: "draft", now: LATER });
+    const again = await save({ id: listed.id, now: new Date("2026-10-16T08:00:00.000Z") });
+    expect(again).toMatchObject({ state: "available", createdAt: NOW.toISOString(), publishedAt: NOW.toISOString() });
+    // A sample listing too: the fixtures count as published when they were made.
+    await save({ id: "l-007", intent: "draft", now: LATER });
+    expect(await save({ id: "l-007", now: LATER })).toMatchObject({
+      state: "available",
+      createdAt: "2026-10-11T09:15:00Z",
+      publishedAt: "2026-10-11T09:15:00Z",
+    });
+  });
+
+  it("keeps a sold listing's first date when it's taken to drafts and published again", async () => {
+    await setOwnListingState("tech-corner", "l-001", "sold", NOW);
+    await save({ id: "l-001", intent: "draft", now: NOW });
+    expect(await save({ id: "l-001", now: LATER })).toMatchObject({
+      state: "available",
+      createdAt: "2026-10-12T07:40:00Z",
+      publishedAt: "2026-10-12T07:40:00Z",
+    });
   });
 
   it("keeps a sold listing sold on Save changes", async () => {
