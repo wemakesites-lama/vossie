@@ -19,7 +19,8 @@ export function ShopWaiting({ shopName, sentAt }: ShopWaitingProps) {
         <p className="eyebrow">Your shop</p>
         <h1 className="sell-title">The Hub is checking your shop</h1>
         <p className="sell-lede">
-          You sent {shopName} for approval on {longSastDate(sentAt)}. The Hub usually takes up to two working days.
+          You sent {shopName} for approval on {longSastDate(sentAt)}. The Hub will let you know here and in your
+          notifications.
         </p>
       </header>
 
@@ -39,8 +40,8 @@ export function ShopWaiting({ shopName, sentAt }: ShopWaitingProps) {
           Get your listings ready
         </h2>
         <p>
-          You can prepare listings now. They&apos;re saved as drafts, which only you can see, until your shop is
-          approved.
+          You can prepare listings now. They&apos;re saved as drafts, which only you can see. Once your shop is
+          approved, you publish them one by one.
         </p>
         <div className="sell-actions">
           <Link href={NEW_LISTING_PATH} prefetch={false} className="btn btn-primary">

@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { readFormState } from "@/lib/auth/form-state";
 import { getViewer } from "@/lib/auth/session";
+import { getPickupPoints } from "@/lib/data";
 import type { OnboardingDraftRow } from "@/lib/data/rows";
 import { shopStats } from "@/lib/data/shop-stats";
 import { getOnboardingDraft, getShopOf } from "@/lib/data/shops";
@@ -13,11 +14,14 @@ import { Dashboard } from "./Dashboard";
 import { SellPitch } from "./SellPitch";
 import { ShopWaiting } from "./ShopWaiting";
 
-/** Where a half-done application picks up: the first step not yet answered (step 3's photo is optional). */
-function resumeStep(draft: OnboardingDraftRow): OnboardingStep {
+/**
+ * Where a half-done application picks up: the first step not yet answered. Step 3's photo is optional, so a draft
+ * with a photo has passed it; step 4 needs pickup points only on a campus that has some (Eduvos Online has none).
+ */
+function resumeStep(draft: OnboardingDraftRow, campusHasPoints: boolean): OnboardingStep {
   if (!draft.name || !draft.categorySlug) return 1;
   if (!draft.about) return 2;
-  if (draft.pickupPointIds.length === 0) return 3;
+  if (!draft.campusSlug || (campusHasPoints && draft.pickupPointIds.length === 0)) return draft.photoSrc ? 4 : 3;
   return 5;
 }
 
@@ -30,8 +34,9 @@ export async function SellHome() {
   if (!account) return <SellPitch startHref={signInHref(onboardingPath(1))} resuming={false} />;
   const own = await getShopOf(account.id);
   if (!own) {
-    const draft = await getOnboardingDraft(account.id);
-    return <SellPitch startHref={onboardingPath(draft ? resumeStep(draft) : 1)} resuming={draft !== null} />;
+    const [draft, pickupPoints] = await Promise.all([getOnboardingDraft(account.id), getPickupPoints()]);
+    const step = draft ? resumeStep(draft, pickupPoints.some((point) => point.campusSlug === draft.campusSlug)) : 1;
+    return <SellPitch startHref={onboardingPath(step)} resuming={draft !== null} />;
   }
   if (own.status === "pending") return <ShopWaiting shopName={own.shop.name} sentAt={own.shop.createdAt} />;
   // The week's numbers read the clock (decision 26).

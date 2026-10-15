@@ -31,8 +31,8 @@ export function SellPitch({ startHref, resuming }: SellPitchProps) {
         </h2>
         <ul className="sell-cards">
           <li>
-            <strong>Buyers on your campus.</strong> Students find you by campus and category, and meet you at a pickup
-            point you choose.
+            <strong>Buyers on your campus.</strong> Students find you by campus and category, and meet at a pickup point
+            you choose, or sort it out online.
           </li>
           <li>
             <strong>Messages stay on Vossie.</strong> Buyers message you here, so your number stays yours.
@@ -49,7 +49,7 @@ export function SellPitch({ startHref, resuming }: SellPitchProps) {
         </h2>
         <ol className="sell-cards sell-numbered">
           <li>Set up your shop: five short steps, about three minutes.</li>
-          <li>The Hub checks it, usually within two working days.</li>
+          <li>The Hub checks it, and lets you know here and in your notifications.</li>
           <li>List what you sell, and answer buyers&apos; messages.</li>
         </ol>
       </section>
@@ -58,7 +58,7 @@ export function SellPitch({ startHref, resuming }: SellPitchProps) {
         <h2 id="sell-fees-title" className="sell-section-title">
           Fees
         </h2>
-        <p>None. Vossie takes no cut and sells no places. Buyers pay you when you meet.</p>
+        <p>None. Vossie takes no cut and sells no paid placements. Buyers pay you when you meet.</p>
       </section>
 
       <p className="sell-note">

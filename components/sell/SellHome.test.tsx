@@ -42,6 +42,32 @@ describe("/sell (selling spec section 3)", () => {
     );
   });
 
+  it("picks up at the pickup points after a photo, and skips them on a campus that has none", async () => {
+    viewer.id = "acc-student";
+    const answered = { ...emptyDraft("acc-student", "midrand", new Date()), name: "Zola's Bakes", categorySlug: "food" };
+    await saveOnboardingDraft({ ...answered, about: "I bake.", photoSrc: null });
+    const noPhoto = render(await SellHome());
+    expect(screen.getByRole("link", { name: "Continue setting up your shop" })).toHaveAttribute(
+      "href",
+      "/sell/onboarding?step=3",
+    );
+    noPhoto.unmount();
+    sampleStore().onboardingDrafts.get("acc-student")!.photoSrc = "/photos/ph-1";
+    const photo = render(await SellHome());
+    expect(screen.getByRole("link", { name: "Continue setting up your shop" })).toHaveAttribute(
+      "href",
+      "/sell/onboarding?step=4",
+    );
+    photo.unmount();
+    // Eduvos Online has no pickup points, so a finished step 4 there leaves none chosen.
+    await saveOnboardingDraft({ ...answered, about: "I tutor online.", campusSlug: "online" });
+    render(await SellHome());
+    expect(screen.getByRole("link", { name: "Continue setting up your shop" })).toHaveAttribute(
+      "href",
+      "/sell/onboarding?step=5",
+    );
+  });
+
   it("tells a seller waiting for approval that the Hub is checking their shop (spec 2.7)", async () => {
     viewer.id = "acc-pending";
     render(await SellHome());
@@ -66,7 +92,7 @@ describe("/sell (selling spec section 3)", () => {
     viewer.id = "acc-seller";
     sampleStore().sellerProfiles.get("acc-seller")!.status = "paused";
     render(await SellHome());
-    expect(screen.getByText("Paused: buyers can't see your listings")).toBeInTheDocument();
+    expect(screen.getByText("Paused: your listings are off every list")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Resume my shop" })).toHaveAttribute("type", "submit");
   });
 });

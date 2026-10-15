@@ -36,7 +36,7 @@ export function Dashboard({ shop, paused, stats, badgeLine, notice }: DashboardP
         <p className="eyebrow">Your shop</p>
         <h1 className="sell-title">{shop.name}</h1>
         <p className={cx("sell-status", paused && "sell-status-paused")}>
-          {paused ? "Paused: buyers can't see your listings" : "Your shop is live"}
+          {paused ? "Paused: your listings are off every list" : "Your shop is live"}
         </p>
       </header>
 
@@ -99,7 +99,8 @@ export function Dashboard({ shop, paused, stats, badgeLine, notice }: DashboardP
         <p>
           {paused
             ? "Your listings come back as soon as you resume."
-            : "Taking a break? Pausing hides your listings until you resume."}
+            : "Taking a break? Pausing takes your listings off every list and stops new messages until you resume. " +
+              "Saved links still open, marked paused."}
         </p>
         <button type="submit" className="btn btn-outline text-navy">
           {paused ? "Resume my shop" : "Pause my shop"}
