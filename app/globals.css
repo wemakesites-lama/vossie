@@ -8024,6 +8024,18 @@
   .sell-skeleton-form {
     height: 32rem;
   }
+
+  /* Delete listing's row, warning and buttons with the gaps between them (Task 17): 276px at 390 (303px at 360, where
+     the warning takes a line more), 254px to 257px from the tablet step. */
+  .sell-skeleton-delete {
+    height: 17.5rem;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .sell-skeleton-delete {
+      height: 16rem;
+    }
+  }
 }
 
 /* --- Selling: my listings (selling plan, Task 11, spec 2.9) --- */

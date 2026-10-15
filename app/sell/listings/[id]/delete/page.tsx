@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { DeleteListing } from "@/components/sell/DeleteListing";
-import { SellFormSkeleton } from "@/components/sell/SellSkeleton";
+import { SellDeleteSkeleton } from "@/components/sell/SellSkeleton";
 
 export const metadata: Metadata = { title: "Delete a listing", robots: { index: false } };
 
@@ -16,7 +16,7 @@ export default function DeleteListingPage({ params }: PageProps<"/sell/listings/
     <div className="page sell-page">
       <div className="sell-column">
         <h1 className="sell-title">Delete this listing?</h1>
-        <Suspense fallback={<SellFormSkeleton />}>
+        <Suspense fallback={<SellDeleteSkeleton />}>
           <DeleteListing params={params} />
         </Suspense>
       </div>

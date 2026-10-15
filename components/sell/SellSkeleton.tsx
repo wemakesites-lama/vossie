@@ -12,3 +12,11 @@ export function SellSkeleton() {
 export function SellFormSkeleton() {
   return <span className="skeleton sell-skeleton-form" aria-hidden="true" />;
 }
+
+/**
+ * Delete listing's confirmation while it streams in: the listing's row, the warning and the buttons, about their height
+ * (measured at 360 to 1440 with the sample listing), so the footer doesn't jump. Task 17 checks it.
+ */
+export function SellDeleteSkeleton() {
+  return <span className="skeleton sell-skeleton-delete" aria-hidden="true" />;
+}
