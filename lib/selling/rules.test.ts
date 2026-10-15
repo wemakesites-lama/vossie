@@ -44,11 +44,21 @@ describe("shops (selling spec 2.6 and 2.11, plan decision 16)", () => {
     expect(nameKey("tech-corner")).toBe(nameKey("TECH CORNER"));
   });
 
+  it("keeps letters from any script, so names in another alphabet don't collide", () => {
+    expect(nameKey("日本")).not.toBe(nameKey("中国"));
+    expect(nameKey("日本")).not.toBe("");
+    expect(nameKey("Øre")).not.toBe(nameKey("Re"));
+    expect(nameKey("ÆBLE")).toBe(nameKey("æble"));
+  });
+
   it("makes a link from a name", () => {
     expect(slugify("Crochet corner")).toBe("crochet-corner");
     expect(slugify("Zoë's Café & Bakes!")).toBe("zoes-cafe-bakes");
     expect(slugify(`${"a".repeat(50)} shop`)).toBe("a".repeat(40));
     expect(slugify("!!!")).toBe("shop");
+    expect(slugify("日本")).toBe("shop");
+    expect(slugify("Zoe\u2018s")).toBe(slugify("Zoe's"));
+    expect(slugify("Zoe\u02bcs")).toBe("zoes");
   });
 
   it("takes a name of 2 to 60 characters once tidied", () => {
@@ -89,6 +99,12 @@ describe("prices (plan decision 26)", () => {
     expect(parsePrice("R1 200")).toBe(1200);
     expect(parsePrice(" r 1,200 ")).toBe(1200);
     for (const bad of ["", "12.50", "R", "two hundred", "-5"]) expect(parsePrice(bad), bad).toBeNull();
+  });
+
+  it("takes separators only between groups of three, so cents after a comma aren't read as thousands", () => {
+    expect(parsePrice("12,500")).toBe(12500);
+    expect(parsePrice("R1\u00a0200")).toBe(1200);
+    for (const bad of ["R250,00", "12,50", "1,5", "1 2 3", "1,2000", "1e5"]) expect(parsePrice(bad), bad).toBeNull();
   });
 });
 

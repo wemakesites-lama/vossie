@@ -35,7 +35,7 @@ export function badgeProgress(
   const rate = replyRate(record);
   // With no enquiry due yet the rate isn't known: it's only asked for once there are enough enquiries.
   if (rate !== null ? rate < rule.rate : record.enquiries >= rule.enquiries) {
-    const rateNow = rate === null ? "" : ` (now ${Math.round(rate * 100)}%)`;
+    const rateNow = rate === null ? "" : ` (now ${Math.floor(rate * 100)}%)`;
     needs.push(`${Math.round(rule.rate * 100)}% of enquiries answered within 48 hours${rateNow}`);
   }
   if (record.salesConfirmed < rule.sales) {

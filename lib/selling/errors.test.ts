@@ -5,7 +5,7 @@ describe("selling's error words (plan decisions 24 and 27)", () => {
   it("words a listing's errors and links each to its field", () => {
     expect(sellingErrors(["title-missing", "price-high", "pickup-missing", "photo-size"], listingFieldIds("new"))).toEqual([
       { message: "Give your listing a title.", fieldId: "new-title" },
-      { message: "Keep the price under R100,000.", fieldId: "new-price" },
+      { message: "The price can be up to R100,000.", fieldId: "new-price" },
       { message: "Choose one of your pickup points.", fieldId: "new-pickup" },
       { message: "Each photo must be 5 MB or less.", fieldId: "new-photos" },
     ]);
