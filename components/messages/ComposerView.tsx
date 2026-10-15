@@ -31,7 +31,8 @@ export function composerForm(state: FormStateRow | null): ComposerForm {
 export type ComposerStatus =
   | { kind: "open" }
   | { kind: "own" }
-  | { kind: "unavailable" }
+  /** A paused or sold listing, or a paused shop; a conversation already started still opens (selling amendment 16). */
+  | { kind: "unavailable"; conversationId: string | null }
   | { kind: "existing"; conversationId: string };
 
 type ComposerViewProps = {
@@ -61,6 +62,11 @@ export function ComposerView({ subject, status, form }: ComposerViewProps) {
               ? "This listing isn't available right now, so it can't be messaged."
               : "This shop isn't taking orders right now, so it can't be messaged."}
           </p>
+          {status.conversationId && (
+            <Link href={threadPath(status.conversationId)} prefetch={false} className="btn btn-primary">
+              Open the conversation
+            </Link>
+          )}
           {listing && (
             <Link href={`/browse?cat=${listing.categorySlug}`} prefetch={false} className="btn btn-outline text-navy">
               See similar items

@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import { CheckIcon } from "@/components/icons";
 import { ShareButton } from "@/components/listing/ShareButton";
 import { Photo } from "@/components/listings/Photo";
 import { MessageSellerLink } from "@/components/messages/SessionLinks";
+import { PausedOwnerOrBanner } from "@/components/messages/ViewerLinks";
 import { badgeLabel } from "@/lib/format";
 import type { Seller } from "@/lib/types";
 
@@ -11,9 +13,12 @@ type SellerHeroProps = { seller: Seller; campusName: string; paused?: boolean };
  * The storefront's poster band (shopping spec 4.1, layout A): the seller's photo, name and tagline on navy stars, with
  * stamps for the campus, the category, Verified and the trust badge, then Message and Share. Small text on the stars is
  * white; sky only fills the Verified stamp and the Message pill, which carry navy text. A paused shop takes no new
- * messages: Message's place says so, as a paused listing's page does (selling plan decision 2, amendment 10).
+ * messages: Message's place says so, as a paused listing's page does (selling plan decision 2, amendment 10), except to
+ * its owner, who gets Edit shop there (selling spec 2.12): the banner is the static shell's, and the session's answer
+ * streams in at the same 48px height (amendment 16).
  */
 export function SellerHero({ seller, campusName, paused = false }: SellerHeroProps) {
+  const banner = <p className="availability-banner seller-paused">Not taking orders right now</p>;
   return (
     <div className="seller-hero surface-navy texture-stars">
       <Photo
@@ -40,7 +45,11 @@ export function SellerHero({ seller, campusName, paused = false }: SellerHeroPro
       </div>
       <div className="seller-hero-actions">
         {paused ? (
-          <p className="availability-banner seller-paused">Not taking orders right now</p>
+          <Suspense fallback={banner}>
+            <PausedOwnerOrBanner slug={seller.slug} className="btn btn-sky seller-message">
+              {banner}
+            </PausedOwnerOrBanner>
+          </Suspense>
         ) : (
           <MessageSellerLink target={{ kind: "shop", sellerSlug: seller.slug }} className="btn btn-sky seller-message">
             Message seller

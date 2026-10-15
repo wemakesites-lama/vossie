@@ -1,9 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ViewerMessageLink, ViewerReportLink } from "./ViewerLinks";
+import { PausedOwnerOrBanner, ViewerMessageLink, ViewerReportLink } from "./ViewerLinks";
 
 const links = vi.hoisted(() => ({ failing: false }));
-const selling = vi.hoisted(() => ({ owner: null as { href: string; label: string } | null }));
+const selling = vi.hoisted(() => ({ owner: null as { href: string; label: string } | null, failing: false }));
 
 vi.mock("@/lib/messaging/links", () => ({
   messageHrefFor: async () => {
@@ -17,11 +17,17 @@ vi.mock("@/lib/messaging/links", () => ({
 }));
 
 // The owner's link (selling plan, Task 14): none unless a test sets one.
-vi.mock("@/lib/selling/links", () => ({ ownerLinkFor: async () => selling.owner }));
+vi.mock("@/lib/selling/links", () => ({
+  ownerLinkFor: async () => {
+    if (selling.failing) throw new Error("The session store didn't answer");
+    return selling.owner;
+  },
+}));
 
 afterEach(() => {
   links.failing = false;
   selling.owner = null;
+  selling.failing = false;
 });
 
 describe("the session's links, once the session is read (messaging spec 3.6)", () => {
@@ -73,5 +79,30 @@ describe("the session's links, once the session is read (messaging spec 3.6)", (
     expect(link).toHaveAttribute("href", "/sell/listings/l-001/edit");
     expect(link).toHaveClass("btn", "btn-primary", "listing-message");
     expect(screen.queryByRole("link", { name: "Message seller" })).toBeNull();
+  });
+});
+
+describe("a paused shop's band, once the session is read (selling spec 2.12, plan amendment 10)", () => {
+  const banner = <p className="availability-banner seller-paused">Not taking orders right now</p>;
+  const show = async () =>
+    render(await PausedOwnerOrBanner({ slug: "tech-corner", className: "btn btn-sky seller-message", children: banner }));
+
+  it("gives the owner Edit shop in the banner's place, with the Message pill's look", async () => {
+    selling.owner = { href: "/sell/profile", label: "Edit shop" };
+    await show();
+    const link = screen.getByRole("link", { name: "Edit shop" });
+    expect(link).toHaveAttribute("href", "/sell/profile");
+    expect(link).toHaveClass("btn", "btn-sky", "seller-message");
+    expect(screen.queryByText("Not taking orders right now")).toBeNull();
+  });
+
+  it("keeps the banner for everyone else, and when the lookup fails", async () => {
+    const { unmount } = await show();
+    expect(screen.getByText("Not taking orders right now")).toHaveClass("availability-banner", "seller-paused");
+    expect(screen.queryByRole("link")).toBeNull();
+    unmount();
+    selling.failing = true;
+    await show();
+    expect(screen.getByText("Not taking orders right now")).toBeInTheDocument();
   });
 });

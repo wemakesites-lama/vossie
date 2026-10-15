@@ -92,18 +92,33 @@ describe("the composer (messaging spec 3.1)", () => {
     expect(screen.getByText("This is your listing, so you can't message yourself.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Send" })).toBeNull();
     unmount();
-    const again = await show({ kind: "listing", listingId: "l-026" }, { kind: "unavailable" });
+    const again = await show({ kind: "listing", listingId: "l-026" }, { kind: "unavailable", conversationId: null });
     expect(screen.getByText("This listing isn't available right now, so it can't be messaged.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "See similar items" })).toHaveAttribute("href", "/browse?cat=tech");
     again.unmount();
     // A paused shop (selling plan amendment 10).
-    const shop = await show({ kind: "shop", sellerSlug: "tech-corner" }, { kind: "unavailable" });
+    const shop = await show({ kind: "shop", sellerSlug: "tech-corner" }, { kind: "unavailable", conversationId: null });
     expect(screen.getByText("This shop isn't taking orders right now, so it can't be messaged.")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "See similar items" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Open the conversation" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Send" })).toBeNull();
     shop.unmount();
     await show({ kind: "listing", listingId: "l-001" }, { kind: "existing", conversationId: "conv-s2" });
     expect(screen.getByText("You've already messaged Tech corner about this.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open the conversation" })).toHaveAttribute("href", "/messages/conv-s2");
+  });
+
+  it("keeps the way into a conversation already started when the shop or listing stops taking messages", async () => {
+    const shop = await show(
+      { kind: "shop", sellerSlug: "tech-corner" },
+      { kind: "unavailable", conversationId: "conv-q1" },
+    );
+    expect(screen.getByText("This shop isn't taking orders right now, so it can't be messaged.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open the conversation" })).toHaveAttribute("href", "/messages/conv-q1");
+    shop.unmount();
+    await show({ kind: "listing", listingId: "l-026" }, { kind: "unavailable", conversationId: "conv-s9" });
+    expect(screen.getByText("This listing isn't available right now, so it can't be messaged.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open the conversation" })).toHaveAttribute("href", "/messages/conv-s9");
+    expect(screen.getByRole("link", { name: "See similar items" })).toBeInTheDocument();
   });
 });

@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetSampleStore } from "@/lib/data/store";
 import { getAccount } from "@/lib/data/accounts";
+import { startConversation } from "@/lib/data/messages";
 import { setShopPaused } from "@/lib/data/shops";
 import { Composer } from "./Composer";
 
@@ -49,6 +50,29 @@ describe("the composer for this visitor (messaging spec 3.1, plan decision 5)", 
     render(await Composer({ target: { kind: "shop", sellerSlug: "tech-corner" } }));
     expect(screen.getByText("This shop isn't taking orders right now, so it can't be messaged.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Send" })).toBeNull();
+  });
+
+  it("still opens a conversation the buyer already has with a paused shop, or about its listings", async () => {
+    const { conversationId } = await startConversation({
+      buyerId: "acc-mentor",
+      listing: null,
+      sellerSlug: "tech-corner",
+      body: "Do you fix screens?",
+      swapOffer: null,
+      now: new Date("2026-10-15T08:00:00Z"),
+    });
+    await setShopPaused("acc-seller", true);
+    const shop = render(await Composer({ target: { kind: "shop", sellerSlug: "tech-corner" } }));
+    expect(screen.getByText("This shop isn't taking orders right now, so it can't be messaged.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open the conversation" })).toHaveAttribute(
+      "href",
+      `/messages/${conversationId}`,
+    );
+    shop.unmount();
+    session.accountId = "acc-student";
+    render(await Composer({ target: { kind: "listing", listingId: "l-001" } }));
+    expect(screen.getByText("This listing isn't available right now, so it can't be messaged.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open the conversation" })).toHaveAttribute("href", "/messages/conv-s2");
   });
 
   it("is the 404 for a listing or shop that doesn't exist", async () => {

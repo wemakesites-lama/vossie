@@ -9,7 +9,7 @@ type LinkProps<Target> = { target: Target; className?: string; children: ReactNo
 /**
  * Stands in for components/messages/ViewerLinks.tsx in component tests (messaging plan, Task 7). The real links are
  * async Server Components, which jsdom can't render inside a tree; these render the signed-out links, which are what a
- * signed-out visitor gets. In a test file:
+ * signed-out visitor gets, and a paused shop's banner (selling plan amendment 16). In a test file:
  *
  *   vi.mock("@/components/messages/ViewerLinks", async () => (await import("@/tests/helpers/viewer-links")).signedOutViewerLinks);
  */
@@ -24,4 +24,5 @@ export const signedOutViewerLinks = {
       {children}
     </Link>
   ),
+  PausedOwnerOrBanner: ({ children }: { slug: string; className?: string; children: ReactNode }) => children,
 };
