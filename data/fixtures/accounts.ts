@@ -34,7 +34,14 @@ export const sampleAccounts: readonly SampleAccount[] = [
       roles: [],
       createdAt: "2026-03-02T09:15:00.000Z",
     },
-    seller: { accountId: "acc-seller", status: "approved", sellerSlug: "tech-corner", appliedAt: "2026-03-02T09:40:00.000Z" },
+    seller: {
+      accountId: "acc-seller",
+      status: "approved",
+      sellerSlug: "tech-corner",
+      appliedAt: "2026-03-02T09:40:00.000Z",
+      // Naledi mentors Sipho's shop, so the mentor dashboard has a shop (staff tools plan, Task 1).
+      mentorId: "acc-mentor",
+    },
   },
   {
     label: "Seller waiting for approval",

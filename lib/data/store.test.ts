@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { sampleAccounts } from "@/data/fixtures/accounts";
 import { sampleConversations } from "@/data/fixtures/messages";
 import { sampleSellerRows } from "@/data/fixtures/shops";
+import { sampleHubPostRows } from "@/data/fixtures/staff";
 import { resetSampleStore, sampleStore, STORE_VERSION } from "./store";
 
 beforeEach(() => {
@@ -9,7 +10,7 @@ beforeEach(() => {
 });
 
 describe("the sample store (accounts spec 2.1)", () => {
-  it("is seeded with the sample accounts, their consents, their shops, the sample conversations and the sample listings, and nothing else", () => {
+  it("is seeded with the sample accounts, their consents, their shops, the sample conversations, the sample listings and the staff tools' seeds, and nothing else", () => {
     const store = sampleStore();
     expect([...store.accounts.keys()]).toEqual(sampleAccounts.map(({ account }) => account.id));
     expect(store.consents.size).toBe(5);
@@ -28,6 +29,14 @@ describe("the sample store (accounts spec 2.1)", () => {
     expect(store.photos.size).toBe(0);
     expect(store.onboardingDrafts.size).toBe(0);
     expect(store.retiredSlugs.size).toBe(0);
+    expect(store.auditLog.size).toBe(0);
+    expect(store.featuredPins.size).toBe(0);
+    expect(store.featuredDraws.size).toBe(0);
+    expect(store.pickupPoints.size).toBe(24);
+    expect([...store.mentorNotes.keys()]).toEqual(["mn-s1", "mn-s2"]);
+    expect(store.hubPosts.size).toBe(18);
+    expect(store.hubRsvps.size).toBe(0);
+    expect([...store.hubBookings.keys()]).toEqual(["bk-s1"]);
   });
 
   it("is one store for the whole process, so a module loaded again still shares it", async () => {
@@ -59,6 +68,14 @@ describe("the sample store (accounts spec 2.1)", () => {
       "pp-midrand-reception",
     ]);
     expect(resetAndRead().listings.get("l-001")?.photos).toHaveLength(3);
+  });
+
+  it("copies the staff tools' seeds too (staff tools plan, Task 1)", () => {
+    sampleStore().hubPosts.get("h-001")!.title = "Changed";
+    sampleStore().pickupPoints.get("pp-midrand-library")!.retiredAt = "2026-10-14T08:00:00.000Z";
+    expect(sampleHubPostRows[0].title).toBe("Pitch night");
+    expect(resetAndRead().pickupPoints.get("pp-midrand-library")?.retiredAt).toBeNull();
+    expect(sampleStore().hubPosts.get("h-001")?.title).toBe("Pitch night");
   });
 
   it("starts again from the fixtures when reset", () => {

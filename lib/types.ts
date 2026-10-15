@@ -129,6 +129,8 @@ export type PickupPoint = {
   id: string;
   campusSlug: string;
   name: string;
+  /** True once the Hub has retired it (staff tools spec 2.3): listings keep it, marked "no longer used". */
+  retired?: boolean;
 };
 
 /** Everything the listing page needs, looked up once (spec 6.1). */
@@ -313,8 +315,18 @@ export type ReportReason = "scam" | "prohibited" | "misleading" | "offensive" | 
 /** What can be reported: a listing (by id), a seller (by slug) or a request (by id) (messaging spec 2.8). */
 export type ReportTarget = { kind: "listing" | "seller" | "request"; id: string };
 
-/** What a notification is about (messaging spec 2.9). This stage makes the first two; stage G makes the others. */
-export type NotificationKind = "message" | "sale-to-confirm" | "report-handled" | "shop-approved";
+/**
+ * What a notification is about (messaging spec 2.9; staff tools plan decision 7). Messaging makes the first two; the
+ * staff tools make the rest: a report's outcome, a shop's approval, the Hub's other decisions about a shop or a
+ * listing ("shop-update"), and slot requests ("booking").
+ */
+export type NotificationKind =
+  | "message"
+  | "sale-to-confirm"
+  | "report-handled"
+  | "shop-approved"
+  | "shop-update"
+  | "booking";
 
 /** The shop a conversation is with, as a thread shows it. `image` and `campusSlug` are null once the shop has gone. */
 export type ConversationShop = {
@@ -436,4 +448,110 @@ export type ShopStats = {
   week: EnquiryCounts;
   /** Enquiries over the last 90 days and sales over the shop's whole life: the trust page's badge rules. */
   record: EnquiryCounts;
+};
+
+// --- Staff tools (staff tools plan, Task 1) ------------------------------------------------------------------------
+
+/** The three staff areas (staff tools spec 2.1): the admin console, the Hub's tools and the mentor dashboard. */
+export type StaffArea = "admin" | "hub" | "mentor";
+
+/** What a staff action did (staff tools spec 2.2): one per audit entry. */
+export type AuditAction =
+  | "shop-approved"
+  | "shop-declined"
+  | "shop-verified"
+  | "shop-unverified"
+  | "shop-paused"
+  | "shop-resumed"
+  | "mentor-assigned"
+  | "mentor-removed"
+  | "report-dismissed"
+  | "listing-hidden"
+  /** A hidden listing shown again (staff tools plan amendment 18). */
+  | "listing-shown"
+  | "featured-pinned"
+  | "featured-unpinned"
+  | "point-added"
+  | "point-renamed"
+  | "point-retired"
+  | "point-restored"
+  | "post-created"
+  | "post-updated"
+  | "booking-accepted"
+  | "booking-declined"
+  | "note-added"
+  | "check-in-added"
+  /** A note or check-in deleted by its author or an admin; the entry keeps no text (amendment 16). */
+  | "note-deleted"
+  | "check-in-deleted";
+
+/** The audit log's filter by kind (staff tools spec 2.3). Each action belongs to one (lib/staff/audit-words.ts). */
+export type AuditKind = "shops" | "reports" | "featured" | "pickup-points" | "posts" | "office-hours" | "mentoring";
+
+/** What an audit entry is about. */
+export type AuditTargetKind = "shop" | "listing" | "report" | "pickup-point" | "post" | "booking";
+
+/** One line of the audit log (staff tools spec 2.2): who, what, the target, the reason or detail, and when. */
+export type AuditEntry = {
+  id: string;
+  /** ISO 8601 in UTC; shown in SAST. */
+  at: string;
+  /** The staff member's account. Kept after it's deleted (staff tools plan amendment 17). */
+  staffId: string;
+  /** Their first name when they acted, or "Former staff member" once their account is deleted (amendment 17). */
+  staffName: string;
+  action: AuditAction;
+  targetKind: AuditTargetKind;
+  /**
+   * The target's name when it happened ("Tech corner", a listing's title), or "Deleted account" once the person the
+   * entry names has deleted theirs (plan decision 6, amendment 21).
+   */
+  targetName: string;
+  /** The reason or note, or "" when there was none. */
+  detail: string;
+};
+
+/** What the Hub did about a report (staff tools spec 2.3). */
+export type ReportOutcome = "dismissed" | "hidden" | "paused";
+
+/** Where a slot request stands (staff tools spec 2.4 and 2.5). */
+export type BookingStatus = "open" | "accepted" | "declined";
+
+/** A slot request, as the office-hours queue and the student's booking page show it (plan decisions 13 and 14). */
+export type HubBooking = {
+  id: string;
+  postId: string;
+  /** The office hours' title. */
+  postTitle: string;
+  /** When the office hours start, ISO 8601 in UTC. */
+  startsAt: string | null;
+  /** The student's first name, or "Deleted account". */
+  studentName: string;
+  /** What they'd like help with, up to 300 characters. */
+  help: string;
+  /** A time that suits, up to 100 characters. */
+  time: string;
+  status: BookingStatus;
+  createdAt: string;
+};
+
+/** A mentor's flags on a shop (staff tools spec 2.6, plan decision 15). */
+export type MentorFlag = "no-enquiries" | "slow-replies" | "paused";
+
+/** A row of the mentor dashboard (staff tools spec 2.6, plan decision 15). */
+export type MentoredShop = {
+  slug: string;
+  name: string;
+  campusSlug: string;
+  /** The owner's first name. */
+  ownerName: string;
+  /** The owner's account, which notes and check-ins are about (plan decision 16). */
+  ownerId: string;
+  badge: TrustBadge | null;
+  status: SellerStatus;
+  mentorId: string;
+  mentorName: string;
+  /** The last 14 days (plan decision 15). */
+  counts: EnquiryCounts;
+  flags: MentorFlag[];
 };
