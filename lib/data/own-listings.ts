@@ -71,6 +71,8 @@ export async function saveOwnListing(save: ListingSave): Promise<ListingRow | nu
     createdAt: !existing || firstPublish ? at : existing.createdAt,
     firstPublishedAt: firstPublish ? at : (existing?.firstPublishedAt ?? null),
     updatedAt: at,
+    // A listing the Hub hid stays hidden when its seller saves it (staff tools plan decision 4). New rows get no field.
+    ...(existing?.hiddenAt ? { hiddenAt: existing.hiddenAt, hiddenReason: existing.hiddenReason ?? null } : {}),
   };
   listings.set(row.id, row);
   const srcs = new Set(row.photos.map((photo) => photo.src));

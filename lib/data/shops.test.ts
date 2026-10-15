@@ -331,3 +331,16 @@ describe("the data export (plan decision 22)", () => {
     expect((await exportShop("acc-student")).onboardingDraft).toBeNull();
   });
 });
+
+describe("a pause the Hub made (staff tools plan decision 3)", () => {
+  it("marks the seller's own pause as theirs, and won't let them resume the Hub's", async () => {
+    const profile = sampleStore().sellerProfiles.get("acc-seller")!;
+    expect(await setShopPaused("acc-seller", true)).toBe("paused");
+    expect(profile.pausedBy).toBe("seller");
+    expect(await setShopPaused("acc-seller", false)).toBe("approved");
+    expect(profile.pausedBy).toBeNull();
+    Object.assign(profile, { status: "paused", pausedBy: "staff", staffReason: "Selling exam answers." });
+    expect(await setShopPaused("acc-seller", false)).toBeNull();
+    expect(profile.status).toBe("paused");
+  });
+});

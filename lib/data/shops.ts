@@ -184,11 +184,17 @@ export async function changeShopSlug(accountId: string, slug: string, now: Date)
   return "changed";
 }
 
-/** Pause my shop and Resume (selling spec 2.8): approved to paused and back. The new status, or null when it can't. */
+/**
+ * Pause my shop and Resume (selling spec 2.8): approved to paused and back. The seller's own pause is marked as theirs;
+ * a pause the Hub made is the Hub's to undo, so the seller can't resume it (staff tools plan decision 3). The new
+ * status, or null when it can't change.
+ */
 export async function setShopPaused(accountId: string, paused: boolean): Promise<SellerStatus | null> {
   const profile = sampleStore().sellerProfiles.get(accountId);
   if (!profile || profile.status !== (paused ? "approved" : "paused")) return null;
+  if (!paused && profile.pausedBy === "staff") return null;
   profile.status = paused ? "paused" : "approved";
+  profile.pausedBy = paused ? "seller" : null;
   return profile.status;
 }
 

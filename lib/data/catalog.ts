@@ -5,7 +5,8 @@ import { sampleStore } from "./store";
 
 // What buyers see (selling spec 2.1, plan decision 2): the store's rows as the public Listing and Seller shapes, and
 // the rules for which rows show where. Plain functions over the store; lib/data/index.ts wraps them in "use cache".
-// Stage G's hidden listings and declined shops join the rules here.
+// A listing the Hub hid is in no list and has no page (staff tools plan decision 4); a declined shop is a waiting one
+// (staff tools plan decision 2), so nothing changes for it here.
 
 const CATEGORY_NAMES: ReadonlyMap<string, string> = new Map(
   categories.map((category) => [category.slug, category.name]),
@@ -99,7 +100,7 @@ export function listedListings(): Listing[] {
   const { sellers, listings } = sampleStore();
   return [...listings.values()].flatMap((row) => {
     const shop = sellers.get(row.sellerSlug);
-    return shop && row.state === "available" && shopStatus(shop) === "approved" ? [toListing(row, shop)] : [];
+    return shop && row.state === "available" && !row.hiddenAt && shopStatus(shop) === "approved" ? [toListing(row, shop)] : [];
   });
 }
 
@@ -108,7 +109,7 @@ export function publicListing(id: string): Listing | null {
   const { sellers, listings } = sampleStore();
   const row = listings.get(id);
   const shop = row ? sellers.get(row.sellerSlug) : undefined;
-  if (!row || !shop || row.state === "draft" || !hasStorefront(shop)) return null;
+  if (!row || !shop || row.state === "draft" || row.hiddenAt || !hasStorefront(shop)) return null;
   return toListing(row, shop);
 }
 
