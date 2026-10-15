@@ -185,6 +185,15 @@ The controller adds amendments here; they override the tasks below wherever they
     5. **A hidden listing's photos aren't served to others.** `/photos/[id]` returns 404 for a photo of a hidden listing unless the viewer is its owner (read the session after `connection()`; the response stays `private`). Test both.
     6. **Edit shop doesn't move listings off a retired point.** In `updateShopProfile`'s loop (`lib/data/shops.ts`), a listing whose point is retired keeps it; only listings on a point the seller removed move. Test it.
     7. **Tests:** `badges.test.ts` sets Tech corner to `new-seller` first and expects the upgrade back; a test pins that `FeaturedTodayContent` awaits `connection()` before `getFeatured`.
+14. **The review of Tasks 7 to 12** (the controller's reviewer; nothing Critical; Claude, under decision 54, 2026-10-15). A fix task runs after Task 13 and before Task 14, test first.
+    1. **Pausing a shop closes every report about it** (important). When the Hub pauses a shop, from its page or from any report, every open report on the shop and on its listings is closed as `"paused"` and each reporter is told the Hub acted, so no reporter is later told "didn't find a problem" about a paused shop. Test: a shop report and a listing report on one shop; pausing from either closes both, each reporter gets the acted sentence.
+    2. **Gone targets are skipped** (important). `closeReportsOn` and E's `hasOpenReport` (`lib/data/reports.ts`) skip rows with `targetGone`. Extend amendment 13.1's test: pausing the new shop on a reused link leaves the old report open, and the old reporter can report the new shop.
+    3. **Amendment 8, applied:** `tellReporter` links to `/account/privacy#account-privacy-reports-title`; fix its test.
+    4. **Amendment 7, applied:** `ReportConfirm`'s hide branch also checks `report.target.kind === "listing"`.
+    5. **Links in the facts look like links:** add `.staff-facts dd a` to the staff link rule in `globals.css`.
+    6. **A decision acts on the shop that was reviewed.** The approve and decline forms post the owner's id as a hidden field; `approveShop` and `declineShop` refuse (the "nothing changed" notice) when it doesn't match the shop now on that link.
+    7. **Pins go with a deleted shop:** `forgetShopOf` deletes `featuredPins` on its slug.
+    8. **The gate is tested on every action:** loop over every exported admin action as a mentor and expect the 404 with the store unchanged.
 
 ## Store design
 
