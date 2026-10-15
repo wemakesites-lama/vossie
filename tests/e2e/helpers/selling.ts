@@ -1,6 +1,6 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Browser, type Page } from "@playwright/test";
 import { pngBytes } from "../../helpers/image-bytes";
-import { button, field, main, project } from "./messaging";
+import { button, field, main, project, signInAsSample } from "./messaging";
 
 // Shared by the selling tests (selling plan, Task 16). Every test shares one server and one sample store, so each
 // names what it makes with a word no other test uses (plan decision 25).
@@ -32,8 +32,10 @@ export async function fillListing(page: Page, title: string) {
 
 /** The id in a My listings row's Edit link. */
 export async function idFromEditLink(page: Page, title: string): Promise<string> {
+  const pattern = /\/sell\/listings\/(l-[0-9a-f-]{36})\/edit$/;
   const href = await main(page).getByRole("link", { name: `Edit ${title}`, exact: true }).getAttribute("href");
-  return /\/sell\/listings\/(l-[0-9a-f-]{36})\/edit$/.exec(href ?? "")![1];
+  expect(href).toMatch(pattern);
+  return pattern.exec(href!)![1];
 }
 
 /**
@@ -76,3 +78,43 @@ export const cardsFor = (page: Page, title: string) =>
 /** The 404 page's heading. */
 export const notFoundHeading = (page: Page) =>
   page.getByRole("heading", { level: 1, name: "We couldn't find that page" });
+
+/**
+ * What a writes test made as the sample seller: the listing's id once the test knows it, and every title it has had,
+ * to find it by when the test failed before reading the id.
+ */
+export type Made = { id: string | null; titles: string[] };
+
+/**
+ * Deletes a writes test's own listing as the sample seller, in a browser context of its own (the test's page may
+ * have the app's JavaScript blocked or be mid-flow). Run after every writes test, passed or failed, so no listing
+ * outlives it on a reused server or a retry (E2E_REUSE_SERVER=1, CI). A listing already gone is fine.
+ */
+export async function deleteMade(browser: Browser, baseURL: string, made: Made) {
+  if (!made.id && made.titles.length === 0) return;
+  const page = await (await browser.newContext({ baseURL })).newPage();
+  try {
+    await signInAsSample(page, "Seller, Tech corner", "/sell/listings");
+    let id = made.id;
+    for (const tab of ["", "?tab=paused", "?tab=sold", "?tab=drafts"]) {
+      if (id) break;
+      await page.goto(`/sell/listings${tab}`);
+      await expect(main(page).getByRole("navigation", { name: "Listings by state" }).first()).toBeVisible();
+      for (const title of made.titles) {
+        if ((await main(page).getByRole("link", { name: `Edit ${title}`, exact: true }).count()) > 0) {
+          id = await idFromEditLink(page, title);
+          break;
+        }
+      }
+    }
+    if (!id) return;
+    await page.goto(`/sell/listings/${id}/delete`);
+    const remove = button(page, "Delete listing");
+    await expect(remove.or(notFoundHeading(page))).toBeVisible();
+    if (await notFoundHeading(page).isVisible()) return;
+    await remove.click();
+    await expect(main(page).getByRole("status").filter({ visible: true })).toHaveText("Deleted.");
+  } finally {
+    await page.context().close();
+  }
+}

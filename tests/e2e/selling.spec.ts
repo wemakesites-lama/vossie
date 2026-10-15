@@ -1,10 +1,19 @@
 import { expect, test } from "@playwright/test";
 import { button, field, main, onlyAt, project, signInAsSample, signUpHere } from "./helpers/messaging";
-import { fillListing, idFromEditLink, newSeller, notFoundHeading, photoWithLocation, uniqueWord } from "./helpers/selling";
+import {
+  cardsFor,
+  fillListing,
+  idFromEditLink,
+  newSeller,
+  notFoundHeading,
+  photoWithLocation,
+  uniqueWord,
+} from "./helpers/selling";
 
 // The selling tests that write nothing buyers see (selling plan decision 25): a new student's application, its draft
-// and its shop, the sample sellers' pages and the owner's view. They run in the device projects; the tests that
-// publish, change or delete listings are in selling-writes.spec.ts, which runs after every other test.
+// and its shop, the sample sellers' pages, the listing form's errors and the owner's view. They run in the device
+// projects; the tests that publish, change or delete listings are in selling-writes.spec.ts, which runs after every
+// other test.
 
 const BOTH = ["phone-390", "desktop-1440"];
 
@@ -75,9 +84,23 @@ test.describe("selling (selling spec section 3)", () => {
     await button(page, "Save as draft").click();
     await expect(page).toHaveURL(/\/sell\/listings\?tab=drafts$/);
     const id = await idFromEditLink(page, title);
+
+    // Save and publish, forged onto the draft's form: a waiting shop still saves a draft (plan decision 4).
+    await main(page).getByRole("link", { name: `Edit ${title}`, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/sell/listings/${id}/edit$`));
+    const draft = button(page, "Save as draft");
+    await draft.evaluate((save: HTMLButtonElement) => (save.value = "publish"));
+    await draft.click();
+    await expect(page).toHaveURL(/\/sell\/listings\?tab=drafts$/);
+    await expect(main(page).getByRole("link", { name: `Edit ${title}`, exact: true })).toBeVisible();
+
+    // Buyers find it nowhere: no page, nothing in browse. The shop has no storefront until the Hub approves it.
     const buyer = await (await browser.newContext({ baseURL })).newPage();
     await buyer.goto(`/listings/${id}`);
     await expect(notFoundHeading(buyer)).toBeVisible();
+    await buyer.goto(`/browse?q=${encodeURIComponent(title)}&campus=all`);
+    await expect(buyer.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(cardsFor(buyer, title)).toHaveCount(0);
     await buyer.context().close();
   });
 
@@ -123,6 +146,34 @@ test.describe("selling (selling spec section 3)", () => {
     await expect(visitor.getByRole("link", { name: "Message seller" }).filter({ visible: true })).toBeVisible();
     await expect(visitor.getByRole("link", { name: "Edit listing" })).toHaveCount(0);
     await visitor.context().close();
+  });
+
+  test("the listing form says what's wrong, keeps what was typed and creates nothing (spec 2.10)", async ({ page }) => {
+    onlyAt(...BOTH);
+    // Only selling-writes adds Tech corner listings, after the device projects, so its tab counts hold still here.
+    const counts = async () => {
+      await page.goto("/sell/listings");
+      const tabs = main(page).getByRole("navigation", { name: "Listings by state" }).getByRole("link");
+      await expect(tabs).toHaveCount(4);
+      return tabs.allTextContents();
+    };
+    await signInAsSample(page, "Seller, Tech corner", "/sell");
+    const before = await counts();
+    await page.goto("/sell/listings/new");
+    await fillListing(page, "");
+    await field(page, "Price in rand").fill("lots");
+    await field(page, "Description").fill("Typed before the error.");
+    await button(page, "Save and publish").click();
+    const problem = page.getByRole("alert", { name: "There's a problem" });
+    await expect(problem).toBeVisible();
+    await expect(problem).toContainText("Give your listing a title.");
+    await expect(problem).toContainText("Enter the price in whole rand, like 250.");
+    await expect(page).toHaveURL(/\/sell\/listings\/new$/);
+    await expect(field(page, "Title")).toHaveValue("");
+    await expect(field(page, "Price in rand")).toHaveValue("lots");
+    await expect(field(page, "Description")).toHaveValue("Typed before the error.");
+    await expect(field(page, "Category")).toHaveValue("res-living");
+    expect(await counts()).toEqual(before);
   });
 
   test("another shop's listing has no form for this seller", async ({ page }) => {
