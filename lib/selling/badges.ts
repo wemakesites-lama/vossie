@@ -3,7 +3,7 @@ import { DAY_MS } from "@/lib/messaging/rules";
 import type { EnquiryCounts, TrustBadge } from "@/lib/types";
 
 // The trust page's badge rules (part C's /trust; FUNCTION-MAP section 6) and what the next badge still needs
-// (selling spec 2.8, plan decision 18). Stage G works the badges out; this only explains the next step.
+// (selling spec 2.8, plan decision 18). Stage G works the badges out with earnedBadge (staff tools spec 2.7).
 
 const RULES = {
   responsive: { enquiries: 3, rate: 0.8, sales: 0, days: 0 },
@@ -13,6 +13,26 @@ const RULES = {
 /** The share of due enquiries answered within 48 hours, or null while none is due. */
 export function replyRate(counts: Pick<EnquiryCounts, "due" | "repliedInTime">): number | null {
   return counts.due === 0 ? null : counts.repliedInTime / counts.due;
+}
+
+/**
+ * The badge a shop has earned (the trust page's rules; staff tools spec 2.7): Trusted, else Responsive, else New
+ * seller. `record` is the last 90 days' enquiries and every confirmed sale (shopStats's `record`); `accountCreatedAt`
+ * is the owner's. With no enquiry due yet the reply rate isn't known, so neither higher badge is met. A badge goes
+ * down again when the record does.
+ */
+export function earnedBadge(record: EnquiryCounts, accountCreatedAt: string, now: Date): TrustBadge {
+  const rate = replyRate(record);
+  const days = Math.floor((now.getTime() - Date.parse(accountCreatedAt)) / DAY_MS);
+  const meets = (rule: (typeof RULES)[keyof typeof RULES]) =>
+    record.enquiries >= rule.enquiries &&
+    rate !== null &&
+    rate >= rule.rate &&
+    record.salesConfirmed >= rule.sales &&
+    days >= rule.days;
+  if (meets(RULES.trusted)) return "trusted";
+  if (meets(RULES.responsive)) return "responsive";
+  return "new-seller";
 }
 
 const more = (n: number, one: string, many: string) => `${n} more ${n === 1 ? one : many}`;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EnquiryCounts } from "@/lib/types";
-import { badgeProgress, replyRate } from "./badges";
+import { badgeProgress, earnedBadge, replyRate } from "./badges";
 
 const NOW = new Date("2026-10-14T08:00:00.000Z");
 const OLD_ACCOUNT = "2026-03-02T09:15:00.000Z";
@@ -63,5 +63,32 @@ describe("what the next badge needs (selling spec 2.8, plan decision 18)", () =>
     expect(badgeProgress("trusted", counts(0, 0, 0, 0), OLD_ACCOUNT, NOW)).toBe(
       "Trusted is the highest badge. Keep replying quickly to keep it.",
     );
+  });
+});
+
+describe("the badge a shop has earned (staff tools spec 2.7, the trust page's rules)", () => {
+  it("is New seller until 3 enquiries in 90 days are answered at 80% within 48 hours", () => {
+    expect(earnedBadge(counts(2, 2, 2, 0), OLD_ACCOUNT, NOW)).toBe("new-seller");
+    expect(earnedBadge(counts(3, 0, 0, 0), OLD_ACCOUNT, NOW)).toBe("new-seller");
+    expect(earnedBadge(counts(5, 5, 3, 0), OLD_ACCOUNT, NOW)).toBe("new-seller");
+    expect(earnedBadge(counts(5, 5, 4, 0), OLD_ACCOUNT, NOW)).toBe("responsive");
+    expect(earnedBadge(counts(3, 3, 3, 0), "2026-10-14T07:59:00.000Z", NOW)).toBe("responsive");
+  });
+
+  it("is Trusted at 85%, 5 confirmed sales and a 30-day-old account, and Responsive one short of any of them", () => {
+    expect(earnedBadge(counts(20, 20, 17, 5), OLD_ACCOUNT, NOW)).toBe("trusted");
+    expect(earnedBadge(counts(20, 20, 16, 5), OLD_ACCOUNT, NOW)).toBe("responsive");
+    expect(earnedBadge(counts(20, 20, 17, 4), OLD_ACCOUNT, NOW)).toBe("responsive");
+    expect(earnedBadge(counts(20, 20, 17, 5), "2026-09-14T08:00:00.000Z", NOW)).toBe("trusted");
+    expect(earnedBadge(counts(20, 20, 17, 5), "2026-09-14T08:00:01.000Z", NOW)).toBe("responsive");
+  });
+
+  it("goes down again when the record does (a badge can go down, the trust page)", () => {
+    expect(earnedBadge(counts(0, 0, 0, 9), OLD_ACCOUNT, NOW)).toBe("new-seller");
+  });
+
+  it("agrees with what the next badge needs: when its rules are met, it's earned", () => {
+    expect(badgeProgress("responsive", counts(5, 5, 5, 6), OLD_ACCOUNT, NOW)).toMatch(/^You meet the rules for Trusted/);
+    expect(earnedBadge(counts(5, 5, 5, 6), OLD_ACCOUNT, NOW)).toBe("trusted");
   });
 });
