@@ -77,6 +77,46 @@
   --font-accent: var(--vos-font-accent);
 }
 
+/*
+ * Metric-matched fallbacks for the display font (decision 71). Text drawn before Special Gothic Condensed One loads
+ * takes the room it will take, so headings don't rewrap when it swaps in. next/font can't make one: it has no metrics
+ * for this font, and it would match lowercase widths against Arial, while the display font is set in capitals.
+ * app/fonts.ts names these three as the font's `fallback`, so `--font-sgc` carries them, as `--font-geist` carries
+ * next/font's "Geist Fallback".
+ * - size-adjust: the display font's width over the local face's, measured on every string the site sets in the display
+ *   font (capitals, as rendered).
+ * - ascent and descent: the display font's (1005 and 295 per 1000 units, no line gap), divided by size-adjust.
+ * The first face that exists wins: Arial Narrow (Mac, and Windows with Office), Arial or its metric twins (Windows,
+ * iOS, Linux), Roboto (Android). Retune these for any new display font.
+ */
+@font-face {
+  font-family: "Vossie Display Fallback";
+  src: local("Arial Narrow"), local("ArialNarrow");
+  size-adjust: 76.7%;
+  ascent-override: 131.03%;
+  descent-override: 38.46%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Vossie Display Fallback Arial";
+  src: local("Arial"), local("ArialMT"), local("Helvetica"), local("Liberation Sans"), local("LiberationSans"),
+    local("Arimo");
+  size-adjust: 62.9%;
+  ascent-override: 159.78%;
+  descent-override: 46.9%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Vossie Display Fallback Roboto";
+  src: local("Roboto"), local("Roboto-Regular"), local("Roboto Regular");
+  size-adjust: 68.2%;
+  ascent-override: 147.36%;
+  descent-override: 43.26%;
+  line-gap-override: 0%;
+}
+
 :root {
   --vos-font-display: var(--font-sgc), "Arial Narrow", sans-serif;
   --vos-font-text: var(--font-geist), ui-sans-serif, system-ui, sans-serif;

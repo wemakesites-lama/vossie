@@ -8,6 +8,10 @@ export const displayInterim = Special_Gothic_Condensed_One({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sgc",
+  // next/font has no metrics for this font, so it can't make an adjusted fallback. These are matched ones, measured on
+  // capitals; their @font-face rules are in globals.css (decision 71). Naming them here also stops the build looking
+  // for metrics it doesn't have (its "Failed to find font override values" warning).
+  fallback: ["Vossie Display Fallback", "Vossie Display Fallback Arial", "Vossie Display Fallback Roboto"],
 });
 
 export const textInterim = Geist({
