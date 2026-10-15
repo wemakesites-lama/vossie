@@ -71,6 +71,17 @@ export async function getPhoto(id: string, now: Date): Promise<Pick<PhotoRow, "t
 }
 
 /**
+ * Whether a photo belongs to a listing the Hub hid, and so isn't for this viewer (staff tools amendment 13.5). Its
+ * owner still sees it, because they can still edit the listing.
+ */
+export function isHiddenFrom(id: string, viewerId: string | null): boolean {
+  const { photos, listings } = sampleStore();
+  if (viewerId !== null && photos.get(id)?.ownerId === viewerId) return false;
+  const src = photoSrc(id);
+  return [...listings.values()].some((listing) => listing.hiddenAt && listing.photos.some((photo) => photo.src === src));
+}
+
+/**
  * The addresses of `ownerId`'s photos with this use; null means waiting on a form. A waiting photo a day old or more
  * is left out, even if no upload has come along to tidy it away yet: it's gone, and nothing may point at it
  * (amendment 10.1).

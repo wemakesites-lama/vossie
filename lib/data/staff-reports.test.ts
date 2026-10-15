@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { deleteAccountData } from "./accounts";
 import { createReport } from "./reports";
+import { createShop } from "./shops";
+import { approveShop } from "./staff-shops";
 import { closeReport, closeReportsOn, getReport, listReports, openReportCount } from "./staff-reports";
 import { resetSampleStore, sampleStore } from "./store";
 
@@ -71,6 +74,32 @@ describe("the Hub's reports queue (staff tools spec 2.3, plan decision 5)", () =
     sampleStore().sellerProfiles.get("acc-seller")!.status = "paused";
     sampleStore().sellerProfiles.get("acc-seller")!.pausedBy = "staff";
     expect((await getReport(own.id))!.can).toEqual({ hide: true, pause: false });
+  });
+
+  it("never lets a report about a deleted shop reach a new shop on the same link (amendment 13.1)", async () => {
+    const aboutShop = await report("acc-student", { kind: "seller", id: "tech-corner" }, 8);
+    const aboutListing = await report("acc-student", { kind: "listing", id: "l-001" }, 9);
+    await deleteAccountData("acc-seller");
+    expect(sampleStore().reports.get(aboutShop)?.targetGone).toBe(true);
+    expect(sampleStore().reports.get(aboutListing)?.targetGone).toBe(true);
+    await createShop(
+      "acc-mentor",
+      {
+        name: "Tech corner",
+        tagline: "A new shop on the old link.",
+        categorySlug: "tech",
+        about: "",
+        image: null,
+        campusSlug: "midrand",
+        pickupPointIds: [],
+      },
+      NOW,
+    );
+    expect(sampleStore().sellers.get("tech-corner")?.ownerId).toBe("acc-mentor");
+    await approveShop("tech-corner");
+    for (const id of [aboutShop, aboutListing]) {
+      expect((await getReport(id))!, id).toMatchObject({ exists: false, shop: null, can: { hide: false, pause: false } });
+    }
   });
 
   it("dismisses one report with its note, once", async () => {

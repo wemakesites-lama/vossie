@@ -37,9 +37,12 @@ describe("trust badges from the store (staff tools spec 2.7, plan decision 8)", 
   });
 
   it("gives Responsive once a third enquiry is answered within 48 hours", async () => {
+    // Start from the badge two enquiries earn, so the upgrade is a real change (amendment 13.7).
+    sampleStore().sellers.get("tech-corner")!.badge = "new-seller";
     answeredEnquiry();
-    expect(await recalculateBadges(NOW)).toEqual([]);
+    expect(await recalculateBadges(NOW)).toEqual(["tech-corner"]);
     expect(sampleStore().sellers.get("tech-corner")?.badge).toBe("responsive");
+    expect(await recalculateBadges(NOW)).toEqual([]);
   });
 
   it("leaves the sample shops no account owns, and a shop waiting for approval, as they are", async () => {

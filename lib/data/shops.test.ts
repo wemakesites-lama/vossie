@@ -123,6 +123,25 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     });
   });
 
+  it("keeps a listing on a retired pickup point, and moves only those on a point the seller removed (amendment 13.6)", async () => {
+    const store = sampleStore();
+    store.pickupPoints.set("pp-midrand-extra", {
+      ...structuredClone(store.pickupPoints.get("pp-midrand-reception")!),
+      id: "pp-midrand-extra",
+      name: "Student centre",
+    });
+    Object.assign(store.listings.get("l-001")!, { handover: "pickup", pickupPointId: "pp-midrand-library" });
+    store.listings.set(
+      "l-moved",
+      makeListingRow({ id: "l-moved", sellerSlug: "tech-corner", campusSlug: "midrand", pickupPointId: "pp-midrand-extra" }),
+    );
+    store.pickupPoints.get("pp-midrand-library")!.retiredAt = NOW.toISOString();
+    await updateShop("acc-seller", { ...details, name: "Tech corner", pickupPointIds: ["pp-midrand-reception"] }, NOW);
+    // The retired library keeps its listing; the point the seller dropped moves its listing to the shop's first point.
+    expect(store.listings.get("l-001")).toMatchObject({ handover: "pickup", pickupPointId: "pp-midrand-library" });
+    expect(store.listings.get("l-moved")).toMatchObject({ handover: "pickup", pickupPointId: "pp-midrand-reception" });
+  });
+
   it("swaps the shop's photo, deleting the old one", async () => {
     const [first, second] = await storePhotos("acc-seller", [upload(), upload()], NOW);
     await updateShop("acc-seller", { ...details, image: { src: first, alt: "" } }, NOW);
@@ -152,6 +171,27 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     expect([...store.conversations.values()].map((row) => row.sellerSlug)).toEqual(["gadgets", "gadgets"]);
     expect(store.reports.get("rep-t1")?.targetId).toBe("gadgets");
     expect(await changeShopSlug("acc-seller", "gadgets-two", NOW)).toBe("used");
+  });
+
+  it("moves Featured pins and recorded rows to the new link too (amendment 13.4)", async () => {
+    const store = sampleStore();
+    store.featuredPins.set("pin-t1", {
+      id: "pin-t1",
+      sellerSlug: "tech-corner",
+      campusSlug: "midrand",
+      day: "2026-10-14",
+      pinnedBy: "acc-admin",
+      createdAt: NOW.toISOString(),
+    });
+    store.featuredDraws.set("midrand:2026-10-14", {
+      key: "midrand:2026-10-14",
+      campusSlug: "midrand",
+      day: "2026-10-14",
+      sellerSlugs: ["tech-corner", "hair-studio"],
+    });
+    expect(await changeShopSlug("acc-seller", "gadgets", NOW)).toBe("changed");
+    expect(store.featuredPins.get("pin-t1")?.sellerSlug).toBe("gadgets");
+    expect(store.featuredDraws.get("midrand:2026-10-14")?.sellerSlugs).toEqual(["gadgets", "hair-studio"]);
   });
 
   it("leaves a gone shop's conversations on the old link, so no new owner of it can open them (amendment 9.1)", async () => {

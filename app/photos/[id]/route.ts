@@ -1,5 +1,6 @@
 import { connection } from "next/server";
-import { getPhoto, isPhotoId } from "@/lib/data/photos";
+import { getViewer } from "@/lib/auth/session";
+import { getPhoto, isHiddenFrom, isPhotoId } from "@/lib/data/photos";
 
 /**
  * A stored photo (selling spec 2.4): its stripped bytes with their real type. A photo never changes once stored and
@@ -13,7 +14,9 @@ export async function GET(_request: Request, { params }: RouteContext<"/photos/[
   await connection();
   const { id } = await params;
   const photo = isPhotoId(id) ? await getPhoto(id, new Date()) : null;
-  if (!photo) return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
+  // A hidden listing's photos go to its owner only (staff tools amendment 13.5); the session is read per request.
+  const hidden = photo !== null && isHiddenFrom(id, (await getViewer())?.id ?? null);
+  if (!photo || hidden) return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
   return new Response(photo.bytes, {
     headers: {
       "Content-Type": photo.type,

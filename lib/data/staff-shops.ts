@@ -161,7 +161,13 @@ export async function staffPauseShop(slug: string, reason: string): Promise<Shop
   if (!shop) return null;
   const { status, pausedBy } = shop.profile;
   if (!(status === "approved" || (status === "paused" && pausedBy !== "staff"))) return null;
-  Object.assign(shop.profile, { status: "paused", pausedBy: "staff", staffReason: reason });
+  // A seller's own pause is remembered under the Hub's, so Resume puts it back (amendment 13.3).
+  Object.assign(shop.profile, {
+    status: "paused",
+    pausedBy: "staff",
+    staffReason: reason,
+    sellerPausedToo: status === "paused",
+  });
   return decided(shop.row);
 }
 
@@ -169,7 +175,13 @@ export async function staffPauseShop(slug: string, reason: string): Promise<Shop
 export async function staffResumeShop(slug: string): Promise<ShopDecision | null> {
   const shop = owned(slug);
   if (!shop || shop.profile.status !== "paused" || shop.profile.pausedBy !== "staff") return null;
-  Object.assign(shop.profile, { status: "approved", pausedBy: null, staffReason: null });
+  const sellerPausedToo = shop.profile.sellerPausedToo === true;
+  Object.assign(
+    shop.profile,
+    sellerPausedToo
+      ? { status: "paused", pausedBy: "seller", staffReason: null, sellerPausedToo: false }
+      : { status: "approved", pausedBy: null, staffReason: null, sellerPausedToo: false },
+  );
   return decided(shop.row);
 }
 

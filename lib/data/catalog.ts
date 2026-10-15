@@ -21,10 +21,16 @@ export function shopStatus(row: Pick<SellerRow, "ownerId">): SellerStatus {
   return sampleStore().sellerProfiles.get(row.ownerId)?.status ?? "pending";
 }
 
-/** Shops with a storefront: approved or paused (plan decision 2). */
+/**
+ * Shops with a storefront: approved, or paused by their seller (plan decision 2). A shop the Hub paused disappears
+ * (staff tools spec 2.3, amendment 13.2): its storefront and listing pages show the 404.
+ */
 const hasStorefront = (row: SellerRow) => {
   const status = shopStatus(row);
-  return status === "approved" || status === "paused";
+  if (status === "approved") return true;
+  if (status !== "paused") return false;
+  const profile = row.ownerId ? sampleStore().sellerProfiles.get(row.ownerId) : undefined;
+  return profile?.pausedBy !== "staff";
 };
 
 /** A shop without a photo shows its category's picture (selling spec 2.6, step 3). */

@@ -3,20 +3,25 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { FeaturedTodayContent, FeaturedTodaySkeleton } from "./FeaturedToday";
 
 const viewer = vi.hoisted(() => ({ campus: "midrand" }));
-const featured = vi.hoisted(() => ({ mode: "real" as "real" | "empty" | "failing" }));
+const featured = vi.hoisted(() => ({ mode: "real" as "real" | "empty" | "failing", calls: [] as string[] }));
 
 vi.mock("@/lib/data/viewer", () => ({
   getViewerContext: async () => ({ campus: viewer.campus, signedIn: false, activity: null }),
 }));
 
 // connection() needs Next's request context, which tests don't have.
-vi.mock("next/server", () => ({ connection: async () => undefined }));
+vi.mock("next/server", () => ({
+  connection: async () => {
+    featured.calls.push("connection");
+  },
+}));
 
 vi.mock("@/lib/data", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/data")>();
   return {
     ...actual,
     getFeatured: async (query: Parameters<typeof actual.getFeatured>[0]) => {
+      featured.calls.push("getFeatured");
       if (featured.mode === "failing") throw new Error("The draw didn't load");
       return featured.mode === "empty" ? [] : actual.getFeatured(query);
     },
@@ -25,6 +30,7 @@ vi.mock("@/lib/data", async (importOriginal) => {
 
 afterEach(() => {
   featured.mode = "real";
+  featured.calls.length = 0;
 });
 
 describe("Featured today (spec 7.10)", () => {
@@ -39,6 +45,12 @@ describe("Featured today (spec 7.10)", () => {
     expect(screen.getAllByText("Verified seller.")).toHaveLength(4);
     expect(screen.getAllByText(/· Midrand$/)).toHaveLength(4);
     expect(screen.getByRole("link", { name: "How we pick featured sellers" })).toHaveAttribute("href", "/trust#trust-featured");
+  });
+
+  it("waits for the request before drawing, because the draw reads and writes the store (amendment 13.7)", async () => {
+    viewer.campus = "midrand";
+    await FeaturedTodayContent();
+    expect(featured.calls).toEqual(["connection", "getFeatured"]);
   });
 
   it("features sellers from every campus when none is chosen", async () => {

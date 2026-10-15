@@ -147,6 +147,17 @@ describe("Verified, the Hub's pause and mentors (staff tools spec 2.3 and 2.6, p
     expect(profile.pausedBy).toBe("staff");
   });
 
+  it("remembers a seller's own pause under the Hub's, and puts it back on Resume (amendment 13.3)", async () => {
+    const profile = sampleStore().sellerProfiles.get("acc-seller")!;
+    Object.assign(profile, { status: "paused", pausedBy: "seller" });
+    await staffPauseShop("tech-corner", "Reported twice.");
+    expect(profile).toMatchObject({ status: "paused", pausedBy: "staff", sellerPausedToo: true });
+    await staffResumeShop("tech-corner");
+    expect(profile).toMatchObject({ status: "paused", pausedBy: "seller", staffReason: null, sellerPausedToo: false });
+    // The seller's own pause is theirs to end again.
+    expect(await staffResumeShop("tech-corner")).toBeNull();
+  });
+
   it("can't pause a waiting shop, or a sample shop no account owns", async () => {
     expect(await staffPauseShop("crochet-corner", "No.")).toBeNull();
     expect(await staffPauseShop("hair-studio", "No.")).toBeNull();

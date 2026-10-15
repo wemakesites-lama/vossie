@@ -53,6 +53,16 @@ describe("which shops are open (plan decisions 1 and 2)", () => {
     expect(publicListingIds()).toContain("l-001");
   });
 
+  it("makes a shop the Hub paused disappear: no storefront, no listing pages, no place in the lists (spec 2.3)", () => {
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, { status: "paused", pausedBy: "staff" });
+    expect(storefrontRow("tech-corner")).toBeNull();
+    expect(sellerFor("tech-corner")).toBeNull();
+    expect(publicListing("l-001")).toBeNull();
+    expect(publicListingIds()).not.toContain("l-001");
+    expect(listedListings().some((listing) => listing.sellerSlug === "tech-corner")).toBe(false);
+    expect(liveSellerRows().some((row) => row.slug === "tech-corner")).toBe(false);
+  });
+
   it("gives a waiting shop no storefront, and its listings no pages", () => {
     sampleStore().listings.set(
       "l-crochet",

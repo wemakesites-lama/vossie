@@ -76,7 +76,14 @@ function moveShop(from: string, to: string): void {
     if (conversation.sellerSlug === from && !conversation.sellerGone) conversation.sellerSlug = to;
   }
   for (const report of store.reports.values()) {
-    if (report.targetKind === "seller" && report.targetId === from) report.targetId = to;
+    if (report.targetKind === "seller" && report.targetId === from && !report.targetGone) report.targetId = to;
+  }
+  // Featured names the shop by its link too: its pins and each campus's recorded row follow it (amendment 13.4).
+  for (const pin of store.featuredPins.values()) {
+    if (pin.sellerSlug === from) pin.sellerSlug = to;
+  }
+  for (const draw of store.featuredDraws.values()) {
+    draw.sellerSlugs = draw.sellerSlugs.map((slug) => (slug === from ? to : slug));
   }
 }
 
@@ -150,7 +157,9 @@ export async function updateShop(accountId: string, details: ShopDetails, now: D
   for (const listing of store.listings.values()) {
     if (listing.sellerSlug !== row.slug) continue;
     listing.campusSlug = row.campusSlug;
-    if (listing.handover === "pickup" && !row.pickupPointIds.includes(listing.pickupPointId ?? "")) {
+    // A retired point isn't the seller's to remove: a listing on one keeps it (amendment 13.6).
+    const retired = Boolean(store.pickupPoints.get(listing.pickupPointId ?? "")?.retiredAt);
+    if (listing.handover === "pickup" && !retired && !row.pickupPointIds.includes(listing.pickupPointId ?? "")) {
       listing.pickupPointId = row.pickupPointIds[0] ?? null;
       if (listing.pickupPointId === null) listing.handover = "online";
     }
@@ -237,8 +246,17 @@ export async function forgetShopOf(accountId: string): Promise<boolean> {
     if (row.ownerId !== accountId) continue;
     hadShop = true;
     store.sellers.delete(slug);
+    const goneListings = new Set<string>();
     for (const [id, listing] of store.listings) {
-      if (listing.sellerSlug === slug) store.listings.delete(id);
+      if (listing.sellerSlug !== slug) continue;
+      goneListings.add(id);
+      store.listings.delete(id);
+    }
+    // Reports about the shop or its listings now point at nothing, even if a new shop takes the link (amendment 13.1).
+    for (const report of store.reports.values()) {
+      if (report.targetKind === "seller" ? report.targetId === slug : report.targetKind === "listing" && goneListings.has(report.targetId)) {
+        report.targetGone = true;
+      }
     }
   }
   store.onboardingDrafts.delete(accountId);

@@ -2,8 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { attachPhotos, photoIdOf, storePhotos } from "@/lib/data/photos";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { pngBytes } from "@/tests/helpers/image-bytes";
+import { resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
+import { signedInAs } from "@/tests/helpers/staff";
 import { GET } from "./route";
 
+const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
+
+vi.mock("next/headers", async () => (await import("@/tests/helpers/next-request")).nextHeaders(request));
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
 
 const NOW = new Date("2026-10-14T08:00:00.000Z");
@@ -11,6 +16,7 @@ const get = (id: string) => GET(new Request(`http://localhost/photos/${id}`), { 
 
 beforeEach(() => {
   resetSampleStore();
+  resetRequest(request);
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(NOW);
 });
@@ -37,6 +43,25 @@ describe("a stored photo (selling spec 2.4)", () => {
     expect(gone.status).toBe(404);
     expect(gone.headers.get("Cache-Control")).toBe("no-store");
     expect((await get(photoIdOf(used)!)).status).toBe(200);
+  });
+
+  it("serves a hidden listing's photos to its owner only, still private (amendment 13.5)", async () => {
+    const [src] = await storePhotos("acc-seller", [photo], NOW);
+    await attachPhotos("acc-seller", [src], "listing:l-001");
+    const id = photoIdOf(src)!;
+    sampleStore().listings.get("l-001")!.photos = [{ src, alt: "" }];
+    expect((await get(id)).status).toBe(200);
+    Object.assign(sampleStore().listings.get("l-001")!, { hiddenAt: NOW.toISOString(), hiddenReason: "Not allowed." });
+    const stranger = await get(id);
+    expect(stranger.status).toBe(404);
+    expect(stranger.headers.get("Cache-Control")).toBe("no-store");
+    await signedInAs(request, "acc-student");
+    expect((await get(id)).status).toBe(404);
+    resetRequest(request);
+    await signedInAs(request, "acc-seller");
+    const owner = await get(id);
+    expect(owner.status).toBe(200);
+    expect(owner.headers.get("Cache-Control")).toBe("private, max-age=31536000, immutable");
   });
 
   it("is a 404 that nothing keeps for an unknown or made-up id", async () => {

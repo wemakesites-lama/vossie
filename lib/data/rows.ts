@@ -44,6 +44,8 @@ export type SellerProfileRow = {
   declinedAt?: string | null;
   /** Who paused a paused shop (staff tools plan decision 3): a seller can only resume their own pause. */
   pausedBy?: "seller" | "staff" | null;
+  /** The seller had paused the shop themselves when the Hub paused it, so Resume puts that pause back (amendment 13.3). */
+  sellerPausedToo?: boolean;
   /** The Hub's reason for a decline or a pause, which the seller sees. */
   staffReason?: string | null;
   /** The mentor assigned to the shop (staff tools spec 2.6). Absent or null when there's none. */
@@ -200,6 +202,8 @@ export type ReportRow = {
   closedAt?: string | null;
   /** The staff member who closed it, or null once their account is deleted. */
   closedBy?: string | null;
+  /** The shop it was about has been deleted: it can only be dismissed, even if a new shop takes the link (amendment 13.1). */
+  targetGone?: boolean;
 };
 
 /** A notification (messaging spec 2.9 and 3.5; plan decisions 12 and 13). */

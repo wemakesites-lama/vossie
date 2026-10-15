@@ -48,10 +48,12 @@ function pausable(slug: string): boolean {
 function toView(row: ReportRow): ReportView {
   const store = sampleStore();
   const open = row.status === "open";
-  const listing = row.targetKind === "listing" ? store.listings.get(row.targetId) : undefined;
+  // A report about a deleted shop never reaches a new one on the same link (amendment 13.1).
+  const gone = row.targetGone === true;
+  const listing = row.targetKind === "listing" && !gone ? store.listings.get(row.targetId) : undefined;
   const shopSlug =
     row.targetKind === "listing" ? listing?.sellerSlug : row.targetKind === "seller" ? row.targetId : undefined;
-  const shopRow = shopSlug ? store.sellers.get(shopSlug) : undefined;
+  const shopRow = shopSlug && !gone ? store.sellers.get(shopSlug) : undefined;
   const exists = row.targetKind === "request" || (row.targetKind === "listing" ? Boolean(listing) : Boolean(shopRow));
   // What Hide can do depends on the kind of target (amendment 7): a listing, as now; a shop is paused, not hidden; a
   // Looking For request is only dismissed here until stage H adds Hide the request.
