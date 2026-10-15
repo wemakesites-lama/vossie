@@ -47,6 +47,11 @@ export type SellerProfileRow = {
    * Hub ("staff") also takes the shop's pages away from buyers and stops it sending messages (amendment 15).
    */
   pausedBy?: "seller" | "staff" | null;
+  /**
+   * True while a Hub pause has taken over the seller's own pause: lifting the Hub's pause gives the seller's back
+   * (staff tools plan amendment 29). Absent or null otherwise.
+   */
+  sellerPauseHeld?: boolean | null;
   /** The Hub's reason for a decline or a pause, which the seller sees and their data download carries (amendment 25). */
   staffReason?: string | null;
   /** The mentor assigned to the shop (staff tools spec 2.6). Absent or null when there's none. */

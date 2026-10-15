@@ -131,7 +131,8 @@ export async function sendReply(formData: FormData): Promise<void> {
   const result = await sendMessage({ conversationId: id, accountId: account.id, body: message.value, now });
   if (result === "not-found") back("/messages");
   await clearOwnFormState(form);
-  // "closed" sends nothing: the thread says the other side has left (plan decision 21).
+  // "closed" sends nothing: the thread says the other side has left (plan decision 21). Nor does "hub-paused": the
+  // seller's thread says the Hub has paused the shop (decisions log row 74).
   done(path);
 }
 

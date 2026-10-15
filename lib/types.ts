@@ -374,6 +374,11 @@ export type Thread = {
   otherName: string;
   /** False once the other side has deleted their account (messaging plan decision 21). */
   otherPresent: boolean;
+  /**
+   * True while the Hub has paused the shop (decisions log row 74, staff tools plan amendment 15): its seller can't send
+   * messages, and the seller's side of the thread says so. The buyer can still write.
+   */
+  hubPaused: boolean;
   shop: ConversationShop;
   /** The listing's title when the conversation started, or null for a question about the shop. */
   listingTitle: string | null;

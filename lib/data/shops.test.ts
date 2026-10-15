@@ -375,3 +375,46 @@ describe("the data export (plan decision 22)", () => {
     expect(await exportShop("acc-student")).toEqual({ shop: null, listings: [] });
   });
 });
+
+describe("a pause the Hub made (staff tools plan decision 3)", () => {
+  it("marks the seller's own pause as theirs, and won't let them resume the Hub's", async () => {
+    const profile = sampleStore().sellerProfiles.get("acc-seller")!;
+    expect(await setShopPaused("acc-seller", true)).toBe("paused");
+    expect(profile.pausedBy).toBe("seller");
+    expect(await setShopPaused("acc-seller", false)).toBe("approved");
+    expect(profile.pausedBy).toBeNull();
+    Object.assign(profile, { status: "paused", pausedBy: "staff", staffReason: "Selling exam answers." });
+    expect(await setShopPaused("acc-seller", false)).toBeNull();
+    expect(profile.status).toBe("paused");
+  });
+
+  it("pauses once when two presses arrive together (amendment 19)", async () => {
+    expect(await Promise.all([setShopPaused("acc-seller", true), setShopPaused("acc-seller", true)])).toEqual([
+      "paused",
+      null,
+    ]);
+  });
+});
+
+describe("Featured after a change of link (staff tools plan amendment 11)", () => {
+  it("moves the shop's pins and its places in recorded rows to its new link", async () => {
+    const store = sampleStore();
+    store.featuredPins.set("pin-1", {
+      id: "pin-1",
+      sellerSlug: "tech-corner",
+      campusSlug: "midrand",
+      day: "2026-10-14",
+      pinnedBy: "acc-admin",
+      createdAt: NOW.toISOString(),
+    });
+    store.featuredDraws.set("midrand:2026-10-14", {
+      key: "midrand:2026-10-14",
+      campusSlug: "midrand",
+      day: "2026-10-14",
+      sellerSlugs: ["hair-studio", "tech-corner"],
+    });
+    expect(await changeShopSlug("acc-seller", "gadgets", NOW)).toBe("changed");
+    expect(store.featuredPins.get("pin-1")?.sellerSlug).toBe("gadgets");
+    expect(store.featuredDraws.get("midrand:2026-10-14")?.sellerSlugs).toEqual(["hair-studio", "gadgets"]);
+  });
+});

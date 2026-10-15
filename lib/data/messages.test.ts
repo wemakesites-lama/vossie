@@ -527,3 +527,42 @@ describe("the data export (plan decision 15)", () => {
     expect((await exportConversations("acc-seller", due)).map((row) => row.status)).toEqual(["confirmed", "replied"]);
   });
 });
+
+describe("a shop the Hub has paused (decisions log row 74, staff tools plan amendment 15)", () => {
+  const hubPause = () =>
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, {
+      status: "paused",
+      pausedBy: "staff",
+      staffReason: "Asking for deposits.",
+    });
+
+  it("can't send messages while it lasts, and its threads say so; buyers can still write", async () => {
+    const { buyer, conversationId } = await ayandaAsks();
+    hubPause();
+    const before = sampleStore().messages.size;
+    expect(await sendMessage({ conversationId, accountId: "acc-seller", body: "Pay a deposit.", now: later(1) })).toBe(
+      "hub-paused",
+    );
+    expect(sampleStore().messages.size).toBe(before);
+    expect(sampleStore().conversations.get(conversationId)).toMatchObject({ status: "asked", firstReplyAt: null });
+    expect(await sendMessage({ conversationId, accountId: buyer.id, body: "Hello?", now: later(2) })).toBe("sent");
+    expect(await getThread(conversationId, "acc-seller", later(3))).toMatchObject({
+      role: "seller",
+      hubPaused: true,
+      shop: { slug: "tech-corner", name: "Tech corner" },
+    });
+    expect(await getThread(conversationId, buyer.id, later(3))).toMatchObject({
+      hubPaused: true,
+      otherName: "Tech corner",
+    });
+  });
+
+  it("leaves a seller's own pause as it was: replies still go", async () => {
+    const { conversationId } = await ayandaAsks();
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, { status: "paused", pausedBy: "seller" });
+    expect(await sendMessage({ conversationId, accountId: "acc-seller", body: "Yes, it is.", now: later(1) })).toBe(
+      "sent",
+    );
+    expect((await getThread(conversationId, "acc-seller", later(2)))?.hubPaused).toBe(false);
+  });
+});

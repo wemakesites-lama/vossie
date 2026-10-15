@@ -126,6 +126,18 @@ describe("a thread (messaging spec 3.3)", () => {
     expect(screen.queryByLabelText("Your reply")).toBeNull();
     expect(screen.getByText("This person has left Vossie, so you can't reply.")).toBeInTheDocument();
   });
+
+  it("has no reply form for a seller whose shop the Hub has paused (decisions log row 74)", () => {
+    show(makeThread({ role: "seller", otherName: "Ayanda", hubPaused: true }));
+    expect(screen.queryByLabelText("Your reply")).toBeNull();
+    expect(screen.getByText("The Hub has paused this shop.")).toBeInTheDocument();
+  });
+
+  it("keeps the buyer's reply form while the Hub's pause lasts", () => {
+    show(makeThread({ hubPaused: true }));
+    expect(screen.getByLabelText("Your reply")).toBeInTheDocument();
+    expect(screen.queryByText("The Hub has paused this shop.")).toBeNull();
+  });
 });
 
 describe("the sale (messaging spec 2.5, plan decision 30)", () => {

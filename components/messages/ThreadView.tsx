@@ -96,10 +96,13 @@ export function ThreadView({ thread, now, reply, sent, campusName }: ThreadViewP
         </ol>
       </section>
       <SaleActions thread={thread} />
-      {thread.otherPresent ? (
-        <ReplyFormView thread={thread} reply={reply} />
-      ) : (
+      {!thread.otherPresent ? (
         <p className="form-notice">This person has left Vossie, so you can&apos;t reply.</p>
+      ) : thread.role === "seller" && thread.hubPaused ? (
+        // A Hub pause stops the seller sending messages (decisions log row 74); the buyer can still write.
+        <p className="form-notice">The Hub has paused this shop.</p>
+      ) : (
+        <ReplyFormView thread={thread} reply={reply} />
       )}
     </div>
   );

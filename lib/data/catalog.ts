@@ -5,7 +5,9 @@ import { sampleStore } from "./store";
 
 // What buyers see (selling spec 2.1, plan decision 2): the store's rows as the public Listing and Seller shapes, and
 // the rules for which rows show where. Plain functions over the store; lib/data/index.ts wraps them in "use cache".
-// Stage G's hidden listings and declined shops join the rules here.
+// A listing the Hub hid is in no list and has no page (staff tools plan decision 4), and a shop the Hub paused has no
+// pages for buyers (decisions log row 74, staff tools plan amendment 15): its owner still has /sell. A declined shop is
+// a waiting one (staff tools plan decision 2), so nothing changes for it here.
 
 const CATEGORY_NAMES: ReadonlyMap<string, string> = new Map(
   categories.map((category) => [category.slug, category.name]),
@@ -20,10 +22,20 @@ export function shopStatus(row: Pick<SellerRow, "ownerId">): SellerStatus {
   return sampleStore().sellerProfiles.get(row.ownerId)?.status ?? "pending";
 }
 
-/** Shops with a storefront: approved or paused (plan decision 2). */
+/**
+ * Whether the Hub has paused the shop (staff tools plan decision 3): its pages are down for buyers and its seller
+ * can't send messages (decisions log row 74). A seller's own pause isn't (its pages stay up, marked paused).
+ */
+export function hubPaused(row: Pick<SellerRow, "ownerId">): boolean {
+  if (row.ownerId === null) return false;
+  const profile = sampleStore().sellerProfiles.get(row.ownerId);
+  return profile?.status === "paused" && profile.pausedBy === "staff";
+}
+
+/** Shops with a storefront: approved, or paused by their seller (plan decision 2; staff tools plan amendment 15). */
 const hasStorefront = (row: SellerRow) => {
   const status = shopStatus(row);
-  return status === "approved" || status === "paused";
+  return status === "approved" || (status === "paused" && !hubPaused(row));
 };
 
 /** A shop without a photo shows its category's picture (selling spec 2.6, step 3). */
@@ -83,7 +95,10 @@ export function liveSellerRows(): SellerRow[] {
   return [...sampleStore().sellers.values()].filter((row) => shopStatus(row) === "approved");
 }
 
-/** A storefront (plan decision 2): an approved or paused shop's. A shop waiting for approval has none. */
+/**
+ * A storefront (plan decision 2): an approved or paused shop's. A shop waiting for approval has none, nor has one the
+ * Hub paused (staff tools plan amendment 15).
+ */
 export function storefrontRow(slug: string): SellerRow | null {
   const row = sampleStore().sellers.get(slug);
   return row && hasStorefront(row) ? row : null;
@@ -95,21 +110,25 @@ export function sellerFor(slug: string): Seller | null {
   return row ? toSeller(row) : null;
 }
 
-/** Listed (plan decision 2): available, in an approved shop. In the store's order. */
+/** Listed (plan decision 2): available, not hidden by the Hub, in an approved shop. In the store's order. */
 export function listedListings(): Listing[] {
   const { sellers, listings } = sampleStore();
   return [...listings.values()].flatMap((row) => {
     const shop = sellers.get(row.sellerSlug);
-    return shop && row.state === "available" && shopStatus(shop) === "approved" ? [toListing(row, shop)] : [];
+    return shop && row.state === "available" && !row.hiddenAt && shopStatus(shop) === "approved"
+      ? [toListing(row, shop)]
+      : [];
   });
 }
 
-/** A listing's page (plan decision 2): anything but a draft, in an approved or paused shop. */
+/**
+ * A listing's page (plan decision 2): anything but a draft or a listing the Hub hid, in a shop with a storefront.
+ */
 export function publicListing(id: string): Listing | null {
   const { sellers, listings } = sampleStore();
   const row = listings.get(id);
   const shop = row ? sellers.get(row.sellerSlug) : undefined;
-  if (!row || !shop || row.state === "draft" || !hasStorefront(shop)) return null;
+  if (!row || !shop || row.state === "draft" || row.hiddenAt || !hasStorefront(shop)) return null;
   return toListing(row, shop);
 }
 

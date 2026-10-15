@@ -92,6 +92,14 @@ function moveShop(from: string, to: string): void {
   for (const report of store.reports.values()) {
     if (report.targetKind === "seller" && report.targetId === from) report.targetId = to;
   }
+  // Featured names the shop by its link too (staff tools plan amendment 11). The audit log keeps the old link: it's
+  // the record of what happened, and links are never reused.
+  for (const pin of store.featuredPins.values()) {
+    if (pin.sellerSlug === from) pin.sellerSlug = to;
+  }
+  for (const draw of store.featuredDraws.values()) {
+    draw.sellerSlugs = draw.sellerSlugs.map((slug) => (slug === from ? to : slug));
+  }
 }
 
 /** What the wizard sets (selling spec 2.6). */
@@ -248,14 +256,19 @@ export async function changeShopSlug(accountId: string, slug: string, now: Date)
 }
 
 /**
- * Pause my shop and Resume (selling spec 2.8): approved to paused and back. The new status, or null when it can't,
- * or when the account has no shop.
+ * Pause my shop and Resume (selling spec 2.8): approved to paused and back. The seller's own pause is marked as theirs;
+ * a pause the Hub made is the Hub's to undo, so the seller can't resume it (staff tools plan decision 3). The new
+ * status, or null when it can't change, or when the account has no shop. Read and written with no await between, so
+ * two presses at once change it once (staff tools plan amendment 19).
  */
 export async function setShopPaused(accountId: string, paused: boolean): Promise<SellerStatus | null> {
-  const own = await getShopOf(accountId);
+  const own = liveShopOf(accountId);
   const profile = sampleStore().sellerProfiles.get(accountId);
-  if (!own || !profile || own.status !== (paused ? "approved" : "paused")) return null;
+  if (!own || !profile || profile.status !== (paused ? "approved" : "paused")) return null;
+  if (!paused && profile.pausedBy === "staff") return null;
   profile.status = paused ? "paused" : "approved";
+  profile.pausedBy = paused ? "seller" : null;
+  profile.sellerPauseHeld = null;
   return profile.status;
 }
 

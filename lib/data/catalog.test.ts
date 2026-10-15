@@ -3,6 +3,7 @@ import { listings } from "@/data/fixtures/listings";
 import { sellers } from "@/data/fixtures/sellers";
 import { makeListingRow } from "@/tests/helpers/fakes";
 import {
+  hubPaused,
   listedListings,
   liveSellerRows,
   publicListing,
@@ -94,5 +95,41 @@ describe("pictures (selling spec 2.5 and 2.6)", () => {
       category: "Fashion & thrift",
       image: { src: "/placeholders/category/fashion-thrift.svg", alt: "" },
     });
+  });
+});
+
+describe("hidden listings (staff tools plan decision 4)", () => {
+  it("keeps a listing the Hub hid out of every list, and gives it no page", () => {
+    Object.assign(sampleStore().listings.get("l-007")!, {
+      hiddenAt: "2026-10-14T08:00:00.000Z",
+      hiddenReason: "Not allowed on Vossie.",
+    });
+    expect(listedListings().some((listing) => listing.id === "l-007")).toBe(false);
+    expect(publicListing("l-007")).toBeNull();
+    expect(publicListingIds()).not.toContain("l-007");
+  });
+});
+
+describe("a pause the Hub made (decisions log row 74, staff tools plan amendment 15)", () => {
+  it("takes the storefront and every listing's page away from buyers", () => {
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, {
+      status: "paused",
+      pausedBy: "staff",
+      staffReason: "Asking for deposits.",
+    });
+    expect(hubPaused(sampleStore().sellers.get("tech-corner")!)).toBe(true);
+    expect(storefrontRow("tech-corner")).toBeNull();
+    expect(sellerFor("tech-corner")).toBeNull();
+    expect(publicListing("l-001")).toBeNull();
+    expect(publicListingIds()).not.toContain("l-007");
+    expect(listedListings().some((listing) => listing.sellerSlug === "tech-corner")).toBe(false);
+  });
+
+  it("leaves a seller's own pause as it was: pages up, marked paused", () => {
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, { status: "paused", pausedBy: "seller" });
+    expect(hubPaused(sampleStore().sellers.get("tech-corner")!)).toBe(false);
+    expect(storefrontRow("tech-corner")?.slug).toBe("tech-corner");
+    expect(publicListing("l-001")?.availability).toBe("paused");
+    expect(hubPaused(sampleStore().sellers.get("hair-studio")!)).toBe(false);
   });
 });

@@ -11,6 +11,7 @@ import type {
   Thread,
   UnreadCounts,
 } from "@/lib/types";
+import { hubPaused, toSeller } from "./catalog";
 import { getListingDetail, getListingsByIds, getSeller } from "./index";
 import {
   countNewNotifications,
@@ -80,8 +81,18 @@ function buyerName(row: ConversationRow): string {
   return buyer?.firstName ?? DELETED;
 }
 
+/** Whether the Hub has paused the conversation's shop: its seller can't send messages (decisions log row 74). */
+function shopHubPaused(sellerSlug: string): boolean {
+  const row = sampleStore().sellers.get(sellerSlug);
+  return row !== undefined && hubPaused(row);
+}
+
 async function shopOf(sellerSlug: string): Promise<ConversationShop> {
-  const seller = await getSeller(sellerSlug);
+  // A shop the Hub paused has no storefront for buyers (staff tools plan amendment 15), but it's still there: its
+  // conversations keep its name.
+  const live = await getSeller(sellerSlug);
+  const row = live ? undefined : sampleStore().sellers.get(sellerSlug);
+  const seller = live ?? (row && hubPaused(row) ? toSeller(row) : null);
   if (!seller) return { slug: sellerSlug, name: CLOSED_SHOP, image: null, campusSlug: null };
   return { slug: seller.slug, name: seller.name, image: seller.image, campusSlug: seller.campusSlug };
 }
@@ -186,12 +197,14 @@ export async function startConversation(input: NewConversation): Promise<{ conve
   return { conversationId: row.id, created: true };
 }
 
-export type SendResult = "sent" | "not-found" | "closed";
+export type SendResult = "sent" | "not-found" | "closed" | "hub-paused";
 
 /**
  * A message in a thread (spec 3.3). The seller's first reply moves Asked to Replied and its time is kept for the trust
  * badges (plan decision 30); the other side is told. "not-found" when the conversation isn't the account's, "closed"
- * when the other side has left (plan decision 21). Server Actions only: it makes ids.
+ * when the other side has left (plan decision 21), "hub-paused" when the seller writes while the Hub has paused their
+ * shop (decisions log row 74; checked with no await before the write, staff tools plan amendment 19). Server Actions
+ * only: it makes ids.
  */
 export async function sendMessage({
   conversationId,
@@ -209,6 +222,7 @@ export async function sendMessage({
   if (!row || !side) return "not-found";
   if (!otherSideThere(row, side)) return "closed";
   await settle(row, now);
+  if (side === "seller" && shopHubPaused(row.sellerSlug)) return "hub-paused";
   addMessage(row, side, body, null, now);
   if (side === "seller") {
     if (row.status === "asked") row.status = "replied";
@@ -326,6 +340,7 @@ export async function getThread(id: string, accountId: string, now: Date): Promi
     role: side,
     otherName: other,
     otherPresent: otherSideThere(row, side),
+    hubPaused: shopHubPaused(row.sellerSlug),
     shop,
     listingTitle: row.listingTitle,
     listing: detail ? { ...detail.listing } : null,

@@ -1,0 +1,291 @@
+import type { ListingState } from "@/lib/types";
+import { listedListings, shopStatus } from "./catalog";
+import type { ListingRow, SellerProfileRow, SellerRow } from "./rows";
+import { sampleStore } from "./store";
+
+// The Hub's decisions about shops and listings (staff tools spec 2.3; plan decisions 2 to 4, 15 and 23; amendments
+// 15, 18 and 29): approving, declining, Verified, the Hub's pause, mentors, and hiding a listing and showing it again.
+// A shop's status stays on its owner's seller profile (selling plan decision 1). Each change checks the state it
+// expects and gives back null when there was nothing to do, so the action writes no audit entry and sends nothing
+// (plan decision 23). From each check to its write there's no await, so two presses at once decide once (amendment
+// 19). Times come from the caller. The actions (Task 10) record, notify and expire the tags: a Hub pause or resume
+// expires both sellers and listings (amendment 15).
+
+/** Where a shop stands, as the Sellers list says it. A declined shop is a waiting one with the decline recorded. */
+export type ShopStanding = "waiting" | "declined" | "open" | "paused";
+
+/** A shop as the Sellers list and its review page show it (spec 2.3). */
+export type ShopReview = {
+  /** A copy. */
+  shop: SellerRow;
+  /** The owner's account and first name, or null for a sample shop no account owns (always open). */
+  owner: { id: string; firstName: string } | null;
+  standing: ShopStanding;
+  appliedAt: string | null;
+  declinedAt: string | null;
+  pausedBy: "seller" | "staff" | null;
+  /** The Hub's reason for a decline or its pause. */
+  staffReason: string | null;
+  mentor: { id: string; firstName: string } | null;
+  /** How many of its listings buyers can find now. */
+  listedCount: number;
+};
+
+/**
+ * What a decision changed, for the action's audit entry and notification. A notification about a shop names its
+ * owner's account as its subject (amendment 11), so a change of link doesn't strand it.
+ */
+export type ShopDecision = { slug: string; name: string; ownerId: string | null };
+
+/** What hiding a listing or showing it again changed, for the action's audit entry and notification. */
+export type ListingDecision = {
+  id: string;
+  title: string;
+  sellerSlug: string;
+  state: ListingState;
+  ownerId: string | null;
+};
+
+/** A listing the Hub hid, for its shop's review page (amendment 18). */
+export type HiddenListing = { id: string; title: string; hiddenAt: string; reason: string };
+
+/** A seller's own standing with the Hub, for /sell (Task 18). */
+export type OwnStanding = { declinedAt: string | null; pausedByHub: boolean; reason: string | null };
+
+function profileOf(row: SellerRow): SellerProfileRow | null {
+  return row.ownerId ? (sampleStore().sellerProfiles.get(row.ownerId) ?? null) : null;
+}
+
+function personOf(accountId: string | null | undefined): { id: string; firstName: string } | null {
+  const row = accountId ? sampleStore().accounts.get(accountId) : undefined;
+  return row ? { id: row.id, firstName: row.firstName } : null;
+}
+
+function standingOf(row: SellerRow, profile: SellerProfileRow | null): ShopStanding {
+  if (!row.ownerId) return "open";
+  if (!profile || profile.status === "pending") return profile?.declinedAt ? "declined" : "waiting";
+  return profile.status === "paused" ? "paused" : "open";
+}
+
+function listedCounts(): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const listing of listedListings()) counts.set(listing.sellerSlug, (counts.get(listing.sellerSlug) ?? 0) + 1);
+  return counts;
+}
+
+function review(row: SellerRow, counts: ReadonlyMap<string, number>): ShopReview {
+  const profile = profileOf(row);
+  return {
+    shop: structuredClone(row),
+    owner: personOf(row.ownerId),
+    standing: standingOf(row, profile),
+    appliedAt: profile?.appliedAt ?? null,
+    declinedAt: profile?.declinedAt ?? null,
+    pausedBy: profile?.pausedBy ?? null,
+    staffReason: profile?.staffReason ?? null,
+    mentor: personOf(profile?.mentorId),
+    listedCount: counts.get(row.slug) ?? 0,
+  };
+}
+
+const RANK: Readonly<Record<ShopStanding, number>> = { waiting: 0, declined: 1, open: 2, paused: 2 };
+
+/** Every shop (spec 2.3): waiting for approval first, oldest application first; then declined; then the rest by name. */
+export async function listShopsForReview(): Promise<ShopReview[]> {
+  const counts = listedCounts();
+  return [...sampleStore().sellers.values()]
+    .map((row) => review(row, counts))
+    .sort(
+      (a, b) =>
+        RANK[a.standing] - RANK[b.standing] ||
+        (a.standing === "waiting" ? (a.appliedAt ?? "").localeCompare(b.appliedAt ?? "") : 0) ||
+        a.shop.name.localeCompare(b.shop.name),
+    );
+}
+
+export async function getShopForReview(slug: string): Promise<ShopReview | null> {
+  const row = sampleStore().sellers.get(slug);
+  return row ? review(row, listedCounts()) : null;
+}
+
+/** How many shops are waiting for approval (not declined), for Overview. */
+export async function countWaitingShops(): Promise<number> {
+  return [...sampleStore().sellers.values()].filter((row) => standingOf(row, profileOf(row)) === "waiting").length;
+}
+
+/** The shop's live row and its owner's profile, or null for an unknown shop or a sample shop no account owns. */
+function owned(slug: string): { row: SellerRow; profile: SellerProfileRow } | null {
+  const row = sampleStore().sellers.get(slug);
+  const profile = row ? profileOf(row) : null;
+  return row && profile ? { row, profile } : null;
+}
+
+const decided = (row: SellerRow): ShopDecision => ({ slug: row.slug, name: row.name, ownerId: row.ownerId });
+
+/** Approve (spec 2.3): a waiting shop opens, with its storefront at its link (selling plan decision 1). */
+export async function approveShop(slug: string): Promise<ShopDecision | null> {
+  const shop = owned(slug);
+  if (!shop || shop.profile.status !== "pending" || shop.profile.declinedAt) return null;
+  Object.assign(shop.profile, {
+    status: "approved",
+    sellerSlug: shop.row.slug,
+    declinedAt: null,
+    pausedBy: null,
+    sellerPauseHeld: null,
+    staffReason: null,
+  });
+  return decided(shop.row);
+}
+
+/** Decline (spec 2.3, plan decision 2): the shop stays waiting, with the decline and its reason recorded. */
+export async function declineShop(slug: string, reason: string, now: Date): Promise<ShopDecision | null> {
+  const shop = owned(slug);
+  if (!shop || shop.profile.status !== "pending" || shop.profile.declinedAt) return null;
+  shop.profile.declinedAt = now.toISOString();
+  shop.profile.staffReason = reason;
+  return decided(shop.row);
+}
+
+/** The seller's Send for approval again (plan decision 2): the decline is forgotten and the shop waits again. */
+export async function resendForApproval(accountId: string, now: Date): Promise<boolean> {
+  const profile = sampleStore().sellerProfiles.get(accountId);
+  if (!profile || profile.status !== "pending" || !profile.declinedAt) return false;
+  profile.declinedAt = null;
+  profile.staffReason = null;
+  profile.appliedAt = now.toISOString();
+  return true;
+}
+
+/** Verify, or take Verified away (spec 2.3), on any shop with a storefront, sample shops included. */
+export async function setVerified(slug: string, verified: boolean): Promise<ShopDecision | null> {
+  const row = sampleStore().sellers.get(slug);
+  if (!row || shopStatus(row) === "pending" || row.verified === verified) return null;
+  row.verified = verified;
+  return decided(row);
+}
+
+/**
+ * staffPauseShop with no await, for a writer that checks a report and pauses its shop in one synchronous run
+ * (amendment 19: Task 5's actOnReport).
+ */
+export function staffPauseShopNow(slug: string, reason: string): ShopDecision | null {
+  const shop = owned(slug);
+  if (!shop) return null;
+  const { status, pausedBy } = shop.profile;
+  if (!(status === "approved" || (status === "paused" && pausedBy !== "staff"))) return null;
+  Object.assign(shop.profile, {
+    status: "paused",
+    pausedBy: "staff",
+    // A pause the seller made is kept underneath, to come back when the Hub's lifts (amendment 29).
+    sellerPauseHeld: status === "paused" ? true : null,
+    staffReason: reason,
+  });
+  return decided(shop.row);
+}
+
+/**
+ * The Hub's Pause shop (spec 2.3, plan decision 3): an open shop, or one its seller paused, which then becomes the
+ * Hub's to resume. While it lasts the shop's pages are down for buyers and its seller can't send messages (decisions
+ * log row 74). A sample shop no account owns has no profile, so it can't be paused.
+ */
+export async function staffPauseShop(slug: string, reason: string): Promise<ShopDecision | null> {
+  return staffPauseShopNow(slug, reason);
+}
+
+/**
+ * The Hub's Resume (spec 2.3): only a pause the Hub made (plan decision 3). When that pause had taken over the
+ * seller's own, the seller's pause comes back (`sellerPauseBack`; amendments 29 and 33), for the seller to resume.
+ */
+export async function staffResumeShop(slug: string): Promise<(ShopDecision & { sellerPauseBack: boolean }) | null> {
+  const shop = owned(slug);
+  if (!shop || shop.profile.status !== "paused" || shop.profile.pausedBy !== "staff") return null;
+  const sellerPauseBack = shop.profile.sellerPauseHeld === true;
+  Object.assign(shop.profile, {
+    status: sellerPauseBack ? "paused" : "approved",
+    pausedBy: sellerPauseBack ? "seller" : null,
+    sellerPauseHeld: null,
+    staffReason: null,
+  });
+  return { ...decided(shop.row), sellerPauseBack };
+}
+
+/** The accounts with the mentor role, by first name, for the seller page's choice (plan decision 15). */
+export async function listMentors(): Promise<{ id: string; firstName: string }[]> {
+  return [...sampleStore().accounts.values()]
+    .filter((row) => row.roles.includes("mentor"))
+    .map((row) => ({ id: row.id, firstName: row.firstName }))
+    .sort((a, b) => a.firstName.localeCompare(b.firstName));
+}
+
+/**
+ * A shop's mentor (spec 2.6, plan decision 15): one of the accounts with the mentor role, or none. Only an open or
+ * paused shop with an owner can have one.
+ */
+export async function setShopMentor(
+  slug: string,
+  mentorId: string | null,
+): Promise<(ShopDecision & { mentorName: string | null }) | null> {
+  const shop = owned(slug);
+  if (!shop || shop.profile.status === "pending") return null;
+  const mentor = mentorId ? sampleStore().accounts.get(mentorId) : undefined;
+  if (mentorId && !mentor?.roles.includes("mentor")) return null;
+  if ((shop.profile.mentorId ?? null) === mentorId) return null;
+  shop.profile.mentorId = mentorId;
+  return { ...decided(shop.row), mentorName: mentor?.firstName ?? null };
+}
+
+function listingDecision(row: ListingRow): ListingDecision {
+  const ownerId = sampleStore().sellers.get(row.sellerSlug)?.ownerId ?? null;
+  return { id: row.id, title: row.title, sellerSlug: row.sellerSlug, state: row.state, ownerId };
+}
+
+/**
+ * hideListing with no await, for a writer that checks a report and hides its listing in one synchronous run
+ * (amendment 19: Task 5's actOnReport).
+ */
+export function hideListingNow(id: string, reason: string, now: Date): ListingDecision | null {
+  const row = sampleStore().listings.get(id);
+  if (!row || row.hiddenAt) return null;
+  row.hiddenAt = now.toISOString();
+  row.hiddenReason = reason;
+  return listingDecision(row);
+}
+
+/** Hide the listing (spec 2.3, plan decision 4): its row stays, with the reason, and buyers stop seeing it. */
+export async function hideListing(id: string, reason: string, now: Date): Promise<ListingDecision | null> {
+  return hideListingNow(id, reason, now);
+}
+
+/**
+ * Show it again (amendment 18): the hidden fields go, and the listing is back wherever its state and its shop put it.
+ * The action records it, tells the seller (listingShownText, "shop-update") and expires listings.
+ */
+export async function showListing(id: string): Promise<ListingDecision | null> {
+  const row = sampleStore().listings.get(id);
+  if (!row?.hiddenAt) return null;
+  row.hiddenAt = null;
+  row.hiddenReason = null;
+  return listingDecision(row);
+}
+
+/** A shop's hidden listings, the most recently hidden first, for its review page's "Hidden listings" (amendment 18). */
+export async function listHiddenListings(slug: string): Promise<HiddenListing[]> {
+  return [...sampleStore().listings.values()]
+    .flatMap((row) =>
+      row.sellerSlug === slug && row.hiddenAt
+        ? [{ id: row.id, title: row.title, hiddenAt: row.hiddenAt, reason: row.hiddenReason ?? "" }]
+        : [],
+    )
+    .sort((a, b) => b.hiddenAt.localeCompare(a.hiddenAt));
+}
+
+/** A seller's standing with the Hub (Task 18's /sell): a decline, or the Hub's pause, and its reason. */
+export async function shopStanding(accountId: string): Promise<OwnStanding | null> {
+  const profile = sampleStore().sellerProfiles.get(accountId);
+  if (!profile) return null;
+  return {
+    declinedAt: profile.declinedAt ?? null,
+    pausedByHub: profile.status === "paused" && profile.pausedBy === "staff",
+    reason: profile.staffReason ?? null,
+  };
+}

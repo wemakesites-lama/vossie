@@ -105,6 +105,7 @@ export function makeThread(overrides: Partial<Thread> = {}): Thread {
     role: "buyer",
     otherName: "Tech corner",
     otherPresent: true,
+    hubPaused: false,
     shop: {
       slug: "tech-corner",
       name: "Tech corner",

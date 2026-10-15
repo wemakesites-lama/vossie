@@ -26,3 +26,29 @@ export function listingsChanged(): void {
 export function sellersChanged(): void {
   updateTag(SELLERS_TAG);
 }
+
+// The staff tools' tags (staff tools plan decisions 10 and 11): the Hub's posts, which staff write and RSVPs count, and
+// the pickup points, which staff add, rename and retire.
+
+export const HUB_TAG = "hub";
+export const PICKUP_POINTS_TAG = "pickup-points";
+
+/** For a cached function that returns Hub posts or events. */
+export function tagHub(): void {
+  cacheTag(HUB_TAG);
+}
+
+/** For a cached function that returns pickup points, or a listing with its pickup point. */
+export function tagPickupPoints(): void {
+  cacheTag(PICKUP_POINTS_TAG);
+}
+
+/** After a Hub post, an RSVP or a slot request changes. Server Actions only. */
+export function hubChanged(): void {
+  updateTag(HUB_TAG);
+}
+
+/** After a pickup point changes. Server Actions only. */
+export function pickupPointsChanged(): void {
+  updateTag(PICKUP_POINTS_TAG);
+}

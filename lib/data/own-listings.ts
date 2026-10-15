@@ -56,6 +56,8 @@ export async function saveOwnListing(save: ListingSave): Promise<ListingRow | nu
   const had = new Set(existing?.photos.map((photo) => photo.src));
   const claimed = await claimPhotos(save.ownerId, save.photos.map((photo) => photo.src), listingPhotoUse(id));
   const photos = save.photos.filter((photo) => had.has(photo.src) || claimed.has(photo.src));
+  // Read after the await, with none before the write, so a hide that landed meanwhile isn't lost (amendment 19).
+  const live = listings.get(id);
   const row: ListingRow = {
     id,
     sellerSlug: save.sellerSlug,
@@ -66,6 +68,8 @@ export async function saveOwnListing(save: ListingSave): Promise<ListingRow | nu
     createdAt: !existing || firstPublish ? at : existing.createdAt,
     publishedAt: firstPublish ? at : (existing?.publishedAt ?? null),
     updatedAt: at,
+    // A listing the Hub hid stays hidden when its seller saves it (staff tools plan decision 4). New rows get no field.
+    ...(live?.hiddenAt ? { hiddenAt: live.hiddenAt, hiddenReason: live.hiddenReason ?? null } : {}),
   };
   listings.set(row.id, row);
   await deletePhotosUsedBy(save.ownerId, listingPhotoUse(row.id), new Set(row.photos.map((photo) => photo.src)));

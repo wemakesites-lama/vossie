@@ -10,6 +10,7 @@ import {
   type ListingSave,
 } from "./own-listings";
 import { getPhoto, photoIdOf, photoSrcsOf, storePhotos } from "./photos";
+import { hideListing } from "./staff-shops";
 import { resetSampleStore, sampleStore } from "./store";
 
 const NOW = new Date("2026-10-14T08:00:00.000Z");
@@ -160,5 +161,27 @@ describe("a shop's own listings (selling spec 2.9 and 2.10, plan decision 3)", (
     const cover = { src: "/placeholders/photo/3.svg", alt: "The cover" };
     const sample = (await save({ id: "l-001", photos: [cover, { src: other, alt: "" }] }))!;
     expect(sample.photos).toEqual([cover]);
+  });
+
+  it("keeps a listing the Hub hid hidden when its seller saves it (staff tools plan decision 4)", async () => {
+    Object.assign(sampleStore().listings.get("l-001")!, {
+      hiddenAt: "2026-10-14T08:00:00.000Z",
+      hiddenReason: "Not allowed on Vossie.",
+    });
+    expect(await save({ id: "l-001" })).toMatchObject({
+      hiddenAt: "2026-10-14T08:00:00.000Z",
+      hiddenReason: "Not allowed on Vossie.",
+    });
+    const fresh = (await save())!;
+    expect("hiddenAt" in fresh).toBe(false);
+  });
+
+  it("keeps a hide that lands while the seller's save is under way (staff tools plan amendment 19)", async () => {
+    const [saved] = await Promise.all([save({ id: "l-001" }), hideListing("l-001", "Not allowed on Vossie.", NOW)]);
+    expect(saved).toMatchObject({ hiddenReason: "Not allowed on Vossie." });
+    expect(sampleStore().listings.get("l-001")).toMatchObject({
+      hiddenAt: NOW.toISOString(),
+      hiddenReason: "Not allowed on Vossie.",
+    });
   });
 });
