@@ -18,6 +18,10 @@ describe("selling's error words (plan decisions 24 and 27)", () => {
       { message: "Choose at least one pickup point.", fieldId: "onb-points" },
     ]);
     expect(sellingErrors(["slug-taken"], shopFieldIds("profile"))[0].fieldId).toBe("profile-slug");
+    // A photo chosen with an Edit shop save that failed isn't kept (amendment 13.6).
+    expect(sellingErrors(["photo-again"], shopFieldIds("profile"))).toEqual([
+      { message: "Choose your photo again.", fieldId: "profile-photo" },
+    ]);
   });
 
   it("words a send that failed, and links it to no field (amendment 9.3)", () => {

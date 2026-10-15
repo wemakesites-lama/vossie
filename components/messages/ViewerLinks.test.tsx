@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ViewerMessageLink, ViewerReportLink } from "./ViewerLinks";
 
 const links = vi.hoisted(() => ({ failing: false }));
-const selling = vi.hoisted(() => ({ owner: null as { href: string; label: string } | null }));
+const selling = vi.hoisted(() => ({ owner: null as { href: string; label: string } | null, failing: false }));
 
 vi.mock("@/lib/messaging/links", () => ({
   messageHrefFor: async () => {
@@ -17,11 +17,17 @@ vi.mock("@/lib/messaging/links", () => ({
 }));
 
 // The owner's link (selling plan, Task 14): none unless a test sets one.
-vi.mock("@/lib/selling/links", () => ({ ownerLinkFor: async () => selling.owner }));
+vi.mock("@/lib/selling/links", () => ({
+  ownerLinkFor: async () => {
+    if (selling.failing) throw new Error("The listing lookup didn't answer");
+    return selling.owner;
+  },
+}));
 
 afterEach(() => {
   links.failing = false;
   selling.owner = null;
+  selling.failing = false;
 });
 
 describe("the session's links, once the session is read (messaging spec 3.6)", () => {
@@ -58,6 +64,20 @@ describe("the session's links, once the session is read (messaging spec 3.6)", (
       "href",
       "/login?next=%2Freport%3Frequest%3Dr-001",
     );
+  });
+
+  it("gives Message seller as usual when the owner's lookup fails (amendment 13.8)", async () => {
+    selling.failing = true;
+    render(
+      await ViewerMessageLink({
+        target: { kind: "listing", listingId: "l-001" },
+        className: "btn btn-primary listing-message",
+        children: "Message seller",
+      }),
+    );
+    const link = screen.getByRole("link", { name: "Message seller" });
+    expect(link).toHaveAttribute("href", "/messages/conv-s2");
+    expect(link).toHaveClass("btn", "btn-primary", "listing-message");
   });
 
   it("gives the owner Edit listing in Message seller's place, with the same look (selling spec 2.12)", async () => {

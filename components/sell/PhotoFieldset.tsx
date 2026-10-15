@@ -1,7 +1,7 @@
 import { describedBy, FieldError } from "@/components/forms/FieldError";
 import { PHOTO_ACCEPT, PHOTO_MAX_MB, PHOTOS_PER_LISTING, SHRINK_MAX_SIDE, SHRINK_QUALITY } from "@/lib/photos/rules";
 import { ALT_MAX } from "@/lib/selling/rules";
-import { PhotoField, type PhotoButton, type PhotoWords, type SavedPhoto } from "./PhotoField";
+import { PhotoField, type PhotoButton, type PhotoParts, type PhotoWords, type SavedPhoto } from "./PhotoField";
 
 type PhotoFieldsetProps = {
   /** The form's id prefix (plan decision 23): "new" or "edit-<id>". */
@@ -13,23 +13,27 @@ type PhotoFieldsetProps = {
   altError: string | undefined;
 };
 
+/** What each photo's button posts without JavaScript: `photoMove`, with its value the photo and the move. */
+const BUTTON = { type: "submit", name: "photoMove", className: "sell-action" } as const;
+
 /** Each photo's buttons (plan decision 9). The photo field shows those that apply where the photo is. */
 const BUTTONS: readonly PhotoButton[] = [
-  { op: "cover", label: "Make cover", className: "sell-action" },
-  { op: "earlier", label: "Move earlier", className: "sell-action" },
-  { op: "later", label: "Move later", className: "sell-action" },
-  { op: "remove", label: "Remove", className: "sell-action sell-action-danger" },
+  { ...BUTTON, op: "cover", label: "Make cover" },
+  { ...BUTTON, op: "earlier", label: "Move earlier" },
+  { ...BUTTON, op: "later", label: "Move later" },
+  { ...BUTTON, op: "remove", label: "Remove", className: "sell-action sell-action-danger" },
 ];
 
 /**
  * What the status line says after each action (sample words, plan decision 27): {n} is a number of photos, {at} a
  * photo's place and {max} the most a listing takes. While picked photos are shrunk, it says so, then that they're
- * ready, for the last pick's number of photos (amendment 11.1).
+ * ready, for the last pick's number of photos (amendment 11.1), or that a save is waiting for them (amendment 13.3).
  */
 const WORDS: PhotoWords = {
   cover: "That photo is the cover now.",
   moved: "Moved to photo {at} of {n}.",
   removed: "Photo removed. {n} left.",
+  held: "Saving once your photos are ready…",
   added: ["1 photo added.", "{n} photos added."],
   refused: ["1 wasn't a JPG, PNG or WebP.", "{n} weren't JPG, PNG or WebP."],
   leftOut: ["Only {max} photos fit, so 1 was left out.", "Only {max} photos fit, so {n} were left out."],
@@ -38,11 +42,34 @@ const WORDS: PhotoWords = {
 };
 
 /**
+ * The fixed attributes of the photo field's parts. The photos' descriptions point to the hint (`${prefix}-alt-hint`);
+ * the one marked invalid, the first that's too long, points to the error as well (amendment 13.4).
+ */
+function photoParts(prefix: string, altError: string | undefined): PhotoParts {
+  const hint = `${prefix}-alt-hint`;
+  return {
+    list: { className: "sell-photos" },
+    photo: { className: "sell-photo" },
+    hidden: { type: "hidden", name: "photo" },
+    img: { width: 96, height: 96, className: "sell-thumb" },
+    body: { className: "sell-photo-body" },
+    title: { className: "sell-photo-title" },
+    label: { className: "form-label" },
+    alt: { type: "text", autoComplete: "off", "aria-describedby": hint, className: "form-input" },
+    invalidAlt: { "aria-invalid": true, "aria-describedby": describedBy(hint, altError && `${prefix}-alt-error`) },
+    buttons: { className: "sell-photo-buttons" },
+    srOnly: { className: "sr-only" },
+    status: { role: "status", className: "sell-photo-status" },
+  };
+}
+
+/**
  * The listing form's photos (selling spec 2.3, 2.5 and section 4; plan decisions 9 and 10). Everything that doesn't
  * change on the page is rendered here, on the server: the legend, the hints, the errors, the file input's label and
- * its attributes, the buttons' and the status line's words, and how photos are shrunk. The photo field, the one client
- * component, draws only the photos, the file input and the status line, so its code stays small (spec section 5).
- * A photo button pressed without JavaScript comes back to the legend (`${prefix}-photos-title`, amendment 11.4).
+ * its attributes, the buttons' words and attributes, every other part's attributes (photoParts), the status line's
+ * words, and how photos are shrunk. The photo field, the one client component, draws only the photos, the file input
+ * and the status line, so its code stays small (spec section 5). A photo button pressed without JavaScript comes back
+ * to the legend (`${prefix}-photos-title`, amendment 11.4).
  */
 export function PhotoFieldset({ prefix, photos, error, altError }: PhotoFieldsetProps) {
   const inputId = `${prefix}-photos`;
@@ -65,15 +92,10 @@ export function PhotoFieldset({ prefix, photos, error, altError }: PhotoFieldset
         shrinkTo={{ side: SHRINK_MAX_SIDE, quality: SHRINK_QUALITY }}
         buttons={BUTTONS}
         words={WORDS}
-        altInput={{
-          type: "text",
-          autoComplete: "off",
-          "aria-describedby": `${prefix}-alt-hint`,
-          className: "form-input",
-        }}
+        parts={photoParts(prefix, altError)}
         altHint={
-          // The photos' descriptions point here (altInput's aria-describedby). A description that's too long is marked
-          // invalid; the error summary links to it, and its message shows here, above the photos.
+          // The photos' descriptions point here (photoParts). A description that's too long is marked invalid and
+          // points to the error too; the error summary links to it, and its message shows here, above the photos.
           <>
             <p id={`${prefix}-alt-hint`} className="form-hint">
               Describe each photo for people who can&apos;t see it. Leave it empty to use the title. Up to {ALT_MAX}{" "}

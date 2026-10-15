@@ -221,11 +221,15 @@ export async function saveShopProfile(formData: FormData): Promise<void> {
   if (tagline.error) errors.push(tagline.error);
   if (!categorySlug) errors.push("category-missing");
   if (about.error) errors.push(about.error);
+  const photoAt = errors.length;
   errors.push(...photo.errors, ...place.errors);
   if (changeSlug && slug.error) errors.push(slug.error);
   else if (changeSlug && (await isSlugTaken(slug.value))) errors.push("slug-taken");
 
   if (errors.length > 0) {
+    // A photo chosen with this save isn't kept, so the summary asks for it again, in the photo's place; Remove photo
+    // comes back ticked (amendment 13.6).
+    if (photo.upload) errors.splice(photoAt, 0, "photo-again");
     const values = {
       name: keepTyped(name.value),
       tagline: keepTyped(tagline.value),
@@ -234,6 +238,7 @@ export async function saveShopProfile(formData: FormData): Promise<void> {
       campus: place.campusSlug,
       points: place.pickupPointIds.join(" "),
       slug: keepTyped(typedSlug),
+      removePhoto: removePhoto ? "yes" : "",
     };
     await writeFormState(PROFILE_FORM, { errors, values, notice: null }, now);
     done(PROFILE_PATH);

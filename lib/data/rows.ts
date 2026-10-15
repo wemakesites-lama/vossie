@@ -223,6 +223,11 @@ export type SellerRow = {
   pickupPointIds: string[];
   /** Whether the seller has changed the link (selling spec 2.11: once). */
   slugChanged: boolean;
+  /**
+   * The links it had before that change. They stay reserved: no other shop may take one, so a link someone saved never
+   * opens another student's shop (amendment 13.7). They open nothing; the spec's warning says old links stop working.
+   */
+  previousSlugs: string[];
   createdAt: string;
   updatedAt: string;
 };

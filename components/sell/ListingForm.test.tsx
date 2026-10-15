@@ -93,7 +93,9 @@ describe("the listing form's request-time part (selling spec 2.10 and section 3)
     const second = screen.getByRole("textbox", { name: "Describe photo 2" });
     expect(second).toHaveAttribute("id", "edit-l-001-alt-2");
     expect(second).toHaveAttribute("aria-invalid", "true");
-    expect(second).toHaveAccessibleDescription(/Up to 125 characters\.$/);
+    // Described by the hint and the error (amendment 13.4).
+    expect(second).toHaveAccessibleDescription(/Up to 125 characters\. Error: Keep each photo's description to 125 characters\.$/);
+    expect(screen.getByRole("textbox", { name: "Describe photo 3" })).toHaveAccessibleDescription(/Up to 125 characters\.$/);
     // Only the first one is marked, where the link lands; the file input isn't.
     expect(screen.getByRole("textbox", { name: "Describe photo 1" })).not.toHaveAttribute("aria-invalid");
     expect(screen.getByRole("textbox", { name: "Describe photo 3" })).not.toHaveAttribute("aria-invalid");

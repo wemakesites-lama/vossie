@@ -34,6 +34,7 @@ const crochetCorner: SellerRow = {
   image: null,
   pickupPointIds: ["pp-pretoria-library"],
   slugChanged: false,
+  previousSlugs: [],
   createdAt: "2026-10-10T12:20:00.000Z",
   updatedAt: "2026-10-10T12:20:00.000Z",
 };
@@ -54,6 +55,7 @@ export const sampleSellerRows: readonly SellerRow[] = [
       image: { ...seller.image },
       pickupPointIds: spotsAt(seller.campusSlug),
       slugChanged: false,
+      previousSlugs: [],
       createdAt: `${seller.since}-01T08:00:00.000Z`,
       updatedAt: `${seller.since}-01T08:00:00.000Z`,
     }),

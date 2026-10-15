@@ -11,6 +11,7 @@ import {
   getOnboardingDraft,
   getShopOf,
   isShopNameTaken,
+  isSlugTaken,
   restoreSampleShop,
   saveOnboardingDraft,
   setShopPaused,
@@ -159,6 +160,27 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     const links = new Map([...sampleStore().conversations.values()].map((row) => [row.id, row.sellerSlug]));
     expect(links.get("conv-s1")).toBe("gadgets");
     expect(links.get("conv-s2")).toBe("tech-corner");
+  });
+
+  it("keeps an old link reserved once it's changed: no other shop takes it, and it opens no shop (amendment 13.7)", async () => {
+    expect(await changeShopSlug("acc-seller", "gadgets", NOW)).toBe("changed");
+    const store = sampleStore();
+    expect(store.sellers.get("gadgets")?.previousSlugs).toEqual(["tech-corner"]);
+    expect(store.sellers.has("tech-corner")).toBe(false);
+    expect(await isSlugTaken("tech-corner")).toBe(true);
+    // Another approved shop can't change its link to it.
+    await applyAs("acc-student", { campusSlug: "pretoria", pickupPointIds: [] });
+    store.sellerProfiles.get("acc-student")!.status = "approved";
+    expect(await changeShopSlug("acc-student", "tech-corner", NOW)).toBe("taken");
+    // A new shop, or a waiting one renamed, with the same name gets the next free link instead.
+    expect((await applyAs("acc-mentor", { name: "Tech corner", campusSlug: "pretoria", pickupPointIds: [] }))?.slug).toBe(
+      "tech-corner-2",
+    );
+    expect((await updateShop("acc-pending", { ...details, name: "Tech corner", campusSlug: "pretoria" }, NOW))?.slug).toBe(
+      "tech-corner-3",
+    );
+    // A waiting shop's link follows its name, so its old ones were never public and aren't kept.
+    expect(store.sellers.get("tech-corner-3")?.previousSlugs).toEqual([]);
   });
 
   it("won't take another shop's link, or change a waiting shop's", async () => {

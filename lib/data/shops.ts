@@ -34,17 +34,24 @@ export async function isShopNameTaken(name: string, campusSlug: string, exceptSl
   return false;
 }
 
-export async function isSlugTaken(slug: string): Promise<boolean> {
-  return sampleStore().sellers.has(slug);
+/** Whether a shop has this link, or had it before its one change, which keeps it reserved (amendment 13.7). */
+function slugInUse(slug: string): boolean {
+  const { sellers } = sampleStore();
+  return sellers.has(slug) || [...sellers.values()].some((row) => row.previousSlugs.includes(slug));
 }
 
-/** A link no other shop has, from `base`: "crochet-corner", then "crochet-corner-2" and so on. `own` keeps its own. */
+export async function isSlugTaken(slug: string): Promise<boolean> {
+  return slugInUse(slug);
+}
+
+/**
+ * A link no shop has or had, from `base`: "crochet-corner", then "crochet-corner-2" and so on. `own` keeps its own.
+ */
 function freeSlug(base: string, own: string | null): string {
-  const { sellers } = sampleStore();
   for (let n = 1; ; n += 1) {
     const suffix = n === 1 ? "" : `-${n}`;
     const slug = `${base.slice(0, SLUG_MAX - suffix.length).replace(/-+$/, "")}${suffix}`;
-    if (slug === own || !sellers.has(slug)) return slug;
+    if (slug === own || !slugInUse(slug)) return slug;
   }
 }
 
@@ -108,6 +115,7 @@ export async function createShop(accountId: string, details: ShopDetails, now: D
     image: details.image ? { ...details.image } : null,
     pickupPointIds: [...details.pickupPointIds],
     slugChanged: false,
+    previousSlugs: [],
     createdAt: at,
     updatedAt: at,
   };
@@ -158,18 +166,20 @@ export async function updateShop(accountId: string, details: ShopDetails, now: D
 export type SlugChange = "changed" | "same" | "used" | "taken";
 
 /**
- * The seller's one change of link (selling spec 2.11), for an approved or paused shop. Old links then 404. Null when
- * the account has no shop, or its shop is still waiting (its link follows its name).
+ * The seller's one change of link (selling spec 2.11), for an approved or paused shop. Old links then 404, and stay
+ * reserved, so no other shop can take one (amendment 13.7). Null when the account has no shop, or its shop is still
+ * waiting (its link follows its name, and isn't public yet).
  */
 export async function changeShopSlug(accountId: string, slug: string, now: Date): Promise<SlugChange | null> {
   const own = await getShopOf(accountId);
   if (!own || own.status === "pending") return null;
   if (own.shop.slug === slug) return "same";
   if (own.shop.slugChanged) return "used";
-  if (sampleStore().sellers.has(slug)) return "taken";
+  if (slugInUse(slug)) return "taken";
   moveShop(own.shop.slug, slug);
   const row = sampleStore().sellers.get(slug)!;
   row.slugChanged = true;
+  row.previousSlugs.push(own.shop.slug);
   row.updatedAt = now.toISOString();
   return "changed";
 }

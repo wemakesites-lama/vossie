@@ -4,7 +4,7 @@ import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
 import { pickupPoints } from "@/data/fixtures/pickup-points";
 import { sampleSellerRows } from "@/data/fixtures/shops";
-import { saveFormState } from "@/lib/data/form-states";
+import { clearFormState, saveFormState } from "@/lib/data/form-states";
 import { resetSampleStore } from "@/lib/data/store";
 import { PROFILE_FORM } from "@/lib/selling/form-state";
 import { redirectOf } from "@/tests/helpers/next-request";
@@ -125,6 +125,24 @@ describe("Edit shop (selling spec 2.11)", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Your shop is saved.");
   });
 
+  it("brings Remove photo back ticked after a save that went wrong, and asks for a chosen photo again (amendment 13.6)", () => {
+    const typed = { name: "", category: "tech", about: "Hi", campus: "midrand", points: "pp-midrand-library", slug: "tech-corner" };
+    const box = () => screen.getByRole("checkbox", { name: "Remove the photo and use my category's picture" });
+    const ticked = show({
+      typed: { ...typed, removePhoto: "yes" },
+      errors: [
+        { message: "Enter your shop's name.", fieldId: "profile-name" },
+        { message: "Choose your photo again.", fieldId: "profile-photo" },
+      ],
+    });
+    expect(box()).toBeChecked();
+    expect(screen.getByRole("link", { name: "Choose your photo again." })).toHaveAttribute("href", "#profile-photo");
+    expect(screen.getByLabelText("A different photo (optional)")).toHaveAccessibleDescription(/Choose your photo again\.$/);
+    ticked.unmount();
+    show({ typed: { ...typed, removePhoto: "" } });
+    expect(box()).not.toBeChecked();
+  });
+
   it("shows a typed link and its error on the link's own field", () => {
     show({
       typed: { name: "Tech corner", category: "tech", about: "Hi", campus: "midrand", points: "pp-midrand-library", slug: "Bad Link!" },
@@ -192,9 +210,16 @@ describe("Edit shop (selling spec 2.11)", () => {
       },
       new Date("2026-10-14T08:00:00.000Z"),
     );
-    render(await ShopProfile());
+    const failed = render(await ShopProfile());
     expect(screen.getByRole("textbox", { name: "Shop name" })).toHaveValue("");
     expect(screen.getByRole("link", { name: "Enter your shop's name." })).toHaveAttribute("href", "#profile-name");
+    failed.unmount();
+    // Once that state has gone (a good save clears it; otherwise it lasts 10 minutes), the shop's own values are back.
+    await clearFormState("s", PROFILE_FORM);
+    render(await ShopProfile());
+    expect(screen.getByRole("textbox", { name: "Shop name" })).toHaveValue("Tech corner");
+    expect(screen.getByRole("combobox", { name: "Your campus" })).toHaveValue("midrand");
+    expect(screen.queryByRole("alert", { name: "There's a problem" })).toBeNull();
   });
 
   it("says that the shop is saved once: a second visit shows no notice (amendment 10.6)", async () => {

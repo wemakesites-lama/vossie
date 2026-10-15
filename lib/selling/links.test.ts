@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { setShopPaused } from "@/lib/data/shops";
 import { resetSampleStore } from "@/lib/data/store";
 import { ownerLinkFor } from "./links";
 
@@ -25,6 +26,20 @@ describe("the owner's link (selling spec 2.12, plan decision 19)", () => {
       href: "/sell/profile",
       label: "Edit shop",
     });
+  });
+
+  it("gives a paused shop's owner the same links: its listing pages and storefront still show (amendment 13.8)", async () => {
+    await setShopPaused("acc-seller", true);
+    viewer.id = "acc-seller";
+    expect(await ownerLinkFor({ kind: "listing", listingId: "l-001" })).toEqual({
+      href: "/sell/listings/l-001/edit",
+      label: "Edit listing",
+    });
+    expect(await ownerLinkFor({ kind: "shop", sellerSlug: "tech-corner" })).toEqual({
+      href: "/sell/profile",
+      label: "Edit shop",
+    });
+    expect(await ownerLinkFor({ kind: "listing", listingId: "l-004" })).toBeNull();
   });
 
   it("gives nobody else anything: another shop's listing or storefront, a student, a visitor", async () => {

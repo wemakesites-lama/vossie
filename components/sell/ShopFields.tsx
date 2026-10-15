@@ -77,7 +77,8 @@ export function AboutField({ ids, errors, about }: { ids: Ids; errors: readonly 
 
 /**
  * The shop's photo (selling spec 2.6 step 3): the one it has, or its category's picture, and a file input. The server
- * checks and strips it (no client code here). `remove` is the wizard's Remove photo button or Edit shop's box.
+ * checks and strips it (no client code here). `remove` is the wizard's Remove photo button or Edit shop's box, which
+ * comes back ticked after a save that went wrong (`removeChecked`, amendment 13.6).
  */
 export function ShopPhotoField({
   ids,
@@ -85,6 +86,7 @@ export function ShopPhotoField({
   current,
   categorySlug,
   remove,
+  removeChecked = false,
 }: {
   ids: Ids;
   errors: readonly FormError[];
@@ -92,6 +94,7 @@ export function ShopPhotoField({
   current: string | null;
   categorySlug: string;
   remove: "button" | "checkbox";
+  removeChecked?: boolean;
 }) {
   const error = errorFor(errors, ids.photos);
   const picture = current ?? categoryPicture(categorySlug || "services").src;
@@ -125,7 +128,14 @@ export function ShopPhotoField({
       )}
       {current && remove === "checkbox" && (
         <div className="form-check">
-          <input id={`${ids.photos}-remove`} name="removePhoto" type="checkbox" value="yes" className="form-checkbox" />
+          <input
+            id={`${ids.photos}-remove`}
+            name="removePhoto"
+            type="checkbox"
+            value="yes"
+            defaultChecked={removeChecked}
+            className="form-checkbox"
+          />
           <label htmlFor={`${ids.photos}-remove`}>Remove the photo and use my category&apos;s picture</label>
         </div>
       )}

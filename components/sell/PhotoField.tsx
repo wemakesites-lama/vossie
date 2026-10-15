@@ -1,6 +1,17 @@
 "use client";
 
-import { useRef, useState, type ChangeEvent, type InputHTMLAttributes, type MouseEvent, type ReactNode } from "react";
+import {
+  useRef,
+  useState,
+  type ButtonHTMLAttributes,
+  type ChangeEvent,
+  type HTMLAttributes,
+  type ImgHTMLAttributes,
+  type InputHTMLAttributes,
+  type LabelHTMLAttributes,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import { flushSync } from "react-dom";
 import type { ShrinkTo } from "@/lib/photos/shrink";
 import { newPhotoToken, type PhotoOp } from "@/lib/selling/photo-order";
@@ -14,20 +25,42 @@ export type SavedPhoto = { src: string; alt: string; thumb: string; invalid?: bo
 /** A photo on the form: a saved one (`src`), or a new one waiting in the file input (`file`), with no description yet. */
 type Item = Partial<SavedPhoto> & { key: string; thumb: string; file?: File };
 
-/** One of each photo's buttons: what it does, its words and its look. */
-export type PhotoButton = { op: PhotoOp; label: string; className: string };
+/** One of each photo's buttons: what it does, its words, and its type, name and look (PhotoFieldset). */
+export type PhotoButton = ButtonHTMLAttributes<HTMLButtonElement> & { op: PhotoOp; label: string };
+
+/**
+ * The fixed attributes of the field's parts, worked out on the server (PhotoFieldset), so none of them is in this
+ * component's code: the classes, each photo's hidden field's type and name, its small picture's size, its description
+ * field's attributes and those of one marked invalid (amendment 13.4), and the status line's role.
+ */
+export type PhotoParts = {
+  list: HTMLAttributes<HTMLOListElement>;
+  photo: HTMLAttributes<HTMLLIElement>;
+  hidden: InputHTMLAttributes<HTMLInputElement>;
+  img: ImgHTMLAttributes<HTMLImageElement>;
+  body: HTMLAttributes<HTMLDivElement>;
+  title: HTMLAttributes<HTMLParagraphElement>;
+  label: LabelHTMLAttributes<HTMLLabelElement>;
+  alt: InputHTMLAttributes<HTMLInputElement>;
+  invalidAlt: InputHTMLAttributes<HTMLInputElement>;
+  buttons: HTMLAttributes<HTMLDivElement>;
+  srOnly: HTMLAttributes<HTMLSpanElement>;
+  status: HTMLAttributes<HTMLParagraphElement>;
+};
 
 /** One way of saying something for one photo, then for more: "1 photo added." and "{n} photos added." */
 type Counted = readonly [one: string, more: string];
 
 /**
  * What the status line says (PhotoFieldset), with {n} for a number of photos, {at} for a photo's place and {max} for
- * the most a listing takes. `busy` and `ready`: while picked photos are shrunk, and once they all are (amendment 11.1).
+ * the most a listing takes. `busy` and `ready`: while picked photos are shrunk, and once they all are (amendment 11.1);
+ * `held`: while a save waits for them (amendment 13.3).
  */
 export type PhotoWords = {
   cover: string;
   moved: string;
   removed: string;
+  held: string;
   added: Counted;
   refused: Counted;
   leftOut: Counted;
@@ -48,8 +81,8 @@ type PhotoFieldProps = {
   words: PhotoWords;
   /** The file input's id, name, accepted types, description and class, worked out on the server (PhotoFieldset). */
   input: InputHTMLAttributes<HTMLInputElement> & { id: string; accept: string };
-  /** What every photo's description field has: its type, the hint it points to and its class (PhotoFieldset). */
-  altInput: InputHTMLAttributes<HTMLInputElement>;
+  /** Every other part's fixed attributes (PhotoFieldset). */
+  parts: PhotoParts;
   /** The hint the photos' descriptions point to, shown while there's a photo. */
   altHint: ReactNode;
   /** The file input's label. */
@@ -63,9 +96,6 @@ const fill = (text: string, values: Record<string, number>) =>
 /** How long a save waits for photos being shrunk before it goes with whatever the file input holds (amendment 11.1). */
 const HOLD_MS = 15_000;
 
-/** What `busy` holds while a save waits: another press is held too, so the form isn't sent twice. */
-const HELD = true;
-
 /**
  * The listing form's photos, the part that moves (selling spec 2.3, 2.5 and section 4; plan decisions 9 and 10).
  * Every photo has a hidden `photo` field (a saved photo's address, or "new:<n>" for the n-th file in the file input),
@@ -75,13 +105,15 @@ const HELD = true;
  * is picked, shrinks them in the background, one at a time; a save waits for them (amendment 11.1).
  */
 export function PhotoField(props: PhotoFieldProps) {
-  const { prefix, photos, max, shrinkTo, buttons, words, input, altInput, altHint, children } = props;
+  const { prefix, photos, max, shrinkTo, buttons, words, input, parts, altHint, children } = props;
   const [items, setItems] = useState<Item[]>(() => photos.map((photo) => ({ ...photo, key: photo.src })));
   const [status, setStatus] = useState("");
   // The photos as last shown, for the handlers, including the shrinking that finishes after a pick.
   const latest = useRef(items);
-  // The shrinking still to finish, as one promise; HELD while a save waits for it; null once it's done.
-  const busy = useRef<Promise<void> | typeof HELD | null>(null);
+  // The shrinking still to finish, as one promise, or null once it's done (amendment 13.1).
+  const chain = useRef<Promise<void> | null>(null);
+  // While a save waits for it, the last press's submit event, whose button the save goes with; otherwise null.
+  const held = useRef<SubmitEvent | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLOListElement>(null);
   const newOnes = items.filter((item) => item.file);
@@ -130,57 +162,63 @@ export function PhotoField(props: PhotoFieldProps) {
       [words.leftOut, fitting.length - taken.length],
       [words.busy, taken.length],
     ];
-    say(
-      counts
-        .filter(([, n]) => n > 0)
-        .map(([counted, n]) => count(counted, n))
-        .join(" "),
-    );
+    say(counts.flatMap(([counted, n]) => (n ? count(counted, n) : [])).join(" "));
     if (taken.length === 0) return;
     // One photo at a time, after any picked before, so only one is decoded at once (amendment 11.2). Until its shrunk
     // copy is ready, the original waits in the input. If the code can't load, the originals go as they are, and the
     // server checks and strips them, as it does without JavaScript (plan decisions 10 and 11).
-    const run: Promise<void> = Promise.all([busy.current, import("@/lib/photos/shrink")])
+    const run: Promise<void> = Promise.all([chain.current, import("@/lib/photos/shrink")])
       .then(async ([, { shrink }]) => {
         for (const file of taken) {
           const small = await shrink(file, shrinkTo);
-          // The preview shows the shrunk copy, so the original's decoded picture can go.
-          show(
-            latest.current.map((item) =>
-              item.file === file ? { ...item, file: small, thumb: URL.createObjectURL(small) } : item,
-            ),
-          );
+          // The preview shows the shrunk copy, and the original's object URL goes. When the original came back, the
+          // preview it has stays (amendment 13.2).
+          if (small !== file)
+            show(
+              latest.current.map((item) => {
+                if (item.file !== file) return item;
+                URL.revokeObjectURL(item.thumb);
+                return { ...item, file: small, thumb: URL.createObjectURL(small) };
+              }),
+            );
         }
       })
       .catch(() => {})
       .then(() => {
-        // Said once the last pick's photos are ready, unless a held save has already gone.
-        if (busy.current !== run) return;
-        busy.current = null;
-        say(count(words.ready, taken.length));
+        // Once the last pick's photos are ready, said only when no save is waiting: a held save goes instead.
+        if (chain.current !== run) return;
+        chain.current = null;
+        if (!held.current) say(count(words.ready, taken.length));
       });
-    busy.current = run;
+    chain.current = run;
   }
 
   /**
-   * The file input's ref, which also holds the form's submit while photos are being shrunk (amendment 11.1): a
-   * capture-phase listener on the form, so it runs before React's form action, added here rather than in an effect.
-   * The held submit is sent again, with the same button, once the shrunk copies are in the input, or after 15 seconds
-   * with whatever the input holds (the server strips originals).
+   * The file input's ref, which also holds the form's submit while photos are being shrunk (amendments 11.1 and 13.1):
+   * a capture-phase listener on the form, so it runs before React's form action, added here rather than in an effect.
+   * A press while a save is held only changes the button it goes with, so the form is sent once. The held save waits
+   * for the newest shrinking, photos picked while it waits included, then is sent with the last button pressed (Save
+   * as draft pressed while it waits saves a draft); after 15 seconds it goes with whatever the input holds (the server
+   * strips originals).
    */
   function attach(element: HTMLInputElement | null) {
     inputRef.current = element;
     const form = element?.form;
     if (!form) return;
+    // The newest shrinking's end: a photo picked while a save waits is shrunk after the ones before, so this waits on.
+    const shrunk = (): Promise<unknown> | undefined => chain.current?.then(shrunk);
     const hold = (event: SubmitEvent) => {
-      const shrinking = busy.current;
-      if (!shrinking) return;
+      if (!chain.current) return;
       event.preventDefault();
-      if (shrinking === HELD) return;
-      busy.current = HELD;
-      Promise.race([shrinking, new Promise((go) => setTimeout(go, HOLD_MS))]).then(() => {
-        busy.current = null;
-        form.requestSubmit(event.submitter);
+      const waiting = held.current;
+      held.current = event;
+      if (waiting) return;
+      say(words.held);
+      Promise.race([shrunk(), new Promise((go) => setTimeout(go, HOLD_MS))]).then(() => {
+        const { submitter } = held.current!;
+        // Nothing is held now, so the submit below goes through, even with a shrink still running after 15 seconds.
+        held.current = chain.current = null;
+        form.requestSubmit(submitter);
       });
     };
     form.addEventListener("submit", hold, true);
@@ -209,7 +247,7 @@ export function PhotoField(props: PhotoFieldProps) {
     say(to ? fill(words.moved, { at: to + 1, n: next.length }) : words.cover);
     // Focus stays with the photo, now at `to`: on the same button if it still has it, otherwise on its first.
     const row = rows[to];
-    (row.querySelector<HTMLButtonElement>(`[value$=":${op}"]`) ?? row.querySelector("button"))?.focus();
+    (row.querySelector<HTMLButtonElement>(`button[value$=":${op}"]`) ?? row.querySelector("button"))?.focus();
   }
 
   return (
@@ -217,53 +255,45 @@ export function PhotoField(props: PhotoFieldProps) {
       {items.length > 0 && (
         <>
           {altHint}
-          <ol ref={listRef} className="sell-photos">
+          <ol ref={listRef} {...parts.list}>
             {items.map((item, index) => {
               const token = item.src ?? newPhotoToken(newOnes.indexOf(item));
               const altId = `${prefix}-alt-${index + 1}`;
+              // A new photo's object URL is let go once its picture has loaded, or couldn't be (amendments 11.2 and
+              // 13.2). A saved photo's address isn't one, and letting it go does nothing.
+              const free = () => URL.revokeObjectURL(item.thumb);
               const shown = buttons.filter(
                 ({ op }) => (index > 0 || (op !== "cover" && op !== "earlier")) && (index < items.length - 1 || op !== "later"),
               );
               return (
-                <li key={item.key} className="sell-photo">
-                  <input type="hidden" name="photo" value={token} />
-                  {/* A new photo's object URL is let go once its picture has loaded, so none outlives its preview
-                      (amendment 11.2). A saved photo's address isn't one, and letting it go does nothing. */}
+                <li key={item.key} {...parts.photo}>
+                  <input {...parts.hidden} value={token} />
                   {/* eslint-disable-next-line @next/next/no-img-element -- a blob or /_next/image address (plan decision 13). */}
-                  <img
-                    src={item.thumb}
-                    alt=""
-                    width={96}
-                    height={96}
-                    className="sell-thumb"
-                    onLoad={() => URL.revokeObjectURL(item.thumb)}
-                  />
-                  <div className="sell-photo-body">
-                    <p className="sell-photo-title">
+                  <img {...parts.img} src={item.thumb} alt="" onLoad={free} onError={free} />
+                  <div {...parts.body}>
+                    <p {...parts.title}>
                       Photo {index + 1}
                       {index === 0 && " (the cover)"}
                     </p>
-                    <label htmlFor={altId} className="form-label">
+                    <label htmlFor={altId} {...parts.label}>
                       Describe photo {index + 1}
                     </label>
                     <input
-                      {...altInput}
+                      {...parts.alt}
+                      {...(item.invalid && parts.invalidAlt)}
                       id={altId}
                       name={`alt:${token}`}
                       defaultValue={item.alt}
-                      aria-invalid={item.invalid}
                     />
-                    <div className="sell-photo-buttons">
-                      {shown.map(({ op, label, className }) => (
+                    <div {...parts.buttons}>
+                      {shown.map(({ op, label, ...button }) => (
                         <button
                           key={op}
-                          type="submit"
-                          name="photoMove"
+                          {...button}
                           value={`${token}:${op}`}
                           onClick={(event) => press(event, item.key, op)}
-                          className={className}
                         >
-                          {label} <span className="sr-only">(photo {index + 1})</span>
+                          {label} <span {...parts.srOnly}>(photo {index + 1})</span>
                         </button>
                       ))}
                     </div>
@@ -276,9 +306,7 @@ export function PhotoField(props: PhotoFieldProps) {
       )}
       {children}
       <input ref={attach} type="file" multiple onChange={pick} {...input} />
-      <p role="status" className="sell-photo-status">
-        {status}
-      </p>
+      <p {...parts.status}>{status}</p>
     </>
   );
 }

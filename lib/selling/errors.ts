@@ -45,6 +45,8 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
   ["photo-size", { message: `Each photo must be ${PHOTO_MAX_MB} MB or less.`, field: "photos" }],
   ["photo-count", { message: `You can add up to ${PHOTOS_PER_LISTING} photos.`, field: "photos" }],
   ["photo-unreadable", { message: "We couldn't read one of the photos. Try another.", field: "photos" }],
+  // Edit shop: a photo chosen with a save that went wrong isn't kept, so it's asked for again (amendment 13.6).
+  ["photo-again", { message: "Choose your photo again.", field: "photos" }],
   ["alt-length", { message: `Keep each photo's description to ${ALT_MAX} characters.`, field: "alt" }],
 ]);
 

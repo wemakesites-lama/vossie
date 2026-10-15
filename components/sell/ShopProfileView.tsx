@@ -58,6 +58,7 @@ export function ShopProfileView(props: ShopProfileViewProps) {
           current={shop.image?.src ?? null}
           categorySlug={shop.categorySlug}
           remove="checkbox"
+          removeChecked={typed?.removePhoto === "yes"}
         />
         <CampusSpotsFields
           ids={IDS}

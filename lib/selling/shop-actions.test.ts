@@ -4,7 +4,7 @@ import { readFormState } from "@/lib/auth/form-state";
 import { hashToken } from "@/lib/auth/secrets";
 import { getPhoto, photoIdOf } from "@/lib/data/photos";
 import { createSession } from "@/lib/data/sessions";
-import { emptyDraft, getOnboardingDraft, getShopOf, saveOnboardingDraft } from "@/lib/data/shops";
+import { createShop, emptyDraft, getOnboardingDraft, getShopOf, saveOnboardingDraft } from "@/lib/data/shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { KEEP_MAX } from "@/lib/messaging/rules";
 import { ascii, containsText, GPS, pngBytes } from "@/tests/helpers/image-bytes";
@@ -244,6 +244,22 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     expect(request.updatedTags).toEqual([]);
   });
 
+  it("keeps Remove photo ticked when a save fails, and asks for a chosen photo again in its place (amendment 13.6)", async () => {
+    await signedInAs("acc-seller");
+    await redirectOf(() => saveShopProfile(profile({ name: "", removePhoto: "yes" })));
+    expect(await readFormState(PROFILE_FORM)).toMatchObject({ errors: ["name-missing"], values: { removePhoto: "yes" } });
+    await redirectOf(() => saveShopProfile(profile({ name: "" })));
+    expect((await readFormState(PROFILE_FORM))?.values.removePhoto).toBe("");
+    // A good photo chosen with a save that fails isn't kept, so the summary asks for it, between the fields before
+    // and after it.
+    await redirectOf(() => saveShopProfile(profile({ name: "", pickupPoint: [], photo: photoFile(pngBytes()) })));
+    expect((await readFormState(PROFILE_FORM))?.errors).toEqual(["name-missing", "photo-again", "points-missing"]);
+    expect(sampleStore().photos.size).toBe(0);
+    // A photo that was refused says why instead.
+    await redirectOf(() => saveShopProfile(profile({ name: "", photo: photoFile(ascii("not a photo"), "shop.png") })));
+    expect((await readFormState(PROFILE_FORM))?.errors).toEqual(["name-missing", "photo-type"]);
+  });
+
   it("keeps only bounded values when a save fails: a category that isn't one is kept as nothing (amendment 10.2)", async () => {
     await signedInAs("acc-seller");
     const huge = "x".repeat(1_000_000);
@@ -261,6 +277,20 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     expect((await getShopOf("acc-seller"))?.shop).toMatchObject({ slug: "gadgets", slugChanged: true });
     await redirectOf(() => saveShopProfile(profile({ slug: "gizmos" })));
     expect((await getShopOf("acc-seller"))?.shop.slug).toBe("gadgets");
+  });
+
+  it("never gives another shop a link this one has changed from (amendment 13.7)", async () => {
+    await signedInAs("acc-seller");
+    await redirectOf(() => saveShopProfile(profile({ slug: "gadgets" })));
+    expect((await getShopOf("acc-seller"))?.shop.slug).toBe("gadgets");
+    await createShop("acc-student", { ...finishedDraft(), image: null }, NOW);
+    sampleStore().sellerProfiles.get("acc-student")!.status = "approved";
+    await signedInAs("acc-student");
+    await redirectOf(() =>
+      saveShopProfile(profile({ name: "Zola's Bakes", category: "food", pickupPoint: "pp-midrand-library", slug: "tech-corner" })),
+    );
+    expect((await readFormState(PROFILE_FORM))?.errors).toEqual(["slug-taken"]);
+    expect((await getShopOf("acc-student"))?.shop.slug).toBe("zolas-bakes");
   });
 
   it("swaps the shop photo, or goes back to the category's picture", async () => {
