@@ -19,11 +19,13 @@ export async function Notifications() {
   return <NotificationsView items={items} now={now} />;
 }
 
-/** The list's room while it streams in. */
+/**
+ * The list's room while it streams in: two rows, the height of the sample accounts' two notifications, so the footer
+ * holds still when they arrive (messaging plan, Task 16).
+ */
 export function NotificationsSkeleton() {
   return (
     <div className="notes-skeleton" aria-hidden="true">
-      <span className="skeleton notes-skeleton-row" />
       <span className="skeleton notes-skeleton-row" />
       <span className="skeleton notes-skeleton-row" />
     </div>

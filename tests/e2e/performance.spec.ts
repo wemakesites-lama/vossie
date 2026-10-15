@@ -64,35 +64,48 @@ for (const [name, path, saved] of PAGES) {
   });
 }
 
-test("a first visit to the account page, signed in, stays inside the JavaScript budget", async ({
-  page,
-  context,
-  browser,
-  baseURL,
-}) => {
-  test.skip(test.info().project.name !== "phone-390", "Measured once, at phone size");
-  // Sign in in a separate browser context, and copy only the session cookie across, so nothing here is cached yet.
-  const other = await browser.newContext();
-  const signingIn = await other.newPage();
-  await signingIn.goto(`${baseURL}/login`);
-  await signingIn.locator("main").getByRole("button", { name: "Student, Midrand", exact: true }).click();
-  await signingIn.waitForURL(/\/account$/);
-  await context.addCookies((await other.cookies()).filter((cookie) => cookie.name === "vossie_session"));
-  await other.close();
+// Pages for a signed-in visitor, measured on a first visit with only the session cookie copied in, so nothing is
+// cached yet (accounts plan, Task 14; messaging plan, Task 16).
+const SIGNED_IN_PAGES: ReadonlyArray<[name: string, path: string, account: string]> = [
+  ["account page", "/account", "Student, Midrand"],
+  ["inbox page", "/messages", "Student, Midrand"],
+  ["thread page", "/messages/conv-s1", "Seller, Tech corner"],
+  ["composer page", "/listings/l-002/message", "Student, Midrand"],
+  ["report page", "/report?listing=l-002", "Student, Midrand"],
+  ["notifications page", "/notifications", "Seller, Tech corner"],
+];
 
-  let scriptBrotli = 0;
-  const pending: Array<Promise<void>> = [];
-  page.on("response", (response) => {
-    if (response.request().resourceType() !== "script") return;
-    pending.push(
-      response.body().then((body) => {
-        scriptBrotli += brotliCompressSync(body, { params: { [constants.BROTLI_PARAM_QUALITY]: 5 } }).length;
-      }),
-    );
+for (const [name, path, account] of SIGNED_IN_PAGES) {
+  test(`a first visit to the ${name}, signed in, stays inside the JavaScript budget`, async ({
+    page,
+    context,
+    browser,
+    baseURL,
+  }) => {
+    test.skip(test.info().project.name !== "phone-390", "Measured once, at phone size");
+    // Sign in in a separate browser context, and copy only the session cookie across, so nothing here is cached yet.
+    const other = await browser.newContext();
+    const signingIn = await other.newPage();
+    await signingIn.goto(`${baseURL}/login`);
+    await signingIn.locator("main").getByRole("button", { name: account, exact: true }).click();
+    await signingIn.waitForURL(/\/account$/);
+    await context.addCookies((await other.cookies()).filter((cookie) => cookie.name === "vossie_session"));
+    await other.close();
+
+    let scriptBrotli = 0;
+    const pending: Array<Promise<void>> = [];
+    page.on("response", (response) => {
+      if (response.request().resourceType() !== "script") return;
+      pending.push(
+        response.body().then((body) => {
+          scriptBrotli += brotliCompressSync(body, { params: { [constants.BROTLI_PARAM_QUALITY]: 5 } }).length;
+        }),
+      );
+    });
+    await page.goto(path, { waitUntil: "networkidle" });
+    await expect(page.locator("main h1")).toBeVisible();
+    await Promise.all(pending);
+    console.log(`${name} (signed in): ${JSON.stringify({ scriptBrotli })}`);
+    expect(scriptBrotli, "JavaScript, brotli as a host serves it").toBeLessThanOrEqual(150 * 1024);
   });
-  await page.goto("/account", { waitUntil: "networkidle" });
-  await expect(page.getByRole("heading", { level: 2, name: "Thandi" })).toBeVisible();
-  await Promise.all(pending);
-  console.log(`account page (signed in): ${JSON.stringify({ scriptBrotli })}`);
-  expect(scriptBrotli, "JavaScript, brotli as a host serves it").toBeLessThanOrEqual(150 * 1024);
-});
+}

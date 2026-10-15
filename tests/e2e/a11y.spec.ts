@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { newBuyer, reply, sellerPage, sendFirstMessage, signUp } from "./helpers/messaging";
 
 test.use({ reducedMotion: "reduce" });
 
@@ -322,5 +323,104 @@ test("the menu, signed in", async ({ page }) => {
   await signInAsSample(page);
   await page.getByRole("button", { name: "Menu", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Menu" }).getByRole("button", { name: "Sign out" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+// --- Messaging (messaging plan, Task 16) --------------------------------------------------------------------------
+
+/**
+ * Signs in with a sample account's button, landing on `next`. The sample student is only read here, except that
+ * opening a thread or /notifications marks the student's sample notifications read, which no test counts.
+ */
+async function signInTo(page: Page, label: string, next: string) {
+  await page.goto(`/login?next=${encodeURIComponent(next)}`);
+  await page.locator("main").getByRole("button", { name: label, exact: true }).click();
+  await page.waitForURL((url) => `${url.pathname}${url.search}` === next);
+}
+
+test("the composer, with its tips", async ({ page }) => {
+  await signInTo(page, "Student, Midrand", "/listings/l-002/message");
+  await expect(page.getByRole("heading", { level: 1, name: "Message Book swap" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("the composer, with errors and then the scam check", async ({ page }) => {
+  // Thandi has a conversation about l-007, so the mentor, who has none, sees the form. A failed post and the check
+  // only write form state for this browser's session.
+  await signInTo(page, "Mentor", "/listings/l-007/message");
+  await page.locator("main").getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+  await page.getByLabel("Your message", { exact: true }).fill("Can I pay a deposit first?");
+  await page.locator("main").getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.getByRole("alert", { name: "Check this before you send" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("the inbox, Buying and Selling", async ({ page }) => {
+  await signInTo(page, "Seller, Tech corner", "/messages?tab=selling");
+  await expect(page.getByRole("link", { name: "Selling", exact: true })).toHaveAttribute("aria-current", "page");
+  expect(await seriousIssues(page)).toEqual([]);
+  // Signed out first: the sign-in page shows its sample accounts only to a visitor who isn't signed in.
+  await page.context().clearCookies();
+  await signInTo(page, "Student, Midrand", "/messages");
+  await expect(page.locator("main .inbox-row").first()).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("a thread, as the seller, with Mark as completed", async ({ page }) => {
+  // Sipho has read everything in the sample conversations, so opening one changes nothing.
+  await signInTo(page, "Seller, Tech corner", "/messages/conv-s1");
+  await expect(page.getByRole("button", { name: "Mark as completed" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("a thread, as the buyer, with a sale to confirm", async ({ page, browser, baseURL }) => {
+  // A conversation of the test's own: the sample one confirms itself a week after 13 October (spec 2.5).
+  await signUp(page, newBuyer());
+  const id = await sendFirstMessage(page, "l-001", "Hi! Is it still available?");
+  const seller = await sellerPage(browser, baseURL!);
+  await seller.goto(`/messages/${id}`);
+  await reply(seller, "Yes, it is.");
+  await seller.locator("main").getByRole("button", { name: "Mark as completed", exact: true }).click();
+  await expect(seller.locator("main .status-pill").filter({ visible: true })).toHaveText("Done");
+  await seller.context().close();
+  await page.reload();
+  await expect(page.getByRole("region", { name: "Did the sale happen?" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("report, with an error", async ({ page }) => {
+  await signInTo(page, "Mentor", "/report?listing=l-002");
+  await page.locator("main").getByRole("button", { name: "Send report", exact: true }).click();
+  await expect(page.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("the report's thank-you", async ({ page }) => {
+  await page.goto("/report/sent?listing=l-001");
+  await expect(page.getByRole("link", { name: "Back to the listing" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("notifications", async ({ page }) => {
+  await signInTo(page, "Student, Midrand", "/notifications");
+  await expect(page.getByRole("heading", { level: 1, name: "Notifications" })).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+});
+
+test("the header with a new notification's badge, and the account page's counts", async ({ page, browser, baseURL }) => {
+  // A buyer of the test's own, so the badge is certain to be there (plan decision 23).
+  await signUp(page, newBuyer());
+  const id = await sendFirstMessage(page, "l-001", "Hi!");
+  const seller = await sellerPage(browser, baseURL!);
+  await seller.goto(`/messages/${id}`);
+  await reply(seller, "Yes, it is.");
+  await seller.context().close();
+  await page.goto("/");
+  await expect(page.locator(".site-header .hdr-badge-alert")).toBeVisible();
+  expect(await seriousIssues(page)).toEqual([]);
+  await page.goto("/account");
+  await expect(page.getByRole("link", { name: /^Notifications\s*,\s*1 new$/ })).toBeVisible();
   expect(await seriousIssues(page)).toEqual([]);
 });

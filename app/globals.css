@@ -7338,18 +7338,21 @@
     background: var(--color-panel);
   }
 
+  /* The real bar, list and rows, measured (messaging plan, Task 16): a row with its three lines is about 95px, and the
+     list's margin and lines add 12px and 3px. A grid's margins don't collapse, so the bar keeps its 16px. */
   .inbox-skeleton {
     display: grid;
-    gap: 12px;
+    gap: 3px;
   }
 
   .inbox-skeleton-bar {
     height: 44px;
     margin-top: 16px;
+    margin-bottom: 9px;
   }
 
   .inbox-skeleton-row {
-    height: 80px;
+    height: 96px;
   }
 
   @media (min-width: 48rem) and (min-height: 30rem) {
@@ -7649,18 +7652,24 @@
     background: var(--color-panel);
   }
 
+  /* The real rows, measured (messaging plan, Task 16): a sentence wraps to two lines on a phone, about 75px a row, and
+     fits on one (56px) from the tablet step. The lines between rows add 1.5px each. */
   .notes-skeleton {
     display: grid;
-    gap: 12px;
+    gap: 3px;
   }
 
   .notes-skeleton-row {
-    height: 56px;
+    height: 75px;
   }
 
   @media (min-width: 48rem) and (min-height: 30rem) {
     .notes-page {
       padding-inline: 40px;
+    }
+
+    .notes-skeleton-row {
+      height: 56px;
     }
   }
 }
