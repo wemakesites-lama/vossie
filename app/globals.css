@@ -7720,11 +7720,26 @@
   /* .page and .sell-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
   .sell-page {
     padding: 24px 16px 64px;
+    /* The page is at least a screen tall, less the header (--sell-header: 64px on phones, 78px from the tablet step,
+       122px with the desktop's quick links). A short page (an empty tab, a step with little on it) would otherwise let
+       the footer into the first screen, and it moved when the skeleton gave way to the content. With this, the footer
+       stays below the fold, so a short page leaves blank space under it instead of moving (selling plan, amendment
+       15.1). svh, the small viewport, so a phone's address bar can't pull the footer up; vh first for older browsers. */
+    --sell-header: 64px;
+    min-height: calc(100vh - var(--sell-header));
+    min-height: calc(100svh - var(--sell-header));
   }
 
   @media (min-width: 48rem) and (min-height: 30rem) {
     .sell-page {
+      --sell-header: 78px;
       padding: 40px 40px 96px;
+    }
+  }
+
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .sell-page {
+      --sell-header: 122px;
     }
   }
 
