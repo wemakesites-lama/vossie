@@ -267,7 +267,10 @@ export async function getHubBanner(): Promise<HubBanner> {
   return hubBanner;
 }
 
-/** Everything a listing page needs (browse and listing spec 6.3), for any listing, paused and sold ones included. */
+/**
+ * Everything a listing page needs (browse and listing spec 6.3), paused and sold ones included; null for a draft or
+ * a listing whose shop is waiting for approval (selling plan decision 2).
+ */
 export async function getListingDetail(id: string): Promise<ListingDetail | null> {
   "use cache";
   tagListings();

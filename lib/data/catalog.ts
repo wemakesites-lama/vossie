@@ -49,11 +49,12 @@ export function toSeller(row: SellerRow): Seller {
 
 /**
  * A listing as buyers see it: its shop's badge (shopping spec 6.1), its photos with the title for an empty
- * description (selling spec 2.5) or its category's picture when it has none, and paused while its shop is.
+ * description (selling spec 2.5) or its category's picture when it has none, and paused while its shop is (a sold one
+ * stays sold: it isn't coming back either way).
  */
 export function toListing(row: ListingRow, shop: SellerRow): Listing {
   const [cover, ...more] = row.photos.map((photo) => ({ src: photo.src, alt: photo.alt || row.title }));
-  const paused = row.state === "draft" || shopStatus(shop) === "paused";
+  const paused = row.state === "draft" || (shopStatus(shop) === "paused" && row.state !== "sold");
   return {
     id: row.id,
     title: row.title,
@@ -88,7 +89,7 @@ export function storefrontRow(slug: string): SellerRow | null {
   return row && hasStorefront(row) ? row : null;
 }
 
-/** Any shop's seller, for a listing's page (its shop has a storefront, or the listing wouldn't have a page). */
+/** A shop's seller, for a listing's page: null for a shop waiting for approval, which has no storefront. */
 export function sellerFor(slug: string): Seller | null {
   const row = storefrontRow(slug);
   return row ? toSeller(row) : null;
