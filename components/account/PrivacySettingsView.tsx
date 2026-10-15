@@ -51,7 +51,9 @@ export function PrivacySettingsView({ consent, deleteErrors, reports }: PrivacyS
         </h2>
         <p>
           A file of what Vossie holds about you: your account, your consent, when you signed in, your conversations,
-          your reports and your notifications. Once selling opens, it will hold your listings too.
+          your reports and your notifications. If you sell, it holds your shop and your listings too, with each
+          photo&apos;s address so you can download it. If you have started to set up your shop but not sent it, it holds
+          your answers so far too.
         </p>
         {/* A file from a route handler, not a page, so a plain link. */}
         <p>
@@ -94,7 +96,10 @@ export function PrivacySettingsView({ consent, deleteErrors, reports }: PrivacyS
             your messages, reports and notifications go, and the other person keeps only their own side of each
             conversation, with your name shown as &quot;Deleted account&quot;;
           </li>
-          <li>once selling opens, your shop and listings go too.</li>
+          <li>
+            your shop, your listings and every photo you uploaded go too, along with any shop answers you haven&apos;t
+            sent, and your shop&apos;s link stops working.
+          </li>
         </ul>
         <p>Saved listings stay on this device until you clear them.</p>
         <ErrorSummary id="account-privacy-delete-summary" errors={deleteErrors} />

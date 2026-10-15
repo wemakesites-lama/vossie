@@ -58,6 +58,11 @@ describe("How it works (info and system spec 3)", () => {
       "What can I do on Vossie today?",
     ]);
     expect(within(questions).getByText(/Browse every campus, save listings on your device and share them/)).toBeInTheDocument();
+    // Selling is open now (selling plan, Task 15): the answers say how to start, and that a preview forgets.
+    expect(within(questions).getByText(/press Start selling on Sell, and answer five short questions/)).toBeInTheDocument();
+    expect(within(questions).getByText(/set up a shop of your own/)).toBeInTheDocument();
+    expect(within(questions).getByText(/can disappear when the server restarts/)).toBeInTheDocument();
+    expect(within(questions).queryByText(/once selling opens|Selling arrives/)).toBeNull();
   });
 
   it("is not a draft", () => {

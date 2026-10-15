@@ -146,7 +146,7 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
   it("says what messaging keeps, for how long, and what deleting your account removes (messaging plan, Task 14)", () => {
     render(<PrivacyPage />);
     const today = screen.getByRole("region", { name: "What this site stores today" });
-    expect(within(today).getByText(/your messages, your reports and your notifications in its memory only/)).toBeInTheDocument();
+    expect(within(today).getByText(/your messages, your reports, your notifications and, if you sell, .* in its memory only/)).toBeInTheDocument();
     const account = screen.getByRole("region", { name: "Your account" });
     expect(within(account).getByText("Your notifications.")).toBeInTheDocument();
     const keep = screen.getByRole("region", { name: "How long we keep it" });
@@ -155,6 +155,25 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     // The other side keeps its own messages and sees "Deleted account" (messaging plan, amendment 3.9).
     expect(within(keep).getByText(/keeps only their own messages, and your name shows as "Deleted account"/)).toBeInTheDocument();
     expect(within(keep).queryByText(/before messaging opens/)).toBeNull();
+  });
+
+  it("says what selling keeps, what happens to a photo's hidden data, and what deleting removes (selling plan, Task 15)", () => {
+    render(<PrivacyPage />);
+    const today = screen.getByRole("region", { name: "What this site stores today" });
+    expect(within(today).getByText(/your shop, your listings and their photos in its memory only/)).toBeInTheDocument();
+    // Photos are kept by the device that loaded them, and a deleted one can stay there (amendment 9.4).
+    expect(within(today).getByText(/a copy can stay on a device that already loaded it/)).toBeInTheDocument();
+    const account = screen.getByRole("region", { name: "Your account" });
+    expect(within(account).getByText(/hidden data such as your location is removed from every photo/)).toBeInTheDocument();
+    // What stays is only what the picture needs (amendment 8; selling spec 8.4).
+    expect(within(account).getByText(/only what a photo needs to show properly/)).toBeInTheDocument();
+    // The wizard's draft is held, and goes with the account (amendment 9.6).
+    expect(within(account).getByText(/kept as a draft until you send your application/)).toBeInTheDocument();
+    expect(within(account).queryByText(/once it opens/)).toBeNull();
+    const keep = screen.getByRole("region", { name: "How long we keep it" });
+    expect(within(keep).getByText(/every photo you uploaded/)).toBeInTheDocument();
+    expect(within(keep).getByText(/any shop answers you had not sent/)).toBeInTheDocument();
+    expect(within(keep).getByText(/shops, listings and photos live in the server/)).toBeInTheDocument();
   });
 
   it("names every vossie_ cookie and browser store the code uses, so a new one can't slip past the policy", () => {

@@ -38,9 +38,10 @@ const SECTIONS: readonly InfoSection[] = [
       <>
         <p>
           Vossie is still a preview. If you sign in, the server keeps your account, your sign-ins, your consent, your
-          messages, your reports and your notifications in its memory only, so they are wiped whenever it restarts, and
-          no email is sent (the sign-in code shows on the screen). Apart from that, a few small things are kept on your
-          own device, so the site can remember your choices.
+          messages, your reports, your notifications and, if you sell, your shop, your listings and their photos in its
+          memory only, so they are wiped whenever it restarts, and no email is sent (the sign-in code shows on the
+          screen). Apart from that, a few small things are kept on your own device, so the site can remember your
+          choices.
         </p>
         <h3>Two first-party cookies</h3>
         <p>
@@ -102,9 +103,16 @@ const SECTIONS: readonly InfoSection[] = [
             The campus updates form in the footer doesn&apos;t send or store your email address yet. When there is a real
             mailing list, it will ask for your consent first, and this policy will say so.
           </li>
+          <li>
+            Your browser keeps the listing photos it loads, so it doesn&apos;t use your data to fetch them again. If a
+            photo is deleted, a copy can stay on a device that already loaded it until that browser clears its cached
+            images and files.
+          </li>
           <li>Vossie uses no advertising or tracking cookies, and no analytics.</li>
         </ul>
-        <p>Clearing your browser&apos;s cookies and site data removes everything listed here.</p>
+        <p>
+          Clearing your browser&apos;s cookies, site data, and cached images and files removes everything listed here.
+        </p>
       </>
     ),
   },
@@ -115,7 +123,7 @@ const SECTIONS: readonly InfoSection[] = [
       <>
         <p>
           Messaging, selling and, later, keeping your saves on every device need an account. This is what your account
-          holds and why, including what selling will add once it opens.
+          holds, and why.
         </p>
         <ul>
           <li>
@@ -145,9 +153,12 @@ const SECTIONS: readonly InfoSection[] = [
             only you see. Allowed under POPIA section 11: needed to run your account.
           </li>
           <li>
-            <strong>If you sell: your shop and listings.</strong> Shop name, tagline, about text, photos, campus, pickup
-            points and what you list, shown to buyers. Hidden location data, such as GPS, is removed from photos you
-            upload. Allowed under POPIA section 11: needed to run your shop.
+            <strong>If you sell: your shop, your listings and their photos.</strong> Shop name, tagline, about text,
+            photo, campus, pickup points and what you list, shown to buyers, and your application while the Hub checks
+            it. Your answers while you set up your shop are kept as a draft until you send your application. Your
+            browser makes photos smaller when it can, and hidden data such as your location is removed from every photo
+            before Vossie keeps it: only what a photo needs to show properly, such as its colours and which way up it
+            is, stays. Allowed under POPIA section 11: needed to run your shop.
           </li>
           <li>
             <strong>If you are in the Hub&apos;s programme: mentors&apos; notes.</strong> Mentors can keep private notes
@@ -175,13 +186,14 @@ const SECTIONS: readonly InfoSection[] = [
         <li>Your account details stay until you delete your account.</li>
         <li>
           Deleting your account removes your account, your sign-in sessions, your record of consent, your messages,
-          your reports and your notifications straight away, along with your shop and listings if you have them. The
-          other person in a conversation keeps only their own messages, and your name shows as &quot;Deleted
-          account&quot;.
+          your reports and your notifications straight away, along with your shop, your listings, every photo you
+          uploaded and any shop answers you had not sent, if you sell. The other person in a conversation keeps only
+          their own messages, and your name shows as &quot;Deleted account&quot;.
         </li>
         <li>
-          While Vossie is a preview, messages, reports and notifications live in the server&apos;s memory and go
-          whenever it restarts. Eduvos will set how long they are kept before launch, and this policy will say so.
+          While Vossie is a preview, messages, reports, notifications, shops, listings and photos live in the
+          server&apos;s memory and go whenever it restarts. Eduvos will set how long they are kept before launch, and
+          this policy will say so.
         </li>
         <li>
           Server logs are kept for a short time. The hosting service decides how long, and this policy will say once it
@@ -285,7 +297,7 @@ export default function PrivacyPage() {
     <InfoPage
       title="Privacy policy"
       lede="How Vossie handles your personal information, under the Protection of Personal Information Act (POPIA)."
-      updated="2026-10-14"
+      updated="2026-10-15"
       draft
       sections={SECTIONS}
     />

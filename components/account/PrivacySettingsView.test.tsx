@@ -89,4 +89,16 @@ describe("Privacy settings (accounts spec 3.3)", () => {
       "Casio fx-991ZA Plus calculator Misleading listing · 1 Oct · Closed",
     ]);
   });
+
+  it("says the download and the deletion take in your shop, its listings and photos (selling plan, Task 15)", () => {
+    render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} />);
+    const download = screen.getByRole("region", { name: "Download your data" });
+    expect(within(download).getByText(/If you sell, it holds your shop and your listings too/)).toBeInTheDocument();
+    // The wizard's answers so far are in the file too (selling plan, amendment 9.6).
+    expect(within(download).getByText(/set up your shop but not sent it, it holds your answers so far too/)).toBeInTheDocument();
+    const deletion = screen.getByRole("region", { name: "Delete your account" });
+    expect(within(deletion).getByText(/every photo you uploaded go too/)).toBeInTheDocument();
+    expect(within(deletion).getByText(/any shop answers you haven't sent/)).toBeInTheDocument();
+    expect(screen.queryByText(/once selling opens/i)).toBeNull();
+  });
 });

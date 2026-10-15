@@ -106,13 +106,14 @@ const SECTIONS: readonly InfoSection[] = [
         </p>
         <h3>How do I become a seller?</h3>
         <p>
-          Sign in, then set up your shop from Sell once selling opens. The Incubation Hub checks it, and then you can
-          start listing.
+          Sign in, press Start selling on Sell, and answer five short questions about your shop. The Incubation Hub
+          checks it, usually within two working days, and you can prepare listings while it does.
         </p>
         <h3>What can I do on Vossie today?</h3>
         <p>
           Browse every campus, save listings on your device and share them, sign in with your Eduvos email, message
-          sellers and report a problem. Selling arrives in the next stage, so this page describes how it will work.
+          sellers, report a problem and set up a shop of your own. While Vossie is a preview, what you add lives in the
+          server&apos;s memory, so it can disappear when the server restarts.
         </p>
       </>
     ),
@@ -124,7 +125,7 @@ export default function HowItWorksPage() {
     <InfoPage
       title="How Vossie works"
       lede="Find it, message the seller, meet on campus, then pay or swap."
-      updated="2026-10-14"
+      updated="2026-10-15"
       sections={SECTIONS}
     />
   );
