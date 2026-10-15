@@ -98,4 +98,9 @@ describe("the Hub's post editor (staff tools spec 2.4)", () => {
     expect(sastToUtc("2026-10-15", "1pm")).toBeNull();
     expect(utcToSastFields("2026-10-14T22:30:00.000Z")).toEqual({ date: "2026-10-15", time: "00:30" });
   });
+
+  it("reads SAST across New Year's Eve, into the year before in UTC (amendment 12.3)", () => {
+    expect(sastToUtc("2027-01-01", "00:30")).toBe("2026-12-31T22:30:00.000Z");
+    expect(utcToSastFields("2026-12-31T22:30:00.000Z")).toEqual({ date: "2027-01-01", time: "00:30" });
+  });
 });

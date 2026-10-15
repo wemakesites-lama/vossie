@@ -49,14 +49,19 @@ export function statusWords(status: SellerStatus): string {
 }
 
 /**
- * One CSV cell (RFC 4180). Text that starts with =, +, - or @ gets an apostrophe first, so a spreadsheet never runs a
- * shop's name as a formula (plan decision 17). A cell with a comma, a quote or a line break is quoted.
+ * One CSV cell (RFC 4180). Text always goes in double quotes, with any quotes inside doubled, so a separator that isn't
+ * a comma can't split it: where Excel's list separator is a semicolon, an unquoted `Bakes;=1+1;` would become three
+ * cells, the second a formula. Text that starts with =, +, -, @, a tab or a carriage return gets an apostrophe first,
+ * so a spreadsheet never runs a shop's name as a formula (plan decision 17, amendment 12.1). Numbers go in bare.
  */
 export function csvCell(value: string | number): string {
-  let text = String(value);
-  if (typeof value === "string" && /^[=+\-@]/.test(text)) text = `'${text}`;
-  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  if (typeof value === "number") return String(value);
+  const text = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return `"${text.replace(/"/g, '""')}"`;
 }
+
+/** A UTF-8 byte-order mark: without it Excel reads the file as ANSI and garbles "Zoë's Café" (amendment 12.2). */
+const BYTE_ORDER_MARK = "\uFEFF";
 
 const CSV_HEADER = [
   "Shop",
@@ -71,7 +76,10 @@ const CSV_HEADER = [
   "Flags",
 ];
 
-/** The dashboard's table as a CSV file (spec 2.6), one line per shop, each ending in CRLF. No messages, no emails. */
+/**
+ * The dashboard's table as a CSV file (spec 2.6), one line per shop, each ending in CRLF. No messages, no emails. It
+ * starts with a byte-order mark, so the route sends the body as it is (amendment 12.2).
+ */
 export function mentorCsv(rows: readonly MentoredShop[], campusNames: ReadonlyMap<string, string>): string {
   const lines = [
     CSV_HEADER,
@@ -88,5 +96,5 @@ export function mentorCsv(rows: readonly MentoredShop[], campusNames: ReadonlyMa
       row.flags.map((flag) => FLAG_WORDS[flag].label).join("; "),
     ]),
   ];
-  return lines.map((cells) => `${cells.map(csvCell).join(",")}\r\n`).join("");
+  return BYTE_ORDER_MARK + lines.map((cells) => `${cells.map(csvCell).join(",")}\r\n`).join("");
 }

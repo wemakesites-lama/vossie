@@ -100,3 +100,12 @@ describe("messageTime (messaging spec 3.3)", () => {
     expect(messageTime("2025-12-30T08:00:00Z", now)).toBe("30 Dec 2025, 10:00");
   });
 });
+
+describe("the unit tests' own clock (staff tools plan amendment 12.3)", () => {
+  it("runs in UTC, so a test can't pass only because this machine is set to South African time", () => {
+    expect(new Date(2026, 0, 1).getTimezoneOffset()).toBe(0);
+    // 00:30 in South Africa on the 15th is 22:30 UTC on the 14th: the machine's own date would say the 15th.
+    expect(new Date("2026-10-14T22:30:00Z").getDate()).toBe(14);
+    expect(Intl.DateTimeFormat().resolvedOptions().timeZone).toBe("UTC");
+  });
+});

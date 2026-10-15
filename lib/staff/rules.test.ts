@@ -38,11 +38,21 @@ describe("the staff forms' limits (plan decisions 10, 13, 16 and 18)", () => {
     expect(checkPointName("x".repeat(61)).error).toBe("point-name-length");
   });
 
+  it("takes a pickup point's name at both ends of 2 to 60 characters", () => {
+    expect(checkPointName("AB")).toEqual({ value: "AB", error: null });
+    expect(checkPointName("x".repeat(60)).error).toBeNull();
+  });
+
   it("asks a slot request for help of up to 300 characters, and an optional time of up to 100", () => {
     expect(checkHelp("").error).toBe("help-missing");
     expect(checkHelp("x".repeat(301)).error).toBe("help-length");
     expect(checkTime("")).toEqual({ value: "", error: null });
     expect(checkTime("x".repeat(101)).error).toBe("time-length");
+  });
+
+  it("takes a time that suits at exactly 100 characters, and help at exactly 300", () => {
+    expect(checkTime("x".repeat(100)).error).toBeNull();
+    expect(checkHelp("x".repeat(300)).error).toBeNull();
   });
 
   it("reads a date as YYYY-MM-DD, only when it's a real day", () => {

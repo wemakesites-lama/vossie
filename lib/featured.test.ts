@@ -60,6 +60,19 @@ describe("drawFeatured (spec 7.10)", () => {
     expect(pinned[0].slug).toBe("a");
   });
 
+  it("features a seller pinned twice once, and still fills the places (staff tools spec 2.8)", () => {
+    const drawn = drawFeatured(sellers, "all", "2026-10-12", 4, { pinned: ["a", "a"] }).map((s) => s.slug);
+    expect(drawn[0]).toBe("a");
+    expect(drawn).toHaveLength(4);
+    expect(new Set(drawn).size).toBe(4);
+  });
+
+  it("puts the campus's own sellers first among the resting ones too (staff tools plan amendment 3)", () => {
+    // On 14 October the plain rotation would start with a, a Midrand seller. Everyone but f is resting.
+    const drawn = drawFeatured(sellers, "pretoria", "2026-10-14", 5, { resting: new Set(["a", "b", "c", "d"]) });
+    expect(drawn.map((s) => s.campusSlug)).toEqual(["online", "pretoria", "pretoria", "midrand", "midrand"]);
+  });
+
   it("ignores a pin for a seller who can't be featured, and never shows more than the places", () => {
     expect(drawFeatured(sellers, "all", "2026-10-12", 4, { pinned: ["e", "nobody"] }).map((s) => s.slug)).not.toContain(
       "e",

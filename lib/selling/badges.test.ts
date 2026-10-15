@@ -85,6 +85,11 @@ describe("the badge a shop has earned (staff tools spec 2.7, the trust page's ru
     expect(earnedBadge(counts(20, 20, 17, 5), "2026-09-14T08:00:01.000Z", NOW)).toBe("responsive");
   });
 
+  it("is Responsive at exactly 3 enquiries when all are answered, and still New seller at 2 (the limit from both sides)", () => {
+    expect(earnedBadge(counts(3, 3, 3, 0), OLD_ACCOUNT, NOW)).toBe("responsive");
+    expect(earnedBadge(counts(2, 2, 2, 0), OLD_ACCOUNT, NOW)).toBe("new-seller");
+  });
+
   it("goes down again when the record does (a badge can go down, the trust page)", () => {
     expect(earnedBadge(counts(0, 0, 0, 9), OLD_ACCOUNT, NOW)).toBe("new-seller");
   });
