@@ -39,8 +39,8 @@ const SECTIONS: readonly InfoSection[] = [
         <p>
           Vossie is still a preview. If you sign in, the server keeps your account, your sign-ins, your consent, your
           messages, your reports and your notifications in its memory only, so they are wiped whenever it restarts, and
-          no email is sent (the sign-in code shows on the screen). Apart from that, a few small things are kept on your own device, so the site can remember your
-          choices.
+          no email is sent (the sign-in code shows on the screen). Apart from that, a few small things are kept on your
+          own device, so the site can remember your choices.
         </p>
         <h3>Two first-party cookies</h3>
         <p>
@@ -176,7 +176,9 @@ const SECTIONS: readonly InfoSection[] = [
         <li>
           Deleting your account removes your account, your sign-in sessions, your record of consent, your messages,
           your reports and your notifications straight away, along with your shop and listings if you have them. The
-          other person in a conversation keeps their own messages, with your name taken out.
+          other person in a conversation keeps their own messages, with your name taken out. When the other person is a
+          shop that answered you, the times of that conversation (when it was asked, first answered and confirmed) stay
+          with the shop, without your name, for its reply and sales badges.
         </li>
         <li>
           While Vossie is a preview, messages, reports and notifications live in the server&apos;s memory and go

@@ -7514,6 +7514,11 @@
     max-width: 36rem;
   }
 
+  /* The back link is as wide as its words, so the space beside it isn't a link. */
+  .report-column > .msg-crumb {
+    justify-self: start;
+  }
+
   .report-title {
     color: var(--color-navy);
     font-family: var(--vos-font-display);
