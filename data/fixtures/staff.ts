@@ -10,8 +10,8 @@ import { pickupPoints } from "./pickup-points";
 /** Midrand's office hours, which the seed gives to Naledi (acc-mentor), so her pages have something in them. */
 const NALEDIS_POSTS: ReadonlySet<string> = new Set(["h-002", "h-007", "h-012"]);
 
-/** When the sample pickup points were approved: before any sample listing. */
-const POINTS_SINCE = "2025-01-15T08:00:00.000Z";
+/** When the sample pickup points were approved: before any sample shop. */
+const POINTS_SINCE = "2024-12-01T08:00:00.000Z";
 
 export const samplePickupPointRows: readonly PickupPointRow[] = pickupPoints.map((point) => ({
   id: point.id,

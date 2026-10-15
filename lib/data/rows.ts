@@ -331,7 +331,7 @@ export type AuditRow = {
   at: string;
   /** The staff member who acted. Kept after their account is deleted (amendment 17). */
   staffId: string;
-  /** Their first name when they acted. */
+  /** Their first name when they acted; "Former staff member" once their account is deleted (the id stays). */
   staffName: string;
   action: AuditAction;
   targetKind: AuditTargetKind;
@@ -435,6 +435,6 @@ export type HubBookingRow = {
   status: BookingStatus;
   createdAt: string;
   answeredAt: string | null;
-  /** The staff member who answered, or null. */
+  /** The staff member who answered, or null (also once their account is deleted). */
   answeredBy: string | null;
 };
