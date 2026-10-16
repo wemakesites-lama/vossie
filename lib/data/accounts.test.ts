@@ -14,7 +14,9 @@ import {
   restoreSampleAccount,
   updateAccountDetails,
 } from "./accounts";
+import { recordAudit } from "./audit";
 import { saveFormState } from "./form-states";
+import { HUB_PHOTO_OWNER, hubCoverUse } from "./hub-posts";
 import { storePhotos } from "./photos";
 import { createReport } from "./reports";
 import { createSession } from "./sessions";
@@ -142,9 +144,9 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
   it("holds the account, its consent, and when its sessions started and end, with no ids", async () => {
     await createSession({ key: "session-key-1", accountId: "acc-seller", createdAt: NOW, expiresAt: IN_30_DAYS });
     const data = await exportAccountData("acc-seller", NOW);
-    // Messaging adds three keys (messaging plan decision 15) and selling two (selling plan decision 22), checked below;
-    // everything else is compared in full.
-    const { conversations, reports, notifications, shop, listings, ...rest } = data!;
+    // Messaging adds three keys (messaging plan decision 15), selling two (selling plan decision 22) and the staff tools
+    // three (staff tools plan decision 16, amendments 6 and 16), checked below; everything else is compared in full.
+    const { conversations, reports, notifications, shop, listings, hubRsvps, slotRequests, mentorNotes, ...rest } = data!;
     expect(rest).toEqual({
       exportedAt: NOW.toISOString(),
       account: {
@@ -169,6 +171,9 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
       "notifications",
       "shop",
       "listings",
+      "hubRsvps",
+      "slotRequests",
+      "mentorNotes",
     ]);
     expect(conversations.map((row) => [row.with, row.about])).toEqual([
       ["Thandi", "Casio fx-991ZA Plus calculator"],
@@ -178,6 +183,13 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
     expect(notifications).toHaveLength(2);
     expect(shop).toMatchObject({ name: "Tech corner", link: "tech-corner", status: "approved" });
     expect(listings.map((row) => row.title)).toEqual(["Casio fx-991ZA Plus calculator", "Gaming headset, barely used"]);
+    // Naledi's note and check-in about Sipho are his to read (staff tools plan amendment 16).
+    expect(hubRsvps).toEqual([]);
+    expect(slotRequests).toEqual([]);
+    expect(mentorNotes.map((note) => [note.kind, note.by])).toEqual([
+      ["note", "Naledi"],
+      ["check-in", "Naledi"],
+    ]);
     const text = JSON.stringify(data);
     expect(text).not.toContain("session-key-1");
     expect(text).not.toContain("acc-seller");
@@ -195,6 +207,35 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
     expect(data!.notifications).toMatchObject([
       { text: "Tech corner marked Casio fx-991ZA Plus calculator as done. Did the sale happen?", read: true },
       { text: "Tech corner replied about Gaming headset, barely used", read: false },
+    ]);
+  });
+
+  it("holds a student's RSVPs and slot requests (staff tools plan decision 16)", async () => {
+    const data = await exportAccountData("acc-student", NOW);
+    expect(data!.slotRequests.map((row) => [row.officeHours, row.status])).toEqual([
+      ["Office hours: your first listing", "open"],
+    ]);
+    expect(data!.mentorNotes).toEqual([]);
+  });
+
+  it("says where the shop stands with the Hub, and which listings it hid and why (staff tools plan amendments 25 and 35)", async () => {
+    const store = sampleStore();
+    Object.assign(store.sellerProfiles.get("acc-seller")!, {
+      status: "paused",
+      pausedBy: "staff",
+      sellerPauseHeld: true,
+      staffReason: "Selling exam answers.",
+    });
+    Object.assign(store.listings.get("l-001")!, { hiddenAt: NOW.toISOString(), hiddenReason: "Looks like a copy." });
+    const data = await exportAccountData("acc-seller", NOW);
+    expect(data!.shop).toMatchObject({
+      status: "paused",
+      standing: { declinedAt: null, pausedBy: "staff", sellerPauseHeld: true },
+      hubReason: "Selling exam answers.",
+    });
+    expect(data!.listings.map((row) => [row.title, row.hidden])).toEqual([
+      ["Casio fx-991ZA Plus calculator", { at: NOW.toISOString(), reason: "Looks like a copy." }],
+      ["Gaming headset, barely used", null],
     ]);
   });
 
@@ -287,6 +328,47 @@ describe("deleting an account (accounts spec 2.13)", () => {
     expect(store.photos.size).toBe(0);
     // The buyers keep their side of each conversation, with the listing's title (messaging plan decision 14).
     expect(store.conversations.get("conv-s2")?.listingTitle).toBe("Casio fx-991ZA Plus calculator");
+  });
+
+  it("forgets the account in the staff tools: notes about its shop and its slot requests go (staff tools plan, Task 8)", async () => {
+    await deleteAccountData("acc-seller");
+    expect(sampleStore().mentorNotes.size).toBe(0);
+    await deleteAccountData("acc-student");
+    expect(sampleStore().hubBookings.size).toBe(0);
+  });
+
+  it("keeps a staff member's notes and the audit entries they made, with no name (staff tools plan amendments 17 and 31)", async () => {
+    await recordAudit({
+      staff: { id: "acc-mentor", firstName: "Naledi" },
+      action: "note-added",
+      target: { kind: "shop", id: "tech-corner", name: "Tech corner" },
+      subjectId: "acc-seller",
+      now: NOW,
+    });
+    await deleteAccountData("acc-mentor");
+    const store = sampleStore();
+    expect([...store.auditLog.values()][0]).toMatchObject({ staffId: "acc-mentor", staffName: "Former staff member" });
+    expect([...store.mentorNotes.values()].map((note) => note.authorName)).toEqual([
+      "Former staff member",
+      "Former staff member",
+    ]);
+    expect(store.sellerProfiles.get("acc-seller")?.mentorId).toBeNull();
+  });
+
+  it("deletes a staff member's waiting cover, and keeps the Hub's covers (staff tools plan amendment 41)", async () => {
+    const [waiting, saved] = await storePhotos(
+      "acc-mentor",
+      [
+        { type: "image/png", bytes: pngBytes() },
+        { type: "image/png", bytes: pngBytes() },
+      ],
+      NOW,
+    );
+    const idOf = (src: string) => src.replace("/photos/", "");
+    Object.assign(sampleStore().photos.get(idOf(saved))!, { ownerId: HUB_PHOTO_OWNER, use: hubCoverUse("h-002") });
+    await deleteAccountData("acc-mentor");
+    expect([...sampleStore().photos.keys()]).toEqual([idOf(saved)]);
+    expect(sampleStore().photos.has(idOf(waiting))).toBe(false);
   });
 });
 

@@ -7,6 +7,7 @@ import { exportConversations, forgetAccountInMessaging, unreadCounts, type Conve
 import { exportNotifications, type NotificationExport } from "./notifications";
 import { deleteReportsBy, exportReports, type ReportExport } from "./reports";
 import { exportShop, forgetShopOf, type ListingExport, type ShopExport } from "./shops";
+import { exportStaffToolsData, forgetAccountInStaffTools, type StaffToolsExport } from "./staff-privacy";
 import { sampleStore } from "./store";
 
 // Accounts, their shops and their consent (accounts spec section 4), shaped like the Supabase calls that will replace
@@ -144,7 +145,9 @@ export async function restoreSampleAccount(email: string): Promise<Account | nul
 
 /**
  * "Download your data" (spec 3.3, plan decision 20). Messaging adds conversations, reports and notifications
- * (messaging plan decision 15); selling adds the shop and its listings (selling plan decision 22).
+ * (messaging plan decision 15); selling adds the shop and its listings (selling plan decision 22); the staff tools add
+ * the Hub's RSVPs and slot requests and the mentors' notes about the account (staff tools plan decision 16, amendment
+ * 16), and where the shop stands with the Hub (amendment 25).
  */
 export type AccountExport = {
   exportedAt: string;
@@ -166,6 +169,11 @@ export type AccountExport = {
   /** The account's shop, if it has one, and every listing in it, drafts included. */
   shop: ShopExport | null;
   listings: ListingExport[];
+  /** The Hub's events the account said it's going to, and its office-hours slot requests (staff tools plan decision 16). */
+  hubRsvps: StaffToolsExport["hubRsvps"];
+  slotRequests: StaffToolsExport["slotRequests"];
+  /** The mentors' notes and check-ins about the account, which are its to read (staff tools plan amendment 16). */
+  mentorNotes: StaffToolsExport["mentorNotes"];
 };
 
 /** The account's data, as the export gives it. Null when the account has gone. */
@@ -182,6 +190,7 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
   const conversations = await exportConversations(accountId, now);
   const [reports, notifications] = await Promise.all([exportReports(accountId), exportNotifications(accountId)]);
   const selling = await exportShop(accountId);
+  const hub = await exportStaffToolsData(accountId);
   return {
     exportedAt: now.toISOString(),
     account: {
@@ -199,6 +208,9 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
     notifications,
     shop: selling.shop,
     listings: selling.listings,
+    hubRsvps: hub.hubRsvps,
+    slotRequests: hub.slotRequests,
+    mentorNotes: hub.mentorNotes,
   };
 }
 
@@ -206,8 +218,9 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
  * Deletes an account straight away (spec 2.13): the account, its shop, its consent, its sessions and their forms'
  * state, any sign-in under way for its email, every sample outbox row addressed to its email (found by address, so
  * a row whose attempt has already ended goes too), and its code count. Messaging's tables go first (messaging plan
- * decision 14), then selling's shop, listings, photos and wizard draft (selling plan decision 22). Nothing of
- * anyone else's is touched.
+ * decision 14), then selling's shop, listings, photos and wizard draft (selling plan decision 22), then the staff
+ * tools' (staff tools plan, Task 8): notes about it, its RSVPs and slot requests go, and the audit log forgets it.
+ * Nothing of anyone else's is touched.
  */
 export async function deleteAccountData(accountId: string): Promise<void> {
   const store = sampleStore();
@@ -219,6 +232,9 @@ export async function deleteAccountData(accountId: string): Promise<void> {
   await deleteReportsBy(accountId);
   // Then its shop, the shop's listings, every photo it uploaded and its wizard draft (selling plan decision 22).
   await forgetShopOf(accountId);
+  // Then the staff tools, while its seller profile still names its shop's link (staff tools plan amendment 11): notes
+  // about it, its RSVPs and slot requests go; the audit log forgets it (staff tools plan, Task 8).
+  await forgetAccountInStaffTools(accountId);
   store.accounts.delete(accountId);
   store.sellerProfiles.delete(accountId);
   for (const [id, row] of store.consents) {

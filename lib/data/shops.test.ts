@@ -379,12 +379,15 @@ describe("the data export (plan decision 22)", () => {
       photo: "/placeholders/seller/tech-corner.svg",
       pickupPoints: ["Library entrance", "Main reception"],
       since: "2026-03",
+      standing: { declinedAt: null, pausedBy: null, sellerPauseHeld: false },
+      hubReason: null,
     });
     expect(data.listings.map((row) => row.title)).toEqual(["Casio fx-991ZA Plus calculator", "Gaming headset, barely used"]);
     expect(data.listings[0]).toMatchObject({
       state: "available",
       category: "Tech",
       pickupPoint: "Library entrance",
+      hidden: null,
       photos: [
         { address: "/placeholders/listing/tech.svg", description: "" },
         { address: "/placeholders/photo/2.svg", description: "The back of the calculator, with the battery cover" },

@@ -373,6 +373,14 @@ export type ShopExport = {
   pickupPoints: string[];
   since: string;
   createdAt: string;
+  /**
+   * Where the shop stands with the Hub (staff tools plan amendments 25 and 35): when it was declined, if it's waiting
+   * after a decline; who paused it, the seller or the Hub ("staff"); and whether the seller's own pause waits under
+   * the Hub's, to come back when the Hub lifts its pause.
+   */
+  standing: { declinedAt: string | null; pausedBy: "seller" | "staff" | null; sellerPauseHeld: boolean };
+  /** The Hub's reason for its decline or its pause, or null. */
+  hubReason: string | null;
 };
 
 export type ListingExport = {
@@ -393,6 +401,8 @@ export type ListingExport = {
   photos: { address: string; description: string }[];
   createdAt: string;
   updatedAt: string;
+  /** When the Hub hid it from buyers, and why (staff tools plan amendment 25), or null. */
+  hidden: { at: string; reason: string } | null;
 };
 
 // Retired points keep their names in the export (staff tools plan decision 10).
@@ -417,6 +427,7 @@ function listingExport(row: ListingRow): ListingExport {
     photos: row.photos.map((photo) => ({ address: photo.src, description: photo.alt })),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    hidden: row.hiddenAt ? { at: row.hiddenAt, reason: row.hiddenReason ?? "" } : null,
   };
 }
 
@@ -425,6 +436,7 @@ export async function exportShop(accountId: string): Promise<{ shop: ShopExport 
   const own = await getShopOf(accountId);
   if (!own) return { shop: null, listings: [] };
   const { shop, status } = own;
+  const profile = sampleStore().sellerProfiles.get(accountId);
   const listings = [...sampleStore().listings.values()]
     .filter((row) => row.sellerSlug === shop.slug)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -441,6 +453,13 @@ export async function exportShop(accountId: string): Promise<{ shop: ShopExport 
       pickupPoints: shop.pickupPointIds.flatMap((id) => spotName(id) ?? []),
       since: shop.since,
       createdAt: shop.createdAt,
+      standing: {
+        declinedAt: profile?.declinedAt ?? null,
+        // A Hub pause reads "staff" (amendment 35).
+        pausedBy: profile?.pausedBy ?? null,
+        sellerPauseHeld: profile?.sellerPauseHeld === true,
+      },
+      hubReason: profile?.staffReason ?? null,
     },
     listings: listings.map(listingExport),
   };

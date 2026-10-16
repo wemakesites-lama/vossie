@@ -15,6 +15,7 @@ const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new M
 vi.mock("next/headers", async () => (await import("@/tests/helpers/next-request")).nextHeaders(request));
 vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
+vi.mock("next/cache", async () => (await import("@/tests/helpers/next-request")).nextCache(request));
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
 const IN_30_DAYS = new Date("2026-11-13T08:42:00.000Z");
@@ -117,6 +118,12 @@ describe("deleting the account (accounts spec 2.13)", () => {
   it("sends a signed-out visitor to sign in, deleting nothing", async () => {
     expect(await redirectOf(() => deleteAccount(form({ confirm: "yes" })))).toBe("/login?next=%2Faccount%2Fprivacy");
     expect(sampleStore().accounts.size).toBe(5);
+  });
+
+  it("expires the Hub's cached posts, since the account's RSVPs went with it (staff tools plan, Task 8)", async () => {
+    await signedInAs("acc-student");
+    await redirectOf(() => deleteAccount(form({ confirm: "yes" })));
+    expect(request.updatedTags).toContain("hub");
   });
 });
 

@@ -399,7 +399,7 @@ export type MentorNoteRow = {
   text: string;
   /** Who wrote it, or null once their account is deleted. */
   authorId: string | null;
-  /** Their first name then, or "Deleted account". */
+  /** Their first name then, or "Former staff member" once their account is deleted (amendments 17 and 31). */
   authorName: string;
   createdAt: string;
 };
