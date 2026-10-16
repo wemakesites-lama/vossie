@@ -58,10 +58,10 @@ export type PostFields = {
 };
 
 /**
- * What a saved post has taken (amendment 26): its kind, its RSVPs and its open slot requests. A new post has none
- * (null).
+ * What a saved post has taken (amendments 26 and 42): its kind, its RSVPs made on Vossie, the going its card shows (a
+ * sample event's starting number plus those RSVPs) and its open slot requests. A new post has none (null).
  */
-export type PostTaken = { kind: HubPostKind; rsvps: number; openRequests: number };
+export type PostTaken = { kind: HubPostKind; rsvps: number; going: number; openRequests: number };
 
 const CLOCK = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
@@ -86,10 +86,10 @@ function limited(raw: string, clean: (text: string) => string, max: number, miss
 }
 
 /**
- * What a saved post with RSVPs or open slot requests can't change (amendment 26), in the form's order: its kind
- * ("post-kind-locked"), and an event's places below the RSVPs taken ("post-capacity-below"). `checkPost` runs it on
- * the typed fields; the save runs it again at the moment it writes, with the counts then (amendment 19), since an RSVP
- * can arrive between the two.
+ * What a saved post with RSVPs or open slot requests can't change (amendments 26 and 42), in the form's order: its kind
+ * once anyone has RSVP'd on Vossie or asked for a slot ("post-kind-locked"), and an event's places below the going its
+ * card shows ("post-capacity-below"). `checkPost` runs it on the typed fields; the save runs it again at the moment it
+ * writes, with the counts then (amendment 19), since an RSVP can arrive between the two.
  */
 export function postLocks(
   fields: Pick<PostFields, "kind" | "capacity">,
@@ -98,7 +98,7 @@ export function postLocks(
   if (!taken) return [];
   const locks: Array<"post-kind-locked" | "post-capacity-below"> = [];
   if (fields.kind !== taken.kind && (taken.rsvps > 0 || taken.openRequests > 0)) locks.push("post-kind-locked");
-  if (fields.kind === "event" && fields.capacity !== null && fields.capacity < taken.rsvps) {
+  if (fields.kind === "event" && fields.capacity !== null && fields.capacity < taken.going) {
     locks.push("post-capacity-below");
   }
   return locks;
@@ -107,8 +107,8 @@ export function postLocks(
 /**
  * The editor's fields, checked (spec 2.4): the kind; a title of up to 70 characters; a campus or All campuses (tips
  * included, amendment 29); for events and office hours a date, a start time and a place; for events, 1 to 1,000
- * places, and never fewer than the RSVPs taken; a one-sentence summary of up to 160; and the body, the markdown
- * subset, up to 4,000. A saved post's `taken` (its kind, RSVPs and open requests) locks its kind once anyone has signed
+ * places, and never fewer than are going; a one-sentence summary of up to 160; and the body, the markdown subset, up
+ * to 4,000. A saved post's `taken` (its kind, RSVPs and open requests) locks its kind once anyone has signed
  * up (amendment 26). Every problem is listed in the form's order; the fields come back only when there's none.
  */
 export function checkPost(

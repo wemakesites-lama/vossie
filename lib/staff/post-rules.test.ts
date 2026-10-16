@@ -123,8 +123,10 @@ describe("the Hub's post editor (staff tools spec 2.4)", () => {
 });
 
 describe("a saved post with RSVPs or slot requests (amendment 26)", () => {
-  const event = { kind: "event" as const, rsvps: 12, openRequests: 0 };
-  const officeHours = { kind: "office-hours" as const, rsvps: 0, openRequests: 1 };
+  const event = { kind: "event" as const, rsvps: 12, going: 12, openRequests: 0 };
+  const officeHours = { kind: "office-hours" as const, rsvps: 0, going: 0, openRequests: 1 };
+  /** A sample event: 23 going before Vossie, nobody on Vossie yet. */
+  const sample = { kind: "event" as const, rsvps: 0, going: 23, openRequests: 0 };
 
   it("refuses fewer places than the RSVPs it has taken", () => {
     expect(checkPost(input({ capacity: "11" }), CAMPUSES, event)).toEqual({
@@ -132,6 +134,12 @@ describe("a saved post with RSVPs or slot requests (amendment 26)", () => {
       errors: ["post-capacity-below"],
     });
     expect(checkPost(input({ capacity: "12" }), CAMPUSES, event).value?.capacity).toBe(12);
+  });
+
+  it("holds places for everyone going, but locks the kind only for Vossie's RSVPs (amendment 42)", () => {
+    expect(checkPost(input({ capacity: "5" }), CAMPUSES, sample).errors).toEqual(["post-capacity-below"]);
+    expect(checkPost(input({ capacity: "23" }), CAMPUSES, sample).value?.capacity).toBe(23);
+    expect(checkPost(input({ kind: "tip", campus: "all" }), CAMPUSES, sample).errors).toEqual([]);
   });
 
   it("says the capacity is invalid, not below, when it isn't a number of places", () => {
@@ -148,7 +156,9 @@ describe("a saved post with RSVPs or slot requests (amendment 26)", () => {
   });
 
   it("lets a post with nobody signed up change kind, and leaves a new post alone", () => {
-    expect(checkPost(input({ kind: "tip", campus: "all" }), CAMPUSES, { ...event, rsvps: 0 }).errors).toEqual([]);
+    expect(checkPost(input({ kind: "tip", campus: "all" }), CAMPUSES, { ...event, rsvps: 0, going: 0 }).errors).toEqual(
+      [],
+    );
     expect(checkPost(input({ capacity: "1" }), CAMPUSES, null).errors).toEqual([]);
   });
 
@@ -156,6 +166,7 @@ describe("a saved post with RSVPs or slot requests (amendment 26)", () => {
     expect(postLocks({ kind: "event", capacity: 5 }, event)).toEqual(["post-capacity-below"]);
     expect(postLocks({ kind: "tip", capacity: null }, event)).toEqual(["post-kind-locked"]);
     expect(postLocks({ kind: "event", capacity: 40 }, event)).toEqual([]);
+    expect(postLocks({ kind: "event", capacity: 22 }, sample)).toEqual(["post-capacity-below"]);
     expect(postLocks({ kind: "event", capacity: 1 }, null)).toEqual([]);
   });
 });

@@ -23,7 +23,7 @@ describe("the staff forms' error words (plan decision 22)", () => {
   it("refuses fewer places than RSVPs, and a new kind once people have signed up (amendment 26)", () => {
     expect(staffErrors(["post-capacity-below", "post-kind-locked"], postFieldIds("edit-h-007"))).toEqual([
       {
-        message: "More people are going than that. Keep at least as many places as RSVPs.",
+        message: "More people are going than that. Keep at least as many places as people going.",
         fieldId: "edit-h-007-capacity",
       },
       {

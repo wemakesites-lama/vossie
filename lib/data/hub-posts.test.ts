@@ -179,10 +179,10 @@ describe("a post's cover (plan decision 11, amendment 24)", () => {
 
 describe("what a post with RSVPs or requests can't change (amendments 19, 26 and 34)", () => {
   it("counts what a saved post has taken: RSVPs on Vossie, and open requests whose office hours haven't passed", async () => {
-    expect(await postTaken("h-001", NOW)).toEqual({ kind: "event", rsvps: 0, openRequests: 0 });
+    expect(await postTaken("h-001", NOW)).toEqual({ kind: "event", rsvps: 0, going: 12, openRequests: 0 });
     await addRsvp("h-001", "acc-student", TODAY, NOW);
-    expect(await postTaken("h-001", NOW)).toEqual({ kind: "event", rsvps: 1, openRequests: 0 });
-    expect(await postTaken("h-007", NOW)).toEqual({ kind: "office-hours", rsvps: 0, openRequests: 1 });
+    expect(await postTaken("h-001", NOW)).toEqual({ kind: "event", rsvps: 1, going: 13, openRequests: 0 });
+    expect(await postTaken("h-007", NOW)).toEqual({ kind: "office-hours", rsvps: 0, going: 0, openRequests: 1 });
     expect(await postTaken("h-007", new Date(`${AFTER_H007}T08:00:00.000Z`))).toMatchObject({ openRequests: 0 });
     expect(await postTaken("h-nope", NOW)).toBeNull();
   });
@@ -202,7 +202,17 @@ describe("what a post with RSVPs or requests can't change (amendments 19, 26 and
     );
   });
 
-  it("checks at the moment it writes, so an RSVP that arrives first still counts", async () => {
+  it("keeps places for all the card shows going, a sample event's first number too (amendment 42)", async () => {
+    // h-003 starts with 23 going and nobody on Vossie, so its kind may change, but not to fewer places than 23.
+    expect(await attempt({ id: "h-003", fields: { ...event, capacity: 5 } })).toEqual({
+      locked: ["post-capacity-below"],
+    });
+    expect(sampleStore().hubPosts.get("h-003")?.capacity).toBe(40);
+    expect((await save({ id: "h-003", fields: { ...event, capacity: 23 } })).row.capacity).toBe(23);
+    expect((await save({ id: "h-003", fields: tip })).row.kind).toBe("tip");
+  });
+
+  it("re-reads the count when the save runs, so an RSVP that arrives first still counts", async () => {
     const made = await save({ fields: { ...event, capacity: 5 } });
     const [rsvp, saved] = await Promise.all([
       addRsvp(made.row.id, "acc-student", TODAY, NOW),
@@ -210,6 +220,17 @@ describe("what a post with RSVPs or requests can't change (amendments 19, 26 and
     ]);
     expect(rsvp).toBe("going");
     expect(saved).toEqual({ locked: ["post-kind-locked"] });
+  });
+
+  it("checks and writes with no await between, so an RSVP sent with the save finds a tip (amendment 19)", async () => {
+    const made = await save({ fields: { ...event, capacity: 5 } });
+    const [saved, rsvp] = await Promise.all([
+      attempt({ id: made.row.id, fields: tip }),
+      addRsvp(made.row.id, "acc-student", TODAY, NOW),
+    ]);
+    expect(saved).toMatchObject({ row: { kind: "tip" } });
+    expect(rsvp).toBe("closed");
+    expect(await hasRsvp(made.row.id, "acc-student")).toBe(false);
   });
 
   it("leaves the stored cover alone when it refuses", async () => {
@@ -229,9 +250,19 @@ describe("RSVP (staff tools spec 2.5, plan decision 13)", () => {
     expect(await addRsvp("h-001", "acc-student", TODAY, NOW)).toBe("going");
     expect(await addRsvp("h-001", "acc-student", TODAY, NOW)).toBe("already");
     expect(await hasRsvp("h-001", "acc-student")).toBe(true);
-    expect(await removeRsvp("h-001", "acc-student")).toBe(true);
-    expect(await removeRsvp("h-001", "acc-student")).toBe(false);
+    expect(await removeRsvp("h-001", "acc-student", TODAY)).toBe(true);
+    expect(await removeRsvp("h-001", "acc-student", TODAY)).toBe(false);
     expect(await hasRsvp("h-001", "acc-student")).toBe(false);
+  });
+
+  it("keeps an RSVP once the event has passed, so its count stays (amendment 42)", async () => {
+    const made = await save();
+    await addRsvp(made.row.id, "acc-student", TODAY, NOW);
+    expect(await removeRsvp(made.row.id, "acc-student", "2026-11-21")).toBe(false);
+    expect(await hasRsvp(made.row.id, "acc-student")).toBe(true);
+    expect(publishedPost(made.row.id)?.going).toBe(1);
+    // The event's own day still counts as ahead (SAST), as for addRsvp.
+    expect(await removeRsvp(made.row.id, "acc-student", "2026-11-20")).toBe(true);
   });
 
   it("refuses a full event, a past one, a draft, and anything that isn't an event", async () => {
@@ -307,6 +338,15 @@ describe("slot requests (staff tools spec 2.4 and 2.5, plan decisions 13 and 14)
     });
   });
 
+  it("answers a request once when Accept and Decline are pressed at once (amendment 19)", async () => {
+    const results = await Promise.all([
+      answerBooking("bk-s1", "accepted", "acc-mentor", LATER),
+      answerBooking("bk-s1", "declined", "acc-admin", LATER),
+    ]);
+    expect(results.filter((result) => result === null)).toHaveLength(1);
+    expect(results.filter((result) => typeof result === "object" && result !== null)).toHaveLength(1);
+  });
+
   it("lets a student ask again once their request is answered", async () => {
     await answerBooking("bk-s1", "declined", "acc-mentor", LATER);
     expect(typeof (await slot("acc-student", "h-007"))).toBe("object");
@@ -337,5 +377,21 @@ describe("requests for office hours that have passed (amendment 23)", () => {
     expect(await openBookingCount("2026-11-19")).toBe(1);
     expect(await openBookingCount(AFTER_H007)).toBe(0);
     expect(await latestBooking("h-007", "acc-student", AFTER_H007)).toMatchObject({ status: "passed" });
+  });
+
+  it("keeps them passed when their past office hours become an event (amendment 42)", async () => {
+    const early = (await slot("acc-seller")) as Exclude<Awaited<ReturnType<typeof slot>>, string>;
+    const day = "2026-10-16";
+    const later = new Date("2026-10-16T08:00:00.000Z");
+    // h-002 (15 Oct) has passed, so its request no longer locks its kind: an admin turns it into a coming event.
+    expect(await attempt({ id: "h-002", fields: event, now: later })).toMatchObject({ row: { kind: "event" } });
+    expect(await openBookingCount(day)).toBe(1);
+    expect((await listBookings(day)).map((booking) => [booking.id, booking.status])).toEqual([
+      ["bk-s1", "open"],
+      [early.booking.id, "passed"],
+    ]);
+    expect(await latestBooking("h-002", "acc-seller", day)).toMatchObject({ status: "passed" });
+    expect(await answerBooking(early.booking.id, "accepted", "acc-mentor", later)).toBe("passed");
+    expect(await postTaken("h-002", later)).toMatchObject({ openRequests: 0 });
   });
 });

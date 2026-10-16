@@ -114,19 +114,21 @@ export function canEditPost(account: Pick<Account, "id" | "roles">, post: Pick<H
   return isAdmin(account) || post.authorId === account.id;
 }
 
-/** Open requests for these office hours that can still be answered (amendment 23: passed ones don't count). */
+/** Open requests for these office hours that can still be answered (amendments 23 and 42: passed ones don't count). */
 function liveRequestCount(post: HubPostRow, today: string): number {
-  if (hasPassed(post, today)) return 0;
-  return [...sampleStore().hubBookings.values()].filter((row) => row.postId === post.id && row.status === "open")
-    .length;
+  return [...sampleStore().hubBookings.values()].filter(
+    (row) => row.postId === post.id && row.status === "open" && !requestPassed(row, today),
+  ).length;
 }
 
 /**
- * What a saved post has taken (amendment 26): its kind, the RSVPs made on Vossie (a sample event's starting number is
- * decoration, and nobody behind it is let down by a change) and its open requests that haven't passed.
+ * What a saved post has taken (amendments 26 and 42): its kind, the RSVPs made on Vossie (a sample event's starting
+ * number is decoration, and nobody behind it is let down by a change of kind), the going its card shows (that starting
+ * number plus the RSVPs, which its places can't go below) and its open requests that haven't passed.
  */
 function takenNow(row: HubPostRow, today: string): PostTaken {
-  return { kind: row.kind, rsvps: rsvpCount(row.id), openRequests: liveRequestCount(row, today) };
+  const rsvps = rsvpCount(row.id);
+  return { kind: row.kind, rsvps, going: (row.going ?? 0) + rsvps, openRequests: liveRequestCount(row, today) };
 }
 
 /** What a saved post has taken, for the editor's check (checkPost); null for an unknown id. */
@@ -222,9 +224,15 @@ export async function addRsvp(postId: string, accountId: string, today: string, 
   return "going";
 }
 
-/** Cancel my RSVP. False when there was none. */
-export async function removeRsvp(postId: string, accountId: string): Promise<boolean> {
-  return sampleStore().hubRsvps.delete(rsvpKey(postId, accountId));
+/**
+ * Cancel my RSVP. False when there was none, or once the event has passed (`today` is the SAST date; amendment 42), so
+ * a past event's count stays.
+ */
+export async function removeRsvp(postId: string, accountId: string, today: string): Promise<boolean> {
+  const { hubPosts, hubRsvps } = sampleStore();
+  const row = hubPosts.get(postId);
+  if (row && hasPassed(row, today)) return false;
+  return hubRsvps.delete(rsvpKey(postId, accountId));
 }
 
 export async function hasRsvp(postId: string, accountId: string): Promise<boolean> {
@@ -233,10 +241,13 @@ export async function hasRsvp(postId: string, accountId: string): Promise<boolea
 
 // --- Slot requests (staff tools spec 2.4 and 2.5, plan decisions 13 and 14; amendment 23) --------------------------
 
-/** Whether an open request can no longer be answered: its office hours' day is over (SAST), or they've gone. */
+/**
+ * Whether an open request can no longer be answered: its office hours have gone, are no longer office hours (a past
+ * post whose kind was changed; amendment 42), or their day is over (SAST).
+ */
 function requestPassed(row: HubBookingRow, today: string): boolean {
   const post = sampleStore().hubPosts.get(row.postId);
-  return row.status === "open" && (!post || hasPassed(post, today));
+  return row.status === "open" && (!post || post.kind !== "office-hours" || hasPassed(post, today));
 }
 
 function toBooking(row: HubBookingRow, today: string): HubBooking {

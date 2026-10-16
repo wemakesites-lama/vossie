@@ -52,7 +52,7 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
   // An event never has fewer places than the RSVPs it has taken (amendment 26).
   [
     "post-capacity-below",
-    { message: "More people are going than that. Keep at least as many places as RSVPs.", field: "capacity" },
+    { message: "More people are going than that. Keep at least as many places as people going.", field: "capacity" },
   ],
   ["post-summary-missing", { message: "Write a one-sentence summary.", field: "summary" }],
   ["post-summary-length", { message: "Keep the summary to 160 characters.", field: "summary" }],
