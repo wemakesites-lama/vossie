@@ -211,6 +211,24 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
     expect(await redirectOf(() => saveListingForm(fanForm({ listing: "l-001" })))).toBe("/sell/listings?tab=sold");
     expect((await getOwnListing("tech-corner", "l-001"))?.state).toBe("sold");
   });
+
+  it("saves a listing on a retired point unchanged, but never moves one to a retired point (staff tools amendment 13)", async () => {
+    await signedInAs("acc-seller");
+    const { pickupPoints } = sampleStore();
+    pickupPoints.get("pp-midrand-library")!.retiredAt = NOW.toISOString();
+    // l-001 is at the library: it keeps it.
+    expect(await redirectOf(() => saveListingForm(fanForm({ listing: "l-001" })))).toBe("/sell/listings");
+    expect((await getOwnListing("tech-corner", "l-001"))?.pickupPointId).toBe("pp-midrand-library");
+    // A new listing can't take it.
+    expect(await redirectOf(() => saveListingForm(fanForm()))).toBe("/sell/listings/new");
+    expect((await readFormState(listingForm(null)))?.errors).toEqual(["pickup-missing"]);
+    // Nor can a listing move to another retired point.
+    pickupPoints.get("pp-midrand-reception")!.retiredAt = NOW.toISOString();
+    expect(await redirectOf(() => saveListingForm(fanForm({ listing: "l-001", pickup: "pp-midrand-reception" })))).toBe(
+      "/sell/listings/l-001/edit",
+    );
+    expect((await readFormState(listingForm("l-001")))?.errors).toEqual(["pickup-missing"]);
+  });
 });
 
 describe("My listings' buttons and Delete listing (selling spec 2.9, plan decision 3)", () => {

@@ -4,7 +4,7 @@ import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
 import { pickupPoints } from "@/data/fixtures/pickup-points";
 import { sampleSellerRows } from "@/data/fixtures/shops";
-import { resetSampleStore } from "@/lib/data/store";
+import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { redirectOf } from "@/tests/helpers/next-request";
 import { ShopProfile } from "./ShopProfile";
 import { ShopProfileView } from "./ShopProfileView";
@@ -112,6 +112,33 @@ describe("Edit shop (selling spec 2.11)", () => {
     const link = document.getElementById("profile-slug")!;
     expect(link).toHaveTextContent("vossie.test/sellers/gadgets");
     expect(link).toHaveAccessibleDescription(/can't change again/);
+  });
+
+  it("says when a saved pickup point has been retired, naming only the shown campus's (staff tools amendment 13)", async () => {
+    const { pickupPoints: points } = sampleStore();
+    points.get("pp-midrand-library")!.retiredAt = "2026-10-14T08:00:00.000Z";
+    viewer.id = "acc-seller";
+    const { unmount } = render(await ShopProfile());
+    const spots = screen.getByRole("group", { name: "Pickup points at Midrand" });
+    expect(spots).toHaveAccessibleDescription(/Choose at least one\. Library entrance is no longer used: choose another\.$/);
+    expect(within(spots).queryByRole("checkbox", { name: "Library entrance" })).toBeNull();
+    expect(within(spots).getByRole("checkbox", { name: "Main reception" })).toBeChecked();
+    unmount();
+    points.get("pp-midrand-reception")!.retiredAt = "2026-10-14T08:00:00.000Z";
+    points.set("pp-midrand-hall", { ...points.get("pp-midrand-library")!, id: "pp-midrand-hall", name: "Hall", retiredAt: null });
+    const both = render(await ShopProfile());
+    expect(screen.getByRole("group", { name: "Pickup points at Midrand" })).toHaveAccessibleDescription(
+      /Library entrance and Main reception are no longer used: choose others\.$/,
+    );
+    both.unmount();
+    // Another campus shown after a save that went wrong: Midrand's retired points aren't its business.
+    show({
+      typed: { name: "Tech corner", category: "tech", about: "Hi", campus: "pretoria", points: "", slug: "tech-corner" },
+      retired: [{ id: "pp-midrand-library", campusSlug: "midrand", name: "Library entrance", retired: true }],
+    });
+    expect(screen.getByRole("group", { name: "Pickup points at Pretoria" })).toHaveAccessibleDescription(
+      "Where buyers can meet you. Choose at least one.",
+    );
   });
 
   it("shows the signed-in seller's own shop, and sends anyone without one to /sell", async () => {

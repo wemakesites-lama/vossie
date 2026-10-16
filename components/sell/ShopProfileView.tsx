@@ -19,6 +19,8 @@ type ShopProfileViewProps = {
   campuses: readonly Pick<Campus, "slug" | "name">[];
   categories: readonly Pick<Category, "slug" | "name">[];
   pickupPoints: readonly PickupPoint[];
+  /** The shop's saved pickup points that the Hub has retired (staff tools plan amendment 13). */
+  retired?: readonly PickupPoint[];
   /** The site's host, from siteUrl(), for the link's beginning. */
   host: string;
 };
@@ -30,7 +32,7 @@ const IDS = shopFieldIds("profile");
  * shop may change once (plan decision 16). Save changes is the form's only submit button, so Enter saves.
  */
 export function ShopProfileView(props: ShopProfileViewProps) {
-  const { shop, status, typed, errors, notice, campuses, categories, pickupPoints, host } = props;
+  const { shop, status, typed, errors, notice, campuses, categories, pickupPoints, retired, host } = props;
   const value = (key: string, fallback: string) => typed?.[key] ?? fallback;
   const chosen = typed ? (typed.points ?? "").split(" ").filter(Boolean) : shop.pickupPointIds;
   return (
@@ -65,6 +67,7 @@ export function ShopProfileView(props: ShopProfileViewProps) {
           chosen={chosen}
           campuses={campuses}
           pickupPoints={pickupPoints}
+          retired={retired}
         />
         <LinkField shop={shop} status={status} typed={value("slug", shop.slug)} host={host} errors={errors} />
         <div className="sell-form-buttons">

@@ -546,3 +546,31 @@ describe("the store behind the data layer (selling spec 2.1, plan decisions 2 an
     expect(await getSellerSlugs()).not.toContain("crochet-corner");
   });
 });
+
+describe("Featured and pickup points from the store (staff tools plan decisions 9 and 10)", () => {
+  it("offers only the points in use, and still names a retired point on its listing's page", async () => {
+    sampleStore().pickupPoints.get("pp-midrand-library")!.retiredAt = "2026-10-14T08:00:00.000Z";
+    expect((await getPickupPoints()).map((point) => point.id)).not.toContain("pp-midrand-library");
+    expect((await getListingDetail("l-001"))?.pickupPoint).toEqual({
+      id: "pp-midrand-library",
+      campusSlug: "midrand",
+      name: "Library entrance",
+      retired: true,
+    });
+  });
+
+  it("features today's row from the store, pins first, and records it", async () => {
+    sampleStore().featuredPins.set("pin-1", {
+      id: "pin-1",
+      sellerSlug: "nail-bar",
+      campusSlug: "midrand",
+      day: "2026-10-14",
+      pinnedBy: "acc-admin",
+      createdAt: "2026-10-14T08:00:00.000Z",
+    });
+    const row = await getFeatured({ campus: "midrand", day: "2026-10-14" });
+    expect(row.map((seller) => seller.slug)[0]).toBe("nail-bar");
+    expect(row).toHaveLength(4);
+    expect(sampleStore().featuredDraws.get("midrand:2026-10-14")?.sellerSlugs).toEqual(row.map((seller) => seller.slug));
+  });
+});

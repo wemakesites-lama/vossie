@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { readFormState } from "@/lib/auth/form-state";
-import { getCampuses, getCategories, getPickupPoints } from "@/lib/data";
+import { getCampuses, getCategories } from "@/lib/data";
 import { getOwnListing } from "@/lib/data/own-listings";
+import { pointsForListing } from "@/lib/data/pickup-points";
 import type { ListingRow } from "@/lib/data/rows";
 import { isId } from "@/lib/messaging/paths";
 import { listingFieldIds, listingFieldPrefix, sellingErrors } from "@/lib/selling/errors";
@@ -42,13 +43,13 @@ export async function ListingForm({ params }: { params?: Promise<{ id: string }>
   const owner = await requireShopOwner(id ? editListingPath(id) : NEW_LISTING_PATH);
   const listing = id && isId(id) ? await getOwnListing(owner.shop.slug, id) : null;
   if (id && !listing) notFound();
-  const [state, categories, campuses, pickupPoints] = await Promise.all([
+  const [state, categories, campuses] = await Promise.all([
     readFormState(listingForm(listing?.id ?? null)),
     getCategories(),
     getCampuses(),
-    getPickupPoints(),
   ]);
-  const spots = pickupPoints.filter((point) => owner.shop.pickupPointIds.includes(point.id));
+  // The shop's points in use, and the listing's own point if the Hub has retired it since (staff tools amendment 13).
+  const spots = pointsForListing(owner.shop.pickupPointIds, listing?.pickupPointId ?? null);
   const values = state ? state.values : valuesOf(listing, spots[0]?.id ?? null);
   const photos = (values.photos ?? "")
     .split("\n")

@@ -2,6 +2,7 @@ import { CampusSelect } from "@/components/forms/CampusSelect";
 import { describedBy, FieldError } from "@/components/forms/FieldError";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import { categoryPicture } from "@/lib/data/catalog";
+import { joinWords } from "@/lib/format";
 import type { shopFieldIds } from "@/lib/selling/errors";
 import { PHOTO_ACCEPT, PHOTO_MAX_MB } from "@/lib/photos/rules";
 import type { Campus, Category, PickupPoint } from "@/lib/types";
@@ -133,9 +134,19 @@ export function ShopPhotoField({
   );
 }
 
+/** Says which saved points the Hub has retired (staff tools plan amendment 13), or "" for none. */
+export function retiredLine(names: readonly string[]): string {
+  if (names.length === 0) return "";
+  return names.length === 1
+    ? `${names[0]} is no longer used: choose another.`
+    : `${joinWords(names)} are no longer used: choose others.`;
+}
+
 /**
  * The campus and its pickup points (selling spec 2.6 step 4, plan decision 15). The points shown are `campusSlug`'s,
- * named in a hidden field, so choosing another campus comes back with that campus's points, with no client code.
+ * named in a hidden field, so choosing another campus comes back with that campus's points, with no client code. Only
+ * points in use are offered; a saved point the Hub has retired since is named in the hint, so it isn't dropped
+ * without a word (staff tools plan amendment 13).
  */
 export function CampusSpotsFields({
   ids,
@@ -144,17 +155,22 @@ export function CampusSpotsFields({
   chosen,
   campuses,
   pickupPoints,
+  retired = [],
 }: {
   ids: Ids;
   errors: readonly FormError[];
   campusSlug: string;
   chosen: readonly string[];
   campuses: readonly Pick<Campus, "slug" | "name">[];
+  /** The points in use. */
   pickupPoints: readonly PickupPoint[];
+  /** The shop's or the draft's saved points that have been retired. */
+  retired?: readonly PickupPoint[];
 }) {
   const campusError = errorFor(errors, ids.campus);
   const campusName = campuses.find((campus) => campus.slug === campusSlug)?.name ?? "";
   const spots = pickupPoints.filter((point) => point.campusSlug === campusSlug);
+  const gone = retiredLine(retired.filter((point) => point.campusSlug === campusSlug).map((point) => point.name));
   return (
     <>
       <div className="form-field">
@@ -179,7 +195,7 @@ export function CampusSpotsFields({
           id={ids.points}
           name="pickupPoint"
           legend={`Pickup points at ${campusName}`}
-          hint="Where buyers can meet you. Choose at least one."
+          hint={`Where buyers can meet you. Choose at least one.${gone && ` ${gone}`}`}
           options={spots.map((point) => ({ value: point.id, label: point.name }))}
           chosen={chosen}
           error={errorFor(errors, ids.points)}

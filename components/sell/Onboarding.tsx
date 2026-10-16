@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { readFormState } from "@/lib/auth/form-state";
 import { requireAccount } from "@/lib/auth/session";
 import { getCampuses, getCategories, getPickupPoints } from "@/lib/data";
+import { retiredPoints } from "@/lib/data/pickup-points";
 import { emptyDraft, getOnboardingDraft } from "@/lib/data/shops";
 import { sellingErrors, shopFieldIds } from "@/lib/selling/errors";
 import { onboardingForm } from "@/lib/selling/form-state";
@@ -38,6 +39,7 @@ export async function Onboarding({ searchParams }: OnboardingProps) {
       campuses={campuses}
       categories={categories}
       pickupPoints={pickupPoints}
+      retired={retiredPoints(shown.pickupPointIds)}
     />
   );
 }

@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { resetSampleStore } from "@/lib/data/store";
+import { emptyDraft, saveOnboardingDraft } from "@/lib/data/shops";
+import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { redirectOf } from "@/tests/helpers/next-request";
 import { Onboarding } from "./Onboarding";
 
@@ -43,5 +44,16 @@ describe("the wizard's request-time part (selling spec 2.6 and section 3)", () =
     viewer.id = "acc-student";
     render(await Onboarding(at("4")));
     expect(screen.getByRole("group", { name: "Pickup points at Midrand" })).toBeInTheDocument();
+  });
+
+  it("says when a point the draft saved has been retired since (staff tools plan amendment 13)", async () => {
+    viewer.id = "acc-student";
+    const now = new Date("2026-10-14T08:00:00.000Z");
+    await saveOnboardingDraft({ ...emptyDraft("acc-student", "midrand", now), pickupPointIds: ["pp-midrand-library"] });
+    sampleStore().pickupPoints.get("pp-midrand-library")!.retiredAt = now.toISOString();
+    render(await Onboarding(at("4")));
+    const spots = screen.getByRole("group", { name: "Pickup points at Midrand" });
+    expect(spots).toHaveAccessibleDescription(/Library entrance is no longer used: choose another\.$/);
+    expect(within(spots).getAllByRole("checkbox").map((box) => box.getAttribute("value"))).toEqual(["pp-midrand-reception"]);
   });
 });

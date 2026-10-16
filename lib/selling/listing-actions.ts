@@ -4,6 +4,7 @@ import { writeFormState } from "@/lib/auth/form-state";
 import { getCategories } from "@/lib/data";
 import { deleteOwnListing, getOwnListing, saveOwnListing, setOwnListingState } from "@/lib/data/own-listings";
 import { photoSrcsOf, storePhotos, type Upload } from "@/lib/data/photos";
+import { pointsForListing } from "@/lib/data/pickup-points";
 import { listingsChanged } from "@/lib/data/tags";
 import { isId } from "@/lib/messaging/paths";
 import { characterCount, keepTyped } from "@/lib/messaging/rules";
@@ -124,9 +125,12 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   }
 
   const categories = await getCategories();
+  // The shop's points in use, and the listing's own point if the Hub has retired it since, so a listing on a retired
+  // point saves unchanged but can't move to one (staff tools plan amendment 13).
+  const spots = pointsForListing(owner.shop.pickupPointIds, existing?.pickupPointId ?? null);
   const check = checkListing(listingInput(formData), {
     categorySlugs: categories.map((category) => category.slug),
-    pickupPointIds: owner.shop.pickupPointIds,
+    pickupPointIds: spots.map((point) => point.id),
   });
   const errors: string[] = [...check.errors, ...photoErrors];
   if ([...alts.values()].some((alt) => characterCount(alt) > ALT_MAX)) errors.push("alt-length");

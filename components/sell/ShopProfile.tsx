@@ -1,5 +1,6 @@
 import { readFormState } from "@/lib/auth/form-state";
 import { getCampuses, getCategories, getPickupPoints } from "@/lib/data";
+import { retiredPoints } from "@/lib/data/pickup-points";
 import { sellingErrors, shopFieldIds } from "@/lib/selling/errors";
 import { PROFILE_FORM } from "@/lib/selling/form-state";
 import { noticeText } from "@/lib/selling/notices";
@@ -29,6 +30,7 @@ export async function ShopProfile() {
       campuses={campuses}
       categories={categories}
       pickupPoints={pickupPoints}
+      retired={retiredPoints(owner.shop.pickupPointIds)}
       host={new URL(siteUrl()).host}
     />
   );

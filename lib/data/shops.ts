@@ -1,10 +1,10 @@
 import { categories } from "@/data/fixtures/categories";
-import { pickupPoints } from "@/data/fixtures/pickup-points";
 import { sampleListingRows, sampleSellerRows, sampleShopOwners } from "@/data/fixtures/shops";
 import { nameKey, SLUG_MAX, slugify } from "@/lib/selling/rules";
 import { sastDate } from "@/lib/time";
 import type { Condition, Handover, ImageRef, ListingKind, ListingState, PayMode, SellerStatus } from "@/lib/types";
 import { claimPhotosNow, deletePhotosOf, deletePhotosUsedByNow } from "./photos";
+import { pickupPointName } from "./pickup-points";
 import type { ListingRow, OnboardingDraftRow, SellerRow } from "./rows";
 import { sampleStore } from "./store";
 
@@ -390,7 +390,8 @@ export type ListingExport = {
   updatedAt: string;
 };
 
-const spotName = (id: string | null) => pickupPoints.find((point) => point.id === id)?.name ?? null;
+// Retired points keep their names in the export (staff tools plan decision 10).
+const spotName = (id: string | null) => pickupPointName(id);
 const categoryName = (slug: string) => categories.find((category) => category.slug === slug)?.name ?? slug;
 
 function listingExport(row: ListingRow): ListingExport {

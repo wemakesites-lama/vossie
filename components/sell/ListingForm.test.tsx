@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { saveFormState } from "@/lib/data/form-states";
-import { resetSampleStore } from "@/lib/data/store";
+import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { ListingForm } from "./ListingForm";
 
 const viewer = vi.hoisted(() => ({ id: null as string | null, sessionKey: null as string | null }));
@@ -69,5 +69,18 @@ describe("the listing form's request-time part (selling spec 2.10 and section 3)
 
   it("is a 404 for another shop's listing", async () => {
     await expect(ListingForm(editing("l-004"))).rejects.toThrow("notFound");
+  });
+
+  it("offers only points in use, and a listing's own retired point as no longer used (staff tools amendment 13)", async () => {
+    sampleStore().pickupPoints.get("pp-midrand-library")!.retiredAt = "2026-10-14T08:00:00.000Z";
+    const optionsOf = () =>
+      [...(screen.getByLabelText("Pickup point") as HTMLSelectElement).options].map((option) => option.text);
+    const { unmount } = render(await ListingForm({}));
+    expect(screen.getByLabelText("Pickup point")).toHaveValue("pp-midrand-reception");
+    expect(optionsOf()).toEqual(["Choose a point", "Main reception"]);
+    unmount();
+    render(await ListingForm(editing("l-001")));
+    expect(screen.getByLabelText("Pickup point")).toHaveValue("pp-midrand-library");
+    expect(optionsOf()).toEqual(["Choose a point", "Main reception", "Library entrance (no longer used)"]);
   });
 });

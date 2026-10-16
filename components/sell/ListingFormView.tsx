@@ -22,7 +22,7 @@ type ListingFormViewProps = {
   photos: readonly SavedPhoto[];
   errors: readonly FormError[];
   categories: readonly Pick<Category, "slug" | "name">[];
-  /** The shop's pickup spots. */
+  /** The shop's pickup spots, and the listing's own if it has been retired since (staff tools amendment 13). */
   spots: readonly PickupPoint[];
   campusName: string;
   /** A value that changes with every post (the form state's expiry), or nothing before the first. */
@@ -189,7 +189,10 @@ export function ListingFormView(props: ListingFormViewProps) {
             name="pickup"
             label="Pickup point"
             hint="For a pickup: where buyers collect it."
-            options={spots.map((spot) => ({ value: spot.id, label: spot.name }))}
+            options={spots.map((spot) => ({
+              value: spot.id,
+              label: spot.retired ? `${spot.name} (no longer used)` : spot.name,
+            }))}
             placeholder="Choose a point"
             defaultValue={values.pickup ?? ""}
             error={errorOf("pickup")}

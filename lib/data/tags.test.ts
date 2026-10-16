@@ -33,11 +33,16 @@ const LISTINGS: ReadonlyArray<[string, () => Promise<unknown>]> = [
 ];
 
 const SELLERS: ReadonlyArray<[string, () => Promise<unknown>]> = [
-  ["getFeatured", () => data.getFeatured({ campus: "midrand", day: "2026-10-15" })],
   ["getVerifiedSellers", () => data.getVerifiedSellers()],
   ["getSeller", () => data.getSeller("tech-corner")],
   ["getSellerSlugs", () => data.getSellerSlugs()],
   ["isShopPaused", () => data.isShopPaused("tech-corner")],
+];
+
+// The staff tools' pickup points (staff tools plan decision 10, amendment 3): a listing's page names its point too.
+const PICKUP_POINTS: ReadonlyArray<[string, () => Promise<unknown>]> = [
+  ["getPickupPoints", () => data.getPickupPoints()],
+  ["getListingDetail", () => data.getListingDetail("l-001")],
 ];
 
 describe("the data layer's cache tags (selling plan decision 6)", () => {
@@ -49,5 +54,15 @@ describe("the data layer's cache tags (selling plan decision 6)", () => {
   it.each(SELLERS)("%s is tagged sellers", async (_name, read) => {
     await read().catch(() => undefined);
     expect(cacheTag).toHaveBeenCalledWith("sellers");
+  });
+
+  it.each(PICKUP_POINTS)("%s is tagged pickup-points", async (_name, read) => {
+    await read().catch(() => undefined);
+    expect(cacheTag).toHaveBeenCalledWith("pickup-points");
+  });
+
+  it("leaves getFeatured uncached: it records the day's row (staff tools plan decision 9)", async () => {
+    await data.getFeatured({ campus: "midrand", day: "2026-10-15" });
+    expect(cacheTag).not.toHaveBeenCalled();
   });
 });

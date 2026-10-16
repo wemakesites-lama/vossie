@@ -16,6 +16,8 @@ type OnboardingViewProps = {
   campuses: readonly Pick<Campus, "slug" | "name">[];
   categories: readonly Pick<Category, "slug" | "name">[];
   pickupPoints: readonly PickupPoint[];
+  /** The draft's saved pickup points that the Hub has retired since (staff tools plan amendment 13). */
+  retired?: readonly PickupPoint[];
 };
 
 const IDS = shopFieldIds("onb");
@@ -35,7 +37,8 @@ function BackLink({ step }: { step: OnboardingStep }) {
  * saveOnboardingStep, or the review and Send for approval. Continue is the first submit button in every form with a
  * text field, so Enter continues (step 3, the photo, has none, so its Remove photo can come first).
  */
-export function OnboardingView({ step, draft, errors, campuses, categories, pickupPoints }: OnboardingViewProps) {
+export function OnboardingView(props: OnboardingViewProps) {
+  const { step, draft, errors, campuses, categories, pickupPoints, retired } = props;
   return (
     <div className="sell-section">
       <p className="sell-progress">
@@ -75,6 +78,7 @@ export function OnboardingView({ step, draft, errors, campuses, categories, pick
               chosen={draft.pickupPointIds}
               campuses={campuses}
               pickupPoints={pickupPoints}
+              retired={retired}
             />
           )}
           <div className="sell-form-buttons">
@@ -96,7 +100,7 @@ function Review({
   campuses,
   categories,
   pickupPoints,
-}: Omit<OnboardingViewProps, "step">) {
+}: Omit<OnboardingViewProps, "step" | "retired">) {
   const campus = campuses.find((item) => item.slug === draft.campusSlug);
   const spots = pickupPoints.filter((point) => point.campusSlug === draft.campusSlug);
   const chosen = spots.filter((point) => draft.pickupPointIds.includes(point.id)).map((point) => point.name);
