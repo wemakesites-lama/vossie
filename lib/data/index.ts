@@ -3,7 +3,7 @@ import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
 import { collections } from "@/data/fixtures/collections";
 import { heroSlides } from "@/data/fixtures/hero";
-import { hubBanner, hubPosts } from "@/data/fixtures/hub";
+import { hubBanner } from "@/data/fixtures/hub";
 import { requests } from "@/data/fixtures/requests";
 import { trendingSearches } from "@/data/fixtures/trending";
 import { findListings } from "@/lib/browse/results";
@@ -43,13 +43,15 @@ import {
   toSeller,
 } from "./catalog";
 import { featuredFor } from "./featured";
+import { publishedPost, publishedPosts } from "./hub-posts";
 import { pickupPointById, pointsInUse } from "./pickup-points";
-import { tagListings, tagPickupPoints, tagSellers } from "./tags";
+import { tagHub, tagListings, tagPickupPoints, tagSellers } from "./tags";
 
 // The data layer (spec section 13). Listings and sellers come from the sample store, through lib/data/catalog.ts,
-// tagged so a write shows on the next request (selling spec 2.1), as do Featured (lib/data/featured.ts, never cached)
-// and the pickup points (lib/data/pickup-points.ts); the rest is still read from the fixtures. Switching to Supabase
-// changes only this file and those modules: keep the signatures, query the tables, keep the tags.
+// tagged so a write shows on the next request (selling spec 2.1), as do Featured (lib/data/featured.ts, never cached),
+// the pickup points (lib/data/pickup-points.ts) and the Hub's published posts (lib/data/hub-posts.ts); the rest is
+// still read from the fixtures. Switching to Supabase changes only this file and those modules: keep the signatures,
+// query the tables, keep the tags.
 
 export async function getCampuses(): Promise<readonly Campus[]> {
   "use cache";
@@ -216,9 +218,10 @@ export async function getFreeAndSwaps({ campus, limit }: CampusQuery): Promise<r
  */
 export async function getHubEvents({ campus, limit, from }: CampusQuery & { from: string }): Promise<readonly HubEvent[]> {
   "use cache";
+  tagHub();
   // `from` is today's SAST date (YYYY-MM-DD). It keeps past events out, and the cache keys on it, so it turns over each day.
   return orderHubPosts(
-    hubPosts.filter((post) => post.kind !== "tip"),
+    publishedPosts().filter((post) => post.kind !== "tip"),
     from,
   )
     .filter((post) => campus === ALL_CAMPUSES || post.campusSlug === ALL_CAMPUSES || post.campusSlug === campus)
@@ -238,8 +241,9 @@ export async function getHubPosts({
   from: string;
 }): Promise<readonly HubPost[]> {
   "use cache";
+  tagHub();
   return orderHubPosts(
-    hubPosts.filter((post) => kinds.includes(post.kind)),
+    publishedPosts().filter((post) => kinds.includes(post.kind)),
     from,
   );
 }
@@ -247,13 +251,19 @@ export async function getHubPosts({
 /** A post's page (community spec 5.2), past events and office hours included. */
 export async function getHubPost(id: string): Promise<HubPost | null> {
   "use cache";
-  return hubPosts.find((post) => post.id === id) ?? null;
+  tagHub();
+  // A draft or an unknown id has no page (staff tools plan decision 11).
+  return publishedPost(id);
 }
 
-/** Every post's id, so each post page is prerendered (community spec 3). */
+/**
+ * Every published post's id, so each post page is prerendered (community spec 3). A new post's page renders on its
+ * first request (staff tools plan decision 11).
+ */
 export async function getHubPostIds(): Promise<readonly string[]> {
   "use cache";
-  return hubPosts.map((post) => post.id);
+  tagHub();
+  return publishedPosts().map((post) => post.id);
 }
 
 /** The Hub's Verified sellers (community spec 5.1), A to Z by name so no one is favoured (plan decision 11). */

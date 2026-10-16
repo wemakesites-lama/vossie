@@ -4,6 +4,7 @@ import {
   deletePhotosOf,
   deletePhotosUsedBy,
   getPhoto,
+  handOverPhotoNow,
   photoIdOf,
   photoSrc,
   photoSrcsOf,
@@ -57,6 +58,20 @@ describe("stored photos (selling spec 2.4, plan decision 11)", () => {
     expect(await photoSrcsOf("acc-seller", "listing:l-001")).toEqual(new Set([listed]));
     expect(await photoSrcsOf("acc-seller", "listing:l-007")).toEqual(new Set([waiting]));
     expect(await photoSrcsOf("acc-seller", "shop")).toEqual(new Set([shop, draft]));
+  });
+
+  it("hands a waiting photo to a new owner with a use, and never anyone else's, a used one or a placeholder", async () => {
+    const [mine, used] = await storePhotos("acc-mentor", [upload(), upload()], NOW);
+    const [theirs] = await storePhotos("acc-admin", [upload()], NOW);
+    await claimPhotos("acc-mentor", [used], "post:h-001");
+    expect(handOverPhotoNow("acc-mentor", theirs, "hub", "post:h-002")).toBe(false);
+    expect(handOverPhotoNow("acc-mentor", used, "hub", "post:h-002")).toBe(false);
+    expect(handOverPhotoNow("acc-mentor", "/placeholders/hub/h-002.svg", "hub", "post:h-002")).toBe(false);
+    expect(handOverPhotoNow("acc-mentor", mine, "hub", "post:h-002")).toBe(true);
+    expect(await photoSrcsOf("hub", "post:h-002")).toEqual(new Set([mine]));
+    expect(await photoSrcsOf("acc-mentor", null)).toEqual(new Set());
+    await deletePhotosOf("acc-mentor");
+    expect(await photoSrcsOf("hub", "post:h-002")).toEqual(new Set([mine]));
   });
 
   it("deletes a use's photos except the ones it keeps, and every photo an account uploaded", async () => {

@@ -37,4 +37,10 @@ describe("HubPostCard (community spec 5.1)", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/All campuses/)).toBeNull();
   });
+
+  it("names a tip's campus when it's for one campus, as events do (staff tools plan amendment 34)", async () => {
+    const post = { ...(await getHubPost("h-013"))!, campusSlug: "midrand" };
+    render(<HubPostCard post={post} campusName="Midrand" />);
+    expect(screen.getByText("Midrand")).toHaveClass("hub-card-where");
+  });
 });

@@ -536,7 +536,11 @@ export type HubBooking = {
   help: string;
   /** A time that suits, up to 100 characters. */
   time: string;
-  status: BookingStatus;
+  /**
+   * Where it stands. "passed" is a request still open once the office hours' day is over (SAST): it can't be answered
+   * and isn't counted as waiting (staff tools plan amendment 23). Only the store's three are ever stored.
+   */
+  status: BookingStatus | "passed";
   createdAt: string;
 };
 

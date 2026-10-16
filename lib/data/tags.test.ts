@@ -45,6 +45,14 @@ const PICKUP_POINTS: ReadonlyArray<[string, () => Promise<unknown>]> = [
   ["getListingDetail", () => data.getListingDetail("l-001")],
 ];
 
+// The Hub's posts (staff tools plan decision 11, amendment 3): staff write them and RSVPs count into them.
+const HUB: ReadonlyArray<[string, () => Promise<unknown>]> = [
+  ["getHubEvents", () => data.getHubEvents({ campus: "midrand", limit: 4, from: "2026-10-14" })],
+  ["getHubPosts", () => data.getHubPosts({ kinds: ["event", "office-hours", "tip"], from: "2026-10-14" })],
+  ["getHubPost", () => data.getHubPost("h-001")],
+  ["getHubPostIds", () => data.getHubPostIds()],
+];
+
 describe("the data layer's cache tags (selling plan decision 6)", () => {
   it.each(LISTINGS)("%s is tagged listings and sellers", async (_name, read) => {
     await read().catch(() => undefined);
@@ -59,6 +67,11 @@ describe("the data layer's cache tags (selling plan decision 6)", () => {
   it.each(PICKUP_POINTS)("%s is tagged pickup-points", async (_name, read) => {
     await read().catch(() => undefined);
     expect(cacheTag).toHaveBeenCalledWith("pickup-points");
+  });
+
+  it.each(HUB)("%s is tagged hub", async (_name, read) => {
+    await read().catch(() => undefined);
+    expect(cacheTag).toHaveBeenCalledWith("hub");
   });
 
   it("leaves getFeatured uncached: it records the day's row (staff tools plan decision 9)", async () => {

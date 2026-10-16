@@ -1,13 +1,15 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ALL_CAMPUSES } from "@/lib/campus";
 import { hubKindLabel, placesLabel } from "@/lib/format";
 import { sastDateTime, shortSastDate } from "@/lib/time";
 import type { HubPost } from "@/lib/types";
 
 /**
  * A post in the Hub's feed (community spec 5.1): the kind as an eyebrow and the title; for events and office hours,
- * when (in SAST), where and for which campus, and for events how many are going; for tips, the date and a one-line
- * summary. The title's link covers the whole card. `campusName` is "All campuses" or the campus's name.
+ * when (in SAST), where and for which campus, and for events how many are going; for tips, the date, the campus when
+ * it's for one (staff tools plan amendment 34) and a one-line summary. The title's link covers the whole card.
+ * `campusName` is "All campuses" or the campus's name.
  */
 export function HubPostCard({ post, campusName }: { post: HubPost; campusName: string }) {
   let details: ReactNode;
@@ -17,6 +19,7 @@ export function HubPostCard({ post, campusName }: { post: HubPost; campusName: s
         <p className="hub-card-when">
           <time dateTime={post.publishedAt}>{shortSastDate(post.publishedAt)}</time>
         </p>
+        {post.campusSlug !== ALL_CAMPUSES && <p className="hub-card-where">{campusName}</p>}
         <p className="hub-card-summary">{post.summary}</p>
       </>
     );

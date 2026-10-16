@@ -574,3 +574,25 @@ describe("Featured and pickup points from the store (staff tools plan decisions 
     expect(sampleStore().featuredDraws.get("midrand:2026-10-14")?.sellerSlugs).toEqual(row.map((seller) => seller.slug));
   });
 });
+
+describe("the Hub's posts from the store (staff tools plan decisions 11 and 13)", () => {
+  it("keeps a draft off the feed, the homepage's row and its page", async () => {
+    sampleStore().hubPosts.get("h-001")!.published = false;
+    expect(await getHubPostIds()).not.toContain("h-001");
+    expect(await getHubPost("h-001")).toBeNull();
+    const feed = await getHubPosts({ kinds: ["event"], from: "2026-10-14" });
+    expect(feed.map((post) => post.id)).not.toContain("h-001");
+    const events = await getHubEvents({ campus: "all", limit: 20, from: "2026-10-14" });
+    expect(events.map((item) => item.id)).not.toContain("h-001");
+  });
+
+  it("counts RSVPs into an event's going", async () => {
+    sampleStore().hubRsvps.set("h-003:acc-student", {
+      key: "h-003:acc-student",
+      postId: "h-003",
+      accountId: "acc-student",
+      createdAt: "2026-10-14T08:00:00.000Z",
+    });
+    expect((await getHubPost("h-003"))?.going).toBe(24);
+  });
+});

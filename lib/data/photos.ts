@@ -103,6 +103,20 @@ export function claimPhotosNow(ownerId: string, srcs: Iterable<string>, use: str
   return claimed;
 }
 
+/**
+ * Gives a photo waiting on `ownerId`'s form to `newOwnerId` with this use, with no await (the Hub's covers, staff tools
+ * plan amendment 24: they wait under the staff member's own account and become the Hub's when the post is saved, so
+ * deleting the account keeps them). False, changing nothing, for anyone else's photo, one already in use, or a
+ * placeholder.
+ */
+export function handOverPhotoNow(ownerId: string, src: string, newOwnerId: string, use: string): boolean {
+  const row = sampleStore().photos.get(photoIdOf(src) ?? "");
+  if (row?.ownerId !== ownerId || row.use !== null) return false;
+  row.ownerId = newOwnerId;
+  row.use = use;
+  return true;
+}
+
 /** Deletes `ownerId`'s photos with this use, except those at the addresses in `keep`. */
 export async function deletePhotosUsedBy(
   ownerId: string,
