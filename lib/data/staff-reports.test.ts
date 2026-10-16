@@ -104,6 +104,16 @@ describe("the Hub's reports queue (staff tools spec 2.3, plan decision 5)", () =
     expect((await getReport(own.id))!.can).toEqual({ hide: false, pause: false });
   });
 
+  it("gives the reported listing's current title, and whether buyers can open it, for the hide page (amendment 29)", async () => {
+    const id = await report("acc-student", { kind: "listing", id: "l-001" }, 8);
+    sampleStore().listings.get("l-001")!.title = "Casio calculator, renamed";
+    expect((await getReport(id))!.listing).toEqual({ id: "l-001", title: "Casio calculator, renamed", public: true });
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, { status: "paused", pausedBy: "staff" });
+    expect((await getReport(id))!.listing?.public).toBe(false);
+    const shop = (await getReport(await report("acc-student", { kind: "seller", id: "tech-corner" }, 8)))!;
+    expect(shop.listing).toBeNull();
+  });
+
   it("dismisses one report with its note, once, naming the reported shop's owner and never the reporter", async () => {
     const id = await report("acc-student", { kind: "listing", id: "l-004" }, 8);
     expect(await closeReport(id, "Nothing wrong.", "acc-admin", NOW)).toEqual({

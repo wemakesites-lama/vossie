@@ -1,5 +1,6 @@
 import { FORMER_STAFF } from "@/lib/staff/audit-words";
 import type { ReportOutcome, ReportReason, ReportTarget } from "@/lib/types";
+import { publicListing } from "./catalog";
 import type { ListingRow, ReportRow, SellerRow } from "./rows";
 import { hideListingNow, type ListingDecision, type ShopDecision, staffPauseShopNow } from "./staff-shops";
 import { sampleStore } from "./store";
@@ -33,6 +34,11 @@ export type ReportView = {
   exists: boolean;
   /** The shop a pause would pause: the listing's, or the one reported. */
   shop: { slug: string; name: string } | null;
+  /**
+   * The reported listing as it is now, for the hide confirm page (amendment 29): its current title, and whether buyers
+   * can open its page (not when it's hidden, a draft, or its shop is paused by the Hub). Null for other reports.
+   */
+  listing: { id: string; title: string; public: boolean } | null;
   /** What the Hub can still do, besides Dismiss (plan decision 5). Nothing once it's closed. */
   can: { hide: boolean; pause: boolean };
 };
@@ -96,6 +102,7 @@ function toView(row: ReportRow): ReportView {
     closedByName: row.closedAt ? firstName(row.closedBy, FORMER_STAFF) : null,
     exists: row.targetKind === "request" || Boolean(row.targetKind === "listing" ? listing : shop),
     shop: shop ? { slug: shop.slug, name: shop.name } : null,
+    listing: listing ? { id: listing.id, title: listing.title, public: publicListing(listing.id) !== null } : null,
     can: allowed(row),
   };
 }
