@@ -180,6 +180,8 @@ export async function sendForApproval(formData: FormData): Promise<void> {
     await writeFormState(onboardingForm(5), { errors: ["guidelines-missing"], values: {}, notice: null }, now);
     done(onboardingPath(5));
   }
+  // A point retired since the draft was saved isn't the new shop's (staff tools spec 2.3): only points in use.
+  const spots = await spotsAt(draft.campusSlug);
   const made = await createShop(
     account.id,
     {
@@ -189,7 +191,7 @@ export async function sendForApproval(formData: FormData): Promise<void> {
       about: draft.about,
       image: draft.photoSrc ? { src: draft.photoSrc, alt: "" } : null,
       campusSlug: draft.campusSlug,
-      pickupPointIds: draft.pickupPointIds,
+      pickupPointIds: draft.pickupPointIds.filter((id) => spots.includes(id)),
     },
     now,
   );

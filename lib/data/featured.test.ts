@@ -72,7 +72,7 @@ describe("a campus's Featured row for the day (staff tools spec 2.8, plan decisi
     const added = await pin("nail-bar");
     expect(added).toMatchObject({ sellerSlug: "nail-bar", campusSlug: "pretoria", day: DAY, pinnedBy: "acc-admin" });
     expect((await featuredFor("pretoria", DAY))[0].slug).toBe("nail-bar");
-    await removePin((added as FeaturedPinRow).id);
+    await removePin((added as FeaturedPinRow).id, DAY);
     expect(await featuredFor("pretoria", DAY)).toEqual(first);
     // Shown in Pretoria's row today, Code coach rests there tomorrow, but a pin still puts it first.
     expect(slugsOf(first)).toContain("code-coach");
@@ -127,7 +127,21 @@ describe("pins (staff tools spec 2.8)", () => {
       expect.objectContaining({ sellerName: "Phone fix", campusSlug: "pretoria", day: DAY, pinnedByName: "Pieter" }),
       expect.objectContaining({ sellerName: "Nail bar", campusSlug: "all", day: "2026-10-20" }),
     ]);
-    expect(await removePin("pin-nope")).toBeNull();
+    expect(await removePin("pin-nope", DAY)).toBeNull();
+  });
+
+  it("refuses to remove a pin for a day gone by, keeping that day's recorded row (plan amendment 40)", async () => {
+    const yesterday = "2026-10-13";
+    const old = (await pin("nail-bar", "pretoria", yesterday)) as FeaturedPinRow;
+    const recorded = await featuredFor("pretoria", yesterday);
+    expect(await removePin(old.id, DAY)).toBe("past");
+    expect(sampleStore().featuredPins.has(old.id)).toBe(true);
+    expect(sampleStore().featuredDraws.get(`pretoria:${yesterday}`)?.sellerSlugs).toEqual(slugsOf(recorded));
+    // Today's pin still goes, and today's row is drawn again.
+    const today = (await pin("nail-bar")) as FeaturedPinRow;
+    await featuredFor("pretoria", DAY);
+    expect(await removePin(today.id, DAY)).toMatchObject({ id: today.id });
+    expect(sampleStore().featuredDraws.has(`pretoria:${DAY}`)).toBe(false);
   });
 
   it("names a pin whose admin has gone as a former staff member (amendment 17)", async () => {

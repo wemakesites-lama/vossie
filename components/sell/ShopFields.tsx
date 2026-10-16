@@ -134,19 +134,22 @@ export function ShopPhotoField({
   );
 }
 
-/** Says which saved points the Hub has retired (staff tools plan amendment 13), or "" for none. */
-export function retiredLine(names: readonly string[]): string {
+/**
+ * Says which saved points the Hub has retired (staff tools plan amendment 13), or "" for none. With `choose` false (a
+ * campus with no points in use left) it doesn't ask for another.
+ */
+export function retiredLine(names: readonly string[], choose = true): string {
   if (names.length === 0) return "";
   return names.length === 1
-    ? `${names[0]} is no longer used: choose another.`
-    : `${joinWords(names)} are no longer used: choose others.`;
+    ? `${names[0]} is no longer used${choose ? ": choose another" : ""}.`
+    : `${joinWords(names)} are no longer used${choose ? ": choose others" : ""}.`;
 }
 
 /**
  * The campus and its pickup points (selling spec 2.6 step 4, plan decision 15). The points shown are `campusSlug`'s,
  * named in a hidden field, so choosing another campus comes back with that campus's points, with no client code. Only
- * points in use are offered; a saved point the Hub has retired since is named in the hint, so it isn't dropped
- * without a word (staff tools plan amendment 13).
+ * points in use are offered; a saved point the Hub has retired since is named in the hint, or beside "no pickup
+ * points" when the campus has none in use left, so it isn't dropped without a word (staff tools plan amendment 13).
  */
 export function CampusSpotsFields({
   ids,
@@ -170,7 +173,8 @@ export function CampusSpotsFields({
   const campusError = errorFor(errors, ids.campus);
   const campusName = campuses.find((campus) => campus.slug === campusSlug)?.name ?? "";
   const spots = pickupPoints.filter((point) => point.campusSlug === campusSlug);
-  const gone = retiredLine(retired.filter((point) => point.campusSlug === campusSlug).map((point) => point.name));
+  const goneNames = retired.filter((point) => point.campusSlug === campusSlug).map((point) => point.name);
+  const gone = retiredLine(goneNames);
   return (
     <>
       <div className="form-field">
@@ -203,6 +207,7 @@ export function CampusSpotsFields({
       ) : (
         campusSlug && (
           <p className="form-hint">
+            {goneNames.length > 0 && `${retiredLine(goneNames, false)} `}
             {campusName || "This campus"} has no pickup points: you&apos;ll meet buyers online.
           </p>
         )

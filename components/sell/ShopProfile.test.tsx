@@ -141,6 +141,20 @@ describe("Edit shop (selling spec 2.11)", () => {
     );
   });
 
+  it("still says a saved point was retired when the campus has no points in use left (staff tools spec 2.3)", async () => {
+    const { pickupPoints: points } = sampleStore();
+    points.get("pp-midrand-library")!.retiredAt = "2026-10-14T08:00:00.000Z";
+    points.get("pp-midrand-reception")!.retiredAt = "2026-10-14T08:00:00.000Z";
+    viewer.id = "acc-seller";
+    render(await ShopProfile());
+    expect(screen.queryByRole("group", { name: "Pickup points at Midrand" })).toBeNull();
+    expect(
+      screen.getByText(
+        "Library entrance and Main reception are no longer used. Midrand has no pickup points: you'll meet buyers online.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("shows the signed-in seller's own shop, and sends anyone without one to /sell", async () => {
     viewer.id = "acc-seller";
     render(await ShopProfile());

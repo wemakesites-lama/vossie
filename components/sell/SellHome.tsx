@@ -16,12 +16,14 @@ import { ShopWaiting } from "./ShopWaiting";
 
 /**
  * Where a half-done application picks up: the first step not yet answered. Step 3's photo is optional, so a draft
- * with a photo has passed it; step 4 needs pickup points only on a campus that has some (Eduvos Online has none).
+ * with a photo has passed it; step 4 needs one of the campus's points in use (`spots`), only on a campus that has some
+ * (Eduvos Online has none). A saved point the Hub has retired since doesn't count (staff tools spec 2.3).
  */
-function resumeStep(draft: OnboardingDraftRow, campusHasPoints: boolean): OnboardingStep {
+function resumeStep(draft: OnboardingDraftRow, spots: readonly string[]): OnboardingStep {
   if (!draft.name || !draft.categorySlug) return 1;
   if (!draft.about) return 2;
-  if (!draft.campusSlug || (campusHasPoints && draft.pickupPointIds.length === 0)) return draft.photoSrc ? 4 : 3;
+  const pointsMissing = spots.length > 0 && !draft.pickupPointIds.some((id) => spots.includes(id));
+  if (!draft.campusSlug || pointsMissing) return draft.photoSrc ? 4 : 3;
   return 5;
 }
 
@@ -35,7 +37,8 @@ export async function SellHome() {
   const own = await getShopOf(account.id);
   if (!own) {
     const [draft, pickupPoints] = await Promise.all([getOnboardingDraft(account.id), getPickupPoints()]);
-    const step = draft ? resumeStep(draft, pickupPoints.some((point) => point.campusSlug === draft.campusSlug)) : 1;
+    const spots = pickupPoints.filter((point) => point.campusSlug === draft?.campusSlug).map((point) => point.id);
+    const step = draft ? resumeStep(draft, spots) : 1;
     return <SellPitch startHref={onboardingPath(step)} resuming={draft !== null} />;
   }
   if (own.status === "pending") return <ShopWaiting shopName={own.shop.name} sentAt={own.shop.createdAt} />;

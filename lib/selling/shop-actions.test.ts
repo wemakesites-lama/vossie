@@ -180,6 +180,14 @@ describe("the onboarding wizard (selling spec 2.6, plan decision 15)", () => {
     expect(await getOnboardingDraft("acc-student")).toBeNull();
   });
 
+  it("gives the new shop only the draft's points still in use (staff tools spec 2.3)", async () => {
+    await signedInAs("acc-student");
+    await saveOnboardingDraft({ ...finishedDraft(), pickupPointIds: ["pp-midrand-library", "pp-midrand-reception"] });
+    sampleStore().pickupPoints.get("pp-midrand-library")!.retiredAt = NOW.toISOString();
+    expect(await redirectOf(() => sendForApproval(form({ guidelines: "yes" })))).toBe("/sell");
+    expect((await getShopOf("acc-student"))?.shop.pickupPointIds).toEqual(["pp-midrand-reception"]);
+  });
+
   it("sends a draft with problems back to its first step, and asks for the guidelines box", async () => {
     await signedInAs("acc-student");
     await saveOnboardingDraft({ ...finishedDraft(), about: "", pickupPointIds: [] });
@@ -252,6 +260,14 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     });
     expect((await readFormState(PROFILE_FORM))?.notice).toBe("shop-saved");
     expect(request.updatedTags).toEqual(["sellers"]);
+  });
+
+  it("leaves a listing on its retired point when only the tagline changes (staff tools spec 2.3)", async () => {
+    await signedInAs("acc-seller");
+    sampleStore().pickupPoints.get("pp-midrand-library")!.retiredAt = NOW.toISOString();
+    await redirectOf(() => saveShopProfile(profile({ tagline: "New tagline.", pickupPoint: ["pp-midrand-reception"] })));
+    expect((await getShopOf("acc-seller"))?.shop.tagline).toBe("New tagline.");
+    expect(sampleStore().listings.get("l-001")?.pickupPointId).toBe("pp-midrand-library");
   });
 
   it("keeps what was typed when something's wrong, and saves nothing", async () => {

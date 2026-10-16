@@ -4,7 +4,7 @@ import { nameKey, SLUG_MAX, slugify } from "@/lib/selling/rules";
 import { sastDate } from "@/lib/time";
 import type { Condition, Handover, ImageRef, ListingKind, ListingState, PayMode, SellerStatus } from "@/lib/types";
 import { claimPhotosNow, deletePhotosOf, deletePhotosUsedByNow } from "./photos";
-import { pickupPointName } from "./pickup-points";
+import { pickupPointById, pickupPointName } from "./pickup-points";
 import type { ListingRow, OnboardingDraftRow, SellerRow } from "./rows";
 import { sampleStore } from "./store";
 
@@ -177,7 +177,8 @@ export async function createShop(
  * Edit shop (selling spec 2.11), and with it an approved or paused shop's one change of link. While the shop waits
  * for approval its link follows its name, and a link asked for is ignored (plan decision 16). Its listings follow its
  * campus, and a pickup whose point it no longer uses moves to its first point, or online when it has none (plan
- * decision 17). A replaced or removed photo is deleted, and the shop keeps no photo it doesn't show.
+ * decision 17), except one on a point the Hub retired, which stays while the shop stays on that campus (staff tools
+ * spec 2.3). A replaced or removed photo is deleted, and the shop keeps no photo it doesn't show.
  *
  * Nothing is saved when another shop on the campus has the name by now ("name-taken"), or the link can't change
  * ("slug-used", "slug-taken"); a link that is already the one asked for (a double click) isn't a change. From reading
@@ -216,6 +217,10 @@ export async function updateShop(
     if (listing.sellerSlug !== row.slug) continue;
     listing.campusSlug = row.campusSlug;
     if (listing.handover === "pickup" && !row.pickupPointIds.includes(listing.pickupPointId ?? "")) {
+      // A retired point stays on the listing while the shop stays on its campus (staff tools spec 2.3): Edit shop
+      // offers only points in use, so the shop's own list never holds it.
+      const point = pickupPointById(listing.pickupPointId);
+      if (point?.retired && point.campusSlug === row.campusSlug) continue;
       listing.pickupPointId = row.pickupPointIds[0] ?? null;
       if (listing.pickupPointId === null) listing.handover = "online";
     }

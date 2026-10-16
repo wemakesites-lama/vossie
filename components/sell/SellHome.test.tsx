@@ -68,6 +68,25 @@ describe("/sell (selling spec section 3)", () => {
     );
   });
 
+  it("picks up at the pickup points when the draft's only point has been retired (staff tools spec 2.3)", async () => {
+    viewer.id = "acc-student";
+    const now = new Date();
+    await saveOnboardingDraft({
+      ...emptyDraft("acc-student", "midrand", now),
+      name: "Zola's Bakes",
+      categorySlug: "food",
+      about: "I bake.",
+      photoSrc: "/photos/ph-1",
+      pickupPointIds: ["pp-midrand-library"],
+    });
+    sampleStore().pickupPoints.get("pp-midrand-library")!.retiredAt = now.toISOString();
+    render(await SellHome());
+    expect(screen.getByRole("link", { name: "Continue setting up your shop" })).toHaveAttribute(
+      "href",
+      "/sell/onboarding?step=4",
+    );
+  });
+
   it("tells a seller waiting for approval that the Hub is checking their shop (spec 2.7)", async () => {
     viewer.id = "acc-pending";
     render(await SellHome());

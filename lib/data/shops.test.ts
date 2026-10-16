@@ -121,6 +121,26 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     expect((await updateShop("acc-seller", { ...edit, name: "Gadget corner" }, NOW))?.shop?.slug).toBe("tech-corner");
   });
 
+  it("leaves a listing on its own retired point when the shop stays on that campus (staff tools spec 2.3)", async () => {
+    const points = sampleStore().pickupPoints;
+    points.get("pp-midrand-library")!.retiredAt = NOW.toISOString();
+    // Edit shop offers only points in use, so a save that changes only the tagline drops the retired one.
+    const inUse = { ...edit, name: "Tech corner", pickupPointIds: ["pp-midrand-reception"] };
+    await updateShop("acc-seller", { ...inUse, tagline: "Calculators, tested." }, NOW);
+    expect(sampleStore().listings.get("l-001")).toMatchObject({ handover: "pickup", pickupPointId: "pp-midrand-library" });
+    // A point the shop dropped that is still in use is replaced, as before.
+    points.get("pp-midrand-library")!.retiredAt = null;
+    await updateShop("acc-seller", inUse, NOW);
+    expect(sampleStore().listings.get("l-001")?.pickupPointId).toBe("pp-midrand-reception");
+  });
+
+  it("moves a listing off its retired point when the shop moves campus", async () => {
+    sampleStore().pickupPoints.get("pp-midrand-library")!.retiredAt = NOW.toISOString();
+    const pretoria = { ...edit, name: "Tech corner", campusSlug: "pretoria", pickupPointIds: ["pp-pretoria-reception"] };
+    await updateShop("acc-seller", pretoria, NOW);
+    expect(sampleStore().listings.get("l-001")?.pickupPointId).toBe("pp-pretoria-reception");
+  });
+
   it("moves its listings to a new campus, and a pickup to one of its spots, or online when it has none", async () => {
     const pretoria = { ...edit, name: "Tech corner", campusSlug: "pretoria", pickupPointIds: ["pp-pretoria-reception"] };
     await updateShop("acc-seller", pretoria, NOW);

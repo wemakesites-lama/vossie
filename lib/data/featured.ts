@@ -13,9 +13,9 @@ import { sampleStore } from "./store";
 // campus's row is recorded the first time it's drawn that day (by `${campus}:${day}`, "all" for visitors who haven't
 // chosen one), so it stays the same all day. A seller shown there sits out that campus's next six days while others
 // can fill the row, then fills what's left, the one shown longest ago first (the soft break, plan amendment 14).
-// Adding or removing a pin for a day forgets that campus's row for the day, so the next view draws again. Only
-// featuredFor records; the admin's preview doesn't (amendment 22). Every write checks and changes the store with no
-// await in between (amendment 19).
+// Adding or removing a pin for a day forgets that campus's row for the day, so the next view draws again; a pin for a
+// day gone by can't be removed, so its recorded row stays (amendment 40). Only featuredFor records; the admin's
+// preview doesn't (amendment 22). Every write checks and changes the store with no await in between (amendment 19).
 
 /** The homepage's four places (homepage spec 7.10). */
 export const FEATURED_PLACES = 4;
@@ -137,11 +137,16 @@ export async function addPin({
   return { ...pin };
 }
 
-/** Removes a pin, and that campus's row for its day, so it's drawn again. The pin, or null when there's none. */
-export async function removePin(id: string): Promise<FeaturedPinRow | null> {
+/**
+ * Removes a pin for `today` (SAST) or later, and that campus's row for its day, so it's drawn again. A pin for a day
+ * gone by stays, with its day's recorded row, which counts towards others' break ("past", plan amendment 40). The
+ * pin, or null when there's none.
+ */
+export async function removePin(id: string, today: string): Promise<FeaturedPinRow | "past" | null> {
   const store = sampleStore();
   const pin = store.featuredPins.get(id);
   if (!pin) return null;
+  if (pin.day < today) return "past";
   store.featuredPins.delete(id);
   store.featuredDraws.delete(drawKey(pin.campusSlug, pin.day));
   return { ...pin };
