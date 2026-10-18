@@ -38,8 +38,8 @@ const SECTIONS: readonly InfoSection[] = [
       <>
         <p>
           Vossie is still a preview. If you sign in, the server keeps your account, your sign-ins, your consent, your
-          messages, your reports, your notifications and, if you sell, your shop, your listings and their photos in its
-          memory only, so they are wiped whenever it restarts, and no email is sent (the sign-in code shows on the
+          RSVPs and slot requests, your messages, your reports, your notifications and, if you sell, your shop, your
+          listings and their photos in its memory only, so they are wiped whenever it restarts, and no email is sent (the sign-in code shows on the
           screen). Apart from that, a few small things are kept on your own device, so the site can remember your
           choices.
         </p>
@@ -149,6 +149,12 @@ const SECTIONS: readonly InfoSection[] = [
             and our legitimate interest in keeping students safe.
           </li>
           <li>
+            <strong>Your RSVPs and slot requests.</strong> When you say you&apos;re going to a Hub event or ask for a
+            slot at office hours, we keep that, what you&apos;d like help with and the time that suits, so the Hub can
+            plan and a mentor can answer. Hub staff see your first name with a request. Allowed under POPIA section 11:
+            needed to give you what you asked for.
+          </li>
+          <li>
             <strong>Your notifications.</strong> A note when someone messages you or a sale needs confirming, which
             only you see. Allowed under POPIA section 11: needed to run your account.
           </li>
@@ -161,13 +167,17 @@ const SECTIONS: readonly InfoSection[] = [
             is, stays. Allowed under POPIA section 11: needed to run your shop.
           </li>
           <li>
-            <strong>If you are in the Hub&apos;s programme: mentors&apos; notes.</strong> Mentors can keep private notes
-            and check-ins about your shop. Only Hub staff can see them, never the seller. Allowed under POPIA section
-            11: our legitimate interest in supporting student businesses.
+            <strong>If the Hub mentors your shop: mentors&apos; notes.</strong> A mentor the Hub assigns to your shop
+            can keep private notes and check-ins about it. Mentors and Hub admins can see them; you can&apos;t, and
+            they aren&apos;t in your data download, but you can ask the Information Officer for them. They are deleted
+            with your account. Allowed under POPIA section 11: our legitimate interest in supporting student
+            businesses.
           </li>
           <li>
-            <strong>A log of what Hub staff do.</strong> Who approved, hid or paused what, and when, so staff actions can
-            be checked. Allowed under POPIA section 11: our legitimate interest in running Vossie fairly.
+            <strong>A log of what Hub staff do.</strong> Who approved, declined, verified, hid or paused what, when and
+            why, so staff actions can be checked. Nobody can edit it. If you delete your account, entries about you
+            lose your name and the reason. Allowed under POPIA section 11: our legitimate interest in running Vossie
+            fairly.
           </li>
         </ul>
         <p>Vossie does not ask for your ID number, your bank details or your home address.</p>
@@ -185,10 +195,11 @@ const SECTIONS: readonly InfoSection[] = [
         </li>
         <li>Your account details stay until you delete your account.</li>
         <li>
-          Deleting your account removes your account, your sign-in sessions, your record of consent, your messages,
-          your reports and your notifications straight away, along with your shop, your listings, every photo you
-          uploaded and any shop answers you had not sent, if you sell. The other person in a conversation keeps only
-          their own messages, and your name shows as &quot;Deleted account&quot;.
+          Deleting your account removes your account, your sign-in sessions, your record of consent, your RSVPs and
+          slot requests, your messages, your reports and your notifications straight away, along with your shop, your
+          listings, every photo you uploaded, any shop answers you had not sent and mentors&apos; notes about your shop,
+          if you sell. The other person in a conversation keeps only their own messages, and your name shows as
+          &quot;Deleted account&quot;. The log of what Hub staff do keeps its entries, without your name.
         </li>
         <li>
           While Vossie is a preview, messages, reports, notifications, shops, listings and photos live in the
@@ -215,8 +226,9 @@ const SECTIONS: readonly InfoSection[] = [
             &quot;a student&quot;, never a name.
           </li>
           <li>
-            <strong>Hub staff</strong> can see reports and account details when they need to, to approve sellers and
-            keep Vossie safe.
+            <strong>Hub staff</strong> can see reports, account details, RSVPs and slot requests when they need to, to
+            approve sellers, run the Hub&apos;s events and keep Vossie safe. A mentor sees your shop&apos;s numbers,
+            never your messages.
           </li>
           <li>
             <strong>Service providers</strong> that run Vossie for Eduvos, such as hosting, the database and the service
@@ -297,7 +309,7 @@ export default function PrivacyPage() {
     <InfoPage
       title="Privacy policy"
       lede="How Vossie handles your personal information, under the Protection of Personal Information Act (POPIA)."
-      updated="2026-10-15"
+      updated="2026-10-18"
       draft
       sections={SECTIONS}
     />

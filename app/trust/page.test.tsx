@@ -24,12 +24,17 @@ describe("How trust works (info and system spec 2.3, 2.4 and 3)", () => {
     ]);
   });
 
-  it("explains Verified as the Hub's own check, and says it isn't a promise", () => {
+  it("explains Verified as a badge the Hub gives after checking, separate from approval, and not a promise (selling spec 8.10)", () => {
     render(<TrustPage />);
     const verified = screen.getByRole("region", { name: "Verified by the Hub" });
     expect(
-      within(verified).getByText(/means the Eduvos Incubation Hub has looked at a seller and approved their shop/),
+      within(verified).getByText(/is a badge the Eduvos Incubation Hub gives a seller after checking who they are/),
     ).toBeInTheDocument();
+    expect(
+      within(verified).getByText(/separate from approval: the Hub approves every shop before it can sell/),
+    ).toBeInTheDocument();
+    expect(within(verified).getByText(/only some approved shops are Verified/)).toBeInTheDocument();
+    expect(verified).not.toHaveTextContent("approved their shop");
     expect(within(verified).getByText(/isn't a promise that a deal will go well/)).toBeInTheDocument();
     expect(within(verified).getByRole("link", { name: "safety steps" })).toHaveAttribute("href", "/safety");
   });
@@ -49,10 +54,17 @@ describe("How trust works (info and system spec 2.3, 2.4 and 3)", () => {
     );
   });
 
-  it("says the badges on sellers today are samples, and that a badge can go down", () => {
+  it("says badges are worked out from conversations, sample shops keep sample badges, and a badge can go down (staff tools spec 2.7)", () => {
     render(<TrustPage />);
     const badges = screen.getByRole("region", { name: "The three badges" });
-    expect(within(badges).getByText(/the badges you see on sellers today are samples/)).toBeInTheDocument();
+    expect(
+      within(badges).getByText(/gets its badge worked out by the rules below, from its conversations on Vossie/),
+    ).toBeInTheDocument();
+    expect(
+      within(badges).getByText(/most shops are samples with no account behind them, and they show sample badges/),
+    ).toBeInTheDocument();
+    expect(badges).not.toHaveTextContent("once accounts are live");
+    expect(badges).not.toHaveTextContent("badges you see on sellers today are samples");
     expect(within(badges).getByText(/a badge can go down again/)).toBeInTheDocument();
   });
 
@@ -86,6 +98,19 @@ describe("How trust works (info and system spec 2.3, 2.4 and 3)", () => {
     expect(items[2]).toMatch(/its sellers come first/);
     expect(items[3]).toMatch(/sits out for a week/);
     expect(items[4]).toMatch(/Hub staff can pin a Verified seller/);
+    expect(within(featured).getByText(/Each campus gets its own draw every day/)).toBeInTheDocument();
+    expect(featured).not.toHaveTextContent("Once accounts are live");
+  });
+
+  it("says the week's break is a preference, kept only while there are enough other Verified sellers (amendment 3)", () => {
+    render(<TrustPage />);
+    const featured = screen.getByRole("region", { name: "How Featured today is picked" });
+    const items = within(featured)
+      .getAllByRole("listitem")
+      .map((item) => item.textContent);
+    expect(items[3]).toBe(
+      "A seller who has been featured sits out for a week when there are enough other Verified sellers to fill the row.",
+    );
   });
 
   it("is not a draft", () => {

@@ -50,10 +50,11 @@ export function PrivacySettingsView({ consent, deleteErrors, reports }: PrivacyS
           Download your data
         </h2>
         <p>
-          A file of what Vossie holds about you: your account, your consent, when you signed in, your conversations,
-          your reports and your notifications. If you sell, it holds your shop and your listings too, with each
-          photo&apos;s address so you can download it. If you have started to set up your shop but not sent it, it holds
-          your answers so far too.
+          A file of what Vossie holds about you: your account, your consent, when you signed in, your RSVPs and slot
+          requests, your conversations, your reports and your notifications. If you sell, it holds your shop and your
+          listings too, with each photo&apos;s address so you can download it. Mentors&apos; notes about your shop
+          aren&apos;t in it: you can ask the Information Officer for them. If you have started to set up your shop but
+          not sent it, it holds your answers so far too.
         </p>
         {/* A file from a route handler, not a page, so a plain link. */}
         <p>
@@ -93,12 +94,12 @@ export function PrivacySettingsView({ consent, deleteErrors, reports }: PrivacyS
           <li>you&apos;re signed out on every device;</li>
           <li>your record of consent goes;</li>
           <li>
-            your messages, reports and notifications go, and the other person keeps only their own side of each
-            conversation, with your name shown as &quot;Deleted account&quot;;
+            your RSVPs and slot requests, messages, reports and notifications go, and the other person keeps only their
+            own side of each conversation, with your name shown as &quot;Deleted account&quot;;
           </li>
           <li>
             your shop, your listings and every photo you uploaded go too, along with any shop answers you haven&apos;t
-            sent, and your shop&apos;s link stops working.
+            sent and mentors&apos; notes about your shop, and your shop&apos;s link stops working.
           </li>
         </ul>
         <p>Saved listings stay on this device until you clear them.</p>

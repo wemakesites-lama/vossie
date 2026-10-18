@@ -101,4 +101,24 @@ describe("Privacy settings (accounts spec 3.3)", () => {
     expect(within(deletion).getByText(/any shop answers you haven't sent/)).toBeInTheDocument();
     expect(screen.queryByText(/once selling opens/i)).toBeNull();
   });
+
+  it("says the download holds your RSVPs and slot requests, and that mentors' notes about your shop aren't in it (staff tools plan decisions 13 and 16)", () => {
+    render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} />);
+    const download = screen.getByRole("region", { name: "Download your data" });
+    // The earlier wording still holds, with the new item inside the list.
+    expect(within(download).getByText(/your RSVPs and slot requests, your conversations, your reports and your notifications/)).toBeInTheDocument();
+    // The policy says notes can be asked for from the Information Officer; the page where the file is says it too.
+    expect(within(download).getByText(/Mentors' notes about your shop aren't in it: you can ask the Information Officer for them\./)).toBeInTheDocument();
+  });
+
+  it("says deleting removes your RSVPs and slot requests, and a seller's mentors' notes about the shop (staff tools plan decision 16)", () => {
+    render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} />);
+    const deletion = screen.getByRole("region", { name: "Delete your account" });
+    expect(within(deletion).getAllByRole("listitem")).toHaveLength(5);
+    expect(within(deletion).getByText(/^your RSVPs and slot requests, messages, reports and notifications go/)).toBeInTheDocument();
+    // The other side still keeps its own messages and sees "Deleted account".
+    expect(within(deletion).getByText(/with your name shown as "Deleted account"/)).toBeInTheDocument();
+    // Notes are about a shop, so they sit with the seller's part of the list.
+    expect(within(deletion).getByText(/any shop answers you haven't sent and mentors' notes about your shop, and your shop's link stops working/)).toBeInTheDocument();
+  });
 });

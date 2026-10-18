@@ -120,6 +120,49 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     expect(within(sharing).getByText(/say "a student", never a name/)).toBeInTheDocument();
   });
 
+  it("says what the staff tools keep, who sees it and what deleting does (staff tools plan decisions 6, 13 and 16)", () => {
+    render(<PrivacyPage />);
+    const account = screen.getByRole("region", { name: "Your account" });
+    expect(within(account).getByText("Your RSVPs and slot requests.")).toBeInTheDocument();
+    expect(account).toHaveTextContent(/they aren't in your data download, but you can ask the Information Officer for them/);
+    expect(account).toHaveTextContent(/Nobody can edit it\. If you delete your account, entries about you lose your name/);
+    expect(screen.getByRole("region", { name: "How long we keep it" })).toHaveTextContent(/RSVPs and slot requests/);
+    expect(screen.getByRole("region", { name: "Who it is shared with" })).toHaveTextContent(/never your messages/);
+  });
+
+  it("says the Hub assigns the mentor, and no longer calls notes a plan for a programme (plan decision 16)", () => {
+    render(<PrivacyPage />);
+    const account = screen.getByRole("region", { name: "Your account" });
+    expect(within(account).getByText("If the Hub mentors your shop: mentors' notes.")).toBeInTheDocument();
+    expect(account).toHaveTextContent(/Mentors and Hub admins can see them; you can't/);
+    expect(account).toHaveTextContent(/They are deleted with your account/);
+    expect(account).not.toHaveTextContent("If you are in the Hub's programme");
+    expect(account).toHaveTextContent(/Who approved, declined, verified, hid or paused what, when and why/);
+    expect(account).toHaveTextContent(/entries about you lose your name and the reason/);
+  });
+
+  it("lists RSVPs and slot requests among what the preview keeps in memory, outside the 'if you sell' part", () => {
+    render(<PrivacyPage />);
+    const today = screen.getByRole("region", { name: "What this site stores today" });
+    expect(
+      within(today).getByText(
+        /your RSVPs and slot requests, your messages, your reports, your notifications and, if you sell, .* in its memory only/,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("says deleting an account removes its RSVPs, slot requests and notes about its shop, and what the log keeps", () => {
+    render(<PrivacyPage />);
+    const keep = screen.getByRole("region", { name: "How long we keep it" });
+    expect(keep).toHaveTextContent(/your RSVPs and slot requests, your messages, your reports and your notifications straight away/);
+    // Notes are about a shop, so they go with the shop's part of the list.
+    expect(keep).toHaveTextContent(/any shop answers you had not sent and mentors' notes about your shop, if you sell/);
+    expect(keep).toHaveTextContent(/The log of what Hub staff do keeps its entries, without your name\./);
+    const sharing = screen.getByRole("region", { name: "Who it is shared with" });
+    expect(sharing).toHaveTextContent(/RSVPs and slot requests/);
+    expect(sharing).toHaveTextContent(/A mentor sees your shop's numbers, never your messages\./);
+  });
+
   it("says where it is hosted is still to be decided, with the section 72 safeguards", () => {
     render(<PrivacyPage />);
     const hosting = screen.getByRole("region", { name: "Where it is hosted" });

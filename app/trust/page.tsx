@@ -15,9 +15,10 @@ const SECTIONS: readonly InfoSection[] = [
     children: (
       <>
         <p>
-          <strong>Verified</strong> means the Eduvos Incubation Hub has looked at a seller and approved their shop. The
-          Hub does this by hand, before a new seller can list anything. A Verified seller has a tick and the word
-          Verified on their listings and their shop.
+          <strong>Verified</strong> is a badge the Eduvos Incubation Hub gives a seller after checking who they are and
+          how they trade. It&apos;s separate from approval: the Hub approves every shop before it can sell, and only
+          some approved shops are Verified. A Verified seller has a tick and the word Verified on their listings and
+          their shop.
         </p>
         <p>
           Verified tells you the Hub knows who the seller is. It isn&apos;t a promise that a deal will go well, so keep
@@ -36,8 +37,9 @@ const SECTIONS: readonly InfoSection[] = [
           badge they meet, and a badge can go down again if their habits change.
         </p>
         <p>
-          Vossie is still being built, so the badges you see on sellers today are samples. The rules below are how real
-          badges will be worked out once accounts are live.
+          A shop with an account behind it gets its badge worked out by the rules below, from its conversations on
+          Vossie, whenever the Hub reviews the marketplace and after each reply or confirmed sale. While Vossie is a
+          preview, most shops are samples with no account behind them, and they show sample badges.
         </p>
         <h3>New seller</h3>
         <p>
@@ -88,8 +90,8 @@ const SECTIONS: readonly InfoSection[] = [
     children: (
       <>
         <p>
-          The Featured today row on the homepage shows sellers the Hub has verified. Once accounts are live, each campus
-          gets its own draw every day, for up to four places:
+          The Featured today row on the homepage shows sellers the Hub has verified. Each campus gets its own draw every
+          day, for up to four places:
         </p>
         <ul>
           <li>Only Verified sellers with an open shop and something listed can be picked.</li>
@@ -97,7 +99,10 @@ const SECTIONS: readonly InfoSection[] = [
           <li>
             If you&apos;ve chosen a campus, its sellers come first, and sellers from other campuses fill any gaps.
           </li>
-          <li>A seller who has been featured sits out for a week before they can be picked again.</li>
+          <li>
+            A seller who has been featured sits out for a week when there are enough other Verified sellers to fill the
+            row.
+          </li>
           <li>
             Hub staff can pin a Verified seller to a campus for a day. A pinned seller takes one of the places before the
             draw.
@@ -113,7 +118,7 @@ export default function TrustPage() {
     <InfoPage
       title="How trust works"
       lede="No star ratings. Trust here comes from checks by the Hub and from what sellers actually do."
-      updated="2026-10-14"
+      updated="2026-10-18"
       sections={SECTIONS}
     />
   );
