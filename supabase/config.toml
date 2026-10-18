@@ -432,3 +432,20 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# Staging: the "Vossie Market" project in Ireland (backend spec section 2). These values replace the local ones when
+# the CLI acts on this project (`config push`, `config diff`); everything else above applies to staging too.
+# Production gets its own block when it exists (phase E).
+[remotes.staging]
+project_id = "kahzsitqnocygsrdfpre"
+
+[remotes.staging.auth]
+# Sign-in emails carry a code, not a link, so this is only Auth's allow-list base.
+site_url = "https://vossie-pi.vercel.app"
+additional_redirect_urls = ["http://localhost:3100"]
+
+# The seed runs on staging only when asked (`db push --include-seed`), never on production: it holds the @vossie.test
+# sample accounts and allows that domain.
+[remotes.staging.db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]

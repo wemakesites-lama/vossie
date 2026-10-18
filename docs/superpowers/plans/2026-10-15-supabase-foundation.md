@@ -405,3 +405,25 @@ Each function is `security definer`, `set search_path = ''`, and takes identity 
   - pgTAP: 803 in 13 files. The new file is `12_text_checks`; the cases are added to 02 and 05 to 11.
   - Unit: 1,455.
   - `db lint` and `db advisors` report nothing.
+
+## Staging, 2026-10-15 (Task 13, done with Lama's approval)
+
+- **Linked:** `supabase link`, run in Lama's terminal with the scoped token. It asked for no database password: `db push` connects with a temporary login role.
+- **Pushed:**
+  - `supabase db push`: the 8 migrations;
+  - `db push --include-seed`: the seed. It needed `[remotes.staging.db.seed]`, because the CLI turns seeding off for remote projects unless the config turns it on.
+- **Seeded:** 13 campuses, 10 categories, 24 pickup points, 30 shops, 38 listings, the five `@vossie.test` accounts, `eduvos.com` and `vossie.test` allowed. The 4 jobs and the private `photos` bucket are in.
+- **Settings:**
+  - `config push` sent the API and storage groups: the `public` schema only, 5 MiB files, analytics off.
+  - It refused the auth group. Supabase doesn't allow template changes on a Free project using its built-in email, and the CLI sends auth as one group.
+  - So the auth settings went through the Management API without the templates: site address, allow-list, 6-digit codes for 10 minutes, a code needed to change a password, both hooks on, and authenticator-app MFA off. Read back and confirmed.
+  - `supabase config diff` kept showing the old auth values afterwards; trust a direct read instead.
+  - The two email subjects and the code template wait for custom SMTP (spec open decision 1). Until then staging sends Supabase's default email, which shows a link, not a code.
+- **Checked on staging:**
+  - signed-out visitors read live listings and are refused profiles (42501);
+  - a Gmail address is refused for a code and for a password sign-up (403), with no email sent;
+  - the advisors show only expected warnings: user actions that signed-in users may run (lint 0029, intended), leaked-password protection and too few MFA options (sign-in is code-only, and passwords can't get a token), and the platform's own `rls_auto_enable`.
+- **`public.rls_auto_enable()`** is Supabase's: the `ensure_rls` event trigger that new projects get, which turns RLS on for new tables. It isn't in our migrations. It returns `event_trigger`, so it can't be called as a function, but `anon` and `authenticated` hold EXECUTE on it. A later migration may revoke that, guarded by `if exists` because the local stack doesn't have it.
+- **For production (phase E):**
+  - campuses, categories and pickup points are only in the seed today, and the seed never reaches production. Move them into a migration (or a production-only data script) before launch;
+  - production's allowed domains come from an ops step.
