@@ -146,6 +146,75 @@ The controller adds amendments here; they override the tasks below wherever they
 
 1. **A first publish is decided once, by stage F** (selling plan amendment 9.2, controller, 2026-10-15). `ListingRow` has `firstPublishedAt`, and `lib/data/own-listings.ts` exports `isFirstPublish(before, state)`. Wherever this plan computes `firstPublish` in `saveListingForm` (as `saved.state !== "draft" && (!existing || existing.state === "draft")`), use `isFirstPublish(existing, saved.state)` instead, with `existing` the row read before the save. Otherwise a listing published, saved back as a draft and published again would notify every follower twice. Add a test: publish, draft, publish again sends one new-listing notification.
 2. **Also from stage F's amendments 8 and 9:** `AccountExport` ends `…, shop, listings, onboardingDraft` (this plan's `requests` and `following` go after it, and its key-order test says so); `getPhoto(id, now)` takes a required `now`; `/photos/[id]` is `private`; `shopStats` skips `sellerGone` conversations, and so should any count this plan adds (offer threads included); prices are whole rand ("R250,00" is 250) and shop names compare in any alphabet. Read the selling plan's amendments 8 and 9 before Task 1.
+3. **A new request is made once, however many times its form is sent** (selling plan amendment 14.1; staff tools amendment 15.7; plan review, Claude under decision 54, 2026-10-18).
+   - **The form.** `RequestForm` (new request only) calls `issueOnceToken()` from `lib/staff/once.ts` after `connection()`, inside its `<Suspense>`. `RequestFormView` takes an `once: string | null` prop and renders `<input type="hidden" name="once" value={once}>` when `requestId` is null.
+   - **The action.** In `saveMyRequest`, for a new request, after the field and limit checks pass and straight before `createRequest`, it calls `takeOnceToken(field(formData, "once"), now)`:
+     - `"none"`: keep the typed values, write the error `form-expired` ("This form has expired. Check it and send it again.", no field), and `back(path)`.
+     - `"again"`: `done(sent?.path ?? YOUR_REQUESTS_PATH)`, creating nothing.
+     - `"first"`: create the request, then `leaveOnceToken(once, { path: requestPath(saved.id), notice: "posted" }, now)`.
+   - **Tests.**
+     - Two posts with one token make one request, and the second lands on the first one's page.
+     - A missing or forged token is refused, with the typed values kept.
+     - `actions.test.ts`'s new-request posts and `summary-ids.test.tsx` pass a token or `once={null}`.
+     - The e2e `postRequest` helper needs no change.
+4. **Every hand-made browser context blocks the worker.** Playwright 1.64's `use.serviceWorkers` reaches only the built-in `context` and `page` fixtures.
+   - Task 21 also adds `serviceWorkers: "block"` to every `browser.newContext(…)` in `tests/e2e`. Start with the two helpers, `tests/e2e/helpers/messaging.ts` (`sellerPage`) and `helpers/staff.ts` (`signedInPage`); there were 11 calls on 2026-10-18.
+   - Task 21's Step 7 and Task 24 check that `grep -rn "newContext(" tests/e2e | grep -v serviceWorkers` prints nothing.
+   - `offline.spec.ts` stays the only place that allows the worker.
+5. **The boot script stays out of the client bundle.** `lib/install.ts`, which is client code on every page, imports from `lib/boot-script.ts`.
+   - Keep `BOOT_SCRIPT` a plain template literal: `` export const BOOT_SCRIPT = `(function(){${BOOT_BODY}${process.env.NODE_ENV === "production" && WORKER_ON ? WORKER_REGISTRATION : ""}})();` ``, with `WORKER_ON` from `lib/offline.ts`. `bootScript(withWorker)` stays an exported function declaration, for the tests only.
+   - After `pnpm build`, `grep -l "serviceWorker.register" .next/static/chunks/*.js` must print nothing. If it prints a file, stop: that is the cut rule.
+6. **The kill switch also stops registering, and the worker's version follows the page.**
+   - The registration joins the boot script only when `WORKER_ON` is set (amendment 5). Devices that already have the worker get the off worker through the browser's own update check.
+   - `workerSource` puts a short hash of `OFFLINE_PAGE` (a 32-bit FNV of its text, in hex) beside `WORKER_VERSION` in its first line. A test checks that changing the page changes `workerSource(true)`.
+   - Task 21's Step 9 uses a throwaway Playwright context, never a personal Chrome profile, and never opens a production build on port 3100: a worker registered there would control Lama's dev pages.
+7. **One offer per shop per request, even when it's sent twice at once.**
+   - In `startOffer`, the find and the insert run with no `await` between them: use a private synchronous `offerRow(requestId, sellerSlug)` in place of `await findOffer(…)`. `findOffer` stays for the composer.
+   - Test: `await Promise.all([offer(), offer()])` gives one thread with one message.
+   - Task 24 adds to the go-live checklist that Supabase needs a unique index on the conversation's request and shop where the request is set.
+8. **A hidden request shows as hidden on its reports** (staff tools rule, `bda34a5`).
+   - In `toView`, when `requestRow?.hiddenAt` is set, set `unseen = "hidden"`.
+   - `AdminReport`'s unseen sentence names the kind: "Students can't see this request: the Hub has hidden it." for a request, and the existing listing sentence otherwise.
+   - Test both.
+9. **Which offer counts skip a shop that has gone.**
+   - The request's offers count (`offerThreadCount`, `offersForRequest`) keeps threads whose shop has gone, and the asker sees "A closed shop" (plan decision 10).
+   - `countOffersSince` (the 20-a-day limit) skips rows with `sellerGone`.
+   - Amendment 2's "offer threads included" means shop counts only.
+   - Test: a thread with `sellerGone` doesn't count toward a shop's 20 a day.
+10. **The JS ledger has a column for the new-listing form.** It starts at 152,287 B, 18 B under the stop line. Tasks 15 to 19, 21 and 24 fill it from `performance.spec.ts`'s signed-in "new listing form" row. The stop line is 152,305 B; the listing page is at 151,769 B.
+11. **Built tests that list everything:**
+    - **Task 6:** the export test destructures `requests, following` beside the other keys (its `rest` is compared with `toEqual`) and expects each to equal `[]`, as staff tools amendment 4 did.
+    - **Task 7:** in `lib/auth/account-actions.test.ts`, `toEqual(["sellers", "hub"])` becomes `["sellers", "hub", "requests"]`, and `toEqual(["hub"])` becomes `["hub", "requests"]`; rename that test "…the Hub's and the board's tags…". `next/cache` is already mocked there.
+    - **Task 19:** `AccountView.test.tsx`'s "links to messages, notifications, Saved, selling and privacy settings" gains `["Your requests", "/account/requests"]` after Saved.
+    - **Tasks 11 and 13:** `summary-ids.test.tsx` has no `toHaveLength`. Append `"request-new-summary"`, `"request-r-001-summary"` and `"offer-r-001-summary"` to its `toEqual` list.
+12. **The privacy page covers the new data everywhere** (Task 19, spec 2.23). In "What this site stores today", the list of what the server keeps in memory adds "your Looking For requests and the shops you follow". So does the "While Vossie is a preview…" bullet in "How long we keep it".
+13. **Skeletons fit their pages** (Tasks 12 and 23).
+    - The delete page gets its own skeleton, sized to its content, not `RequestFormSkeleton` (selling found a 240px footer jump on Delete listing).
+    - `cls.spec.ts` gains signed-in rows for a request's delete and edit pages, using the asker's own request in `community-checks.spec.ts`.
+14. **Saved's tab switch shows the skeleton.** Key Saved's `<Suspense>` by tab (`key={tab}`, passed from a small wrapper), so a client-side switch never shows the other tab's content while the new one loads.
+15. **Odds and ends:**
+    - **The offered pill:** add `.status-pill[data-status="offered"]` colours, navy on pale.
+    - **A wrong task number:** the "Where things stand" privacy-guard row should say that Task 21, not Task 20, names `vossie_offline`.
+    - **The storefront band:** Task 17's `.seller-hero-actions { width: 18rem }` stretches Message seller (`flex: 1`) on every storefront at tablet and desktop. Check it at 768 and 1440 against the owner's view. If it changes the look, give `.seller-follow` `width: 0; min-width: 100%` instead, so its words never widen the band.
+    - **No new summary id:** the request variant of `ReportConfirm` reuses the `hide-<report>-summary` id, so `summary-ids.test.tsx` needs nothing new for it.
+16. **Mechanical renames and quote fixes** (the review, against `0d396c6`; edit in place, no behaviour change):
+
+    | Task / step | Plan says | Built code |
+    |---|---|---|
+    | Recheck 3; Task 1 Step 7.3 | `STORE_VERSION` "4 after G, so 5" | It's 6 now (`lib/data/store.ts`), so set it to **7** (or one more than it is when you start) |
+    | Recheck 1; Tasks 1 and 24, Step 1 | `git status` shows only ` M .claude/launch.json` | It also shows ` M docs/PROGRESS.md`, ` M docs/reference/LANDING-DECISIONS.md` and three untracked 2026-10-15 docs: other sessions' work. Never stage them. Task 24 hands its PROGRESS section and decision row to the controller as snippet files, as stage F did |
+    | Recheck 12; Task 5 Step 5 | `moveShop`'s loops "end with E's reports" | They end with G's `featuredPins` and `featuredDraws` loops (`lib/data/shops.ts`); add the follows loop after them |
+    | Recheck 14; Task 10 Step 2.3 | Replace `hide: open && Boolean(listing) && !listing?.hiddenAt` in `can` | `toView` sets `canHide` in a `switch (row.targetKind)`. Change `case "request": canHide = false; // stage H` to `canHide = open && Boolean(requestRow) && !requestRow?.hiddenAt;` (`lib/data/staff-reports.ts`) |
+    | Task 10 Step 4.2 | Insert before `if (kind === "hide" && report.can.hide) {` | The line is `if (kind === "hide" && report.can.hide && report.target.kind === "listing") {` (`ReportConfirm.tsx`) |
+    | Task 10 Step 4 | `AdminReport`'s one-line sentence | The sentence spans two lines; edit by meaning |
+    | Task 9 Step 1 (listing-actions test) | `saveListingForm(fanForm())`, `fanForm({ … })` | `fanForm` is async (it carries the token): `saveListingForm(await fanForm(…))`, after `signedInAs` |
+    | Task 9 Step 4 (and amendment 1) | `firstPublish = saved.state !== "draft" && …` | `isFirstPublish(existing, saved.state)` (`lib/data/own-listings.ts`). Insert it after `listingsChanged();` in `listing-actions.ts` |
+    | Task 14 Step 1 tests | `replyForm(null)` | `replyForm(null, offer.id)`: it takes `(state, conversationId)` |
+    | Task 14 Step 4.5 | "The other person has left Vossie, so you can't reply." | Keep the built words: "This person has left Vossie, so you can't reply." (messaging amendment 3.9) |
+    | Task 23 Step 2 (cls rows) | A fourth value of `true` | The fourth value is `signIn?: string`, the sample's button label: `"Student, Midrand"` |
+    | Task 23 Step 3 (performance) | Declares a new `const SIGNED_IN_PAGES: [name, path][]` and loop | It already exists as `[name, path, account]` with a loop. Add rows with `"Student, Midrand"`; don't redeclare it |
+    | Task 7 Step 5 | "If the file has no `vi.mock("next/cache")`, add one" | It has one; nothing to add |
+    | Everywhere | Staff create forms | Since this plan was written, staff create forms carry a one-time token (`lib/staff/once.ts`), shop links reserve `export` (`RESERVED_SLUGS`), and `approveShop`/`declineShop` take the owner's id |
 
 ## Store design
 
