@@ -8715,3 +8715,111 @@
     color: var(--color-navy);
   }
 }
+
+/* --- Staff tools: RSVP and Request a slot (staff tools plan, Task 15, spec 2.5) --- */
+@layer components {
+  /* "You're going" and Cancel my RSVP share one row, the button's 48px, so the action's room still fits. */
+  .hub-rsvp-going {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+  }
+
+  /* Navy on pale is 10.6:1. */
+  .hub-rsvp-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: var(--color-pale);
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  /* .page and .hub-book-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
+  .hub-book-page {
+    padding: 24px 16px 64px;
+  }
+
+  .hub-book-body {
+    display: grid;
+    justify-items: start;
+    gap: 18px;
+    max-width: 40rem;
+  }
+
+  .hub-book-body > form {
+    width: 100%;
+  }
+
+  .hub-book-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: clamp(2rem, 1.7rem + 1.2vw, 2.75rem);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .hub-book-post {
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+
+  .hub-book-request {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+    padding: 18px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+  }
+
+  .hub-book-heading {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 22px;
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  .hub-book-status {
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  /* The two facts stand apart: each name over its answer, a gap between the pairs. */
+  .hub-book-facts {
+    display: grid;
+    gap: 10px;
+  }
+
+  /* Muted on the grey panel is 5.3:1. */
+  .hub-book-facts dt {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  .hub-book-skeleton-crumb {
+    width: 12rem;
+    height: 44px;
+  }
+
+  .hub-book-skeleton-title {
+    width: min(20rem, 80%);
+    height: 44px;
+  }
+
+  .hub-book-skeleton-form {
+    width: 100%;
+    height: 22rem;
+    border-radius: var(--radius-card);
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .hub-book-page {
+      padding-inline: 40px;
+    }
+  }
+}

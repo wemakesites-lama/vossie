@@ -7,6 +7,7 @@ import { siteUrl } from "@/lib/site-url";
 // pitch page and "/sell/" is everything under it (plan decision 8). Staff pages aren't listed: naming them would
 // advertise them, and they answer 404 to everyone else (staff tools decision 1).
 // Messaging's pages belong to one person too (messaging plan decision 24); "*" matches any listing or shop.
+// A Hub post's slot request page (`/hub/*/book`) belongs to one student (staff tools plan, Task 15).
 const DISALLOWED = [
   "/saved",
   "/login",
@@ -18,6 +19,7 @@ const DISALLOWED = [
   "/report",
   "/listings/*/message",
   "/sellers/*/message",
+  "/hub/*/book",
 ];
 
 export default function robots(): MetadataRoute.Robots {

@@ -274,9 +274,10 @@ test.describe("Hub posts (spec 5.2)", () => {
     await hubCards(page).first().getByRole("link").click();
     await expect(page).toHaveURL(/\/hub\/h-\d{3}$/);
     const id = new URL(page.url()).pathname.split("/").pop()!;
+    // Signing in comes back to the post's request page (staff tools spec 2.5).
     await expect(page.getByRole("link", { name: "Request a slot" })).toHaveAttribute(
       "href",
-      `/login?next=%2Fhub%2F${id}`,
+      `/login?next=%2Fhub%2F${id}%2Fbook`,
     );
     await expect(page.getByText("Tell the mentor what you'd like help with when you sign in.")).toBeVisible();
   });

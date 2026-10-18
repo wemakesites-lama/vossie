@@ -9,6 +9,7 @@ import { replyForm, ThreadView } from "@/components/messages/ThreadView";
 import { ListingFormView } from "@/components/sell/ListingFormView";
 import { OnboardingView } from "@/components/sell/OnboardingView";
 import { ShopProfileView } from "@/components/sell/ShopProfileView";
+import { BookSlotView } from "@/components/hub/BookSlot";
 import { AdminFeatured } from "@/components/staff/AdminFeatured";
 import { AdminPickupPoints } from "@/components/staff/AdminPickupPoints";
 import { AdminReport } from "@/components/staff/AdminReport";
@@ -67,6 +68,7 @@ vi.mock("@/lib/staff/admin-actions", () => ({
   restorePoint: async () => {},
 }));
 vi.mock("@/lib/staff/hub-actions", () => ({ answerSlot: async () => {}, savePost: async () => {} }));
+vi.mock("@/lib/hub-actions", () => ({ cancelRsvp: async () => {}, rsvpToEvent: async () => {}, sendSlotRequest: async () => {} }));
 
 const account: Account = {
   id: "acc-student",
@@ -265,10 +267,11 @@ describe("error summary ids (accounts spec 6)", () => {
           campuses={campusChoices}
           coverSrc={editedPost.image.src}
         />
+        <BookSlotView post={editedPost} passed={false} latest={null} values={{}} errors={oops} notice={null} />
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(26);
+    expect(summaries).toHaveLength(27);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -299,6 +302,7 @@ describe("error summary ids (accounts spec 6)", () => {
       // Not "…-summary": that is the editor's Summary field's id.
       "new-post-problems",
       "edit-h-002-problems",
+      "book-h-002-summary",
     ]);
   });
 });

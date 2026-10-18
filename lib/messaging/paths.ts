@@ -59,18 +59,24 @@ export function parseReportTarget(params: Readonly<Record<string, string | strin
   return found.length === 1 && isId(found[0].id) ? found[0] : null;
 }
 
-const ACCOUNT_ONLY = ["/account", "/messages", "/notifications"];
+// Pages that need an account, or a staff role (staff tools plan, Task 15): going back would only come back to sign-in.
+const ACCOUNT_ONLY = ["/account", "/messages", "/notifications", "/admin", "/mentor", "/hub/manage", "/hub/new"];
+const HUB_EDIT = /^\/hub\/[a-z0-9][a-z0-9-]*\/edit$/;
+const HUB_BOOK = /^\/hub\/([a-z0-9][a-z0-9-]*)\/book$/;
 const COMPOSER = /^\/(listings|sellers)\/([a-z0-9][a-z0-9-]*)\/message$/;
 
 /**
  * Where the sign-in page's back link goes for `next` (plan decision 4): the listing, shop or request behind a composer
- * or a report form; nowhere for pages that need an account, since going back would only come back to sign-in; and
- * `next` itself otherwise. `next` has already been through safeNextPath.
+ * or a report form; nowhere for pages that need an account, or a staff role, since going back would only come back to
+ * sign-in; a slot request's post for its request page; and `next` itself otherwise. `next` has already been through safeNextPath.
  */
 export function backPathFor(next: string): string | null {
   const url = new URL(next, "https://vossie.invalid");
   const path = url.pathname;
   if (ACCOUNT_ONLY.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) return null;
+  if (HUB_EDIT.test(path)) return null;
+  const booking = HUB_BOOK.exec(path);
+  if (booking) return `/hub/${booking[1]}`;
   const composer = COMPOSER.exec(path);
   if (composer) return `/${composer[1]}/${composer[2]}`;
   if (path === "/report" || path === "/report/sent") {

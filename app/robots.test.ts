@@ -47,6 +47,11 @@ describe("robots.txt (info and system spec 2.8)", () => {
     }
   });
 
+  it("keeps crawlers off a Hub post's slot request page, and not off the post (staff tools plan, Task 15)", () => {
+    expect(blocked("/hub/h-002/book")).toBe(true);
+    expect(blocked("/hub/h-002")).toBe(false);
+  });
+
   it("doesn't advertise staff pages", () => {
     expect(disallow.join(" ")).not.toMatch(/admin|mentor|manage/);
   });

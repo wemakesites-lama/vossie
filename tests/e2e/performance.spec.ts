@@ -15,6 +15,8 @@ const PAGES: ReadonlyArray<[name: string, path: string, saved?: string]> = [
   ["request page", "/looking-for/r-001"],
   ["Hub page", "/hub"],
   ["Hub post", "/hub/h-013"],
+  ["Hub event", "/hub/h-001"],
+  ["Hub office hours", "/hub/h-002"],
   ["sell page", "/sell"],
 ];
 

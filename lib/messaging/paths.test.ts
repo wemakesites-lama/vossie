@@ -79,6 +79,14 @@ describe("messaging addresses (messaging spec 2.1, 2.8 and 3)", () => {
     expect(backPathFor("/messages-old")).toBe("/messages-old");
   });
 
+  it("gives staff pages no back link, and a slot request page its post (staff tools plan, Task 15)", () => {
+    for (const next of ["/admin", "/admin/reports/rep-1", "/mentor/tech-corner", "/hub/manage", "/hub/new", "/hub/h-002/edit"]) {
+      expect(backPathFor(next), next).toBeNull();
+    }
+    expect(backPathFor("/hub/h-002/book")).toBe("/hub/h-002");
+    expect(backPathFor("/hub/h-002")).toBe("/hub/h-002");
+  });
+
   it("keys each form's state by what it's about, so two drafts never mix (D decision 3)", () => {
     const keys = [
       composerFormKey({ kind: "listing", listingId: "l-001" }),
