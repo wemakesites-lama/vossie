@@ -13,6 +13,7 @@ import { BookSlotView } from "@/components/hub/BookSlot";
 import { AdminFeatured } from "@/components/staff/AdminFeatured";
 import { AdminPickupPoints } from "@/components/staff/AdminPickupPoints";
 import { AdminReport } from "@/components/staff/AdminReport";
+import { MentorShop } from "@/components/staff/MentorShop";
 import { NEW_POST_VALUES, PostEditor, postValues } from "@/components/staff/PostEditor";
 import { ReportConfirm } from "@/components/staff/ReportConfirm";
 import { SellerConfirm } from "@/components/staff/SellerConfirm";
@@ -21,6 +22,7 @@ import { categories } from "@/data/fixtures/categories";
 import { pickupPoints } from "@/data/fixtures/pickup-points";
 import { sampleSellerRows } from "@/data/fixtures/shops";
 import { getPostRow } from "@/lib/data/hub-posts";
+import { getMentoredShop, listNotes } from "@/lib/data/mentors";
 import { createReport } from "@/lib/data/reports";
 import { getReport } from "@/lib/data/staff-reports";
 import { getShopForReview } from "@/lib/data/staff-shops";
@@ -69,6 +71,7 @@ vi.mock("@/lib/staff/admin-actions", () => ({
 }));
 vi.mock("@/lib/staff/hub-actions", () => ({ answerSlot: async () => {}, savePost: async () => {} }));
 vi.mock("@/lib/hub-actions", () => ({ cancelRsvp: async () => {}, rsvpToEvent: async () => {}, sendSlotRequest: async () => {} }));
+vi.mock("@/lib/staff/mentor-actions", () => ({ addCheckIn: async () => {}, addMentorNote: async () => {} }));
 
 const account: Account = {
   id: "acc-student",
@@ -194,6 +197,11 @@ describe("error summary ids (accounts spec 6)", () => {
       { slug: "pretoria", name: "Pretoria" },
     ];
     const editedPost = (await getPostRow("h-002"))!;
+    const mentored = (await getMentoredShop(
+      "tech-corner",
+      { id: "acc-mentor", roles: ["mentor"] },
+      new Date("2026-10-14T08:42:00.000Z"),
+    ))!;
     render(
       <>
         <EmailStep next={null} email="" consented={false} errors={oops} samples={null} />
@@ -268,10 +276,18 @@ describe("error summary ids (accounts spec 6)", () => {
           coverSrc={editedPost.image.src}
         />
         <BookSlotView post={editedPost} passed={false} latest={null} values={{}} errors={oops} notice={null} />
+        <MentorShop
+          shop={mentored}
+          campusName="Midrand"
+          notes={await listNotes(mentored.ownerId)}
+          noteForm={{ values: {}, errors: oops }}
+          checkInForm={{ values: {}, errors: oops }}
+          today="2026-10-14"
+        />
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(27);
+    expect(summaries).toHaveLength(29);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -303,6 +319,8 @@ describe("error summary ids (accounts spec 6)", () => {
       "new-post-problems",
       "edit-h-002-problems",
       "book-h-002-summary",
+      "note-tech-corner-summary",
+      "check-in-tech-corner-summary",
     ]);
   });
 });

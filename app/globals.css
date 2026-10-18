@@ -8823,3 +8823,40 @@
     }
   }
 }
+
+/* --- Staff tools: the mentor dashboard (staff tools plan, Task 16, spec 2.6) --- */
+@layer components {
+  .staff-download {
+    margin-top: 8px;
+  }
+
+  /* A flag's name in bold danger red (6.6:1 on white), and what it means under it. */
+  .staff-flags {
+    display: grid;
+    gap: 10px;
+  }
+
+  .staff-flags dt {
+    color: var(--color-danger);
+    font-weight: 700;
+  }
+
+  .staff-notes {
+    display: grid;
+    gap: 12px;
+  }
+
+  .staff-note {
+    display: grid;
+    gap: 6px;
+    padding: 14px 16px;
+    border-left: 4px solid var(--color-navy);
+    border-radius: 0 var(--radius-card) var(--radius-card) 0;
+    background: var(--color-panel);
+  }
+
+  .staff-note-kind {
+    color: var(--color-navy);
+    font-weight: 700;
+  }
+}
