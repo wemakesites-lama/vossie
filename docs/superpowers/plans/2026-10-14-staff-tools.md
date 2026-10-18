@@ -194,6 +194,15 @@ The controller adds amendments here; they override the tasks below wherever they
     6. **A decision acts on the shop that was reviewed.** The approve and decline forms post the owner's id as a hidden field; `approveShop` and `declineShop` refuse (the "nothing changed" notice) when it doesn't match the shop now on that link.
     7. **Pins go with a deleted shop:** `forgetShopOf` deletes `featuredPins` on its slug.
     8. **The gate is tested on every action:** loop over every exported admin action as a mentor and expect the 404 with the store unchanged.
+15. **The review of Tasks 13 to 16** (the controller's reviewer; nothing Critical; Claude, under decision 54, 2026-10-18). A fix task runs after Task 17 and before Task 18, test first.
+    1. **Preview links are navy** (important, contrast). `.staff-body p a:not(.btn):not(.link-button)` outranks `.staff-preview .markdown a`, so links in the Preview's paragraphs come out sky-dark on pale (about 4.0:1). Raise the override's specificity (e.g. `.staff-body .staff-preview .markdown a`) and check it on a production build.
+    2. **The Featured page says what the draw does** (amendment 3): `AdminFeatured`'s line becomes "A seller who has been featured sits out for a week when there are enough other Verified sellers to fill the row."
+    3. **Nobody reads notes about their own shop.** `mentoredShops` skips a shop whose owner is the viewer, `/mentor/[slug]` gives the 404 for the viewer's own shop, and `setShopMentor` refuses (the "nothing changed" notice) a mentor who owns the shop. A test for each.
+    4. **The CSV moves to `/mentor/export.csv`,** so no shop link can take its address (links have no dots). The dashboard's link, the route's test and Task 20's e2e follow.
+    5. **No storefront link to a Hub-paused shop** on the mentor's shop page, as on the admin pages (amendment 13.2): `MentoredShop` carries `pausedBy`, and the page says the Hub has paused it instead.
+    6. **The Preview's headings sit under "Preview".** `Markdown` takes a `headingLevel` (default 2), and the Preview passes 3, so a post's `##` becomes an h3 there.
+    7. **A second press doesn't make a second post, note or check-in, and an unchanged Save logs nothing.** New posts, notes and check-ins carry a one-time token in a hidden field, as selling's new listing does (selling plan amendment 14), and a repeat is ignored. `savePost` on a post with every field and the cover unchanged writes nothing and leaves the "nothing changed" notice (plan decision 23).
+    8. **Task 20 polls for the "(no longer used)" line** (Task 17's finding): the first visit after a retire can show the cached text for one request (amendment 13.10), so the test reloads until it shows rather than checking once.
 
 ## Store design
 
@@ -224,8 +233,8 @@ The eight tables, the fields added to earlier rows, and who touches them:
 | Point | `/` | `/browse` | Listing | Storefront | Hub event | Hub office hours | `/sell` (signed out) |
 |---|---|---|---|---|---|---|---|
 | Start (F's final figures) | 150,613 | 151,360 | 151,769 | 151,373 | not in F's ledger; Task 15 measures it | – | 150,613 |
-| Task 15, RSVP and Request a slot | | | | | | | |
-| Task 17, Featured, badges, retired points | | | | | | | |
+| Task 15, RSVP and Request a slot | 150,613 | 151,360 | 151,769 | 151,373 | 150,613 | 150,613 | 150,613 |
+| Task 17, Featured, badges, retired points | 150,613 | 151,360 | 151,769 | 151,373 | 150,613 | 150,613 | 150,613 |
 | Task 18, `/sell`, the account page | | | | | | | |
 | **Final (Task 22)** | | | | | | | |
 
