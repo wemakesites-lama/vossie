@@ -20,7 +20,8 @@ type ReportConfirmProps = {
 export function ReportConfirm({ kind, report, reason, errors }: ReportConfirmProps) {
   const back = adminReportPath(report.id);
   const shop = report.shop;
-  if (kind === "hide" && report.can.hide) {
+  // This branch is the listing's: stage H adds its own for a Looking For request (amendment 7).
+  if (kind === "hide" && report.can.hide && report.target.kind === "listing") {
     return (
       <ConfirmAction
         id={`hide-${report.id}`}
@@ -47,7 +48,7 @@ export function ReportConfirm({ kind, report, reason, errors }: ReportConfirmPro
         lead={`Pause ${shop.name}? Buyers stop seeing it straight away.`}
         consequences={[
           "The shop and its listings disappear for buyers: their pages show 'not found'.",
-          "Every open report about what was reported closes, and each reporter hears that the Hub acted.",
+          "Every open report about the shop or its listings closes, and each reporter hears that the Hub acted.",
           "The seller sees your reason on their dashboard and gets a notification. Only the Hub can resume it.",
         ]}
         action={pauseReportedShop}

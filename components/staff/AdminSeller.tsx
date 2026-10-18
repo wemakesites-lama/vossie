@@ -93,10 +93,12 @@ export function AdminSeller({ review, campusName, categoryName, pointNames, ment
         <h2 id="admin-shop-actions-title" className="staff-section-title">
           What you can do
         </h2>
-        {standing === "waiting" && (
+        {standing === "waiting" && owner && (
           <div className="staff-row-actions">
             <form action={approveSeller}>
               <input type="hidden" name="shop" value={shop.slug} />
+              {/* The owner reviewed: if the shop is deleted and a new one takes the link, this form does nothing. */}
+              <input type="hidden" name="owner" value={owner.id} />
               <button type="submit" className="btn btn-primary">
                 Approve {shop.name}
               </button>

@@ -32,7 +32,7 @@ describe("the Sellers list (staff tools spec 2.3)", () => {
   });
 
   it("says when a shop was declined, and when nobody is waiting", async () => {
-    await declineShop("crochet-corner", "Add a photo of your work.", new Date("2026-10-14T08:42:00.000Z"));
+    await declineShop("crochet-corner", "acc-pending", "Add a photo of your work.", new Date("2026-10-14T08:42:00.000Z"));
     const { unmount } = render(<AdminSellers rows={await listShopsForReview()} campusNames={names} />);
     expect(screen.getByRole("cell", { name: "Declined on 14 Oct" })).toBeInTheDocument();
     unmount();

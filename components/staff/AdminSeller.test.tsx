@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { declineShop, getShopForReview } from "@/lib/data/staff-shops";
@@ -37,6 +39,8 @@ describe("a shop's review page (staff tools spec 2.3)", () => {
     expect(screen.getByText("Lerato")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Approve Crochet corner" })).toHaveAttribute("type", "submit");
     expect(document.querySelector('form input[name="shop"]')).toHaveValue("crochet-corner");
+    // The owner reviewed is posted with it, so a different shop on the link isn't approved by mistake (amendment 14.6).
+    expect(document.querySelector('form input[name="owner"]')).toHaveValue("acc-pending");
     expect(screen.getByRole("link", { name: "Decline Crochet corner" })).toHaveAttribute(
       "href",
       "/admin/sellers/crochet-corner/decline",
@@ -45,7 +49,7 @@ describe("a shop's review page (staff tools spec 2.3)", () => {
   });
 
   it("shows a declined shop's reason, with nothing to do until the seller sends it again", async () => {
-    await declineShop("crochet-corner", "Add a photo of your work.", new Date("2026-10-14T08:42:00.000Z"));
+    await declineShop("crochet-corner", "acc-pending", "Add a photo of your work.", new Date("2026-10-14T08:42:00.000Z"));
     await show("crochet-corner");
     expect(screen.getByText(/^Declined on 14 October 2026\. The seller sees your reason:/)).toHaveTextContent(
       "Add a photo of your work.",
@@ -92,6 +96,17 @@ describe("a shop's review page (staff tools spec 2.3)", () => {
     await show("tech-corner");
     expect(screen.getByRole("link", { name: "See Tech corner's storefront" })).toBeInTheDocument();
     expect(screen.queryByText(/while the Hub's pause lasts/)).toBeNull();
+  });
+
+  it("styles the link in the facts like the other staff links, so it looks like one (amendment 14.5)", () => {
+    const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
+    const start = css.indexOf(".staff-body p a:not(.btn)");
+    expect(start).toBeGreaterThan(-1);
+    const selectors = css
+      .slice(start, css.indexOf("{", start))
+      .split(",")
+      .map((selector) => selector.trim());
+    expect(selectors).toContain(".staff-facts dd a:not(.btn):not(.link-button)");
   });
 
   it("says a sample shop can't be paused, offers Remove Verified, and has no mentor", async () => {

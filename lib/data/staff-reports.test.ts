@@ -1,9 +1,16 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { deleteAccountData } from "./accounts";
-import { createReport } from "./reports";
+import { createReport, hasOpenReport } from "./reports";
 import { createShop } from "./shops";
-import { approveShop } from "./staff-shops";
-import { closeReport, closeReportsOn, getReport, listReports, openReportCount } from "./staff-reports";
+import { approveShop, staffPauseShop } from "./staff-shops";
+import {
+  closeReport,
+  closeReportsAboutShop,
+  closeReportsOn,
+  getReport,
+  listReports,
+  openReportCount,
+} from "./staff-reports";
 import { resetSampleStore, sampleStore } from "./store";
 
 const at = (hour: number) => new Date(`2026-10-14T${String(hour).padStart(2, "0")}:00:00.000Z`);
@@ -113,10 +120,47 @@ describe("the Hub's reports queue (staff tools spec 2.3, plan decision 5)", () =
       NOW,
     );
     expect(sampleStore().sellers.get("tech-corner")?.ownerId).toBe("acc-mentor");
-    await approveShop("tech-corner");
+    await approveShop("tech-corner", "acc-mentor");
     for (const id of [aboutShop, aboutListing]) {
       expect((await getReport(id))!, id).toMatchObject({ exists: false, shop: null, can: { hide: false, pause: false } });
     }
+    // Pausing or hiding on the reused link leaves the old reports open, and the old reporter can report the new shop
+    // (amendment 14.2).
+    await staffPauseShop("tech-corner", "Reported twice.");
+    expect(await closeReportsAboutShop("tech-corner", "Reported twice.", "acc-admin", NOW)).toEqual([]);
+    expect(await closeReportsOn({ kind: "seller", id: "tech-corner" }, "paused", "Reported twice.", "acc-admin", NOW)).toEqual([]);
+    expect(await closeReportsOn({ kind: "listing", id: "l-001" }, "hidden", "Not allowed.", "acc-admin", NOW)).toEqual([]);
+    for (const id of [aboutShop, aboutListing]) expect(sampleStore().reports.get(id), id).toMatchObject({ status: "open" });
+    expect(await hasOpenReport("acc-student", { kind: "seller", id: "tech-corner" })).toBe(false);
+    const aboutNewShop = await report("acc-student", { kind: "seller", id: "tech-corner" }, 10);
+    expect(await hasOpenReport("acc-student", { kind: "seller", id: "tech-corner" })).toBe(true);
+    expect((await closeReportsAboutShop("tech-corner", "Reported twice.", "acc-admin", NOW)).map((item) => item.id)).toEqual([
+      aboutNewShop,
+    ]);
+    for (const id of [aboutShop, aboutListing]) expect(sampleStore().reports.get(id)?.status, id).toBe("open");
+  });
+
+  it("closes every open report about a shop and about its listings when the shop is paused (amendment 14.1)", async () => {
+    const aboutShop = await report("acc-student", { kind: "seller", id: "tech-corner" }, 8);
+    const aboutListing = await report("acc-mentor", { kind: "listing", id: "l-001" }, 9);
+    const aboutOtherListing = await report("acc-student", { kind: "listing", id: "l-007" }, 10);
+    const elsewhere = await report("acc-student", { kind: "listing", id: "l-004" }, 11);
+    const aboutRequest = await report("acc-student", { kind: "request", id: "r-001" }, 11);
+    const closed = await closeReportsAboutShop("tech-corner", "Selling exam answers.", "acc-admin", NOW);
+    expect(closed.map((item) => item.id).sort()).toEqual([aboutShop, aboutListing, aboutOtherListing].sort());
+    expect(closed.map((item) => item.reporterId).sort()).toEqual(["acc-mentor", "acc-student", "acc-student"]);
+    for (const id of [aboutShop, aboutListing, aboutOtherListing]) {
+      expect(sampleStore().reports.get(id), id).toMatchObject({
+        status: "closed",
+        outcome: "paused",
+        note: "Selling exam answers.",
+        closedAt: NOW.toISOString(),
+        closedBy: "acc-admin",
+      });
+    }
+    // A report about another shop's listing, or about a request, is none of this shop's business.
+    for (const id of [elsewhere, aboutRequest]) expect(sampleStore().reports.get(id)?.status, id).toBe("open");
+    expect(await closeReportsAboutShop("tech-corner", "Again.", "acc-admin", NOW)).toEqual([]);
   });
 
   it("dismisses one report with its note, once", async () => {

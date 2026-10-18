@@ -54,6 +54,14 @@ describe("reports (messaging spec 2.8 and 3.4)", () => {
     expect(await hasOpenReport("acc-student", LISTING)).toBe(false);
   });
 
+  it("doesn't count an open report about something that has gone, so a new shop on the same link can be reported (amendment 14.2)", async () => {
+    const id = await report("acc-student", SELLER);
+    sampleStore().reports.get(id)!.targetGone = true;
+    expect(await hasOpenReport("acc-student", SELLER)).toBe(false);
+    await report("acc-student", SELLER);
+    expect(await hasOpenReport("acc-student", SELLER)).toBe(true);
+  });
+
   it("counts an account's reports since a time, for the daily limit", async () => {
     await report("acc-student", LISTING, new Date("2026-10-13T08:00:00.000Z"));
     await report("acc-student", SELLER, new Date("2026-10-14T08:00:00.000Z"));

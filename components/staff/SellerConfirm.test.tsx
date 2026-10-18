@@ -16,6 +16,9 @@ describe("the sellers' confirm pages (staff tools spec 2.9, plan decision 18)", 
     expect(screen.getByText("Decline Crochet corner? It won't be approved yet.")).toBeInTheDocument();
     expect(screen.getByText("Lerato sees your reason on their selling page, and gets a notification.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Decline Crochet corner" })).toHaveAttribute("type", "submit");
+    // The shop and the owner that were reviewed (amendment 14.6).
+    expect(document.querySelector('input[name="shop"]')).toHaveValue("crochet-corner");
+    expect(document.querySelector('input[name="owner"]')).toHaveValue("acc-pending");
     expect(screen.getByRole("link", { name: "Keep it" })).toHaveAttribute("href", "/admin/sellers/crochet-corner");
   });
 
@@ -23,6 +26,9 @@ describe("the sellers' confirm pages (staff tools spec 2.9, plan decision 18)", 
     render(<SellerConfirm kind="pause" review={(await getShopForReview("tech-corner"))!} reason="" errors={[]} />);
     expect(screen.getByText("Pause Tech corner? Buyers stop seeing it straight away.")).toBeInTheDocument();
     expect(screen.getByText(/Only the Hub can resume it\.$/)).toBeInTheDocument();
+    expect(
+      screen.getByText("Every open report about the shop or its listings closes, and each reporter hears that the Hub acted."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pause Tech corner" })).toBeInTheDocument();
   });
 

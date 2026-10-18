@@ -44,10 +44,14 @@ function byReporter(reporterId: string): ReportRow[] {
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
 }
 
-/** Whether the account already has an open report on this target (plan decision 17). */
+/**
+ * Whether the account already has an open report on this target (plan decision 17). A report about something that has
+ * gone doesn't count: a new shop on the same link is a different shop (staff tools amendments 13.1 and 14.2).
+ */
 export async function hasOpenReport(reporterId: string, target: ReportTarget): Promise<boolean> {
   return byReporter(reporterId).some(
-    (row) => row.status === "open" && row.targetKind === target.kind && row.targetId === target.id,
+    (row) =>
+      row.status === "open" && row.targetGone !== true && row.targetKind === target.kind && row.targetId === target.id,
   );
 }
 

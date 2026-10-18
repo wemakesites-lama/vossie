@@ -111,10 +111,19 @@ function owned(slug: string): { row: SellerRow; profile: SellerProfileRow } | nu
 
 const decided = (row: SellerRow): ShopDecision => ({ slug: row.slug, name: row.name, ownerId: row.ownerId });
 
-/** Approve (spec 2.3): a waiting shop opens, with its storefront at its link (selling plan decision 1). */
-export async function approveShop(slug: string): Promise<ShopDecision | null> {
+/**
+ * The shop on this link is the one the Hub reviewed: it's still owned by `ownerId`, the account the review page named
+ * (amendment 14.6). A shop deleted since, with a new one on the same link, is another shop and isn't decided on.
+ */
+const reviewed = (shop: { row: SellerRow }, ownerId: string) => ownerId !== "" && shop.row.ownerId === ownerId;
+
+/**
+ * Approve (spec 2.3): a waiting shop opens, with its storefront at its link (selling plan decision 1). `ownerId` is the
+ * owner on the page the Hub reviewed.
+ */
+export async function approveShop(slug: string, ownerId: string): Promise<ShopDecision | null> {
   const shop = owned(slug);
-  if (!shop || shop.profile.status !== "pending" || shop.profile.declinedAt) return null;
+  if (!shop || !reviewed(shop, ownerId) || shop.profile.status !== "pending" || shop.profile.declinedAt) return null;
   Object.assign(shop.profile, {
     status: "approved",
     sellerSlug: shop.row.slug,
@@ -125,10 +134,18 @@ export async function approveShop(slug: string): Promise<ShopDecision | null> {
   return decided(shop.row);
 }
 
-/** Decline (spec 2.3, plan decision 2): the shop stays waiting, with the decline and its reason recorded. */
-export async function declineShop(slug: string, reason: string, now: Date): Promise<ShopDecision | null> {
+/**
+ * Decline (spec 2.3, plan decision 2): the shop stays waiting, with the decline and its reason recorded. `ownerId` is the
+ * owner on the page the Hub reviewed (amendment 14.6).
+ */
+export async function declineShop(
+  slug: string,
+  ownerId: string,
+  reason: string,
+  now: Date,
+): Promise<ShopDecision | null> {
   const shop = owned(slug);
-  if (!shop || shop.profile.status !== "pending" || shop.profile.declinedAt) return null;
+  if (!shop || !reviewed(shop, ownerId) || shop.profile.status !== "pending" || shop.profile.declinedAt) return null;
   shop.profile.declinedAt = now.toISOString();
   shop.profile.staffReason = reason;
   return decided(shop.row);

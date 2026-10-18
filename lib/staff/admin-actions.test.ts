@@ -1,12 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readFormState } from "@/lib/auth/form-state";
+import { deleteAccountData } from "@/lib/data/accounts";
 import { listAudit } from "@/lib/data/audit";
+import { addPin } from "@/lib/data/featured";
 import { getNotifications } from "@/lib/data/notifications";
 import { createReport } from "@/lib/data/reports";
+import { createShop } from "@/lib/data/shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import type { ReportTarget } from "@/lib/types";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { form, signedInAs, STAFF_NOW } from "@/tests/helpers/staff";
+import * as adminActions from "./admin-actions";
 import {
   addPoint,
   approveSeller,
@@ -62,10 +66,98 @@ describe("the gate on every admin action (staff tools spec 2.1, plan decision 1)
   });
 });
 
+// Amendment 14.8: every exported admin action, one valid form each. An admin's form does something (an audit entry); the
+// same form from a mentor or a student gets the 404 and leaves the store exactly as it was.
+type Arranged = { report: string; pin: string };
+type GateCase = {
+  /** What the form needs to be valid and to change something. */
+  setup?: (arranged: Arranged) => void | Promise<void>;
+  fields: (arranged: Arranged) => Record<string, string>;
+};
+
+const REASON = "Selling exam answers.";
+const GATE_CASES: Readonly<Record<string, GateCase>> = {
+  approveSeller: { fields: () => ({ shop: "crochet-corner", owner: "acc-pending" }) },
+  declineSeller: { fields: () => ({ shop: "crochet-corner", owner: "acc-pending", reason: REASON }) },
+  verifySeller: { fields: () => ({ shop: "tech-corner", verified: "yes" }) },
+  pauseSeller: { fields: () => ({ shop: "tech-corner", reason: REASON }) },
+  resumeSeller: {
+    setup: () => {
+      Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, { status: "paused", pausedBy: "staff", staffReason: REASON });
+    },
+    fields: () => ({ shop: "tech-corner" }),
+  },
+  assignMentor: { fields: () => ({ shop: "tech-corner", mentor: "" }) },
+  dismissReport: { fields: ({ report }) => ({ report, note: "Looked fine." }) },
+  hideReportedListing: { fields: ({ report }) => ({ report, reason: REASON }) },
+  pauseReportedShop: { fields: ({ report }) => ({ report, reason: REASON }) },
+  pinSeller: { fields: () => ({ seller: "nail-bar", campus: "pretoria", day: "2026-10-14" }) },
+  unpinSeller: {
+    setup: async (arranged) => {
+      const pin = await addPin({
+        sellerSlug: "nail-bar",
+        campusSlug: "pretoria",
+        day: "2026-10-14",
+        staffId: "acc-admin",
+        now: STAFF_NOW,
+      });
+      if (typeof pin === "string") throw new Error(`The pin wasn't made: ${pin}`);
+      arranged.pin = pin.id;
+    },
+    fields: ({ pin }) => ({ pin }),
+  },
+  addPoint: { fields: () => ({ campus: "midrand", name: "Student centre" }) },
+  renamePoint: { fields: () => ({ point: "pp-midrand-library", name: "Library steps" }) },
+  retirePoint: { fields: () => ({ point: "pp-midrand-library" }) },
+  restorePoint: {
+    setup: () => {
+      sampleStore().pickupPoints.get("pp-midrand-library")!.retiredAt = STAFF_NOW.toISOString();
+    },
+    fields: () => ({ point: "pp-midrand-library" }),
+  },
+};
+
+const ADMIN_ACTIONS: Readonly<Record<string, (formData: FormData) => Promise<void>>> = { ...adminActions };
+
+/** A fresh store with a report on a Tech corner listing, and the case's setup done. Its form. */
+async function arrange(name: string): Promise<FormData> {
+  resetSampleStore();
+  resetRequest(request);
+  const arranged: Arranged = {
+    report: await report("acc-student", { kind: "listing", id: "l-001" }, "Casio fx-991ZA Plus calculator"),
+    pin: "",
+  };
+  await GATE_CASES[name].setup?.(arranged);
+  return form(GATE_CASES[name].fields(arranged));
+}
+
+describe("the gate on every exported admin action (staff tools amendment 14.8)", () => {
+  it("has a case for every exported action, so a new action can't skip the gate's test", () => {
+    expect(Object.keys(ADMIN_ACTIONS).length).toBeGreaterThan(0);
+    expect(Object.keys(GATE_CASES).sort()).toEqual(Object.keys(ADMIN_ACTIONS).sort());
+  });
+
+  it.each(Object.keys(GATE_CASES))("%s works for an admin, and gives a mentor or a student the 404", async (name) => {
+    // The form is a good one: an admin's post changes something and is logged.
+    const forAdmin = await arrange(name);
+    await asAdmin();
+    await redirectOf(() => ADMIN_ACTIONS[name](forAdmin));
+    expect(sampleStore().auditLog.size, `${name} with a valid form`).toBe(1);
+    for (const accountId of ["acc-mentor", "acc-student"]) {
+      const forOthers = await arrange(name);
+      await signedInAs(request, accountId);
+      const before = structuredClone(sampleStore());
+      await expect(ADMIN_ACTIONS[name](forOthers), `${name} as ${accountId}`).rejects.toThrow("notFound");
+      expect(sampleStore(), `${name} as ${accountId}`).toEqual(before);
+      expect([request.refreshed, request.updatedTags], `${name} as ${accountId}`).toEqual([false, []]);
+    }
+  });
+});
+
 describe("sellers (staff tools spec 2.3)", () => {
   it("approves a waiting shop: one audit entry, the seller told, buyers' pages expired, and a notice", async () => {
     await asAdmin();
-    const redirect = await redirectSignalOf(() => approveSeller(form({ shop: "crochet-corner" })));
+    const redirect = await redirectSignalOf(() => approveSeller(form({ shop: "crochet-corner", owner: "acc-pending" })));
     expect([redirect.url, redirect.type, request.refreshed]).toEqual(["/admin/sellers/crochet-corner", "replace", true]);
     expect(sampleStore().sellerProfiles.get("acc-pending")).toMatchObject({ status: "approved", sellerSlug: "crochet-corner" });
     expect(await lastAudit()).toMatchObject({
@@ -86,17 +178,54 @@ describe("sellers (staff tools spec 2.3)", () => {
 
   it("says nothing changed on a second press, writing no entry and sending nothing (plan decision 23)", async () => {
     await asAdmin();
-    await redirectOf(() => approveSeller(form({ shop: "crochet-corner" })));
-    await redirectOf(() => approveSeller(form({ shop: "crochet-corner" })));
+    await redirectOf(() => approveSeller(form({ shop: "crochet-corner", owner: "acc-pending" })));
+    await redirectOf(() => approveSeller(form({ shop: "crochet-corner", owner: "acc-pending" })));
     expect(sampleStore().auditLog.size).toBe(1);
     expect(await getNotifications("acc-pending", 5)).toHaveLength(1);
     expect(await notice()).toBe("nothing");
     expect(await redirectOf(() => approveSeller(form({ shop: "Not a slug!" })))).toBe("/admin/sellers");
   });
 
+  it("acts only on the shop that was reviewed: a new shop on the same link is neither approved nor declined (amendment 14.6)", async () => {
+    await asAdmin();
+    // The page was drawn for Lerato's shop; she deletes her account, and a student starts a new shop on the same link.
+    await deleteAccountData("acc-pending");
+    await createShop(
+      "acc-student",
+      {
+        name: "Crochet corner",
+        tagline: "A different shop on the old link.",
+        categorySlug: "tech",
+        about: "",
+        image: null,
+        campusSlug: "midrand",
+        pickupPointIds: [],
+      },
+      STAFF_NOW,
+    );
+    expect(sampleStore().sellers.get("crochet-corner")?.ownerId).toBe("acc-student");
+    const attempts = [
+      () => approveSeller(form({ shop: "crochet-corner", owner: "acc-pending" })),
+      () => approveSeller(form({ shop: "crochet-corner" })),
+      () => declineSeller(form({ shop: "crochet-corner", owner: "acc-pending", reason: "Add a photo of your work." })),
+    ];
+    for (const attempt of attempts) {
+      expect(await redirectOf(attempt)).toMatch(/^\/admin\/sellers/);
+      expect(await notice()).toBe("nothing");
+    }
+    expect(sampleStore().sellerProfiles.get("acc-student")).toMatchObject({ status: "pending", sellerSlug: null });
+    expect(sampleStore().sellerProfiles.get("acc-student")?.declinedAt ?? null).toBeNull();
+    expect(sampleStore().auditLog.size).toBe(0);
+    const told = (await getNotifications("acc-student", 20)).filter((item) => item.kind.startsWith("shop-"));
+    expect(told).toEqual([]);
+    // The page for the shop that's there now posts its own owner, and works.
+    await redirectOf(() => approveSeller(form({ shop: "crochet-corner", owner: "acc-student" })));
+    expect(sampleStore().sellerProfiles.get("acc-student")?.status).toBe("approved");
+  });
+
   it("asks for the reason before declining, keeping what was typed and changing nothing", async () => {
     await asAdmin();
-    expect(await redirectOf(() => declineSeller(form({ shop: "crochet-corner", reason: " " })))).toBe(
+    expect(await redirectOf(() => declineSeller(form({ shop: "crochet-corner", owner: "acc-pending", reason: " " })))).toBe(
       "/admin/sellers/crochet-corner/decline",
     );
     expect(await readFormState(declineForm("crochet-corner"))).toMatchObject({
@@ -110,7 +239,7 @@ describe("sellers (staff tools spec 2.3)", () => {
   it("declines with the reason, which is recorded, and tells the seller where to see it", async () => {
     await asAdmin();
     expect(
-      await redirectOf(() => declineSeller(form({ shop: "crochet-corner", reason: "Add a photo of your work." }))),
+      await redirectOf(() => declineSeller(form({ shop: "crochet-corner", owner: "acc-pending", reason: "Add a photo of your work." }))),
     ).toBe("/admin/sellers/crochet-corner");
     expect(sampleStore().sellerProfiles.get("acc-pending")).toMatchObject({
       declinedAt: STAFF_NOW.toISOString(),
@@ -200,7 +329,8 @@ describe("reports (staff tools spec 2.3, plan decision 5)", () => {
     expect(await newest("acc-student")).toMatchObject({
       kind: "report-handled",
       text: "We looked at your report about Box braids, shoulder length and didn't find a problem.",
-      href: "/account/privacy",
+      // The heading of "Reports you've made" (amendment 8).
+      href: "/account/privacy#account-privacy-reports-title",
     });
     expect(await lastAudit()).toMatchObject({ action: "report-dismissed", targetKind: "report", detail: "Looked fine." });
   });
@@ -228,6 +358,39 @@ describe("reports (staff tools spec 2.3, plan decision 5)", () => {
     }
     expect(request.updatedTags).toEqual(["listings"]);
     expect(await lastAudit()).toMatchObject({ action: "listing-hidden", targetKind: "listing", targetName: title });
+  });
+
+  // Amendment 14.1: whichever way the Hub pauses a shop, no reporter is later told "didn't find a problem" about it.
+  it.each([
+    ["its page", "page"],
+    ["a report about the shop", "shop"],
+    ["a report about one of its listings", "listing"],
+  ] as const)("closes every open report on the shop and its listings when it's paused from %s", async (_from, via) => {
+    const title = "Casio fx-991ZA Plus calculator";
+    const aboutShop = await report("acc-student", { kind: "seller", id: "tech-corner" }, "Tech corner");
+    const aboutListing = await report("acc-mentor", { kind: "listing", id: "l-001" }, title);
+    const elsewhere = await report("acc-student", { kind: "listing", id: "l-004" }, "Box braids, shoulder length");
+    await asAdmin();
+    const reason = "Selling exam answers.";
+    await redirectOf(() => {
+      if (via === "page") return pauseSeller(form({ shop: "tech-corner", reason }));
+      return pauseReportedShop(form({ report: via === "shop" ? aboutShop : aboutListing, reason }));
+    });
+    expect(sampleStore().sellerProfiles.get("acc-seller")).toMatchObject({ status: "paused", pausedBy: "staff" });
+    for (const id of [aboutShop, aboutListing]) {
+      expect(sampleStore().reports.get(id), id).toMatchObject({
+        status: "closed",
+        outcome: "paused",
+        note: "Selling exam answers.",
+        closedBy: "acc-admin",
+      });
+    }
+    expect(sampleStore().reports.get(elsewhere)?.status).toBe("open");
+    expect((await newest("acc-student")).text).toBe("Thanks, we've acted on your report about Tech corner.");
+    expect((await newest("acc-mentor")).text).toBe(`Thanks, we've acted on your report about ${title}.`);
+    expect((await newest("acc-mentor")).href).toBe("/account/privacy#account-privacy-reports-title");
+    expect([...sampleStore().notifications.values()].filter((row) => row.text.includes("didn't find a problem"))).toEqual([]);
+    expect((await listAudit({ staff: null, kind: "shops" })).map((entry) => entry.action)).toEqual(["shop-paused"]);
   });
 
   it("pauses the shop behind a report, and can only dismiss a report about a request", async () => {

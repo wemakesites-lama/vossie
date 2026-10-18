@@ -51,7 +51,7 @@ describe("the Sellers list and a shop's review (staff tools spec 2.3)", () => {
   it("puts shops waiting for approval first, oldest first, then declined ones, then the rest by name", async () => {
     waitingShop("acc-zola", "zolas-bakes", "Zola's bakes", "2026-10-12T08:00:00.000Z");
     waitingShop("acc-ama", "ama-prints", "Ama prints", "2026-10-13T08:00:00.000Z");
-    await declineShop("ama-prints", "Add a photo of your work.", NOW);
+    await declineShop("ama-prints", "acc-ama", "Add a photo of your work.", NOW);
     const rows = await listShopsForReview();
     expect(rows.slice(0, 3).map((row) => [row.shop.slug, row.standing])).toEqual([
       ["crochet-corner", "waiting"],
@@ -79,7 +79,7 @@ describe("the Sellers list and a shop's review (staff tools spec 2.3)", () => {
 
 describe("approving and declining (staff tools spec 2.3, plan decision 2)", () => {
   it("approves a waiting shop: its storefront opens under its link", async () => {
-    expect(await approveShop("crochet-corner")).toEqual({
+    expect(await approveShop("crochet-corner", "acc-pending")).toEqual({
       slug: "crochet-corner",
       name: "Crochet corner",
       ownerId: "acc-pending",
@@ -87,13 +87,13 @@ describe("approving and declining (staff tools spec 2.3, plan decision 2)", () =
     expect(sampleStore().sellerProfiles.get("acc-pending")).toMatchObject({ status: "approved", sellerSlug: "crochet-corner" });
     expect(shopStatus(sampleStore().sellers.get("crochet-corner")!)).toBe("approved");
     // A second press, or an open shop, changes nothing (plan decision 23).
-    expect(await approveShop("crochet-corner")).toBeNull();
-    expect(await approveShop("tech-corner")).toBeNull();
-    expect(await approveShop("hair-studio")).toBeNull();
+    expect(await approveShop("crochet-corner", "acc-pending")).toBeNull();
+    expect(await approveShop("tech-corner", "acc-seller")).toBeNull();
+    expect(await approveShop("hair-studio", "acc-seller")).toBeNull();
   });
 
   it("declines a waiting shop with its reason: it stays waiting, and can be sent again", async () => {
-    expect(await declineShop("crochet-corner", "Add a photo of your work.", NOW)).toMatchObject({ ownerId: "acc-pending" });
+    expect(await declineShop("crochet-corner", "acc-pending", "Add a photo of your work.", NOW)).toMatchObject({ ownerId: "acc-pending" });
     expect(sampleStore().sellerProfiles.get("acc-pending")).toMatchObject({
       status: "pending",
       sellerSlug: null,
@@ -108,8 +108,8 @@ describe("approving and declining (staff tools spec 2.3, plan decision 2)", () =
       appliedAt: "2026-10-10T12:20:00.000Z",
     });
     // Declined isn't waiting: it can't be approved or declined again until it's sent again.
-    expect(await declineShop("crochet-corner", "Again.", NOW)).toBeNull();
-    expect(await approveShop("crochet-corner")).toBeNull();
+    expect(await declineShop("crochet-corner", "acc-pending", "Again.", NOW)).toBeNull();
+    expect(await approveShop("crochet-corner", "acc-pending")).toBeNull();
     expect(await resendForApproval("acc-pending", LATER)).toBe(true);
     expect(sampleStore().sellerProfiles.get("acc-pending")).toMatchObject({
       declinedAt: null,
@@ -118,7 +118,17 @@ describe("approving and declining (staff tools spec 2.3, plan decision 2)", () =
     });
     expect((await shopStanding("acc-pending"))?.appliedAt).toBe(LATER.toISOString());
     expect(await resendForApproval("acc-pending", LATER)).toBe(false);
-    expect(await approveShop("crochet-corner")).not.toBeNull();
+    expect(await approveShop("crochet-corner", "acc-pending")).not.toBeNull();
+  });
+
+  it("acts only on the shop that was reviewed: another owner on the link changes nothing (amendment 14.6)", async () => {
+    expect(await approveShop("crochet-corner", "acc-student")).toBeNull();
+    expect(await approveShop("crochet-corner", "")).toBeNull();
+    expect(await declineShop("crochet-corner", "acc-student", "No.", NOW)).toBeNull();
+    expect(sampleStore().sellerProfiles.get("acc-pending")).toMatchObject({ status: "pending", sellerSlug: null });
+    expect(sampleStore().sellerProfiles.get("acc-pending")?.declinedAt ?? null).toBeNull();
+    // The shop's own owner still works.
+    expect(await declineShop("crochet-corner", "acc-pending", "Add a photo of your work.", NOW)).not.toBeNull();
   });
 });
 

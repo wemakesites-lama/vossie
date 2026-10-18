@@ -235,8 +235,8 @@ export async function saveOnboardingDraft(draft: OnboardingDraftRow): Promise<vo
 }
 
 /**
- * Deleting an account (plan decision 22): its shop, the shop's listings, every photo it uploaded and its wizard
- * draft. True when it had a shop. Its seller profile goes with the account (D); its conversations stay for the
+ * Deleting an account (plan decision 22): its shop, the shop's listings and Featured pins, every photo it uploaded and
+ * its wizard draft. True when it had a shop. Its seller profile goes with the account (D); its conversations stay for the
  * buyers, with each listing's title (messaging plan decision 14).
  */
 export async function forgetShopOf(accountId: string): Promise<boolean> {
@@ -257,6 +257,10 @@ export async function forgetShopOf(accountId: string): Promise<boolean> {
       if (report.targetKind === "seller" ? report.targetId === slug : report.targetKind === "listing" && goneListings.has(report.targetId)) {
         report.targetGone = true;
       }
+    }
+    // Featured pins on the shop go with it, so a new shop on the link isn't pinned by the old one's pins (amendment 14.7).
+    for (const [id, pin] of store.featuredPins) {
+      if (pin.sellerSlug === slug) store.featuredPins.delete(id);
     }
   }
   store.onboardingDrafts.delete(accountId);

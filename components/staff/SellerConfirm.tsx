@@ -49,7 +49,8 @@ export function SellerConfirm({ kind, review, reason, errors }: SellerConfirmPro
           "Nothing is deleted.",
         ]}
         action={declineSeller}
-        hidden={{ shop: shop.slug }}
+        // The owner reviewed, so a new shop on the same link isn't declined by mistake (amendment 14.6).
+        hidden={{ shop: shop.slug, owner: owner?.id ?? "" }}
         reasonHint="The seller sees it."
         reason={reason}
         errors={errors}
@@ -64,6 +65,7 @@ export function SellerConfirm({ kind, review, reason, errors }: SellerConfirmPro
       lead={`Pause ${shop.name}? Buyers stop seeing it straight away.`}
       consequences={[
         "The shop and its listings disappear for buyers: their pages show 'not found'.",
+        "Every open report about the shop or its listings closes, and each reporter hears that the Hub acted.",
         `${who} sees your reason on their dashboard and gets a notification. Only the Hub can resume it.`,
         "Nothing is deleted.",
       ]}

@@ -30,10 +30,22 @@ describe("the reports' confirm pages (staff tools spec 2.9, plan decision 18)", 
     expect(screen.getByRole("link", { name: "Keep it" })).toHaveAttribute("href", `/admin/reports/${report.id}`);
   });
 
+  it("offers Hide only for a listing, so stage H can add its own branch for a request (amendment 14.4)", async () => {
+    const report = await view({ kind: "request", id: "r-001" }, "A Looking For request");
+    // Whatever `can` says, the listing's words and action don't fit a request.
+    render(<ReportConfirm kind="hide" report={{ ...report, can: { hide: true, pause: false } }} reason="" errors={[]} />);
+    expect(screen.getByText(/can't be hidden from this report/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to the report" })).toHaveAttribute("href", `/admin/reports/${report.id}`);
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
   it("asks before pausing the shop behind a report", async () => {
     const report = await view({ kind: "listing", id: "l-001" }, "Casio fx-991ZA Plus calculator");
     render(<ReportConfirm kind="pause" report={report} reason="" errors={[]} />);
     expect(screen.getByText("Pause Tech corner? Buyers stop seeing it straight away.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Every open report about the shop or its listings closes, and each reporter hears that the Hub acted."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pause Tech corner" })).toBeInTheDocument();
   });
 

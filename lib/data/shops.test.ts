@@ -255,6 +255,26 @@ describe("deleting and bringing back (plan decision 22, D's plan decision 15)", 
     expect(await forgetShopOf("acc-student")).toBe(false);
   });
 
+  it("takes the Featured pins on the shop with it, and nobody else's (amendment 14.7)", async () => {
+    const pin = (id: string, sellerSlug: string, day: string) =>
+      sampleStore().featuredPins.set(id, {
+        id,
+        sellerSlug,
+        campusSlug: "midrand",
+        day,
+        pinnedBy: "acc-admin",
+        createdAt: NOW.toISOString(),
+      });
+    pin("pin-a", "tech-corner", "2026-10-14");
+    pin("pin-b", "tech-corner", "2026-10-20");
+    pin("pin-c", "nail-bar", "2026-10-14");
+    await forgetShopOf("acc-seller");
+    expect([...sampleStore().featuredPins.keys()]).toEqual(["pin-c"]);
+    // An account with no shop leaves the pins alone.
+    await forgetShopOf("acc-student");
+    expect(sampleStore().featuredPins.size).toBe(1);
+  });
+
   it("puts a sample shop and its sample listings back, once", async () => {
     await forgetShopOf("acc-seller");
     expect(await restoreSampleShop("acc-seller")).toBe(true);

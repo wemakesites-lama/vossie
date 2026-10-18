@@ -3,8 +3,9 @@ import type { ReportRow } from "./rows";
 import { sampleStore } from "./store";
 
 // The Hub's reports queue (staff tools spec 2.3, plan decision 5), over E's reports. A report names its reporter by
-// first name only. Dismiss closes one report; hiding the listing or pausing the account closes every open report on
-// the same target. A report about something that has gone, or about a Looking For request, can only be dismissed.
+// first name only. Dismiss closes one report; hiding the listing closes every open report on that listing, and pausing
+// the shop closes every open report on the shop and on its listings (amendment 14.1). A report about something that
+// has gone, or about a Looking For request, can only be dismissed.
 // Closing writes; the action notifies (Task 10). Times come from the caller.
 
 /** A report as the queue and its page show it (spec 2.3). */
@@ -141,9 +142,10 @@ export async function closeReport(id: string, note: string, staffId: string, now
 }
 
 /**
- * Hide the listing or Pause the account (spec 2.3, plan decision 5): every open report on the same target closes with
- * the outcome and the reason. Each one, for its reporter's notification. Stage H adds Hide the request on the same
- * confirm page and reuses this, so it stays target-generic (amendment 7).
+ * Hide the listing (spec 2.3, plan decision 5): every open report on the same target closes with the outcome and the
+ * reason, except ones about something that has gone (amendment 14.2). Each one, for its reporter's notification. Stage H
+ * adds Hide the request on the same confirm page and reuses this, so it stays target-generic (amendment 7). A pause
+ * closes the reports about a whole shop, listings included: `closeReportsAboutShop`.
  */
 export async function closeReportsOn(
   target: ReportTarget,
@@ -154,8 +156,34 @@ export async function closeReportsOn(
 ): Promise<ClosedReport[]> {
   const closed: ClosedReport[] = [];
   for (const row of sampleStore().reports.values()) {
-    if (row.status !== "open" || row.targetKind !== target.kind || row.targetId !== target.id) continue;
+    // A report about something that has gone never reaches a new one on the same link (amendments 13.1 and 14.2).
+    if (row.status !== "open" || row.targetGone === true) continue;
+    if (row.targetKind !== target.kind || row.targetId !== target.id) continue;
     close(row, outcome, note, staffId, now);
+    closed.push({ id: row.id, reporterId: row.reporterId, title: row.targetTitle });
+  }
+  return closed;
+}
+
+/**
+ * The Hub's pause (spec 2.3, amendment 14.1): every open report about the shop, and about any of its listings, closes
+ * as "paused" with the reason, so no reporter is later told the Hub "didn't find a problem" with a shop it paused.
+ * Whichever report or page the pause came from, they all close. Each one, for its reporter's notification.
+ */
+export async function closeReportsAboutShop(
+  slug: string,
+  note: string,
+  staffId: string,
+  now: Date,
+): Promise<ClosedReport[]> {
+  const store = sampleStore();
+  const closed: ClosedReport[] = [];
+  for (const row of store.reports.values()) {
+    if (row.status !== "open" || row.targetGone === true) continue;
+    const aboutShop = row.targetKind === "seller" && row.targetId === slug;
+    const aboutListing = row.targetKind === "listing" && store.listings.get(row.targetId)?.sellerSlug === slug;
+    if (!aboutShop && !aboutListing) continue;
+    close(row, "paused", note, staffId, now);
     closed.push({ id: row.id, reporterId: row.reporterId, title: row.targetTitle });
   }
   return closed;

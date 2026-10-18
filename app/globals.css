@@ -8368,6 +8368,7 @@
 
   /* Links in staff text are underlined, so colour isn't the only sign of them. Sky-dark on white is 4.7:1. */
   .staff-body p a:not(.btn):not(.link-button),
+  .staff-facts dd a:not(.btn):not(.link-button),
   .staff-table td a:not(.btn):not(.staff-row-action) {
     color: var(--color-sky-dark);
     font-weight: 600;

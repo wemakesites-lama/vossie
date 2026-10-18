@@ -14,7 +14,13 @@ import {
   restorePickupPoint,
   retirePickupPoint,
 } from "@/lib/data/pickup-points";
-import { closeReport, closeReportsOn, getReport, type ClosedReport } from "@/lib/data/staff-reports";
+import {
+  closeReport,
+  closeReportsAboutShop,
+  closeReportsOn,
+  getReport,
+  type ClosedReport,
+} from "@/lib/data/staff-reports";
 import {
   approveShop,
   declineShop,
@@ -99,6 +105,9 @@ async function tellOwner(
   });
 }
 
+/** Where a reporter's notification goes: the heading of "Reports you've made" on privacy settings (amendment 8). */
+const REPORTS_MADE_PATH = "/account/privacy#account-privacy-reports-title";
+
 /** Tells a reporter what happened to their report (spec 2.3), on privacy settings' "Reports you've made". */
 async function tellReporter(closed: ClosedReport, outcome: "acted" | "dismissed", now: Date): Promise<void> {
   await notify({
@@ -106,7 +115,7 @@ async function tellReporter(closed: ClosedReport, outcome: "acted" | "dismissed"
     kind: "report-handled",
     subjectId: closed.id,
     text: reportOutcomeText(outcome, closed.title),
-    href: "/account/privacy",
+    href: REPORTS_MADE_PATH,
     now,
   });
 }
@@ -122,10 +131,12 @@ async function backWithReason(form: string, error: string, typed: string, path: 
 /** Approve: a waiting shop opens (plan decision 2), and its owner is told. */
 export async function approveSeller(formData: FormData): Promise<void> {
   const slug = idFrom(formData, "shop");
+  // The owner of the shop the Hub reviewed: a decision acts only on that shop (amendment 14.6).
+  const owner = idFrom(formData, "owner");
   const path = slug ? adminSellerPath(slug) : ADMIN_SELLERS_PATH;
   const staff = await requireStaff("admin", path);
   const now = new Date();
-  const decision = slug ? await approveShop(slug) : null;
+  const decision = slug && owner ? await approveShop(slug, owner) : null;
   if (!decision) return nothingChanged(path, now);
   await recordAudit({
     staff: staffOf(staff),
@@ -152,12 +163,13 @@ export async function approveSeller(formData: FormData): Promise<void> {
 /** Decline, from its confirm page (plan decisions 2 and 18): the reason is required, and the seller sees it on /sell. */
 export async function declineSeller(formData: FormData): Promise<void> {
   const slug = idFrom(formData, "shop");
+  const owner = idFrom(formData, "owner");
   const staff = await requireStaff("admin", slug ? declineSellerPath(slug) : ADMIN_SELLERS_PATH);
   const now = new Date();
   if (!slug) return nothingChanged(ADMIN_SELLERS_PATH, now);
   const reason = checkReason(field(formData, "reason"));
   if (reason.error) return backWithReason(declineForm(slug), reason.error, reason.value, declineSellerPath(slug), now);
-  const decision = await declineShop(slug, reason.value, now);
+  const decision = owner ? await declineShop(slug, owner, reason.value, now) : null;
   if (!decision) return nothingChanged(adminSellerPath(slug), now);
   await recordAudit({
     staff: staffOf(staff),
@@ -205,6 +217,9 @@ export async function pauseSeller(formData: FormData): Promise<void> {
   if (reason.error) return backWithReason(shopPauseForm(slug), reason.error, reason.value, pauseSellerPath(slug), now);
   const decision = await staffPauseShop(slug, reason.value);
   if (!decision) return nothingChanged(adminSellerPath(slug), now);
+  // Pausing from the shop's page closes the reports about it too, so no reporter is later told the Hub found no
+  // problem with a shop it paused (amendment 14.1).
+  const reports = await closeReportsAboutShop(decision.slug, reason.value, staff.id, now);
   await recordAudit({
     staff: staffOf(staff),
     action: "shop-paused",
@@ -214,6 +229,7 @@ export async function pauseSeller(formData: FormData): Promise<void> {
     now,
   });
   await tellOwner(decision, "paused", now);
+  for (const closed of reports) await tellReporter(closed, "acted", now);
   sellersChanged();
   await clearStaffForm(shopPauseForm(slug));
   await leaveNotice("paused", now);
@@ -335,7 +351,8 @@ export async function hideReportedListing(formData: FormData): Promise<void> {
 
 /**
  * Pause the account, from its confirm page (plan decisions 3, 5 and 18): the reported shop, or the reported listing's
- * shop, pauses as the Hub's pause; every open report on the target closes; the seller and each reporter are told.
+ * shop, pauses as the Hub's pause; every open report on the shop and its listings closes (amendment 14.1); the seller and
+ * each reporter are told.
  */
 export async function pauseReportedShop(formData: FormData): Promise<void> {
   const id = idFrom(formData, "report");
@@ -347,7 +364,8 @@ export async function pauseReportedShop(formData: FormData): Promise<void> {
   if (reason.error) return backWithReason(reportPauseForm(id), reason.error, reason.value, pauseReportedPath(id), now);
   const decision = await staffPauseShop(view.shop.slug, reason.value);
   if (!decision) return nothingChanged(ADMIN_REPORTS_PATH, now);
-  const reports = await closeReportsOn(view.target, "paused", reason.value, staff.id, now);
+  // Every open report about the shop or its listings closes, not only the ones on this report's own target.
+  const reports = await closeReportsAboutShop(decision.slug, reason.value, staff.id, now);
   await recordAudit({
     staff: staffOf(staff),
     action: "shop-paused",
