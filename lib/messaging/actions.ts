@@ -4,8 +4,10 @@ import { refresh } from "next/cache";
 import { redirect, RedirectType } from "next/navigation";
 import { writeFormState } from "@/lib/auth/form-state";
 import { requireAccount } from "@/lib/auth/session";
+import { recalculateBadgeFor } from "@/lib/data/badges";
 import { confirmSale, markCompleted, rejectSale, sendMessage, startConversation } from "@/lib/data/messages";
 import { countReportsSince, createReport, hasOpenReport } from "@/lib/data/reports";
+import { sellersChanged } from "@/lib/data/tags";
 import type { ReportTarget } from "@/lib/types";
 import { clearOwnFormState } from "./form-state";
 import {
@@ -130,6 +132,9 @@ export async function sendReply(formData: FormData): Promise<void> {
   }
   const result = await sendMessage({ conversationId: id, accountId: account.id, body: message.value, now });
   if (result === "not-found") back("/messages");
+  // A seller's reply can change their shop's badge (staff tools spec 2.7, plan decision 8). Nothing else can expire
+  // the cached sellers when it does, so this action does.
+  if (result === "sent" && (await recalculateBadgeFor(id, now))) sellersChanged();
   await clearOwnFormState(form);
   // "closed" sends nothing: the thread says the other side has left (plan decision 21).
   done(path);
@@ -144,7 +149,10 @@ async function changeSale(formData: FormData, change: SaleChange): Promise<void>
   const id = idFrom(formData, "conversation");
   if (!id) redirect("/messages");
   const account = await requireAccount(threadPath(id));
-  await change({ conversationId: id, accountId: account.id, now: new Date() });
+  const now = new Date();
+  await change({ conversationId: id, accountId: account.id, now });
+  // A confirmed sale, or one that didn't happen, can change the shop's badge (staff tools spec 2.7, plan decision 8).
+  if (await recalculateBadgeFor(id, now)) sellersChanged();
   done(threadPath(id));
 }
 

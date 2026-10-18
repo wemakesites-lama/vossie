@@ -269,3 +269,23 @@ describe("Send report (messaging spec 2.8 and 3.4)", () => {
     expect(sampleStore().reports.size).toBe(0);
   });
 });
+
+describe("badges after a reply or a confirmed sale (staff tools spec 2.7, plan decision 8)", () => {
+  it("works the shop's badge out after the seller replies, and expires sellers only when it changed", async () => {
+    await signedInAs("acc-seller");
+    // Tech corner's sample badge is Responsive; two enquiries earn New seller.
+    await redirectOf(() => sendReply(form({ conversation: "conv-s1", body: "It's still here." })));
+    expect(sampleStore().sellers.get("tech-corner")?.badge).toBe("new-seller");
+    expect(request.updatedTags).toEqual(["sellers"]);
+    await redirectOf(() => sendReply(form({ conversation: "conv-s1", body: "Any time after 12:00." })));
+    expect(request.updatedTags).toEqual(["sellers"]);
+  });
+
+  it("works it out after the buyer confirms a sale", async () => {
+    sampleStore().sellers.get("tech-corner")!.badge = "trusted";
+    await signedInAs("acc-student");
+    await redirectOf(() => confirmTheSale(form({ conversation: "conv-s2" })));
+    expect(sampleStore().sellers.get("tech-corner")?.badge).toBe("new-seller");
+    expect(request.updatedTags).toEqual(["sellers"]);
+  });
+});

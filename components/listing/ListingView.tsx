@@ -20,6 +20,8 @@ import { SellerCard } from "./SellerCard";
  */
 export function ListingView({ detail, campusNames }: { detail: ListingDetail; campusNames: ReadonlyMap<string, string> }) {
   const { listing, seller, category, campus, pickupPoint } = detail;
+  // A listing keeps a pickup point the Hub has retired, marked so (staff tools plan decision 10).
+  const pointName = pickupPoint ? `${pickupPoint.name}${pickupPoint.retired ? " (no longer used)" : ""}` : null;
 
   return (
     <div className="page listing-page">
@@ -49,7 +51,7 @@ export function ListingView({ detail, campusNames }: { detail: ListingDetail; ca
             </p>
           )}
           <ListingActions listing={listing} />
-          <CollectBox handover={listing.handover} campusName={campus.name} pickupPointName={pickupPoint?.name ?? null}>
+          <CollectBox handover={listing.handover} campusName={campus.name} pickupPointName={pointName}>
             <Suspense fallback={null}>
               <CampusNote campusSlug={campus.slug} campusName={campus.name} handover={listing.handover} />
             </Suspense>

@@ -76,4 +76,10 @@ describe("ListingView (spec 5.1)", () => {
     expect(screen.queryByText("Condition")).not.toBeInTheDocument();
     expect(screen.getByText("On campus at Midrand")).toBeInTheDocument();
   });
+
+  it("marks a pickup point the Hub retired as no longer used (staff tools plan decision 10)", async () => {
+    const detail = (await getListingDetail("l-001"))!;
+    render(<ListingView detail={{ ...detail, pickupPoint: { ...detail.pickupPoint!, retired: true } }} campusNames={names} />);
+    expect(screen.getByText("Collect at Midrand · Library entrance (no longer used)")).toBeInTheDocument();
+  });
 });

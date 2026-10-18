@@ -1,5 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { addPin } from "@/lib/data/featured";
+import { resetSampleStore } from "@/lib/data/store";
+import { sastToday } from "@/lib/time";
 import { FeaturedTodayContent, FeaturedTodaySkeleton } from "./FeaturedToday";
 
 const viewer = vi.hoisted(() => ({ campus: "midrand" }));
@@ -26,6 +29,11 @@ vi.mock("@/lib/data", async (importOriginal) => {
       return featured.mode === "empty" ? [] : actual.getFeatured(query);
     },
   };
+});
+
+// Each day's row is recorded in the store (staff tools plan decision 9), so every test starts from a fresh one.
+beforeEach(() => {
+  resetSampleStore();
 });
 
 afterEach(() => {
@@ -62,6 +70,17 @@ describe("Featured today (spec 7.10)", () => {
   it("doesn't name the campus when some featured sellers come from elsewhere", async () => {
     viewer.campus = "pretoria";
     render(await FeaturedTodayContent());
+    expect(screen.getByRole("heading", { level: 2, name: "Hustles on every campus" })).toBeInTheDocument();
+  });
+
+  it("puts a seller the Hub pinned for today first (staff tools spec 2.8)", async () => {
+    viewer.campus = "midrand";
+    await addPin({ sellerSlug: "nail-bar", campusSlug: "midrand", day: sastToday(), staffId: "acc-admin", now: new Date() });
+    render(await FeaturedTodayContent());
+    const cards = screen.getAllByRole("article");
+    expect(cards).toHaveLength(4);
+    expect(within(cards[0]).getByRole("link")).toHaveAttribute("href", "/sellers/nail-bar");
+    // A seller from another campus is in the row, so it doesn't claim to be Midrand's.
     expect(screen.getByRole("heading", { level: 2, name: "Hustles on every campus" })).toBeInTheDocument();
   });
 
