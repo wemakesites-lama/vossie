@@ -76,6 +76,23 @@ describe("the Hub's reports queue (staff tools spec 2.3, plan decision 5)", () =
     expect((await getReport(own.id))!.can).toEqual({ hide: true, pause: false });
   });
 
+  it("says when buyers can't see what was reported: a hidden listing, or a shop the Hub has paused", async () => {
+    const listing = await report("acc-student", { kind: "listing", id: "l-001" }, 8);
+    const shop = await report("acc-student", { kind: "seller", id: "tech-corner" }, 9);
+    expect(await getReport(listing)).toMatchObject({ exists: true, unseen: null });
+    expect(await getReport(shop)).toMatchObject({ exists: true, unseen: null });
+    sampleStore().listings.get("l-001")!.hiddenAt = NOW.toISOString();
+    expect(await getReport(listing)).toMatchObject({ exists: true, unseen: "hidden" });
+    delete sampleStore().listings.get("l-001")!.hiddenAt;
+    // A shop the seller paused is still up, marked paused; only the Hub's pause makes it disappear (amendment 13.2).
+    sampleStore().sellerProfiles.get("acc-seller")!.status = "paused";
+    sampleStore().sellerProfiles.get("acc-seller")!.pausedBy = "seller";
+    expect(await getReport(shop)).toMatchObject({ unseen: null });
+    sampleStore().sellerProfiles.get("acc-seller")!.pausedBy = "staff";
+    expect(await getReport(shop)).toMatchObject({ exists: true, unseen: "paused" });
+    expect(await getReport(listing)).toMatchObject({ exists: true, unseen: "paused" });
+  });
+
   it("never lets a report about a deleted shop reach a new shop on the same link (amendment 13.1)", async () => {
     const aboutShop = await report("acc-student", { kind: "seller", id: "tech-corner" }, 8);
     const aboutListing = await report("acc-student", { kind: "listing", id: "l-001" }, 9);

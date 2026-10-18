@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createReport } from "@/lib/data/reports";
 import { closeReport, getReport } from "@/lib/data/staff-reports";
-import { resetSampleStore } from "@/lib/data/store";
+import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import type { ReportTarget } from "@/lib/types";
 import { AdminReport } from "./AdminReport";
 
@@ -49,6 +49,26 @@ describe("a report's page (staff tools spec 2.3, plan decision 5)", () => {
       "submit",
     );
     expect(document.querySelector('input[name="report"]')).toHaveValue(id);
+  });
+
+  it("doesn't link a listing the Hub has hidden, and says buyers can't see it", async () => {
+    const id = await reportOn({ kind: "listing", id: "l-001" }, "Casio fx-991ZA Plus calculator");
+    sampleStore().listings.get("l-001")!.hiddenAt = NOW.toISOString();
+    render(<AdminReport report={(await getReport(id))!} note="" errors={[]} />);
+    const facts = screen.getByRole("region", { name: "The report" });
+    expect(within(facts).queryByRole("link")).toBeNull();
+    expect(within(facts).getByText("Casio fx-991ZA Plus calculator")).toBeInTheDocument();
+    expect(within(facts).getByText("Buyers can't see this listing: the Hub has hidden it.")).toBeInTheDocument();
+  });
+
+  it("doesn't link a shop the Hub has paused, and says buyers can't see it while the pause lasts", async () => {
+    const id = await reportOn({ kind: "seller", id: "tech-corner" }, "Tech corner");
+    sampleStore().sellerProfiles.get("acc-seller")!.status = "paused";
+    sampleStore().sellerProfiles.get("acc-seller")!.pausedBy = "staff";
+    render(<AdminReport report={(await getReport(id))!} note="" errors={[]} />);
+    const facts = screen.getByRole("region", { name: "The report" });
+    expect(within(facts).queryByRole("link")).toBeNull();
+    expect(within(facts).getByText("Buyers can't see this shop while the Hub's pause lasts.")).toBeInTheDocument();
   });
 
   it("offers only Dismiss for a report about a request, and says why", async () => {

@@ -36,14 +36,23 @@ export function AdminReport({ report, note, errors }: AdminReportProps) {
           <div>
             <dt>What</dt>
             <dd>
-              {report.exists ? (
+              {report.exists && !report.unseen ? (
                 <Link href={targetPath(report.target)} prefetch={false}>
                   {report.targetTitle}
                 </Link>
+              ) : report.exists ? (
+                report.targetTitle
               ) : (
                 `${report.targetTitle} (gone)`
               )}
               <span className="staff-muted"> · {kindWords(report.target.kind)}</span>
+              {report.unseen && (
+                <span className="staff-muted staff-unseen">
+                  {report.unseen === "hidden"
+                    ? "Buyers can't see this listing: the Hub has hidden it."
+                    : "Buyers can't see this shop while the Hub's pause lasts."}
+                </span>
+              )}
             </dd>
           </div>
           <div>

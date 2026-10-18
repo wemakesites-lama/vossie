@@ -26,6 +26,11 @@ export type ReportView = {
   closedByName: string | null;
   /** Whether the reported listing or shop is still there (a request always is). */
   exists: boolean;
+  /**
+   * Why buyers can't see what exists: the Hub hid the listing, or paused the shop (whose pages show the 404 while the
+   * pause lasts, amendment 13.2). Null when they can, so the page may link it.
+   */
+  unseen: "hidden" | "paused" | null;
   /** The shop a pause would pause: the listing's, or the one reported. */
   shop: { slug: string; name: string } | null;
   /** What the Hub can still do, besides Dismiss (plan decision 5). Nothing once it's closed. */
@@ -55,6 +60,12 @@ function toView(row: ReportRow): ReportView {
     row.targetKind === "listing" ? listing?.sellerSlug : row.targetKind === "seller" ? row.targetId : undefined;
   const shopRow = shopSlug && !gone ? store.sellers.get(shopSlug) : undefined;
   const exists = row.targetKind === "request" || (row.targetKind === "listing" ? Boolean(listing) : Boolean(shopRow));
+  let unseen: ReportView["unseen"] = null;
+  if (exists && listing?.hiddenAt) unseen = "hidden";
+  else if (exists && shopRow) {
+    const profile = shopRow.ownerId ? store.sellerProfiles.get(shopRow.ownerId) : undefined;
+    if (profile?.status === "paused" && profile.pausedBy === "staff") unseen = "paused";
+  }
   // What Hide can do depends on the kind of target (amendment 7): a listing, as now; a shop is paused, not hidden; a
   // Looking For request is only dismissed here until stage H adds Hide the request.
   let canHide: boolean;
@@ -84,6 +95,7 @@ function toView(row: ReportRow): ReportView {
     closedAt: row.closedAt ?? null,
     closedByName: row.closedAt ? firstName(row.closedBy) : null,
     exists,
+    unseen,
     shop: shopRow ? { slug: shopRow.slug, name: shopRow.name } : null,
     can: {
       hide: canHide,

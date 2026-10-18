@@ -9,6 +9,8 @@ import { replyForm, ThreadView } from "@/components/messages/ThreadView";
 import { ListingFormView } from "@/components/sell/ListingFormView";
 import { OnboardingView } from "@/components/sell/OnboardingView";
 import { ShopProfileView } from "@/components/sell/ShopProfileView";
+import { AdminFeatured } from "@/components/staff/AdminFeatured";
+import { AdminPickupPoints } from "@/components/staff/AdminPickupPoints";
 import { AdminReport } from "@/components/staff/AdminReport";
 import { ReportConfirm } from "@/components/staff/ReportConfirm";
 import { SellerConfirm } from "@/components/staff/SellerConfirm";
@@ -55,6 +57,12 @@ vi.mock("@/lib/staff/admin-actions", () => ({
   hideReportedListing: async () => {},
   pauseReportedShop: async () => {},
   pauseSeller: async () => {},
+  pinSeller: async () => {},
+  unpinSeller: async () => {},
+  addPoint: async () => {},
+  renamePoint: async () => {},
+  retirePoint: async () => {},
+  restorePoint: async () => {},
 }));
 
 const account: Account = {
@@ -215,10 +223,28 @@ describe("error summary ids (accounts spec 6)", () => {
         <AdminReport report={report} note="" errors={oops} />
         <ReportConfirm kind="hide" report={report} reason="" errors={oops} />
         <ReportConfirm kind="pause" report={report} reason="" errors={oops} />
+        <AdminFeatured
+          today="2026-10-14"
+          rows={[]}
+          pins={[]}
+          choices={[]}
+          places={[{ slug: "midrand", name: "Midrand" }]}
+          values={{}}
+          errors={oops}
+        />
+        <AdminPickupPoints
+          campuses={[
+            { slug: "midrand", name: "Midrand" },
+            { slug: "pretoria", name: "Pretoria" },
+          ]}
+          points={pickupPoints.map((point) => ({ ...point, retiredAt: null, createdAt: "2026-10-14T08:00:00.000Z" }))}
+          addForms={{ midrand: { name: "", errors: oops } }}
+          renameForms={{ "pp-pretoria-library": { name: "", errors: oops } }}
+        />
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(21);
+    expect(summaries).toHaveLength(24);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -243,6 +269,9 @@ describe("error summary ids (accounts spec 6)", () => {
       `dismiss-${reportId}-summary`,
       `hide-${reportId}-summary`,
       `report-pause-${reportId}-summary`,
+      "pin-summary",
+      "points-midrand-summary",
+      "points-pretoria-summary",
     ]);
   });
 });
