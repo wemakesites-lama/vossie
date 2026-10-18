@@ -20,6 +20,8 @@ export async function mentoredShops(viewer: Pick<Account, "id" | "roles">, now: 
   for (const profile of sellerProfiles.values()) {
     const mentorId = profile.mentorId ?? null;
     if (!mentorId || profile.status === "pending" || !profile.sellerSlug) continue;
+    // Notes are about a shop's owner, so nobody reads them about their own shop, mentor or admin (amendment 15.3).
+    if (profile.accountId === viewer.id) continue;
     if (!isAdmin(viewer) && mentorId !== viewer.id) continue;
     const shop = sellers.get(profile.sellerSlug);
     const owner = accounts.get(profile.accountId);
@@ -33,6 +35,7 @@ export async function mentoredShops(viewer: Pick<Account, "id" | "roles">, now: 
       ownerId: owner.id,
       badge: shop.badge,
       status: profile.status,
+      pausedBy: profile.status === "paused" ? (profile.pausedBy ?? null) : null,
       mentorId,
       mentorName: accounts.get(mentorId)?.firstName ?? DELETED,
       counts,

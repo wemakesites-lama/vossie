@@ -11,6 +11,7 @@ const tech: MentoredShop = {
   ownerId: "acc-seller",
   badge: "responsive",
   status: "paused",
+  pausedBy: null,
   mentorId: "acc-mentor",
   mentorName: "Naledi",
   counts: { enquiries: 4, due: 4, repliedInTime: 1, salesConfirmed: 2 },

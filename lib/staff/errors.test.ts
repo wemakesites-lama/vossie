@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { sellingErrors } from "@/lib/selling/errors";
 import { postFieldIds, staffErrors, staffFieldIds } from "./errors";
 
 describe("the staff forms' error words (plan decision 22)", () => {
@@ -23,6 +24,25 @@ describe("the staff forms' error words (plan decision 22)", () => {
   it("words a date and time that have passed, at the date field (amendment 12.5)", () => {
     expect(staffErrors(["post-date-past"], postFieldIds("new-post"))).toEqual([
       { message: "Choose a date and time that hasn't passed.", fieldId: "new-post-date" },
+    ]);
+  });
+
+  it("words a form that has run out of its one-time token, linked to no field (amendment 15.7)", () => {
+    const words = {
+      message: "This form is out of date, so nothing was saved. What you typed is kept: check it and send it again.",
+      fieldId: null,
+    };
+    expect(staffErrors(["once-expired"], staffFieldIds("note-tech-corner"))).toEqual([words]);
+    expect(staffErrors(["once-expired"], postFieldIds("new-post"))).toEqual([words]);
+  });
+
+  it("says it once on the post editor's page, which reads selling's words for the cover as well", () => {
+    const ids = postFieldIds("new-post");
+    const codes = ["once-expired", "photo-type"];
+    const all = [...staffErrors(codes, ids), ...sellingErrors(codes, { photos: ids.photos })];
+    expect(all.map((error) => error.message)).toEqual([
+      expect.stringMatching(/^This form is out of date/),
+      "Use a JPG, PNG or WebP photo.",
     ]);
   });
 });

@@ -16,7 +16,10 @@ beforeEach(() => {
   resetSampleStore();
 });
 
-async function show(forms: { note?: FormView; checkIn?: FormView } = {}) {
+const NOTE_ONCE = "6f1c2a3e-8c1b-4d6e-9a43-0f6f1b3a9e55";
+const CHECK_IN_ONCE = "0b9d6a1c-2f4e-4c7a-8d15-3e2a7c9b1f60";
+
+async function show(forms: { note?: FormView; checkIn?: FormView; noteOnce?: string | null; checkInOnce?: string | null } = {}) {
   const shop = (await getMentoredShop("tech-corner", naledi, NOW))!;
   render(
     <MentorShop
@@ -25,6 +28,8 @@ async function show(forms: { note?: FormView; checkIn?: FormView } = {}) {
       notes={await listNotes(shop.ownerId)}
       noteForm={forms.note ?? empty}
       checkInForm={forms.checkIn ?? empty}
+      noteOnce={forms.noteOnce === undefined ? NOTE_ONCE : forms.noteOnce}
+      checkInOnce={forms.checkInOnce === undefined ? CHECK_IN_ONCE : forms.checkInOnce}
       today="2026-10-14"
     />,
   );
@@ -70,6 +75,42 @@ describe("a shop's mentor page (staff tools spec 2.6, plan decisions 15 and 16)"
     expect(screen.getByLabelText("What you talked about")).toBeRequired();
     expect(screen.getByRole("button", { name: "Add a check-in for Tech corner" })).toBeInTheDocument();
     for (const input of document.querySelectorAll('input[name="shop"]')) expect(input).toHaveValue("tech-corner");
+  });
+
+  it("gives the note form and the check-in form a one-time token each, so neither is made twice (amendment 15.7)", async () => {
+    await show();
+    const forms = document.querySelectorAll("form");
+    expect(forms).toHaveLength(2);
+    expect(forms[0].querySelector('input[name="once"]')).toHaveValue(NOTE_ONCE);
+    expect(forms[1].querySelector('input[name="once"]')).toHaveValue(CHECK_IN_ONCE);
+    expect(forms[0].querySelector('input[name="once"]')).toHaveAttribute("type", "hidden");
+  });
+
+  it("posts no token when none could be made", async () => {
+    await show({ noteOnce: null, checkInOnce: null });
+    expect(document.querySelector('input[name="once"]')).toBeNull();
+  });
+
+  it("links the shop's storefront, but not while the Hub has it paused (amendment 15.5)", async () => {
+    await show();
+    expect(screen.getByRole("link", { name: "See Tech corner's storefront" })).toHaveAttribute("href", "/sellers/tech-corner");
+    expect(screen.queryByText(/The Hub has paused/)).toBeNull();
+  });
+
+  it("keeps the storefront link for a shop its seller paused", async () => {
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, { status: "paused", pausedBy: "seller" });
+    await show();
+    expect(screen.getByRole("link", { name: "See Tech corner's storefront" })).toBeInTheDocument();
+    expect(screen.queryByText(/The Hub has paused/)).toBeNull();
+  });
+
+  it("says the Hub has paused a shop instead of linking a storefront that buyers get the 404 for (amendment 15.5)", async () => {
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, { status: "paused", pausedBy: "staff" });
+    await show();
+    expect(screen.queryByRole("link", { name: /storefront/ })).toBeNull();
+    expect(screen.getByText(/The Hub has paused Tech corner, so buyers can't see it\./)).toBeInTheDocument();
+    // The numbers and the notes are still there to read.
+    expect(screen.getByRole("region", { name: "Notes and check-ins" })).toBeInTheDocument();
   });
 
   it("keeps a failed note's words, with what's wrong", async () => {

@@ -43,6 +43,17 @@ describe("Featured (staff tools spec 2.3 and 2.8)", () => {
     expect(within(pretoria).getAllByRole("cell")[1]).toHaveTextContent(/^FeaturedNail bar \(pinned\), /);
   });
 
+  it("says what the draw does about the week's break: a preference, not a rule (amendment 15.2)", async () => {
+    await show();
+    expect(
+      screen.getByText(
+        /A seller who has been featured sits out for a week when there are enough other Verified sellers to fill the row\./,
+      ),
+    ).toBeInTheDocument();
+    // The old line promised a strict break, which the draw doesn't keep (amendment 3).
+    expect(screen.queryByText(/next six days/)).toBeNull();
+  });
+
   it("offers the pin form: the sellers who can be featured, every place and today by default", async () => {
     await show();
     const sellers = screen.getByRole("combobox", { name: "Seller" });

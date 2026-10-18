@@ -12,6 +12,7 @@ import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
 import { checkInForm, noteForm, takeNotice } from "@/lib/staff/form-state";
+import { issueOnceToken } from "@/lib/staff/once";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { MENTOR_PATH, mentorShopPath } from "@/lib/staff/paths";
 import { sastDate } from "@/lib/time";
@@ -41,12 +42,15 @@ async function Shop({ params }: Pick<PageProps<"/mentor/[slug]">, "params">) {
   const now = new Date();
   const shop = isId(slug) ? await getMentoredShop(slug, account, now) : null;
   if (!shop) notFound();
-  const [campuses, notes, note, checkIn, notice] = await Promise.all([
+  // A note and a check-in each get a one-time token, made now, at request time (staff tools amendment 15.7).
+  const [campuses, notes, note, checkIn, notice, noteOnce, checkInOnce] = await Promise.all([
     getCampuses(),
     listNotes(shop.ownerId),
     readFormState(noteForm(shop.slug)),
     readFormState(checkInForm(shop.slug)),
     takeNotice(),
+    issueOnceToken(),
+    issueOnceToken(),
   ]);
   return (
     <StaffFrame account={account} area="Mentoring" title={shop.name} current={MENTOR_PATH} notice={staffNoticeText(notice)}>
@@ -59,6 +63,8 @@ async function Shop({ params }: Pick<PageProps<"/mentor/[slug]">, "params">) {
           values: checkIn?.values ?? {},
           errors: staffErrors(checkIn?.errors ?? [], staffFieldIds(`check-in-${shop.slug}`)),
         }}
+        noteOnce={noteOnce}
+        checkInOnce={checkInOnce}
         today={sastDate(now)}
       />
     </StaffFrame>

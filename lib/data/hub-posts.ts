@@ -111,16 +111,42 @@ export type PostSave = {
 };
 
 /**
+ * Whether saving `fields` and `cover` would change the post. The same moment is the same time, however it is written:
+ * stored times may omit the milliseconds. No new cover (null) keeps the one it has.
+ */
+function unchanged(row: HubPostRow, fields: PostFields, cover: ImageRef | null): boolean {
+  const sameStart =
+    row.startsAt === fields.startsAt ||
+    (row.startsAt !== null && fields.startsAt !== null && Date.parse(row.startsAt) === Date.parse(fields.startsAt));
+  return (
+    sameStart &&
+    row.kind === fields.kind &&
+    row.title === fields.title &&
+    row.campusSlug === fields.campusSlug &&
+    (row.place ?? null) === fields.place &&
+    (row.capacity ?? null) === fields.capacity &&
+    row.summary === fields.summary &&
+    row.body === fields.body &&
+    row.published === fields.published &&
+    (cover === null || (cover.src === row.image.src && cover.alt === row.image.alt))
+  );
+}
+
+/**
  * Saves a post (spec 2.4): a new one with an id of "h-" and a UUID, or changes to an existing one. A post is dated from
  * when it's first published. An event's count starts at 0; a post that stops being an event has none. Null when `id`
- * isn't a post. Server Actions only: it makes ids.
+ * isn't a post. An existing post saved with every field and its cover as they are is left alone (`changed` false, its
+ * updated time kept), so a second press logs nothing (staff tools amendment 15.7). Server Actions only: it makes ids.
  */
 export async function saveHubPost(
   save: PostSave,
-): Promise<{ row: HubPostRow; created: boolean; publishedNow: boolean } | null> {
+): Promise<{ row: HubPostRow; created: boolean; publishedNow: boolean; changed: boolean } | null> {
   const { hubPosts } = sampleStore();
   const existing = save.id ? hubPosts.get(save.id) : undefined;
   if (save.id && !existing) return null;
+  if (existing && unchanged(existing, save.fields, save.cover)) {
+    return { row: structuredClone(existing), created: false, publishedNow: false, changed: false };
+  }
   const at = save.now.toISOString();
   const { published, ...fields } = save.fields;
   const publishedNow = published && !existing?.publishedAt;
@@ -137,7 +163,7 @@ export async function saveHubPost(
     updatedAt: at,
   };
   hubPosts.set(row.id, row);
-  return { row: structuredClone(row), created: !existing, publishedNow };
+  return { row: structuredClone(row), created: !existing, publishedNow, changed: true };
 }
 
 // --- RSVP (staff tools spec 2.5, plan decision 13) -----------------------------------------------------------------

@@ -22,6 +22,7 @@ describe("the mentor dashboard (staff tools spec 2.6, plan decision 15)", () => 
         ownerId: "acc-seller",
         badge: "responsive",
         status: "approved",
+        pausedBy: null,
         mentorId: "acc-mentor",
         mentorName: "Naledi",
         counts: { enquiries: 2, due: 2, repliedInTime: 2, salesConfirmed: 0 },
@@ -41,10 +42,31 @@ describe("the mentor dashboard (staff tools spec 2.6, plan decision 15)", () => 
     expect((await mentoredShops(naledi, later))[0].flags).toEqual(["no-enquiries", "paused"]);
   });
 
+  it("says who paused a paused shop, so the page can leave out a storefront link buyers get the 404 for (amendment 15.5)", async () => {
+    const profile = sampleStore().sellerProfiles.get("acc-seller")!;
+    Object.assign(profile, { status: "paused", pausedBy: "staff" });
+    expect((await mentoredShops(naledi, NOW))[0]).toMatchObject({ status: "paused", pausedBy: "staff" });
+    Object.assign(profile, { pausedBy: "seller" });
+    expect((await getMentoredShop("tech-corner", naledi, NOW))?.pausedBy).toBe("seller");
+  });
+
   it("leaves out a shop with no mentor, or one waiting for approval", async () => {
     sampleStore().sellerProfiles.get("acc-pending")!.mentorId = "acc-mentor";
     sampleStore().sellerProfiles.get("acc-seller")!.mentorId = null;
     expect(await mentoredShops(pieter, NOW)).toEqual([]);
+  });
+
+  it("leaves out the viewer's own shop, whatever their role (amendment 15.3)", async () => {
+    // Notes are about a shop's owner, so nobody reads them about themselves: a mentor or an admin who has a shop.
+    const asMentor = { id: "acc-seller", roles: ["mentor"] as const };
+    const asAdmin = { id: "acc-seller", roles: ["admin"] as const };
+    sampleStore().sellerProfiles.get("acc-seller")!.mentorId = "acc-seller";
+    expect(await mentoredShops(asMentor, NOW)).toEqual([]);
+    expect(await mentoredShops(asAdmin, NOW)).toEqual([]);
+    expect(await getMentoredShop("tech-corner", asMentor, NOW)).toBeNull();
+    expect(await getMentoredShop("tech-corner", asAdmin, NOW)).toBeNull();
+    // Everyone else still sees it.
+    expect((await mentoredShops(pieter, NOW)).map((row) => row.slug)).toEqual(["tech-corner"]);
   });
 
   it("opens a shop's mentor page only for its mentor or an admin", async () => {

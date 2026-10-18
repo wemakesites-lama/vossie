@@ -1,6 +1,6 @@
 import { categories } from "@/data/fixtures/categories";
 import { sampleListingRows, sampleSellerRows, sampleShopOwners } from "@/data/fixtures/shops";
-import { nameKey, SLUG_MAX, slugify } from "@/lib/selling/rules";
+import { nameKey, RESERVED_SLUGS, SLUG_MAX, slugify } from "@/lib/selling/rules";
 import { sastDate } from "@/lib/time";
 import type { Condition, Handover, ImageRef, ListingKind, ListingState, PayMode, SellerStatus } from "@/lib/types";
 import { attachPhotos, deletePhotosOf, deletePhotosUsedBy } from "./photos";
@@ -34,10 +34,15 @@ export async function isShopNameTaken(name: string, campusSlug: string, exceptSl
   return false;
 }
 
-/** Whether a shop has this link, or had it before its one change, which keeps it reserved (amendment 13.7). */
+/**
+ * Whether a shop has this link, or had it before its one change, which keeps it reserved (amendment 13.7). A word a
+ * fixed route uses beside a shop's link counts as in use too, so no shop gets it (staff tools amendment 15.4).
+ */
 function slugInUse(slug: string): boolean {
   const { sellers } = sampleStore();
-  return sellers.has(slug) || [...sellers.values()].some((row) => row.previousSlugs.includes(slug));
+  return (
+    RESERVED_SLUGS.has(slug) || sellers.has(slug) || [...sellers.values()].some((row) => row.previousSlugs.includes(slug))
+  );
 }
 
 export async function isSlugTaken(slug: string): Promise<boolean> {

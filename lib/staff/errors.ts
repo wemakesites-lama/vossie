@@ -37,6 +37,13 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
   ["help-missing", { message: "Say what you'd like help with.", field: "help" }],
   ["help-length", { message: `Keep it to ${HELP_MAX} characters.`, field: "help" }],
   ["time-length", { message: `Keep it to ${TIME_MAX} characters.`, field: "time" }],
+  // A new post's, note's or check-in's form with no one-time token, a made-up one or one that has run out (amendment
+  // 15.7). It belongs to no field. Not "form-expired": selling's code of that name has its own words, and the post
+  // editor's page reads both lists.
+  [
+    "once-expired",
+    { message: "This form is out of date, so nothing was saved. What you typed is kept: check it and send it again.", field: "none" },
+  ],
   // The Hub's post editor (lib/staff/post-rules.ts), in the form's order.
   ["post-kind-missing", { message: "Choose a tip, an event or office hours.", field: "kind" }],
   ["post-title-missing", { message: "Give the post a title.", field: "title" }],

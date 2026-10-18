@@ -40,6 +40,27 @@ beforeEach(() => {
   resetSampleStore();
 });
 
+describe("links a fixed route already uses (staff tools amendment 15.4)", () => {
+  it("counts as taken, so the link can't be typed into Edit shop", async () => {
+    expect(await isSlugTaken("export")).toBe(true);
+    expect(await isSlugTaken("exports")).toBe(false);
+    await applyAs("acc-student");
+    sampleStore().sellerProfiles.get("acc-student")!.status = "approved";
+    expect(await changeShopSlug("acc-student", "export", NOW)).toBe("taken");
+    expect((await getShopOf("acc-student"))?.shop).toMatchObject({ slug: "zolas-bakes", slugChanged: false });
+  });
+
+  it("is never the link a new shop, or a waiting one renamed, is given", async () => {
+    expect((await applyAs("acc-student", { name: "Export" }))?.slug).toBe("export-shop");
+    expect((await applyAs("acc-mentor", { name: "Export", campusSlug: "pretoria", pickupPointIds: [] }))?.slug).toBe(
+      "export-shop-2",
+    );
+    expect((await updateShop("acc-pending", { ...details, name: "EXPORT", campusSlug: "pretoria" }, NOW))?.slug).toBe(
+      "export-shop-3",
+    );
+  });
+});
+
 describe("applying to sell (selling spec 2.6 and 2.7, plan decisions 1 and 16)", () => {
   it("makes a shop with a link from its name, and a seller profile waiting for the Hub, with no storefront yet", async () => {
     const shop = (await applyAs("acc-student"))!;

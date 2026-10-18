@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getPostRow } from "@/lib/data/hub-posts";
@@ -91,7 +93,7 @@ describe("the post editor (staff tools spec 2.4)", () => {
     );
     const preview = screen.getByRole("region", { name: "Preview" });
     expect(preview).toHaveAttribute("id", "new-post-preview");
-    expect(within(preview).getByRole("heading", { level: 2, name: "Bring" })).toBeInTheDocument();
+    expect(within(preview).getByRole("heading", { level: 3, name: "Bring" })).toBeInTheDocument();
     expect(within(preview).getByRole("listitem")).toHaveTextContent("A table");
     expect(document.querySelector('input[name="keepCover"]')).toHaveValue(values.cover);
     expect(screen.getByRole("link", { name: "see it" })).toHaveAttribute("href", values.cover);
@@ -150,5 +152,89 @@ describe("the post editor (staff tools spec 2.4)", () => {
     expect(summary.id).not.toBe("edit-h-002-summary");
     expect(document.querySelectorAll("#edit-h-002-summary")).toHaveLength(1);
     expect(screen.getByLabelText("Summary")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("carries the new post's one-time token in a hidden field, and an edit carries none (amendment 15.7)", async () => {
+    const token = "6f1c2a3e-8c1b-4d6e-9a43-0f6f1b3a9e55";
+    const { unmount } = render(
+      <PostEditor postId={null} values={NEW_POST_VALUES} errors={[]} preview={null} campuses={campuses} coverSrc={null} once={token} />,
+    );
+    expect(document.querySelector('input[name="once"]')).toHaveAttribute("type", "hidden");
+    expect(document.querySelector('input[name="once"]')).toHaveValue(token);
+    unmount();
+    // Nobody signed in has no token to draw, and the form posts none.
+    render(
+      <PostEditor postId={null} values={NEW_POST_VALUES} errors={[]} preview={null} campuses={campuses} coverSrc={null} once={null} />,
+    );
+    expect(document.querySelector('input[name="once"]')).toBeNull();
+    document.body.innerHTML = "";
+    render(
+      <PostEditor
+        postId="h-002"
+        values={postValues((await getPostRow("h-002"))!)}
+        errors={[]}
+        preview={null}
+        campuses={campuses}
+        coverSrc={null}
+        once={token}
+      />,
+    );
+    expect(document.querySelector('input[name="once"]')).toBeNull();
+  });
+
+  it("sets headings under the Preview's own h2 (amendment 15.6)", () => {
+    const body = "## Bring\n\nA table.";
+    render(
+      <PostEditor postId={null} values={{ ...NEW_POST_VALUES, body }} errors={[]} preview={body} campuses={campuses} coverSrc={null} />,
+    );
+    const preview = screen.getByRole("region", { name: "Preview" });
+    expect(within(preview).getByRole("heading", { level: 2, name: "Preview" })).toBeInTheDocument();
+    expect(within(preview).getByRole("heading", { level: 3, name: "Bring" })).toBeInTheDocument();
+    expect(within(preview).getAllByRole("heading", { level: 2 })).toHaveLength(1);
+  });
+});
+
+/** [ids, classes and pseudo-classes, elements]: a selector's specificity, `:not(x)` counting as `x` does. */
+function specificity(selector: string): [number, number, number] {
+  const flat = selector.replace(/:not\(([^)]*)\)/g, " $1 ");
+  const ids = flat.match(/#[\w-]+/g)?.length ?? 0;
+  const classes = flat.match(/\.[\w-]+|\[[^\]]*\]|:(?!:)[\w-]+/g)?.length ?? 0;
+  const bare = flat.replace(/\.[\w-]+|#[\w-]+|\[[^\]]*\]|::?[\w-]+/g, " ");
+  return [ids, classes, bare.match(/[a-zA-Z][\w-]*/g)?.length ?? 0];
+}
+
+function outranks(a: [number, number, number], b: [number, number, number]): boolean {
+  for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] > b[i];
+  return false;
+}
+
+/** Every `selector { declarations }` in the stylesheet, comments gone. The file's rules sit one level inside @layer. */
+function cssRules(css: string): { selectors: string[]; body: string }[] {
+  const rules: { selectors: string[]; body: string }[] = [];
+  for (const match of css.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    rules.push({ selectors: match[1].split(",").map((selector) => selector.trim()), body: match[2] });
+  }
+  return rules;
+}
+
+describe("the Preview's colours (amendment 15.1)", () => {
+  const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
+  const rules = cssRules(css);
+
+  it("paints a link in a Preview paragraph navy: its rule outranks the staff text-link rule, whatever the order", () => {
+    // The staff text-link rule paints a link in any paragraph sky-dark, which is under 4.5:1 on the Preview's pale.
+    const staffLink = rules
+      .flatMap((rule) => rule.selectors)
+      .find((selector) => selector.startsWith(".staff-body p a:not(.btn)"));
+    expect(staffLink).toBeDefined();
+    const isPreviewLink = (selector: string) =>
+      selector.includes(".staff-preview") && selector.includes(".markdown") && /(^|\s)a(?![\w-])/.test(selector);
+    const navy = rules.filter(
+      (rule) => /^color:\s*var\(--color-navy\);?$/.test(rule.body.trim()) && rule.selectors.some(isPreviewLink),
+    );
+    expect(navy).toHaveLength(1);
+    // The Preview sits inside .staff-body, so a selector for a link in its paragraphs must beat the staff rule's.
+    const selector = navy[0].selectors.find(isPreviewLink)!;
+    expect(outranks(specificity(selector), specificity(staffLink!)), `${selector} vs ${staffLink}`).toBe(true);
   });
 });

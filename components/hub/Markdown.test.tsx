@@ -36,6 +36,14 @@ describe("Markdown (community spec decision 9)", () => {
     expect(container).toHaveTextContent('<img src="x" onerror="alert(1)"> <b>hi</b>');
   });
 
+  it("makes headings h2 unless told otherwise, and h3 for a page that already has an h2 above (staff tools amendment 15.6)", () => {
+    const { rerender } = render(<Markdown source="## Bring" />);
+    expect(screen.getByRole("heading", { level: 2, name: "Bring" })).toBeInTheDocument();
+    rerender(<Markdown source="## Bring" headingLevel={3} />);
+    expect(screen.getByRole("heading", { level: 3, name: "Bring" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
+  });
+
   it("takes a class for where it sits", () => {
     const { container } = render(<Markdown source="Hello" className="hub-post-body" />);
     expect(container.firstChild).toHaveClass("markdown", "hub-post-body");

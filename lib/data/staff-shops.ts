@@ -211,8 +211,8 @@ export async function listMentors(): Promise<{ id: string; firstName: string }[]
 }
 
 /**
- * A shop's mentor (spec 2.6, plan decision 15): one of the accounts with the mentor role, or none. Only an open or
- * paused shop with an owner can have one.
+ * A shop's mentor (spec 2.6, plan decision 15): one of the accounts with the mentor role, or none, but never the shop's
+ * own owner. Only an open or paused shop with an owner can have one.
  */
 export async function setShopMentor(
   slug: string,
@@ -222,6 +222,8 @@ export async function setShopMentor(
   if (!shop || shop.profile.status === "pending") return null;
   const mentor = mentorId ? sampleStore().accounts.get(mentorId) : undefined;
   if (mentorId && !mentor?.roles.includes("mentor")) return null;
+  // Nobody reads notes about their own shop (amendment 15.3), so the owner can't be its mentor.
+  if (mentorId && mentorId === shop.profile.accountId) return null;
   if ((shop.profile.mentorId ?? null) === mentorId) return null;
   shop.profile.mentorId = mentorId;
   return { ...decided(shop.row), mentorName: mentor?.firstName ?? null };

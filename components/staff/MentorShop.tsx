@@ -18,6 +18,9 @@ type MentorShopProps = {
   notes: readonly MentorNoteView[];
   noteForm: FormView;
   checkInForm: FormView;
+  /** The one-time tokens that make a note, and a check-in, once however many times its form is sent (amendment 15.7). */
+  noteOnce: string | null;
+  checkInOnce: string | null;
   /** Today's SAST date, the check-in's default and latest. */
   today: string;
 };
@@ -27,7 +30,7 @@ type MentorShopProps = {
  * check-ins, newest first, and forms to add both. Notes are about the shop's owner, shared with every mentor and
  * admin who can open this page, and never shown to the seller. The words are samples for Lama to change.
  */
-export function MentorShop({ shop, campusName, notes, noteForm, checkInForm, today }: MentorShopProps) {
+export function MentorShop({ shop, campusName, notes, noteForm, checkInForm, noteOnce, checkInOnce, today }: MentorShopProps) {
   const note = staffFieldIds(`note-${shop.slug}`);
   const checkIn = staffFieldIds(`check-in-${shop.slug}`);
   const noteError = errorFor(noteForm.errors, note.text);
@@ -87,9 +90,14 @@ export function MentorShop({ shop, campusName, notes, noteForm, checkInForm, tod
         )}
         <p className="staff-muted">
           Worked out from the shop&apos;s conversations: mentors see its numbers, never their messages.{" "}
-          <Link href={`/sellers/${shop.slug}`} prefetch={false}>
-            See {shop.name}&apos;s storefront
-          </Link>
+          {/* A shop the Hub has paused has no storefront for anyone, as on the admin pages (amendment 15.5). */}
+          {shop.status === "paused" && shop.pausedBy === "staff" ? (
+            <>The Hub has paused {shop.name}, so buyers can&apos;t see it.</>
+          ) : (
+            <Link href={`/sellers/${shop.slug}`} prefetch={false}>
+              See {shop.name}&apos;s storefront
+            </Link>
+          )}
         </p>
       </section>
 
@@ -125,6 +133,7 @@ export function MentorShop({ shop, campusName, notes, noteForm, checkInForm, tod
         <ErrorSummary id={`note-${shop.slug}-summary`} errors={noteForm.errors} />
         <form action={addMentorNote} noValidate className="form-stack staff-inline-form">
           <input type="hidden" name="shop" value={shop.slug} />
+          {noteOnce && <input type="hidden" name="once" value={noteOnce} />}
           <div className="form-field">
             <label htmlFor={note.text} className="form-label">
               Note
@@ -161,6 +170,7 @@ export function MentorShop({ shop, campusName, notes, noteForm, checkInForm, tod
         <ErrorSummary id={`check-in-${shop.slug}-summary`} errors={checkInForm.errors} />
         <form action={addCheckIn} noValidate className="form-stack staff-inline-form">
           <input type="hidden" name="shop" value={shop.slug} />
+          {checkInOnce && <input type="hidden" name="once" value={checkInOnce} />}
           <div className="form-field">
             <label htmlFor={checkIn.day} className="form-label">
               Date of the check-in

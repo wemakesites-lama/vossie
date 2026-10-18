@@ -279,6 +279,18 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     expect((await getShopOf("acc-seller"))?.shop.slug).toBe("gadgets");
   });
 
+  it("won't change the link to one a fixed route uses: /mentor/export is the CSV (staff tools amendment 15.4)", async () => {
+    await signedInAs("acc-seller");
+    for (const typed of ["export", "Export", " EXPORT "]) {
+      await redirectOf(() => saveShopProfile(profile({ slug: typed })));
+      expect((await readFormState(PROFILE_FORM))?.errors, typed).toEqual(["slug-taken"]);
+    }
+    expect((await getShopOf("acc-seller"))?.shop).toMatchObject({ slug: "tech-corner", slugChanged: false });
+    // The one change is still there to use.
+    await redirectOf(() => saveShopProfile(profile({ slug: "exports" })));
+    expect((await getShopOf("acc-seller"))?.shop).toMatchObject({ slug: "exports", slugChanged: true });
+  });
+
   it("never gives another shop a link this one has changed from (amendment 13.7)", async () => {
     await signedInAs("acc-seller");
     await redirectOf(() => saveShopProfile(profile({ slug: "gadgets" })));

@@ -5761,7 +5761,9 @@
     margin-top: 14px;
   }
 
-  .markdown h2 {
+  /* Headings are h2s on a post's page, and h3s in the staff Preview, which has its own h2 (amendment 15.6 of staff tools). */
+  .markdown h2,
+  .markdown h3 {
     margin-top: 28px;
     color: var(--color-navy);
     font-family: var(--vos-font-display);
@@ -5770,7 +5772,8 @@
     text-transform: uppercase;
   }
 
-  .markdown > h2:first-child {
+  .markdown > h2:first-child,
+  .markdown > h3:first-child {
     margin-top: 0;
   }
 
@@ -8710,8 +8713,10 @@
     background: var(--color-pale);
   }
 
-  /* Links on pale are navy: sky-dark on pale is under 4.5:1. They stay underlined. */
-  .staff-preview .markdown a {
+  /* Links on pale are navy: sky-dark on pale is under 4.5:1. They stay underlined. The Preview sits in .staff-body, whose
+     rule for links in paragraphs (.staff-body p a:not(.btn):not(.link-button), specificity 0-3-2) would paint them
+     sky-dark; this selector names the same guards and two more classes, so it wins whatever the order (amendment 15.1). */
+  .staff-body .staff-preview .markdown a:not(.btn):not(.link-button) {
     color: var(--color-navy);
   }
 }

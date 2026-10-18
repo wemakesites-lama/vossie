@@ -183,6 +183,17 @@ describe("Verified, the Hub's pause and mentors (staff tools spec 2.3 and 2.6, p
     expect(await setShopMentor("hair-studio", "acc-mentor")).toBeNull();
     expect(await setShopMentor("crochet-corner", "acc-mentor")).toBeNull();
   });
+
+  it("won't make a shop's owner its mentor: nobody reads notes about their own shop (amendment 15.3)", async () => {
+    sampleStore().accounts.get("acc-seller")!.roles.push("mentor");
+    expect(await listMentors()).toContainEqual({ id: "acc-seller", firstName: "Sipho" });
+    expect(await setShopMentor("tech-corner", "acc-seller")).toBeNull();
+    // The mentor it had stays.
+    expect(sampleStore().sellerProfiles.get("acc-seller")?.mentorId).toBe("acc-mentor");
+    // Another shop can still have them.
+    sampleStore().sellerProfiles.get("acc-pending")!.status = "approved";
+    expect(await setShopMentor("crochet-corner", "acc-seller")).toMatchObject({ mentorName: "Sipho" });
+  });
 });
 
 describe("hiding a listing (staff tools spec 2.3, plan decision 4)", () => {

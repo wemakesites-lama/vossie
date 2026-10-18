@@ -17,8 +17,11 @@ function renderInline(parts: readonly MarkdownInline[]): ReactNode[] {
   });
 }
 
-function renderBlock(block: MarkdownBlock, index: number): ReactNode {
-  if (block.type === "heading") return <h2 key={index}>{renderInline(block.children)}</h2>;
+function renderBlock(block: MarkdownBlock, index: number, headingLevel: 2 | 3): ReactNode {
+  if (block.type === "heading") {
+    const Heading = headingLevel === 3 ? "h3" : "h2";
+    return <Heading key={index}>{renderInline(block.children)}</Heading>;
+  }
   if (block.type === "paragraph") return <p key={index}>{renderInline(block.children)}</p>;
   const items = block.items.map((item, n) => <li key={n}>{renderInline(item)}</li>);
   return block.type === "bullets" ? <ul key={index}>{items}</ul> : <ol key={index}>{items}</ol>;
@@ -26,8 +29,21 @@ function renderBlock(block: MarkdownBlock, index: number): ReactNode {
 
 /**
  * A Hub post's body (community spec decision 9): the markdown subset, turned into React elements on the server. Text
- * is never read as HTML, so anything that looks like a tag shows as written. Headings are h2s, under the page's h1.
+ * is never read as HTML, so anything that looks like a tag shows as written. Headings are h2s, under the page's h1,
+ * unless `headingLevel` says 3: the staff Preview sits under its own h2, "Preview" (staff tools amendment 15.6).
  */
-export function Markdown({ source, className }: { source: string; className?: string }) {
-  return <div className={cx("markdown", className)}>{parseMarkdown(source).map(renderBlock)}</div>;
+export function Markdown({
+  source,
+  className,
+  headingLevel = 2,
+}: {
+  source: string;
+  className?: string;
+  headingLevel?: 2 | 3;
+}) {
+  return (
+    <div className={cx("markdown", className)}>
+      {parseMarkdown(source).map((block, index) => renderBlock(block, index, headingLevel))}
+    </div>
+  );
 }

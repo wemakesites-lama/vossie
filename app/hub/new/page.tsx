@@ -9,6 +9,7 @@ import { sellingErrors } from "@/lib/selling/errors";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { postFieldIds, staffErrors } from "@/lib/staff/errors";
 import { postForm, postPrefix } from "@/lib/staff/form-state";
+import { issueOnceToken } from "@/lib/staff/once";
 import { HUB_MANAGE_PATH, HUB_NEW_PATH } from "@/lib/staff/paths";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -26,7 +27,8 @@ export default function NewPostPage() {
 
 async function NewPost() {
   const account = await requireStaff("hub", HUB_NEW_PATH);
-  const [campuses, state] = await Promise.all([getCampuses(), readFormState(postForm(null))]);
+  // A new post gets a one-time token, made now, at request time (staff tools amendment 15.7).
+  const [campuses, state, once] = await Promise.all([getCampuses(), readFormState(postForm(null)), issueOnceToken()]);
   const ids = postFieldIds(postPrefix(null));
   const codes = state?.errors ?? [];
   return (
@@ -38,6 +40,7 @@ async function NewPost() {
         preview={state?.notice === "preview" ? (state.values.body ?? "") : null}
         campuses={campuses.map((campus) => ({ slug: campus.slug, name: campus.name }))}
         coverSrc={null}
+        once={once}
       />
     </StaffFrame>
   );

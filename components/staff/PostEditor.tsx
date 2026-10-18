@@ -81,6 +81,8 @@ type PostEditorProps = {
   campuses: readonly { slug: string; name: string }[];
   /** The post's cover now, or null for a new post. */
   coverSrc: string | null;
+  /** A new post's one-time token, which makes it once however many times the form is sent (amendment 15.7). */
+  once?: string | null;
 };
 
 /**
@@ -89,7 +91,7 @@ type PostEditorProps = {
  * shows whatever the kind, since nothing can hide them without JavaScript; hints say which apply. Preview draws the
  * body on the server, above the form; Save checks everything. A plain form, so it works without the app's JavaScript.
  */
-export function PostEditor({ postId, values, errors, preview, campuses, coverSrc }: PostEditorProps) {
+export function PostEditor({ postId, values, errors, preview, campuses, coverSrc, once = null }: PostEditorProps) {
   const prefix = postPrefix(postId);
   const ids = postFieldIds(prefix);
   const kindError = errorFor(errors, ids.kind);
@@ -106,7 +108,7 @@ export function PostEditor({ postId, values, errors, preview, campuses, coverSrc
           {preview.trim() === "" ? (
             <p className="staff-muted">There is nothing to preview yet.</p>
           ) : (
-            <Markdown source={preview} />
+            <Markdown source={preview} headingLevel={3} />
           )}
         </section>
       )}
@@ -115,6 +117,7 @@ export function PostEditor({ postId, values, errors, preview, campuses, coverSrc
       <ErrorSummary id={`${prefix}-problems`} errors={errors} />
       <form action={savePost} noValidate className="form-stack staff-editor">
         <input type="hidden" name="post" value={postId ?? ""} />
+        {postId === null && once && <input type="hidden" name="once" value={once} />}
 
         <fieldset className="form-field" aria-describedby={describedBy(kindError && `${prefix}-kind-error`)}>
           <legend className="form-label">Kind</legend>

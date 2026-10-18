@@ -316,6 +316,15 @@ describe("sellers (staff tools spec 2.3)", () => {
     await redirectOf(() => assignMentor(form({ shop: "tech-corner", mentor: "acc-student" })));
     expect(await notice()).toBe("nothing");
   });
+
+  it("won't make a shop's owner its mentor: it says nothing changed and logs nothing (amendment 15.3)", async () => {
+    await asAdmin();
+    sampleStore().accounts.get("acc-seller")!.roles.push("mentor");
+    await redirectOf(() => assignMentor(form({ shop: "tech-corner", mentor: "acc-seller" })));
+    expect(sampleStore().sellerProfiles.get("acc-seller")?.mentorId).toBe("acc-mentor");
+    expect(await notice()).toBe("nothing");
+    expect(await listAudit({ staff: null, kind: "mentoring" })).toEqual([]);
+  });
 });
 
 describe("reports (staff tools spec 2.3, plan decision 5)", () => {

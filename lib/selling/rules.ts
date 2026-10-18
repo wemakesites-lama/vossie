@@ -20,6 +20,15 @@ export const PRICE_MAX = 100_000;
 export const SLUG_MIN = 3;
 export const SLUG_MAX = 40;
 
+/**
+ * Words a shop's link can't be, because a fixed route already uses that word beside the shop's own (staff tools plan
+ * amendment 15.4): `/mentor/export` is the mentor dashboard's CSV, next to `/mentor/[slug]`, so a shop on the link
+ * "export" would never be reached there, and its mentor page would download a file. Every fixed folder beside a shop's
+ * `[slug]` in `app/sellers`, `app/admin/sellers` and `app/mentor` belongs here; `rules.test.ts` reads those folders and
+ * fails when one is missing.
+ */
+export const RESERVED_SLUGS: ReadonlySet<string> = new Set(["export"]);
+
 /** One line of user text: line breaks and runs of spaces become one space, control characters go, the ends are trimmed. */
 export function cleanLine(raw: string): string {
   return cleanText(raw).replace(/\s+/g, " ");
@@ -42,7 +51,7 @@ export function nameKey(name: string): string {
 /**
  * A shop's link made from its name (plan decision 16, amendment 8.6): the name's a to z and digits, joined by
  * hyphens, so "Zoë's Café" becomes "zoes-cafe". One shorter than SLUG_MIN gets "-shop" ("ab-shop"), and a name with
- * none of them is "shop".
+ * none of them is "shop". A word a route already uses (RESERVED_SLUGS) gets "-shop" too: "Export" is "export-shop".
  */
 export function slugify(name: string): string {
   const slug = nameKey(name)
@@ -50,7 +59,7 @@ export function slugify(name: string): string {
     .replace(/^-+/, "")
     .slice(0, SLUG_MAX)
     .replace(/-+$/, "");
-  if (slug.length >= SLUG_MIN) return slug;
+  if (slug.length >= SLUG_MIN && !RESERVED_SLUGS.has(slug)) return slug;
   return slug ? `${slug}-shop` : "shop";
 }
 

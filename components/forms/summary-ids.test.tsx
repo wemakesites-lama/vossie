@@ -266,6 +266,7 @@ describe("error summary ids (accounts spec 6)", () => {
           preview="## Bring"
           campuses={campusChoices}
           coverSrc={null}
+          once="6f1c2a3e-8c1b-4d6e-9a43-0f6f1b3a9e55"
         />
         <PostEditor
           postId="h-002"
@@ -282,6 +283,8 @@ describe("error summary ids (accounts spec 6)", () => {
           notes={await listNotes(mentored.ownerId)}
           noteForm={{ values: {}, errors: oops }}
           checkInForm={{ values: {}, errors: oops }}
+          noteOnce="0b9d6a1c-2f4e-4c7a-8d15-3e2a7c9b1f60"
+          checkInOnce="9a3c1d5e-7b2f-4e8a-b6d4-1c0e5f7a2d83"
           today="2026-10-14"
         />
       </>,

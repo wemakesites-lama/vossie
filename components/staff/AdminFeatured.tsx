@@ -45,7 +45,8 @@ export function AdminFeatured({ today, rows, pins, choices, places, values, erro
         </h2>
         <p>
           Each campus&apos;s row as its visitors see it today, {dayMonth(today)}. Pins come first; the other places are
-          the fair daily draw, and a seller shown sits out that campus for the next six days.
+          the fair daily draw. A seller who has been featured sits out for a week when there are enough other Verified
+          sellers to fill the row.
         </p>
         <StaffTable
           caption="Featured today, by campus"

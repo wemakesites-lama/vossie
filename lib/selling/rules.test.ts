@@ -1,3 +1,5 @@
+import { readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   checkAbout,
@@ -9,6 +11,7 @@ import {
   nameKey,
   nextState,
   parsePrice,
+  RESERVED_SLUGS,
   slugify,
   type ListingInput,
 } from "./rules";
@@ -66,6 +69,30 @@ describe("shops (selling spec 2.6 and 2.11, plan decision 16)", () => {
     expect(slugify("Ζήτα Café")).toBe("cafe");
     expect(slugify("東京")).toBe("shop");
     expect(slugify("東京 7")).toBe("7-shop");
+  });
+
+  it("never makes a link a fixed route already uses, but adds -shop as it does to a short one (staff tools amendment 15.4)", () => {
+    // /mentor/export is the CSV, beside /mentor/[slug]: a shop on this link would be unreachable there.
+    expect(slugify("Export")).toBe("export-shop");
+    expect(slugify("  EXPORT! ")).toBe("export-shop");
+    expect(slugify("Éxport")).toBe("export-shop");
+    // A name that only contains the word is a different link.
+    expect(slugify("Export hub")).toBe("export-hub");
+    expect(slugify("Exports")).toBe("exports");
+    for (const reserved of RESERVED_SLUGS) expect(slugify(reserved)).not.toBe(reserved);
+  });
+
+  it("reserves every fixed route that sits beside a shop's link, so a new one can't be forgotten (amendment 15.4)", () => {
+    // Where a shop's link is a path segment: its storefront, the admin's page for it and its mentor page.
+    const parents = ["app/sellers", "app/admin/sellers", "app/mentor"];
+    const fixed = parents.flatMap((parent) =>
+      readdirSync(join(process.cwd(), parent))
+        .filter((name) => statSync(join(process.cwd(), parent, name)).isDirectory())
+        // [slug] is the shop; (group), _private and @slot folders and other dynamic segments are not fixed words.
+        .filter((name) => !/^[[(_@]/.test(name)),
+    );
+    expect(fixed).toContain("export");
+    for (const name of fixed) expect(RESERVED_SLUGS.has(name), `/${name} sits beside a shop's link`).toBe(true);
   });
 
   it("takes a name of 2 to 60 characters once tidied", () => {

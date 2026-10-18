@@ -541,6 +541,8 @@ export type MentoredShop = {
   ownerId: string;
   badge: TrustBadge | null;
   status: SellerStatus;
+  /** Who paused the shop, when it is paused: its seller, or the Hub (whose pause hides its storefront, amendment 13.2). */
+  pausedBy: "seller" | "staff" | null;
   mentorId: string;
   mentorName: string;
   /** The last 14 days (plan decision 15). */
