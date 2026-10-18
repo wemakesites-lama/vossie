@@ -30,4 +30,30 @@ describe("the dashboard (selling spec 2.8)", () => {
     render(<Dashboard shop={shop} paused={false} stats={stats} badgeLine="" notice="Your shop is live again." />);
     expect(screen.getByRole("status")).toHaveTextContent("Your shop is live again.");
   });
+
+  it("leaves the Pause form out when the Hub paused the shop (staff tools plan decision 3)", () => {
+    render(<Dashboard shop={shop} paused stats={stats} badgeLine="" notice={null} hubPause="Selling exam answers." />);
+    expect(screen.getByText("Paused by the Hub: buyers can't see your listings")).toBeInTheDocument();
+    expect(screen.getByText(/Only the Hub can resume it/)).toBeInTheDocument();
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("offers no link to the storefront of a shop the Hub paused, since it answers 404 (amendment 13.2)", () => {
+    render(<Dashboard shop={shop} paused stats={stats} badgeLine="" notice={null} hubPause="Selling exam answers." />);
+    const links = within(screen.getByRole("navigation", { name: "Your shop's pages" })).getAllByRole("link");
+    expect(links.map((link) => link.textContent)).toEqual(["New listing", "My listings", "Messages from buyers", "Edit shop"]);
+  });
+
+  it("keeps the Resume form and the storefront link for a shop the seller paused", () => {
+    render(<Dashboard shop={shop} paused stats={stats} badgeLine="" notice={null} hubPause={null} />);
+    expect(screen.getByText("Paused: buyers can't see your listings")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Resume my shop" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View your shop" })).toHaveAttribute("href", "/sellers/tech-corner");
+  });
+
+  it("keeps a Hub reason that is empty as a Hub pause all the same", () => {
+    render(<Dashboard shop={shop} paused stats={stats} badgeLine="" notice={null} hubPause="" />);
+    expect(screen.getByText("Paused by the Hub: buyers can't see your listings")).toBeInTheDocument();
+    expect(screen.queryByRole("button")).toBeNull();
+  });
 });

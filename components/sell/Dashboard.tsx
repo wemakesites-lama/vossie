@@ -15,28 +15,37 @@ type DashboardProps = {
   badgeLine: string;
   /** The words for the last action's notice, if any. */
   notice: string | null;
+  /** The Hub's reason when the Hub paused the shop (staff tools plan decision 3); the seller can't resume it. */
+  hubPause?: string | null;
 };
 
 /**
  * The dashboard (selling spec 2.8, plan decision 18): whether the shop is live, the last 7 days' numbers, the badge
  * and what the next one needs, the shop's pages, and Pause my shop or Resume. No view counts: nothing records views.
+ * A shop the Hub paused says so, with the Hub's reason and no Pause or Resume form (staff tools plan decision 3).
  */
-export function Dashboard({ shop, paused, stats, badgeLine, notice }: DashboardProps) {
+export function Dashboard({ shop, paused, stats, badgeLine, notice, hubPause = null }: DashboardProps) {
+  const byHub = hubPause !== null;
   const { week } = stats;
-  const pages: ReadonlyArray<[label: string, href: string]> = [
+  const pages: Array<[label: string, href: string]> = [
     ["New listing", NEW_LISTING_PATH],
     ["My listings", myListingsPath()],
     ["Messages from buyers", inboxPath("selling")],
     ["Edit shop", PROFILE_PATH],
-    ["View your shop", `/sellers/${shop.slug}`],
   ];
+  // A shop the Hub paused has no storefront while it's paused: its page answers 404 (amendment 13.2).
+  if (!byHub) pages.push(["View your shop", `/sellers/${shop.slug}`]);
   return (
     <div className="sell-column">
       <header className="sell-head">
         <p className="eyebrow">Your shop</p>
         <h1 className="sell-title">{shop.name}</h1>
         <p className={cx("sell-status", paused && "sell-status-paused")}>
-          {paused ? "Paused: buyers can't see your listings" : "Your shop is live"}
+          {byHub
+            ? "Paused by the Hub: buyers can't see your listings"
+            : paused
+              ? "Paused: buyers can't see your listings"
+              : "Your shop is live"}
         </p>
       </header>
 
@@ -44,6 +53,16 @@ export function Dashboard({ shop, paused, stats, badgeLine, notice }: DashboardP
         <p role="status" className="form-notice">
           {notice}
         </p>
+      )}
+
+      {byHub && (
+        <section aria-labelledby="sell-hub-pause-title" className="sell-section">
+          <h2 id="sell-hub-pause-title" className="sell-section-title">
+            Why the Hub paused it
+          </h2>
+          <blockquote className="staff-reason">{hubPause}</blockquote>
+          <p>Only the Hub can resume it. Talk to the Hub on your campus once you&apos;ve sorted it out.</p>
+        </section>
       )}
 
       <section aria-labelledby="sell-week-title" className="sell-section">
@@ -95,16 +114,18 @@ export function Dashboard({ shop, paused, stats, badgeLine, notice }: DashboardP
         </ul>
       </nav>
 
-      <form action={paused ? resumeShop : pauseShop} className="sell-pause">
-        <p>
-          {paused
-            ? "Your listings come back as soon as you resume."
-            : "Taking a break? Pausing hides your listings until you resume."}
-        </p>
-        <button type="submit" className="btn btn-outline text-navy">
-          {paused ? "Resume my shop" : "Pause my shop"}
-        </button>
-      </form>
+      {!byHub && (
+        <form action={paused ? resumeShop : pauseShop} className="sell-pause">
+          <p>
+            {paused
+              ? "Your listings come back as soon as you resume."
+              : "Taking a break? Pausing hides your listings until you resume."}
+          </p>
+          <button type="submit" className="btn btn-outline text-navy">
+            {paused ? "Resume my shop" : "Pause my shop"}
+          </button>
+        </form>
+      )}
     </div>
   );
 }

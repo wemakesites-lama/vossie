@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { saveFormState } from "@/lib/data/form-states";
 import { setShopPaused } from "@/lib/data/shops";
+import { staffPauseShop } from "@/lib/data/staff-shops";
 import { resetSampleStore } from "@/lib/data/store";
 import { MY_LISTINGS_FORM } from "@/lib/selling/form-state";
 import { redirectOf } from "@/tests/helpers/next-request";
@@ -66,6 +67,15 @@ describe("My listings' and Delete listing's request-time parts (selling spec 2.9
     await setShopPaused("acc-seller", true);
     render(await MyListings({ searchParams: Promise.resolve({}) }));
     expect(screen.getByText(/^Your shop is paused, so buyers can't see your listings/)).toBeInTheDocument();
+  });
+
+  it("tells the owner of a shop the Hub paused why, and doesn't say they can resume it (staff tools plan decision 3)", async () => {
+    viewer.id = "acc-seller";
+    await staffPauseShop("tech-corner", "Selling exam answers.");
+    render(await MyListings({ searchParams: Promise.resolve({}) }));
+    const banner = screen.getByText(/^Paused by the Hub: buyers can't see your listings\./);
+    expect(banner).toHaveTextContent("The Hub said: Selling exam answers.");
+    expect(screen.queryByText(/until you resume it/)).toBeNull();
   });
 
   it("sends a student without a shop to /sell, and a signed-out visitor to sign in", async () => {

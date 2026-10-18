@@ -8865,3 +8865,30 @@
     font-weight: 700;
   }
 }
+
+/* --- Staff tools: the Hub's reasons, as sellers see them (staff tools plan, Task 18, plan decisions 2 to 4) --- */
+@layer components {
+  /* The Hub's own words, quoted: ink on pale is 9.0:1, with a navy rule. */
+  .staff-reason {
+    padding: 14px 18px;
+    border-left: 4px solid var(--color-navy);
+    border-radius: 0 var(--radius-card) var(--radius-card) 0;
+    background: var(--color-pale);
+    color: var(--color-ink);
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+
+  /* The Hub's reason inside My listings' pale notice: a long word wraps rather than push the page wider. */
+  .staff-hub-pause {
+    overflow-wrap: anywhere;
+  }
+
+  /* Danger red on white is 6.6:1. */
+  .staff-hidden-note {
+    color: var(--color-danger);
+    font-size: 14px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+}

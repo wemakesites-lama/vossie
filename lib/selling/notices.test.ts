@@ -13,6 +13,12 @@ describe("notices after an action (plan decision 27)", () => {
     );
   });
 
+  it("tells a seller whose shop the Hub paused that the Hub, not they, resumes it (staff tools plan decision 3)", () => {
+    const text = noticeText("saved-shop-hub-paused");
+    expect(text).toBe("Saved. The Hub has paused your shop, so buyers will see it once the Hub resumes it.");
+    expect(text).not.toMatch(/you resume/);
+  });
+
   it("shows nothing for anything else, so form state can never put its own words on the page", () => {
     for (const code of [null, undefined, "", "toString", "<b>hi</b>"]) expect(noticeText(code)).toBeNull();
   });

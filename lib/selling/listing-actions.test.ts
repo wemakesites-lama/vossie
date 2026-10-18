@@ -6,6 +6,7 @@ import { getOwnListing, listOwnListings, setOwnListingState } from "@/lib/data/o
 import { attachPhotos, getPhoto, photoIdOf, storePhotos } from "@/lib/data/photos";
 import { createSession } from "@/lib/data/sessions";
 import { setShopPaused } from "@/lib/data/shops";
+import { staffPauseShop, staffResumeShop } from "@/lib/data/staff-shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { DAY_MS, KEEP_MAX } from "@/lib/messaging/rules";
 import { ascii, containsText, GPS, pngBytes } from "@/tests/helpers/image-bytes";
@@ -264,6 +265,14 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
     expect((await readFormState(MY_LISTINGS_FORM))?.notice).toBe("drafted");
   });
 
+  it("tells a shop the Hub paused that the Hub resumes it, not the seller, on a publish (staff tools plan decision 3)", async () => {
+    await signedInAs("acc-seller");
+    await staffPauseShop("tech-corner", "Selling exam answers.");
+    await redirectOf(async () => saveListingForm(await fanForm()));
+    expect((await fan())?.state).toBe("available");
+    expect((await readFormState(MY_LISTINGS_FORM))?.notice).toBe("saved-shop-hub-paused");
+  });
+
   it("saves changes to a listing, and keeps a sold one sold", async () => {
     await signedInAs("acc-seller");
     expect(await redirectOf(async () => saveListingForm(await fanForm({ listing: "l-001", title: "Desk fan" })))).toBe(
@@ -440,6 +449,24 @@ describe("My listings' buttons and Delete listing (selling spec 2.9, plan decisi
     expect(await move("sold", "available")).toBe("sold");
     expect(await move("available", "sold")).toBe("saved-shop-paused");
     expect((await getOwnListing("tech-corner", "l-001"))?.state).toBe("available");
+  });
+
+  it("tells a shop the Hub paused that the Hub resumes it, on Resume and Relist too (staff tools plan decision 3)", async () => {
+    await signedInAs("acc-seller");
+    await staffPauseShop("tech-corner", "Selling exam answers.");
+    const move = async (to: string, tab: string) => {
+      await redirectOf(() => changeListingState(form({ listing: "l-001", to, tab })));
+      return (await readFormState(MY_LISTINGS_FORM))?.notice;
+    };
+    expect(await move("paused", "available")).toBe("paused");
+    expect(await move("available", "paused")).toBe("saved-shop-hub-paused");
+    expect(await move("sold", "available")).toBe("sold");
+    expect(await move("available", "sold")).toBe("saved-shop-hub-paused");
+    // The shop comes back as the seller's own pause when the Hub resumes it, so the old words are right again.
+    await staffResumeShop("tech-corner");
+    await setShopPaused("acc-seller", true);
+    expect(await move("paused", "available")).toBe("paused");
+    expect(await move("available", "paused")).toBe("saved-shop-paused");
   });
 
   it("deletes a listing and its photos, saying so", async () => {

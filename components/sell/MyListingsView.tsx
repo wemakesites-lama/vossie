@@ -15,6 +15,8 @@ type MyListingsViewProps = {
   waiting: boolean;
   /** The shop is paused, so buyers see none of its listings (amendment 11.6). */
   paused: boolean;
+  /** The Hub's reason when the Hub paused the shop (staff tools plan decision 3); the seller can't resume it. */
+  hubPause?: string | null;
   notice: string | null;
   /** The listing the notice is about, for its link. */
   noticeListing: string | null;
@@ -30,9 +32,10 @@ const EMPTY: Readonly<Record<ListingsTab, string>> = {
 /**
  * My listings (selling spec 2.9): the last action's notice, the four tabs as links with their counts, and the open
  * tab's listings, each with its photo, title, price, last update and actions. Each button and link names its listing.
- * While the shop is paused, buyers can't see the listing, so the notice offers no look at it as a buyer.
+ * While the shop is paused, buyers can't see the listing, so the notice offers no look at it as a buyer. A shop the
+ * Hub paused says so, with the Hub's reason, and doesn't say the seller can resume it (staff tools plan decision 3).
  */
-export function MyListingsView({ tab, rows, waiting, paused, notice, noticeListing }: MyListingsViewProps) {
+export function MyListingsView({ tab, rows, waiting, paused, hubPause = null, notice, noticeListing }: MyListingsViewProps) {
   const open = LISTINGS_TABS.find((item) => item.tab === tab)!;
   const shown = rows.filter((row) => row.state === open.state);
   const linkable = !paused && rows.some((row) => row.id === noticeListing && row.state !== "draft");
@@ -56,7 +59,12 @@ export function MyListingsView({ tab, rows, waiting, paused, notice, noticeListi
           Your shop is waiting for the Hub, so your listings stay drafts until it&apos;s approved.
         </p>
       )}
-      {paused && (
+      {paused && hubPause !== null && (
+        <p className="form-notice staff-hub-pause">
+          {`Paused by the Hub: buyers can't see your listings.${hubPause ? ` The Hub said: ${hubPause}` : ""}`}
+        </p>
+      )}
+      {paused && hubPause === null && (
         <p className="form-notice">Your shop is paused, so buyers can&apos;t see your listings until you resume it.</p>
       )}
 
@@ -95,7 +103,10 @@ export function MyListingsView({ tab, rows, waiting, paused, notice, noticeListi
   );
 }
 
-/** A listing's photo, title, price and last update. Delete listing's page shows it too. */
+/**
+ * A listing's photo, title, price and last update. Delete listing's page shows it too. A listing the Hub hid says so,
+ * with the reason (staff tools plan decision 4).
+ */
 export function ListingSummary({ row }: { row: ListingRow }) {
   const cover = row.photos[0]?.src ?? `/placeholders/listing/${row.categorySlug}.svg`;
   return (
@@ -106,6 +117,9 @@ export function ListingSummary({ row }: { row: ListingRow }) {
         <p className="sell-item-meta">
           {priceLabel(row)} · Updated {shortSastDate(row.updatedAt)}
         </p>
+        {row.hiddenAt && (
+          <p className="staff-hidden-note">{`Hidden by the Hub: ${row.hiddenReason ?? "no reason given"}`}</p>
+        )}
       </div>
     </>
   );

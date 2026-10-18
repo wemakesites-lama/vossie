@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { ClockIcon, ShieldIcon } from "@/components/icons";
 import type { NotificationItem } from "@/lib/types";
 import { NotificationsView } from "./NotificationsView";
 
@@ -48,14 +49,24 @@ describe("notifications (messaging spec 3.5)", () => {
     const { container } = render(
       <NotificationsView
         now={NOW}
-        items={(["message", "sale-to-confirm", "report-handled", "shop-approved"] as const).map((kind, n) =>
-          item({ id: `note-${n}`, kind, text: `Sentence ${n}` }),
+        items={(["message", "sale-to-confirm", "report-handled", "shop-approved", "shop-update", "booking"] as const).map(
+          (kind, n) => item({ id: `note-${n}`, kind, text: `Sentence ${n}` }),
         )}
       />,
     );
     const icons = container.querySelectorAll("svg.notes-icon");
-    expect(icons).toHaveLength(4);
+    expect(icons).toHaveLength(6);
     for (const icon of icons) expect(icon).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("draws a shop update with the shield and a slot request or answer with the clock (staff tools plan decision 7)", () => {
+    const drawn = (kind: NotificationItem["kind"]) =>
+      render(<NotificationsView now={NOW} items={[item({ kind })]} />).container.querySelector("svg.notes-icon")!.innerHTML;
+    const shield = render(<ShieldIcon className="notes-icon" />).container.querySelector("svg")!.innerHTML;
+    const clock = render(<ClockIcon className="notes-icon" />).container.querySelector("svg")!.innerHTML;
+    expect(drawn("shop-update")).toBe(shield);
+    expect(drawn("booking")).toBe(clock);
+    expect(shield).not.toBe(clock);
   });
 
   it('says "Nothing new." when there are none (spec 3.5)', () => {

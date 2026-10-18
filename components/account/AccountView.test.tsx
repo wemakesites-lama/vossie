@@ -5,6 +5,9 @@ import type { FormStateRow } from "@/lib/data/rows";
 import type { Account } from "@/lib/types";
 import { AccountView, detailsForm } from "./AccountView";
 
+// next/link draws a plain <a> in jsdom; this one shows `prefetch` as data, for the test that checks the staff rows.
+vi.mock("next/link", async () => (await import("@/tests/helpers/next-link")).nextLinkShowingPrefetch);
+
 // The forms only need something to post to; the actions have their own tests.
 vi.mock("@/lib/auth/actions", () => ({ signOut: async () => {}, updateDetails: async () => {} }));
 
@@ -105,6 +108,47 @@ describe("Your account (accounts spec 3.2)", () => {
   it("names a mentor's or an admin's Hub role (plan decision 16)", () => {
     renderAccount({ ...account, roles: ["admin"] });
     expect(screen.getByText("Hub role").nextElementSibling).toHaveTextContent("Admin");
+  });
+
+  it("links staff to the tools their roles open (staff tools plan decision 19)", () => {
+    renderAccount({ ...account, roles: ["admin"] });
+    const rows = screen.getByRole("navigation", { name: "Your account's pages" });
+    expect(within(rows).getByRole("link", { name: "Admin console" })).toHaveAttribute("href", "/admin");
+    expect(within(rows).getByRole("link", { name: "Hub posts and office hours" })).toHaveAttribute("href", "/hub/manage");
+    expect(within(rows).getByRole("link", { name: "Mentor dashboard" })).toHaveAttribute("href", "/mentor");
+  });
+
+  it("gives a mentor the Hub's tools and the dashboard, and a student no staff rows", () => {
+    const { unmount } = renderAccount({ ...account, roles: ["mentor"] });
+    expect(screen.queryByRole("link", { name: "Admin console" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Hub posts and office hours" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Mentor dashboard" })).toBeInTheDocument();
+    unmount();
+    renderAccount();
+    expect(screen.queryByRole("link", { name: "Hub posts and office hours" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Mentor dashboard" })).toBeNull();
+  });
+
+  it("lists the staff rows after Your shop and before Privacy settings, in a fixed order", () => {
+    renderAccount({ ...account, roles: ["admin"] });
+    const pages = screen.getByRole("navigation", { name: "Your account's pages" });
+    expect(within(pages).getAllByRole("link").map((link) => link.textContent)).toEqual([
+      "Messages",
+      "Notifications",
+      "Saved",
+      "Start selling",
+      "Admin console",
+      "Hub posts and office hours",
+      "Mentor dashboard",
+      "Privacy settings",
+    ]);
+  });
+
+  it("never prefetches the staff rows: every staff page reads the session (staff tools plan decision 19)", () => {
+    renderAccount({ ...account, roles: ["admin"] });
+    for (const name of ["Admin console", "Hub posts and office hours", "Mentor dashboard"]) {
+      expect(screen.getByRole("link", { name }).dataset.prefetch, name).toBe("false");
+    }
   });
 
   it("says how many conversations are unread and how many notifications are new (messaging spec 3.6)", () => {

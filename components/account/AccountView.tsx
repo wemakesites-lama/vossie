@@ -7,6 +7,8 @@ import { signOut, updateDetails } from "@/lib/auth/actions";
 import { DETAILS_FIELDS } from "@/lib/auth/form-state";
 import { errorFor, formErrors, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
+import { AREA_HOME } from "@/lib/staff/paths";
+import { staffAreasOf } from "@/lib/staff/roles";
 import { sastMonthYear } from "@/lib/time";
 import type { Account, Campus, StaffRole, UnreadCounts } from "@/lib/types";
 
@@ -142,6 +144,15 @@ export function AccountView({ account, campuses, details, counts }: AccountViewP
           <li>
             <SellingRow seller={account.seller} />
           </li>
+          {/* Staff tools, by role, with no prefetch: every staff page reads the session (staff tools plan decision 19). */}
+          {staffAreasOf(account).map((area) => (
+            <li key={area}>
+              <Link href={AREA_HOME[area].href} prefetch={false} className="account-row">
+                {AREA_HOME[area].label}
+                <ChevronRightIcon />
+              </Link>
+            </li>
+          ))}
           <li>
             <Link href="/account/privacy" className="account-row">
               Privacy settings

@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { saveFormState } from "@/lib/data/form-states";
 import { emptyDraft, saveOnboardingDraft } from "@/lib/data/shops";
+import { declineShop, resendForApproval } from "@/lib/data/staff-shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { DASHBOARD_FORM } from "@/lib/selling/form-state";
 import { prefetchingLinks } from "@/tests/helpers/next-link";
@@ -20,7 +21,11 @@ vi.mock("@/lib/auth/session", async () => {
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
 // next/link draws a plain <a> in jsdom; this one shows `prefetch` as data, for the test that checks every link.
 vi.mock("next/link", async () => (await import("@/tests/helpers/next-link")).nextLinkShowingPrefetch);
-vi.mock("@/lib/selling/shop-actions", () => ({ pauseShop: async () => {}, resumeShop: async () => {} }));
+vi.mock("@/lib/selling/shop-actions", () => ({
+  pauseShop: async () => {},
+  resumeShop: async () => {},
+  sendForApprovalAgain: async () => {},
+}));
 
 beforeEach(() => {
   resetSampleStore();
@@ -136,5 +141,64 @@ describe("/sell (selling spec section 3)", () => {
     render(await SellHome());
     expect(screen.getByText("Paused: buyers can't see your listings")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Resume my shop" })).toHaveAttribute("type", "submit");
+  });
+
+  it("tells a declined seller the Hub's reason and how to send the shop again (staff tools plan decision 2)", async () => {
+    await declineShop("crochet-corner", "acc-pending", "Add a photo of your work.", new Date("2026-10-14T08:00:00.000Z"));
+    viewer.id = "acc-pending";
+    render(await SellHome());
+    expect(screen.getByRole("heading", { level: 1, name: "The Hub didn't approve your shop yet" })).toBeInTheDocument();
+    expect(screen.getByText("Add a photo of your work.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send for approval again" })).toBeInTheDocument();
+  });
+
+  it("brings back the waiting page after Send for approval again, dated when it was sent again (amendment 6)", async () => {
+    await declineShop("crochet-corner", "acc-pending", "Add a photo of your work.", new Date("2026-10-14T08:00:00.000Z"));
+    await resendForApproval("acc-pending", new Date("2026-10-16T08:00:00.000Z"));
+    viewer.id = "acc-pending";
+    render(await SellHome());
+    expect(screen.getByRole("heading", { level: 1, name: "The Hub is checking your shop" })).toBeInTheDocument();
+    expect(screen.getByText(/You sent Crochet corner for approval on 16 October 2026\./)).toBeInTheDocument();
+    expect(screen.queryByText("Add a photo of your work.")).toBeNull();
+  });
+
+  it("shows a shop the Hub paused with its reason, and no Resume (staff tools plan decision 3)", async () => {
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, {
+      status: "paused",
+      pausedBy: "staff",
+      staffReason: "Selling exam answers.",
+    });
+    viewer.id = "acc-seller";
+    render(await SellHome());
+    expect(screen.getByText("Paused by the Hub: buyers can't see your listings")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Why the Hub paused it" })).toHaveTextContent("Selling exam answers.");
+    expect(screen.queryByRole("button", { name: "Resume my shop" })).toBeNull();
+  });
+
+  it("shows a shop the seller paused as theirs to resume, even with an old Hub reason on file", async () => {
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, {
+      status: "paused",
+      pausedBy: "seller",
+      staffReason: null,
+    });
+    viewer.id = "acc-seller";
+    render(await SellHome());
+    expect(screen.getByText("Paused: buyers can't see your listings")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Why the Hub paused it" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Resume my shop" })).toBeInTheDocument();
+  });
+
+  it("never prefetches on a declined shop or one the Hub paused either (amendment 10.7)", async () => {
+    await declineShop("crochet-corner", "acc-pending", "Add a photo of your work.", new Date("2026-10-14T08:00:00.000Z"));
+    viewer.id = "acc-pending";
+    const declined = render(await SellHome());
+    expect(declined.container.querySelectorAll("a[data-prefetch]").length).toBeGreaterThan(0);
+    expect(prefetchingLinks(declined.container)).toEqual([]);
+    declined.unmount();
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, { status: "paused", pausedBy: "staff", staffReason: "x" });
+    viewer.id = "acc-seller";
+    const paused = render(await SellHome());
+    expect(paused.container.querySelectorAll("a[data-prefetch]").length).toBeGreaterThan(0);
+    expect(prefetchingLinks(paused.container)).toEqual([]);
   });
 });

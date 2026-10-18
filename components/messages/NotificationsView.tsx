@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { CheckIcon, FlagIcon, MessageIcon, ShieldIcon } from "@/components/icons";
+import { CheckIcon, ClockIcon, FlagIcon, MessageIcon, ShieldIcon } from "@/components/icons";
 import { inboxTime } from "@/lib/time";
 import type { NotificationItem, NotificationKind } from "@/lib/types";
 
-/** Each kind's icon (plan decision 13). Stage G's kinds are drawn already. */
+/** Each kind's icon (plan decision 13; staff tools plan decision 7 adds "shop-update" and "booking"). */
 function KindIcon({ kind }: { kind: NotificationKind }) {
   switch (kind) {
     case "message":
@@ -14,6 +14,10 @@ function KindIcon({ kind }: { kind: NotificationKind }) {
       return <FlagIcon className="notes-icon" />;
     case "shop-approved":
       return <ShieldIcon className="notes-icon" />;
+    case "shop-update":
+      return <ShieldIcon className="notes-icon" />;
+    case "booking":
+      return <ClockIcon className="notes-icon" />;
   }
 }
 

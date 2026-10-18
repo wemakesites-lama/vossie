@@ -18,6 +18,7 @@ import {
   setShopPaused,
   updateShop,
 } from "@/lib/data/shops";
+import { resendForApproval } from "@/lib/data/staff-shops";
 import { sellersChanged } from "@/lib/data/tags";
 import { keepTyped } from "@/lib/messaging/rules";
 import { done, field, fieldList, fileList } from "./action-helpers";
@@ -286,4 +287,14 @@ export async function pauseShop(): Promise<void> {
 /** Resume (selling spec 2.8). */
 export async function resumeShop(): Promise<void> {
   await setPaused(false);
+}
+
+/**
+ * Send for approval again (staff tools plan decision 2): a shop the Hub declined, changed in Edit shop, waits for the
+ * Hub again. Anything else changes nothing.
+ */
+export async function sendForApprovalAgain(): Promise<void> {
+  const owner = await requireShopOwner(SELL_PATH);
+  await resendForApproval(owner.account.id, new Date());
+  done(SELL_PATH);
 }

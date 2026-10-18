@@ -5,12 +5,20 @@ import { hashToken } from "@/lib/auth/secrets";
 import { getPhoto, photoIdOf } from "@/lib/data/photos";
 import { createSession } from "@/lib/data/sessions";
 import { createShop, emptyDraft, getOnboardingDraft, getShopOf, saveOnboardingDraft } from "@/lib/data/shops";
+import { declineShop } from "@/lib/data/staff-shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { KEEP_MAX } from "@/lib/messaging/rules";
 import { ascii, containsText, GPS, pngBytes } from "@/tests/helpers/image-bytes";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { DASHBOARD_FORM, onboardingForm, PROFILE_FORM } from "./form-state";
-import { pauseShop, resumeShop, saveOnboardingStep, saveShopProfile, sendForApproval } from "./shop-actions";
+import {
+  pauseShop,
+  resumeShop,
+  saveOnboardingStep,
+  saveShopProfile,
+  sendForApproval,
+  sendForApprovalAgain,
+} from "./shop-actions";
 
 const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
 
@@ -340,5 +348,47 @@ describe("pausing the shop (selling spec 2.8)", () => {
     await redirectOf(() => pauseShop());
     expect((await getShopOf("acc-pending"))?.status).toBe("pending");
     expect(request.updatedTags).toEqual([]);
+  });
+});
+
+describe("Send for approval again (staff tools plan decision 2)", () => {
+  it("puts a declined shop back in the Hub's queue, forgetting the decline", async () => {
+    await declineShop("crochet-corner", "acc-pending", "Add a photo of your work.", NOW);
+    await signedInAs("acc-pending");
+    expect(await redirectOf(() => sendForApprovalAgain())).toBe("/sell");
+    expect(sampleStore().sellerProfiles.get("acc-pending")).toMatchObject({
+      status: "pending",
+      declinedAt: null,
+      staffReason: null,
+      appliedAt: NOW.toISOString(),
+    });
+  });
+
+  it("changes nothing for a shop that wasn't declined", async () => {
+    await signedInAs("acc-seller");
+    expect(await redirectOf(() => sendForApprovalAgain())).toBe("/sell");
+    expect(sampleStore().sellerProfiles.get("acc-seller")?.status).toBe("approved");
+  });
+
+  it("leaves a waiting shop's date alone, and a shop the Hub paused paused", async () => {
+    await signedInAs("acc-pending");
+    const sent = sampleStore().sellerProfiles.get("acc-pending")!.appliedAt;
+    await redirectOf(() => sendForApprovalAgain());
+    expect(sampleStore().sellerProfiles.get("acc-pending")?.appliedAt).toBe(sent);
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, {
+      status: "paused",
+      pausedBy: "staff",
+      staffReason: "Selling exam answers.",
+    });
+    await signedInAs("acc-seller");
+    await redirectOf(() => sendForApprovalAgain());
+    expect(sampleStore().sellerProfiles.get("acc-seller")).toMatchObject({ status: "paused", pausedBy: "staff" });
+  });
+
+  it("sends a student with no shop to /sell, and a signed-out visitor to sign in", async () => {
+    await signedInAs("acc-student");
+    expect(await redirectOf(() => sendForApprovalAgain())).toBe("/sell");
+    resetRequest(request);
+    expect(await redirectOf(() => sendForApprovalAgain())).toBe("/login?next=%2Fsell");
   });
 });

@@ -84,6 +84,52 @@ describe("My listings (selling spec 2.9)", () => {
     ).toBeInTheDocument();
   });
 
+  it("tells a seller the Hub paused the shop, with the Hub's reason and no promise they can resume it (staff tools plan decision 3)", () => {
+    show("available", { paused: true, hubPause: "Selling exam answers." });
+    const banner = screen.getByText(/^Paused by the Hub: buyers can't see your listings\./);
+    expect(banner).toHaveTextContent("The Hub said: Selling exam answers.");
+    expect(banner).not.toHaveTextContent(/until you resume/);
+    expect(screen.queryByText(/Your shop is paused/)).toBeNull();
+  });
+
+  it("still says the Hub paused it when the Hub gave no reason, and offers no look as a buyer", () => {
+    show("available", { paused: true, hubPause: "", notice: "Saved.", noticeListing: "l-a" });
+    expect(screen.getByText("Paused by the Hub: buyers can't see your listings.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "See it as buyers do" })).toBeNull();
+  });
+
+  it("keeps the seller's own pause words when the Hub didn't pause it", () => {
+    show("available", { paused: true, hubPause: null });
+    expect(
+      screen.getByText("Your shop is paused, so buyers can't see your listings until you resume it."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Paused by the Hub/)).toBeNull();
+  });
+
+  it("marks a listing the Hub hid, with the Hub's reason (staff tools plan decision 4)", () => {
+    const hidden = makeListingRow({ hiddenAt: "2026-10-14T08:00:00.000Z", hiddenReason: "Exam papers aren't allowed." });
+    render(<MyListingsView tab="available" rows={[hidden]} waiting={false} paused={false} notice={null} noticeListing={null} />);
+    expect(screen.getByText("Hidden by the Hub: Exam papers aren't allowed.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Edit Test listing" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Delete Test listing" })).toBeInTheDocument();
+  });
+
+  it("says nothing about the Hub on a listing it didn't hide, and doesn't need a reason to mark one", () => {
+    const { rerender } = show("available");
+    expect(screen.queryByText(/Hidden by the Hub/)).toBeNull();
+    rerender(
+      <MyListingsView
+        tab="available"
+        rows={[makeListingRow({ hiddenAt: "2026-10-14T08:00:00.000Z" })]}
+        waiting={false}
+        paused={false}
+        notice={null}
+        noticeListing={null}
+      />,
+    );
+    expect(screen.getByText("Hidden by the Hub: no reason given")).toBeInTheDocument();
+  });
+
   // Next treats /sell/listings and /sell/listings?tab=paused as one page, so a kept page's rows meet the next tab's
   // (selling plan amendment 2). Rows are keyed by their listing, so none of them, or their forms, carries over.
   it("carries nothing over when the same page is shown for another tab", () => {
