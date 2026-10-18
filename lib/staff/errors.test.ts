@@ -19,4 +19,10 @@ describe("the staff forms' error words (plan decision 22)", () => {
   it("gives a radio group's error to its first radio", () => {
     expect(postFieldIds("edit-h-001").kind).toBe("edit-h-001-kind-tip");
   });
+
+  it("words a date and time that have passed, at the date field (amendment 12.5)", () => {
+    expect(staffErrors(["post-date-past"], postFieldIds("new-post"))).toEqual([
+      { message: "Choose a date and time that hasn't passed.", fieldId: "new-post-date" },
+    ]);
+  });
 });

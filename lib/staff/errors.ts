@@ -44,6 +44,8 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
   ["post-campus-missing", { message: "Choose a campus, or All campuses.", field: "campus" }],
   ["post-date-missing", { message: "Enter the date.", field: "date" }],
   ["post-time-missing", { message: "Enter the start time, like 13:00.", field: "time" }],
+  // Checked in the action, not by checkPost, so a post that has passed can still be edited (amendment 12.5).
+  ["post-date-past", { message: "Choose a date and time that hasn't passed.", field: "date" }],
   ["post-place-missing", { message: "Say where it happens.", field: "place" }],
   ["post-place-length", { message: "Keep the place to 80 characters.", field: "place" }],
   ["post-capacity-invalid", { message: "Enter how many places there are, from 1 to 1,000.", field: "capacity" }],

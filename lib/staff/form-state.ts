@@ -20,6 +20,8 @@ export const PIN_FORM = "featured-pin";
 export const pointAddForm = (campusSlug: string) => `point-add:${campusSlug}`;
 export const pointRenameForm = (id: string) => `point-rename:${id}`;
 export const postForm = (id: string | null) => (id ? `post:${id}` : "post:new");
+/** The editor's id prefix (plan decision 23's rule from selling): "new-post", or "edit-<id>" while editing that post. */
+export const postPrefix = (id: string | null) => (id ? `edit-${id}` : "new-post");
 export const noteForm = (slug: string) => `mentor-note:${slug}`;
 export const checkInForm = (slug: string) => `check-in:${slug}`;
 export const slotForm = (postId: string) => `slot:${postId}`;

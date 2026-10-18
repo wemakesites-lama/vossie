@@ -12,12 +12,14 @@ import { ShopProfileView } from "@/components/sell/ShopProfileView";
 import { AdminFeatured } from "@/components/staff/AdminFeatured";
 import { AdminPickupPoints } from "@/components/staff/AdminPickupPoints";
 import { AdminReport } from "@/components/staff/AdminReport";
+import { NEW_POST_VALUES, PostEditor, postValues } from "@/components/staff/PostEditor";
 import { ReportConfirm } from "@/components/staff/ReportConfirm";
 import { SellerConfirm } from "@/components/staff/SellerConfirm";
 import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
 import { pickupPoints } from "@/data/fixtures/pickup-points";
 import { sampleSellerRows } from "@/data/fixtures/shops";
+import { getPostRow } from "@/lib/data/hub-posts";
 import { createReport } from "@/lib/data/reports";
 import { getReport } from "@/lib/data/staff-reports";
 import { getShopForReview } from "@/lib/data/staff-shops";
@@ -64,6 +66,7 @@ vi.mock("@/lib/staff/admin-actions", () => ({
   retirePoint: async () => {},
   restorePoint: async () => {},
 }));
+vi.mock("@/lib/staff/hub-actions", () => ({ answerSlot: async () => {}, savePost: async () => {} }));
 
 const account: Account = {
   id: "acc-student",
@@ -184,6 +187,11 @@ describe("error summary ids (accounts spec 6)", () => {
       now: new Date("2026-10-14T08:42:00.000Z"),
     });
     const report = (await getReport(reportId))!;
+    const campusChoices = [
+      { slug: "midrand", name: "Midrand" },
+      { slug: "pretoria", name: "Pretoria" },
+    ];
+    const editedPost = (await getPostRow("h-002"))!;
     render(
       <>
         <EmailStep next={null} email="" consented={false} errors={oops} samples={null} />
@@ -241,10 +249,26 @@ describe("error summary ids (accounts spec 6)", () => {
           addForms={{ midrand: { name: "", errors: oops } }}
           renameForms={{ "pp-pretoria-library": { name: "", errors: oops } }}
         />
+        <PostEditor
+          postId={null}
+          values={NEW_POST_VALUES}
+          errors={oops}
+          preview="## Bring"
+          campuses={campusChoices}
+          coverSrc={null}
+        />
+        <PostEditor
+          postId="h-002"
+          values={postValues(editedPost)}
+          errors={oops}
+          preview={null}
+          campuses={campusChoices}
+          coverSrc={editedPost.image.src}
+        />
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(24);
+    expect(summaries).toHaveLength(26);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -272,6 +296,9 @@ describe("error summary ids (accounts spec 6)", () => {
       "pin-summary",
       "points-midrand-summary",
       "points-pretoria-summary",
+      // Not "…-summary": that is the editor's Summary field's id.
+      "new-post-problems",
+      "edit-h-002-problems",
     ]);
   });
 });

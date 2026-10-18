@@ -3,7 +3,7 @@ import { readFormState, writeFormState } from "@/lib/auth/form-state";
 import { resetSampleStore } from "@/lib/data/store";
 import { resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { signedInAs, STAFF_NOW } from "@/tests/helpers/staff";
-import { clearStaffForm, declineForm, HUB_NOTICE, leaveNotice, takeNotice } from "./form-state";
+import { clearStaffForm, declineForm, HUB_NOTICE, leaveNotice, postForm, postPrefix, takeNotice } from "./form-state";
 
 const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
 
@@ -39,5 +39,12 @@ describe("the staff forms' state (accounts plan decision 3)", () => {
     expect(await readFormState(declineForm("tech-corner"))).toBeNull();
     await clearStaffForm(declineForm("crochet-corner"));
     expect(await readFormState(declineForm("crochet-corner"))).toBeNull();
+  });
+});
+
+describe("the post editor's names", () => {
+  it("names a new post's form and ids apart from an edit's, and each edit's apart from the others", () => {
+    expect([postForm(null), postForm("h-002")]).toEqual(["post:new", "post:h-002"]);
+    expect([postPrefix(null), postPrefix("h-002")]).toEqual(["new-post", "edit-h-002"]);
   });
 });

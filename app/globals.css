@@ -8690,3 +8690,28 @@
     margin-top: 4px;
   }
 }
+
+/* --- Staff tools: the Hub's post editor (staff tools plan, Task 14, spec 2.4) --- */
+@layer components {
+  .staff-editor {
+    max-width: 44rem;
+  }
+
+  /* A kind's hint sits under its radio, in line with the label (24px box and 12px gap). */
+  .staff-radio-hint {
+    margin: -6px 0 6px 36px;
+  }
+
+  /* The preview sits on the pale panel, so it reads as a sample of the post, not part of the form. */
+  .staff-preview {
+    max-width: 44rem;
+    padding: 20px;
+    border-radius: var(--radius-card);
+    background: var(--color-pale);
+  }
+
+  /* Links on pale are navy: sky-dark on pale is under 4.5:1. They stay underlined. */
+  .staff-preview .markdown a {
+    color: var(--color-navy);
+  }
+}
