@@ -131,10 +131,15 @@ for (const [name, path, cookies, signIn] of PAGES) {
 // content no sooner than 300 ms after that first paint, even when it arrived with the page: React streams a finished
 // boundary after the rest of the page when the page before it is over 12.8 KB, and the layout alone is. So a fallback
 // shorter than its content (null, around a whole page that waits on its params), or a skeleton taller than a short
-// state, is on screen for a while, and the footer moved when it gave way. Signed in or out, it's the same: signing in
-// loads two pages first, so it warms the cache, and the signed-out row loads the sign-in page first for the same
-// reason. At full speed the whole page arrives before the first paint, so the rows above can't see it.
-const SLOW_PAGES: ReadonlyArray<[name: string, path: string, signIn?: string]> = [
+// state, is on screen for a while, and the footer moved when it gave way. The first paint can also fall between two
+// parts of the page's HTML: the homepage's photo sits above the hero's panel on phones but comes after it in the page,
+// and the panel dropped when the photo arrived. Signed in or out, it's the same: signing in loads two pages first, so
+// it warms the cache, and the signed-out rows load the sign-in page first for the same reason. At full speed the whole
+// page arrives before the first paint, so the rows above can't see it. Browse is measured with no results (Mbombela),
+// the shortest state under its skeleton, and with results (Midrand).
+const SLOW_PAGES: ReadonlyArray<
+  [name: string, path: string, signIn?: string, cookies?: Readonly<Record<string, string>>]
+> = [
   ["storefront", "/sellers/tech-corner", "Student, Midrand"],
   ["storefront (signed out)", "/sellers/tech-corner"],
   ["listing page", "/listings/l-001", "Student, Midrand"],
@@ -143,15 +148,22 @@ const SLOW_PAGES: ReadonlyArray<[name: string, path: string, signIn?: string]> =
   ["Hub event", "/hub/h-001", "Student, Midrand"],
   ["Saved page (nothing saved)", "/saved", "Student, Midrand"],
   ["Saved page's Shops tab (none followed)", "/saved?tab=shops", "Student, Midrand"],
+  ["homepage", "/"],
+  ["browse page (campus mbombela: no results)", "/browse", undefined, { vossie_campus: "mbombela" }],
+  ["browse page (campus midrand)", "/browse", undefined, { vossie_campus: "midrand" }],
 ];
 
-for (const [name, path, signIn] of SLOW_PAGES) {
+for (const [name, path, signIn, cookies] of SLOW_PAGES) {
   test(`the ${name} holds still on a slow network, after another page (CLS 0.05 or less, spec 11)`, async ({
     page,
     context,
+    baseURL,
   }) => {
     test.skip(!["phone-390", "desktop-1440"].includes(test.info().project.name), "Measured at 390 and 1440");
     test.slow();
+    if (cookies) {
+      await context.addCookies(Object.entries(cookies).map(([cookie, value]) => ({ name: cookie, value, url: baseURL! })));
+    }
     if (signIn) {
       await page.goto("/login");
       await page.locator("main").getByRole("button", { name: signIn, exact: true }).click();

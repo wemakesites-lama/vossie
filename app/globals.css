@@ -1847,13 +1847,15 @@
 @layer components {
   /* On a slow network with the CSS cached, the browser paints a page as it arrives, and React shows a <Suspense>
      boundary's content no sooner than 300 ms after that first paint. Until then a page waiting on its params shows
-     PageFallback, and Saved its skeleton, which is far taller than an empty tab. Either let the footer into the first
-     screen, and it moved when the content took over. So both are at least a screen tall, less the header (64px on
-     phones, 78px from the tablet step, 122px with the desktop's quick links), like .sell-page (selling amendment 15.1):
-     a short Saved tab leaves blank space under it instead. svh, the small viewport, so a phone's address bar can't
-     pull the footer up; vh first for older browsers. */
+     PageFallback, and Saved and browse their skeletons, which are far taller than an empty tab or no results. Either
+     let the footer into the first screen, and it moved when the content took over. So all three are at least a screen
+     tall, less the header (64px on phones, 78px from the tablet step, 122px with the desktop's quick links), like
+     .sell-page (selling amendment 15.1): a short Saved tab or browse with no results leaves blank space under it
+     instead. svh, the small viewport, so a phone's address bar can't pull the footer up; vh first for older
+     browsers. */
   .page-fallback,
-  .saved-page {
+  .saved-page,
+  .browse {
     --screen-header: 64px;
     min-height: calc(100vh - var(--screen-header));
     min-height: calc(100svh - var(--screen-header));
@@ -1861,14 +1863,16 @@
 
   @media (min-width: 48rem) and (min-height: 30rem) {
     .page-fallback,
-    .saved-page {
+    .saved-page,
+    .browse {
       --screen-header: 78px;
     }
   }
 
   @media (min-width: 64rem) and (min-height: 30rem) {
     .page-fallback,
-    .saved-page {
+    .saved-page,
+    .browse {
       --screen-header: 122px;
     }
   }
@@ -2221,17 +2225,28 @@
     color: var(--color-white);
   }
 
-  /* Phones: the photo sits above the panel (spec 7.3). It comes after the panel in the page, so the headline and
-     buttons come before the slide controls for screen readers and keyboards (plan decision 17). */
+  /* Phones: the photo sits above the panel, in the grid's first row (spec 7.3). It comes after the panel in the page,
+     so the headline and buttons come before the slide controls for screen readers and keyboards (plan decision 17).
+     So on a slow network the browser could paint the panel before the photo had arrived, and the photo then pushed it
+     down. An empty box the photo's size (::before, first in the hero) holds the row from the first paint, and the
+     photo takes the same cell. */
+  .hero::before,
   .hero-media {
-    position: relative;
-    order: -1;
+    grid-area: 1 / 1;
     aspect-ratio: 4 / 3;
     /* Landscape phones keep the phone layout, so keep the photo to part of the screen there. In portrait the
        4:3 box is far below this. The explicit width stops the cap from shrinking the box through its ratio. */
     width: 100%;
     max-height: 60svh;
     background: var(--color-pale);
+  }
+
+  .hero::before {
+    content: "";
+  }
+
+  .hero-media {
+    position: relative;
     /* Sideways swipes change the slide; up and down still scroll the page, and pinch-zoom still works. */
     touch-action: pan-y pinch-zoom;
     --focus-ring: var(--color-sky);
@@ -2325,8 +2340,14 @@
       padding-top: 24px;
     }
 
+    /* Side by side, the panel then the photo. The columns are fixed and the panel sets the height, so a photo that
+       arrives late moves nothing, and needs no box held for it. */
+    .hero::before {
+      content: none;
+    }
+
     .hero-media {
-      order: 0;
+      grid-area: auto;
       aspect-ratio: auto;
       max-height: none;
     }
