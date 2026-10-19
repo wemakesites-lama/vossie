@@ -253,6 +253,12 @@ The controller adds amendments here; they override the tasks below wherever they
        - The homepage's whole-first-visit `total` swings by about 3 KB between runs of the same build, from prefetches and lazy images, and once read 358,839 B against the 358,400 B cap.
        - The owner sees an empty, reserved 52px row under the storefront band on phones and tablets: the Follow row's space, kept so nothing moves.
     4. **As built in Task 17:** the band keeps its width by giving `.seller-follow` zero width and full minimum width, and moving the column gap onto Share. A follower's status wraps inside its own box, beside Unfollow. Amendment 15's `width: 18rem` was dropped, because it widened Message seller on every storefront.
+21. **Notes from Task 21, for Tasks 22 to 24** (Claude, under decision 54, 2026-10-19).
+    1. **The JS figures are now 22 B lower on every page** (`/` 150,591 B, listing 151,747 B, the new listing form 152,265 B, 40 B under the stop line). The install event's name moved to `lib/install-event.ts`, so client code never imports `lib/boot-script.ts` or `lib/offline.ts`. Importing them had tipped decision 63's chunk merge (+527 B on every page) and carried dead `JSON.stringify` calls. A guard test checks this. Task 24 fills the ledger with these figures, and CLAUDE.md gains the rule: client code never imports the boot script or the offline page.
+    2. **Task 23: the homepage's first-visit `total` measures what spec 11 defines.** The total is the first visit before below-the-fold photos, so it leaves out link prefetches (`?_rsc=` requests) and images that load lazily below the fold. Today's figure swings by about 13 KB between runs and once read 359,430 B against the 358,400 B cap. Report the figures before and after, and keep the cap.
+    3. **Task 24: the kill switch reaches a device through the browser's own update check.** That can take up to about a day on a phone that already has the worker, because a plain reload doesn't trigger it. The go-live checklist's kill-switch item and the docs say so.
+    4. **Task 22: an unexplained `selling-writes` flake.** It failed once, in a run after the context changes ("edit, pause, resume, mark sold and delete, each seen by a buyer" and "Back after publishing…"), then passed alone and in a full rerun. If it recurs in Task 22's or Task 24's runs, find the cause.
+    5. **The registration costs 63 to 87 B of each page's HTML** (the cut is 100 B). Its margin is thin and varies by build, so Task 23 records it again.
 
 ## Store design
 
