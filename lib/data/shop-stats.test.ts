@@ -103,3 +103,31 @@ describe("the dashboard's numbers (selling spec 2.8, plan decision 18)", () => {
     });
   });
 });
+
+describe("offers and the shop's numbers (community actions spec 2.12)", () => {
+  it("leaves offer threads out of enquiries and the reply rate, and counts their confirmed sales", async () => {
+    const now = new Date("2026-10-14T08:42:00.000Z");
+    const before = await shopStats("tech-corner", now);
+    const at = "2026-10-13T08:00:00.000Z";
+    sampleStore().conversations.set("conv-offer-test", {
+      id: "conv-offer-test",
+      listingId: "l-001",
+      listingTitle: "Casio fx-991ZA Plus calculator",
+      sellerSlug: "tech-corner",
+      buyerId: "acc-student",
+      sellerGone: false,
+      status: "confirmed",
+      createdAt: at,
+      lastMessageAt: at,
+      firstReplyAt: at,
+      completedAt: at,
+      confirmedAt: "2026-10-13T12:00:00.000Z",
+      confirmedBy: "buyer",
+      requestId: "r-001",
+      requestTitle: "Accounting 1 tutor this week",
+    });
+    const after = await shopStats("tech-corner", now);
+    expect(after.week).toEqual({ ...before.week, salesConfirmed: before.week.salesConfirmed + 1 });
+    expect(after.record).toEqual({ ...before.record, salesConfirmed: before.record.salesConfirmed + 1 });
+  });
+});

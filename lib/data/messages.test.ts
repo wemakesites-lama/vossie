@@ -9,9 +9,11 @@ import {
   getThread,
   markCompleted,
   markThreadRead,
+  type NewOffer,
   rejectSale,
   sendMessage,
   startConversation,
+  startOffer,
   unreadCounts,
 } from "./messages";
 import { getNotifications } from "./notifications";
@@ -277,6 +279,7 @@ describe("the inbox (messaging spec 2.10, 2.11 and 3.2)", () => {
         role: "buyer",
         otherName: "Tech corner",
         listingTitle: "Gaming headset, barely used",
+        requestTitle: null,
         image: { src: "/placeholders/listing/tech.svg", alt: "Gaming headset, barely used" },
         preview: "Hi Thandi, it is. Can I see the speaker first?",
         lastFromViewer: false,
@@ -289,6 +292,7 @@ describe("the inbox (messaging spec 2.10, 2.11 and 3.2)", () => {
         role: "buyer",
         otherName: "Tech corner",
         listingTitle: "Casio fx-991ZA Plus calculator",
+        requestTitle: null,
         image: { src: "/placeholders/listing/tech.svg", alt: "Casio fx-991ZA Plus calculator" },
         preview: "Perfect, see you there.",
         lastFromViewer: true,
@@ -575,5 +579,126 @@ describe("the data export (plan decision 15)", () => {
       confirmedBy: "auto",
     });
     expect((await exportConversations("acc-seller", due)).map((row) => row.status)).toEqual(["confirmed", "replied"]);
+  });
+});
+
+describe("offers on Looking For requests (community actions spec 2.7 to 2.12)", () => {
+  const OFFER_NOW = new Date("2026-10-14T08:42:00.000Z");
+  const offer = (overrides: Partial<NewOffer> = {}) =>
+    startOffer({
+      askerId: "acc-student",
+      request: { id: "r-001", title: "Accounting 1 tutor this week" },
+      sellerSlug: "tech-corner",
+      listing: null,
+      body: "I passed Accounting 1 with 78%. Evenings work.",
+      now: OFFER_NOW,
+      ...overrides,
+    });
+  const messagesIn = (id: string) => [...sampleStore().messages.values()].filter((row) => row.conversationId === id);
+
+  it("starts an Offered thread holding the shop's message, and tells the asker", async () => {
+    const id = await offer();
+    expect(sampleStore().conversations.get(id)).toMatchObject({
+      status: "offered",
+      buyerId: "acc-student",
+      sellerSlug: "tech-corner",
+      listingId: null,
+      requestId: "r-001",
+      requestTitle: "Accounting 1 tutor this week",
+    });
+    const thread = await getThread(id, "acc-student", OFFER_NOW);
+    expect(thread).toMatchObject({
+      role: "buyer",
+      otherName: "Tech corner",
+      status: "offered",
+      request: { id: "r-001", title: "Accounting 1 tutor this week", live: true },
+    });
+    expect(thread?.messages).toMatchObject([
+      { fromViewer: false, author: "Tech corner", body: "I passed Accounting 1 with 78%. Evenings work." },
+    ]);
+    expect((await getNotifications("acc-student", 1))[0]).toMatchObject({
+      kind: "offer",
+      text: "Tech corner offered to help with Accounting 1 tutor this week",
+      href: `/messages/${id}`,
+    });
+  });
+
+  it("makes one per shop per request: a second offer changes nothing", async () => {
+    const id = await offer();
+    expect(await offer({ body: "Me again." })).toBe(id);
+    expect(messagesIn(id)).toHaveLength(1);
+  });
+
+  // Amendment 7: the find and the insert run with no await between them, so two sends at once make one thread.
+  it("makes one even when it's sent twice at once", async () => {
+    const [first, second] = await Promise.all([offer(), offer({ body: "Me again." })]);
+    expect(second).toBe(first);
+    expect([...sampleStore().conversations.values()].filter((row) => row.requestId === "r-001")).toHaveLength(1);
+    expect(messagesIn(first)).toHaveLength(1);
+    expect((await getNotifications("acc-student", 50)).filter((note) => note.kind === "offer")).toHaveLength(1);
+  });
+
+  it("can point to one of the shop's listings, shown as the thread's listing", async () => {
+    const id = await offer({ listing: { id: "l-001", title: "Casio fx-991ZA Plus calculator" } });
+    expect((await getThread(id, "acc-student", OFFER_NOW))?.listing?.id).toBe("l-001");
+  });
+
+  it("keeps the asker unnamed to the shop until they write, then uses their first name (spec 2.10)", async () => {
+    const id = await offer();
+    expect((await getThread(id, "acc-seller", OFFER_NOW))?.otherName).toBe("The student who asked");
+    expect((await getInbox("acc-seller", "selling", OFFER_NOW)).find((row) => row.id === id)).toMatchObject({
+      otherName: "The student who asked",
+      requestTitle: "Accounting 1 tutor this week",
+      status: "offered",
+    });
+    expect(await sendMessage({ conversationId: id, accountId: "acc-student", body: "Yes please!", now: OFFER_NOW })).toBe(
+      "sent",
+    );
+    expect((await getThread(id, "acc-seller", OFFER_NOW))?.otherName).toBe("Thandi");
+  });
+
+  it("makes the shop wait for a reply, which moves Offered to Replied; only then can it be marked completed", async () => {
+    const id = await offer();
+    // Each step is a minute later, so "the newest notification" is the one that step made.
+    const shop = (minutes: number) => ({ conversationId: id, accountId: "acc-seller", now: later(minutes) });
+    expect(await sendMessage({ ...shop(1), body: "Still keen?" })).toBe("waiting");
+    expect(messagesIn(id)).toHaveLength(1);
+    expect(await markCompleted(shop(2))).toBe("not-allowed");
+    await sendMessage({ conversationId: id, accountId: "acc-student", body: "Yes, Thursday.", now: later(3) });
+    expect(sampleStore().conversations.get(id)?.status).toBe("replied");
+    expect((await getNotifications("acc-seller", 1))[0].text).toBe("Thandi replied about Accounting 1 tutor this week");
+    expect(await sendMessage({ ...shop(4), body: "Great, 18:00 at the library." })).toBe("sent");
+    expect(await markCompleted(shop(5))).toBe("done");
+    expect((await getNotifications("acc-student", 1))[0].text).toBe(
+      "Tech corner marked Accounting 1 tutor this week as done. Did the sale happen?",
+    );
+  });
+
+  it("is never found as an enquiry or a shop question (spec 2.9)", async () => {
+    await offer({ askerId: "acc-mentor", listing: { id: "l-001", title: "Casio fx-991ZA Plus calculator" } });
+    expect(await findConversation("acc-mentor", { kind: "listing", listingId: "l-001" })).toBeNull();
+    expect(await findConversation("acc-mentor", { kind: "shop", sellerSlug: "tech-corner" })).toBeNull();
+  });
+
+  it("says when the request has gone, keeping its title", async () => {
+    const id = await offer({ askerId: "acc-mentor" });
+    sampleStore().requests.delete("r-001");
+    expect((await getThread(id, "acc-mentor", OFFER_NOW))?.request).toEqual({
+      id: "r-001",
+      title: "Accounting 1 tutor this week",
+      live: false,
+    });
+  });
+
+  it("names the request in both sides' data exports, and the asker not at all", async () => {
+    await offer();
+    expect(
+      (await exportConversations("acc-seller", OFFER_NOW)).find((row) => row.about === "Request: Accounting 1 tutor this week"),
+    ).toMatchObject({ with: "The student who asked", status: "offered" });
+    expect(
+      (await exportConversations("acc-student", OFFER_NOW)).find(
+        (row) => row.about === "Your request: Accounting 1 tutor this week",
+      ),
+    ).toMatchObject({ with: "Tech corner" });
   });
 });

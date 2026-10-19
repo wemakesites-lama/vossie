@@ -22,7 +22,10 @@ function soldAt(row: ConversationRow, now: Date): string | null {
 }
 
 function counts(rows: readonly ConversationRow[], enquiriesSince: number, salesSince: number, now: Date): EnquiryCounts {
-  const enquiries = rows.filter((row) => row.listingId !== null && Date.parse(row.createdAt) >= enquiriesSince);
+  // An offer thread isn't an enquiry: the shop wrote first (community actions spec 2.12). Its sale still counts.
+  const enquiries = rows.filter(
+    (row) => row.listingId !== null && !row.requestId && Date.parse(row.createdAt) >= enquiriesSince,
+  );
   const inTime = enquiries.filter(
     (row) => row.firstReplyAt !== null && Date.parse(row.firstReplyAt) - Date.parse(row.createdAt) <= REPLY_WINDOW_MS,
   );

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { offerAbout, offerNoteText, UNNAMED_ASKER } from "@/lib/looking-for/words";
 import { messageNoteText, saleNoteText } from "@/lib/messaging/notification-text";
 import { threadPath, type MessageTarget } from "@/lib/messaging/paths";
 import { autoConfirmAt, firstLine } from "@/lib/messaging/rules";
@@ -11,7 +12,7 @@ import type {
   Thread,
   UnreadCounts,
 } from "@/lib/types";
-import { getListingDetail, getListingsByIds, getSeller } from "./index";
+import { getListingDetail, getListingsByIds, getRequest, getSeller } from "./index";
 import {
   countNewNotifications,
   deleteNotifications,
@@ -89,6 +90,10 @@ async function shopOf(sellerSlug: string): Promise<ConversationShop> {
 /** The other side's name, as `side` sees it (spec 2.11). */
 function otherName(row: ConversationRow, side: Side, shopName: string): string {
   if (side === "buyer") return row.sellerGone ? DELETED : shopName;
+  // The asker stays unnamed to the shop until they write in the offer's thread (community actions spec 2.10).
+  if (row.requestId && row.buyerId && !messagesOf(row.id).some((message) => message.from === "buyer")) {
+    return UNNAMED_ASKER;
+  }
   return buyerName(row);
 }
 
@@ -119,7 +124,8 @@ async function tellOtherSide(row: ConversationRow, from: Side, now: Date): Promi
   await notifyAboutMessage({
     accountId: to,
     conversationId: row.id,
-    text: messageNoteText({ sender, listingTitle: row.listingTitle, first }),
+    // An offer thread is named by its request (community actions plan decision 14).
+    text: messageNoteText({ sender, listingTitle: row.requestTitle ?? row.listingTitle, first }),
     href: threadPath(row.id),
     now,
   });
@@ -127,7 +133,8 @@ async function tellOtherSide(row: ConversationRow, from: Side, now: Date): Promi
 
 function findRow(buyerId: string, target: MessageTarget): ConversationRow | null {
   for (const row of sampleStore().conversations.values()) {
-    if (row.buyerId !== buyerId || row.sellerGone) continue;
+    // An offer thread is never an enquiry or a shop question (community actions spec 2.9).
+    if (row.buyerId !== buyerId || row.sellerGone || row.requestId) continue;
     if (target.kind === "listing" && row.listingId === target.listingId) return row;
     if (target.kind === "shop" && row.listingId === null && row.sellerSlug === target.sellerSlug) return row;
   }
@@ -186,12 +193,74 @@ export async function startConversation(input: NewConversation): Promise<{ conve
   return { conversationId: row.id, created: true };
 }
 
-export type SendResult = "sent" | "not-found" | "closed";
+export type NewOffer = {
+  /** The request's asker, on the conversation's buyer side. */
+  askerId: string;
+  request: { id: string; title: string };
+  sellerSlug: string;
+  /** One of the shop's listings the offer points to, or null (community actions spec 2.9). */
+  listing: { id: string; title: string } | null;
+  body: string;
+  now: Date;
+};
+
+/**
+ * The shop's offer thread on a request, while the shop is there to answer it. Synchronous on purpose: startOffer finds
+ * and inserts with no await between, so two offers sent at once make one thread (community actions amendment 7).
+ */
+function offerRow(requestId: string, sellerSlug: string): ConversationRow | null {
+  for (const row of sampleStore().conversations.values()) {
+    if (row.requestId === requestId && row.sellerSlug === sellerSlug && !row.sellerGone) return row;
+  }
+  return null;
+}
+
+/**
+ * A shop's offer on a request (community actions spec 2.7 and 2.9): a conversation with the asker on the buyer's side,
+ * Offered, holding the shop's message, and an "offer" notification for the asker. One per shop per request: when the
+ * shop has offered already, nothing changes and that thread's id comes back. Server Actions only: it makes ids.
+ */
+export async function startOffer(input: NewOffer): Promise<string> {
+  const existing = offerRow(input.request.id, input.sellerSlug);
+  if (existing) return existing.id;
+  const at = input.now.toISOString();
+  const row: ConversationRow = {
+    id: `conv-${randomUUID()}`,
+    listingId: input.listing?.id ?? null,
+    listingTitle: input.listing?.title ?? null,
+    sellerSlug: input.sellerSlug,
+    buyerId: input.askerId,
+    sellerGone: false,
+    status: "offered",
+    createdAt: at,
+    lastMessageAt: at,
+    firstReplyAt: null,
+    completedAt: null,
+    confirmedAt: null,
+    confirmedBy: null,
+    requestId: input.request.id,
+    requestTitle: input.request.title,
+  };
+  sampleStore().conversations.set(row.id, row);
+  addMessage(row, "seller", input.body, null, input.now);
+  await notify({
+    accountId: input.askerId,
+    kind: "offer",
+    subjectId: row.id,
+    text: offerNoteText((await shopOf(input.sellerSlug)).name, input.request.title),
+    href: threadPath(row.id),
+    now: input.now,
+  });
+  return row.id;
+}
+
+export type SendResult = "sent" | "not-found" | "closed" | "waiting";
 
 /**
  * A message in a thread (spec 3.3). The seller's first reply moves Asked to Replied and its time is kept for the trust
  * badges (plan decision 30); the other side is told. "not-found" when the conversation isn't the account's, "closed"
- * when the other side has left (plan decision 21). Server Actions only: it makes ids.
+ * when the other side has left (plan decision 21), "waiting" when a shop that offered writes again before the asker has
+ * replied (community actions spec 2.9). Server Actions only: it makes ids.
  */
 export async function sendMessage({
   conversationId,
@@ -208,8 +277,11 @@ export async function sendMessage({
   const side = row ? sideOf(row, accountId) : null;
   if (!row || !side) return "not-found";
   if (!otherSideThere(row, side)) return "closed";
+  if (side === "seller" && row.status === "offered") return "waiting";
   await settle(row, now);
   addMessage(row, side, body, null, now);
+  // The asker's reply turns an offer into a conversation like any other (community actions spec 2.12).
+  if (side === "buyer" && row.status === "offered") row.status = "replied";
   if (side === "seller") {
     if (row.status === "asked") row.status = "replied";
     row.firstReplyAt ??= now.toISOString();
@@ -243,7 +315,7 @@ export async function markCompleted(change: SaleChange): Promise<SaleResult> {
     accountId: row.buyerId,
     kind: "sale-to-confirm",
     subjectId: row.id,
-    text: saleNoteText({ shop: (await shopOf(row.sellerSlug)).name, listingTitle: row.listingTitle }),
+    text: saleNoteText({ shop: (await shopOf(row.sellerSlug)).name, listingTitle: row.requestTitle ?? row.listingTitle }),
     href: threadPath(row.id),
     now: change.now,
   });
@@ -306,6 +378,7 @@ export async function getInbox(accountId: string, tab: InboxTab, now: Date): Pro
       role: side,
       otherName: otherName(row, side, shop.name),
       listingTitle: row.listingTitle,
+      requestTitle: row.requestTitle ?? null,
       image: image ? { ...image } : null,
       preview: last ? firstLine(last.body) : "",
       lastFromViewer: last?.from === side,
@@ -322,9 +395,10 @@ export async function getThread(id: string, accountId: string, now: Date): Promi
   const side = row ? sideOf(row, accountId) : null;
   if (!row || !side) return null;
   await settle(row, now);
-  const [detail, shop] = await Promise.all([
+  const [detail, shop, request] = await Promise.all([
     row.listingId ? getListingDetail(row.listingId) : Promise.resolve(null),
     shopOf(row.sellerSlug),
+    row.requestId ? getRequest(row.requestId) : Promise.resolve(null),
   ]);
   const other = otherName(row, side, shop.name);
   return {
@@ -335,6 +409,7 @@ export async function getThread(id: string, accountId: string, now: Date): Promi
     shop,
     listingTitle: row.listingTitle,
     listing: detail ? { ...detail.listing } : null,
+    request: row.requestId ? { id: row.requestId, title: row.requestTitle ?? "", live: request !== null } : null,
     status: row.status,
     completedAt: row.completedAt,
     confirmedAt: row.confirmedAt,
@@ -429,7 +504,7 @@ export async function forgetAccountInMessaging(accountId: string, shopSlug: stri
 /** A conversation in the account's data export (plan decision 15). No ids. */
 export type ConversationExport = {
   with: string;
-  /** The listing's title, or null for a question about the shop. */
+  /** The listing's title, "Your request: …" or "Request: …" for an offer, or null for a question about the shop. */
   about: string | null;
   status: ConversationStatus;
   startedAt: string;
@@ -451,7 +526,7 @@ export async function exportConversations(accountId: string, now: Date): Promise
       const side = sideOf(row, accountId)!;
       return {
         with: otherName(row, side, (await shopOf(row.sellerSlug)).name),
-        about: row.listingTitle,
+        about: row.requestTitle ? offerAbout(side, row.requestTitle) : row.listingTitle,
         status: row.status,
         startedAt: row.createdAt,
         messages: messagesOf(row.id).map((message) => ({

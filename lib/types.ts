@@ -352,6 +352,8 @@ export type ConversationSummary = {
   otherName: string;
   /** The listing's title, or null for a question about the shop (messaging plan decision 2). */
   listingTitle: string | null;
+  /** The request an offer answers (community actions spec 2.7), or null for any other conversation. */
+  requestTitle: string | null;
   /** The listing's photo, or the shop's for a question about the shop. Null once the listing has gone. */
   image: ImageRef | null;
   /** The last message's first line. */
@@ -387,6 +389,11 @@ export type Thread = {
   listingTitle: string | null;
   /** The listing as it is now: null for a question about the shop, or once the listing has gone (stage F). */
   listing: Listing | null;
+  /**
+   * The request an offer answers, or null for any other conversation (community actions spec 2.7). `live` is false
+   * once its page has gone (deleted or hidden), and the thread then says so (plan decision 8).
+   */
+  request: { id: string; title: string; live: boolean } | null;
   status: ConversationStatus;
   completedAt: string | null;
   confirmedAt: string | null;
