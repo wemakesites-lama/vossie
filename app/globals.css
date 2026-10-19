@@ -9092,3 +9092,98 @@
     }
   }
 }
+
+/* --- Community actions: the offer composer (community actions plan, Task 13, spec 2.9) --- */
+@layer components {
+  /* The request an offer answers, in the place E's composer shows the listing. Navy on the grey panel. */
+  .offer-summary {
+    display: grid;
+    gap: 8px;
+    padding: 16px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+  }
+
+  .offer-summary-eyebrow {
+    color: var(--color-navy);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .offer-summary-title {
+    color: var(--color-navy);
+    font-size: 18px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .offer-note {
+    display: grid;
+    justify-items: start;
+    gap: 12px;
+  }
+
+  /*
+   * The composer's room while it streams in: the open form a shop sees, laid out by E's .composer-layout like the page,
+   * with the card, the form and the tips each at the height measured on the build for a one-line request title. The
+   * steps follow where the page's own text wraps, by width (the card's pills and the form's hint wrap, and the tips'
+   * lines), so they are width queries; only desktop's (tips beside the form) shares the layout's breakpoint. A long
+   * title wraps the card and makes the page a line or two taller, which is the most it can move.
+   */
+  .offer-skeleton-summary {
+    height: 9.925rem;
+    border-radius: var(--radius-card);
+  }
+
+  .offer-skeleton-form {
+    height: 27.1rem;
+  }
+
+  .offer-skeleton-tips {
+    height: 16.4rem;
+    border-radius: var(--radius-card);
+  }
+
+  @media (min-width: 23.9rem) {
+    .offer-skeleton-tips {
+      height: 14.97rem;
+    }
+  }
+
+  @media (min-width: 24.8rem) {
+    .offer-skeleton-summary {
+      height: 7.7rem;
+    }
+  }
+
+  @media (min-width: 25.3rem) {
+    .offer-skeleton-tips {
+      height: 13.5rem;
+    }
+  }
+
+  @media (min-width: 29.4rem) {
+    .offer-skeleton-tips {
+      height: 12.1rem;
+    }
+  }
+
+  @media (min-width: 30.6rem) {
+    .offer-skeleton-form {
+      height: 25.75rem;
+    }
+  }
+
+  /* Desktop: the form on the left and the tips beside it, so only the form sets the page's height. */
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .offer-skeleton-form {
+      height: 26rem;
+    }
+
+    .offer-skeleton-tips {
+      height: 17.5rem;
+    }
+  }
+}

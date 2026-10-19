@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { AccountView, detailsForm } from "@/components/account/AccountView";
 import { PrivacySettingsView } from "@/components/account/PrivacySettingsView";
 import { CodeStep, EmailStep, ProfileStep } from "@/components/auth/SignInSteps";
+import { OfferView } from "@/components/looking-for/OfferView";
 import { RequestFormView, startValues } from "@/components/looking-for/RequestFormView";
 import { composerForm, ComposerView } from "@/components/messages/ComposerView";
 import { reportForm, ReportView } from "@/components/messages/ReportView";
@@ -21,6 +22,7 @@ import { SellerConfirm } from "@/components/staff/SellerConfirm";
 import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
 import { pickupPoints } from "@/data/fixtures/pickup-points";
+import { requests } from "@/data/fixtures/requests";
 import { sampleSellerRows } from "@/data/fixtures/shops";
 import { getPostRow } from "@/lib/data/hub-posts";
 import { getMentoredShop, listNotes } from "@/lib/data/mentors";
@@ -311,10 +313,15 @@ describe("error summary ids (accounts spec 6)", () => {
           categories={categories}
           today="2026-10-14"
         />
+        <OfferView
+          subject={{ request: requests[0], campusName: "Midrand" }}
+          status={{ kind: "open", askerId: "acc-student", shopSlug: "tech-corner", listings: [] }}
+          form={{ body: "", listing: "", errors: oops, warnings: [] }}
+        />
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(31);
+    expect(summaries).toHaveLength(32);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -350,6 +357,7 @@ describe("error summary ids (accounts spec 6)", () => {
       "check-in-tech-corner-summary",
       "request-new-summary",
       "request-r-001-summary",
+      "offer-r-001-summary",
     ]);
   });
 });
