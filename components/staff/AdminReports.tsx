@@ -28,7 +28,9 @@ export function reportedThing(report: Pick<ReportView, "target" | "targetTitle">
   return `${kindWords(report.target.kind)}: ${report.targetTitle}`;
 }
 
-export function outcomeWords(outcome: ReportOutcome | null): string {
+/** What a closed report ended in. "Hidden" is a listing, or a Looking For request when `kind` says so (plan decision 20). */
+export function outcomeWords(outcome: ReportOutcome | null, kind?: ReportTarget["kind"]): string {
+  if (outcome === "hidden" && kind === "request") return "Request hidden";
   return outcome ? OUTCOME_WORDS[outcome] : "Closed";
 }
 
@@ -79,7 +81,7 @@ export function AdminReports({ reports }: { reports: readonly ReportView[] }) {
             key: report.id,
             cells: [
               reportedThing(report),
-              outcomeWords(report.outcome),
+              outcomeWords(report.outcome, report.target.kind),
               report.closedAt ? (
                 <time key="closed" dateTime={report.closedAt}>
                   {shortSastDate(report.closedAt)}

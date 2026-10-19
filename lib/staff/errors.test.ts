@@ -12,6 +12,12 @@ describe("the staff forms' error words (plan decision 22)", () => {
     ]);
   });
 
+  it("words a missing reason for a request as one its asker reads (community actions plan decision 20)", () => {
+    expect(staffErrors(["reason-missing-asker"], staffFieldIds("hide-rep-1"))).toEqual([
+      { message: "Give a reason. The asker sees it.", fieldId: "hide-rep-1-reason" },
+    ]);
+  });
+
   it("keeps the codes' order, and leaves out codes it doesn't know", () => {
     const errors = staffErrors(["help-missing", "toString", "time-length"], staffFieldIds("book-h-002"));
     expect(errors.map((error) => error.fieldId)).toEqual(["book-h-002-help", "book-h-002-time"]);

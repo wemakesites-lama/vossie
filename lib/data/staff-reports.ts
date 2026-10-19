@@ -5,7 +5,7 @@ import { sampleStore } from "./store";
 // The Hub's reports queue (staff tools spec 2.3, plan decision 5), over E's reports. A report names its reporter by
 // first name only. Dismiss closes one report; hiding the listing closes every open report on that listing, and pausing
 // the shop closes every open report on the shop and on its listings (amendment 14.1). A report about something that
-// has gone, or about a Looking For request, can only be dismissed.
+// has gone can only be dismissed; a request can be hidden too (community actions plan decision 20).
 // Closing writes; the action notifies (Task 10). Times come from the caller.
 
 /** A report as the queue and its page show it (spec 2.3). */
@@ -25,11 +25,11 @@ export type ReportView = {
   note: string | null;
   closedAt: string | null;
   closedByName: string | null;
-  /** Whether the reported listing or shop is still there (a request always is). */
+  /** Whether the reported listing, shop or request is still there. */
   exists: boolean;
   /**
-   * Why buyers can't see what exists: the Hub hid the listing, or paused the shop (whose pages show the 404 while the
-   * pause lasts, amendment 13.2). Null when they can, so the page may link it.
+   * Why buyers can't see what exists: the Hub hid the listing or the request, or paused the shop (whose pages show the
+   * 404 while the pause lasts, amendment 13.2). Null when they can, so the page may link it.
    */
   unseen: "hidden" | "paused" | null;
   /** The shop a pause would pause: the listing's, or the one reported. */
@@ -60,15 +60,17 @@ function toView(row: ReportRow): ReportView {
   const shopSlug =
     row.targetKind === "listing" ? listing?.sellerSlug : row.targetKind === "seller" ? row.targetId : undefined;
   const shopRow = shopSlug && !gone ? store.sellers.get(shopSlug) : undefined;
-  const exists = row.targetKind === "request" || (row.targetKind === "listing" ? Boolean(listing) : Boolean(shopRow));
+  const requestRow = row.targetKind === "request" ? store.requests.get(row.targetId) : undefined;
+  const exists =
+    row.targetKind === "request" ? Boolean(requestRow) : row.targetKind === "listing" ? Boolean(listing) : Boolean(shopRow);
   let unseen: ReportView["unseen"] = null;
-  if (exists && listing?.hiddenAt) unseen = "hidden";
+  if (exists && (listing?.hiddenAt || requestRow?.hiddenAt)) unseen = "hidden";
   else if (exists && shopRow) {
     const profile = shopRow.ownerId ? store.sellerProfiles.get(shopRow.ownerId) : undefined;
     if (profile?.status === "paused" && profile.pausedBy === "staff") unseen = "paused";
   }
-  // What Hide can do depends on the kind of target (amendment 7): a listing, as now; a shop is paused, not hidden; a
-  // Looking For request is only dismissed here until stage H adds Hide the request.
+  // What Hide can do depends on the kind of target (amendment 7): a listing or a Looking For request that's there and
+  // not hidden yet (community actions plan decision 20); a shop is paused, not hidden.
   let canHide: boolean;
   switch (row.targetKind) {
     case "listing":
@@ -78,7 +80,7 @@ function toView(row: ReportRow): ReportView {
       canHide = false;
       break;
     case "request":
-      canHide = false; // stage H
+      canHide = open && Boolean(requestRow) && !requestRow?.hiddenAt;
       break;
   }
   return {
@@ -143,9 +145,9 @@ export async function closeReport(id: string, note: string, staffId: string, now
 
 /**
  * Hide the listing (spec 2.3, plan decision 5): every open report on the same target closes with the outcome and the
- * reason, except ones about something that has gone (amendment 14.2). Each one, for its reporter's notification. Stage H
- * adds Hide the request on the same confirm page and reuses this, so it stays target-generic (amendment 7). A pause
- * closes the reports about a whole shop, listings included: `closeReportsAboutShop`.
+ * reason, except ones about something that has gone (amendment 14.2). Each one, for its reporter's notification. Hide
+ * the request (community actions plan decision 20) reuses this on the same confirm page, so it stays target-generic
+ * (amendment 7). A pause closes the reports about a whole shop, listings included: `closeReportsAboutShop`.
  */
 export async function closeReportsOn(
   target: ReportTarget,

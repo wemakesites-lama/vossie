@@ -20,8 +20,8 @@ type AdminReportProps = {
 
 /**
  * A report's page (spec 2.3, plan decision 5): what was reported (linked while it's there), the reason, the detail,
- * the reporter's first name and when. Open: Hide the listing and Pause the account through their confirm pages, where
- * the report allows them, and Dismiss with a note. Closed: what was done, by whom and when.
+ * the reporter's first name and when. Open: Hide the listing or request and Pause the account through their confirm
+ * pages, where the report allows them, and Dismiss with a note. Closed: what was done, by whom and when.
  */
 export function AdminReport({ report, note, errors }: AdminReportProps) {
   const noteId = `dismiss-${report.id}-note`;
@@ -49,7 +49,9 @@ export function AdminReport({ report, note, errors }: AdminReportProps) {
               {report.unseen && (
                 <span className="staff-muted staff-unseen">
                   {report.unseen === "hidden"
-                    ? "Buyers can't see this listing: the Hub has hidden it."
+                    ? report.target.kind === "request"
+                      ? "Students can't see this request: the Hub has hidden it."
+                      : "Buyers can't see this listing: the Hub has hidden it."
                     : "Buyers can't see this shop while the Hub's pause lasts."}
                 </span>
               )}
@@ -97,8 +99,8 @@ export function AdminReport({ report, note, errors }: AdminReportProps) {
           )}
           {!report.can.hide && !report.can.pause && (
             <p>
-              This report is about a Looking For request, something that has gone, or a shop the Hub can&apos;t pause,
-              so it can only be dismissed.
+              This report is about something that has gone, or a shop the Hub can&apos;t pause, so it can only be
+              dismissed.
             </p>
           )}
           <ErrorSummary id={`dismiss-${report.id}-summary`} errors={errors} />
@@ -134,7 +136,7 @@ export function AdminReport({ report, note, errors }: AdminReportProps) {
             What was done
           </h2>
           <p className="staff-standing">
-            {outcomeWords(report.outcome)} on {longSastDate(report.closedAt ?? report.createdAt)} by{" "}
+            {outcomeWords(report.outcome, report.target.kind)} on {longSastDate(report.closedAt ?? report.createdAt)} by{" "}
             {report.closedByName ?? "Deleted account"}.
           </p>
           {report.note && <p className="staff-prewrap">{report.note}</p>}

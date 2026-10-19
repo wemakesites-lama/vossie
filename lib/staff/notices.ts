@@ -13,6 +13,7 @@ const NOTICES: ReadonlyMap<string, string> = new Map([
   ["mentor-removed", "The shop has no mentor now."],
   ["dismissed", "Dismissed. The reporter has been told."],
   ["hidden", "Hidden. Its seller and everyone who reported it have been told."],
+  ["request-hidden", "Hidden. The asker and everyone who reported it have been told."],
   ["report-paused", "Paused. The seller and everyone who reported it have been told."],
   ["pinned", "Pinned. They take one of the four places that day."],
   ["unpinned", "Pin removed."],

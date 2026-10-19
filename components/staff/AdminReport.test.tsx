@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createReport } from "@/lib/data/reports";
-import { closeReport, getReport } from "@/lib/data/staff-reports";
+import { closeReport, closeReportsOn, getReport } from "@/lib/data/staff-reports";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import type { ReportTarget } from "@/lib/types";
 import { AdminReport } from "./AdminReport";
@@ -71,13 +71,46 @@ describe("a report's page (staff tools spec 2.3, plan decision 5)", () => {
     expect(within(facts).getByText("Buyers can't see this shop while the Hub's pause lasts.")).toBeInTheDocument();
   });
 
-  it("offers only Dismiss for a report about a request, and says why", async () => {
+  it("offers Hide for a report about a request, and Dismiss (community actions plan decision 20)", async () => {
     const id = await reportOn({ kind: "request", id: "r-001" }, "Looking for a lab coat");
     render(<AdminReport report={(await getReport(id))!} note="" errors={[]} />);
-    expect(screen.getByText(/can only be dismissed/)).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /^Hide / })).toBeNull();
+    expect(screen.getByRole("link", { name: "Hide Looking for a lab coat" })).toHaveAttribute(
+      "href",
+      `/admin/reports/${id}/hide`,
+    );
     expect(screen.queryByRole("link", { name: /^Pause / })).toBeNull();
+    expect(screen.queryByText(/can only be dismissed/)).toBeNull();
     expect(screen.getByRole("button", { name: "Dismiss the report about Looking for a lab coat" })).toBeInTheDocument();
+  });
+
+  it("doesn't link a request the Hub has hidden, and says students can't see it (amendment 8)", async () => {
+    const id = await reportOn({ kind: "request", id: "r-001" }, "Looking for a lab coat");
+    sampleStore().requests.get("r-001")!.hiddenAt = NOW.toISOString();
+    render(<AdminReport report={(await getReport(id))!} note="" errors={[]} />);
+    const facts = screen.getByRole("region", { name: "The report" });
+    expect(within(facts).queryByRole("link")).toBeNull();
+    expect(within(facts).getByText("Looking for a lab coat")).toBeInTheDocument();
+    expect(within(facts).getByText("Students can't see this request: the Hub has hidden it.")).toBeInTheDocument();
+    expect(within(facts).queryByText(/Buyers can't see this listing/)).toBeNull();
+    // Hidden already, so Hide has gone, and the report can only be dismissed.
+    expect(screen.queryByRole("link", { name: /^Hide / })).toBeNull();
+    expect(screen.getByText(/can only be dismissed/)).toBeInTheDocument();
+  });
+
+  it("says a hidden request was hidden once its report is closed", async () => {
+    const id = await reportOn({ kind: "request", id: "r-001" }, "Looking for a lab coat");
+    await closeReportsOn({ kind: "request", id: "r-001" }, "hidden", "Not allowed.", "acc-admin", NOW);
+    render(<AdminReport report={(await getReport(id))!} note="" errors={[]} />);
+    expect(screen.getByText("Request hidden on 14 October 2026 by Pieter.")).toBeInTheDocument();
+    expect(screen.getByText("Not allowed.")).toBeInTheDocument();
+  });
+
+  it("links a request that's up to its page", async () => {
+    const id = await reportOn({ kind: "request", id: "r-001" }, "Looking for a lab coat");
+    render(<AdminReport report={(await getReport(id))!} note="" errors={[]} />);
+    const facts = screen.getByRole("region", { name: "The report" });
+    expect(within(facts).getByRole("link", { name: "Looking for a lab coat" })).toHaveAttribute("href", "/looking-for/r-001");
+    expect(within(facts).queryByText(/can't see this/)).toBeNull();
   });
 
   it("keeps the note typed before a failed Dismiss, with what's wrong", async () => {

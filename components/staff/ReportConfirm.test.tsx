@@ -2,11 +2,15 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createReport } from "@/lib/data/reports";
 import { getReport } from "@/lib/data/staff-reports";
-import { resetSampleStore } from "@/lib/data/store";
+import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import type { ReportTarget } from "@/lib/types";
 import { ReportConfirm } from "./ReportConfirm";
 
-vi.mock("@/lib/staff/admin-actions", () => ({ hideReportedListing: async () => {}, pauseReportedShop: async () => {} }));
+vi.mock("@/lib/staff/admin-actions", () => ({
+  hideReportedListing: async () => {},
+  hideReportedRequest: async () => {},
+  pauseReportedShop: async () => {},
+}));
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
 
@@ -30,10 +34,31 @@ describe("the reports' confirm pages (staff tools spec 2.9, plan decision 18)", 
     expect(screen.getByRole("link", { name: "Keep it" })).toHaveAttribute("href", `/admin/reports/${report.id}`);
   });
 
-  it("offers Hide only for a listing, so stage H can add its own branch for a request (amendment 14.4)", async () => {
-    const report = await view({ kind: "request", id: "r-001" }, "A Looking For request");
-    // Whatever `can` says, the listing's words and action don't fit a request.
+  it("asks before hiding a request, saying what students, the asker and the reporters see (community actions plan decision 20)", async () => {
+    const report = await view({ kind: "request", id: "r-002" }, "Graphic calculator to borrow for exams");
+    render(<ReportConfirm kind="hide" report={report} reason="" errors={[]} />);
+    expect(
+      screen.getByText("Hide Graphic calculator to borrow for exams? Students stop seeing it straight away."),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/sees your reason in Your requests/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hide Graphic calculator to borrow for exams" })).toBeInTheDocument();
+    expect(document.querySelector('input[name="report"]')).toHaveValue(report.id);
+    expect(screen.getByRole("link", { name: "Keep it" })).toHaveAttribute("href", `/admin/reports/${report.id}`);
+  });
+
+  it("offers Hide only for a listing or a request, whatever `can` says (amendment 14.4)", async () => {
+    const report = await view({ kind: "seller", id: "tech-corner" }, "Tech corner");
+    // Neither the listing's words and action nor the request's fit a shop, which is paused, not hidden.
     render(<ReportConfirm kind="hide" report={{ ...report, can: { hide: true, pause: false } }} reason="" errors={[]} />);
+    expect(screen.getByText(/can't be hidden from this report/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to the report" })).toHaveAttribute("href", `/admin/reports/${report.id}`);
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("says a request can't be hidden from a report that doesn't allow it, with the way back", async () => {
+    const report = await view({ kind: "request", id: "r-002" }, "Graphic calculator to borrow for exams");
+    sampleStore().requests.get("r-002")!.hiddenAt = NOW.toISOString();
+    render(<ReportConfirm kind="hide" report={(await getReport(report.id))!} reason="" errors={[]} />);
     expect(screen.getByText(/can't be hidden from this report/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to the report" })).toHaveAttribute("href", `/admin/reports/${report.id}`);
     expect(screen.queryByRole("button")).toBeNull();

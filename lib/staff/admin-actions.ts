@@ -14,6 +14,7 @@ import {
   restorePickupPoint,
   retirePickupPoint,
 } from "@/lib/data/pickup-points";
+import { hideRequest } from "@/lib/data/requests";
 import {
   closeReport,
   closeReportsAboutShop,
@@ -31,7 +32,9 @@ import {
   staffResumeShop,
   type ShopDecision,
 } from "@/lib/data/staff-shops";
-import { listingsChanged, pickupPointsChanged, sellersChanged } from "@/lib/data/tags";
+import { listingsChanged, pickupPointsChanged, requestsChanged, sellersChanged } from "@/lib/data/tags";
+import { YOUR_REQUESTS_PATH } from "@/lib/looking-for/paths";
+import { requestHiddenText } from "@/lib/looking-for/words";
 import { isId } from "@/lib/messaging/paths";
 import { keepTyped } from "@/lib/messaging/rules";
 import { done, field } from "@/lib/selling/action-helpers";
@@ -318,7 +321,7 @@ export async function hideReportedListing(formData: FormData): Promise<void> {
   const staff = await requireStaff("admin", id ? hideReportedPath(id) : ADMIN_REPORTS_PATH);
   const now = new Date();
   const view = id ? await getReport(id) : null;
-  if (!id || !view?.can.hide) return nothingChanged(ADMIN_REPORTS_PATH, now);
+  if (!id || !view?.can.hide || view.target.kind !== "listing") return nothingChanged(ADMIN_REPORTS_PATH, now);
   const reason = checkReason(field(formData, "reason"));
   if (reason.error) return backWithReason(hideForm(id), reason.error, reason.value, hideReportedPath(id), now);
   const hidden = await hideListing(view.target.id, reason.value, now);
@@ -346,6 +349,51 @@ export async function hideReportedListing(formData: FormData): Promise<void> {
   listingsChanged();
   await clearStaffForm(hideForm(id));
   await leaveNotice("hidden", now);
+  done(ADMIN_REPORTS_PATH);
+}
+
+/**
+ * Hide the request, from the same confirm page (community actions spec 2.14, plan decision 20): it leaves the board,
+ * the homepage and the sitemap, and its page 404s; every open report on it closes; its asker hears the Hub hid it and
+ * sees why in Your requests; each reporter hears the Hub acted.
+ */
+export async function hideReportedRequest(formData: FormData): Promise<void> {
+  const id = idFrom(formData, "report");
+  const staff = await requireStaff("admin", id ? hideReportedPath(id) : ADMIN_REPORTS_PATH);
+  const now = new Date();
+  const view = id ? await getReport(id) : null;
+  if (!id || !view?.can.hide || view.target.kind !== "request") return nothingChanged(ADMIN_REPORTS_PATH, now);
+  const reason = checkReason(field(formData, "reason"));
+  if (reason.error) {
+    // The asker reads the reason, so the missing-reason error doesn't say "the seller".
+    const code = reason.error === "reason-missing" ? "reason-missing-asker" : reason.error;
+    return backWithReason(hideForm(id), code, reason.value, hideReportedPath(id), now);
+  }
+  const hidden = await hideRequest(view.target.id, reason.value, now);
+  if (!hidden) return nothingChanged(ADMIN_REPORTS_PATH, now);
+  const reports = await closeReportsOn(view.target, "hidden", reason.value, staff.id, now);
+  await recordAudit({
+    staff: staffOf(staff),
+    action: "request-hidden",
+    target: { kind: "request", id: hidden.id, name: hidden.title },
+    detail: reason.value,
+    subjectId: hidden.askerId,
+    now,
+  });
+  if (hidden.askerId) {
+    await notify({
+      accountId: hidden.askerId,
+      kind: "request-update",
+      subjectId: hidden.id,
+      text: requestHiddenText(hidden.title),
+      href: YOUR_REQUESTS_PATH,
+      now,
+    });
+  }
+  for (const closed of reports) await tellReporter(closed, "acted", now);
+  requestsChanged();
+  await clearStaffForm(hideForm(id));
+  await leaveNotice("request-hidden", now);
   done(ADMIN_REPORTS_PATH);
 }
 

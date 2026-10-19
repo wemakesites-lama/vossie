@@ -5,6 +5,7 @@ import { listAudit } from "@/lib/data/audit";
 import { addPin } from "@/lib/data/featured";
 import { getNotifications } from "@/lib/data/notifications";
 import { createReport } from "@/lib/data/reports";
+import { createRequest } from "@/lib/data/requests";
 import { createShop } from "@/lib/data/shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import type { ReportTarget } from "@/lib/types";
@@ -18,6 +19,7 @@ import {
   declineSeller,
   dismissReport,
   hideReportedListing,
+  hideReportedRequest,
   pauseReportedShop,
   pauseSeller,
   pinSeller,
@@ -28,7 +30,7 @@ import {
   unpinSeller,
   verifySeller,
 } from "./admin-actions";
-import { declineForm, dismissForm, PIN_FORM, pointAddForm, STAFF_NOTICE } from "./form-state";
+import { declineForm, dismissForm, hideForm, PIN_FORM, pointAddForm, STAFF_NOTICE } from "./form-state";
 
 const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
 
@@ -90,6 +92,13 @@ const GATE_CASES: Readonly<Record<string, GateCase>> = {
   assignMentor: { fields: () => ({ shop: "tech-corner", mentor: "" }) },
   dismissReport: { fields: ({ report }) => ({ report, note: "Looked fine." }) },
   hideReportedListing: { fields: ({ report }) => ({ report, reason: REASON }) },
+  // Hide the request acts on a report about a request, so its setup reports one (community actions plan decision 20).
+  hideReportedRequest: {
+    setup: async (arranged) => {
+      arranged.report = await report("acc-student", { kind: "request", id: "r-002" }, "Graphic calculator to borrow for exams");
+    },
+    fields: ({ report }) => ({ report, reason: REASON }),
+  },
   pauseReportedShop: { fields: ({ report }) => ({ report, reason: REASON }) },
   pinSeller: { fields: () => ({ seller: "nail-bar", campus: "pretoria", day: "2026-10-14" }) },
   unpinSeller: {
@@ -402,7 +411,7 @@ describe("reports (staff tools spec 2.3, plan decision 5)", () => {
     expect((await listAudit({ staff: null, kind: "shops" })).map((entry) => entry.action)).toEqual(["shop-paused"]);
   });
 
-  it("pauses the shop behind a report, and can only dismiss a report about a request", async () => {
+  it("pauses the shop behind a report, and hideReportedListing won't act on a report about a request", async () => {
     const id = await report("acc-student", { kind: "seller", id: "tech-corner" }, "Tech corner");
     await asAdmin();
     await redirectOf(() => pauseReportedShop(form({ report: id, reason: "Asked buyers for deposits." })));
@@ -489,5 +498,92 @@ describe("pickup points (staff tools spec 2.3, plan decision 10)", () => {
       ["point-retired", ""],
       ["point-renamed", "Was Library entrance"],
     ]);
+  });
+});
+
+describe("hiding a reported request (community actions spec 2.14, plan decision 20)", () => {
+  const postedRequest = () =>
+    createRequest({
+      askerId: "acc-student",
+      fields: {
+        title: "Exam answers wanted",
+        categorySlug: "textbooks-notes",
+        campusSlug: "midrand",
+        details: "Looking for the answers to Friday's exam paper.",
+        budgetZar: null,
+        swapWelcome: false,
+        neededBy: null,
+      },
+      now: STAFF_NOW,
+    });
+
+  it("hides it: every open report closes, the asker and the reporters are told, it's logged, the board expires", async () => {
+    const posted = await postedRequest();
+    const first = await report("acc-mentor", { kind: "request", id: posted.id }, posted.title);
+    const second = await report("acc-seller", { kind: "request", id: posted.id }, posted.title);
+    await asAdmin();
+    expect(
+      await redirectOf(() => hideReportedRequest(form({ report: first, reason: "Selling exam answers isn't allowed." }))),
+    ).toBe("/admin/reports");
+    expect(sampleStore().requests.get(posted.id)).toMatchObject({ hiddenReason: "Selling exam answers isn't allowed." });
+    expect([sampleStore().reports.get(first)?.outcome, sampleStore().reports.get(second)?.outcome]).toEqual([
+      "hidden",
+      "hidden",
+    ]);
+    expect(await lastAudit()).toMatchObject({
+      staffName: "Pieter",
+      action: "request-hidden",
+      targetKind: "request",
+      targetName: "Exam answers wanted",
+      detail: "Selling exam answers isn't allowed.",
+    });
+    expect(await newest("acc-student")).toMatchObject({
+      kind: "request-update",
+      text: "The Hub hid your request Exam answers wanted. See why in Your requests.",
+      href: "/account/requests",
+    });
+    expect((await newest("acc-mentor")).text).toBe("Thanks, we've acted on your report about Exam answers wanted.");
+    expect((await newest("acc-seller")).text).toBe("Thanks, we've acted on your report about Exam answers wanted.");
+    expect(request.updatedTags).toEqual(["requests"]);
+    expect(await notice()).toBe("request-hidden");
+  });
+
+  it("hides a sample request, which has no asker to tell", async () => {
+    const id = await report("acc-student", { kind: "request", id: "r-002" }, "Graphic calculator to borrow for exams");
+    await asAdmin();
+    await redirectOf(() => hideReportedRequest(form({ report: id, reason: "Not allowed." })));
+    expect(sampleStore().requests.get("r-002")?.hiddenReason).toBe("Not allowed.");
+    expect([...sampleStore().notifications.values()].filter((row) => row.kind === "request-update")).toEqual([]);
+    expect((await newest("acc-student")).text).toBe(
+      "Thanks, we've acted on your report about Graphic calculator to borrow for exams.",
+    );
+  });
+
+  it("asks for the reason first, and changes nothing on a second press or for a listing's report", async () => {
+    const posted = await postedRequest();
+    const id = await report("acc-mentor", { kind: "request", id: posted.id }, posted.title);
+    await asAdmin();
+    expect(await redirectOf(() => hideReportedRequest(form({ report: id, reason: "" })))).toBe(
+      `/admin/reports/${id}/hide`,
+    );
+    // The reason is read by the asker, not a seller, so the missing-reason error says so.
+    expect((await readFormState(hideForm(id)))?.errors).toEqual(["reason-missing-asker"]);
+    expect(sampleStore().requests.get(posted.id)?.hiddenAt).toBeNull();
+    await redirectOf(() => hideReportedRequest(form({ report: id, reason: "Not allowed." })));
+    await redirectOf(() => hideReportedRequest(form({ report: id, reason: "Again." })));
+    expect(await notice()).toBe("nothing");
+    expect(sampleStore().auditLog.size).toBe(1);
+    const aboutListing = await report("acc-mentor", { kind: "listing", id: "l-004" }, "Box braids, shoulder length");
+    await redirectOf(() => hideReportedRequest(form({ report: aboutListing, reason: "No." })));
+    expect(sampleStore().listings.get("l-004")?.hiddenAt ?? null).toBeNull();
+    expect(sampleStore().reports.get(aboutListing)?.status).toBe("open");
+  });
+
+  it("gives anyone but an admin the 404, changing nothing", async () => {
+    const posted = await postedRequest();
+    const id = await report("acc-mentor", { kind: "request", id: posted.id }, posted.title);
+    await signedInAs(request, "acc-mentor");
+    await expect(hideReportedRequest(form({ report: id, reason: "No." }))).rejects.toThrow("notFound");
+    expect(sampleStore().requests.get(posted.id)?.hiddenAt).toBeNull();
   });
 });

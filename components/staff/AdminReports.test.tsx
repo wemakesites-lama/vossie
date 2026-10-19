@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createReport } from "@/lib/data/reports";
-import { closeReport, listReports } from "@/lib/data/staff-reports";
+import { closeReport, closeReportsOn, listReports } from "@/lib/data/staff-reports";
 import { resetSampleStore } from "@/lib/data/store";
 import { AdminReports } from "./AdminReports";
 
@@ -43,6 +43,24 @@ describe("the reports queue (staff tools spec 2.3)", () => {
     const done = screen.getByRole("table", { name: "Closed recently" });
     expect(within(done).getByRole("cell", { name: "Dismissed" })).toBeInTheDocument();
     expect(within(done).getByRole("cell", { name: "Pieter" })).toBeInTheDocument();
+  });
+
+  it("says what was hidden: a listing, or a request (community actions plan decision 20)", async () => {
+    for (const [kind, id, title] of [
+      ["listing", "l-004", "Box braids, shoulder length"],
+      ["request", "r-002", "Graphic calculator to borrow for exams"],
+    ] as const) {
+      await createReport({ reporterId: "acc-student", target: { kind, id }, targetTitle: title, reason: "scam", detail: "", now: NOW });
+      await closeReportsOn({ kind, id }, "hidden", "Not allowed.", "acc-admin", NOW);
+    }
+    render(<AdminReports reports={await listReports()} />);
+    const done = screen.getByRole("table", { name: "Closed recently" });
+    const rows = within(done).getAllByRole("row").slice(1);
+    const rowFor = (what: string) => rows.find((row) => within(row).queryByRole("cell", { name: what }))!;
+    expect(rowFor("Listing: Box braids, shoulder length")).toHaveTextContent("Listing hidden");
+    const request = rowFor("Looking For request: Graphic calculator to borrow for exams");
+    expect(request).toHaveTextContent("Request hidden");
+    expect(request).not.toHaveTextContent("Listing hidden");
   });
 
   it("says when there's nothing open, or nothing closed", () => {

@@ -9,6 +9,8 @@ import { HELP_MAX, PIN_DAYS_AHEAD, REASON_MAX, TIME_MAX } from "./rules";
 const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Map([
   // Confirm pages and Dismiss (plan decision 18).
   ["reason-missing", { message: "Give a reason. The seller sees it.", field: "reason" }],
+  // Hide the request: the asker reads the reason (community actions plan decision 20).
+  ["reason-missing-asker", { message: "Give a reason. The asker sees it.", field: "reason" }],
   ["reason-length", { message: `Keep the reason to ${REASON_MAX} characters.`, field: "reason" }],
   ["note-missing", { message: "Add a note to say what you found.", field: "note" }],
   ["note-length", { message: `Keep the note to ${REASON_MAX} characters.`, field: "note" }],

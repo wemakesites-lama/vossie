@@ -66,7 +66,7 @@ describe("the Hub's reports queue (staff tools spec 2.3, plan decision 5)", () =
     expect(await getReport("rep-nope")).toBeNull();
   });
 
-  it("says what the Hub can do: hide a listing that's there, pause an owned open shop, only dismiss the rest", async () => {
+  it("says what the Hub can do: hide a listing or a request that's there, pause an owned open shop, only dismiss the rest", async () => {
     const own = (await getReport(await report("acc-student", { kind: "listing", id: "l-001" }, 8)))!;
     expect(own).toMatchObject({ exists: true, can: { hide: true, pause: true }, shop: { slug: "tech-corner", name: "Tech corner" } });
     const sample = (await getReport(await report("acc-student", { kind: "listing", id: "l-004" }, 8)))!;
@@ -74,7 +74,7 @@ describe("the Hub's reports queue (staff tools spec 2.3, plan decision 5)", () =
     const shop = (await getReport(await report("acc-student", { kind: "seller", id: "tech-corner" }, 8)))!;
     expect(shop.can).toEqual({ hide: false, pause: true });
     const request = (await getReport(await report("acc-student", { kind: "request", id: "r-001" }, 8)))!;
-    expect(request.can).toEqual({ hide: false, pause: false });
+    expect(request.can).toEqual({ hide: true, pause: false });
     sampleStore().listings.delete("l-007");
     const gone = (await getReport(await report("acc-student", { kind: "listing", id: "l-007" }, 8)))!;
     expect(gone).toMatchObject({ exists: false, can: { hide: false, pause: false } });
@@ -189,5 +189,31 @@ describe("the Hub's reports queue (staff tools spec 2.3, plan decision 5)", () =
     expect([...sampleStore().reports.values()].filter((row) => row.outcome === "hidden")).toHaveLength(2);
     expect(sampleStore().reports.get(other)?.status).toBe("open");
     expect(await closeReportsOn({ kind: "listing", id: "l-001" }, "hidden", "Again.", "acc-admin", NOW)).toEqual([]);
+  });
+});
+
+describe("reports about a request (community actions spec 2.14, plan decision 20)", () => {
+  it("can hide a request that's there and not hidden yet; one that has gone can only be dismissed", async () => {
+    const id = await report("acc-student", { kind: "request", id: "r-002" }, 8);
+    expect((await getReport(id))!).toMatchObject({ exists: true, can: { hide: true, pause: false }, shop: null });
+    sampleStore().requests.get("r-002")!.hiddenAt = NOW.toISOString();
+    expect((await getReport(id))!.can).toEqual({ hide: false, pause: false });
+    sampleStore().requests.delete("r-002");
+    expect((await getReport(id))!).toMatchObject({ exists: false, can: { hide: false, pause: false } });
+  });
+
+  it("says students can't see a request the Hub has hidden, as it does for a listing (amendment 8)", async () => {
+    const id = await report("acc-student", { kind: "request", id: "r-002" }, 8);
+    expect(await getReport(id)).toMatchObject({ exists: true, unseen: null });
+    sampleStore().requests.get("r-002")!.hiddenAt = NOW.toISOString();
+    expect(await getReport(id)).toMatchObject({ exists: true, unseen: "hidden" });
+    sampleStore().requests.delete("r-002");
+    expect(await getReport(id)).toMatchObject({ exists: false, unseen: null });
+  });
+
+  it("can't hide once the report is closed", async () => {
+    const id = await report("acc-student", { kind: "request", id: "r-002" }, 8);
+    await closeReport(id, "Nothing wrong.", "acc-admin", NOW);
+    expect((await getReport(id))!.can).toEqual({ hide: false, pause: false });
   });
 });

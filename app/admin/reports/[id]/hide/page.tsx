@@ -13,14 +13,17 @@ import { hideForm } from "@/lib/staff/form-state";
 import { ADMIN_REPORTS_PATH, hideReportedPath } from "@/lib/staff/paths";
 
 export async function generateMetadata(): Promise<Metadata> {
-  return staffMetadata("admin", "Hide a listing");
+  return staffMetadata("admin", "Hide a listing or request");
 }
 
 export function generateStaticParams() {
   return [{ id: "rep-sample" }];
 }
 
-/** Hide the listing's confirm page (staff tools spec 2.9, plan decisions 4 and 18). */
+/**
+ * Hide the listing's or request's confirm page (staff tools spec 2.9, plan decisions 4 and 18; community actions plan
+ * decision 20).
+ */
 export default function HideReportedPage({ params }: PageProps<"/admin/reports/[id]/hide">) {
   return (
     <Suspense fallback={<StaffSkeleton />}>

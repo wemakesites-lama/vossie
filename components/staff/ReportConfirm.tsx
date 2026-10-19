@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { FormError } from "@/lib/auth/messages";
 import type { ReportView } from "@/lib/data/staff-reports";
-import { hideReportedListing, pauseReportedShop } from "@/lib/staff/admin-actions";
+import { hideReportedListing, hideReportedRequest, pauseReportedShop } from "@/lib/staff/admin-actions";
 import { adminReportPath } from "@/lib/staff/paths";
 import { ConfirmAction } from "./ConfirmAction";
 
@@ -14,13 +14,14 @@ type ReportConfirmProps = {
 
 /**
  * Hide the listing's and Pause the account's confirm pages (spec 2.9; plan decisions 4, 5 and 18): what will happen,
- * the reason, and the button. When the report doesn't allow it (closed, about a request, gone), a sentence and the way
- * back. The words are samples for Lama to change.
+ * the reason, and the button. A request's report hides the request (community actions plan decision 20). When the
+ * report doesn't allow it (closed, hidden already, gone), a sentence and the way back. The words are samples for Lama
+ * to change.
  */
 export function ReportConfirm({ kind, report, reason, errors }: ReportConfirmProps) {
   const back = adminReportPath(report.id);
   const shop = report.shop;
-  // This branch is the listing's: stage H adds its own for a Looking For request (amendment 7).
+  // This branch is the listing's; the next is a Looking For request's (amendment 7).
   if (kind === "hide" && report.can.hide && report.target.kind === "listing") {
     return (
       <ConfirmAction
@@ -34,6 +35,27 @@ export function ReportConfirm({ kind, report, reason, errors }: ReportConfirmPro
         action={hideReportedListing}
         hidden={{ report: report.id }}
         reasonHint="The seller sees it."
+        reason={reason}
+        errors={errors}
+        confirmLabel={`Hide ${report.targetTitle}`}
+        keepHref={back}
+      />
+    );
+  }
+  if (kind === "hide" && report.can.hide && report.target.kind === "request") {
+    return (
+      <ConfirmAction
+        id={`hide-${report.id}`}
+        lead={`Hide ${report.targetTitle}? Students stop seeing it straight away.`}
+        consequences={[
+          "It leaves the board and the homepage, and its page says it can't be found. Shops can't offer on it.",
+          "Every open report about it closes, and each reporter hears that the Hub acted.",
+          "Its asker gets a notification and sees your reason in Your requests. They can delete it, but not edit or reopen it.",
+          "It can't be shown again from here yet.",
+        ]}
+        action={hideReportedRequest}
+        hidden={{ report: report.id }}
+        reasonHint="The asker sees it."
         reason={reason}
         errors={errors}
         confirmLabel={`Hide ${report.targetTitle}`}
@@ -64,7 +86,7 @@ export function ReportConfirm({ kind, report, reason, errors }: ReportConfirmPro
   return (
     <p>
       {kind === "hide"
-        ? "This listing can't be hidden from this report: it's closed, hidden already, or gone."
+        ? "It can't be hidden from this report: it's closed, hidden already, or gone."
         : "The shop can't be paused from this report: it's closed, a sample shop, or paused by the Hub already."}{" "}
       <Link href={back} prefetch={false}>
         Back to the report
