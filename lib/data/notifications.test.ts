@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   countNewNotifications,
   deleteNotifications,
+  deleteNotificationsAbout,
   exportNotifications,
   getNotifications,
   markConversationNotificationsRead,
@@ -151,5 +152,21 @@ describe("deleting and exporting (plan decisions 14 and 15)", () => {
       { text: "Tech corner replied about Gaming headset, barely used", at: "2026-10-13T09:05:00.000Z", read: false },
     ]);
     expect(JSON.stringify(data)).not.toMatch(/note-|acc-|conv-/);
+  });
+});
+
+describe("notifications about things that have gone (community actions plan decisions 6 and 21)", () => {
+  it("deletes everyone's of one kind about those things, and nothing else", async () => {
+    const at = new Date("2026-10-14T08:42:00.000Z");
+    await notify({ accountId: "acc-student", kind: "request-update", subjectId: "r-a", text: "A", href: "/", now: at });
+    await notify({ accountId: "acc-mentor", kind: "request-update", subjectId: "r-a", text: "B", href: "/", now: at });
+    await notify({ accountId: "acc-student", kind: "request-update", subjectId: "r-b", text: "C", href: "/", now: at });
+    await notify({ accountId: "acc-student", kind: "offer", subjectId: "r-a", text: "D", href: "/", now: at });
+    await deleteNotificationsAbout("request-update", new Set(["r-a"]));
+    expect((await getNotifications("acc-student", 50)).map((item) => item.text)).toEqual(
+      expect.arrayContaining(["C", "D"]),
+    );
+    expect((await getNotifications("acc-student", 50)).map((item) => item.text)).not.toContain("A");
+    expect((await getNotifications("acc-mentor", 50)).map((item) => item.text)).not.toContain("B");
   });
 });

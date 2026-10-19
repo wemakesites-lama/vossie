@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getCampuses, getCategories, getRequest } from "@/lib/data";
+import { resetSampleStore } from "@/lib/data/store";
 import { RequestView } from "./RequestView";
 
 // The async listings are tested on their own; here they stand in (jsdom can't render async components in a tree).
@@ -8,6 +9,11 @@ vi.mock("./RelatedListings", () => ({ RelatedListings: () => <section aria-label
 
 // The session's links are async Server Components; here they're the signed-out links (messaging plan, Task 7).
 vi.mock("@/components/messages/ViewerLinks", async () => (await import("@/tests/helpers/viewer-links")).signedOutViewerLinks);
+
+// Requests come from the sample store (community actions plan decision 1). A fresh one for each test.
+beforeEach(() => {
+  resetSampleStore();
+});
 
 async function show(id: string) {
   const [request, categories, campuses] = await Promise.all([getRequest(id), getCategories(), getCampuses()]);

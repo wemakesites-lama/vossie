@@ -6,6 +6,7 @@ import { cacheTag, updateTag } from "next/cache";
 
 export const LISTINGS_TAG = "listings";
 export const SELLERS_TAG = "sellers";
+export const REQUESTS_TAG = "requests";
 
 /** For a cached function that returns listings: a shop's status and badge change its listings too. */
 export function tagListings(): void {
@@ -51,4 +52,14 @@ export function hubChanged(): void {
 /** After a pickup point changes. Server Actions only. */
 export function pickupPointsChanged(): void {
   updateTag(PICKUP_POINTS_TAG);
+}
+
+/** For a cached function that returns requests (community actions plan decision 1). Offer counts are in them too. */
+export function tagRequests(): void {
+  cacheTag(REQUESTS_TAG);
+}
+
+/** After a request, or its offers, change. Server Actions only. */
+export function requestsChanged(): void {
+  updateTag(REQUESTS_TAG);
 }

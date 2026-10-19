@@ -1,7 +1,13 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { getRequest } from "@/lib/data";
+import { resetSampleStore } from "@/lib/data/store";
 import { RequestRow } from "./RequestRow";
+
+// Requests come from the sample store (community actions plan decision 1). A fresh one for each test.
+beforeEach(() => {
+  resetSampleStore();
+});
 
 async function show(id: string, campusName: string, categoryName: string) {
   return render(<RequestRow request={(await getRequest(id))!} campusName={campusName} categoryName={categoryName} />);

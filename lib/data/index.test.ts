@@ -34,6 +34,7 @@ import {
   getVerifiedSellers,
   searchListings,
 } from "./index";
+import { createRequest, hideRequest } from "./requests";
 import { resetSampleStore, sampleStore } from "./store";
 import type { SearchQuery } from "@/lib/types";
 
@@ -424,6 +425,25 @@ describe("Looking For data (community spec 4.3)", () => {
       "l-026",
     );
   });
+
+  it("reads requests from the store: a new one is listed, a hidden one isn't (community actions plan decision 1)", async () => {
+    const fields = {
+      title: "Desk lamp for res",
+      categorySlug: "res-living",
+      campusSlug: "mbombela",
+      details: "A lamp that clips onto a desk, by the weekend.",
+      budgetZar: null,
+      swapWelcome: true,
+      neededBy: null,
+    };
+    const posted = await createRequest({ askerId: "acc-student", fields, now: new Date("2026-10-14T08:42:00.000Z") });
+    expect(ids(await getRequests({ campus: "mbombela", limit: 3 }))).toEqual([posted.id, "r-001", "r-002"]);
+    expect(ids(await getOpenRequests({ category: "res-living" }))).toContain(posted.id);
+    expect((await getRequest(posted.id))?.title).toBe("Desk lamp for res");
+    await hideRequest("r-001", "Not allowed.", new Date("2026-10-14T09:00:00.000Z"));
+    expect(await getRequest("r-001")).toBeNull();
+    expect(await getRequestIds()).not.toContain("r-001");
+  });
 });
 
 describe("Hub data (community spec 5.3)", () => {
@@ -642,6 +662,16 @@ describe("the cache tags (selling spec 2.1, plan decision 6, amendment 8.13)", (
 
   it.each(Object.entries(sellerReaders))("tags %s with sellers", async (_, read) => {
     expect(await tagsOf(read)).toEqual([["sellers"]]);
+  });
+
+  it("tags the four request readers with requests only (community actions plan decision 1)", async () => {
+    const requestReaders = [
+      () => getRequests({ campus: "all", limit: 3 }),
+      () => getOpenRequests({ category: null }),
+      () => getRequest("r-001"),
+      () => getRequestIds(),
+    ];
+    for (const read of requestReaders) expect(await tagsOf(read)).toEqual([["requests"]]);
   });
 
   it("tags a listing's page with listings, sellers and pickup points (staff tools plan decision 10)", async () => {

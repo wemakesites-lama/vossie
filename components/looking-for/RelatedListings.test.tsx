@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getCampuses, getRequest } from "@/lib/data";
+import { resetSampleStore } from "@/lib/data/store";
 import { RelatedListings } from "./RelatedListings";
 
 const load = vi.hoisted(() => ({ mode: "real" as "real" | "empty" | "failing" }));
@@ -14,6 +15,11 @@ vi.mock("@/lib/data", async (importOriginal) => {
       return load.mode === "empty" ? [] : actual.getRelatedListings(query);
     },
   };
+});
+
+// Requests come from the sample store (community actions plan decision 1). A fresh one for each test.
+beforeEach(() => {
+  resetSampleStore();
 });
 
 afterEach(() => {

@@ -4,7 +4,6 @@ import { categories } from "@/data/fixtures/categories";
 import { collections } from "@/data/fixtures/collections";
 import { heroSlides } from "@/data/fixtures/hero";
 import { hubBanner } from "@/data/fixtures/hub";
-import { requests } from "@/data/fixtures/requests";
 import { trendingSearches } from "@/data/fixtures/trending";
 import { findListings } from "@/lib/browse/results";
 import { ALL_CAMPUSES } from "@/lib/campus";
@@ -44,11 +43,14 @@ import {
 import { featuredFor } from "./featured";
 import { publishedPost, publishedPosts } from "./hub-posts";
 import { pickupPointById, pointsInUse } from "./pickup-points";
-import { tagHub, tagListings, tagPickupPoints, tagSellers } from "./tags";
+import { listedRequests, publicRequest, publicRequestIds } from "./requests";
+import { tagHub, tagListings, tagPickupPoints, tagRequests, tagSellers } from "./tags";
 
 // The data layer (spec section 13). Listings and sellers come from the sample store, through lib/data/catalog.ts,
-// tagged so a write shows on the next request (selling spec 2.1); the rest is still read from the fixtures. Switching
-// to Supabase changes only this file and the catalog: keep the signatures, query the tables, keep the tags.
+// tagged so a write shows on the next request (selling spec 2.1). Requests come from it too, through
+// lib/data/requests.ts, tagged `requests` (community actions plan decision 1); the rest is still read from the
+// fixtures. Switching to Supabase changes only this file and the catalog: keep the signatures, query the tables, keep
+// the tags.
 
 export async function getCampuses(): Promise<readonly Campus[]> {
   "use cache";
@@ -137,35 +139,34 @@ export async function getFeatured({ campus, day }: { campus: CampusChoice; day: 
   return featuredFor(campus, day);
 }
 
-/** Open requests only: closed ones never appear in lists (community spec 4.3). */
-function openRequests(items: readonly LookingForRequest[]): LookingForRequest[] {
-  return items.filter((request) => request.status === "open");
-}
-
 /** The homepage's open requests (spec 7.11): newest first, the visitor's campus first (community spec 4.3). */
 export async function getRequests({ campus, limit }: CampusQuery): Promise<readonly LookingForRequest[]> {
   "use cache";
-  return campusFirst(openRequests(requests).sort(newestFirst), campus, limit);
+  tagRequests();
+  return campusFirst(listedRequests().sort(newestFirst), campus, limit);
 }
 
 /** The Looking For board (community spec 4.1): open requests, newest first, in one category or in all of them. */
 export async function getOpenRequests({ category }: { category: string | null }): Promise<readonly LookingForRequest[]> {
   "use cache";
-  return openRequests(requests)
+  tagRequests();
+  return listedRequests()
     .filter((request) => category === null || request.categorySlug === category)
     .sort(newestFirst);
 }
 
-/** A request's page (community spec 4.2), open or closed. */
+/** A request's page (community spec 4.2), open or closed; a hidden one has none (community actions spec 2.14). */
 export async function getRequest(id: string): Promise<LookingForRequest | null> {
   "use cache";
-  return requests.find((request) => request.id === id) ?? null;
+  tagRequests();
+  return publicRequest(id);
 }
 
-/** Every request's id, so each request page is prerendered (community spec 3). */
+/** Every request with a page, so each is prerendered (community spec 3); a new one renders on its first request. */
 export async function getRequestIds(): Promise<readonly string[]> {
   "use cache";
-  return requests.map((request) => request.id);
+  tagRequests();
+  return publicRequestIds();
 }
 
 /**

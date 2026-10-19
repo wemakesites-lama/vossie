@@ -151,3 +151,14 @@ export type NotificationExport = { text: string; at: string; read: boolean };
 export async function exportNotifications(accountId: string): Promise<NotificationExport[]> {
   return ofAccount(accountId).map((row) => ({ text: row.text, at: row.createdAt, read: row.readAt !== null }));
 }
+
+/**
+ * Everyone's notifications of one kind about things that have gone (community actions plan decisions 6 and 21): a
+ * deleted request's update, or the new listings of a shop that has gone. They would only lead to a page that 404s.
+ */
+export async function deleteNotificationsAbout(kind: NotificationKind, subjectIds: ReadonlySet<string>): Promise<void> {
+  const { notifications } = sampleStore();
+  for (const [id, row] of notifications) {
+    if (row.kind === kind && subjectIds.has(row.subjectId)) notifications.delete(id);
+  }
+}

@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { resetSampleStore } from "@/lib/data/store";
 import { LookingForRequests } from "./LookingForRequests";
 
 const viewer = vi.hoisted(() => ({ campus: "midrand" }));
@@ -18,6 +19,11 @@ vi.mock("@/lib/data", async (importOriginal) => {
       return requests.mode === "empty" ? [] : actual.getRequests(query);
     },
   };
+});
+
+// Requests come from the sample store (community actions plan decision 1). A fresh one for each test.
+beforeEach(() => {
+  resetSampleStore();
 });
 
 afterEach(() => {

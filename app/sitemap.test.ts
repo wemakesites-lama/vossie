@@ -1,7 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { getCollections, getHubPostIds, getListingIds, getRequestIds, getSellerSlugs } from "@/lib/data";
+import { resetSampleStore } from "@/lib/data/store";
 import { siteUrl } from "@/lib/site-url";
 import sitemap from "./sitemap";
+
+// Requests come from the sample store (community actions plan decision 1). A fresh one for each test.
+beforeEach(() => {
+  resetSampleStore();
+});
 
 describe("sitemap.xml (info and system spec 2.8)", () => {
   it("lists every listing, seller and collection at the site's own address", async () => {
