@@ -437,12 +437,94 @@ Review notes that were deliberately not acted on:
 - **Docs still uncommitted, waiting for Lama:** the positioning and editorial spec (`2026-10-15-positioning-and-editorial-design.md`), the Supabase spec and plan (`2026-10-15-supabase-backend-design.md`, `2026-10-15-supabase-foundation.md`), and the lines two other sessions added to this file and to the decisions log (the positioning section and decision 71; the Supabase section and Next bullet). Stage F's own decision is row 72 because row 71 is reserved for the positioning decision; this section and row 72 were written from snippet files for the same reason.
 - **JS room for stage G and later.** The listing page ends at 151,769 B (536 B under the stop line, 1,831 B under the limit) and the listing forms at 152,287 B.
 
+## 2026-10-19: Staff tools built, in sample mode (stage G)
+- **The admin console** (`/admin`):
+  - Overview: sellers waiting, open reports and slot requests waiting, and the trust badges worked out as the page opens.
+  - Sellers: waiting first. A shop's review page shows its answers, with Approve, Decline (a reason), Verify, the Hub's Pause and Resume, and its mentor.
+  - Reports: Dismiss with a note, Hide the listing, or Pause the account. Hiding or pausing closes every open report on that target.
+  - Featured: today's row for each campus, and pins.
+  - Pickup points: add, rename, retire and use again.
+  - Audit log: newest first, by kind.
+  - Decline, Hide and Pause go through confirm pages.
+- **The Hub's tools** (`/hub/manage`, `/hub/new`, `/hub/[id]/edit`): posts with drafts and a cover, a server-rendered Preview, and the office-hours queue with Accept and Decline. A mentor sees and edits their own posts, an admin all of them.
+- **RSVP and Request a slot** are real for signed-in students (`/hub/[id]` and `/hub/[id]/book`); signed out, they go to sign-in. One open request per student per office hours; the post's author is told.
+- **The mentor dashboard** (`/mentor`): assigned shops with the last 14 days' numbers and flags, each shop's private notes and check-ins, and a CSV download (quoted, guarded against formulas, with a byte-order mark so Excel reads it).
+- **What buyers see:**
+  - Featured honours pins and a week's break, as a preference: resting sellers fill the row after everyone else.
+  - Trust badges come from conversations for shops with an account.
+  - Hidden listings and Hub-paused shops leave every list, and a Hub-paused shop's pages are the 404.
+  - A retired pickup point says "(no longer used)".
+- **What sellers see:** a declined shop sees the Hub's reason on `/sell` and sends it again; a Hub-paused shop sees the reason and has no Resume; a hidden listing is marked on My listings; the account page lists each staff member's tools by role; notifications draw the two new kinds.
+- **Every staff page answers 404 to anyone without the role** (from inside the page: status 200, `noindex`, "Page not found" in the tab); signed out, it goes to sign-in first. Every staff action checks the role first and writes one audit entry only when something changed.
+- **Words:** the trust page says Verified is the Hub's badge, separate from approval; the privacy policy and privacy settings say what mentors' notes, the staff log, RSVPs and slot requests keep.
+- **Where the build differed from the plan** is in the plan's "Changes made during the build" (`docs/superpowers/plans/2026-10-14-staff-tools.md`), with each change's commit. The ones worth knowing:
+  - Four review fix commits, one for each batch of reviews: the CSV guard, unit tests in UTC and limits tested from both sides (`67d4ab8`); reports on a deleted shop, a Hub pause hiding the shop, a seller's own pause surviving it, and hidden listings' photos (`d39becb`, with `f0bc7aa`); pausing closing every report on the shop, and a decision acting on the shop that was reviewed (`322654d`); navy Preview links, no notes about your own shop, reserved shop links and no double posts (`5af3548`).
+  - Two things the plan didn't foresee, now in the spec's section 8: a shop's link can't be a word a fixed route uses (`/mentor/export`: `RESERVED_SLUGS`), and a new Hub post, note or check-in needs a one-time token (`lib/staff/once.ts`).
+  - The editor's error summary is `<prefix>-problems`, because `<prefix>-summary` is the Summary field's id.
+  - The tests: staff pages' tab titles stream in, so the axe checks wait for the `<title>`; the slot request page is checked at h-007, because h-002 has passed; the "(no longer used)" check reloads until it shows.
+- **Plan decisions Lama may want to revisit:**
+  - Decision 1: staff pages answer 404 with status 200 (below).
+  - Decision 3: only the Hub resumes a Hub pause, and shops no account owns can't be paused.
+  - Decision 4: nothing shows a hidden listing again.
+  - Decision 9 and amendment 3: Featured's week's break is a preference, not a rule.
+  - Decisions 10 and 11: pickup points and Hub posts moved into the store.
+  - Decision 16: mentors' notes are about the shop's owner and aren't in the seller's data download.
+  - Decision 22, the sample wording (below).
+- **Checks:**
+  - lint and types are clean;
+  - 1,937 unit tests pass, in 261 files;
+  - end to end, 1,025 pass, 887 are skipped by design and none fail, across 360, 390, 768, 1024 and 1440px, with `selling-writes` and then `staff-writes` (1440px) run last. Skipped includes the review screenshots, which run only with `SCREENSHOTS=1`;
+  - axe finds no serious or critical issues on every staff page (the admin console, the Hub's tools, the mentor pages), the confirm pages with their errors, the post editor with its errors and a Preview, and the slot request page.
+- **First visit at 390px, JS brotli:** homepage 150,613 B, browse 151,360 B, listing 151,769 B, storefront 151,373 B, Hub event 150,613 B, Hub office hours 150,613 B, `/sell` 150,613 B; signed in: new and edit listing forms 152,287 B; staff pages, signed in: Overview 150,613 B, Sellers 150,613 B, Hub tools 150,613 B, Mentor dashboard 150,613 B (stop line 152,305 B, never passed; limit 153,600 B). The stage added no client code, and every page that existed before is exactly as stage F left it, to the byte. The listing forms are still the highest pages, 18 B under the stop line and 1,313 B under the limit; the listing page is 536 B under it. The Hub event and office hours pages weren't in stage F's ledger; they are the same 150,613 B as the info pages.
+- **Layout shift** (fonts held back, at 390 and 1440px):
+
+  | Page | 390px | 1440px |
+  |---|---|---|
+  | Slot request page, a request waiting | 0.0036 | 0.0004 |
+  | Slot request page, the form | 0.0007 | 0.0004 |
+  | Admin Overview | 0.0007 | 0.0014 |
+  | Mentor dashboard | 0.0006 | 0.0027 |
+
+  All are under the limit of 0.05. The other pages' figures are as stage F left them (the selling pitch is still the one close to the limit, 0.0494 at 390px).
+
+- Review screenshots: `docs/progress/staff/` (28, at 390 and 1440px).
+
+## 2026-10-19: Open points for Lama after the staff tools build
+- **Staff pages answer 404 with status 200** (plan decision 1). The 404 is raised from inside the page, after it has started streaming, so the visitor sees the site's 404 page, Next adds `noindex`, and the status is still 200. Server Actions and the CSV route make the same role check, and the CSV route is a real 404. A real 404 for the pages needs a role check before rendering once sessions live in a real database (a proxy); it's on the go-live checklist.
+- **Hub covers share one limit.** A cover picked in the editor is stored as a waiting photo owned by `hub` (so deleting a staff member's account doesn't take Hub content with it), and sample mode keeps the newest 12 waiting photos per owner. All staff therefore share the 12 photos waiting on unsaved Hub forms; a thirteenth pushes out the oldest, which can lose a cover a Preview was keeping. It's no limit on saved posts.
+- **Tech corner's badge drops to New seller** once Overview recalculates (plan amendment 10). The sample shop's "Responsive" badge was seeded, and the real rule counts conversations in the last 90 days; no third sample enquiry was added because the sample conversations' dates fall outside the window anyway. It earns Responsive again if enough enquiries are answered in time. Buyers see a change within 15 minutes (Next's default life), or at the next write that expires the `sellers` tag; the nightly badge job is on the go-live checklist.
+- **Deleted sample staff accounts don't come back whole.** A sample staff account deleted and then signed in again by its sample button is a new account: it doesn't get back Sipho's mentor assignment (Naledi on Tech corner), or Naledi's authorship of h-002, h-007 and h-012 (plan amendment 10). Only a restart brings the seeds back.
+- **Double submits.** Only new listings (selling amendment 14) and the staff create forms (a new Hub post, a note, a check-in: `lib/staff/once.ts`) carry a one-time token. Everything else relies on its data function checking the state it expects, so a repeated Approve, Dismiss, Accept or RSVP says "Nothing changed. It was already done." and writes nothing. A message or a reply sent twice is sent twice (stage E), and a report's guard is its one-per-target rule.
+- **Sample wording to review** (plan decision 22):
+  - the notices: `lib/staff/notices.ts`;
+  - the notification sentences: `lib/staff/notification-text.ts`;
+  - the errors: `lib/staff/errors.ts`; the audit log's words: `lib/staff/audit-words.ts`;
+  - the mentor flags' explanations: `lib/staff/mentor.ts`;
+  - the confirm pages' lines and the empty states: in each view (`components/staff/*.tsx`, `components/hub/BookSlot.tsx`, `components/hub/PostAction.tsx`); Overview's lines: `components/staff/AdminOverview.tsx`;
+  - the declined and Hub-paused lines on `/sell`: `components/sell/ShopDeclined.tsx`, `Dashboard.tsx`; My listings' Hub-pause line, hidden-listing note and the new notice: `components/sell/MyListingsView.tsx`, `lib/selling/notices.ts`;
+  - the trust page's and the privacy policy's new sentences: `app/trust/page.tsx`, `app/privacy/page.tsx`, `components/account/PrivacySettingsView.tsx`;
+  - Naledi's sample note and check-in and Thandi's sample slot request: `data/fixtures/staff.ts`.
+- **The admin mentor dropdown still lists a shop's owner.** A mentor who owns the shop can't be its mentor (amendment 15.3): choosing them gives "Nothing changed", but they stay in the list. Leaving them out of the options for that shop is a small change in `components/staff/AdminSeller.tsx` and its page.
+- **Deleting a staff account says nothing about their own work.** What it does (`lib/data/staff-privacy.ts`): their posts stay on the Hub with no author (only an admin can edit them afterwards), the notes and check-ins they wrote stay as "Deleted account", their audit entries stay as "Deleted account", pins and answered requests stay unsigned, and the shops they mentored lose their mentor. The privacy settings' deletion list and the policy describe a seller's data, not this. A line for staff on the delete page is a small change.
+- **The full end-to-end count.** A full run on 18 October was interrupted when the Mac went to sleep with its lid closed, so the last complete figure in the commit log is 953 passed and 768 skipped at Task 12 (`a7f33f5`), before Task 20 added the staff tests. This session's full run, lid open and held awake, finished with 1,025 passed, 887 skipped by design and none failed, in 9.9 minutes. (Run alone on 19 October, after `pnpm lint`, `pnpm typecheck` and `pnpm test`; `pnpm e2e` builds and starts its own server on 3200. The lid was open before and during it, and `caffeinate -i` held the Mac awake. No stalls. The 887 skipped are the device-specific checks, the review screenshots, which run only with `SCREENSHOTS=1`, and the like: 768 at the end of stage F, plus the staff tests that run at two sizes only and the new screenshots test.)
+- **Hidden listings stay hidden.** Nothing shows one again (plan decision 4): the seller can edit or delete it, and only a change in the store brings it back. Likewise no way to unpause a Hub pause except the Hub's Resume, and sample shops no account owns can't be paused.
+- **Featured's break is a preference.** With nine Verified sellers for four places, a strict week's break emptied every campus's row for four days of each week, so a seller who has just been featured comes after everyone else rather than the row running short (spec section 8, item 8; the trust page and the Featured page say so). Once more sellers are Verified the break holds in full. `/admin/featured` records each campus's row for the day when it's opened, which is the row buyers then see.
+- **Kept as drafted** (amendment 10): a dismissal needs a note; the audit log records that a note was added, never its words; a mentor sees only their own posts in `/hub/manage`, an admin all of them.
+- **A new event can't start in the past,** so the sample office hours h-007 (19 November 2026) is the last upcoming one; after that date the slot request page says the office hours have passed, and the axe check skips pressing a form that is no longer there. Re-date it in `data/fixtures/hub.ts` for later demos.
+- **A manual screen-reader check is still to do:** the tables stack into cards on phones and keep their table roles (plan decision 20), and the notices and error summaries are live regions. The tests check the roles, names and words, not what VoiceOver or TalkBack say.
+- **Shop links reserve fixed words.** `/mentor/export` is the CSV, so a shop can never be called "export" (`export-shop` instead), and a test fails if a new fixed folder beside `[slug]` in `app/sellers`, `app/admin/sellers` or `app/mentor` isn't added to `RESERVED_SLUGS` (`lib/selling/rules.ts`).
+- **Hub covers on Vercel:** a cover goes through a Server Action like a listing's photos, so the 4.5 MB body limit applies there (see the selling build's open point); the go-live checklist has direct-to-storage uploads and moving Hub covers to storage.
+- **Unused files, for Lama to delete or keep:** none new. The ones from earlier stages are still there (`components/ComingSoon.tsx` and its test, `data/fixtures/viewer.ts`); no task ran `rm`.
+- **Docs still uncommitted, waiting for Lama:** the positioning and editorial spec, the Supabase spec and plan, and the other sessions' lines in this file and in the decisions log. This section, the stage G section above and decision row 73 were written from snippet files (`g-progress.md`, `g-decision.md`) for the same reason; row 73 because rows 71 and 72 are taken.
+- **JS room for stage H and later.** The listing forms are the highest pages at 152,287 B (18 B under the stop line, 1,313 B under the limit); every other page has at least 536 B (the listing page, 151,769 B).
+
 ## Next
-- Lama reviews the screenshots in `docs/progress/selling/` (24, at 390 and 1440px), and the messaging ones in `docs/progress/messaging/` if not yet seen. To retake the selling ones, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "selling review screenshots"`; the messaging ones use `-g "messaging review screenshots"`.
-- Then stage G: staff tools (`2026-10-14-staff-tools-design.md`, plan `2026-10-14-staff-tools.md`): approving the waiting shops (Lerato's "Crochet corner" and any new application), Verified, hiding listings and the Featured rules. Its plan's recheck reads selling's code first: `lib/data/catalog.ts` (what buyers see), `lib/data/shops.ts`, `SellerRow.previousSlugs`, `ListingRow.firstPublishedAt` and `takeFormState`.
+- Lama reviews the screenshots in `docs/progress/staff/` (28, at 390 and 1440px), and the selling ones in `docs/progress/selling/` and the messaging ones in `docs/progress/messaging/` if not yet seen. To retake the staff ones, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "staff tools review screenshots"`; the selling ones use `-g "selling review screenshots"` and the messaging ones `-g "messaging review screenshots"`.
+- Then stage H: community actions (`2026-10-14-community-actions-design.md`, plan `2026-10-14-community-actions.md`): posting Looking For requests, offers, following shops and the offline page. Its plan's recheck should read the staff tools' code first: `lib/data/staff-reports.ts` (a report's `toView` and `closeReportsOn`, where Hide the request joins), `lib/staff/once.ts` (a one-time token like the one its new request form needs) and `lib/staff/admin-actions.ts`. Stage I (saved-search alerts) follows.
 
 ## Waiting on
 - Eduvos font files and licence confirmation.
 - The official crest SVG.
 - Photos. The homepage is built, so each one is now a file drop plus one line in a fixture.
-- Eduvos's legal review of the privacy policy, terms of use and seller guidelines; the Information Officer's name; a contact address for privacy requests and support.
+- The Hub's real posts and office hours, and the real mentor and admin accounts. The 18 posts are samples, and managing staff accounts in the app isn't built.
+- Eduvos's legal review of the privacy policy, terms of use and seller guidelines; the Information Officer's name; a contact address for privacy requests and support; whether POPIA's right of access puts mentors' notes in a seller's data download (today the Information Officer is asked for them); and how long the staff log, RSVPs and slot requests are kept.
