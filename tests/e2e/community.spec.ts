@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { button, signInAsSample } from "./helpers/messaging";
 
 const project = () => test.info().project.name;
 
@@ -93,7 +94,7 @@ test.describe("the Looking For board (spec 4.1)", () => {
     await expect(page.getByText("No requests here yet. Be the first to ask.")).toBeVisible();
     await expect(page.locator(".board-empty").getByRole("link", { name: "Post a request" })).toHaveAttribute(
       "href",
-      "/login?next=%2Flooking-for",
+      "/login?next=%2Flooking-for%2Fnew",
     );
   });
 
@@ -101,10 +102,43 @@ test.describe("the Looking For board (spec 4.1)", () => {
     onlyAt("phone-390", "desktop-1440");
     await page.goto("/looking-for");
     await page.locator(".board-head").getByRole("link", { name: "Post a request" }).click();
-    await expect(page).toHaveURL(/\/login\?next=%2Flooking-for$/);
+    await expect(page).toHaveURL(/\/login\?next=%2Flooking-for%2Fnew$/);
     await page.getByRole("link", { name: "Go back" }).click();
     await expect(page).toHaveURL(/\/looking-for$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Looking For");
+  });
+
+  // Each Post a request link, signed out, through sign-in to the form. This is the click-through that caught a signed-out
+  // visitor being linked straight at the form: the browser kept the form's redirect to sign-in and replayed it after
+  // they signed in, leaving them on the sign-in page (community actions plan, Task 16).
+  const POST_A_REQUEST_LINKS = [
+    ["the board's head", "/looking-for", ".board-head"],
+    ["the board's empty state", "/looking-for?cat=tickets-events", ".board-empty"],
+    ["the homepage's band", "/", "#looking-for"],
+  ] as const;
+  for (const [where, path, container] of POST_A_REQUEST_LINKS) {
+    test(`signed out, Post a request on ${where} goes through sign-in and the form opens`, async ({ page }) => {
+      onlyAt("phone-390", "desktop-1440");
+      await page.goto(path);
+      const link = page.locator(container).filter({ visible: true }).getByRole("link", { name: "Post a request" });
+      await expect(link).toHaveAttribute("href", "/login?next=%2Flooking-for%2Fnew");
+      await link.click();
+      await expect(page).toHaveURL(/\/login\?next=%2Flooking-for%2Fnew$/);
+      await button(page, "Student, Midrand").click();
+      await expect(page).toHaveURL(/\/looking-for\/new$/);
+      await expect(page.getByRole("heading", { level: 1, name: "Ask for what you need" })).toBeVisible();
+    });
+  }
+
+  test("signed in, Post a request opens the form itself, with no sign-in page between", async ({ page }) => {
+    onlyAt("phone-390", "desktop-1440");
+    await signInAsSample(page, "Student, Midrand", "/looking-for");
+    // The session's link streams in after the shell's sign-in link: wait for it.
+    const link = page.locator(".board-head").filter({ visible: true }).getByRole("link", { name: "Post a request" });
+    await expect(link).toHaveAttribute("href", "/looking-for/new");
+    await link.click();
+    await expect(page).toHaveURL(/\/looking-for\/new$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Ask for what you need" })).toBeVisible();
   });
 
   test("the chips scroll sideways on phones, and the page doesn't", async ({ page }) => {

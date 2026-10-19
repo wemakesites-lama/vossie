@@ -3,8 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetSampleStore } from "@/lib/data/store";
 import { RequestBoard } from "./RequestBoard";
 
-const viewer = vi.hoisted(() => ({ campus: "all" }));
+const viewer = vi.hoisted(() => ({ campus: "all", signedIn: false }));
 const board = vi.hoisted(() => ({ failing: false }));
+
+// Post a request's session part is an async Server Component; here it follows `viewer.signedIn` (plan, Task 16).
+vi.mock("@/components/looking-for/ViewerPostRequestLink", async () =>
+  (await import("@/tests/helpers/viewer-post-request")).viewerPostRequestLink(() => viewer.signedIn),
+);
 
 vi.mock("@/lib/data/viewer", () => ({
   getViewerContext: async () => ({ campus: viewer.campus, signedIn: false, activity: null }),
@@ -28,6 +33,7 @@ beforeEach(() => {
 
 afterEach(() => {
   viewer.campus = "all";
+  viewer.signedIn = false;
   board.failing = false;
 });
 
@@ -115,8 +121,17 @@ describe("RequestBoard (community spec 4.1)", () => {
   it("invites the first request when a category has nothing open", async () => {
     await show({ cat: "tickets-events" });
     expect(screen.getByText("No requests here yet. Be the first to ask.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Post a request" })).toHaveAttribute("href", "/login?next=%2Flooking-for");
+    expect(screen.getByRole("link", { name: "Post a request" })).toHaveAttribute(
+      "href",
+      "/login?next=%2Flooking-for%2Fnew",
+    );
     expect(screen.queryByRole("region")).toBeNull();
+  });
+
+  it("opens the request form itself from the empty state once the visitor is signed in", async () => {
+    viewer.signedIn = true;
+    await show({ cat: "tickets-events" });
+    expect(screen.getByRole("link", { name: "Post a request" })).toHaveAttribute("href", "/looking-for/new");
   });
 
   it("says so when the requests don't load, with a way to try again, and keeps the chips", async () => {

@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Suspense } from "react";
+import { PostRequestLink } from "@/components/looking-for/PostRequestLink";
 import { LookingForRequests, RequestsSkeleton } from "./LookingForRequests";
 import { SectionHeader } from "./SectionHeader";
 
@@ -11,9 +11,8 @@ export function LookingFor() {
         <SectionHeader id="looking-for" eyebrow="Looking For" title="Can’t find it? Ask for it." tone="navy" />
         <p className="looking-for-copy">Post what you need and sellers on your campus come to you with offers.</p>
         {/* Inside the intro, so the tab order matches the layout: the button sits under the copy at every size. */}
-        <Link href="/looking-for" className="btn btn-primary looking-for-action">
-          Post a request
-        </Link>
+        {/* Follows the session in its own <Suspense>, with no prefetch: the homepage is prefetched from every page (decision 53). */}
+        <PostRequestLink className="btn btn-primary looking-for-action">Post a request</PostRequestLink>
       </div>
       <div className="looking-for-requests">
         <Suspense fallback={<RequestsSkeleton />}>

@@ -1,12 +1,11 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { LinkTabs } from "@/components/ui/LinkTabs";
 import { getCampuses, getCategories, getOpenRequests } from "@/lib/data";
 import { isOnlineCampus } from "@/lib/campus";
 import { getViewerContext } from "@/lib/data/viewer";
-import { signInHref } from "@/lib/next-path";
 import { boardHref, readRequestCategory, splitByCampus } from "@/lib/requests";
 import type { CampusChoice, LookingForRequest } from "@/lib/types";
+import { PostRequestLink } from "./PostRequestLink";
 import { RequestRow } from "./RequestRow";
 
 type Names = { campuses: ReadonlyMap<string, string>; categories: ReadonlyMap<string, string> };
@@ -46,9 +45,7 @@ export async function RequestBoard({ searchParams }: RequestBoardProps) {
     body = (
       <div className="board-empty">
         <p>No requests here yet. Be the first to ask.</p>
-        <Link href={signInHref("/looking-for")} prefetch={false} className="btn btn-primary">
-          Post a request
-        </Link>
+        <PostRequestLink className="btn btn-primary">Post a request</PostRequestLink>
       </div>
     );
   } else {
