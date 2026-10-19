@@ -9333,3 +9333,57 @@
     line-height: 1.25;
   }
 }
+
+/* --- Community actions: Saved's tabs and the shops you follow (community actions plan, Task 18, spec 2.17) --- */
+@layer components {
+  /* As tall as the tabs (44px links, 4px of top padding and the 1px line) and the note, so nothing jumps. */
+  .saved-skeleton-tabs {
+    display: block;
+    height: 49px;
+    margin-top: 22px;
+  }
+
+  .saved-skeleton-note {
+    display: block;
+    width: min(100%, 30rem);
+    height: 2.6em;
+    margin-top: 10px;
+  }
+
+  .saved-shops-notice {
+    margin-top: 20px;
+  }
+
+  /* One wrapping row of the Hub's small cards (community spec 5.1), each with Unfollow under it. */
+  .saved-shops {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 12px;
+    margin-top: 16px;
+  }
+
+  .saved-shop {
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: 8px;
+  }
+
+  .saved-shop-paused {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--color-pale);
+    color: var(--color-navy);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .saved-shop-listed {
+    color: var(--color-ink);
+    font-size: 12px;
+  }
+
+  .saved-shop-unfollow {
+    min-height: 44px;
+  }
+}
