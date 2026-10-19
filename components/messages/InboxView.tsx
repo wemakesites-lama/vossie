@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Photo } from "@/components/listings/Photo";
+import { offerAbout } from "@/lib/looking-for/words";
 import { inboxPath, threadPath } from "@/lib/messaging/paths";
 import { inboxTime } from "@/lib/time";
 import type { ConversationSummary, InboxTab } from "@/lib/types";
@@ -73,7 +74,8 @@ export function InboxView({ tab, hasShop, conversations, now }: InboxViewProps) 
 
 /** One conversation: a link to its thread, read as "Unread, Tech corner, 14:05, …" (spec 3.2 and section 5). */
 function InboxRow({ conversation, now }: { conversation: ConversationSummary; now: Date }) {
-  const { id, otherName, listingTitle, image, preview, lastFromViewer, lastMessageAt, status, unread } = conversation;
+  const { id, role, otherName, listingTitle, requestTitle, image, preview, lastFromViewer, lastMessageAt, status, unread } =
+    conversation;
   return (
     <Link href={threadPath(id)} prefetch={false} className="inbox-row" data-unread={unread || undefined}>
       {image ? (
@@ -88,7 +90,9 @@ function InboxRow({ conversation, now }: { conversation: ConversationSummary; no
             {inboxTime(lastMessageAt, now)}
           </time>
         </span>{" "}
-        <span className="inbox-about">{listingTitle ?? "A question for the shop"}</span>{" "}
+        <span className="inbox-about">
+          {requestTitle ? offerAbout(role, requestTitle) : (listingTitle ?? "A question for the shop")}
+        </span>{" "}
         <span className="inbox-preview">{lastFromViewer ? `You: ${preview}` : preview}</span>
       </span>{" "}
       <span className="inbox-end">

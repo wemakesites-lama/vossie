@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { FormStateRow } from "@/lib/data/rows";
-import { makeThread } from "@/tests/helpers/fakes";
+import { makeListing, makeThread } from "@/tests/helpers/fakes";
 import { replyForm, ThreadView } from "./ThreadView";
 
 // The forms only need something to post to; the actions have their own tests.
@@ -216,5 +216,86 @@ describe("the sale (messaging spec 2.5, plan decision 30)", () => {
     unmount();
     show(makeThread({ status: "replied" }));
     expect(screen.queryByRole("button", { name: /Mark as completed|Confirm the sale/ })).toBeNull();
+  });
+});
+
+describe("offer threads (community actions spec 2.7 to 2.10, plan decision 8)", () => {
+  const OFFER_NOW = new Date("2026-10-14T12:00:00.000Z");
+  const offer = makeThread({
+    status: "offered",
+    request: { id: "r-abc", title: "Desk lamp for res", live: true },
+    listing: null,
+    listingTitle: null,
+    messages: [
+      {
+        id: "msg-1",
+        fromViewer: false,
+        author: "Tech corner",
+        body: "I have a clip-on lamp, R120.",
+        swapOffer: null,
+        sentAt: "2026-10-14T10:00:00.000Z",
+      },
+    ],
+  });
+
+  it("names the request, linked to its page, with the Offered pill; the asker can reply", () => {
+    render(
+      <ThreadView thread={offer} now={OFFER_NOW} reply={replyForm(null, offer.id)} sent={false} campusName="Midrand" />,
+    );
+    expect(screen.getByText(/^Your request:/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Desk lamp for res" })).toHaveAttribute("href", "/looking-for/r-abc");
+    expect(screen.getByText("Offered")).toHaveClass("status-pill");
+    expect(screen.getByLabelText("Your reply")).toBeInTheDocument();
+  });
+
+  it("makes the shop wait for the asker's reply, and says Sent. in the shop's words", () => {
+    const seller = { ...offer, role: "seller" as const, otherName: "The student who asked" };
+    render(
+      <ThreadView thread={seller} now={OFFER_NOW} reply={replyForm(null, offer.id)} sent campusName="Midrand" />,
+    );
+    expect(screen.getByText(/^Request:/)).toBeInTheDocument();
+    expect(screen.getByText("You can write again when they reply.")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Your reply")).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent("Sent. The student who asked gets a notification.");
+    expect(screen.queryByRole("button", { name: "Mark as completed" })).toBeNull();
+  });
+
+  it("gives the shop its reply form back once the asker has replied", () => {
+    const seller = { ...offer, role: "seller" as const, otherName: "Thandi", status: "replied" as const };
+    render(
+      <ThreadView thread={seller} now={OFFER_NOW} reply={replyForm(null, offer.id)} sent={false} campusName="Midrand" />,
+    );
+    expect(screen.queryByText("You can write again when they reply.")).toBeNull();
+    expect(screen.getByLabelText("Your reply")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mark as completed" })).toBeInTheDocument();
+  });
+
+  it("says when the request has gone, and shows the listing the shop pointed to", () => {
+    render(
+      <ThreadView
+        thread={{
+          ...offer,
+          request: { id: "r-abc", title: "Desk lamp for res", live: false },
+          listing: makeListing({ id: "l-test", title: "Clip-on lamp" }),
+          listingTitle: "Clip-on lamp",
+        }}
+        now={OFFER_NOW}
+        reply={replyForm(null, offer.id)}
+        sent={false}
+        campusName="Midrand"
+      />,
+    );
+    expect(screen.queryByRole("link", { name: "Desk lamp for res" })).toBeNull();
+    expect(screen.getByText("This request was removed.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Clip-on lamp" })).toHaveAttribute("href", "/listings/l-test");
+  });
+
+  it("keeps the other conversations' note and the left-Vossie line (messaging amendment 3.9)", () => {
+    const { unmount } = show(makeThread(), { sent: true });
+    expect(screen.getByRole("status")).toHaveTextContent("Sent. Sellers usually reply within a day.");
+    unmount();
+    show({ ...offer, otherPresent: false, otherName: "A closed shop" });
+    expect(screen.getByText("This person has left Vossie, so you can't reply.")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Your reply")).toBeNull();
   });
 });

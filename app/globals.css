@@ -9187,3 +9187,45 @@
     }
   }
 }
+
+/* --- Community actions: an offer thread's card (community actions plan, Task 14, spec 2.7) --- */
+@layer components {
+  /* Offered: navy on pale, with the pill's navy outline, so it reads apart from Replied (plan amendment 15). */
+  .status-pill[data-status="offered"] {
+    background: var(--color-pale);
+  }
+
+  .offer-thread {
+    display: grid;
+    gap: 10px;
+  }
+
+  .offer-thread-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+  }
+
+  /* Navy on the grey panel: sky-dark is 4.25:1 there. */
+  .offer-thread-about {
+    color: var(--color-navy);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .offer-thread-about a {
+    color: var(--color-navy);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .offer-thread-gone {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+}

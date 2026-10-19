@@ -115,3 +115,36 @@ describe("StatusPill (messaging spec 2.5 and section 5)", () => {
     ]);
   });
 });
+
+describe("offer threads in the inbox (community actions plan decisions 8 and 9)", () => {
+  it("names them by their request: Request for the shop, Your request for the asker", () => {
+    const { unmount } = render(
+      <InboxView
+        tab="selling"
+        hasShop
+        conversations={[
+          makeSummary({
+            role: "seller",
+            otherName: "The student who asked",
+            requestTitle: "Desk lamp for res",
+            listingTitle: null,
+            status: "offered",
+          }),
+        ]}
+        now={NOW}
+      />,
+    );
+    expect(screen.getByRole("link", { name: /Request: Desk lamp for res/ })).toHaveTextContent("The student who asked");
+    expect(screen.getByText("Offered")).toHaveAttribute("data-status", "offered");
+    unmount();
+    render(
+      <InboxView
+        tab="buying"
+        hasShop={false}
+        conversations={[makeSummary({ role: "buyer", otherName: "Tech corner", requestTitle: "Desk lamp for res" })]}
+        now={NOW}
+      />,
+    );
+    expect(screen.getByRole("link", { name: /Your request: Desk lamp for res/ })).toBeInTheDocument();
+  });
+});

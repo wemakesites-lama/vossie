@@ -3,6 +3,7 @@ import { ErrorSummary } from "@/components/forms/ErrorSummary";
 import { ArrowLeftIcon } from "@/components/icons";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
+import { OFFER_SENT_NOTE, SHOP_WAITS_NOTE } from "@/lib/looking-for/words";
 import { sendReply } from "@/lib/messaging/actions";
 import { messagingErrors, replyFields } from "@/lib/messaging/errors";
 import { inboxPath, threadPath } from "@/lib/messaging/paths";
@@ -11,6 +12,7 @@ import { messageTime } from "@/lib/time";
 import type { Thread } from "@/lib/types";
 import { MessageField } from "./MessageField";
 import { MessageSummary } from "./MessageSummary";
+import { OfferAbout } from "./OfferAbout";
 import { SaleActions } from "./SaleActions";
 import { ScamCheck } from "./ScamCheck";
 import { StatusPill } from "./StatusPill";
@@ -41,9 +43,12 @@ type ThreadViewProps = {
 /**
  * A thread (messaging spec 3.3): who it's with, Refresh, the listing and its status, the messages, the sale, and the
  * reply form. Each message says who wrote it and when in words, so it isn't read by colour or side alone (section 5).
- * Message text is React text: no markup, and addresses aren't made into links (spec 2.12).
+ * Message text is React text: no markup, and addresses aren't made into links (spec 2.12). An offer thread shows its
+ * request, and the shop waits for the asker's reply (community actions plan decision 8).
  */
 export function ThreadView({ thread, now, reply, sent, campusName }: ThreadViewProps) {
+  // The shop that offered waits for the asker's reply before writing again (community actions spec 2.9).
+  const waiting = thread.request !== null && thread.role === "seller" && thread.status === "offered";
   return (
     <div className="thread-column">
       <Link href={inboxPath(thread.role === "seller" ? "selling" : "buying")} prefetch={false} className="msg-crumb">
@@ -60,17 +65,23 @@ export function ThreadView({ thread, now, reply, sent, campusName }: ThreadViewP
           Refresh
         </a>
       </div>
-      <MessageSummary
-        listing={thread.listing}
-        listingTitle={thread.listingTitle}
-        shop={thread.shop}
-        campusName={campusName}
-      >
-        <StatusPill status={thread.status} />
-      </MessageSummary>
+      {thread.request ? (
+        <OfferAbout thread={thread} request={thread.request} campusName={campusName}>
+          <StatusPill status={thread.status} />
+        </OfferAbout>
+      ) : (
+        <MessageSummary
+          listing={thread.listing}
+          listingTitle={thread.listingTitle}
+          shop={thread.shop}
+          campusName={campusName}
+        >
+          <StatusPill status={thread.status} />
+        </MessageSummary>
+      )}
       {sent && (
         <p role="status" className="form-notice">
-          Sent. Sellers usually reply within a day.
+          {thread.request && thread.role === "seller" ? OFFER_SENT_NOTE : "Sent. Sellers usually reply within a day."}
         </p>
       )}
       <section aria-labelledby="thread-messages-title">
@@ -97,11 +108,9 @@ export function ThreadView({ thread, now, reply, sent, campusName }: ThreadViewP
         </ol>
       </section>
       <SaleActions thread={thread} />
-      {thread.otherPresent ? (
-        <ReplyFormView thread={thread} reply={reply} />
-      ) : (
-        <p className="form-notice">This person has left Vossie, so you can&apos;t reply.</p>
-      )}
+      {thread.otherPresent && waiting && <p className="form-notice">{SHOP_WAITS_NOTE}</p>}
+      {thread.otherPresent && !waiting && <ReplyFormView thread={thread} reply={reply} />}
+      {!thread.otherPresent && <p className="form-notice">This person has left Vossie, so you can&apos;t reply.</p>}
     </div>
   );
 }
