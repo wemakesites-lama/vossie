@@ -83,7 +83,7 @@ test.describe("selling (selling spec section 3)", () => {
     await expect(page).toHaveURL(/\/sell\/listings\?tab=drafts$/, POST_LANDS);
     await expect(main(page).getByRole("status")).toHaveText("Saved as a draft. Only you can see it.");
     const id = await idOfEditLink(page, title);
-    const buyer = await (await browser.newContext({ baseURL })).newPage();
+    const buyer = await (await browser.newContext({ baseURL, serviceWorkers: "block" })).newPage();
     await buyer.goto(`/listings/${id}`);
     await expect(notFoundHeading(buyer)).toBeVisible();
     await buyer.context().close();
@@ -148,7 +148,7 @@ test.describe("selling (selling spec section 3)", () => {
       "href",
       "/sell/profile",
     );
-    const visitor = await (await browser.newContext({ baseURL })).newPage();
+    const visitor = await (await browser.newContext({ baseURL, serviceWorkers: "block" })).newPage();
     await visitor.goto("/listings/l-001");
     await expect(visitor.getByRole("link", { name: "Message seller" }).filter({ visible: true })).toBeVisible();
     await expect(visitor.getByRole("link", { name: "Edit listing" })).toHaveCount(0);

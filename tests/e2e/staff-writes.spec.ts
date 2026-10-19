@@ -113,7 +113,7 @@ test("an admin pauses the shop behind a report: its owner sees why with no Resum
 }) => {
   test.setTimeout(150_000);
   const shopName = newShopName();
-  const ownerContext = await browser.newContext({ baseURL });
+  const ownerContext = await browser.newContext({ baseURL, serviceWorkers: "block" });
   const owner = await ownerContext.newPage();
   await applyToSell(owner, shopName);
   const admin = await signedInPage(browser, baseURL!, "Admin", "/admin/sellers");
@@ -128,7 +128,7 @@ test("an admin pauses the shop behind a report: its owner sees why with no Resum
   await main(page).getByRole("radio", { name: "Scam or fraud" }).check();
   await button(page, "Send report").click();
   await expect(page).toHaveURL(/\/report\/sent/, POST_LANDS);
-  const secondContext = await browser.newContext({ baseURL });
+  const secondContext = await browser.newContext({ baseURL, serviceWorkers: "block" });
   const second = await secondContext.newPage();
   await signUp(second, newBuyer());
   await second.goto(`/report?seller=${slug}`);

@@ -76,7 +76,7 @@ const SECTIONS: readonly InfoSection[] = [
             <code>vossie_flash</code>: a one-off message such as &quot;You&apos;re signed out&quot;, for up to a minute.
           </li>
         </ul>
-        <h3>Three things kept only in your browser</h3>
+        <h3>Four things kept only in your browser</h3>
         <p>These stay in your browser&apos;s own storage. They are never sent to Vossie.</p>
         <ul>
           <li>
@@ -88,6 +88,11 @@ const SECTIONS: readonly InfoSection[] = [
           </li>
           <li>
             <code>vossie_low_data</code>: whether you turned data saver on.
+          </li>
+          <li>
+            <code>vossie_offline</code>: a copy of Vossie&apos;s offline page, kept by Vossie&apos;s service worker so
+            an installed Vossie can say you&apos;re offline instead of showing an error. It holds nothing about you and
+            no page you looked at.
           </li>
         </ul>
         <h3>What else happens</h3>
@@ -202,7 +207,7 @@ const SECTIONS: readonly InfoSection[] = [
       <ul>
         <li>
           The campus and saved cookies last up to a year, and some browsers clear them sooner. The sign-in cookies last
-          up to 30 days, 30 minutes and a minute. Your browser keeps the other three things until you clear them.
+          up to 30 days, 30 minutes and a minute. Your browser keeps the other four things until you clear them.
         </li>
         <li>Your account details stay until you delete your account.</li>
         <li>

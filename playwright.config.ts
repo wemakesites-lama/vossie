@@ -41,6 +41,11 @@ export default defineConfig({
     baseURL,
     locale: "en-ZA",
     timezoneId: "Africa/Johannesburg",
+    // Production builds register Vossie's service worker (community actions spec 2.22). Only tests/e2e/offline.spec.ts
+    // lets it run; everywhere else a worker would keep the offline page and change what a dropped request shows.
+    // This reaches the built-in `context` and `page` fixtures only: every browser.newContext(…) says it itself
+    // (community actions plan amendment 4).
+    serviceWorkers: "block",
     trace: "retain-on-failure",
   },
   webServer: {

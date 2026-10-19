@@ -8,7 +8,7 @@ import { POST_LANDS, uniqueWord } from "./selling";
 
 /** A browser of its own, signed in as a sample account, landing on `next`. Close its context at the end of the test. */
 export async function signedInPage(browser: Browser, baseURL: string, label: string, next: string): Promise<Page> {
-  const context = await browser.newContext({ baseURL });
+  const context = await browser.newContext({ baseURL, serviceWorkers: "block" });
   const page = await context.newPage();
   await signInAsSample(page, label, next);
   return page;

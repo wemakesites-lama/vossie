@@ -201,7 +201,7 @@ test.describe("messaging a seller (messaging spec 3.1 to 3.3)", () => {
     onlyAt(...BOTH);
     await signUp(page, newBuyer());
     const id = await sendFirstMessage(page, "l-001", "Hi!");
-    const other = await browser.newContext({ baseURL });
+    const other = await browser.newContext({ baseURL, serviceWorkers: "block" });
     const stranger = await other.newPage();
     await signUp(stranger, newBuyer());
     await stranger.goto(`/messages/${id}`);

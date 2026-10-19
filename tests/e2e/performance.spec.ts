@@ -1,5 +1,6 @@
 import { brotliCompressSync, constants } from "node:zlib";
 import { expect, test } from "@playwright/test";
+import { WORKER_REGISTRATION } from "../../lib/boot-script";
 
 // Saved reads the saved cookie, so it's measured with two listings saved: its cards and their hearts load as they would.
 const PAGES: ReadonlyArray<[name: string, path: string, saved?: string]> = [
@@ -100,7 +101,7 @@ for (const [name, path, account] of SIGNED_IN_PAGES) {
   }) => {
     test.skip(test.info().project.name !== "phone-390", "Measured once, at phone size");
     // Sign in in a separate browser context, and copy only the session cookie across, so nothing here is cached yet.
-    const other = await browser.newContext();
+    const other = await browser.newContext({ serviceWorkers: "block" });
     const signingIn = await other.newPage();
     await signingIn.goto(`${baseURL}/login`);
     await signingIn.locator("main").getByRole("button", { name: account, exact: true }).click();
@@ -127,3 +128,26 @@ for (const [name, path, account] of SIGNED_IN_PAGES) {
     expect(scriptBrotli, "JavaScript, brotli as a host serves it").toBeLessThanOrEqual(150 * 1024);
   });
 }
+
+/** The registration wherever the HTML holds it: in <head> as it is, and with its quotes escaped in the RSC payload. */
+const registrationAnywhere = new RegExp(
+  WORKER_REGISTRATION.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/"/g, '\\\\*"'),
+  "g",
+);
+
+test("the worker's registration costs under 100 B in a page's HTML (community actions spec 2.22, the cut rule)", async ({
+  request,
+}) => {
+  test.skip(test.info().project.name !== "phone-390", "Measured once, at phone size");
+  const brotli = (text: string) =>
+    brotliCompressSync(text, { params: { [constants.BROTLI_PARAM_QUALITY]: 5 } }).length;
+  for (const path of ["/", "/listings/l-001", "/looking-for/r-001"]) {
+    const html = await (await request.get(path)).text();
+    expect(html.match(registrationAnywhere)?.length ?? 0, path).toBeGreaterThanOrEqual(1);
+    // Nothing of it may be left once the matches are gone, or the cost below would be measured short.
+    expect(html.replace(registrationAnywhere, ""), path).not.toContain("serviceWorker");
+    const cost = brotli(html) - brotli(html.replace(registrationAnywhere, ""));
+    console.log(`worker registration in ${path}'s HTML: ${cost} B brotli`);
+    expect(cost, path).toBeLessThan(100);
+  }
+});

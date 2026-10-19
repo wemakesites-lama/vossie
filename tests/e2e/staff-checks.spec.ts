@@ -26,7 +26,7 @@ async function expectNoSeriousIssues(page: Page) {
 
 /** Signs `context` in through another browser, copying only the session cookie across, so nothing is cached yet. */
 async function copySession(browser: Browser, context: BrowserContext, baseURL: string, label: string) {
-  const other = await browser.newContext({ baseURL });
+  const other = await browser.newContext({ baseURL, serviceWorkers: "block" });
   await signInAsSample(await other.newPage(), label, "/account");
   await context.addCookies((await other.cookies()).filter((cookie) => cookie.name === "vossie_session"));
   await other.close();

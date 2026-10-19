@@ -70,7 +70,7 @@ test("edit, pause, resume, mark sold and delete, each seen by a buyer", async ({
   const renamed = `${title} white`;
   await signInAsSample(page, "Seller, Tech corner", "/sell");
   const id = await publishListing(page, title);
-  const buyer = await (await browser.newContext({ baseURL })).newPage();
+  const buyer = await (await browser.newContext({ baseURL, serviceWorkers: "block" })).newPage();
 
   await page.goto(`/sell/listings/${id}/edit`);
   await field(page, "Title").fill(renamed);
@@ -188,7 +188,7 @@ test("a new listing is made once, however many times its form is sent (amendment
 
   await page.goto("/sell/listings");
   await expect(main(page).getByRole("link", { name: `Edit ${title}`, exact: true })).toHaveCount(1);
-  const buyer = await (await browser.newContext({ baseURL })).newPage();
+  const buyer = await (await browser.newContext({ baseURL, serviceWorkers: "block" })).newPage();
   await buyer.goto(browseFor(word));
   await expect(cardsFor(buyer, word)).toHaveCount(1);
   await buyer.context().close();

@@ -1,4 +1,4 @@
-import { INSTALL_PROMPT_EVENT } from "./boot-script";
+import { INSTALL_PROMPT_EVENT } from "./install-event";
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;

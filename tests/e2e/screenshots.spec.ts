@@ -524,7 +524,7 @@ test("selling review screenshots", async ({ page, browser, baseURL }) => {
   await shot(page, "05-waiting");
 
   // The sample seller in a browser of their own: only read, so the sample stays as it is.
-  const context = await browser.newContext({ baseURL, viewport: page.viewportSize()!, reducedMotion: "reduce" });
+  const context = await browser.newContext({ baseURL, serviceWorkers: "block", viewport: page.viewportSize()!, reducedMotion: "reduce" });
   const seller = await context.newPage();
   const sellerMain = seller.locator("main");
   const sellerShot = (name: string, fullPage = true) => shot(seller, name, fullPage);
@@ -602,7 +602,7 @@ test("staff tools review screenshots", async ({ page, browser, baseURL }) => {
   await shot(page, "09-audit-log");
 
   // The mentor, in a browser of their own. Preview saves nothing.
-  const mentorContext = await browser.newContext({ baseURL, viewport: page.viewportSize()!, reducedMotion: "reduce" });
+  const mentorContext = await browser.newContext({ baseURL, serviceWorkers: "block", viewport: page.viewportSize()!, reducedMotion: "reduce" });
   const mentor = await mentorContext.newPage();
   const mentorMain = mentor.locator("main");
   await signInAsSample(mentor, "Mentor", "/hub/manage");
@@ -624,7 +624,7 @@ test("staff tools review screenshots", async ({ page, browser, baseURL }) => {
   await mentorContext.close();
 
   // Thandi's sample slot request at h-007 (upcoming until 19 November 2026), as she sees it.
-  const studentContext = await browser.newContext({ baseURL, viewport: page.viewportSize()!, reducedMotion: "reduce" });
+  const studentContext = await browser.newContext({ baseURL, serviceWorkers: "block", viewport: page.viewportSize()!, reducedMotion: "reduce" });
   const student = await studentContext.newPage();
   await signInAsSample(student, "Student, Midrand", "/hub/h-007/book");
   await expect(student.locator("main").getByRole("region", { name: "Your request" })).toBeVisible();

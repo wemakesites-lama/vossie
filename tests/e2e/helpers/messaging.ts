@@ -80,7 +80,7 @@ export async function reply(page: Page, text: string) {
 
 /** The sample seller (Sipho, Tech corner) in a browser of their own. Close its context at the end of the test. */
 export async function sellerPage(browser: Browser, baseURL: string): Promise<Page> {
-  const context = await browser.newContext({ baseURL });
+  const context = await browser.newContext({ baseURL, serviceWorkers: "block" });
   const page = await context.newPage();
   await signInAsSample(page, "Seller, Tech corner");
   return page;

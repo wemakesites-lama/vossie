@@ -6,6 +6,7 @@ import { SESSION_COOKIE, SIGN_IN_COOKIE } from "@/lib/auth/cookies";
 import { CAMPUS_COOKIE } from "@/lib/campus";
 import { FLASH_COOKIE } from "@/lib/flash";
 import { LOW_DATA_KEY } from "@/lib/low-data";
+import { OFFLINE_CACHE } from "@/lib/offline";
 import { RECENT_KEY } from "@/lib/recent-searches";
 import { RECENTLY_VIEWED_KEY } from "@/lib/recently-viewed";
 import { SAVED_COOKIE } from "@/lib/saved";
@@ -57,7 +58,7 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     expect(within(who).getByText(/Eduvos is the responsible party/)).toBeInTheDocument();
   });
 
-  it("lists the two cookies and the three browser-only stores by their real names (spec 2.2)", () => {
+  it("lists the two cookies and the four browser-only stores by their real names (spec 2.2)", () => {
     render(<PrivacyPage />);
     const today = screen.getByRole("region", { name: "What this site stores today" });
     expect(within(today).getByText(/in its memory only/)).toBeInTheDocument();
@@ -66,8 +67,8 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
       SAVED_COOKIE,
     ]);
     expect(
-      codesAfter(within(today).getByRole("heading", { level: 3, name: "Three things kept only in your browser" })),
-    ).toEqual([RECENTLY_VIEWED_KEY, RECENT_KEY, LOW_DATA_KEY]);
+      codesAfter(within(today).getByRole("heading", { level: 3, name: "Four things kept only in your browser" })),
+    ).toEqual([RECENTLY_VIEWED_KEY, RECENT_KEY, LOW_DATA_KEY, OFFLINE_CACHE]);
   });
 
   it("names the three sign-in cookies by their real names (accounts spec 2.2, 2.5 and plan decision 12)", () => {
