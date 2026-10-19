@@ -233,6 +233,19 @@ The controller adds amendments here; they override the tasks below wherever they
     - An e2e test clicks through: signed out, Post a request, sign in, and the form opens.
     - **The general rule** (also in CLAUDE.md): never link a signed-out visitor straight at a page that needs sign-in. Link to `signInHref(next)`, or a session-following link.
     - **For Task 24's open points:** the underlying replay, where a client navigation to a page that redirected to sign-in repeats that redirect after signing in, is left in stage D's sign-in flow. A `refresh()` in `afterSignIn` didn't clear it.
+19. **The review of Tasks 6 to 15** (nothing Critical or Important; Claude, under decision 54, 2026-10-19). One fix task runs after Task 17, test first.
+    1. **The contact check also catches commas, underscores and colons between digits.** `DIGIT_RUN` and `RUN_BREAK` in `lib/looking-for/rules.ts` gain `,`, `_` and `:`. "082,123,4567", "082_123_4567" and "082:123:4567" are refused, while "R1,200" and "1,200 - 2,000" still pass.
+    2. **An offer thread speaks of a shop, not a person.**
+       - **A closed shop:** for `thread.request && role === "buyer"`, the reply area says "This shop has closed, so you can't reply."
+       - **The sent note:** `OFFER_SENT_NOTE` shows only while the status is `offered`.
+    3. **One name for a shop that the Hub paused.** Offer threads use the shop's real name while its row exists (the asker's panel already does). "A closed shop" is only for a shop that has gone.
+    4. **A hidden request's offer threads say so.** The asker reads "The Hub hid this request." and the shop reads "This request was removed."
+    5. **The current title everywhere.** The export's `about` line and the reply notifications use the request's current title while it's up, as the inbox and thread do (amendment 17.4).
+    6. **Editing a request whose needed-by date has passed** accepts the date unchanged. Only a changed date must be today or later.
+    7. **A paused shop that already offered can still open its offer.** In `offerStatus`, the existing-offer check comes before the pending and paused checks.
+    8. **Only known values are kept.** `typedValues` keeps `category` and `campus` only when they are known slugs, as selling does.
+    9. **Each composer's tips have their own id.** E's `ComposerView` passes `composer-<item>-tips` to `SafetyTips`, so two kept composers can't share `composer-tips-title`. The comment then matches the code.
+    10. **Your requests' title links are 44px targets** (`display: inline-flex; align-items: center; min-height: 44px`).
 
 ## Store design
 
