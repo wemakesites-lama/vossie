@@ -8955,3 +8955,140 @@
     }
   }
 }
+
+/* --- Community actions: Your requests and Delete request (community actions plan, Task 12, spec 2.6 and 2.13) --- */
+@layer components {
+  /* .page and .requests-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
+  .requests-page {
+    padding: 24px 16px 64px;
+  }
+
+  .requests-column {
+    display: grid;
+    gap: 20px;
+    max-width: 48rem;
+  }
+
+  .requests-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .requests-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .requests-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .requests-item {
+    display: grid;
+    gap: 8px;
+    padding: 16px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+
+  /* Links on white are sky-dark. */
+  .requests-item-title {
+    color: var(--color-navy);
+    font-size: 17px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .requests-item-title a {
+    color: var(--color-sky-dark);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .requests-item-meta {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  .requests-state {
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .requests-reason {
+    padding: 10px 12px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+    color: var(--color-ink);
+    font-size: 14px;
+  }
+
+  .requests-actions,
+  .requests-confirm {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .requests-empty {
+    padding: 24px 20px;
+    border-radius: var(--radius-card);
+    background: var(--color-panel);
+  }
+
+  .requests-lead {
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .requests-consequences {
+    display: grid;
+    gap: 6px;
+    padding-left: 1.25rem;
+    list-style: disc;
+  }
+
+  .requests-skeleton-item {
+    height: 8rem;
+  }
+
+  /*
+   * The confirm page's room while it streams in (plan amendment 13): the heading's own height, then the sentence, the
+   * two consequences and the buttons as one block. Measured on the build with a one-line title: the block is 14.25rem
+   * where the second consequence takes three lines, 11.5rem once it takes two (from 26.5rem wide), and 12rem on
+   * desktop. A long title that wraps the sentence makes the page a line or two taller, which is the most it can move.
+   */
+  .requests-skeleton-delete-title {
+    width: 16rem;
+    height: var(--text-section);
+  }
+
+  .requests-skeleton-delete {
+    height: 14.25rem;
+  }
+
+  @media (min-width: 26.5rem) {
+    .requests-skeleton-delete {
+      height: 11.5rem;
+    }
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .requests-page {
+      padding-inline: 40px;
+    }
+  }
+
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .requests-skeleton-delete {
+      height: 12rem;
+    }
+  }
+}
