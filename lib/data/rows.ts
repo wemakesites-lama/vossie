@@ -15,6 +15,7 @@ import type {
   ReportOutcome,
   ReportReason,
   ReportTarget,
+  RequestStatus,
   SellerStatus,
   StaffRole,
   TrustBadge,
@@ -163,6 +164,10 @@ export type ConversationRow = {
   completedAt: string | null;
   confirmedAt: string | null;
   confirmedBy: "buyer" | "auto" | null;
+  /** The Looking For request an offer answers (community actions spec 2.7). Absent or null for any other conversation. */
+  requestId?: string | null;
+  /** The request's title when the offer was made, kept for when the request has gone, as listingTitle is. */
+  requestTitle?: string | null;
 };
 
 /** One message (messaging spec 4). */
@@ -219,6 +224,8 @@ export type NotificationRow = {
   href: string;
   createdAt: string;
   readAt: string | null;
+  /** How many new listings a "new-listing" notification is about (community actions spec 2.19). Absent means one. */
+  count?: number | null;
 };
 
 // --- Selling (selling plan, Task 1; "Store design") -------------------------------------------------------------
@@ -432,4 +439,41 @@ export type HubBookingRow = {
   answeredAt: string | null;
   /** The staff member who answered, or null. */
   answeredBy: string | null;
+};
+
+// --- Community actions (community actions plan, Task 1; "Store design") -------------------------------------------
+
+/** A Looking For request (community actions spec 2.1). Part B's LookingForRequest is made from it (lib/data/requests.ts). */
+export type RequestRow = {
+  id: string;
+  /** Who asked: never shown to anyone (community spec decision 2). Null for the 16 sample requests. */
+  askerId: string | null;
+  title: string;
+  categorySlug: string;
+  campusSlug: string;
+  /** In the asker's words, line breaks kept. */
+  details: string;
+  /** Rand, or null for "Open to offers". */
+  budgetZar: number | null;
+  swapWelcome: boolean;
+  /** YYYY-MM-DD in South African time, or null. */
+  neededBy: string | null;
+  status: RequestStatus;
+  createdAt: string;
+  updatedAt: string;
+  /** When the asker closed it; null while it's open, and for the sample requests. */
+  closedAt: string | null;
+  /** The fixture's offers number, kept only on the samples, which have no offer threads (spec 2.11). 0 otherwise. */
+  seedOffers: number;
+  /** When and why the Hub hid it (spec 2.14), as G's hidden listings. Null while it isn't hidden. */
+  hiddenAt: string | null;
+  hiddenReason: string | null;
+};
+
+/** A student following a shop (community actions spec 2.15), by the shop's slug, which moveShop keeps up to date. */
+export type FollowRow = {
+  id: string;
+  accountId: string;
+  sellerSlug: string;
+  createdAt: string;
 };

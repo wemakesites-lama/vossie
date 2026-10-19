@@ -242,20 +242,20 @@ The two tables, the fields added to earlier rows, and who touches them:
 
 **As built** (fill in during the build):
 
-| Point | `/` | `/browse` | Listing | Storefront | Saved | Board | Request | `/sell` (signed out) |
-|---|---|---|---|---|---|---|---|---|
-| Start (G's final figures) | | | | | | | | |
-| Task 15, the asker's panel | | | | | | | | |
-| Task 16, Post a request | | | | | | | | |
-| Task 17, Follow | | | | | | | | |
-| Task 18, Saved's tabs | | | | | | | | |
-| Task 19, the dashboard and the account page | | | | | | | | |
-| Task 21, the worker's registration | | | | | | | | |
-| **Final (Task 24)** | | | | | | | | |
+| Point | `/` | `/browse` | Listing | Storefront | Saved | Board | Request | `/sell` (signed out) | New listing form (signed in; amendment 10) |
+|---|---|---|---|---|---|---|---|---|---|
+| Start (G's final figures) | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | not measured at the start (Task 15 measures it) | 151,089 | 150,613 | 152,287 |
+| Task 15, the asker's panel | | | | | | | | | |
+| Task 16, Post a request | | | | | | | | | |
+| Task 17, Follow | | | | | | | | | |
+| Task 18, Saved's tabs | | | | | | | | | |
+| Task 19, the dashboard and the account page | | | | | | | | | |
+| Task 21, the worker's registration | | | | | | | | | |
+| **Final (Task 24)** | | | | | | | | | |
 
 The worker's registration: accepted by Lama, 2026-10-14; its cost in a page's HTML ________ B brotli (cut at 100 B). New pages, signed in (Task 23): new request ________ B, Your requests ________ B, offer composer ________ B, Saved's Shops tab ________ B.
 
-The stop line used: ________ B. Unit tests at the start: ________. End to end at the start: ________ pass, ________ skipped.
+The stop line used: 152,305 B (decision 52). Unit tests at the start: 1,937. End to end at the start: 1,025 pass, 887 skipped.
 
 ## Conventions for every task
 

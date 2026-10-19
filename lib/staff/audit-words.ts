@@ -15,6 +15,7 @@ const ACTIONS: Readonly<Record<AuditAction, { label: string; kind: AuditKind }>>
   "mentor-removed": { label: "Removed a mentor", kind: "mentoring" },
   "report-dismissed": { label: "Dismissed a report", kind: "reports" },
   "listing-hidden": { label: "Hid a listing", kind: "reports" },
+  "request-hidden": { label: "Hid a request", kind: "reports" },
   "featured-pinned": { label: "Pinned to Featured", kind: "featured" },
   "featured-unpinned": { label: "Removed a Featured pin", kind: "featured" },
   "point-added": { label: "Added a pickup point", kind: "pickup-points" },

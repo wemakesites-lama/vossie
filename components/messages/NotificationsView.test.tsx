@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
+import type { ReactElement } from "react";
 import { describe, expect, it } from "vitest";
-import { ClockIcon, ShieldIcon } from "@/components/icons";
+import { ClockIcon, FlagIcon, MessageIcon, PlusSquareIcon, ShieldIcon } from "@/components/icons";
 import type { NotificationItem } from "@/lib/types";
 import { NotificationsView } from "./NotificationsView";
 
@@ -67,6 +68,31 @@ describe("notifications (messaging spec 3.5)", () => {
     expect(drawn("shop-update")).toBe(shield);
     expect(drawn("booking")).toBe(clock);
     expect(shield).not.toBe(clock);
+  });
+
+  it("draws an icon for an offer, a request's update and a followed shop's new listing (community actions plan decision 14)", () => {
+    const { container } = render(
+      <NotificationsView
+        now={NOW}
+        items={(["offer", "request-update", "new-listing"] as const).map((kind, n) =>
+          item({ id: `note-${n}`, kind, text: `Note ${n}` }),
+        )}
+      />,
+    );
+    expect(container.querySelectorAll(".notes-row .notes-icon")).toHaveLength(3);
+  });
+
+  it("draws an offer with the speech bubble, a request's update with the flag and a new listing with the plus-square", () => {
+    const drawn = (kind: NotificationItem["kind"]) =>
+      render(<NotificationsView now={NOW} items={[item({ kind })]} />).container.querySelector("svg.notes-icon")!.innerHTML;
+    const inner = (icon: ReactElement) => render(icon).container.querySelector("svg")!.innerHTML;
+    const bubble = inner(<MessageIcon className="notes-icon" />);
+    const flag = inner(<FlagIcon className="notes-icon" />);
+    const plus = inner(<PlusSquareIcon className="notes-icon" />);
+    expect(drawn("offer")).toBe(bubble);
+    expect(drawn("request-update")).toBe(flag);
+    expect(drawn("new-listing")).toBe(plus);
+    expect(new Set([bubble, flag, plus]).size).toBe(3);
   });
 
   it('says "Nothing new." when there are none (spec 3.5)', () => {

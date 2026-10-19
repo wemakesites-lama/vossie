@@ -86,6 +86,7 @@ export function keepTyped(text: string): string {
 }
 
 const STATUS_LABELS: Readonly<Record<ConversationStatus, string>> = {
+  offered: "Offered",
   asked: "Asked",
   replied: "Replied",
   done: "Done",

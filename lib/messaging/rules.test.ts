@@ -107,3 +107,9 @@ describe("report reasons (messaging spec 2.8)", () => {
     for (const raw of ["", "Scam", "toString", "fake-profile"]) expect(parseReason(raw), raw).toBeNull();
   });
 });
+
+describe("an offer's status (community actions spec 2.7)", () => {
+  it("says Offered until the asker replies", () => {
+    expect(statusLabel("offered")).toBe("Offered");
+  });
+});

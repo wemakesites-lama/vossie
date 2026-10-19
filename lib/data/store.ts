@@ -1,5 +1,6 @@
 import { sampleAccounts, sampleConsents } from "@/data/fixtures/accounts";
 import { sampleConversations, sampleMessages, sampleNotifications } from "@/data/fixtures/messages";
+import { sampleRequestRows } from "@/data/fixtures/request-rows";
 import { sampleListingRows, sampleSellerRows } from "@/data/fixtures/shops";
 import { sampleHubBookings, sampleHubPostRows, sampleMentorNotes, samplePickupPointRows } from "@/data/fixtures/staff";
 import type {
@@ -9,6 +10,7 @@ import type {
   ConversationRow,
   FeaturedDrawRow,
   FeaturedPinRow,
+  FollowRow,
   FormStateRow,
   HubBookingRow,
   HubPostRow,
@@ -21,6 +23,7 @@ import type {
   PhotoRow,
   PickupPointRow,
   ReportRow,
+  RequestRow,
   SampleEmailRow,
   SellerProfileRow,
   SellerRow,
@@ -87,10 +90,14 @@ export type SampleStore = {
   hubRsvps: Map<string, HubRsvpRow>;
   /** By id: office-hours slot requests (staff tools spec 2.5). */
   hubBookings: Map<string, HubBookingRow>;
+  /** By id: Looking For requests (community actions spec 2.1). */
+  requests: Map<string, RequestRow>;
+  /** By id: who follows which shop (community actions spec 2.15). */
+  follows: Map<string, FollowRow>;
 };
 
 /** Bump it when a table is added or a row changes shape, so `next dev` reseeds instead of keeping an old store. */
-export const STORE_VERSION = 6;
+export const STORE_VERSION = 7;
 
 type StoreHolder = { __vossieSampleStore?: SampleStore };
 
@@ -143,5 +150,8 @@ function seedStore(): SampleStore {
     hubPosts: new Map(structuredClone(sampleHubPostRows).map((row) => [row.id, row])),
     hubRsvps: new Map(),
     hubBookings: new Map(structuredClone(sampleHubBookings).map((row) => [row.id, row])),
+    // Copies, like the others (community actions plan decision 1).
+    requests: new Map(structuredClone(sampleRequestRows).map((row) => [row.id, row])),
+    follows: new Map(),
   };
 }

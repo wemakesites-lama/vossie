@@ -13,6 +13,7 @@ const EVERY_ACTION: AuditAction[] = [
   "mentor-removed",
   "report-dismissed",
   "listing-hidden",
+  "request-hidden",
   "featured-pinned",
   "featured-unpinned",
   "point-added",
@@ -45,5 +46,12 @@ describe("the audit log's words (staff tools spec 2.2 and 2.3)", () => {
       kind: null,
     });
     expect(parseAuditFilter({ staff: "<script>" })).toEqual({ staff: null, kind: null });
+  });
+});
+
+describe("hiding a request (community actions plan decision 20)", () => {
+  it("is Hid a request, filed under Reports", () => {
+    expect(auditLabel("request-hidden")).toBe("Hid a request");
+    expect(auditKindOf("request-hidden")).toBe("reports");
   });
 });

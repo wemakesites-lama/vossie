@@ -303,8 +303,12 @@ export type SearchResult = {
 
 // --- Messaging (messaging plan, Task 1) -------------------------------------------------------------------------
 
-/** Where a conversation stands (messaging spec 2.5): asked, the seller replied, marked done, the sale confirmed. */
-export type ConversationStatus = "asked" | "replied" | "done" | "confirmed";
+/**
+ * Where a conversation stands (messaging spec 2.5): asked, the seller replied, marked done, the sale confirmed. An
+ * offer on a Looking For request starts "offered" and becomes "replied" when the asker writes back (community actions
+ * spec 2.7 and 2.12).
+ */
+export type ConversationStatus = "offered" | "asked" | "replied" | "done" | "confirmed";
 
 /** The inbox's two tabs (messaging spec 2.10). */
 export type InboxTab = "buying" | "selling";
@@ -318,7 +322,8 @@ export type ReportTarget = { kind: "listing" | "seller" | "request"; id: string 
 /**
  * What a notification is about (messaging spec 2.9; staff tools plan decision 7). Messaging makes the first two; the
  * staff tools make the rest: a report's outcome, a shop's approval, the Hub's other decisions about a shop or a
- * listing ("shop-update"), and slot requests ("booking").
+ * listing ("shop-update"), and slot requests ("booking"). Community actions add an offer on your request, the Hub's
+ * update about your request, and a followed shop's new listing (community actions plan decision 14).
  */
 export type NotificationKind =
   | "message"
@@ -326,7 +331,10 @@ export type NotificationKind =
   | "report-handled"
   | "shop-approved"
   | "shop-update"
-  | "booking";
+  | "booking"
+  | "offer"
+  | "request-update"
+  | "new-listing";
 
 /** The shop a conversation is with, as a thread shows it. `image` and `campusSlug` are null once the shop has gone. */
 export type ConversationShop = {
@@ -467,6 +475,7 @@ export type AuditAction =
   | "mentor-removed"
   | "report-dismissed"
   | "listing-hidden"
+  | "request-hidden"
   | "featured-pinned"
   | "featured-unpinned"
   | "point-added"
@@ -484,7 +493,7 @@ export type AuditAction =
 export type AuditKind = "shops" | "reports" | "featured" | "pickup-points" | "posts" | "office-hours" | "mentoring";
 
 /** What an audit entry is about. */
-export type AuditTargetKind = "shop" | "listing" | "report" | "pickup-point" | "post" | "booking";
+export type AuditTargetKind = "shop" | "listing" | "report" | "pickup-point" | "post" | "booking" | "request";
 
 /** One line of the audit log (staff tools spec 2.2): who, what, the target, the reason or detail, and when. */
 export type AuditEntry = {
@@ -548,4 +557,40 @@ export type MentoredShop = {
   /** The last 14 days (plan decision 15). */
   counts: EnquiryCounts;
   flags: MentorFlag[];
+};
+
+// --- Community actions (community actions plan, Task 1) -----------------------------------------------------------
+
+/** Where one of the asker's own requests stands (community actions spec 2.6 and 2.14). */
+export type RequestState = "open" | "closed" | "hidden";
+
+/** One of the asker's own requests, for its page's panel and Your requests (community actions spec 2.13). */
+export type OwnRequest = {
+  /** As the board shows it, with the offers count worked out now. */
+  request: LookingForRequest;
+  state: RequestState;
+  /** The Hub's reason, once it has hidden it. */
+  hiddenReason: string | null;
+};
+
+/** One offer on a request, as its asker sees it (community actions spec 2.13). */
+export type OfferSummary = {
+  conversationId: string;
+  /** The shop's name, or "A closed shop" once it has gone. */
+  shopName: string;
+  /** The offer's first line, or "" once the shop has left. */
+  preview: string;
+  /** When the shop offered, ISO 8601 in UTC. */
+  offeredAt: string;
+};
+
+/** A shop the account follows, as Saved's Shops tab shows it (community actions spec 2.17). */
+export type FollowedShop = {
+  slug: string;
+  name: string;
+  campusSlug: string;
+  image: ImageRef;
+  paused: boolean;
+  /** How many of its listings buyers can see now. */
+  listed: number;
 };
