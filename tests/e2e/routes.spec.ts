@@ -96,4 +96,23 @@ test.describe("routes", () => {
       await expect(page, path).toHaveURL(`/login?next=${encodeURIComponent(path)}`);
     }
   });
+
+  test("staff pages send a signed-out visitor to sign in, coming back afterwards (staff tools spec 2.1)", async ({
+    page,
+  }) => {
+    onlyAtPhoneAndDesktop();
+    for (const [path, next] of [
+      ["/admin", "%2Fadmin"],
+      ["/admin/sellers", "%2Fadmin%2Fsellers"],
+      ["/hub/manage", "%2Fhub%2Fmanage"],
+      ["/hub/new", "%2Fhub%2Fnew"],
+      ["/mentor", "%2Fmentor"],
+      ["/mentor/export", "%2Fmentor"],
+      // A student's page, not a staff one: the request page for office hours comes back to itself.
+      ["/hub/h-004/book", "%2Fhub%2Fh-004%2Fbook"],
+    ]) {
+      await page.goto(path);
+      await expect(page, path).toHaveURL(new RegExp(`/login\\?next=${next}$`));
+    }
+  });
 });
