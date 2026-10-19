@@ -369,6 +369,7 @@ test("the inbox, Buying", async ({ page }) => {
   // A second sign-in on the same page would meet "You're signed in as…" and no sample buttons, so this is its own test.
   await signInTo(page, "Student, Midrand", "/messages");
   await expect(page.locator("main .inbox-row").first()).toBeVisible();
+  await titled(page);
   expect(await seriousIssues(page)).toEqual([]);
 });
 
@@ -376,6 +377,8 @@ test("a thread, as the seller, with Mark as completed", async ({ page }) => {
   // Sipho has read everything in the sample conversations, so opening one changes nothing.
   await signInTo(page, "Seller, Tech corner", "/messages/conv-s1");
   await expect(page.getByRole("button", { name: "Mark as completed" })).toBeVisible();
+  // The thread's <title> streams in with its request-time part; axe's document-title rule must see it.
+  await titled(page);
   expect(await seriousIssues(page)).toEqual([]);
 });
 
