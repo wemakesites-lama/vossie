@@ -39,11 +39,16 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - Server Components by default. `"use client"` only where there is interaction.
 - Device preferences (campus cookie `vossie_campus`, saved cookie `vossie_saved`, recent searches, data saver) go through the stores in `lib/` and `useSyncExternalStore`.
 - Never read `cookies()`, `headers()` or `searchParams` outside `<Suspense>`.
+- `generateMetadata` may read the session or `searchParams` when the page's own content is request-time inside `<Suspense>`: Next streams the metadata (staff pages and `/browse` do this).
 - Who's signed in comes only from `getViewer()` or `requireAccount()` (`lib/auth/session.ts`), inside `<Suspense>`. Forms are plain `<form action={serverAction}>`: the action checks its input, takes identity from the session, keeps errors in the store (never the URL) and ends with `redirect()`. Only `lib/data` touches the sample store.
 - Messaging's Server Actions end every write with `done()` (`refresh()`, then a `replace` redirect; `lib/messaging/actions.ts`), so the browser drops its kept pages. Message text is React text, never HTML, and links in it aren't made clickable.
 - Listings and sellers come from the sample store through `lib/data/catalog.ts`; every cached reader is tagged (`lib/data/tags.ts`), and a selling write calls `listingsChanged()` or `sellersChanged()` before `done()` (`lib/selling/action-helpers.ts`). Fixtures stay the seed: `data/fixtures/shops.ts` turns them into rows.
 - The listing form's `PhotoField` is the only selling client component, and only its two routes load it: links to `/sell/…` pages never prefetch, and `/sell` itself has no client component (the header prefetches it on every page). The selling pages' main column (`.sell-page`) is at least a screen tall less the header, so the footer stays below the first screen while a page streams in.
 - End-to-end tests that publish, change or delete listings go in `tests/e2e/selling-writes.spec.ts`, which runs after every other test.
+- Staff pages (`/admin`, `/hub/manage`, `/hub/new`, `/hub/[id]/edit`, `/mentor`) render a wordless `StaffSkeleton` in their static shell and everything else inside `<Suspense>` after `requireStaff(area, nextPath)` (`lib/staff/access.ts`): sign-in when signed out, the 404 for anyone without the role (shown from inside the page, so status 200 and `noindex`). Their tab title comes from `staffMetadata()`. No public page links to them, and links into them never prefetch.
+- Every staff action is a Server Action in `lib/staff/*-actions.ts`: `requireStaff()` first, one `recordAudit()` only when something changed (the audit log has no update or delete), the notifications the spec names, the right tag expired, then `done()`. A form that makes something new (a Hub post, a note, a check-in) carries a one-time token (`lib/staff/once.ts`), so a second press makes nothing.
+- A shop's link can never be a word a fixed route uses beside `[slug]` (`RESERVED_SLUGS` in `lib/selling/rules.ts`: `/mentor/export` is the CSV); add the word there when a new fixed folder joins `app/sellers`, `app/admin/sellers` or `app/mentor` (a test reads the folders).
+- End-to-end tests whose staff actions buyers can see go in `tests/e2e/staff-writes.spec.ts`, which runs after every other test, selling's included.
 - No `Date.now()`, `new Date()` or `Math.random()` while prerendering.
 - Client hooks that suspend while Next builds App Shells (`usePathname()`, `useParams()`) are read only inside `<Suspense>` in shared layout code (see `components/ui/NavLink.tsx`).
 - Dynamic routes:
@@ -62,10 +67,11 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - Links that would prefetch a route with client components cost that route's chunk on every page they appear on. Use `prefetch={false}` unless there's a reason (decision 53). The header's home link prefetches `/`, so client code used only on the homepage costs bytes on every page.
 
 ## Privacy (POPIA)
-- Collect the minimum. Sample mode keeps accounts, sessions, consent, sign-ins, messages, reports, notifications, shops, listings and photos in the server's memory only, wiped on restart; the campus choice and saved listings are first-party cookies, and recent searches stay in the browser.
+- Collect the minimum. Sample mode keeps accounts, sessions, consent, sign-ins, messages, reports, notifications, shops, listings, photos, RSVPs, slot requests, Hub posts, mentors' notes and the staff log in the server's memory only, wiped on restart; the campus choice and saved listings are first-party cookies, and recent searches stay in the browser.
 - Looking For requests never name the asker: they say "Asked by a student at {campus}". Sellers are businesses and show their names (community spec decision 2).
 - The footer sign-up shows a confirmation only. It sends and stores nothing until there is a real, consented mailing list.
 - Every cookie and browser-storage key is named `vossie_…`, and the privacy page must name each one: a test (`app/privacy/page.test.tsx`) finds them in the code and fails until it does.
+- Mentors' notes are about a shop's owner, seen by mentors and admins only, never by the seller, and not in the data download; deleting an account deletes notes about it and strips it from the audit log, which keeps its entries.
 - Photos of people need their consent.
 - Photos lose their hidden data (location included) before they're stored: the browser re-encodes them, and the server strips them anyway (`lib/photos/strip-metadata.ts`).
 

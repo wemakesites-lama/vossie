@@ -235,12 +235,76 @@ The eight tables, the fields added to earlier rows, and who touches them:
 | Start (F's final figures) | 150,613 | 151,360 | 151,769 | 151,373 | not in F's ledger; Task 15 measures it | – | 150,613 |
 | Task 15, RSVP and Request a slot | 150,613 | 151,360 | 151,769 | 151,373 | 150,613 | 150,613 | 150,613 |
 | Task 17, Featured, badges, retired points | 150,613 | 151,360 | 151,769 | 151,373 | 150,613 | 150,613 | 150,613 |
-| Task 18, `/sell`, the account page | | | | | | | |
-| **Final (Task 22)** | | | | | | | |
+| Task 18, `/sell`, the account page | 150,613 | 151,360 | 151,769 | 151,373 | 150,613 | 150,613 | 150,613 |
+| **Final (Task 22)** | 150,613 | 151,360 | 151,769 | 151,373 | 150,613 | 150,613 | 150,613 |
 
-Staff pages, signed in (Task 21): Overview ________ B, Sellers ________ B, Hub tools ________ B, Mentor dashboard ________ B.
+Staff pages, signed in (Task 21, `36c3a6c`): Overview 150,613 B, Sellers 150,613 B, Hub tools 150,613 B, Mentor dashboard 150,613 B.
 
 The stop line used: 152,305 B (decision 52); limit 153,600 B. The listing forms (new and edit), measured signed in as the sample seller, are the highest pages at the start: 152,287 B, 18 B under the stop line, so any client change to `PhotoField` needs Lama's say; every other page has at least 536 B (the listing page, 151,769 B). The Start figures are F's final ledger row (`622800a`, `docs/PROGRESS.md`); `performance.spec.ts` was not run again for Task 1, which adds no page or client code. Unit tests at the start: 1,555 (215 files). End to end at the start: 953 pass, 768 skipped (F's final run in `docs/PROGRESS.md`; not run again for Task 1).
+
+**Task 22 (final run, 19 October):** the stage added no client code, so no page moved: every row above is F's to the byte. The Final figures are `performance.spec.ts` at 390px inside the full end-to-end run, and they match Tasks 15, 17, 18 and 21. The listing forms (new and edit), signed in as the sample seller, are still the highest pages at 152,287 B (18 B under the stop line, 1,313 B under the limit); every other page is at least 536 B under the stop line. Staff pages (Overview, Sellers, Hub tools, Mentor dashboard) are 150,613 B each, signed in as the sample admin and mentor. **Layout shift** (fonts held back, 390 / 1440px): the slot request page with a request waiting 0.0036 / 0.0004 and with the form 0.0007 / 0.0004, Overview 0.0007 / 0.0014, the mentor dashboard 0.0006 / 0.0027. **Final checks:** `pnpm lint` and `pnpm typecheck` are clean; unit 1,937 (261 files, from 1,555 in 215 at the start); `pnpm build` lists the staff pages and `/hub/[id]/book` as partly prerendered and `/mentor/export` as dynamic, with no "runtime data in generateMetadata()" error; end to end 1,025 passed, 887 skipped by design, none failed, in 9.9 minutes, with `staff-writes` last (the 953 passed and 768 skipped at the start, plus the staff tests, plus 119 more skips from the staff tests' two-size projects and the new screenshots test). Review screenshots: 28 in `docs/progress/staff/`.
+
+## Changes made during the build
+
+Written in Task 22 (2026-10-19) from `git log` (`9cd12c2`, Task 1, to `36c3a6c`, Task 21) and the code. Each change names the commit that made it; amendments have a docs commit that wrote them into this plan and, usually, a fix commit that built them. Commit subjects are the `git log --oneline` lines, so `git show <hash>` finds the rest.
+
+**Tasks and their commits**
+
+| Task | Commit | Task | Commit |
+|---|---|---|---|
+| 1 Types, seeds, eight tables (`STORE_VERSION` 6) | `9cd12c2` | 12 Admin Reports and the hide and pause confirm pages | `a7f33f5` |
+| 2 Staff rules and words | `25d4bf1` | 13 Admin Featured, Pickup points, Audit log | `bda34a5` |
+| 3 Mentor flags and CSV, post checks, Featured's break, earned badge | `e31b5c8` | 14 The Hub's tools and the post editor | `872c2f9` |
+| 4 Audit log, decisions on shops, hidden listings | `4e96cb4` | 15 RSVP and Request a slot | `1a35544` |
+| 5 Reports, badges from the store, shop numbers | `e8cc3d0` | 16 The mentor dashboard, a shop's page, the CSV | `798a2ed` |
+| 6 Featured and pickup points from the store | `f89e0bf` | 17 Buyers' side: badges after a reply, retired points | `f68876f` |
+| 7 Hub posts, RSVPs, slot requests | `4a7b5a2` | 18 The seller's and the account's side | `bca1322` |
+| 8 Mentor data, deletion and export | `c929b7e` | 19 The trust page and the privacy policy | `0d396c6` |
+| 9 The staff gate, frame, tables, confirm page | `c07dbca` | 20 End to end | `9b2fbd6` |
+| 10 The admin console's Server Actions | `7f6e943` | 21 Accessibility, layout shift, size | `36c3a6c` |
+| 11 Admin Overview, Sellers, a shop's review, confirm pages | `73c6d1b` | 22 Screenshots, docs, final checks | this commit |
+
+**Amendments 1 to 15 (the controller's reviews, Claude under decision 54)**
+
+| Amendment | Plan text | Built in |
+|---|---|---|
+| 1 to 10: plan review (summary ids, POPIA for booking notifications, Featured's break as a preference, the export's keys, no new listing on a retired point, a re-sent shop's date, room for stage H, the reporter's link, metadata that reads the session, what was kept as drafted) | `d728923` | each task as it was built: 1 in the `summary-ids.test.tsx` additions (Tasks 11 to 16); 2 and 4 in Task 8; 3 in Tasks 3 and 6, its words in Tasks 13 and 19; 5 in Task 6; 6 in Tasks 4 and 18; 7 in Tasks 5 and 12; 8 in Task 10 (and 14.3); 9 in this task (`CLAUDE.md`) |
+| 11: what selling's amendments 8 and 9 changed for G | `e3e08b7` | every task (`firstPublishedAt`, the export's key order, `getPhoto`'s clock) |
+| 12: the CSV guard and byte-order mark, unit tests in UTC, limits from both sides, no new event in the past | `aee7e13` | `67d4ab8`; 12.5 in Task 14 (`872c2f9`) |
+| 13: reports on a deleted shop, a Hub pause hides the shop, a seller's own pause survives, pins follow a link change, hidden photos to the owner only, Edit shop and retired points | `9b8abe7` | `d39becb`; 13.3's seller-facing words `f0bc7aa` |
+| 14: pausing closes every report on the shop, gone targets skipped, a decision acts on the shop reviewed, pins go with a deleted shop, the gate tested on every action | `bba2ad6` | `322654d` |
+| 15: navy Preview links, the Featured page's words, nobody reads notes about their own shop, reserved shop links, no storefront link to a Hub-paused shop, Preview headings, no double posts, polling for "(no longer used)" | `3b4c918` | `5af3548`; 15.8 in Task 20 (`9b2fbd6`) |
+
+Amendments 12 to 15 each ran as a fix task after Tasks 6, 10, 13 and 17, test first, as the plan said: `67d4ab8`, `d39becb` (with `f0bc7aa`), `322654d` and `5af3548`.
+
+**Where the build differed from the tasks as written**
+
+- **The editor's error summary is `<prefix>-problems`** (Task 14; amendment 1). The plan's `${prefix}-summary` is the id of the editor's own Summary field (`new-post-summary`, `edit-h-002-summary`), so a link to the field would have gone to the error list. `summary-ids.test.tsx` lists `new-post-problems` and `edit-h-002-problems`, and `PostEditor.test.tsx` checks the field's id is on the page once. `872c2f9`.
+- **The past-date rule is in the action, not in `checkPost`** (Task 14; amendment 12.5). `startsInThePast` in `lib/staff/hub-actions.ts` refuses a new event or office hours, or a changed date or time, that starts at or before now, and puts `post-date-past` in the error list after the kind, title and campus codes, in the editor's order. It compares moments (a stored time may omit its milliseconds), and a post whose start is left as it is can still be edited, so h-002 and h-012 stay editable. `872c2f9`.
+- **`lib/staff/once.ts` is in no task** (amendment 15.7). A new Hub post, a note and a check-in carry a hidden one-time token, made when the form is drawn (after `connection()`), kept in form state as `staff-once:<token>` for an hour, and taken in one step by the first save; a second send goes where the first went and makes nothing, and one with no token, a made-up or a run-out one is refused with the form's error and what was typed. It is selling's `takeFormState` pattern (selling amendment 14.1), and costs no client code. An edit that changes nothing writes and logs nothing (`saveHubPost` says whether it changed). `5af3548`.
+- **`RESERVED_SLUGS`** (amendment 15.4). The plan's first wording moved the CSV to `/mentor/export.csv`; the build kept `/mentor/export` and reserved the word instead, because moving the route means removing its old file, which needs Lama's say. `lib/selling/rules.ts` has `RESERVED_SLUGS` (`export`); `slugify` makes `export-shop`, `lib/data/shops.ts` refuses `export` as taken in Edit shop, and a test reads the folders beside `[slug]` in `app/sellers`, `app/admin/sellers` and `app/mentor` and fails when one isn't reserved. `5af3548`.
+- **Hub-pause wording on My listings** (Task 18). The task listed `MyListingsView` only. The build also changed `MyListings.tsx` (it reads `shopStanding`), added the notice `saved-shop-hub-paused` to `lib/selling/notices.ts`, and `pausedShopNotice` to `lib/selling/listing-actions.ts`: a listing saved, resumed or relisted while the Hub has the shop paused says "The Hub has paused your shop, so buyers will see it once the Hub resumes it", since the seller can't resume it. My listings' paused line says "Paused by the Hub: buyers can't see your listings." and the Hub's reason. `bca1322`.
+- **The dashboard drops its storefront link for a Hub-paused shop** (Task 18; the consequence of amendment 13.2: the storefront is the 404 while the pause lasts). "View your shop" isn't offered. The admin pages (`73c6d1b`, `322654d`) and the mentor's shop page (amendment 15.5, `5af3548`) do the same. `bca1322`.
+- **A report's page doesn't link what buyers can't see** (Task 13, not in the task; same consequence). `ReportView.unseen` is `"hidden"` or `"paused"`, and `AdminReport` names the title as text with "Buyers can't see this listing: the Hub has hidden it." `bda34a5`.
+- **A Hub Resume that restores the seller's own pause says so** (amendment 13.3). `f0bc7aa` followed the fix: the notification says the Hub lifted its pause and the shop is still paused as the seller set it, not that buyers can see it again.
+- **The trust and privacy pages' dates and the privacy settings** (Task 19). `updated` on `/trust` went from 2026-10-14 to 2026-10-18 and on `/privacy` from 2026-10-15 to 2026-10-18; the task didn't mention them. The task also didn't list `PrivacySettingsView` (the download and deletion lists); it now names RSVPs and slot requests and says mentors' notes aren't in the download. `0d396c6`.
+- **Unit tests run in UTC** (amendment 12.3): `vitest.global-setup.ts` sets `TZ=UTC` (`vitest.config.mts`), with a guard test and the New Year's Eve SAST case in `lib/time.test.ts`. No existing test failed, so no timezone bug turned up. `67d4ab8`.
+- **The CSV is quoted and starts with a byte-order mark** (amendment 12.1 and 12.2): every text cell in double quotes, a leading `=`, `+`, `-`, `@`, tab or carriage return given an apostrophe. `staff.spec.ts` follows: `readFile(…, "utf8")` keeps the mark, so the test checks it first and slices it off before splitting lines. `67d4ab8`, `9b2fbd6`.
+- **Task 20** (`9b2fbd6`), where the written tests changed:
+  - every wait after a post has `POST_LANDS` (20 seconds), text checks on kept pages filter to what's visible, and long tests set their own timeouts (60 to 180 seconds);
+  - the signed-out redirect check moved to `routes.spec.ts` as its own test (it also covers `/mentor/export` and `/hub/h-004/book`), so `staff.spec.ts`'s 404 test starts signed in and covers more pages (Featured, Pickup points, Audit log, `/hub/new`, `/hub/h-003/edit`, `/mentor/tech-corner`); its `noindex` check requires every robots meta tag to say it, because Next adds its own to a not-found page that has started streaming; and a new test checks a mentor gets the 404 on `/admin`, `/admin/sellers` and `/admin/audit` yet opens `/hub/manage` and `/mentor`;
+  - `staff-writes.spec.ts` checks more than the task's tests (a shop isn't Verified until the Hub says so, the owner is told, the audit log has it, and Remove Verified puts it back; Hide needs a reason, and the seller's notification; the report-pause test has two reporters, as amendment 14.1 needs); the pin test picks a Verified seller the day's draw didn't give East London, not a fixed "Nail bar", and counts the pins already made, since a shared server may hold earlier ones;
+  - **a test the task didn't have:** an admin adds a pickup point, a seller puts a listing on it, the Hub retires it, and the listing's page says "(no longer used)"; the test reloads until it shows, because the first visit after a retire can still show the cached words for one request (selling amendment 13.10; this plan's 15.8), then checks the forms stop offering it and that Use it again restores the words;
+  - the two loosened checks of Tech corner's "Responsive" stamp (`shopping.spec.ts`, `selling.spec.ts`) accept any badge, as approval 7 said.
+- **Task 21** (`36c3a6c`), where the written checks changed:
+  - the checks use `seriousIssues` from `tests/e2e/helpers/axe.ts` (selling's) instead of a local Axe function, and wait for the page's `<title>` before running it (`expectNoSeriousIssues`): a staff page's title streams in with its request-time parts, and axe's document-title rule would fire in the gap;
+  - the slot request page is checked at **h-007**, not h-002: h-002 started on 15 October, so its page would show "passed". h-007 (Thandi's request waiting; upcoming until 19 November 2026) gives the page with a request waiting, and a second account (Seller, Tech corner) gets the form and its error; after 19 November the form isn't there and the check skips its press;
+  - added: the audit log filtered by Shops, the Hide confirm page's error, the post editor with its errors and with a Preview, and layout shift for both slot request states, named by project.
+- **Task 22's screenshots test** is written in the style of selling's (the visible-only `button` and `field` helpers, a scroll to the top before each shot, a wait on each page's heading, `POST_LANDS` after the decline post, a 180-second timeout), and takes 28 PNGs, 14 at 390px and 14 at 1440px.
+- **`docs/PROGRESS.md` and the decisions log are written from snippet files** (`g-progress.md`, `g-decision.md`), not edited in place: both hold other sessions' uncommitted lines (the positioning and Supabase sections, and decision rows 71 and 72), which Lama decides on. The decision row is number 73. The controller merges them.
+- **The spec's section 8 existed already,** so Task 22 retitled it "Changes on plan review and build" and added items 11 to 23, rather than adding a section.
+- **`docs/reference/GO-LIVE.md` went a little past the task:** section 7's Featured item says the break is a preference (amendment 3) rather than that it empties a row; section 6's "Stage G" backend line is ticked, with the three real-database items below it; the waiting-for-approval row and the Hub post row say what is built; and the suggested order gained item 5 for stage G, so the old 5 and 6 are 6 and 7.
+- **`CLAUDE.md` gained more than the task's lines:** the `generateMetadata` rule (amendment 9), the reserved-link rule and the one-time-token sentence, and the staff tables added to sample mode's in-memory list.
 
 ## Conventions for every task
 

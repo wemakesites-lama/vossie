@@ -2,7 +2,7 @@
 
 Every page and view the marketplace needs before it can go live, plus the work that isn't a screen. Drawn from the app's routes, the old demo's function map (`FUNCTION-MAP.md`) and the homepage spec's "Not in this stage" list.
 
-Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) after Looking For and the Hub (part B), after sign-in and accounts, in sample mode (stage D), after messaging, reports and notifications, in sample mode (stage E), and after selling, in sample mode (stage F). Update the status column as each stage lands.
+Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) after Looking For and the Hub (part B), after sign-in and accounts, in sample mode (stage D), after messaging, reports and notifications, in sample mode (stage E), after selling, in sample mode (stage F), and after the staff tools, in sample mode (stage G). Update the status column as each stage lands.
 
 **Status key**
 - **Built:** done.
@@ -23,10 +23,10 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Looking For board | `/looking-for` | Built to read; posting a request: stage H (designed) |
 | A single Looking For request | `/looking-for/[id]` | Built to read; offers: stage H (designed) |
 | Hub feed: tips, events, office hours | `/hub` | Built |
-| Hub post, with RSVP and book-a-slot | `/hub/[id]` | Built (RSVP and booking wait for accounts) |
+| Hub post, with RSVP and book-a-slot | `/hub/[id]`, `/hub/[id]/book` | **Built (sample mode)**: RSVP and slot requests for signed-in students; signed out, through sign-in |
 | How it works, Safety | `/how-it-works`, `/safety` | Built |
 | Privacy policy | `/privacy` | Built as a draft; Eduvos signs off the wording |
-| How trust works (the badges, and how Featured is picked) | `/trust` | Built |
+| How trust works (the badges, and how Featured is picked) | `/trust` | **Built**: Verified is the Hub's badge, separate from approval; badges and Featured's draw are worked out (sample mode) |
 | Terms of use, seller guidelines | `/terms`, `/seller-guidelines` | Built as drafts; Eduvos signs off the wording |
 | Error page (when something breaks) | `error.tsx` | Next's default for now (the branded page was dropped under the stop rule, decision 62) |
 | Not found | 404 | Built |
@@ -67,7 +67,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 |---|---|---|
 | "Sell on Vossie" pitch, for people who aren't selling yet | `/sell` | **Built (sample mode)** |
 | Become-a-seller steps: basics, about, photo, campus and pickup points, review | `/sell/onboarding` | **Built (sample mode)**: no contact step (decision 57) |
-| Waiting-for-approval state | `/sell` | **Built (sample mode)**: the shop can prepare drafts; approval is stage G's |
+| Waiting-for-approval state | `/sell` | **Built (sample mode)**: the shop can prepare drafts; the Hub approves or declines it (stage G), and a declined shop sees the reason and can send it again |
 | Seller dashboard: status, the last 7 days' numbers, the badge's next step | `/sell` | **Built (sample mode)**: enquiries, replies within 48 hours and confirmed sales; no view counts |
 | My listings: available, paused, sold or drafts; edit; delete with a confirm step | `/sell/listings` | **Built (sample mode)**, with drafts |
 | Create and edit a listing: photos (compressed, location removed, alt text), price, swap terms, pickup point | `/sell/listings/new`, `/sell/listings/[id]/edit` | **Built (sample mode)** |
@@ -77,11 +77,11 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 
 | Screen or view | Route | Status |
 |---|---|---|
-| Admin: seller approvals, reports queue, hide a listing or pause an account, Verified badge, Featured pins, pickup points, audit log; hide a request (stage H) | `/admin/*` | Missing |
-| Hub post editor and the office-hours queue | `/hub/new`, `/hub/manage` | Missing |
-| Mentor dashboard, seller detail, notes, check-ins, CSV export | `/mentor/*` | Missing; can follow launch |
+| Admin: seller approvals, reports queue, hide a listing or pause an account, Verified badge, Featured pins, pickup points, audit log; hide a request (stage H) | `/admin/*` | **Built in sample mode** (hiding a request is stage H's) |
+| Hub post editor and the office-hours queue | `/hub/new`, `/hub/[id]/edit`, `/hub/manage` | **Built in sample mode** |
+| Mentor dashboard, seller detail, notes, check-ins, CSV export | `/mentor/*` | **Built in sample mode** |
 
-**Totals:** about 45 screens and views, one of them (the WhatsApp handoff) cut. 33 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, the privacy policy, terms of use and seller guidelines as drafts, Looking For's board and request pages and the Hub's feed and post pages, which read today and send acting to sign-in, and, in sample mode, sign-in, your account and privacy settings, messaging (the composer, inbox, thread, notifications and report pages) and selling (the pitch, the application steps and waiting page, the dashboard, My listings, the listing form and Edit shop)), and 11 are placeholders or missing. Most of the missing ones are the signed-in half of the product.
+**Totals:** about 45 screens and views, one of them (the WhatsApp handoff) cut. 36 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, the privacy policy, terms of use and seller guidelines as drafts, Looking For's board and request pages and the Hub's feed and post pages, which read today and send acting to sign-in, and, in sample mode, sign-in, your account and privacy settings, messaging (the composer, inbox, thread, notifications and report pages), selling (the pitch, the application steps and waiting page, the dashboard, My listings, the listing form and Edit shop) and the staff tools (the admin console, the Hub's post editor and office-hours queue, and the mentor dashboard)), and 8 are placeholders or missing. Most of the rest are stage H's (acting on Looking For, the offline page) and stage I's (saved-search alerts).
 
 ## 6. Work that isn't a screen
 
@@ -96,7 +96,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] **Keyed hashes for codes.** Sign-in codes and tokens are stored as plain SHA-256 hashes (a code is salted with its attempt's key, which sits in the same row). A 6-digit code has only a million values, so a leaked store gives the codes away. The real backend hashes them with a server secret (HMAC).
 - [ ] **Counting tries.** The real backend counts a wrong try (atomically) before it compares the code, so guesses sent in parallel can't get past 5 tries. The same goes for the 5 codes an hour: `recordWrongTry` and `reserveCodeSend` in `lib/data/sign-in.ts` say what each needs (a single `UPDATE … RETURNING`, and a single upsert or a per-email lock).
 - [ ] **The store's scope.** The sample store lives in one server process. Running more than one instance, or serverless functions, needs the real database first.
-- [ ] Scheduled jobs: the nightly Featured draw, recalculating trust badges, confirming sales automatically after 7 days, and closing old Looking For requests (stage H leaves them open).
+- [ ] Scheduled jobs: recalculating trust badges nightly (Overview does it on demand today), confirming sales automatically after 7 days, and closing old Looking For requests (stage H leaves them open). Featured's draw needs no job: each campus's row is recorded on its first view of the day.
 - [ ] Supabase tables for conversations, messages, reports and notifications replace the sample store's (`lib/data/messages.ts`, `notifications.ts`, `reports.ts`).
 - [ ] Live updates and the header's count without a page load (Supabase Realtime), if wanted: messaging spec 2.6 left them out.
 - [ ] A scheduled job for the 7-day auto-confirm (it's checked on read today) and for deleting old messages, reports and notifications once Eduvos sets how long they're kept.
@@ -104,7 +104,10 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] Supabase tables for shops, listings and onboarding drafts, and Supabase Storage for photos, replace the sample store's (`lib/data/shops.ts`, `own-listings.ts`, `photos.ts`, `catalog.ts`); `/photos/[id]` goes. Storage's own resizing (or a cache handler that can purge) replaces next/image's, with a purge when a photo is deleted (selling plan decision 12).
 - [ ] Photos uploaded straight to storage from the browser (signed upload links), not through a Server Action: many hosts cap a request body far below the 32 MB set in `next.config.ts` (Vercel's functions take 4.5 MB). The no-JavaScript path then needs its own answer.
 - [ ] Storage quotas per account (sample mode keeps only each account's newest 12 waiting photos), and a look at photos of people (consent, CLAUDE.md).
-- [ ] Stage G: approving, declining and staff-pausing shops (with a reason the seller sees), Verified, hiding listings, and the Featured rules (approved, something listed, a week's break).
+- [x] Stage G: approving, declining and staff-pausing shops (with a reason the seller sees), Verified, hiding listings, and the Featured rules (approved, something listed, a week's break as a preference). Built in sample mode (2026-10-19); the three items below move it to the real database.
+- [ ] A true 404 status for staff pages: a proxy checks the session's role before rendering, once sessions live in the real database (staff tools plan decision 1).
+- [ ] Supabase tables for the audit log (insert-only: no update or delete grant for anyone), Featured pins and draws, pickup points, mentors' notes, Hub posts, RSVPs and slot requests replace the sample store's.
+- [ ] Hub covers move to Supabase Storage with the other photos.
 
 ### POPIA and legal (Eduvos signs these off)
 - [ ] Final privacy policy, with a named Information Officer. A draft is live at `/privacy`; Eduvos's legal team reviews it.
@@ -122,12 +125,15 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] Eduvos sets how long messages, reports and notifications are kept; the privacy policy says so (messaging plan decision 27). In sample mode they last until the server restarts.
 - [ ] Where the data is hosted. The old demo ran in Ireland; sending data abroad needs adequate safeguards (section 72).
 - [ ] The privacy policy's "Vossie is still a preview" sentence comes out once accounts move to the real backend.
+- [ ] Whether POPIA's right of access puts mentors' notes in the seller's data download; today the Information Officer is asked for them (staff tools plan decision 16).
+- [ ] How long the staff audit log, RSVPs and slot requests are kept.
 
 ### Content
 - [ ] Real photos.
 - [ ] Eduvos fonts and the licence.
 - [ ] The official crest SVG.
 - [ ] Real pickup points for each campus.
+- [ ] The Hub's real posts and office hours, and the real staff accounts (mentors and admins); managing them in the app is not built (staff tools spec 7).
 - [ ] Real Hub events, tips and story. The 18 posts and the Hub's two paragraphs are sample wording.
 - [ ] Real Looking For requests. The 16 requests (and the offers counts on them) are samples to remove, with their `seedOffers` (stage H).
 - [ ] Info pages say what's true today; update them as stages land (How it works' "What can I do on Vossie today?", the trust page's sample notes, the privacy page's "Your account" section).
@@ -170,6 +176,9 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] **Which email proves someone is a student?** The demo's `@vossie.net` was a stand-in.
 - [ ] **Plus addresses.** `thandi+1@eduvos.com` counts as a new address, which gets round the per-email code limit and allows several accounts per student. Decide with Eduvos whether to treat plus addresses as the same person, or reject them, once its mail system is known.
 - [ ] **Who moderates reports and approvals,** and how fast do they respond?
+- [ ] **Showing a hidden listing again.** Not built: the seller can edit or delete it, and only a change in the store brings it back (staff tools plan decision 4).
+- [ ] **Featured with few Verified sellers.** The week's break is a preference, not a rule: with nine Verified sellers for four places, a seller who has just been featured comes after everyone else rather than leaving the row short (staff tools spec section 8). Once more sellers are Verified the break holds in full.
+- [ ] **Email to staff** when an application, a report or a slot request waits (staff tools spec 7).
 - [ ] **Do new messages, or saved-search alerts (stage I), send an email?** Messages are in-app only (decision 57); email notifications are still to decide.
 - [ ] **How long are messages, reports and notifications kept?** Eduvos's call (messaging plan decision 27). The privacy policy says the periods will be set before launch; today everything lasts until the server restarts.
 - [ ] **Do Looking For and the Hub go live on day one?** If not, their homepage sections are hidden.
@@ -180,9 +189,10 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 1. **Done (2026-10-13):** browse and listing pages.
 2. **Done (2026-10-14): the other public pages.** The storefront, Saved, collections, the info, legal and system pages, and Looking For and the Hub (to read) are done. The branded error page was dropped under the JS stop rule, so Next's default shows. Next is item 3, starting with stage D (sign-in and accounts): it turns every "sign in to do that" link on these pages into the real flow.
 3. **Done in sample mode (2026-10-14): sign-in, account and privacy.** Supabase and an email service replace the sample store at go-live.
-4. **Done in sample mode (2026-10-15): onboarding, the listing form and the dashboard.** The minimum admin is stage G.
-5. **Done in sample mode (2026-10-14): messaging, reports and notifications.** Supabase replaces the sample store at go-live.
+4. **Done in sample mode (2026-10-15): onboarding, the listing form and the dashboard.** The staff tools that approve shops are stage G's (item 5).
+5. **Done in sample mode (2026-10-19): the staff tools (stage G).** Stage H adds community actions.
+6. **Done in sample mode (2026-10-14): messaging, reports and notifications.** Supabase replaces the sample store at go-live.
    - Stage E builds messaging, then stage F selling. Stage G adds the staff tools: admin, the Hub's posting tools and the mentors' dashboard. Stage H adds community actions: posting Looking For requests, offers, following shops and the offline page. Stage I adds saved-search alerts.
-6. **Launch readiness:** legal sign-off, domain, monitoring, content, and the pilot.
+7. **Launch readiness:** legal sign-off, domain, monitoring, content, and the pilot.
 
 **After launch:** delivery between campuses.

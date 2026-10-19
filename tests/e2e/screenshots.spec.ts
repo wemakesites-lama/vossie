@@ -552,3 +552,82 @@ test("selling review screenshots", async ({ page, browser, baseURL }) => {
   await sellerShot("12-listing-owner", false);
   await context.close();
 });
+
+test("staff tools review screenshots", async ({ page, browser, baseURL }) => {
+  const project = test.info().project.name;
+  test.skip(!["phone-390", "desktop-1440"].includes(project), "Saved at 390 and 1440 only");
+  // Three browsers and fourteen pages, on a server a full run may be busy with.
+  test.setTimeout(180_000);
+  const file = (name: string) => `docs/progress/staff/${project}-${name}.png`;
+  // Back to the top first: after a focus jump to an error summary the header has folded to its crest, which a full-page
+  // shot would draw over the page.
+  const shot = async (on: Page, name: string) => {
+    await on.evaluate(() => window.scrollTo(0, 0));
+    await on.screenshot({ path: file(name), fullPage: true });
+  };
+  const heading = (on: Page, name: string) =>
+    expect(on.locator("main").getByRole("heading", { level: 1, name })).toBeVisible();
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+
+  // The admin only reads, so nothing the other tests count changes.
+  await signInAsSample(page, "Admin", "/admin");
+  await heading(page, "Overview");
+  await shot(page, "01-overview");
+  await page.goto("/admin/sellers");
+  await heading(page, "Sellers");
+  await shot(page, "02-sellers");
+  await page.goto("/admin/sellers/crochet-corner");
+  await heading(page, "Crochet corner");
+  await shot(page, "03-review-waiting");
+  await page.goto("/admin/sellers/crochet-corner/decline");
+  await heading(page, "Decline Crochet corner");
+  await button(page, "Decline Crochet corner").click();
+  await expect(page.locator("main").getByRole("alert", { name: "There's a problem" })).toBeVisible(POST_LANDS);
+  await shot(page, "04-decline-errors");
+  await page.goto("/admin/sellers/tech-corner");
+  await heading(page, "Tech corner");
+  await shot(page, "05-review-open");
+  await page.goto("/admin/reports");
+  await heading(page, "Reports");
+  await shot(page, "06-reports");
+  await page.goto("/admin/featured");
+  await heading(page, "Featured");
+  await shot(page, "07-featured");
+  await page.goto("/admin/pickup-points");
+  await heading(page, "Pickup points");
+  await shot(page, "08-pickup-points");
+  await page.goto("/admin/audit");
+  await heading(page, "Audit log");
+  await shot(page, "09-audit-log");
+
+  // The mentor, in a browser of their own. Preview saves nothing.
+  const mentorContext = await browser.newContext({ baseURL, viewport: page.viewportSize()!, reducedMotion: "reduce" });
+  const mentor = await mentorContext.newPage();
+  const mentorMain = mentor.locator("main");
+  await signInAsSample(mentor, "Mentor", "/hub/manage");
+  await expect(mentorMain.getByRole("heading", { level: 2, name: "Office-hours requests" })).toBeVisible();
+  await shot(mentor, "10-hub-posts");
+  await mentor.goto("/hub/new");
+  await heading(mentor, "Write a post");
+  await field(mentor, "Title").fill("Market day at the Hub");
+  await field(mentor, "The post").fill("## Bring\n- A table\n- A float\n\nStalls are **free**.");
+  await button(mentor, "Preview").click();
+  await expect(mentorMain.getByRole("region", { name: "Preview" })).toBeVisible(POST_LANDS);
+  await shot(mentor, "11-post-preview");
+  await mentor.goto("/mentor");
+  await expect(mentorMain.getByRole("table", { name: "Your sellers, A to Z" })).toBeVisible();
+  await shot(mentor, "12-mentor-dashboard");
+  await mentor.goto("/mentor/tech-corner");
+  await expect(mentorMain.getByRole("region", { name: "Notes and check-ins" })).toBeVisible();
+  await shot(mentor, "13-mentor-shop");
+  await mentorContext.close();
+
+  // Thandi's sample slot request at h-007 (upcoming until 19 November 2026), as she sees it.
+  const studentContext = await browser.newContext({ baseURL, viewport: page.viewportSize()!, reducedMotion: "reduce" });
+  const student = await studentContext.newPage();
+  await signInAsSample(student, "Student, Midrand", "/hub/h-007/book");
+  await expect(student.locator("main").getByRole("region", { name: "Your request" })).toBeVisible();
+  await shot(student, "14-slot-request");
+  await studentContext.close();
+});

@@ -1,7 +1,7 @@
 # Vossie staff tools: design spec
 
 - **Date:** 2026-10-14
-- **Status:** Approved under Lama's standing goal (2026-10-14): "make recommended decisions where needed and continue working in the same manner". Each decision is Claude's recommendation, logged in the decisions log.
+- **Status:** Built (2026-10-19), in sample mode. Approved under Lama's standing goal (2026-10-14): "make recommended decisions where needed and continue working in the same manner". Each decision is Claude's recommendation, logged in the decisions log. Section 8 holds what the plan review and the build changed; it wins over the decisions above.
 - **Scope:** stage G:
   - the admin console;
   - the Hub's post editor and office-hours queue;
@@ -134,9 +134,9 @@ No client code beyond the shell. Staff pages aren't in the public budget, but ea
 
 Scheduled jobs (go-live), email to staff, staff accounts management beyond the seeded ones, and analytics.
 
-## 8. Changes on plan review (2026-10-14)
+## 8. Changes on plan review and build (2026-10-14 to 2026-10-19)
 
-The plan (`docs/superpowers/plans/2026-10-14-staff-tools.md`, with its amendments) refines these points; where they differ, these win. Claude, under decision 54.
+The plan (`docs/superpowers/plans/2026-10-14-staff-tools.md`, with its amendments) and the build refine these points; where they differ, these win. Items 1 to 10 came at plan review; items 11 to 23 came from the plan's decisions and its amendments while building, and the plan's "Changes made during the build" gives each with its commit. Claude, under decision 54.
 
 1. **Staff pages show the 404 from inside the page,** with status 200 and `noindex`, so the tab says "Page not found" to anyone else. Every action and the CSV route check the role on the server. A true 404 status needs a role check before rendering (a proxy) once sessions are in a real database: a go-live item.
 2. **A declined shop stays waiting,** with the Hub's reason. The seller presses **Send for approval again**, and the shop shows when it was sent again.
@@ -148,3 +148,16 @@ The plan (`docs/superpowers/plans/2026-10-14-staff-tools.md`, with its amendment
 8. **Featured's week's break is a preference.** Featured records each campus's row per day. A featured seller sits out for a week when there are enough other Verified sellers to fill the row; otherwise resting sellers fill it after everyone else, so the row never runs empty.
 9. **Pickup points and Hub posts move into the store.** Retiring a pickup point has **Use it again** to undo it, and no new listing can use a retired point.
 10. **Mentors' notes are about the shop's owner** and aren't in the seller's data download; the seller can ask the Information Officer for them. Deleting a student removes their slot requests, and the notifications that named them.
+11. **The audit log gets an entry only when something changed.** A second press, or an action that finds nothing to do, writes no entry, sends nothing and says "Nothing changed. It was already done." Deleting an account keeps the entries it made (as "Deleted account") and strips its name, id and reason from the entries about it.
+12. **A shop the Hub pauses disappears,** as 2.3 says: its storefront and listing pages show the 404 and leave the sitemap, and its listings leave every list. A seller's own pause keeps them up, marked paused, and survives the Hub's: when the Hub resumes a shop the seller had paused too, it goes back to paused by the seller. The seller's dashboard says "Paused by the Hub" with the reason and has no Resume, and My listings says so and that the Hub resumes it.
+13. **A hidden listing's photos go to its owner only,** and Edit shop leaves listings on a retired pickup point where they are.
+14. **A report about a deleted shop can only be dismissed:** reports on a shop that has gone are marked, so closing reports on a new shop that reuses its link never reaches them. A decision on a shop acts on the shop that was reviewed: Approve and Decline carry the owner's id, and do nothing if the link now belongs to someone else.
+15. **Preview is a second submit button** that draws the body on the server above the form, keeping every field (the body up to 8,000 characters) and a cover picked before it. A new event or office hours, or one whose date or time changes, must start after now ("Choose a date and time that hasn't passed."); a past post can still be edited with its date as it is.
+16. **A second press makes nothing.** A new Hub post, a mentor's note and a check-in carry a one-time token (good for an hour); only the first save to take it makes anything, and a repeat goes where the first went. A post saved with nothing changed writes and logs nothing.
+17. **One open slot request per student per office hours,** the post's author is told of each, and the office-hours queue is shared by every mentor and admin. Accept and Decline each tell the student and have no confirm page.
+18. **The mentor dashboard covers 14 days;** one mentor per shop, chosen from accounts with the mentor role and only for shops with an owner account. Nobody reads notes about their own shop: a mentor who owns a shop can't be its mentor, and its mentor page is the 404 for its owner. The CSV is quoted in every text cell, guards against formulas (a leading `=`, `+`, `-`, `@`, tab or carriage return gets an apostrophe) and starts with a byte-order mark so Excel reads it as UTF-8.
+19. **A shop's link can't be a word a fixed route uses** beside a shop's `[slug]`: `/mentor/export` is the CSV, so "Export" becomes `export-shop` and Edit shop refuses `export` as taken. A test reads the folders and fails when a new fixed one isn't reserved.
+20. **Confirm pages** for Decline, Hide and Pause, each with a required reason up to 500 characters and a Keep link. Tables stack on phones with explicit table roles, so a screen reader keeps the table. Mentors see only their own posts in `/hub/manage`; an admin sees all. Staff links live on the account page and inside staff pages and never prefetch.
+21. **Staff pages say what they are doing.** `/admin/featured` records each campus's row for the day when it is opened, so the draw is the one buyers see; Overview works badges out as it renders, so a shop with an account can drop to New seller (Tech corner, once its conversations are counted) until it earns Responsive again.
+22. **Reports about a Looking For request, or about something gone, can only be dismissed** until stage H adds Hide the request on the same confirm page; `ReportOutcome` `"hidden"` and the reporters' `report-handled` notification stay target-generic for it. The reporter's notification links to Privacy settings' "Reports you've made".
+23. **Wording the spec doesn't give is for Lama to change:** the notices, the notification sentences, the confirm pages' lines, the empty states, the flags' explanations, Overview's lines, the declined and Hub-paused lines on `/sell`, Naledi's sample note and check-in, and Thandi's sample slot request.
