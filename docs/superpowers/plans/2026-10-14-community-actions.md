@@ -215,6 +215,19 @@ The controller adds amendments here; they override the tasks below wherever they
     | Task 23 Step 3 (performance) | Declares a new `const SIGNED_IN_PAGES: [name, path][]` and loop | It already exists as `[name, path, account]` with a loop. Add rows with `"Student, Midrand"`; don't redeclare it |
     | Task 7 Step 5 | "If the file has no `vi.mock("next/cache")`, add one" | It has one; nothing to add |
     | Everywhere | Staff create forms | Since this plan was written, staff create forms carry a one-time token (`lib/staff/once.ts`), shop links reserve `export` (`RESERVED_SLUGS`), and `approveShop`/`declineShop` take the owner's id |
+17. **The review of Tasks 1 to 5** (Claude, under decision 54, 2026-10-19). One fix task runs after Task 9 and before Task 10, test first.
+    1. **The budget reads South African money right** (important). `parseBudget` uses `parsePrice` from `lib/selling/rules.ts`, so "R250,00" is 250, and "99,99" and "1,2" are invalid; then the 1 to `BUDGET_MAX` range check. Before this, every comma was stripped, so cents were read as rand and "R250,00" showed as R25,000 on the board.
+    2. **The contact-details check catches joined numbers.** `holdsPhone` first takes dates out (`/\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[./]\d{1,2}[./]\d{2,4})\b/g`), then splits runs on `/[\s()./+-]+/`, so "082 123 4567-083 123 4567", "R300-0821234567", "Price 1.082 123 4567" and "082/123/4567" are refused, while "2026-10-01 - 2026-10-05", "01.10.2026 - 05.10.2026" and "R1 200 - R2 000" still pass.
+       - `ISBN_LABEL` accepts "ISBN 10:" as well as "ISBN-10" (`/ISBN(?:[\s-]?1[03])?[\s:]*$/i`).
+       - The refusal adds "If it's an ISBN, write ISBN before it."
+    3. **The limits say what they count:** "You've posted 5 requests in the last 24 hours. Try again later." and the same for offers (plan decision 4; messaging amendment 3.7).
+    4. **An offer thread shows the request's current title** while the request is up: `getThread` and the inbox use `request?.title ?? row.requestTitle`. The kept title is only for once the request has gone.
+    5. **A shop that has gone is "A closed shop" in every offer thread:** the asker's panel, the inbox, the thread and the export. Other conversations keep "Deleted account". There is one `CLOSED_SHOP` constant.
+    6. **A Hub-paused shop you follow shows on Saved, marked Paused,** with Unfollow and no storefront link (spec 2.17). Before this, it disappeared from Saved but still counted toward the 200.
+    7. **Tidying up:**
+       - The synchronous `offerRow` moves into `lib/data/offers.ts`; `startOffer`, `findOffer` and `offerThreadCount` use it.
+       - `notify`'s comment names the new kinds.
+    8. **Go-live (Task 24):** the 5 open requests, 5 new a day and 20 offers a day are counted with awaits before the write, so forms sent at the same moment can pass them. The real backend counts them in the database, beside amendment 7's unique index.
 
 ## Store design
 
