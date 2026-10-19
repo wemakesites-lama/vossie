@@ -30,6 +30,9 @@ const DEVICE_PROJECTS = ["phone-360", "phone-390", "tablet-768", "laptop-1024", 
 // The staff actions buyers can see (Verified, hidden listings, pins, Hub posts) run after every other test, selling's
 // writes included, so nothing another test counts moves under it (staff tools plan decision 21).
 const STAFF_WRITES = /staff-writes\.spec\.ts$/;
+// The tests that post requests, offer, hide requests or publish listings run after every other test, so the board's,
+// the homepage's and browse's counts never move under another test (community actions plan decision 27).
+const COMMUNITY_WRITES = /community-writes\.spec\.ts$/;
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -57,15 +60,15 @@ export default defineConfig({
     timeout: 240_000,
   },
   projects: [
-    { name: "phone-360", use: phone(360, 780), testIgnore: [SELLING_WRITES, STAFF_WRITES] },
-    { name: "phone-390", use: phone(390, 844), testIgnore: [SELLING_WRITES, STAFF_WRITES] },
+    { name: "phone-360", use: phone(360, 780), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES] },
+    { name: "phone-390", use: phone(390, 844), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES] },
     {
       name: "tablet-768",
       use: { ...desktop(768, 1024), screen: { width: 768, height: 1024 }, hasTouch: true },
-      testIgnore: [SELLING_WRITES, STAFF_WRITES],
+      testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES],
     },
-    { name: "laptop-1024", use: desktop(1024, 768), testIgnore: [SELLING_WRITES, STAFF_WRITES] },
-    { name: "desktop-1440", use: desktop(1440, 900), testIgnore: [SELLING_WRITES, STAFF_WRITES] },
+    { name: "laptop-1024", use: desktop(1024, 768), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES] },
+    { name: "desktop-1440", use: desktop(1440, 900), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES] },
     // After the five above (selling plan decision 25). Run it alone with --project=selling-writes --no-deps.
     { name: "selling-writes", use: phone(390, 844), testMatch: SELLING_WRITES, dependencies: DEVICE_PROJECTS },
     // After everything else (staff tools plan decision 21). Run it alone with --project=staff-writes --no-deps.
@@ -74,6 +77,13 @@ export default defineConfig({
       use: desktop(1440, 900),
       testMatch: STAFF_WRITES,
       dependencies: [...DEVICE_PROJECTS, "selling-writes"],
+    },
+    // After everything else (community actions plan decision 27). Run it alone with --project=community-writes --no-deps.
+    {
+      name: "community-writes",
+      use: phone(390, 844),
+      testMatch: COMMUNITY_WRITES,
+      dependencies: [...DEVICE_PROJECTS, "selling-writes", "staff-writes"],
     },
   ],
 });

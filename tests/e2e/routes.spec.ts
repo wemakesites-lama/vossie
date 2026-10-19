@@ -97,6 +97,30 @@ test.describe("routes", () => {
     }
   });
 
+  test("Looking For's new pages need an account, and come back after sign-in (community actions spec section 3)", async ({
+    page,
+  }) => {
+    onlyAtPhoneAndDesktop();
+    for (const path of [
+      "/looking-for/new",
+      "/looking-for/r-002/offer",
+      "/looking-for/r-002/edit",
+      "/looking-for/r-002/delete",
+      "/account/requests",
+    ]) {
+      await page.goto(path);
+      await expect(page, path).toHaveURL(`/login?next=${encodeURIComponent(path)}`);
+    }
+  });
+
+  test("an unknown request's composer is the 404 before any sign-in (community actions spec section 3)", async ({
+    page,
+  }) => {
+    onlyAtPhoneAndDesktop();
+    await page.goto("/looking-for/r-nope/offer");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
+  });
+
   test("staff pages send a signed-out visitor to sign in, coming back afterwards (staff tools spec 2.1)", async ({
     page,
   }) => {
