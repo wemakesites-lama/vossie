@@ -53,15 +53,20 @@ export async function isFollowing(accountId: string, sellerSlug: string): Promis
 }
 
 /**
- * Saved's Shops tab (spec 2.17): the shops the account follows that have a storefront, newest follow first, each with
- * its photo (or its category's picture), campus, whether it's paused, and how many listings buyers can see now.
+ * Saved's Shops tab (spec 2.17): the shops the account follows, newest follow first, each with its photo (or its
+ * category's picture), campus, whether it's paused, whether its storefront is up, and how many listings buyers can see
+ * now. A shop the Hub paused is on the list too, paused and with no storefront, so the account can unfollow it: its
+ * follow still counts towards the 200 (plan amendment 17.6). A shop waiting for approval never had a storefront to
+ * follow, so it isn't.
  */
 export async function listFollowedShops(accountId: string): Promise<FollowedShop[]> {
   const listed = new Map<string, number>();
   for (const listing of listedListings()) listed.set(listing.sellerSlug, (listed.get(listing.sellerSlug) ?? 0) + 1);
+  const { sellers } = sampleStore();
   return followsBy(accountId).flatMap((follow) => {
-    const row = storefrontRow(follow.sellerSlug);
-    if (!row) return [];
+    const row = sellers.get(follow.sellerSlug);
+    const status = row ? shopStatus(row) : null;
+    if (!row || (status !== "approved" && status !== "paused")) return [];
     const seller = toSeller(row);
     return [
       {
@@ -69,11 +74,17 @@ export async function listFollowedShops(accountId: string): Promise<FollowedShop
         name: seller.name,
         campusSlug: seller.campusSlug,
         image: { ...seller.image },
-        paused: shopStatus(row) === "paused",
+        paused: status === "paused",
+        storefront: storefrontRow(follow.sellerSlug) !== null,
         listed: listed.get(seller.slug) ?? 0,
       },
     ];
   });
+}
+
+/** A shop's name for a status line, whether or not its storefront is up (a shop the Hub paused still has a name). */
+export async function shopNameOf(sellerSlug: string): Promise<string | null> {
+  return sampleStore().sellers.get(sellerSlug)?.name ?? null;
 }
 
 /** How many follow the shop: its dashboard's number (spec 2.18). Never who. */

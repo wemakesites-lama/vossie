@@ -597,7 +597,13 @@ export type FollowedShop = {
   name: string;
   campusSlug: string;
   image: ImageRef;
+  /** Paused by its seller or by the Hub: the card says "Paused". */
   paused: boolean;
+  /**
+   * Whether its storefront page is up. False for a shop the Hub paused (its page is the 404), so the card doesn't
+   * link there but still offers Unfollow (plan amendment 17.6).
+   */
+  storefront: boolean;
   /** How many of its listings buyers can see now. */
   listed: number;
 };

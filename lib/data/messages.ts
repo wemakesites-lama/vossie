@@ -21,6 +21,7 @@ import {
   notify,
   notifyAboutMessage,
 } from "./notifications";
+import { CLOSED_SHOP, offerRow } from "./offers";
 import type { ConversationRow, MessageRow } from "./rows";
 import { sampleStore } from "./store";
 
@@ -32,8 +33,6 @@ type Side = "buyer" | "seller";
 
 /** What a side that has deleted its account is called (plan decision 14). */
 const DELETED = "Deleted account";
-/** What a shop that no longer exists is called. */
-const CLOSED_SHOP = "A closed shop";
 
 /** The account that owns the shop now, or null (plan decision 1). */
 function shopOwnerId(sellerSlug: string): string | null {
@@ -87,9 +86,15 @@ async function shopOf(sellerSlug: string): Promise<ConversationShop> {
   return { slug: seller.slug, name: seller.name, image: seller.image, campusSlug: seller.campusSlug };
 }
 
-/** The other side's name, as `side` sees it (spec 2.11). */
+/**
+ * The other side's name, as `side` sees it (spec 2.11). A shop that has gone is "A closed shop" in an offer thread, where
+ * the asker never dealt with a person, and "Deleted account" in any other conversation (plan amendment 17.5).
+ */
 function otherName(row: ConversationRow, side: Side, shopName: string): string {
-  if (side === "buyer") return row.sellerGone ? DELETED : shopName;
+  if (side === "buyer") {
+    if (!row.sellerGone) return shopName;
+    return row.requestId ? CLOSED_SHOP : DELETED;
+  }
   // The asker stays unnamed to the shop until they write in the offer's thread (community actions spec 2.10).
   if (row.requestId && row.buyerId && !messagesOf(row.id).some((message) => message.from === "buyer")) {
     return UNNAMED_ASKER;
@@ -203,17 +208,6 @@ export type NewOffer = {
   body: string;
   now: Date;
 };
-
-/**
- * The shop's offer thread on a request, while the shop is there to answer it. Synchronous on purpose: startOffer finds
- * and inserts with no await between, so two offers sent at once make one thread (community actions amendment 7).
- */
-function offerRow(requestId: string, sellerSlug: string): ConversationRow | null {
-  for (const row of sampleStore().conversations.values()) {
-    if (row.requestId === requestId && row.sellerSlug === sellerSlug && !row.sellerGone) return row;
-  }
-  return null;
-}
 
 /**
  * A shop's offer on a request (community actions spec 2.7 and 2.9): a conversation with the asker on the buyer's side,
@@ -362,11 +356,15 @@ export async function getInbox(accountId: string, tab: InboxTab, now: Date): Pro
     .sort((a, b) => Date.parse(b.lastMessageAt) - Date.parse(a.lastMessageAt));
   for (const row of rows) await settle(row, now);
   const listingIds = unique(rows.flatMap((row) => (row.listingId ? [row.listingId] : [])));
-  const [listings, shops] = await Promise.all([
+  const requestIds = unique(rows.flatMap((row) => (row.requestId ? [row.requestId] : [])));
+  const [listings, shops, requests] = await Promise.all([
     getListingsByIds(listingIds),
     Promise.all(unique(rows.map((row) => row.sellerSlug)).map(shopOf)),
+    Promise.all(requestIds.map((id) => getRequest(id))),
   ]);
   const images = new Map(listings.map((listing) => [listing.id, listing.image]));
+  // An offer thread shows its request's title as it is now, while the request is up (plan amendment 17.4).
+  const requestTitles = new Map(requests.flatMap((request) => (request ? [[request.id, request.title] as const] : [])));
   const shopsBySlug = new Map(shops.map((shop) => [shop.slug, shop]));
   return rows.map((row) => {
     const shop = shopsBySlug.get(row.sellerSlug)!;
@@ -378,7 +376,7 @@ export async function getInbox(accountId: string, tab: InboxTab, now: Date): Pro
       role: side,
       otherName: otherName(row, side, shop.name),
       listingTitle: row.listingTitle,
-      requestTitle: row.requestTitle ?? null,
+      requestTitle: (row.requestId ? requestTitles.get(row.requestId) : undefined) ?? row.requestTitle ?? null,
       image: image ? { ...image } : null,
       preview: last ? firstLine(last.body) : "",
       lastFromViewer: last?.from === side,
@@ -409,7 +407,10 @@ export async function getThread(id: string, accountId: string, now: Date): Promi
     shop,
     listingTitle: row.listingTitle,
     listing: detail ? { ...detail.listing } : null,
-    request: row.requestId ? { id: row.requestId, title: row.requestTitle ?? "", live: request !== null } : null,
+    // The request's title as it is now while it's up; the title it had when it was offered on once it has gone.
+    request: row.requestId
+      ? { id: row.requestId, title: request?.title ?? row.requestTitle ?? "", live: request !== null }
+      : null,
     status: row.status,
     completedAt: row.completedAt,
     confirmedAt: row.confirmedAt,

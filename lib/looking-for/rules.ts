@@ -1,4 +1,5 @@
 import { characterCount, cleanText } from "@/lib/messaging/rules";
+import { parsePrice } from "@/lib/selling/rules";
 
 // Looking For's limits and checks (community actions spec 2.3 to 2.5 and 2.9; plan decisions 3 to 5). Plain values
 // and functions: safe anywhere on the server and in tests.
@@ -58,13 +59,18 @@ export type RequestFields = {
 // --- Contact details (spec 2.4, plan decision 3) -------------------------------------------------------------------
 
 const EMAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*\.\p{L}{2,}/u;
-/** A run of digits that may hold spaces, dots, dashes and brackets, perhaps after a "+". */
-const DIGIT_RUN = /\+?\d[\d\s().-]*\d/g;
+/** A run of digits that may hold spaces, dots, dashes, slashes, pluses and brackets, perhaps after a "+". */
+const DIGIT_RUN = /\+?\d[\d\s().\/+-]*\d/g;
+/** A date, written 2026-10-01 or 01.10.2026 or 01/10/2026: its digits are never part of a phone number. */
+const DATE = /\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[./]\d{1,2}[./]\d{2,4})\b/g;
+/** Where one number ends and the next begins inside a run. */
+const RUN_BREAK = /[\s()./+-]+/;
 /** 13 digits starting 978 or 979, each perhaps after one space or dash. */
 const ISBN_13 = /\b97[89](?:[\s-]?\d){10}\b/g;
 /** 10 characters, digits and a last X, each perhaps after one space or dash. */
 const ISBN_10 = /\b\d(?:[\s-]?\d){8}[\s-]?[\dXx]\b/g;
-const ISBN_LABEL = /ISBN(?:-?10)?[\s:]*$/i;
+/** The word before an ISBN-10: "ISBN", "ISBN-10", "ISBN 10" or "ISBN10", then perhaps a colon and spaces. */
+const ISBN_LABEL = /ISBN(?:[\s-]?1[03])?[\s:]*$/i;
 const FOUR_GROUPS = /^\d{1,5}-\d{1,7}-\d{1,7}-[\dXx]$/;
 
 /** An ISBN-10's check digit: the digits weighted 10 down to 1 add up to a multiple of 11 (X is 10). */
@@ -98,9 +104,13 @@ function isPhoneDigits(digits: string): boolean {
   );
 }
 
-/** Whether some words in a run of digits, one after another, make a phone number ("R300 082 123 4567"). */
+/**
+ * Whether some numbers in a run of digits, one after another, make a phone number ("R300 082 123 4567",
+ * "R300-0821234567", "082/123/4567"). Dates come out first, so the days of "2026-10-01 - 2026-10-05" never add up to
+ * one (plan amendment 17.2).
+ */
 function holdsPhone(run: string): boolean {
-  const parts = run.trim().split(/\s+/);
+  const parts = run.replace(DATE, " ").split(RUN_BREAK).filter(Boolean);
   for (let start = 0; start < parts.length; start += 1) {
     let digits = "";
     for (let end = start; end < parts.length && digits.length <= 13; end += 1) {
@@ -120,13 +130,15 @@ export function hasContactDetails(text: string): boolean {
 
 // --- The fields (spec 2.3, plan decision 5) ------------------------------------------------------------------------
 
-/** The budget in whole rand: "300", "R1 200" or "1,200". Empty is null ("Open to offers"); anything else is "invalid". */
+/**
+ * The budget in whole rand, read as a listing's price is (F's parsePrice, plan amendment 17.1): "300", "R1 200", "1,200"
+ * and "R250,00" are fine; "99,99" and "1,2" are not, because a comma before cents is not a thousands separator. Empty is
+ * null ("Open to offers"); anything else is "invalid".
+ */
 export function parseBudget(raw: string): number | null | "invalid" {
-  const value = raw.trim().replace(/^R\s*/i, "").replace(/[\s,]/g, "");
-  if (value === "") return null;
-  if (!/^\d{1,6}$/.test(value)) return "invalid";
-  const rand = Number(value);
-  return rand >= 1 && rand <= BUDGET_MAX ? rand : "invalid";
+  if (raw.trim().replace(/^R\s*/i, "") === "") return null;
+  const rand = parsePrice(raw);
+  return rand !== null && rand >= 1 && rand <= BUDGET_MAX ? rand : "invalid";
 }
 
 /** Whether a YYYY-MM-DD date exists ("2026-02-30" doesn't). */

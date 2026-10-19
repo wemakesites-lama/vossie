@@ -6,15 +6,30 @@ import { sampleStore } from "./store";
 // Offers on Looking For requests, read from E's conversations (community actions spec 2.7, 2.9 and 2.13; plan
 // decisions 4, 10 and 12). Read-only: startOffer in lib/data/messages.ts makes them. Times come from the caller.
 
-const CLOSED_SHOP = "A closed shop";
+/** What a shop that no longer exists is called in an offer thread, wherever it shows (plan amendment 17.5). */
+export const CLOSED_SHOP = "A closed shop";
 
 function offersOn(requestId: string): ConversationRow[] {
   return [...sampleStore().conversations.values()].filter((row) => row.requestId === requestId);
 }
 
-/** The shop's offer on this request, while the shop is there to answer it (spec 2.9: one per shop per request). */
+/**
+ * The shop's offer thread on this request, while the shop is there to answer it (spec 2.9: one per shop per request).
+ * The store's own row, for lib/data's use. Synchronous on purpose: startOffer finds and inserts with no await between,
+ * so two offers sent at once make one thread (plan amendments 7 and 17.7).
+ */
+export function offerRow(requestId: string, sellerSlug: string): ConversationRow | null {
+  return offersOn(requestId).find((row) => row.sellerSlug === sellerSlug && !row.sellerGone) ?? null;
+}
+
+/** The shop's offer on this request, for the composer: the thread's id (spec 2.9). */
 export async function findOffer(requestId: string, sellerSlug: string): Promise<string | null> {
-  return offersOn(requestId).find((row) => row.sellerSlug === sellerSlug && !row.sellerGone)?.id ?? null;
+  return offerRow(requestId, sellerSlug)?.id ?? null;
+}
+
+/** A request's offers: its offer threads, whatever state they're in, a shop that has left included (spec 2.11). */
+export function offerThreadCount(requestId: string): number {
+  return offersOn(requestId).length;
 }
 
 /**

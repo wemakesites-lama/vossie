@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { forgetAccountInMessaging, sendMessage, startOffer, type NewOffer } from "./messages";
-import { countOffersSince, findOffer, offersForRequest } from "./offers";
+import { CLOSED_SHOP, countOffersSince, findOffer, offerRow, offersForRequest, offerThreadCount } from "./offers";
 import { resetSampleStore } from "./store";
 
 const at = (hour: number) => new Date(`2026-10-14T${String(hour).padStart(2, "0")}:00:00.000Z`);
@@ -63,5 +63,33 @@ describe("offers on a request (community actions spec 2.9 and 2.13)", () => {
       { conversationId: id, shopName: "A closed shop", preview: "", offeredAt: at(8).toISOString() },
     ]);
     expect(await countOffersSince("tech-corner", at(5))).toBe(0);
+  });
+});
+
+// Plan amendment 17.7: the lookups all share one synchronous offerRow, which startOffer relies on (amendment 7).
+describe("the offer thread lookups share one synchronous offerRow (plan amendments 7 and 17.7)", () => {
+  it("finds a shop's offer thread on a request at once, with no await, while the shop is there", async () => {
+    const id = await offer();
+    expect(offerRow("r-001", "tech-corner")?.id).toBe(id);
+    expect(offerRow("r-001", "code-coach")).toBeNull();
+    expect(offerRow("r-002", "tech-corner")).toBeNull();
+    expect(await findOffer("r-001", "tech-corner")).toBe(id);
+    await forgetAccountInMessaging("acc-seller", "tech-corner");
+    expect(offerRow("r-001", "tech-corner")).toBeNull();
+  });
+
+  it("counts a request's offer threads, a shop that has gone included", async () => {
+    const first = await offer();
+    await offer({ sellerSlug: "code-coach", now: at(9) });
+    expect(offerThreadCount("r-001")).toBe(2);
+    expect(offerThreadCount("r-002")).toBe(0);
+    // The asker writes, so the thread outlives the shop's owner; it still counts.
+    await sendMessage({ conversationId: first, accountId: "acc-student", body: "Yes please.", now: at(10) });
+    await forgetAccountInMessaging("acc-seller", "tech-corner");
+    expect(offerThreadCount("r-001")).toBe(2);
+  });
+
+  it("names a shop that has gone the same way everywhere", () => {
+    expect(CLOSED_SHOP).toBe("A closed shop");
   });
 });

@@ -14,7 +14,8 @@ import {
 // Looking For's error words (community actions spec 2.3, 2.4, 2.5 and 2.9; plan decision 26 for the ones the spec
 // doesn't give), each linked to its field, in the shape D's ErrorSummary and errorFor take.
 
-const CONTACT = "Take out the phone number or email. Shops will message you on Vossie.";
+const CONTACT =
+  "Take out the phone number or email. Shops will message you on Vossie. If it's an ISBN, write ISBN before it.";
 
 // A Map, so a stray code such as "toString" finds nothing. The limits belong to no field.
 const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Map([
@@ -37,7 +38,11 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
     "open-limit",
     { message: `You have ${OPEN_REQUESTS_MAX} open requests. Close one before you post another.`, field: "none" },
   ],
-  ["daily-limit", { message: `You've posted ${REQUESTS_PER_DAY} requests today. Try again tomorrow.`, field: "none" }],
+  // The limits say what they count: the last 24 hours, not "today" (plan amendment 17.3, as messaging's report limit).
+  [
+    "daily-limit",
+    { message: `You've posted ${REQUESTS_PER_DAY} requests in the last 24 hours. Try again later.`, field: "none" },
+  ],
   // A new request's form with no token, a made-up one or a run-out one (plan amendment 3). It belongs to no field.
   ["form-expired", { message: "This form has expired. Check it and send it again.", field: "none" }],
 ]);
@@ -85,7 +90,7 @@ export function offerFieldIds(prefix: string): OfferFieldIds {
 export function offerErrors(codes: readonly string[], fieldIds: Readonly<Record<string, string>>): FormError[] {
   return codes.flatMap((code) =>
     code === "offer-rate"
-      ? [{ message: `Your shop has made ${OFFERS_PER_DAY} offers today. Try again tomorrow.`, fieldId: null }]
+      ? [{ message: `Your shop has made ${OFFERS_PER_DAY} offers in the last 24 hours. Try again later.`, fieldId: null }]
       : messagingErrors([code], fieldIds),
   );
 }

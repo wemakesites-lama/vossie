@@ -17,6 +17,7 @@ import {
   unreadCounts,
 } from "./messages";
 import { getNotifications } from "./notifications";
+import { createRequest, getOwnRequest, hideRequest, updateRequest } from "./requests";
 import { resetSampleStore, sampleStore } from "./store";
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
@@ -583,6 +584,19 @@ describe("the data export (plan decision 15)", () => {
 });
 
 describe("offers on Looking For requests (community actions spec 2.7 to 2.12)", () => {
+  /** A posted request's fields as the edit form would send them back, for a change of one of them. */
+  const requestFields = async (id: string) => {
+    const request = (await getOwnRequest("acc-student", id))!.request;
+    return {
+      title: request.title,
+      categorySlug: request.categorySlug,
+      campusSlug: request.campusSlug,
+      details: request.details,
+      budgetZar: request.budgetZar,
+      swapWelcome: request.swapWelcome,
+      neededBy: request.neededBy,
+    };
+  };
   const OFFER_NOW = new Date("2026-10-14T08:42:00.000Z");
   const offer = (overrides: Partial<NewOffer> = {}) =>
     startOffer({
@@ -700,5 +714,75 @@ describe("offers on Looking For requests (community actions spec 2.7 to 2.12)", 
         (row) => row.about === "Your request: Accounting 1 tutor this week",
       ),
     ).toMatchObject({ with: "Tech corner" });
+  });
+
+  // Plan amendment 17.4: the asker can rename a request, so the thread and the inbox read its title while it's up.
+  it("shows the request's current title in the thread and both inboxes while it's up, the kept one once it isn't", async () => {
+    const posted = await createRequest({
+      askerId: "acc-student",
+      fields: {
+        title: "Desk lamp for res",
+        categorySlug: "res-living",
+        campusSlug: "midrand",
+        details: "A lamp that clips onto a desk, by the weekend.",
+        budgetZar: 150,
+        swapWelcome: false,
+        neededBy: null,
+      },
+      now: OFFER_NOW,
+    });
+    const id = await offer({ request: { id: posted.id, title: posted.title } });
+    const renamed = { ...(await requestFields(posted.id)), title: "Clip-on desk lamp" };
+    expect(await updateRequest("acc-student", posted.id, renamed, later(5))).not.toBeNull();
+    expect((await getThread(id, "acc-student", later(6)))?.request).toEqual({
+      id: posted.id,
+      title: "Clip-on desk lamp",
+      live: true,
+    });
+    expect((await getInbox("acc-student", "buying", later(6))).find((row) => row.id === id)?.requestTitle).toBe(
+      "Clip-on desk lamp",
+    );
+    expect((await getInbox("acc-seller", "selling", later(6))).find((row) => row.id === id)?.requestTitle).toBe(
+      "Clip-on desk lamp",
+    );
+    // Once the Hub hides it (or it's deleted) its page is gone, and the thread keeps the title it had when it went up.
+    await hideRequest(posted.id, "Not allowed.", later(7));
+    expect((await getThread(id, "acc-student", later(8)))?.request).toEqual({
+      id: posted.id,
+      title: "Desk lamp for res",
+      live: false,
+    });
+    expect((await getInbox("acc-student", "buying", later(8))).find((row) => row.id === id)?.requestTitle).toBe(
+      "Desk lamp for res",
+    );
+  });
+
+  // Plan amendment 17.5: in an offer thread the shop that has gone is "A closed shop", whoever's account it was.
+  it("calls a shop that has gone 'A closed shop' in an offer thread everywhere, and keeps 'Deleted account' elsewhere", async () => {
+    const id = await offer();
+    // The asker answers, so the thread outlives the shop's owner (messaging plan decision 14).
+    await sendMessage({ conversationId: id, accountId: "acc-student", body: "Yes please.", now: later(1) });
+    // An ordinary enquiry to the same shop, which the same account deleting keeps as "Deleted account".
+    const { buyer, conversationId } = await ayandaAsks();
+    await sendMessage({ conversationId, accountId: "acc-seller", body: "Yes, it is.", now: later(2) });
+    await sendMessage({ conversationId, accountId: buyer.id, body: "Great!", now: later(3) });
+    await forgetAccountInMessaging("acc-seller", "tech-corner");
+
+    expect(await getThread(id, "acc-student", later(4))).toMatchObject({ otherName: "A closed shop", otherPresent: false });
+    expect((await getThread(id, "acc-student", later(4)))?.messages.map((message) => message.author)).toEqual(["You"]);
+    expect((await getInbox("acc-student", "buying", later(4))).find((row) => row.id === id)?.otherName).toBe(
+      "A closed shop",
+    );
+    expect((await exportConversations("acc-student", later(4))).find((row) => row.about?.startsWith("Your request"))?.with).toBe(
+      "A closed shop",
+    );
+
+    expect(await getThread(conversationId, buyer.id, later(4))).toMatchObject({
+      otherName: "Deleted account",
+      otherPresent: false,
+    });
+    expect((await getInbox(buyer.id, "buying", later(4))).find((row) => row.id === conversationId)?.otherName).toBe(
+      "Deleted account",
+    );
   });
 });

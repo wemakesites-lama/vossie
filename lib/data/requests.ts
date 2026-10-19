@@ -4,6 +4,7 @@ import { categories } from "@/data/fixtures/categories";
 import type { RequestFields } from "@/lib/looking-for/rules";
 import type { LookingForRequest, OwnRequest, RequestState } from "@/lib/types";
 import { deleteNotificationsAbout } from "./notifications";
+import { offerThreadCount } from "./offers";
 import type { RequestRow } from "./rows";
 import { sampleStore } from "./store";
 
@@ -11,15 +12,6 @@ import { sampleStore } from "./store";
 // 4, 6, 10 and 21). Plain functions over the store: lib/data/index.ts wraps the public reads in "use cache", tagged
 // "requests"; Server Actions call the writes, then requestsChanged(). The asker is never part of what buyers see.
 // Times come from the caller; only Server Actions call createRequest, which makes ids.
-
-/** A request's offers: its offer threads (spec 2.7), whatever state they're in, a shop that has left included. */
-function offerThreadCount(requestId: string): number {
-  let count = 0;
-  for (const row of sampleStore().conversations.values()) {
-    if (row.requestId === requestId) count += 1;
-  }
-  return count;
-}
 
 /** A row as part B's LookingForRequest. The offers count is the offer threads plus the sample's number (spec 2.11). */
 function toRequest(row: RequestRow): LookingForRequest {

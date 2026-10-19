@@ -9,8 +9,10 @@ import {
   listFollowedShops,
   notifyFollowers,
   removeFollow,
+  shopNameOf,
 } from "./follows";
 import { getNotifications, notifyNewListing } from "./notifications";
+import { staffPauseShop } from "./staff-shops";
 import { resetSampleStore, sampleStore } from "./store";
 
 const at = (hour: number) => new Date(`2026-10-14T${String(hour).padStart(2, "0")}:00:00.000Z`);
@@ -57,6 +59,53 @@ describe("the shops you follow, and your followers (spec 2.17 and 2.18)", () => 
     ]);
     sampleStore().sellerProfiles.get("acc-seller")!.status = "paused";
     expect((await listFollowedShops("acc-student"))[0]).toMatchObject({ slug: "tech-corner", paused: true, listed: 0 });
+  });
+
+  // Plan amendment 17.6: the Hub pausing a shop takes its storefront down, but the follow stays and so does its card.
+  it("keeps a shop the Hub paused on the list, marked Paused, with no storefront to link to", async () => {
+    await addFollow("acc-student", "code-coach", at(8));
+    await addFollow("acc-student", "tech-corner", at(9));
+    expect((await listFollowedShops("acc-student")).map((shop) => [shop.slug, shop.paused, shop.storefront])).toEqual([
+      ["tech-corner", false, true],
+      ["code-coach", false, true],
+    ]);
+    // A shop its seller paused still has a storefront page.
+    sampleStore().sellerProfiles.get("acc-seller")!.status = "paused";
+    expect((await listFollowedShops("acc-student"))[0]).toMatchObject({ paused: true, storefront: true });
+    sampleStore().sellerProfiles.get("acc-seller")!.status = "approved";
+    expect(await staffPauseShop("tech-corner", "Reported twice.")).not.toBeNull();
+    const shops = await listFollowedShops("acc-student");
+    expect(shops).toHaveLength(2);
+    expect(shops[0]).toMatchObject({
+      slug: "tech-corner",
+      name: "Tech corner",
+      campusSlug: "midrand",
+      paused: true,
+      storefront: false,
+      listed: 0,
+    });
+    expect(shops[0].image.src).not.toBe("");
+    expect(shops[1]).toMatchObject({ slug: "code-coach", paused: false, storefront: true });
+    // It can be unfollowed from Saved, which is how it stops counting towards the 200.
+    expect(await removeFollow("acc-student", "tech-corner")).toBe(true);
+    expect((await listFollowedShops("acc-student")).map((shop) => shop.slug)).toEqual(["code-coach"]);
+  });
+
+  it("leaves out a shop with no storefront because it is waiting for approval", async () => {
+    sampleStore().follows.set("follow-x", {
+      id: "follow-x",
+      accountId: "acc-student",
+      sellerSlug: "crochet-corner",
+      createdAt: at(8).toISOString(),
+    });
+    expect(await listFollowedShops("acc-student")).toEqual([]);
+  });
+
+  it("names a shop for a status line whether or not its storefront is up", async () => {
+    expect(await shopNameOf("tech-corner")).toBe("Tech corner");
+    await staffPauseShop("tech-corner", "Reported twice.");
+    expect(await shopNameOf("tech-corner")).toBe("Tech corner");
+    expect(await shopNameOf("nope")).toBeNull();
   });
 
   it("counts a shop's followers, never saying who", async () => {

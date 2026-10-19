@@ -54,6 +54,36 @@ describe("contact details (community actions spec 2.4, plan decision 3)", () => 
   it("doesn't take a phone number for an ISBN because it's labelled one", () => {
     expect(hasContactDetails("ISBN 0821234567")).toBe(true);
   });
+
+  // Staff review of Tasks 1 to 5 (plan amendment 17.2): numbers joined by a dash or slash, or after a dot, are still numbers.
+  it("finds phone numbers joined to other numbers or text by a dash, a slash or a dot", () => {
+    for (const text of [
+      "082 123 4567-083 123 4567",
+      "R300-0821234567",
+      "Price 1.082 123 4567",
+      "082/123/4567",
+    ]) {
+      expect(hasContactDetails(text), text).toBe(true);
+    }
+  });
+
+  it("lets dates and ranges of dates or prices through, in both of the ways they are written", () => {
+    for (const text of ["2026-10-01 - 2026-10-05", "01.10.2026 - 05.10.2026", "R1 200 - R2 000"]) {
+      expect(hasContactDetails(text), text).toBe(false);
+    }
+  });
+
+  it("still finds a phone number next to a date", () => {
+    expect(hasContactDetails("Needed by 2026-10-16, call 082 123 4567")).toBe(true);
+    expect(hasContactDetails("082 123 4567 on 01.10.2026")).toBe(true);
+  });
+
+  it("reads ISBN 10 and ISBN-10 as labels", () => {
+    for (const text of ["ISBN 10: 0306406152", "ISBN-10 0306406152", "ISBN 10 0-306-40615-2", "isbn10: 0306406152"]) {
+      expect(hasContactDetails(text), text).toBe(false);
+    }
+    expect(hasContactDetails("ISBN 10: 0821234567")).toBe(true);
+  });
 });
 
 describe("the budget (community actions plan decision 5)", () => {
@@ -70,6 +100,22 @@ describe("the budget (community actions plan decision 5)", () => {
     for (const raw of ["0", "100001", "12.50", "about 300", "-5", "R"]) {
       expect(parseBudget(raw), raw).toBe(raw === "R" ? null : "invalid");
     }
+  });
+
+  // Plan amendment 17.1: the same reading of money as a listing's price (parsePrice), so cents are never rand.
+  it("reads South African money: ,00 or .00 cents are dropped, any other cents are refused", () => {
+    expect(parseBudget("R250,00")).toBe(250);
+    expect(parseBudget("250.00")).toBe(250);
+    expect(parseBudget("R1 200,00")).toBe(1200);
+    expect(parseBudget("1,200")).toBe(1200);
+    for (const raw of ["99,99", "1,2", "R99,99", "1,20", "R250,50", "R0,00"]) {
+      expect(parseBudget(raw), raw).toBe("invalid");
+    }
+  });
+
+  it("checks the range after reading the money", () => {
+    expect(parseBudget("R100 000,00")).toBe(100000);
+    expect(parseBudget("R100 001,00")).toBe("invalid");
   });
 });
 

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readFormState } from "@/lib/auth/form-state";
 import { addFollow, isFollowing } from "@/lib/data/follows";
+import { staffPauseShop } from "@/lib/data/staff-shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { form, signedInAs, STAFF_NOW } from "@/tests/helpers/staff";
@@ -36,6 +37,19 @@ describe("Follow and Unfollow (community actions spec 2.16 and 2.17)", () => {
   it("unfollows from Saved, landing back on its Shops tab with a status line", async () => {
     await signedInAs(request, "acc-student");
     await addFollow("acc-student", "tech-corner", STAFF_NOW);
+    expect(await redirectOf(() => unfollowShop(form({ shop: "tech-corner", from: "saved" })))).toBe("/saved?tab=shops");
+    expect(await isFollowing("acc-student", "tech-corner")).toBe(false);
+    expect(await readFormState(SAVED_SHOPS_FORM)).toMatchObject({
+      notice: "unfollowed",
+      values: { shop: "Tech corner" },
+    });
+  });
+
+  // Plan amendment 17.6: Saved lists a shop the Hub paused, so unfollowing it names it, though its storefront is down.
+  it("names a shop the Hub paused when it's unfollowed from Saved", async () => {
+    await signedInAs(request, "acc-student");
+    await addFollow("acc-student", "tech-corner", STAFF_NOW);
+    expect(await staffPauseShop("tech-corner", "Reported twice.")).not.toBeNull();
     expect(await redirectOf(() => unfollowShop(form({ shop: "tech-corner", from: "saved" })))).toBe("/saved?tab=shops");
     expect(await isFollowing("acc-student", "tech-corner")).toBe(false);
     expect(await readFormState(SAVED_SHOPS_FORM)).toMatchObject({

@@ -3,8 +3,7 @@
 import { redirect } from "next/navigation";
 import { writeFormState } from "@/lib/auth/form-state";
 import { requireAccount } from "@/lib/auth/session";
-import { storefrontRow } from "@/lib/data/catalog";
-import { addFollow, removeFollow } from "@/lib/data/follows";
+import { addFollow, removeFollow, shopNameOf } from "@/lib/data/follows";
 import { isId } from "@/lib/messaging/paths";
 import { done, field } from "@/lib/selling/action-helpers";
 import { followNoteKey, SAVED_SHOPS_FORM, savedTabPath } from "./rules";
@@ -21,8 +20,8 @@ function landingFor(formData: FormData, slug: string): { path: string; note: str
     : { path: `/sellers/${slug}`, note: followNoteKey(slug) };
 }
 
-/** The shop's name for the status line, or "the shop" once it has gone. */
-const shopName = (slug: string) => storefrontRow(slug)?.name ?? "the shop";
+/** The shop's name for the status line, or "the shop" once it has gone. A shop the Hub paused still has its name. */
+const shopName = async (slug: string) => (await shopNameOf(slug)) ?? "the shop";
 
 /** Follow (spec 2.16): says so, or that 200 is the most; the owner's own shop and a second press say nothing. */
 export async function followShop(formData: FormData): Promise<void> {
@@ -34,7 +33,7 @@ export async function followShop(formData: FormData): Promise<void> {
   const result = await addFollow(account.id, slug, now);
   if (result === "followed" || result === "limit") {
     const notice = result === "followed" ? "followed" : "follow-limit";
-    await writeFormState(note, { errors: [], values: { shop: shopName(slug) }, notice }, now);
+    await writeFormState(note, { errors: [], values: { shop: await shopName(slug) }, notice }, now);
   }
   done(path);
 }
@@ -46,7 +45,8 @@ export async function unfollowShop(formData: FormData): Promise<void> {
   const { path, note } = landingFor(formData, slug);
   const account = await requireAccount(path);
   if (await removeFollow(account.id, slug)) {
-    await writeFormState(note, { errors: [], values: { shop: shopName(slug) }, notice: "unfollowed" }, new Date());
+    const shop = await shopName(slug);
+    await writeFormState(note, { errors: [], values: { shop }, notice: "unfollowed" }, new Date());
   }
   done(path);
 }

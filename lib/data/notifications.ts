@@ -34,7 +34,10 @@ function add({ accountId, kind, subjectId, text, href, now }: NewNotification): 
   });
 }
 
-/** A notification of any kind: a sale to confirm here; report outcomes and shop approvals in stage G. */
+/**
+ * A notification of any kind: a sale to confirm here; report outcomes, shop approvals and bookings in stage G; an offer,
+ * the Hub's word about a request and a followed shop's new listing in stage H (see NotificationKind).
+ */
 export async function notify(notification: NewNotification): Promise<void> {
   add(notification);
 }
