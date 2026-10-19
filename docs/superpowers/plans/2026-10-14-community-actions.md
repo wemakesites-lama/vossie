@@ -287,7 +287,7 @@ The two tables, the fields added to earlier rows, and who touches them:
 | Task 16, Post a request | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | 150,613 | 151,089 | 150,613 | 152,287 |
 | Task 17, Follow | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | 150,613 | 151,089 | 150,613 | 152,287 |
 | Task 18, Saved's tabs | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | 150,613 | 151,089 | 150,613 | 152,287 |
-| Task 19, the dashboard and the account page | | | | | | | | | |
+| Task 19, the dashboard and the account page | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | 150,613 | 151,089 | 150,613 | 152,287 |
 | Task 21, the worker's registration | | | | | | | | | |
 | **Final (Task 24)** | | | | | | | | | |
 

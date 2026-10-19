@@ -9387,3 +9387,12 @@
     min-height: 44px;
   }
 }
+
+/* --- Community actions: the dashboard's followers (community actions plan, Task 19, spec 2.18) --- */
+@layer components {
+  .sell-followers {
+    margin-top: 6px;
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+}

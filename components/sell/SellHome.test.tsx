@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { addFollow } from "@/lib/data/follows";
 import { saveFormState } from "@/lib/data/form-states";
 import { emptyDraft, saveOnboardingDraft } from "@/lib/data/shops";
 import { declineShop, resendForApproval } from "@/lib/data/staff-shops";
@@ -111,6 +112,16 @@ describe("/sell (selling spec section 3)", () => {
     expect(within(week).getByText("Replied within 48 hours").nextElementSibling).toHaveTextContent("2 of 2");
     expect(within(week).getByText("Sales confirmed").nextElementSibling).toHaveTextContent("0");
     expect(screen.getByText("1 more enquiry and 5 more confirmed sales for Trusted.")).toBeInTheDocument();
+  });
+
+  it("tells the shop how many follow it, from the follows in the store (community actions spec 2.18)", async () => {
+    viewer.id = "acc-seller";
+    const first = render(await SellHome());
+    expect(screen.getByText("No one follows your shop yet")).toBeInTheDocument();
+    first.unmount();
+    await addFollow("acc-student", "tech-corner", new Date("2026-10-14T08:42:00.000Z"));
+    render(await SellHome());
+    expect(screen.getByText("1 person follows your shop")).toBeInTheDocument();
   });
 
   it("says what the last action did once: a second visit shows no notice (amendment 10.6)", async () => {

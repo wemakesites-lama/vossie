@@ -219,6 +219,29 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     expect(within(keep).getByText(/shops, listings and photos live in the server/)).toBeInTheDocument();
   });
 
+  it("says what Looking For and following keep, and that deleting your account removes them (community actions spec 2.23)", () => {
+    render(<PrivacyPage />);
+    const account = screen.getByRole("region", { name: "Your account" });
+    expect(within(account).getByText("Your Looking For requests.")).toBeInTheDocument();
+    expect(within(account).getByText("The shops you follow.")).toBeInTheDocument();
+    expect(within(account).getByText(/never with your name/)).toBeInTheDocument();
+    expect(within(account).getByText(/a shop sees only how many people follow it, never who/)).toBeInTheDocument();
+    const keep = screen.getByRole("region", { name: "How long we keep it" });
+    expect(within(keep).getByText(/your Looking For requests, the shops you follow/)).toBeInTheDocument();
+  });
+
+  it("lists requests and follows among what the preview keeps in memory, and what goes when it restarts (community actions amendment 12)", () => {
+    render(<PrivacyPage />);
+    const today = screen.getByRole("region", { name: "What this site stores today" });
+    expect(
+      within(today).getByText(/your Looking For requests and the shops you follow, your RSVPs and slot requests, .* in its memory only/),
+    ).toBeInTheDocument();
+    const keep = screen.getByRole("region", { name: "How long we keep it" });
+    expect(
+      within(keep).getByText(/While Vossie is a preview, Looking For requests, follows, messages, reports, notifications, shops, listings and photos live in the server/),
+    ).toBeInTheDocument();
+  });
+
   it("names every vossie_ cookie and browser store the code uses, so a new one can't slip past the policy", () => {
     // Every cookie and storage key is named "vossie_…". A key added later fails here until this page names it.
     const names = new Set<string>();

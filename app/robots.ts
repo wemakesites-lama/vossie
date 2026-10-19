@@ -8,6 +8,7 @@ import { siteUrl } from "@/lib/site-url";
 // advertise them, and they answer 404 to everyone else (staff tools decision 1).
 // Messaging's pages belong to one person too (messaging plan decision 24); "*" matches any listing or shop.
 // A Hub post's slot request page (`/hub/*/book`) belongs to one student (staff tools plan, Task 15).
+// Looking For's forms belong to one person, and the offline page is the worker's (community actions plan decision 23).
 const DISALLOWED = [
   "/saved",
   "/login",
@@ -20,6 +21,11 @@ const DISALLOWED = [
   "/listings/*/message",
   "/sellers/*/message",
   "/hub/*/book",
+  "/looking-for/new",
+  "/looking-for/*/offer",
+  "/looking-for/*/edit",
+  "/looking-for/*/delete",
+  "/offline",
 ];
 
 export default function robots(): MetadataRoute.Robots {

@@ -7,6 +7,7 @@ import { signOut, updateDetails } from "@/lib/auth/actions";
 import { DETAILS_FIELDS } from "@/lib/auth/form-state";
 import { errorFor, formErrors, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
+import { YOUR_REQUESTS_PATH } from "@/lib/looking-for/paths";
 import { AREA_HOME } from "@/lib/staff/paths";
 import { staffAreasOf } from "@/lib/staff/roles";
 import { sastMonthYear } from "@/lib/time";
@@ -138,6 +139,13 @@ export function AccountView({ account, campuses, details, counts }: AccountViewP
             {/* No prefetch, as in the header: Saved's card chunk would load on every visit here. */}
             <Link href="/saved" prefetch={false} className="account-row">
               Saved
+              <ChevronRightIcon />
+            </Link>
+          </li>
+          <li>
+            {/* No prefetch: the page reads the session (community actions spec 2.13). */}
+            <Link href={YOUR_REQUESTS_PATH} prefetch={false} className="account-row">
+              Your requests
               <ChevronRightIcon />
             </Link>
           </li>

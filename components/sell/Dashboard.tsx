@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRightIcon } from "@/components/icons";
 import { cx } from "@/lib/cx";
+import { followersLine } from "@/lib/following/rules";
 import { badgeLabel } from "@/lib/format";
 import { inboxPath } from "@/lib/messaging/paths";
 import { myListingsPath, NEW_LISTING_PATH, PROFILE_PATH } from "@/lib/selling/paths";
@@ -17,6 +18,8 @@ type DashboardProps = {
   notice: string | null;
   /** The Hub's reason when the Hub paused the shop (staff tools plan decision 3); the seller can't resume it. */
   hubPause?: string | null;
+  /** How many follow the shop (community actions spec 2.18): the shop sees the number, never who. */
+  followers?: number;
 };
 
 /**
@@ -24,7 +27,7 @@ type DashboardProps = {
  * and what the next one needs, the shop's pages, and Pause my shop or Resume. No view counts: nothing records views.
  * A shop the Hub paused says so, with the Hub's reason and no Pause or Resume form (staff tools plan decision 3).
  */
-export function Dashboard({ shop, paused, stats, badgeLine, notice, hubPause = null }: DashboardProps) {
+export function Dashboard({ shop, paused, stats, badgeLine, notice, hubPause = null, followers = 0 }: DashboardProps) {
   const byHub = hubPause !== null;
   const { week } = stats;
   const pages: Array<[label: string, href: string]> = [
@@ -47,6 +50,7 @@ export function Dashboard({ shop, paused, stats, badgeLine, notice, hubPause = n
               ? "Paused: buyers can't see your listings"
               : "Your shop is live"}
         </p>
+        <p className="sell-followers">{followersLine(followers)}</p>
       </header>
 
       {notice && (

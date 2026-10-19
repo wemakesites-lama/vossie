@@ -38,7 +38,8 @@ const SECTIONS: readonly InfoSection[] = [
       <>
         <p>
           Vossie is still a preview. If you sign in, the server keeps your account, your sign-ins, your consent, your
-          RSVPs and slot requests, your messages, your reports, your notifications and, if you sell, your shop, your
+          Looking For requests and the shops you follow, your RSVPs and slot requests, your messages, your reports, your
+          notifications and, if you sell, your shop, your
           listings and their photos in its memory only, so they are wiped whenever it restarts, and no email is sent (the sign-in code shows on the
           screen). Apart from that, a few small things are kept on your own device, so the site can remember your
           choices.
@@ -159,6 +160,16 @@ const SECTIONS: readonly InfoSection[] = [
             only you see. Allowed under POPIA section 11: needed to run your account.
           </li>
           <li>
+            <strong>Your Looking For requests.</strong> What you ask for, shown to everyone as &quot;Asked by a student
+            at&quot; your campus, never with your name. Vossie keeps which account asked, so only you can change or
+            delete it. Allowed under POPIA section 11: needed to run the service you ask for.
+          </li>
+          <li>
+            <strong>The shops you follow.</strong> So Saved can list them and tell you when they list something new; a
+            shop sees only how many people follow it, never who. Allowed under POPIA section 11: needed to run the
+            service you ask for.
+          </li>
+          <li>
             <strong>If you sell: your shop, your listings and their photos.</strong> Shop name, tagline, about text,
             photo, campus, pickup points and what you list, shown to buyers, and your application while the Hub checks
             it. Your answers while you set up your shop are kept as a draft until you send your application. Your
@@ -195,15 +206,16 @@ const SECTIONS: readonly InfoSection[] = [
         </li>
         <li>Your account details stay until you delete your account.</li>
         <li>
-          Deleting your account removes your account, your sign-in sessions, your record of consent, your RSVPs and
-          slot requests, your messages, your reports and your notifications straight away, along with your shop, your
+          Deleting your account removes your account, your sign-in sessions, your record of consent, your Looking For
+          requests, the shops you follow, your RSVPs and slot requests, your messages, your reports and your
+          notifications straight away, along with your shop, your
           listings, every photo you uploaded, any shop answers you had not sent and mentors&apos; notes about your shop,
           if you sell. The other person in a conversation keeps only their own messages, and your name shows as
           &quot;Deleted account&quot;. The log of what Hub staff do keeps its entries, without your name.
         </li>
         <li>
-          While Vossie is a preview, messages, reports, notifications, shops, listings and photos live in the
-          server&apos;s memory and go whenever it restarts. Eduvos will set how long they are kept before launch, and
+          While Vossie is a preview, Looking For requests, follows, messages, reports, notifications, shops, listings
+          and photos live in the server&apos;s memory and go whenever it restarts. Eduvos will set how long they are kept before launch, and
           this policy will say so.
         </li>
         <li>
@@ -309,7 +321,7 @@ export default function PrivacyPage() {
     <InfoPage
       title="Privacy policy"
       lede="How Vossie handles your personal information, under the Protection of Personal Information Act (POPIA)."
-      updated="2026-10-18"
+      updated="2026-10-19"
       draft
       sections={SECTIONS}
     />

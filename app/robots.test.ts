@@ -52,6 +52,21 @@ describe("robots.txt (info and system spec 2.8)", () => {
     expect(blocked("/hub/h-002")).toBe(false);
   });
 
+  it("keeps crawlers off Looking For's forms and the offline page, and not off requests (community actions plan decision 23)", () => {
+    for (const path of [
+      "/looking-for/new",
+      "/looking-for/r-001/offer",
+      "/looking-for/r-001/edit",
+      "/looking-for/r-001/delete",
+      "/offline",
+      "/account/requests",
+    ]) {
+      expect(blocked(path), path).toBe(true);
+    }
+    expect(blocked("/looking-for/r-001")).toBe(false);
+    expect(blocked("/looking-for")).toBe(false);
+  });
+
   it("doesn't advertise staff pages", () => {
     expect(disallow.join(" ")).not.toMatch(/admin|mentor|manage/);
   });

@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { getViewer } from "@/lib/auth/session";
 import { getPickupPoints } from "@/lib/data";
+import { countFollowers } from "@/lib/data/follows";
 import type { OnboardingDraftRow } from "@/lib/data/rows";
 import { shopStats } from "@/lib/data/shop-stats";
 import { getOnboardingDraft, getShopOf } from "@/lib/data/shops";
@@ -56,7 +57,11 @@ export async function SellHome() {
   await connection();
   const now = new Date();
   // The notice is taken as it is shown, so a second visit says nothing (amendment 10.6).
-  const [stats, state] = await Promise.all([shopStats(own.shop.slug, now), takeNotice(DASHBOARD_FORM)]);
+  const [stats, state, followers] = await Promise.all([
+    shopStats(own.shop.slug, now),
+    takeNotice(DASHBOARD_FORM),
+    countFollowers(own.shop.slug),
+  ]);
   return (
     <Dashboard
       shop={{ name: own.shop.name, slug: own.shop.slug, badge: own.shop.badge }}
@@ -65,6 +70,7 @@ export async function SellHome() {
       badgeLine={badgeProgress(own.shop.badge, stats.record, account.createdAt, now)}
       notice={noticeText(state?.notice)}
       hubPause={standing?.pausedByHub ? (standing.reason ?? "") : null}
+      followers={followers}
     />
   );
 }

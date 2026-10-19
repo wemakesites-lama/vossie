@@ -78,13 +78,14 @@ describe("Your account (accounts spec 3.2)", () => {
     expect(screen.getByRole("combobox", { name: "Your campus" })).toHaveValue("");
   });
 
-  it("links to messages, notifications, Saved, selling and privacy settings, and offers Sign out (messaging spec 3.6)", () => {
+  it("links to messages, notifications, Saved, Your requests, selling and privacy settings, and offers Sign out (messaging spec 3.6; community actions amendment 11)", () => {
     renderAccount();
     const pages = screen.getByRole("navigation", { name: "Your account's pages" });
     expect(within(pages).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
       ["Messages", "/messages"],
       ["Notifications", "/notifications"],
       ["Saved", "/saved"],
+      ["Your requests", "/account/requests"],
       ["Start selling", "/sell"],
       ["Privacy settings", "/account/privacy"],
     ]);
@@ -136,6 +137,7 @@ describe("Your account (accounts spec 3.2)", () => {
       "Messages",
       "Notifications",
       "Saved",
+      "Your requests",
       "Start selling",
       "Admin console",
       "Hub posts and office hours",
@@ -149,6 +151,14 @@ describe("Your account (accounts spec 3.2)", () => {
     for (const name of ["Admin console", "Hub posts and office hours", "Mentor dashboard"]) {
       expect(screen.getByRole("link", { name }).dataset.prefetch, name).toBe("false");
     }
+  });
+
+  it("links to Your requests, with no prefetch: the page reads the session (community actions spec 2.13)", () => {
+    renderAccount();
+    const rows = screen.getByRole("navigation", { name: "Your account's pages" });
+    const link = within(rows).getByRole("link", { name: "Your requests" });
+    expect(link).toHaveAttribute("href", "/account/requests");
+    expect(link.dataset.prefetch).toBe("false");
   });
 
   it("says how many conversations are unread and how many notifications are new (messaging spec 3.6)", () => {

@@ -32,7 +32,7 @@ describe("Privacy settings (accounts spec 3.3)", () => {
   it("says what deleting does, and asks for the box before the red button (spec 2.13)", () => {
     render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} />);
     const section = screen.getByRole("region", { name: "Delete your account" });
-    expect(within(section).getAllByRole("listitem")).toHaveLength(5);
+    expect(within(section).getAllByRole("listitem")).toHaveLength(6);
     // The other side keeps its own messages, and sees the deleted side as "Deleted account" (plan amendment 3.9).
     expect(within(section).getByText(/with your name shown as "Deleted account"/)).toBeInTheDocument();
     expect(within(section).getByRole("checkbox", { name: "I understand this can't be undone" })).not.toBeChecked();
@@ -111,10 +111,17 @@ describe("Privacy settings (accounts spec 3.3)", () => {
     expect(within(download).getByText(/Mentors' notes about your shop aren't in it: you can ask the Information Officer for them\./)).toBeInTheDocument();
   });
 
+  it("says the download and the deletion take in requests and follows (community actions spec 2.23)", () => {
+    render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} />);
+    expect(screen.getByText(/your Looking For requests and the shops you follow/)).toBeInTheDocument();
+    expect(screen.getByText(/your requests and follows go too/)).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Download your data" })).getByText(/your Looking For requests/)).toBeInTheDocument();
+  });
+
   it("says deleting removes your RSVPs and slot requests, and a seller's mentors' notes about the shop (staff tools plan decision 16)", () => {
     render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} />);
     const deletion = screen.getByRole("region", { name: "Delete your account" });
-    expect(within(deletion).getAllByRole("listitem")).toHaveLength(5);
+    expect(within(deletion).getAllByRole("listitem")).toHaveLength(6);
     expect(within(deletion).getByText(/^your RSVPs and slot requests, messages, reports and notifications go/)).toBeInTheDocument();
     // The other side still keeps its own messages and sees "Deleted account".
     expect(within(deletion).getByText(/with your name shown as "Deleted account"/)).toBeInTheDocument();

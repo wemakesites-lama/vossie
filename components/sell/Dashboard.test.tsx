@@ -56,4 +56,24 @@ describe("the dashboard (selling spec 2.8)", () => {
     expect(screen.getByText("Paused by the Hub: buyers can't see your listings")).toBeInTheDocument();
     expect(screen.queryByRole("button")).toBeNull();
   });
+
+  it("says how many follow the shop, never who (community actions spec 2.18)", () => {
+    const { unmount } = render(
+      <Dashboard shop={shop} paused={false} stats={stats} badgeLine="" notice={null} followers={12} />,
+    );
+    expect(screen.getByText("12 people follow your shop")).toBeInTheDocument();
+    unmount();
+    const one = render(<Dashboard shop={shop} paused={false} stats={stats} badgeLine="" notice={null} followers={1} />);
+    expect(screen.getByText("1 person follows your shop")).toBeInTheDocument();
+    one.unmount();
+    render(<Dashboard shop={shop} paused={false} stats={stats} badgeLine="" notice={null} />);
+    expect(screen.getByText("No one follows your shop yet")).toBeInTheDocument();
+  });
+
+  it("says it under the shop's status, in the header", () => {
+    render(<Dashboard shop={shop} paused={false} stats={stats} badgeLine="" notice={null} followers={3} />);
+    const header = screen.getByRole("banner");
+    expect(within(header).getByText("Your shop is live")).toBeInTheDocument();
+    expect(within(header).getByText("3 people follow your shop")).toBeInTheDocument();
+  });
 });
