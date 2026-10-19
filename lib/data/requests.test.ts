@@ -14,6 +14,7 @@ import {
   listOwnRequests,
   publicRequest,
   publicRequestIds,
+  requestAskerId,
   setRequestOpen,
   updateRequest,
 } from "./requests";
@@ -194,5 +195,14 @@ describe("deleting an account, and its data export (spec 2.23, plan decision 21)
       },
     ]);
     expect(await exportRequests("acc-mentor")).toEqual([]);
+  });
+});
+
+describe("who asked (community actions spec 2.7 and 2.11)", () => {
+  it("is the account that posted it; no one for a sample request or one that's gone", async () => {
+    const { id } = await post();
+    expect(await requestAskerId(id)).toBe("acc-student");
+    expect(await requestAskerId("r-001")).toBeNull();
+    expect(await requestAskerId("r-nope")).toBeNull();
   });
 });

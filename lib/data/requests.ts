@@ -70,6 +70,11 @@ export async function getOwnRequest(askerId: string, id: string): Promise<OwnReq
   return row && row.askerId === askerId ? toOwn(row) : null;
 }
 
+/** Who asked, for an offer's thread (spec 2.7): null for a sample request, which can't take offers, or one that's gone. */
+export async function requestAskerId(id: string): Promise<string | null> {
+  return sampleStore().requests.get(id)?.askerId ?? null;
+}
+
 const ORDER: Readonly<Record<RequestState, number>> = { open: 0, closed: 1, hidden: 2 };
 
 /** Your requests (spec 2.13, plan decision 18): open, then closed, then hidden, each newest first. */

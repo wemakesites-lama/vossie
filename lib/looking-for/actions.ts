@@ -4,6 +4,8 @@ import { redirect, RedirectType } from "next/navigation";
 import { writeFormState } from "@/lib/auth/form-state";
 import { requireAccount } from "@/lib/auth/session";
 import { getCampuses, getCategories } from "@/lib/data";
+import { startOffer } from "@/lib/data/messages";
+import { countOffersSince } from "@/lib/data/offers";
 import {
   countOpenRequests,
   countRequestsSince,
@@ -15,8 +17,9 @@ import {
 } from "@/lib/data/requests";
 import { requestsChanged } from "@/lib/data/tags";
 import { clearOwnFormState } from "@/lib/messaging/form-state";
-import { isId } from "@/lib/messaging/paths";
-import { DAY_MS, keepTyped } from "@/lib/messaging/rules";
+import { isId, sentNoteKey, threadPath } from "@/lib/messaging/paths";
+import { checkMessage, DAY_MS, keepTyped } from "@/lib/messaging/rules";
+import { scamWarnings } from "@/lib/messaging/scam-check";
 import { done, field } from "@/lib/selling/action-helpers";
 import { leaveOnceToken, sentOnceToken, takeOnceToken } from "@/lib/staff/once";
 import { sastDate } from "@/lib/time";
@@ -24,13 +27,23 @@ import {
   deleteRequestPath,
   editRequestPath,
   NEW_REQUEST_PATH,
+  offerFormKey,
+  offerPath,
   requestFormKey,
   requestNoteKey,
   requestPath,
   YOUR_REQUESTS_FORM,
   YOUR_REQUESTS_PATH,
 } from "./paths";
-import { checkRequest, OPEN_REQUESTS_MAX, REQUESTS_PER_DAY, type RequestError, type RequestInput } from "./rules";
+import {
+  checkRequest,
+  OFFERS_PER_DAY,
+  OPEN_REQUESTS_MAX,
+  REQUESTS_PER_DAY,
+  type RequestError,
+  type RequestInput,
+} from "./rules";
+import { offerStatus, offerSubject } from "./subjects";
 
 // The Server Actions behind Looking For's forms (community actions spec 2.2 to 2.6 and 2.9). Each is a plain form's
 // action, so it works before the app's JavaScript arrives. It checks its own input, takes identity only from the
@@ -194,4 +207,53 @@ export async function deleteMyRequest(formData: FormData): Promise<void> {
     await leaveNote(YOUR_REQUESTS_FORM, "deleted", new Date());
   }
   done(YOUR_REQUESTS_PATH);
+}
+
+// --- Offers (spec 2.7 to 2.9) -------------------------------------------------------------------------------------
+
+/**
+ * Send offer, from the composer (spec 2.9): only when the composer would show its form (plan decision 12); the message
+ * checked with E's rules, then E's scam words unless Send anyway was pressed; a listing only if it's one of the shop's
+ * listed ones (plan decision 13); at most 20 a shop in 24 hours. The thread then says "Sent." once (E's note).
+ */
+export async function sendOffer(formData: FormData): Promise<void> {
+  const id = idFrom(formData, "request");
+  if (!id) redirect("/looking-for");
+  const path = offerPath(id);
+  const account = await requireAccount(path);
+  const subject = await offerSubject(id);
+  if (!subject) redirect("/looking-for");
+  const status = await offerStatus(subject, account);
+  // The composer says why anyone else can't offer; a post that arrives anyway just goes back to it.
+  if (status.kind !== "open") back(path);
+  const now = new Date();
+  const form = offerFormKey(id);
+  const message = checkMessage(field(formData, "body"));
+  const pointed = status.listings.find((listing) => listing.id === field(formData, "listing")) ?? null;
+  const values = { body: keepTyped(message.value), listing: pointed?.id ?? "" };
+  if (message.error) {
+    await writeFormState(form, { errors: [message.error], values, notice: null }, now);
+    back(path);
+  }
+  const warnings = field(formData, "anyway") === "yes" ? [] : scamWarnings(message.value);
+  if (warnings.length > 0) {
+    await writeFormState(form, { errors: [], values: { ...values, warnings: warnings.join(",") }, notice: "check" }, now);
+    back(path);
+  }
+  if ((await countOffersSince(status.shopSlug, new Date(now.getTime() - DAY_MS))) >= OFFERS_PER_DAY) {
+    await writeFormState(form, { errors: ["offer-rate"], values, notice: null }, now);
+    back(path);
+  }
+  const conversationId = await startOffer({
+    askerId: status.askerId,
+    request: { id, title: subject.request.title },
+    sellerSlug: status.shopSlug,
+    listing: pointed,
+    body: message.value,
+    now,
+  });
+  await clearOwnFormState(form);
+  await writeFormState(sentNoteKey(conversationId), { errors: [], values: {}, notice: "sent" }, now);
+  requestsChanged();
+  done(threadPath(conversationId));
 }

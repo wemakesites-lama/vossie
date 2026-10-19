@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readFormState } from "@/lib/auth/form-state";
 import type { RequestFields } from "@/lib/looking-for/rules";
+import { startOffer } from "@/lib/data/messages";
 import { createRequest, getOwnRequest } from "@/lib/data/requests";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
+import { sentNoteKey } from "@/lib/messaging/paths";
 import { issueOnceToken, ONCE_TTL_MS, takeOnceToken } from "@/lib/staff/once";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { form, signedInAs, STAFF_NOW } from "@/tests/helpers/staff";
-import { closeMyRequest, deleteMyRequest, reopenMyRequest, saveMyRequest } from "./actions";
-import { requestFormKey, requestNoteKey, YOUR_REQUESTS_FORM } from "./paths";
+import { closeMyRequest, deleteMyRequest, reopenMyRequest, saveMyRequest, sendOffer } from "./actions";
+import { offerFormKey, requestFormKey, requestNoteKey, YOUR_REQUESTS_FORM } from "./paths";
 
 const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
 
@@ -274,5 +276,90 @@ describe("Close, Reopen and Delete (spec 2.6, plan decisions 6 and 7)", () => {
     const theirs = await posted("acc-mentor");
     await redirectOf(() => deleteMyRequest(form({ request: theirs.id })));
     expect(sampleStore().requests.has(theirs.id)).toBe(true);
+  });
+});
+
+describe("Send offer (community actions spec 2.7 to 2.9)", () => {
+  const asSeller = () => signedInAs(request, "acc-seller");
+
+  it("starts the thread, expires the board, and opens the thread with Sent.", async () => {
+    const { id } = await posted();
+    await asSeller();
+    const redirect = await redirectSignalOf(() =>
+      sendOffer(form({ request: id, body: "I have a clip-on lamp, R120.", listing: "l-001" })),
+    );
+    expect(redirect.url).toMatch(/^\/messages\/conv-[0-9a-f-]{36}$/);
+    expect([redirect.type, request.refreshed, request.updatedTags]).toEqual(["replace", true, ["requests"]]);
+    const conversationId = redirect.url.split("/").at(-1)!;
+    expect(sampleStore().conversations.get(conversationId)).toMatchObject({
+      status: "offered",
+      buyerId: "acc-student",
+      sellerSlug: "tech-corner",
+      requestId: id,
+      listingId: "l-001",
+    });
+    expect(await readFormState(sentNoteKey(conversationId))).toMatchObject({ notice: "sent" });
+    expect(await readFormState(offerFormKey(id))).toBeNull();
+    expect((await getOwnRequest("acc-student", id))?.request.offers).toBe(1);
+  });
+
+  it("ignores a listing that isn't one of the shop's listed ones (plan decision 13)", async () => {
+    const { id } = await posted();
+    await asSeller();
+    const url = await redirectOf(() => sendOffer(form({ request: id, body: "I can help.", listing: "l-004" })));
+    expect(sampleStore().conversations.get(url.split("/").at(-1)!)?.listingId).toBeNull();
+  });
+
+  it("keeps the message and says what's wrong, or asks to check scam words before sending anyway", async () => {
+    const { id } = await posted();
+    await asSeller();
+    expect(await redirectOf(() => sendOffer(form({ request: id, body: " " })))).toBe(`/looking-for/${id}/offer`);
+    expect(await readFormState(offerFormKey(id))).toMatchObject({ errors: ["message-missing"] });
+    const scam = "Pay a deposit first and I'll bring it.";
+    await redirectOf(() => sendOffer(form({ request: id, body: scam })));
+    expect(await readFormState(offerFormKey(id))).toMatchObject({ notice: "check", values: { body: scam } });
+    expect(sampleStore().conversations.size).toBe(2);
+    await redirectOf(() => sendOffer(form({ request: id, body: scam, anyway: "yes" })));
+    expect(sampleStore().conversations.size).toBe(3);
+  });
+
+  it("stops at 20 offers a shop in a day", async () => {
+    const { id } = await posted();
+    for (let n = 0; n < 20; n += 1) {
+      const other = await posted("acc-mentor");
+      await startOffer({
+        askerId: "acc-mentor",
+        request: { id: other.id, title: other.title },
+        sellerSlug: "tech-corner",
+        listing: null,
+        body: "I can help.",
+        now: STAFF_NOW,
+      });
+    }
+    await asSeller();
+    await redirectOf(() => sendOffer(form({ request: id, body: "I can help." })));
+    expect((await readFormState(offerFormKey(id)))?.errors).toEqual(["offer-rate"]);
+  });
+
+  it("makes one thread with one message when the same offer is sent twice at once (plan amendment 7)", async () => {
+    const { id } = await posted();
+    await asSeller();
+    const send = () => redirectOf(() => sendOffer(form({ request: id, body: "I can help." })));
+    await Promise.all([send(), send()]);
+    const threads = [...sampleStore().conversations.values()].filter((row) => row.requestId === id);
+    expect(threads).toHaveLength(1);
+    const said = [...sampleStore().messages.values()].filter((message) => message.conversationId === threads[0].id);
+    expect(said).toHaveLength(1);
+    expect((await getOwnRequest("acc-student", id))?.request.offers).toBe(1);
+  });
+
+  it("sends anyone who can't offer back to the composer, which says why, storing nothing", async () => {
+    const { id } = await posted();
+    await signedInAs(request, "acc-mentor");
+    expect(await redirectOf(() => sendOffer(form({ request: id, body: "I can help." })))).toBe(`/looking-for/${id}/offer`);
+    await asStudent();
+    expect(await redirectOf(() => sendOffer(form({ request: id, body: "Me!" })))).toBe(`/looking-for/${id}/offer`);
+    expect(sampleStore().conversations.size).toBe(2);
+    expect(await redirectOf(() => sendOffer(form({ request: "Not an id!", body: "x" })))).toBe("/looking-for");
   });
 });
