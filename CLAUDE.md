@@ -53,7 +53,7 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - Client hooks that suspend while Next builds App Shells (`usePathname()`, `useParams()`) are read only inside `<Suspense>` in shared layout code (see `components/ui/NavLink.tsx`).
 - Dynamic routes:
   - `generateStaticParams` returns at least one value.
-  - `params` is awaited inside `<Suspense>`.
+  - `params` is awaited inside `<Suspense>`, whose fallback is `<PageFallback />` (a screen tall), never `null`. On any page after the first, the browser paints before React shows the content (at least 300 ms after first paint once a page passes 12.8 KB), so an empty fallback lets the footer jump into view on a slow network. A skeleton must not be taller than the page's shortest state either.
   - Unknown values call `notFound()`.
   - Never export `dynamicParams`; it fails the build with Cache Components.
 - The React Compiler lint rules are on: no `setState` directly in an effect body, no `ref.current` during render.
