@@ -294,12 +294,96 @@ The two tables, the fields added to earlier rows, and who touches them:
 | Task 17, Follow | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | 150,613 | 151,089 | 150,613 | 152,287 |
 | Task 18, Saved's tabs | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | 150,613 | 151,089 | 150,613 | 152,287 |
 | Task 19, the dashboard and the account page | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | 150,613 | 151,089 | 150,613 | 152,287 |
-| Task 21, the worker's registration | | | | | | | | | |
-| **Final (Task 24)** | | | | | | | | | |
+| Task 21, the worker's registration | 150,591 | 151,338 | 151,747 | 151,351 | 151,226 | 150,591 | 151,067 | 150,591 | 152,265 |
+| **Final (Task 24)** | 150,591 | 151,338 | 151,747 | 151,351 | 151,226 | 150,591 | 151,067 | 150,591 | 152,265 |
 
-The worker's registration: accepted by Lama, 2026-10-14; its cost in a page's HTML 65 to 89 B brotli (`/` 89, a listing 65, a request 77; cut at 100 B; measured again in Task 23, 2026-10-19). New pages, signed in (Task 23): new request 150,591 B, Your requests 150,591 B, offer composer 150,591 B, Saved's Shops tab 151,226 B. Also measured: edit request, delete request, the offer thread (either side) 150,591 B; the request page as its asker 151,067 B; a student's storefront 151,351 B. The highest page is still the listing forms (152,265 B, 40 B under the stop line).
+**Why every figure fell by 22 B at Task 21** (`519d865`; the Task 21 row is Task 19's less 22 B, as that commit's message measured it, and the Final row is Task 24's own run, the same to the byte). The worker's registration is in the HTML, not in any script file, so it should have moved nothing. A first build did move things: `lib/install.ts` (client code on every page) imported the install event's name from `lib/boot-script.ts`, which now imports the worker's source, and that import tipped decision 63's chunk merge (+527 B on every page, and a ninth script file on a first visit). It also had left four dead `JSON.stringify` calls from the boot script in the client bundle. The name moved to `lib/install-event.ts`, so client code never imports `lib/boot-script.ts` or `lib/offline.ts`; with that, every page is 22 B smaller than before the worker (amendment 21.1). `lib/install-event.test.ts` checks it, and after `pnpm build` `grep -l "serviceWorker.register" .next/static/chunks/*.js` prints nothing (amendment 5; checked again in Task 24).
+
+The worker's registration: accepted by Lama, 2026-10-14; its cost in a page's HTML 65 to 89 B brotli (`/` 89, a listing 65, a request 77; cut at 100 B; measured again in Task 23, 2026-10-19; Task 24's two full runs read `/` 89 and 88, a listing 66 and 65, and a request 77 both times, so the homepage is closest, 11 B under the cut). New pages, signed in (Task 23): new request 150,591 B, Your requests 150,591 B, offer composer 150,591 B, Saved's Shops tab 151,226 B. Also measured: edit request, delete request, the offer thread (either side) 150,591 B; the request page as its asker 151,067 B; a student's storefront 151,351 B. The highest page is still the listing forms (152,265 B, 40 B under the stop line).
 
 The stop line used: 152,305 B (decision 52). Unit tests at the start: 1,937. End to end at the start: 1,025 pass, 887 skipped.
+
+## Changes made during the build
+
+Written in Task 24 (2026-10-19) from `git log` (`8a019ab`, Task 1, to `864b50c`, Task 23) and the code. Each change names the commit that made it; amendments have a docs commit that wrote them into this plan and, usually, a fix commit that built them. Commit subjects are the `git log --oneline` lines, so `git show <hash>` finds the rest.
+
+**Tasks and their commits**
+
+| Task | Commit | Task | Commit |
+|---|---|---|---|
+| 1 Types, the sample requests as rows, two tables (`STORE_VERSION` 7) | `8a019ab` | 13 The offer composer | `dbae188` |
+| 2 Rules, errors, paths and words for requests and follows | `b291e64` | 14 Offer threads in the inbox and thread | `7de7d74` |
+| 3 Requests in the store, tagged | `b1bc515` | 15 The request page's panel (session-following) | `e915b95` |
+| 4 Offers are conversations | `c840898` | 16 Post a request follows the session | `b52d5aa` |
+| 5 Follows in the store, new-listing notifications | `262986b` | 17 Follow on the storefront's band | `b3e0fb4` |
+| 6 Deleting an account, and the export | `2c4803e` | Fix after Task 17 (amendment 19) | `46de4e0` |
+| 7 The request Server Actions | `5b196a8` | 18 Saved's Shops tab | `dd5d000` |
+| 8 Send offer | `e909eb4` | 19 The account page, the dashboard, privacy, robots | `ff5f8dd` |
+| 9 Follow and Unfollow, telling followers | `90ddca5` | Found in Task 23: `PageFallback`, then the hero and browse | `625e9a3`, `851f544` (docs `f6003e1`) |
+| Fix after Task 9 (amendment 17) | `72eb71d` | 20 The offline page | `4bb4b85` |
+| 10 The Hub hides a reported request | `cac284c` | 21 The service worker and its registration | `519d865` |
+| 11 The request form | `2961e63` | 22 End to end | `8c76be5` |
+| 12 Delete request and Your requests | `54432b6` | 23 Axe, layout shift and size | `864b50c` |
+| | | 24 Screenshots, docs, final checks | this commit |
+
+**Amendments 1 to 21 (the controller's reviews, Claude under decision 54)**
+
+| Amendment | Plan text | Built in |
+|---|---|---|
+| 1 and 2: what selling's amendments 8 and 9 changed for this stage (`isFirstPublish`, the export's key order, `getPhoto`'s clock, gone sellers left out of shop counts) | `e3e08b7` | Task 9 (`90ddca5`: `isFirstPublish(existing, saved.state)`), Task 6 (`2c4803e`: `requests` and `following` after `onboardingDraft`), Task 4 (`c840898`) |
+| 3: a new request is made once (a one-time token) | `69c1f32` | Task 7 (`5b196a8`: `takeOnceToken`, the `form-expired` error) and Task 11 (`2961e63`: the hidden `once` field) |
+| 4: every hand-made browser context blocks the worker | `69c1f32` | Task 21 (`519d865`): `serviceWorkers: "block"` in every `browser.newContext(` in `tests/e2e`, in the Playwright config for the built-in fixtures, and in each helper added after. `grep -rn "newContext(" tests/e2e \| grep -v serviceWorkers` prints nothing (checked again in Task 24) |
+| 5 and 6: the boot script stays out of the client bundle; the kill switch also stops registering and the worker's version follows the page | `69c1f32` | Task 21 (`519d865`) |
+| 7: one offer per shop per request, even sent twice at once | `69c1f32` | Task 4 (`c840898`: a synchronous find and insert), tidied into `lib/data/offers.ts` in `72eb71d` |
+| 8: a hidden request shows as hidden on its reports | `69c1f32` | Task 10 (`cac284c`) |
+| 9: which offer counts skip a shop that has gone | `69c1f32` | Task 4 (`c840898`) |
+| 10: the ledger's column for the new listing form | `69c1f32` | filled in Tasks 15 to 19 and 21, and Task 24 |
+| 11: built tests that list everything | `69c1f32` | Tasks 6, 7, 11, 13 and 19 |
+| 12: the privacy page covers requests and follows everywhere | `69c1f32` | Task 19 (`ff5f8dd`) |
+| 13: skeletons fit their pages | `69c1f32` | Task 12 (`54432b6`: `DeleteRequestSkeleton`) and Task 23 (`864b50c`: rows for edit and delete in `community-checks.spec.ts`) |
+| 14: Saved's tab switch shows the skeleton | `69c1f32` | Task 18 (`dd5d000`: `<Suspense key={tab}>` in `SavedTabs`) |
+| 15: odds and ends | `69c1f32` | the offered pill in Task 14 (`7de7d74`); the storefront band in Task 17 (`b3e0fb4`, and see 20.4); the privacy-guard row and the `ReportConfirm` id needed no code |
+| 16: mechanical renames and quote fixes | `69c1f32` | each task as it was built |
+| 17: the review of Tasks 1 to 5 (the budget, joined numbers, the limits' words, current titles, "A closed shop", a paused shop on Saved) | `0ee2179`, `8c53f4a` | a fix task after Task 9: `72eb71d` |
+| 18: Post a request follows the session | `815d7c9` | Task 16 (`b52d5aa`); the rule is in `CLAUDE.md` |
+| 19: the review of Tasks 6 to 15 | `4ef0a16` | a fix task after Task 17: `46de4e0` |
+| 20: notes from Tasks 16 and 17 | `b3e0fb4` | 20.1 in Task 22 (`8c76be5`); 20.2 in `625e9a3`, `851f544` and `864b50c`; 20.3 in this task's open points; 20.4 in Task 17 (`b3e0fb4`) |
+| 21: notes from Task 21 | `5224673` | 21.1 in `519d865`; 21.2 and 21.5 in `864b50c`; 21.3 in the go-live checklist and the docs (this task); 21.4 in this task's open points |
+
+Amendments 17 and 19 each ran as a fix task, test first, as the plan said: `72eb71d` and `46de4e0`.
+
+**Where the build differed from the tasks as written**
+
+- **The request form carries a one-time token** (Tasks 7 and 11; amendment 3). `RequestForm` calls `issueOnceToken()` (`lib/staff/once.ts`) after `connection()` and `RequestFormView` renders it as a hidden `once` field for a new request only. `saveMyRequest` takes it straight before `createRequest`: a second send lands on the first one's page and makes nothing, and a missing or made-up token is refused with `form-expired` ("This form has expired. Check it and send it again.") and what was typed. The plan's first draft had none. `5b196a8`, `2961e63`.
+- **Offers, to the letter of amendments 7 and 9** (Task 4). `startOffer` finds and inserts with no `await` between (`offerRow`, in `lib/data/offers.ts` since `72eb71d`), so `Promise.all([offer(), offer()])` makes one thread. A request's offers count keeps threads whose shop has gone; the 20-a-day limit skips them. `c840898`, `72eb71d`.
+- **The budget reads South African money** (Task 2; amendment 17.1). `parseBudget` uses selling's `parsePrice`, so "R250,00" is 250, and "99,99" and "1,2" are invalid; the plan stripped every comma, which read cents as rand. `72eb71d`.
+- **The contact check is wider than the plan's** (Task 2; amendments 17.2 and 19.1). Dates are taken out first, then runs of digits are split on spaces, brackets, dots, slashes, plus signs, dashes, commas, underscores and colons, so "082 123 4567-083 123 4567", "082/123/4567", "082,123,4567" and "082:123:4567" are refused while "2026-10-01 - 2026-10-05", "R1 200 - R2 000" and "R1,200" pass. "ISBN 10:" counts as a label as well as "ISBN-10", and the refusal ends "If it's an ISBN, write ISBN before it." `72eb71d`, `46de4e0`.
+- **The limits say what they count** (amendment 17.3): "You've posted 5 requests in the last 24 hours. Try again later." and the same for offers. `72eb71d`.
+- **Offer threads** (Task 4 and Task 14; amendments 17.4, 17.5, 19.2 to 19.5). The request's current title shows while its page is up, the kept title once it has gone, in the inbox, thread, export and reply notifications. One constant, `CLOSED_SHOP` ("A closed shop"), names a shop that has gone, and only that: a shop the Hub paused keeps its real name. The asker's reply area then reads "This shop has closed, so you can't reply." and the sent note shows only while the status is Offered. A hidden request's thread says "The Hub hid this request." to the asker and "This request was removed." to the shop (`requestIsHidden` in `lib/data/requests.ts` and `request.hidden` on `Thread`). `72eb71d`, `46de4e0`.
+- **A shop the Hub paused stays on Saved, marked Paused** (Task 18; amendment 17.6). `FollowedShop` has a required `storefront: boolean`; the card links to the storefront only when it's true, and Follow and Unfollow's status lines name the shop through `shopNameOf`. `72eb71d`, `dd5d000`.
+- **Hide the request** (Task 10). The plan's file list left out `lib/staff/errors.ts`, where the build added `reason-missing-asker` ("Give a reason. The asker sees it."); the hide page's title is "Hide a listing or request". The queue's `toView` sets `canHide` in its `switch`, and a request the Hub has hidden reads "Students can't see this request: the Hub has hidden it." (amendment 8). `cac284c`.
+- **The request page's panel is two views and two wrappers** (Task 15). `OffersViews.tsx` holds the public and the asker's versions as pure views, so `OffersPanel` (the `<Suspense>`) and `ViewerOffers` (the session's part) share them without importing each other; `tests/helpers/viewer-offers.tsx` stands in for the session part. `lib/messaging/paths.ts`'s `backPathFor` gained the new pages' back links. `e915b95`.
+- **Post a request follows the session** (Task 16; amendment 18). The plan changed two links; the build added `PostRequestLink` (a `<Suspense>` whose fallback is `signInHref(NEW_REQUEST_PATH)`), `PostRequestLinkView` and `ViewerPostRequestLink`, with `tests/helpers/viewer-post-request.tsx`, because a signed-out visitor sent straight at `/looking-for/new` was stranded on sign-in: the browser kept the gated page's redirect and replayed it. An e2e test clicks through (signed out, Post a request, sign in, the form opens). The replay itself is stage D's, and is left open (an open point). `b52d5aa`.
+- **Follow on the band** (Task 17). `FollowViews.tsx` holds the signed-out, Follow and Unfollow versions as pure views (as in Task 15). The band keeps its width by giving `.seller-follow` zero width and a full minimum width and moving the column gap onto Share; amendment 15's `width: 18rem` widened Message seller on every storefront and was dropped. A follower's status wraps inside its own box beside Unfollow. The owner gets an empty row (an open point). `b3e0fb4`.
+- **The new request limits and offers are counted with awaits before the write** (amendment 17.8), so forms sent at the same moment can pass them; the go-live checklist has the database count. No code change in sample mode.
+- **Task 20's offline page and Task 21's worker** (`4bb4b85`, `519d865`).
+  - `WORKER_REGISTRATION` starts with a semicolon, so the plan's 131 characters are 132: without it the script's last statement and the registration ran together into a syntax error.
+  - `BOOT_SCRIPT` is a plain template literal that adds the registration only when `process.env.NODE_ENV === "production"` **and** `WORKER_ON` (amendments 5 and 6), so the kill switch stops registering as well as serving the off worker.
+  - `workerSource(on, page)` puts a 32-bit FNV hash of the offline page beside `WORKER_VERSION` in its first line, so editing the page makes a different worker.
+  - `/sw.js` awaits `connection()` so its `Cache-Control: no-cache` goes out exactly as written.
+  - `lib/install-event.ts` is in no task: the install prompt's event name moved there so client code never imports `lib/boot-script.ts` or `lib/offline.ts` (amendment 21.1; the JS ledger says why). `lib/install-event.test.ts` checks it.
+  - `performance.spec.ts` measures the registration in a page's HTML (the cut rule), and `offline.spec.ts` is the one place that allows the worker.
+- **Task 22's tests** (`8c76be5`) go a little past the task: a second contact-details test (an email address refused, an ISBN passes), a shop can't offer on a sample request, a sample request's edit and delete pages are the 404, a request made once however often its form is sent (amendment 3, with a forged token), and an unknown request's composer is the 404 before any sign-in. The Follow checks use exact names (amendment 20.1). The tests that write run in `community-writes`; `routes.spec.ts` gained the sign-in redirects and the 404.
+- **Task 23's checks went further than the plan's** (`864b50c`, `625e9a3`, `851f544`; amendment 20.2).
+  - `cls.spec.ts` was reorganised around a table of slow-network rows (350 ms latency, 400 kbps, with the CSS, fonts and scripts already cached, as on any page after the first), and counts shifts Chrome marks as following input, which phone emulation does for every shift: `phone-390` had been measuring none. `tests/e2e/helpers/shifts.ts` holds the measuring.
+  - `community-checks.spec.ts` covers four groups instead of two (the asker's pages, an offer's pages, the Hub's side of a request, and following), shift at 390 and 1440 for the asker's and the shop's pages, and the JS budget.
+  - `performance.spec.ts`'s homepage `total` now measures what spec 11 defines, leaving out link prefetches and lazy photos below the fold (amendment 21.2): 313,540 B, steady to 2 B (it had swung by up to 13 KB, once past the cap).
+- **`PageFallback`** (`625e9a3`, `f6003e1`). Found while checking Task 23's layout shift: the listing, storefront, request, collection and Hub post pages waited behind `<Suspense fallback={null}>`. React sends a finished boundary after the rest of the page once the page passes 12.8 KB and shows it no sooner than 300 ms after the first paint, so on a slow network with the CSS cached the browser painted the empty fallback, the footer sat under the header, and it jumped when the content arrived (up to 1.05). A new `components/ui/PageFallback.tsx` is a screen tall (less the header) and replaces `null` on those five pages; Saved's column is at least a screen tall too (`.saved-page`). `CLAUDE.md` says a params page's fallback is `<PageFallback />`, never `null`. These touched earlier stages' pages: the shift predated stage H (signed out it was about 0, signed in 0.4 to 1.05).
+- **The homepage's hero and browse with no results** (`851f544`). Also found in Task 23: on phones the hero photo sits above the panel but comes after it in the HTML, so a first paint between the two had the panel at the top and the photo pushed it down 278px (0.2532 at 390). An empty `::before` the photo's size now holds the first grid row. Browse's skeleton was far taller than its no-results state, so the footer entered the first screen when the empty state took over (0.064 at 390): `.browse` is at least a screen tall less the header. CSS only, no JavaScript change.
+- **More pages are at least a screen tall** (`864b50c`): the request form (with Edit and Delete request), Your requests, the offer composer, and messaging's inbox, thread and notifications (Your requests had shifted 0.16 at 390 on a slow network, the seller's inbox 0.09). Your requests' heading stacks above Post a request on phones, since side by side depended on the heading's font (0.05 at 390).
+- **`docs/PROGRESS.md` and the decisions log are written from snippet files** (`h-progress.md`, `h-decision.md`), not edited in place: both hold other sessions' uncommitted lines (the positioning and Supabase sections and decision row 71), which Lama decides on. The decision row is number 74 (73 is stage G's). The controller merges them.
+- **Task 24's screenshots** are 22 PNGs (11 at 390px, 11 at 1440px), in the style of selling's and the staff tools' (a scroll to the top before each shot, `POST_LANDS` after each post, a 180-second timeout, and the asker's panel waited for by name). The request and the shop's offer come from a new student, so no sample account's data changes.
+- **`CLAUDE.md` gained more than the task's lines:** the rule that client code never imports `lib/boot-script.ts` or `lib/offline.ts` (with the `grep` that must print nothing after a build), `community-writes.spec.ts` and `community-checks.spec.ts` running last in the `community-writes` project, the `newContext` rule for tests (amendment 4), the new request's one-time token, and Looking For requests and follows in sample mode's in-memory list. The amendment 18 rule (never link a signed-out visitor straight at a gated page) and the `PageFallback` rule came earlier (`815d7c9`, `f6003e1`).
 
 ## Conventions for every task
 

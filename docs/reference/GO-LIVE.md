@@ -2,7 +2,7 @@
 
 Every page and view the marketplace needs before it can go live, plus the work that isn't a screen. Drawn from the app's routes, the old demo's function map (`FUNCTION-MAP.md`) and the homepage spec's "Not in this stage" list.
 
-Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) after Looking For and the Hub (part B), after sign-in and accounts, in sample mode (stage D), after messaging, reports and notifications, in sample mode (stage E), after selling, in sample mode (stage F), and after the staff tools, in sample mode (stage G). Update the status column as each stage lands.
+Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) after Looking For and the Hub (part B), after sign-in and accounts, in sample mode (stage D), after messaging, reports and notifications, in sample mode (stage E), after selling, in sample mode (stage F), after the staff tools, in sample mode (stage G), and after community actions, in sample mode (stage H). Update the status column as each stage lands.
 
 **Status key**
 - **Built:** done.
@@ -20,8 +20,8 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Listing: gallery, phone dock, collect box, seller card, more from the seller, paused and sold states, Share | `/listings/[id]` | Built |
 | Seller storefront: header, badges, about, their listings, contact, report | `/sellers/[slug]` | Built |
 | Collection: a curated list, e.g. "Res essentials" | `/collections/[slug]` | Built |
-| Looking For board | `/looking-for` | Built to read; posting a request: stage H (designed) |
-| A single Looking For request | `/looking-for/[id]` | Built to read; offers: stage H (designed) |
+| Looking For board | `/looking-for` | **Built (sample mode)**: Post a request goes through sign-in to the form, or straight to it when signed in (stage H) |
+| A single Looking For request | `/looking-for/[id]` | **Built (sample mode)**: the asker's panel with their offers, Offer to help for shops, Report (stage H) |
 | Hub feed: tips, events, office hours | `/hub` | Built |
 | Hub post, with RSVP and book-a-slot | `/hub/[id]`, `/hub/[id]/book` | **Built (sample mode)**: RSVP and slot requests for signed-in students; signed out, through sign-in |
 | How it works, Safety | `/how-it-works`, `/safety` | Built |
@@ -30,7 +30,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Terms of use, seller guidelines | `/terms`, `/seller-guidelines` | Built as drafts; Eduvos signs off the wording |
 | Error page (when something breaks) | `error.tsx` | Next's default for now (the branded page was dropped under the stop rule, decision 62) |
 | Not found | 404 | Built |
-| Offline page | `/offline` | Designed (stage H): a self-contained page and a navigation-only worker |
+| Offline page | `/offline` | **Built** (stage H): a self-contained page and a navigation-only worker, registered from the boot script after load, in production builds |
 
 ## 2. Sign-in and account
 
@@ -42,11 +42,11 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | "Sign in to do that" sheet, which returns you to what you were doing | links | **Built as links** to `/login?next=…` (decision 44); signed-in visitors see a note with the way back |
 | Account summary and sign out | `/account` | **Built** |
 | Privacy settings: consent record, download my data, reports I've made, delete my account (required by POPIA) | `/account/privacy` | **Built** (with the list of reports you've made) |
-| Saved listings, and followed sellers once accounts exist | `/saved` | Built (followed sellers: stage H, on Saved's Shops tab) |
+| Saved listings, and followed sellers once accounts exist | `/saved` | **Built** (followed sellers on Saved's Shops tab: stage H, sample mode) |
 | Header: "Sign in" when signed out, and an inbox icon with an unread count | shell | **Built** (a red badge for new notifications on the account icon, not an inbox icon: messaging plan decision 10) |
-| Post, edit, close, reopen and delete a Looking For request | `/looking-for/new`, `/looking-for/[id]/edit`, `/looking-for/[id]/delete` | Designed (stage H) |
-| Your requests | `/account/requests` | Designed (stage H) |
-| Offer to help with a request (shops only) | `/looking-for/[id]/offer` | Designed (stage H) |
+| Post, edit, close, reopen and delete a Looking For request | `/looking-for/new`, `/looking-for/[id]/edit`, `/looking-for/[id]/delete` | **Built (sample mode)** |
+| Your requests | `/account/requests` | **Built (sample mode)** |
+| Offer to help with a request (shops only) | `/looking-for/[id]/offer` | **Built (sample mode)** |
 | Saved searches: save from browse, pause and delete on Saved, a notification when a new listing matches | `/browse`, `/saved?tab=searches` | Designed (stage I) |
 
 ## 3. Messaging
@@ -77,11 +77,11 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 
 | Screen or view | Route | Status |
 |---|---|---|
-| Admin: seller approvals, reports queue, hide a listing or pause an account, Verified badge, Featured pins, pickup points, audit log; hide a request (stage H) | `/admin/*` | **Built in sample mode** (hiding a request is stage H's) |
+| Admin: seller approvals, reports queue, hide a listing or hide a request (stage H) or pause an account, Verified badge, Featured pins, pickup points, audit log | `/admin/*` | **Built in sample mode**, with Hide the request (stage H) |
 | Hub post editor and the office-hours queue | `/hub/new`, `/hub/[id]/edit`, `/hub/manage` | **Built in sample mode** |
 | Mentor dashboard, seller detail, notes, check-ins, CSV export | `/mentor/*` | **Built in sample mode** |
 
-**Totals:** about 45 screens and views, one of them (the WhatsApp handoff) cut. 36 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, the privacy policy, terms of use and seller guidelines as drafts, Looking For's board and request pages and the Hub's feed and post pages, which read today and send acting to sign-in, and, in sample mode, sign-in, your account and privacy settings, messaging (the composer, inbox, thread, notifications and report pages), selling (the pitch, the application steps and waiting page, the dashboard, My listings, the listing form and Edit shop) and the staff tools (the admin console, the Hub's post editor and office-hours queue, and the mentor dashboard)), and 8 are placeholders or missing. Most of the rest are stage H's (acting on Looking For, the offline page) and stage I's (saved-search alerts).
+**Totals:** about 45 screens and views, one of them (the WhatsApp handoff) cut. 40 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, the privacy policy, terms of use and seller guidelines as drafts, Looking For's board and request pages and the Hub's feed and post pages, the offline page, and, in sample mode, sign-in, your account and privacy settings, messaging (the composer, inbox, thread, notifications and report pages), selling (the pitch, the application steps and waiting page, the dashboard, My listings, the listing form and Edit shop), the staff tools (the admin console, the Hub's post editor and office-hours queue, and the mentor dashboard) and community actions (the request form and its edit page, Delete request, Your requests, the offer composer, and Saved's Shops tab)), and 4 are placeholders or missing. Most of the rest are stage I's (saved-search alerts).
 
 ## 6. Work that isn't a screen
 
@@ -108,6 +108,10 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] A true 404 status for staff pages: a proxy checks the session's role before rendering, once sessions live in the real database (staff tools plan decision 1).
 - [ ] Supabase tables for the audit log (insert-only: no update or delete grant for anyone), Featured pins and draws, pickup points, mentors' notes, Hub posts, RSVPs and slot requests replace the sample store's.
 - [ ] Hub covers move to Supabase Storage with the other photos.
+- [x] Stage H: posting, editing, closing, reopening and deleting Looking For requests, offers from approved shops, Hide the request, following shops, and the offline page and worker. Built in sample mode (2026-10-19); the items below move it to the real database.
+- [ ] Supabase behind `lib/data/requests.ts`, `offers.ts` and `follows.ts`; the `requests` cache tag stays.
+- [ ] **A unique index on the conversation's request and shop,** where the request is set. Sample mode keeps one offer per shop per request by finding and inserting with no `await` between, which two requests at the same moment can't get past in one process; a database needs the index (community actions plan amendment 7).
+- [ ] **The request limits counted in the database.** The 5 open requests, 5 new a day and 20 offers a shop a day are counted with awaits before the write, so forms sent at the same moment can pass them. The real backend counts them with the write, in the same statement or behind a lock (community actions plan amendment 17.8).
 
 ### POPIA and legal (Eduvos signs these off)
 - [ ] Final privacy policy, with a named Information Officer. A draft is live at `/privacy`; Eduvos's legal team reviews it.
@@ -162,7 +166,8 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] Try Turbopack's `requestCost` chunking option, which saved about 1.1 KB on every page in a trial (decision 53).
 - [ ] A test on a cheap Android phone.
 - [ ] Decide whether a browser with JavaScript off needs the forms. "Works without JavaScript" means without the app's bundle: React's small inline script still places streamed parts, so with JavaScript off the composer, the thread's forms and the report form stay on their skeletons (messaging plan amendment 4).
-- [ ] The offline worker's kill switch (stage H): a version that removes itself and its cache, tried on a real phone before launch.
+- [ ] The offline worker's kill switch (stage H): a version that removes itself and its cache, tried on a real phone before launch. `WORKER_ON = false` in `lib/offline.ts` serves it and stops the pages registering the worker, but it reaches a phone that already has the worker only through the browser's own update check, which can take up to about a day (a plain reload doesn't trigger it). Plan for that delay when deciding whether to switch it off (community actions plan amendment 21.3).
+- [ ] **Stage D's sign-in replay of a gated page's redirect.** After a client navigation to a page that redirected to sign-in, signing in repeats that redirect (the browser kept it from the first visit), so the visitor is stranded on sign-in and the page never opens. Post a request, Offer to help and Follow work round it (links that follow the session), but a link straight at any other gated page still has it, so CLAUDE.md says never to link a signed-out visitor at one. A `refresh()` in `afterSignIn` didn't clear it; the fix belongs in the sign-in flow (community actions plan amendment 18).
 
 ### Launch
 - [ ] A support contact, and a privacy contact address. `/privacy` says one will be added; `/terms` and `/seller-guidelines` tell people to "contact the Hub" without saying how.
@@ -190,9 +195,10 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 2. **Done (2026-10-14): the other public pages.** The storefront, Saved, collections, the info, legal and system pages, and Looking For and the Hub (to read) are done. The branded error page was dropped under the JS stop rule, so Next's default shows. Next is item 3, starting with stage D (sign-in and accounts): it turns every "sign in to do that" link on these pages into the real flow.
 3. **Done in sample mode (2026-10-14): sign-in, account and privacy.** Supabase and an email service replace the sample store at go-live.
 4. **Done in sample mode (2026-10-15): onboarding, the listing form and the dashboard.** The staff tools that approve shops are stage G's (item 5).
-5. **Done in sample mode (2026-10-19): the staff tools (stage G).** Stage H adds community actions.
-6. **Done in sample mode (2026-10-14): messaging, reports and notifications.** Supabase replaces the sample store at go-live.
+5. **Done in sample mode (2026-10-19): the staff tools (stage G).**
+6. **Done in sample mode (2026-10-19): community actions (stage H).** Posting Looking For requests, offers, following shops and the offline page. Stage I adds saved-search alerts.
+7. **Done in sample mode (2026-10-14): messaging, reports and notifications.** Supabase replaces the sample store at go-live.
    - Stage E builds messaging, then stage F selling. Stage G adds the staff tools: admin, the Hub's posting tools and the mentors' dashboard. Stage H adds community actions: posting Looking For requests, offers, following shops and the offline page. Stage I adds saved-search alerts.
-7. **Launch readiness:** legal sign-off, domain, monitoring, content, and the pilot.
+8. **Launch readiness:** legal sign-off, domain, monitoring, content, and the pilot.
 
 **After launch:** delivery between campuses.

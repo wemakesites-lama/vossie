@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Request } from "@playwright/test";
+import { offersPanel, postRequest, statusLine } from "./helpers/community";
 import { button, field, newBuyer, reply, sellerPage, signInAsSample, signUp, signUpHere } from "./helpers/messaging";
 import { newSeller, photoWithLocation, POST_LANDS, uniqueWord } from "./helpers/selling";
 
@@ -630,4 +631,73 @@ test("staff tools review screenshots", async ({ page, browser, baseURL }) => {
   await expect(student.locator("main").getByRole("region", { name: "Your request" })).toBeVisible();
   await shot(student, "14-slot-request");
   await studentContext.close();
+});
+
+test("community actions review screenshots", async ({ page, browser, baseURL }) => {
+  const project = test.info().project.name;
+  test.skip(!["phone-390", "desktop-1440"].includes(project), "Saved at 390 and 1440 only");
+  // A new student, their request, the sample shop's offer in a second browser, a follow and eleven pages, on a server a
+  // full run may be busy with.
+  test.setTimeout(180_000);
+  const file = (name: string) => `docs/progress/community-actions/${project}-${name}.png`;
+  const main = page.locator("main");
+  // Back to the top first: after a focus jump to an error summary the header has folded to its crest, which a full-page
+  // shot would draw over the page.
+  const shot = async (on: Page, name: string, fullPage = true) => {
+    await on.evaluate(() => window.scrollTo(0, 0));
+    await on.screenshot({ path: file(name), fullPage });
+  };
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  // A new student, so nothing of the sample accounts changes. The request is theirs alone.
+  await signUp(page, newBuyer());
+
+  await page.goto("/looking-for/new");
+  await button(page, "Post request").click();
+  await expect(main.getByRole("alert", { name: "There's a problem" })).toBeVisible(POST_LANDS);
+  await shot(page, "01-request-form-errors");
+
+  const id = await postRequest(page, `Desk lamp for res ${uniqueWord()}`.slice(0, 60));
+  await expect(offersPanel(page)).toContainText("Your request");
+  await shot(page, "02-request-asker");
+
+  // The sample shop, in a browser of its own at the same size: it offers, and waits for the asker to reply.
+  const shop = await sellerPage(browser, baseURL!);
+  await shop.setViewportSize(page.viewportSize()!);
+  await shop.emulateMedia({ reducedMotion: "reduce" });
+  await shop.goto(`/looking-for/${id}/offer`);
+  await expect(field(shop, "Your offer")).toBeVisible();
+  await shot(shop, "03-offer-composer");
+  await field(shop, "Your offer").fill("I have a clip-on lamp, R120. I can bring it to the library at lunch.");
+  await button(shop, "Send offer").click();
+  await expect(shop.locator("main").getByText("You can write again when they reply.").filter({ visible: true })).toBeVisible(
+    POST_LANDS,
+  );
+  await shot(shop, "04-offer-thread-shop");
+  await shop.context().close();
+
+  await page.reload();
+  await expect(offersPanel(page).getByRole("link", { name: /Tech corner/ })).toBeVisible();
+  await shot(page, "05-request-with-offer");
+  await page.goto("/account/requests");
+  await expect(main.getByRole("heading", { level: 1, name: "Your requests" })).toBeVisible();
+  await shot(page, "06-your-requests");
+  await page.goto(`/looking-for/${id}/delete`);
+  await expect(button(page, "Delete request")).toBeVisible();
+  await shot(page, "07-delete-request");
+
+  await page.goto("/sellers/tech-corner");
+  // Exact names: "Follow Tech corner" is also a part of "Unfollow Tech corner" (plan amendment 20.1).
+  await page.getByRole("button", { name: "Follow Tech corner", exact: true }).click();
+  await expect(statusLine(page)).toHaveText("You follow Tech corner.", POST_LANDS);
+  await shot(page, "08-storefront-following", false);
+  await page.goto("/saved?tab=shops");
+  await expect(main.getByRole("button", { name: /^Unfollow Tech corner/ })).toBeVisible();
+  await shot(page, "09-saved-shops");
+  await page.goto("/looking-for/r-002/offer");
+  await expect(main.getByText("Offers come from shops on Vossie", { exact: false })).toBeVisible();
+  await shot(page, "10-offer-no-shop");
+  await page.goto("/offline");
+  await expect(page.getByRole("heading", { level: 1, name: "You're offline" })).toBeVisible();
+  await shot(page, "11-offline", false);
 });
