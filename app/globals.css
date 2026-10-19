@@ -9276,3 +9276,56 @@
     overflow-wrap: anywhere;
   }
 }
+
+/* --- Community actions: Follow on the storefront's band (community actions plan, Task 17, spec 2.16) --- */
+@layer components {
+  /* The actions wrap, so Follow has a row of its own at every size (plan decision 16). The space between Message and
+     Share is Share's margin, not a column gap: a gap before the Follow row would count towards the band's width, which
+     is as wide as its content from the tablet step, and widen Message seller by 8px (plan amendment 15). */
+  .seller-hero-actions {
+    flex-wrap: wrap;
+    column-gap: 0;
+    row-gap: 8px;
+  }
+
+  .seller-hero-actions > .seller-share {
+    margin-inline-start: 8px;
+  }
+
+  /* Always there and at least 44px high, whatever the session says, so nothing below moves when it streams in. Its
+     width is 0 with a minimum of the whole row: it takes the row's width and wraps onto a row of its own, but its words
+     never count towards the band's width, so Message seller and Edit shop keep the size they have on every storefront
+     (plan amendment 15). The row is one line: the status line wraps inside its own box beside the button, so
+     "You follow this shop" and Unfollow fit the narrow tablet and desktop width and the row keeps its height. */
+  .seller-follow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 0;
+    min-width: 100%;
+    min-height: 44px;
+  }
+
+  /* Navy on solid sky (4.97:1), as Message seller. */
+  .seller-follow-btn {
+    min-height: 44px;
+    padding-inline: 28px;
+  }
+
+  /* A white outline with white text on the stars (spec section 4). */
+  .seller-unfollow {
+    min-height: 44px;
+    border: 1.5px solid var(--color-white);
+    color: var(--color-white);
+  }
+
+  /* Small text on the stars is white (CLAUDE.md). */
+  .seller-follow-note {
+    flex: 1 1 0;
+    min-width: 0;
+    color: var(--color-white);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+}

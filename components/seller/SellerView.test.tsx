@@ -9,6 +9,9 @@ vi.mock("./SellerListings", () => ({ SellerListings: () => <section aria-label="
 // The session's links are async Server Components; here they're the signed-out links (messaging plan, Task 7).
 vi.mock("@/components/messages/ViewerLinks", async () => (await import("@/tests/helpers/viewer-links")).signedOutViewerLinks);
 
+// Follow's session part is an async Server Component; here it's the signed-out link (community actions plan, Task 17).
+vi.mock("@/components/seller/ViewerFollow", async () => (await import("@/tests/helpers/viewer-follow")).signedOutViewerFollow);
+
 async function show(slug: string) {
   render(<SellerView seller={(await getSeller(slug))!} campusNames={new Map([["midrand", "Midrand"]])} />);
 }

@@ -4,11 +4,13 @@ import { Photo } from "@/components/listings/Photo";
 import { MessageSellerLink } from "@/components/messages/SessionLinks";
 import { badgeLabel } from "@/lib/format";
 import type { Seller } from "@/lib/types";
+import { FollowControl } from "./FollowControl";
 
 /**
  * The storefront's poster band (shopping spec 4.1, layout A): the seller's photo, name and tagline on navy stars, with
  * stamps for the campus, the category, Verified and the trust badge, then Message and Share. Small text on the stars is
- * white; sky only fills the Verified stamp and the Message pill, which carry navy text.
+ * white; sky only fills the Verified stamp and the Message pill, which carry navy text. Follow has its own row under
+ * them (community actions spec 2.16).
  */
 export function SellerHero({ seller, campusName }: { seller: Seller; campusName: string }) {
   return (
@@ -40,6 +42,7 @@ export function SellerHero({ seller, campusName }: { seller: Seller; campusName:
           Message seller
         </MessageSellerLink>
         <ShareButton title={seller.name} className="seller-share" />
+        <FollowControl slug={seller.slug} name={seller.name} />
       </div>
     </div>
   );

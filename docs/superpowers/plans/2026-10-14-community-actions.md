@@ -246,6 +246,13 @@ The controller adds amendments here; they override the tasks below wherever they
     8. **Only known values are kept.** `typedValues` keeps `category` and `campus` only when they are known slugs, as selling does.
     9. **Each composer's tips have their own id.** E's `ComposerView` passes `composer-<item>-tips` to `SafetyTips`, so two kept composers can't share `composer-tips-title`. The comment then matches the code.
     10. **Your requests' title links are 44px targets** (`display: inline-flex; align-items: center; min-height: 44px`).
+20. **Notes from Tasks 16 and 17, for the last tasks** (Claude, 2026-10-19).
+    1. **Task 22:** Follow buttons are found with `exact: true`. Playwright matches a role's name as a case-insensitive substring, so "Follow Tech corner" also finds "Unfollow Tech corner".
+    2. **Task 23: a footer shift on slow networks.** Signed-in pages shift their footer on a slow network (about 0.4 to 1.0 at 350 ms latency and 400 kbps), as if the static shell's footer is swapped for another. This happens on the listing page as well as the storefront, so it predates this stage; signed out it is about 0. Task 23 investigates it. A footer stays below the first screen on selling pages (selling amendment 15), so check whether the root layout's slots need the same.
+    3. **Task 24 open points:**
+       - The homepage's whole-first-visit `total` swings by about 3 KB between runs of the same build, from prefetches and lazy images, and once read 358,839 B against the 358,400 B cap.
+       - The owner sees an empty, reserved 52px row under the storefront band on phones and tablets: the Follow row's space, kept so nothing moves.
+    4. **As built in Task 17:** the band keeps its width by giving `.seller-follow` zero width and full minimum width, and moving the column gap onto Share. A follower's status wraps inside its own box, beside Unfollow. Amendment 15's `width: 18rem` was dropped, because it widened Message seller on every storefront.
 
 ## Store design
 
@@ -278,7 +285,7 @@ The two tables, the fields added to earlier rows, and who touches them:
 | Start (G's final figures) | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | not measured at the start (Task 15 measures it) | 151,089 | 150,613 | 152,287 |
 | Task 15, the asker's panel | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | 150,613 | 151,089 | 150,613 | 152,287 |
 | Task 16, Post a request | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | 150,613 | 151,089 | 150,613 | 152,287 |
-| Task 17, Follow | | | | | | | | | |
+| Task 17, Follow | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | 150,613 | 151,089 | 150,613 | 152,287 |
 | Task 18, Saved's tabs | | | | | | | | | |
 | Task 19, the dashboard and the account page | | | | | | | | | |
 | Task 21, the worker's registration | | | | | | | | | |

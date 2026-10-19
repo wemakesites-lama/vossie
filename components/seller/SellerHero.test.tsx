@@ -6,6 +6,9 @@ import { SellerHero } from "./SellerHero";
 // The session's links are async Server Components; here they're the signed-out links (messaging plan, Task 7).
 vi.mock("@/components/messages/ViewerLinks", async () => (await import("@/tests/helpers/viewer-links")).signedOutViewerLinks);
 
+// Follow's session part is an async Server Component; here it's the signed-out link (community actions plan, Task 17).
+vi.mock("@/components/seller/ViewerFollow", async () => (await import("@/tests/helpers/viewer-follow")).signedOutViewerFollow);
+
 const techCorner = makeSeller({
   slug: "tech-corner",
   name: "Tech corner",
@@ -40,5 +43,13 @@ describe("SellerHero (shopping spec 4.1)", () => {
       "/login?next=%2Fsellers%2Ftech-corner%2Fmessage",
     );
     expect(screen.getByRole("button", { name: "Share" })).toHaveClass("seller-share");
+  });
+
+  it("has Follow in a row of its own, through sign-in when signed out (community actions spec 2.16)", () => {
+    render(<SellerHero seller={techCorner} campusName="Midrand" />);
+    const follow = screen.getByRole("link", { name: "Follow Tech corner" });
+    expect(follow).toHaveAttribute("href", "/login?next=%2Fsellers%2Ftech-corner");
+    // Its own row: it sits in the band's actions, after Message and Share, in its own box.
+    expect(follow.closest(".seller-follow")?.parentElement).toHaveClass("seller-hero-actions");
   });
 });
