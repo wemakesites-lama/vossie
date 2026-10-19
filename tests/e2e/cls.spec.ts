@@ -1,46 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-
-type Shift = { value: number; nodes: string[] };
-
-/**
- * From the next page load on, keeps every layout shift in `window.__shifts`. Shifts marked as following input count
- * too: nothing is pressed during the load, and Chrome marks every shift that way under the phones' mobile emulation, so
- * leaving them out measured nothing at 390.
- */
-async function recordShifts(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    type LayoutShift = PerformanceEntry & {
-      value: number;
-      sources?: Array<{ node?: Node | null }>;
-    };
-    const shifts: Array<{ value: number; nodes: string[] }> = [];
-    (window as unknown as { __shifts: typeof shifts }).__shifts = shifts;
-    new PerformanceObserver((list) => {
-      for (const entry of list.getEntries() as LayoutShift[]) {
-        shifts.push({
-          value: entry.value,
-          nodes: (entry.sources ?? []).map(({ node }) =>
-            node instanceof Element ? `${node.tagName.toLowerCase()}.${[...node.classList].join(".")}` : String(node?.nodeName),
-          ),
-        });
-      }
-    }).observe({ type: "layout-shift", buffered: true });
-  });
-}
-
-/** Loads `path` and checks the sum of its layout shifts once the fonts are in. */
-async function expectStill(page: Page, name: string, path: string): Promise<void> {
-  await page.goto(path, { waitUntil: "networkidle" });
-  await page.evaluate(() => document.fonts.ready.then(() => undefined));
-  // Two frames, so a last shift is recorded.
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-
-  const shifts = await page.evaluate(() => (window as unknown as { __shifts: Shift[] }).__shifts);
-  // The sum of every shift: never less than CLS, which only counts the worst burst, so this is the stricter check.
-  const total = shifts.reduce((sum, shift) => sum + shift.value, 0);
-  console.log(`${name} layout shift: ${total.toFixed(4)} ${JSON.stringify(shifts)}`);
-  expect(total, "cumulative layout shift").toBeLessThanOrEqual(0.05);
-}
+import { test } from "@playwright/test";
+import { expectStill, holdFonts, recordShifts, throttle } from "./helpers/shifts";
 
 // A campus (the `vossie_campus` cookie) changes what the page shows and where the campus note, the empty state and the
 // results fall, so those pages are measured with one chosen too. Midrand has results; Mbombela has none. Saved reads
@@ -96,6 +55,19 @@ const PAGES: ReadonlyArray<
   ["onboarding, step 4", "/sell/onboarding?step=4", undefined, "Student, Midrand"],
   ["storefront (its owner's view)", "/sellers/tech-corner", undefined, "Seller, Tech corner"],
   ["listing page (its owner's view)", "/listings/l-001", undefined, "Seller, Tech corner"],
+  // Community actions (community actions plan, Task 23). The pages that need a request of the account's own (edit,
+  // delete, the asker's panel, the composer's form) are measured in community-checks.spec.ts, which posts one.
+  ["Looking For board (signed in)", "/looking-for", undefined, "Student, Midrand"],
+  ["request page (signed in)", "/looking-for/r-001", undefined, "Student, Midrand"],
+  ["request form", "/looking-for/new", undefined, "Student, Midrand"],
+  ["Your requests", "/account/requests", undefined, "Student, Midrand"],
+  ["offer composer (no shop)", "/looking-for/r-002/offer", undefined, "Student, Midrand"],
+  ["offer composer (a shop, on a sample request)", "/looking-for/r-002/offer", undefined, "Seller, Tech corner"],
+  ["offer composer (shop waiting for approval)", "/looking-for/r-002/offer", undefined, "Seller waiting for approval"],
+  ["Saved page, Shops tab", "/saved?tab=shops"],
+  ["Saved page, Shops tab (signed in)", "/saved?tab=shops", undefined, "Student, Midrand"],
+  ["storefront (a student's view: Follow)", "/sellers/tech-corner", undefined, "Student, Midrand"],
+  ["offline page", "/offline"],
 ];
 
 for (const [name, path, cookies, signIn] of PAGES) {
@@ -115,12 +87,7 @@ for (const [name, path, cookies, signIn] of PAGES) {
       await page.waitForURL(/\/account$/);
     }
 
-    // Hold the fonts back, so they swap in after first paint: the worst case for shifts.
-    await page.route(/\.woff2$/, async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      await route.continue();
-    });
-
+    await holdFonts(page);
     await recordShifts(page);
     await expectStill(page, name, path);
   });
@@ -148,6 +115,19 @@ const SLOW_PAGES: ReadonlyArray<
   ["Hub event", "/hub/h-001", "Student, Midrand"],
   ["Saved page (nothing saved)", "/saved", "Student, Midrand"],
   ["Saved page's Shops tab (none followed)", "/saved?tab=shops", "Student, Midrand"],
+  ["Saved page's Shops tab (signed out)", "/saved?tab=shops"],
+  ["Looking For board", "/looking-for", "Student, Midrand"],
+  // Messaging's pages hold a few rows, far fewer than their skeletons: the footer was in the first screen after they
+  // streamed in (0.09 at 390 for the seller's inbox), until the pages were made a screen tall (community actions plan,
+  // Task 23, amendment 20.2).
+  ["inbox page (buying)", "/messages", "Student, Midrand"],
+  ["inbox page (selling)", "/messages?tab=selling", "Seller, Tech corner"],
+  ["thread page", "/messages/conv-s1", "Seller, Tech corner"],
+  ["notifications page", "/notifications", "Seller, Tech corner"],
+  ["request form", "/looking-for/new", "Student, Midrand"],
+  ["Your requests", "/account/requests", "Student, Midrand"],
+  ["offer composer (no shop)", "/looking-for/r-002/offer", "Student, Midrand"],
+  ["offer composer (a shop, on a sample request)", "/looking-for/r-002/offer", "Seller, Tech corner"],
   ["homepage", "/"],
   ["browse page (campus mbombela: no results)", "/browse", undefined, { vossie_campus: "mbombela" }],
   ["browse page (campus midrand)", "/browse", undefined, { vossie_campus: "midrand" }],
@@ -173,14 +153,7 @@ for (const [name, path, signIn, cookies] of SLOW_PAGES) {
     }
     await page.waitForLoadState("networkidle");
 
-    const cdp = await context.newCDPSession(page);
-    await cdp.send("Network.enable");
-    await cdp.send("Network.emulateNetworkConditions", {
-      offline: false,
-      latency: 350,
-      downloadThroughput: (400 * 1024) / 8,
-      uploadThroughput: (400 * 1024) / 8,
-    });
+    await throttle(context, page);
     await recordShifts(page);
     await expectStill(page, `${name} (slow network)`, path);
   });

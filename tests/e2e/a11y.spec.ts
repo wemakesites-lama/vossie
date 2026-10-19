@@ -604,3 +604,110 @@ test("an error summary's link brings its field's label into view below the stick
       .toBeGreaterThanOrEqual(0);
   }
 });
+
+// --- Community actions (community actions plan, Task 23; spec section 4) -------------------------------------------
+// The pages and states that need nothing written. Those that need a posted request or an offer (the asker's pages, the
+// composer's form, the offer thread) are in community-checks.spec.ts, which runs last. The sample accounts only read here.
+
+/** axe once the page's title is in: a streamed page's <title> can arrive a moment after its heading. */
+async function expectAccessible(page: Page) {
+  await titled(page);
+  expect(await seriousIssues(page)).toEqual([]);
+}
+
+test("the request form, and after a post that went wrong (spec 2.3)", async ({ page }) => {
+  await signInAsSample(page);
+  await page.goto("/looking-for/new");
+  await expect(page.getByRole("heading", { level: 1, name: "Ask for what you need" })).toBeVisible();
+  await expectAccessible(page);
+  await page.locator("main").getByRole("button", { name: "Post request", exact: true }).click();
+  await expect(page.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  await expectAccessible(page);
+});
+
+test("the request form, after the contact-details refusal (spec 2.4)", async ({ page }) => {
+  await signInAsSample(page);
+  await page.goto("/looking-for/new");
+  await page.getByLabel("What you need", { exact: true }).fill("Desk lamp");
+  await page.getByLabel("Category", { exact: true }).selectOption({ label: "Res & living" });
+  await page.getByLabel("Details", { exact: true }).fill("Call me on 082 123 4567 about it.");
+  await page.locator("main").getByRole("button", { name: "Post request", exact: true }).click();
+  await expect(page.getByRole("alert", { name: "There's a problem" })).toBeVisible();
+  await expect(page.getByLabel("Details", { exact: true })).toHaveAttribute("aria-invalid", "true");
+  await expectAccessible(page);
+});
+
+test("the offer composer for a student without a shop (spec 2.8)", async ({ page }) => {
+  await signInAsSample(page);
+  await page.goto("/looking-for/r-002/offer");
+  await expect(page.getByText("Offers come from shops on Vossie", { exact: false }).filter({ visible: true })).toBeVisible();
+  await expectAccessible(page);
+});
+
+test("the offer composer for a shop, on a sample request, which has no one to answer (spec 2.11)", async ({ page }) => {
+  await signInAsSample(page, "Seller, Tech corner");
+  await page.goto("/looking-for/r-002/offer");
+  await expect(page.getByText("This is one of Vossie's sample requests", { exact: false }).filter({ visible: true })).toBeVisible();
+  await expectAccessible(page);
+});
+
+test("the offer composer for a shop waiting for approval (plan decision 12)", async ({ page }) => {
+  await signInAsSample(page, "Seller waiting for approval");
+  await page.goto("/looking-for/r-002/offer");
+  await expect(page.getByText("Your shop can make offers once the Hub approves it.").filter({ visible: true })).toBeVisible();
+  await expectAccessible(page);
+});
+
+test("a request, signed in: the session's Offer to help and Report links (plan decision 19)", async ({ page }) => {
+  await signInAsSample(page);
+  await page.goto("/looking-for/r-002");
+  // The signed-out links give way to the session's once they stream in.
+  await expect(page.locator("main").getByRole("link", { name: "Offer to help" }).filter({ visible: true })).toHaveAttribute(
+    "href",
+    "/looking-for/r-002/offer",
+  );
+  await expectAccessible(page);
+});
+
+test("Your requests, with none yet (spec 2.13)", async ({ page }) => {
+  await signInAsSample(page);
+  await page.goto("/account/requests");
+  await expect(page.getByRole("heading", { level: 1, name: "Your requests" })).toBeVisible();
+  await expect(page.getByText("You haven't asked for anything yet.").filter({ visible: true })).toBeVisible();
+  await expectAccessible(page);
+});
+
+test("Saved's Shops tab, signed out and signed in (spec 2.17)", async ({ page }) => {
+  await page.goto("/saved?tab=shops");
+  await expect(page.getByText("Sign in to follow shops.", { exact: false }).filter({ visible: true })).toBeVisible();
+  await expectAccessible(page);
+  await signInAsSample(page);
+  await page.goto("/saved?tab=shops");
+  await expect(page.getByText("No shops yet").filter({ visible: true })).toBeVisible();
+  await expectAccessible(page);
+});
+
+test("a storefront's Follow, signed out and signed in (spec 2.16)", async ({ page }) => {
+  await page.goto("/sellers/tech-corner");
+  await expect(page.getByRole("link", { name: "Follow Tech corner", exact: true })).toBeVisible();
+  await expectAccessible(page);
+  await signInAsSample(page);
+  await page.goto("/sellers/tech-corner");
+  await expect(page.getByRole("button", { name: "Follow Tech corner", exact: true })).toBeVisible();
+  await expectAccessible(page);
+});
+
+test("the dashboard's followers line, and the account page's Your requests row (spec 2.13 and 2.18)", async ({ page }) => {
+  await signInAsSample(page, "Seller, Tech corner");
+  await expect(page.locator("main").getByRole("link", { name: /^Your requests/ })).toBeVisible();
+  await expectAccessible(page);
+  await page.goto("/sell");
+  await expect(page.locator("main").getByText(/(follows|follow) your shop/).filter({ visible: true })).toBeVisible();
+  await expectAccessible(page);
+});
+
+test("the offline page (spec 2.20)", async ({ page }) => {
+  await page.goto("/offline");
+  await expect(page.getByRole("heading", { level: 1, name: "You're offline" })).toBeVisible();
+  await expectAccessible(page);
+});

@@ -1852,10 +1852,20 @@
      tall, less the header (64px on phones, 78px from the tablet step, 122px with the desktop's quick links), like
      .sell-page (selling amendment 15.1): a short Saved tab or browse with no results leaves blank space under it
      instead. svh, the small viewport, so a phone's address bar can't pull the footer up; vh first for older
-     browsers. */
+     browsers. The request form (and Edit and Delete request, which share its page), Your requests and the offer
+     composer are the same (community actions plan, Task 23): their skeletons are shorter or taller than a note, a
+     list of one request or a form, so the footer moved by up to 0.16 at 390 and 0.055 at 1440. So are messaging's
+     inbox, thread and notifications, whose rows are fewer than their skeleton's (0.09 at 390 and 0.05 at 1440 on a
+     slow network, measured as the Seller with the sample data). */
   .page-fallback,
   .saved-page,
-  .browse {
+  .browse,
+  .request-form-page,
+  .requests-page,
+  .offer-page,
+  .inbox-page,
+  .thread-page,
+  .notes-page {
     --screen-header: 64px;
     min-height: calc(100vh - var(--screen-header));
     min-height: calc(100svh - var(--screen-header));
@@ -1864,7 +1874,13 @@
   @media (min-width: 48rem) and (min-height: 30rem) {
     .page-fallback,
     .saved-page,
-    .browse {
+    .browse,
+    .request-form-page,
+    .requests-page,
+    .offer-page,
+    .inbox-page,
+    .thread-page,
+    .notes-page {
       --screen-header: 78px;
     }
   }
@@ -1872,7 +1888,13 @@
   @media (min-width: 64rem) and (min-height: 30rem) {
     .page-fallback,
     .saved-page,
-    .browse {
+    .browse,
+    .request-form-page,
+    .requests-page,
+    .offer-page,
+    .inbox-page,
+    .thread-page,
+    .notes-page {
       --screen-header: 122px;
     }
   }
@@ -9021,11 +9043,15 @@
     max-width: 48rem;
   }
 
+  /*
+   * The heading, then Post a request under it on phones; side by side from the tablet step. Side by side on a phone
+   * depended on the heading's font: in the fallback font it was 243px wide and the button wrapped below it, then the
+   * display font made it 182px and the button moved up beside it, taking the list with it (0.05 at 390, plan Task 23).
+   */
   .requests-head {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
   }
 
@@ -9139,6 +9165,13 @@
   @media (min-width: 48rem) and (min-height: 30rem) {
     .requests-page {
       padding-inline: 40px;
+    }
+
+    .requests-head {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
     }
   }
 

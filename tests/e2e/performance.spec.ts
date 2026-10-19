@@ -1,5 +1,5 @@
 import { brotliCompressSync, constants } from "node:zlib";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { WORKER_REGISTRATION } from "../../lib/boot-script";
 
 // Saved reads the saved cookie, so it's measured with two listings saved: its cards and their hearts load as they would.
@@ -19,7 +19,28 @@ const PAGES: ReadonlyArray<[name: string, path: string, saved?: string]> = [
   ["Hub event", "/hub/h-001"],
   ["Hub office hours", "/hub/h-002"],
   ["sell page", "/sell"],
+  ["Saved page, Shops tab", "/saved?tab=shops"],
 ];
+
+/**
+ * The addresses of photos that load only because they are lazy and sit below the first screen: images with
+ * `loading="lazy"` whose top is past the bottom of the window, the page being unscrolled. Chrome fetches those within a
+ * margin of the window, so how many it fetches before the network goes quiet changes from run to run. An address that
+ * an image above the fold or an eager one uses too is not in the set. Spec 11 measures "before below-the-fold photos".
+ */
+async function belowTheFoldPhotos(page: Page): Promise<Set<string>> {
+  const urls = await page.evaluate(() => {
+    const above = new Set<string>();
+    const below = new Set<string>();
+    for (const image of document.images) {
+      if (!image.currentSrc) continue;
+      const lazyBelow = image.loading === "lazy" && image.getBoundingClientRect().top >= window.innerHeight;
+      (lazyBelow ? below : above).add(image.currentSrc);
+    }
+    return [...below].filter((url) => !above.has(url));
+  });
+  return new Set(urls);
+}
 
 for (const [name, path, saved] of PAGES) {
   test(`a first visit to the ${name} stays inside the size budgets`, async ({ page, context, baseURL }) => {
@@ -27,13 +48,17 @@ for (const [name, path, saved] of PAGES) {
     if (saved) await context.addCookies([{ name: "vossie_saved", value: saved, url: baseURL! }]);
     const pending: Array<Promise<void>> = [];
     // script, font and total are the gzip transfer sizes `next start` serves. scriptBrotli is the same scripts
-    // compressed the way a host serves them.
-    const bytes = { script: 0, scriptBrotli: 0, font: 0, total: 0 };
+    // compressed the way a host serves them. `total` is the first visit as spec 11 defines it, before below-the-fold
+    // photos: it leaves out the link prefetches (the `?_rsc=` requests the page's links make as they come into view)
+    // and the lazy photos below the first screen, whose number changes from run to run. `everything` is the old
+    // measure, every byte until the network went quiet, logged beside it.
+    const bytes = { script: 0, scriptBrotli: 0, font: 0, total: 0, everything: 0 };
+    const finished: Array<{ url: string; size: number }> = [];
 
     page.on("requestfinished", (request) => {
       pending.push(
         request.sizes().then((sizes) => {
-          bytes.total += sizes.responseBodySize + sizes.responseHeadersSize;
+          finished.push({ url: request.url(), size: sizes.responseBodySize + sizes.responseHeadersSize });
           if (request.resourceType() === "script") bytes.script += sizes.responseBodySize;
           if (request.resourceType() === "font") bytes.font += sizes.responseBodySize;
         }),
@@ -56,6 +81,11 @@ for (const [name, path, saved] of PAGES) {
     // A Saved row must measure the cards, not the empty state a cookie mix-up would show.
     if (saved) await expect(page.locator("main article")).toHaveCount(saved.split(".").length);
     await Promise.all(pending);
+    const belowTheFold = await belowTheFoldPhotos(page);
+    for (const { url, size } of finished) {
+      bytes.everything += size;
+      if (!url.includes("_rsc=") && !belowTheFold.has(url)) bytes.total += size;
+    }
     console.log(`${name}: ${JSON.stringify(bytes)}`);
 
     // The JavaScript budget is measured brotli-compressed, as a host serves it. `next start` only does gzip, which
@@ -90,6 +120,16 @@ const SIGNED_IN_PAGES: ReadonlyArray<[name: string, path: string, account: strin
   ["onboarding page", "/sell/onboarding", "Student, Midrand"],
   ["storefront, its owner's view", "/sellers/tech-corner", "Seller, Tech corner"],
   ["listing page, its owner's view", "/listings/l-001", "Seller, Tech corner"],
+  // Community actions' new pages carry only the shell (community actions spec 5), measured signed in as the sample
+  // student, and the pages it changed for a signed-in visitor. The pages that need a request of the account's own (edit,
+  // delete, the composer's form) are measured by community-checks.spec.ts, which posts one.
+  ["request form", "/looking-for/new", "Student, Midrand"],
+  ["Your requests", "/account/requests", "Student, Midrand"],
+  ["offer composer (no shop)", "/looking-for/r-002/offer", "Student, Midrand"],
+  ["Saved page, Shops tab", "/saved?tab=shops", "Student, Midrand"],
+  ["Looking For board", "/looking-for", "Student, Midrand"],
+  ["request page", "/looking-for/r-001", "Student, Midrand"],
+  ["storefront, a student's view", "/sellers/tech-corner", "Student, Midrand"],
 ];
 
 for (const [name, path, account] of SIGNED_IN_PAGES) {

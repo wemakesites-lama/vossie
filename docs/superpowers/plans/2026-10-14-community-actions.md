@@ -297,7 +297,7 @@ The two tables, the fields added to earlier rows, and who touches them:
 | Task 21, the worker's registration | | | | | | | | | |
 | **Final (Task 24)** | | | | | | | | | |
 
-The worker's registration: accepted by Lama, 2026-10-14; its cost in a page's HTML ________ B brotli (cut at 100 B). New pages, signed in (Task 23): new request ________ B, Your requests ________ B, offer composer ________ B, Saved's Shops tab ________ B.
+The worker's registration: accepted by Lama, 2026-10-14; its cost in a page's HTML 65 to 89 B brotli (`/` 89, a listing 65, a request 77; cut at 100 B; measured again in Task 23, 2026-10-19). New pages, signed in (Task 23): new request 150,591 B, Your requests 150,591 B, offer composer 150,591 B, Saved's Shops tab 151,226 B. Also measured: edit request, delete request, the offer thread (either side) 150,591 B; the request page as its asker 151,067 B; a student's storefront 151,351 B. The highest page is still the listing forms (152,265 B, 40 B under the stop line).
 
 The stop line used: 152,305 B (decision 52). Unit tests at the start: 1,937. End to end at the start: 1,025 pass, 887 skipped.
 

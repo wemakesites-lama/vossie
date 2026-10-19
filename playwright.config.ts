@@ -31,8 +31,9 @@ const DEVICE_PROJECTS = ["phone-360", "phone-390", "tablet-768", "laptop-1024", 
 // writes included, so nothing another test counts moves under it (staff tools plan decision 21).
 const STAFF_WRITES = /staff-writes\.spec\.ts$/;
 // The tests that post requests, offer, hide requests or publish listings run after every other test, so the board's,
-// the homepage's and browse's counts never move under another test (community actions plan decision 27).
-const COMMUNITY_WRITES = /community-writes\.spec\.ts$/;
+// the homepage's and browse's counts never move under another test (community actions plan decision 27). Their checks
+// (axe, layout shift and size on the pages that need a posted request or an offer) run with them.
+const COMMUNITY_WRITES = /community-(writes|checks)\.spec\.ts$/;
 
 export default defineConfig({
   testDir: "./tests/e2e",

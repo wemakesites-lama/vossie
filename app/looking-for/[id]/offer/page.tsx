@@ -13,7 +13,7 @@ export function generateStaticParams() {
 /** The offer composer (community actions spec 2.9), laid out like E's. It renders per request inside <Suspense>. */
 export default function OfferPage({ params }: PageProps<"/looking-for/[id]/offer">) {
   return (
-    <div className="page composer-page">
+    <div className="page composer-page offer-page">
       <Suspense fallback={<OfferSkeleton />}>
         <OfferForVisitor params={params} />
       </Suspense>
