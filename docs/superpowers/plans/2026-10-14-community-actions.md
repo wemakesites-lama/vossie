@@ -228,6 +228,11 @@ The controller adds amendments here; they override the tasks below wherever they
        - The synchronous `offerRow` moves into `lib/data/offers.ts`; `startOffer`, `findOffer` and `offerThreadCount` use it.
        - `notify`'s comment names the new kinds.
     8. **Go-live (Task 24):** the 5 open requests, 5 new a day and 20 offers a day are counted with awaits before the write, so forms sent at the same moment can pass them. The real backend counts them in the database, beside amendment 7's unique index.
+18. **Post a request follows the session** (found in Task 16; Claude, under decision 54, 2026-10-19). A signed-out visitor who followed a plain link to `/looking-for/new` was sent to sign-in, and after signing in stayed there: the browser had kept the gated page's redirect from the first visit and replayed it, so the form never opened.
+    - Post a request is therefore a session-following link, as E's Message and Task 15's Offer to help are. Its fallback, and the signed-out visitor's version, is `signInHref(NEW_REQUEST_PATH)`; a signed-in visitor's streams in as `/looking-for/new`, inside `<Suspense>`, with no client code. This applies on the board's head link, its empty state and the homepage band.
+    - An e2e test clicks through: signed out, Post a request, sign in, and the form opens.
+    - **The general rule** (also in CLAUDE.md): never link a signed-out visitor straight at a page that needs sign-in. Link to `signInHref(next)`, or a session-following link.
+    - **For Task 24's open points:** the underlying replay, where a client navigation to a page that redirected to sign-in repeats that redirect after signing in, is left in stage D's sign-in flow. A `refresh()` in `afterSignIn` didn't clear it.
 
 ## Store design
 
@@ -259,7 +264,7 @@ The two tables, the fields added to earlier rows, and who touches them:
 |---|---|---|---|---|---|---|---|---|---|
 | Start (G's final figures) | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | not measured at the start (Task 15 measures it) | 151,089 | 150,613 | 152,287 |
 | Task 15, the asker's panel | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | 150,613 | 151,089 | 150,613 | 152,287 |
-| Task 16, Post a request | | | | | | | | | |
+| Task 16, Post a request | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | 150,613 | 151,089 | 150,613 | 152,287 |
 | Task 17, Follow | | | | | | | | | |
 | Task 18, Saved's tabs | | | | | | | | | |
 | Task 19, the dashboard and the account page | | | | | | | | | |

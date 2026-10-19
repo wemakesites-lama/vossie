@@ -65,6 +65,7 @@ Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/
 - Touch targets are at least 44px. No hover-only features.
 - The site's address comes only from `siteUrl()` (`lib/site-url.ts`), which reads `NEXT_PUBLIC_SITE_URL`. `metadataBase`, `robots.txt` and the sitemap use it. Never write a domain in code.
 - Links that would prefetch a route with client components cost that route's chunk on every page they appear on. Use `prefetch={false}` unless there's a reason (decision 53). The header's home link prefetches `/`, so client code used only on the homepage costs bytes on every page.
+- Never link a signed-out visitor straight at a page that needs sign-in. A client navigation keeps that page's redirect to sign-in and replays it after signing in, so the visitor is stranded. Link to `signInHref(next)`, or use a session-following link (a `<Suspense>` whose fallback is the sign-in link and whose server child streams in the real one), as Message, Offer to help and Post a request do (community actions plan amendment 18).
 
 ## Privacy (POPIA)
 - Collect the minimum. Sample mode keeps accounts, sessions, consent, sign-ins, messages, reports, notifications, shops, listings, photos, RSVPs, slot requests, Hub posts, mentors' notes and the staff log in the server's memory only, wiped on restart; the campus choice and saved listings are first-party cookies, and recent searches stay in the browser.
