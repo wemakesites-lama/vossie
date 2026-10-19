@@ -10,6 +10,7 @@ import {
   markSaleNotificationsRead,
   notify,
   notifyAboutMessage,
+  notifyNewListing,
 } from "./notifications";
 import { resetSampleStore, sampleStore } from "./store";
 
@@ -168,5 +169,43 @@ describe("notifications about things that have gone (community actions plan deci
     );
     expect((await getNotifications("acc-student", 50)).map((item) => item.text)).not.toContain("A");
     expect((await getNotifications("acc-mentor", 50)).map((item) => item.text)).not.toContain("B");
+  });
+});
+
+describe("a followed shop's new listings (community actions spec 2.19, plan decision 15)", () => {
+  const SHOP = { accountId: "acc-mentor", sellerSlug: "tech-corner", shopName: "Tech corner" };
+  // 10:00 and 18:00 on Wednesday 14 October in SAST, then 00:01 on Thursday.
+  const morning = new Date("2026-10-14T08:00:00.000Z");
+  const evening = new Date("2026-10-14T16:00:00.000Z");
+  const nextDay = new Date("2026-10-14T22:01:00.000Z");
+  const newListings = async () =>
+    (await getNotifications("acc-mentor", 50)).filter((item) => item.kind === "new-listing");
+
+  it("names the first new listing of the day, linking to it", async () => {
+    await notifyNewListing({ ...SHOP, listing: { id: "l-001", title: "Casio fx-991ZA Plus calculator" }, now: morning });
+    expect(await newListings()).toMatchObject([
+      { text: "Tech corner listed Casio fx-991ZA Plus calculator", href: "/listings/l-001", isNew: true },
+    ]);
+  });
+
+  it("updates it while it's unread, linking to the shop and moving it to the top", async () => {
+    await notifyNewListing({ ...SHOP, listing: { id: "l-001", title: "Casio fx-991ZA Plus calculator" }, now: morning });
+    await notifyNewListing({ ...SHOP, listing: { id: "l-007", title: "Gaming headset, barely used" }, now: evening });
+    await notifyNewListing({ ...SHOP, listing: { id: "l-016", title: "Desk lamp" }, now: evening });
+    expect(await newListings()).toMatchObject([
+      { text: "Tech corner listed 3 new things", href: "/sellers/tech-corner", createdAt: evening.toISOString() },
+    ]);
+  });
+
+  it("makes no more that day once it's read, and a new one the next SAST day", async () => {
+    await notifyNewListing({ ...SHOP, listing: { id: "l-001", title: "Casio fx-991ZA Plus calculator" }, now: morning });
+    await markNotificationsRead("acc-mentor", morning);
+    await notifyNewListing({ ...SHOP, listing: { id: "l-007", title: "Gaming headset, barely used" }, now: evening });
+    expect(await newListings()).toHaveLength(1);
+    await notifyNewListing({ ...SHOP, listing: { id: "l-016", title: "Desk lamp" }, now: nextDay });
+    expect((await newListings()).map((item) => item.text)).toEqual([
+      "Tech corner listed Desk lamp",
+      "Tech corner listed Casio fx-991ZA Plus calculator",
+    ]);
   });
 });

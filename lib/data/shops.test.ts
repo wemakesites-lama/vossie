@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { makeListingRow } from "@/tests/helpers/fakes";
 import { pngBytes } from "@/tests/helpers/image-bytes";
+import { addFollow, isFollowing } from "./follows";
+import { getNotifications, notifyNewListing } from "./notifications";
 import { getPhoto, photoIdOf, photoSrcsOf, storePhotos } from "./photos";
 import {
   changeShopSlug,
@@ -423,5 +425,22 @@ describe("a pause the Hub made (staff tools plan decision 3)", () => {
     Object.assign(profile, { status: "paused", pausedBy: "staff", staffReason: "Selling exam answers." });
     expect(await setShopPaused("acc-seller", false)).toBeNull();
     expect(profile.status).toBe("paused");
+  });
+});
+
+describe("a changed link keeps the shop's followers (community actions spec 2.15)", () => {
+  it("moves its follows, and its followers' new-listing notifications, with it", async () => {
+    const now = new Date("2026-10-14T08:42:00.000Z");
+    await addFollow("acc-student", "tech-corner", now);
+    const shop = { accountId: "acc-student", sellerSlug: "tech-corner", shopName: "Tech corner", now };
+    await notifyNewListing({ ...shop, listing: { id: "l-001", title: "Casio fx-991ZA Plus calculator" } });
+    await notifyNewListing({ ...shop, listing: { id: "l-007", title: "Gaming headset, barely used" } });
+    expect(await changeShopSlug("acc-seller", "tech-corner-mdr", now)).toBe("changed");
+    expect(await isFollowing("acc-student", "tech-corner-mdr")).toBe(true);
+    expect(await isFollowing("acc-student", "tech-corner")).toBe(false);
+    expect((await getNotifications("acc-student", 1))[0]).toMatchObject({
+      kind: "new-listing",
+      href: "/sellers/tech-corner-mdr",
+    });
   });
 });

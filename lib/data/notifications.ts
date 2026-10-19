@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { newListingsText, newListingText } from "@/lib/following/rules";
+import { sastDate } from "@/lib/time";
 import type { NotificationItem, NotificationKind } from "@/lib/types";
 import type { NotificationRow } from "./rows";
 import { sampleStore } from "./store";
@@ -161,4 +163,45 @@ export async function deleteNotificationsAbout(kind: NotificationKind, subjectId
   for (const [id, row] of notifications) {
     if (row.kind === kind && subjectIds.has(row.subjectId)) notifications.delete(id);
   }
+}
+
+/**
+ * A followed shop's new listing (community actions spec 2.19, plan decision 15): one notification per shop per
+ * follower per SAST day. The first names the listing and links to it. Another listing that day, while it's unread,
+ * updates it ("Tech corner listed 2 new things", linking to the shop) and brings it to the top. Once it's read, the
+ * shop's other listings that day make none.
+ */
+export async function notifyNewListing({
+  accountId,
+  sellerSlug,
+  shopName,
+  listing,
+  now,
+}: {
+  accountId: string;
+  sellerSlug: string;
+  shopName: string;
+  listing: { id: string; title: string };
+  now: Date;
+}): Promise<void> {
+  const today = sastDate(now);
+  for (const row of sampleStore().notifications.values()) {
+    if (row.accountId !== accountId || row.kind !== "new-listing" || row.subjectId !== sellerSlug) continue;
+    if (sastDate(new Date(row.createdAt)) !== today) continue;
+    if (row.readAt !== null) return;
+    const count = (row.count ?? 1) + 1;
+    row.count = count;
+    row.text = newListingsText(shopName, count);
+    row.href = `/sellers/${sellerSlug}`;
+    row.createdAt = now.toISOString();
+    return;
+  }
+  add({
+    accountId,
+    kind: "new-listing",
+    subjectId: sellerSlug,
+    text: newListingText(shopName, listing.title),
+    href: `/listings/${listing.id}`,
+    now,
+  });
 }

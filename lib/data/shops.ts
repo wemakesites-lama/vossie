@@ -60,7 +60,10 @@ function freeSlug(base: string, own: string | null): string {
   }
 }
 
-/** Moves a shop to a new link, and everything that names it by its link with it (plan decision 16). */
+/**
+ * Moves a shop to a new link, and everything that names it by its link with it (plan decision 16). Follows and
+ * new-listing notifications go with it (community actions plan decision 15).
+ */
 function moveShop(from: string, to: string): void {
   const store = sampleStore();
   const row = store.sellers.get(from);
@@ -89,6 +92,15 @@ function moveShop(from: string, to: string): void {
   }
   for (const draw of store.featuredDraws.values()) {
     draw.sellerSlugs = draw.sellerSlugs.map((slug) => (slug === from ? to : slug));
+  }
+  // Follows, and followers' new-listing notifications, name the shop by its link too (community actions spec 2.15).
+  for (const follow of store.follows.values()) {
+    if (follow.sellerSlug === from) follow.sellerSlug = to;
+  }
+  for (const note of store.notifications.values()) {
+    if (note.kind !== "new-listing" || note.subjectId !== from) continue;
+    note.subjectId = to;
+    if (note.href === `/sellers/${from}`) note.href = `/sellers/${to}`;
   }
 }
 
