@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { HubPostView } from "@/components/hub/HubPostView";
+import { PageFallback } from "@/components/ui/PageFallback";
 import { getCampuses, getHubPost, getHubPostIds } from "@/lib/data";
 import { shortDescription } from "@/lib/format";
 import { markdownText } from "@/lib/markdown";
@@ -28,8 +29,9 @@ export async function generateStaticParams() {
 
 export default function HubPostPage({ params }: PageProps<"/hub/[id]">) {
   return (
-    // Known posts are prerendered, so this fallback only shows for an unknown id, until the 404 takes over.
-    <Suspense fallback={null}>
+    // Known posts are prerendered, but the fallback still shows while the page streams in (see PageFallback), and for
+    // an unknown id until the 404 takes over.
+    <Suspense fallback={<PageFallback />}>
       <PostDetails params={params} />
     </Suspense>
   );

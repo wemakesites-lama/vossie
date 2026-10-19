@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ListingView } from "@/components/listing/ListingView";
 import { RecordRecentlyViewed } from "@/components/listings/RecordRecentlyViewed";
+import { PageFallback } from "@/components/ui/PageFallback";
 import { getCampuses, getListingDetail, getListingIds } from "@/lib/data";
 import { priceLabel, shortDescription } from "@/lib/format";
 
@@ -26,8 +27,9 @@ export async function generateStaticParams() {
 
 export default function ListingPage({ params }: PageProps<"/listings/[id]">) {
   return (
-    // Known listings are prerendered, so this fallback only shows for an unknown id, until the 404 takes over.
-    <Suspense fallback={null}>
+    // Known listings are prerendered, but the fallback still shows while the page streams in (see PageFallback), and
+    // for an unknown id until the 404 takes over.
+    <Suspense fallback={<PageFallback />}>
       <ListingDetails params={params} />
     </Suspense>
   );

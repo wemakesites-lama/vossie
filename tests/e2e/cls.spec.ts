@@ -1,6 +1,46 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 type Shift = { value: number; nodes: string[] };
+
+/**
+ * From the next page load on, keeps every layout shift in `window.__shifts`. Shifts marked as following input count
+ * too: nothing is pressed during the load, and Chrome marks every shift that way under the phones' mobile emulation, so
+ * leaving them out measured nothing at 390.
+ */
+async function recordShifts(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    type LayoutShift = PerformanceEntry & {
+      value: number;
+      sources?: Array<{ node?: Node | null }>;
+    };
+    const shifts: Array<{ value: number; nodes: string[] }> = [];
+    (window as unknown as { __shifts: typeof shifts }).__shifts = shifts;
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries() as LayoutShift[]) {
+        shifts.push({
+          value: entry.value,
+          nodes: (entry.sources ?? []).map(({ node }) =>
+            node instanceof Element ? `${node.tagName.toLowerCase()}.${[...node.classList].join(".")}` : String(node?.nodeName),
+          ),
+        });
+      }
+    }).observe({ type: "layout-shift", buffered: true });
+  });
+}
+
+/** Loads `path` and checks the sum of its layout shifts once the fonts are in. */
+async function expectStill(page: Page, name: string, path: string): Promise<void> {
+  await page.goto(path, { waitUntil: "networkidle" });
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  // Two frames, so a last shift is recorded.
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+
+  const shifts = await page.evaluate(() => (window as unknown as { __shifts: Shift[] }).__shifts);
+  // The sum of every shift: never less than CLS, which only counts the worst burst, so this is the stricter check.
+  const total = shifts.reduce((sum, shift) => sum + shift.value, 0);
+  console.log(`${name} layout shift: ${total.toFixed(4)} ${JSON.stringify(shifts)}`);
+  expect(total, "cumulative layout shift").toBeLessThanOrEqual(0.05);
+}
 
 // A campus (the `vossie_campus` cookie) changes what the page shows and where the campus note, the empty state and the
 // results fall, so those pages are measured with one chosen too. Midrand has results; Mbombela has none. Saved reads
@@ -81,36 +121,55 @@ for (const [name, path, cookies, signIn] of PAGES) {
       await route.continue();
     });
 
-    await page.addInitScript(() => {
-      type LayoutShift = PerformanceEntry & {
-        value: number;
-        hadRecentInput: boolean;
-        sources?: Array<{ node?: Node | null }>;
-      };
-      const shifts: Array<{ value: number; nodes: string[] }> = [];
-      (window as unknown as { __shifts: typeof shifts }).__shifts = shifts;
-      new PerformanceObserver((list) => {
-        for (const entry of list.getEntries() as LayoutShift[]) {
-          if (entry.hadRecentInput) continue;
-          shifts.push({
-            value: entry.value,
-            nodes: (entry.sources ?? []).map(({ node }) =>
-              node instanceof Element ? `${node.tagName.toLowerCase()}.${[...node.classList].join(".")}` : String(node?.nodeName),
-            ),
-          });
-        }
-      }).observe({ type: "layout-shift", buffered: true });
+    await recordShifts(page);
+    await expectStill(page, name, path);
+  });
+}
+
+// The same pages on a slow network (350 ms latency, 400 kbps), with the CSS, fonts and scripts already cached, as on
+// any page after the first. The browser then paints the page as it arrives, and React shows a <Suspense> boundary's
+// content no sooner than 300 ms after that first paint, even when it arrived with the page: React streams a finished
+// boundary after the rest of the page when the page before it is over 12.8 KB, and the layout alone is. So a fallback
+// shorter than its content (null, around a whole page that waits on its params), or a skeleton taller than a short
+// state, is on screen for a while, and the footer moved when it gave way. Signed in or out, it's the same: signing in
+// loads two pages first, so it warms the cache, and the signed-out row loads the sign-in page first for the same
+// reason. At full speed the whole page arrives before the first paint, so the rows above can't see it.
+const SLOW_PAGES: ReadonlyArray<[name: string, path: string, signIn?: string]> = [
+  ["storefront", "/sellers/tech-corner", "Student, Midrand"],
+  ["storefront (signed out)", "/sellers/tech-corner"],
+  ["listing page", "/listings/l-001", "Student, Midrand"],
+  ["request page", "/looking-for/r-001", "Student, Midrand"],
+  ["collection page", "/collections/start-of-semester", "Student, Midrand"],
+  ["Hub event", "/hub/h-001", "Student, Midrand"],
+  ["Saved page (nothing saved)", "/saved", "Student, Midrand"],
+  ["Saved page's Shops tab (none followed)", "/saved?tab=shops", "Student, Midrand"],
+];
+
+for (const [name, path, signIn] of SLOW_PAGES) {
+  test(`the ${name} holds still on a slow network, after another page (CLS 0.05 or less, spec 11)`, async ({
+    page,
+    context,
+  }) => {
+    test.skip(!["phone-390", "desktop-1440"].includes(test.info().project.name), "Measured at 390 and 1440");
+    test.slow();
+    if (signIn) {
+      await page.goto("/login");
+      await page.locator("main").getByRole("button", { name: signIn, exact: true }).click();
+      await page.waitForURL(/\/account$/);
+    } else {
+      await page.goto("/login");
+    }
+    await page.waitForLoadState("networkidle");
+
+    const cdp = await context.newCDPSession(page);
+    await cdp.send("Network.enable");
+    await cdp.send("Network.emulateNetworkConditions", {
+      offline: false,
+      latency: 350,
+      downloadThroughput: (400 * 1024) / 8,
+      uploadThroughput: (400 * 1024) / 8,
     });
-
-    await page.goto(path, { waitUntil: "networkidle" });
-    await page.evaluate(() => document.fonts.ready.then(() => undefined));
-    // Two frames, so a last shift is recorded.
-    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-
-    const shifts = await page.evaluate(() => (window as unknown as { __shifts: Shift[] }).__shifts);
-    // The sum of every shift: never less than CLS, which only counts the worst burst, so this is the stricter check.
-    const total = shifts.reduce((sum, shift) => sum + shift.value, 0);
-    console.log(`${name} layout shift: ${total.toFixed(4)} ${JSON.stringify(shifts)}`);
-    expect(total, "cumulative layout shift").toBeLessThanOrEqual(0.05);
+    await recordShifts(page);
+    await expectStill(page, `${name} (slow network)`, path);
   });
 }

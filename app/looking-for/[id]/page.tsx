@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { RequestView } from "@/components/looking-for/RequestView";
+import { PageFallback } from "@/components/ui/PageFallback";
 import { getCampuses, getCategories, getRequest, getRequestIds } from "@/lib/data";
 import { shortDescription } from "@/lib/format";
 
@@ -23,8 +24,9 @@ export async function generateStaticParams() {
 
 export default function RequestPage({ params }: PageProps<"/looking-for/[id]">) {
   return (
-    // Known requests are prerendered, so this fallback only shows for an unknown id, until the 404 takes over.
-    <Suspense fallback={null}>
+    // Known requests are prerendered, but the fallback still shows while the page streams in (see PageFallback), and
+    // for an unknown id until the 404 takes over.
+    <Suspense fallback={<PageFallback />}>
       <RequestDetails params={params} />
     </Suspense>
   );

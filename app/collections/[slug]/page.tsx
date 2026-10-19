@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CollectionView } from "@/components/collection/CollectionView";
+import { PageFallback } from "@/components/ui/PageFallback";
 import { getCampuses, getCategories, getCollection, getCollectionListings, getCollections } from "@/lib/data";
 
 /**
@@ -21,8 +22,9 @@ export async function generateStaticParams() {
 
 export default function CollectionPage({ params }: PageProps<"/collections/[slug]">) {
   return (
-    // Known collections are prerendered, so this fallback only shows for an unknown slug, until the 404 takes over.
-    <Suspense fallback={null}>
+    // Known collections are prerendered, but the fallback still shows while the page streams in (see PageFallback), and
+    // for an unknown slug until the 404 takes over.
+    <Suspense fallback={<PageFallback />}>
       <CollectionDetails params={params} />
     </Suspense>
   );
