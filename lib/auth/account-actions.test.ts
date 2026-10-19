@@ -124,19 +124,25 @@ describe("deleting the account (accounts spec 2.13)", () => {
     await signedInAs("acc-seller");
     await redirectOf(() => deleteAccount(form({ confirm: "yes" })));
     expect(sampleStore().sellers.has("tech-corner")).toBe(false);
-    expect(request.updatedTags).toEqual(["sellers", "hub"]);
+    expect(request.updatedTags).toEqual(["sellers", "hub", "requests"]);
   });
 
-  it("expires only the Hub's tag for an account with no shop, as buyers see no shop change", async () => {
+  it("expires only the Hub's and the board's tags for an account with no shop, as buyers see no shop change", async () => {
     await signedInAs("acc-student");
     await redirectOf(() => deleteAccount(form({ confirm: "yes" })));
-    expect(request.updatedTags).toEqual(["hub"]);
+    expect(request.updatedTags).toEqual(["hub", "requests"]);
   });
 
   it("expires the Hub's cached posts, since the account's RSVPs went with it (staff tools plan, Task 8)", async () => {
     await signedInAs("acc-student");
     await redirectOf(() => deleteAccount(form({ confirm: "yes" })));
     expect(request.updatedTags).toContain("hub");
+  });
+
+  it("expires the board, whose requests and offers counts may have changed (community actions plan decision 10)", async () => {
+    await signedInAs("acc-student");
+    await redirectOf(() => deleteAccount(form({ confirm: "yes" })));
+    expect(request.updatedTags).toContain("requests");
   });
 
   it("expires nothing when the box wasn't ticked", async () => {

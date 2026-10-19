@@ -38,6 +38,8 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
     { message: `You have ${OPEN_REQUESTS_MAX} open requests. Close one before you post another.`, field: "none" },
   ],
   ["daily-limit", { message: `You've posted ${REQUESTS_PER_DAY} requests today. Try again tomorrow.`, field: "none" }],
+  // A new request's form with no token, a made-up one or a run-out one (plan amendment 3). It belongs to no field.
+  ["form-expired", { message: "This form has expired. Check it and send it again.", field: "none" }],
 ]);
 
 export type RequestFieldIds = {

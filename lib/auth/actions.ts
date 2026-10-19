@@ -20,7 +20,7 @@ import {
   saveSampleEmail,
   saveSignInAttempt,
 } from "@/lib/data/sign-in";
-import { hubChanged, sellersChanged } from "@/lib/data/tags";
+import { hubChanged, requestsChanged, sellersChanged } from "@/lib/data/tags";
 import { safeNextPath, signInHref } from "@/lib/next-path";
 import { ATTEMPT_TTL_MS, CODE_TTL_MS, CODES_PER_HOUR, isSampleMode, MAX_WRONG_TRIES, POLICY_VERSION } from "./config";
 import { deleteCookie, readCookieValue, SESSION_COOKIE, setFlash, SIGN_IN_COOKIE, setPrivateCookie } from "./cookies";
@@ -317,6 +317,8 @@ export async function deleteAccount(formData: FormData): Promise<void> {
   if (account.seller) sellersChanged();
   // Its RSVPs have gone, so events' counts change (staff tools plan, Task 8).
   hubChanged();
+  // Its requests have gone, and offers counts may have changed (community actions plan decision 10).
+  requestsChanged();
   await deleteCookie(SESSION_COOKIE);
   await setFlash("deleted");
   redirect("/");

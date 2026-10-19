@@ -21,6 +21,12 @@ describe("the request form's error words (community actions spec 2.3 and 2.4)", 
     expect(requestFieldIds("request-r-001").title).toBe("request-r-001-title");
   });
 
+  it("says a form with no good one-time token has expired, linked to no field (plan amendment 3)", () => {
+    expect(requestErrors(["form-expired"], requestFieldIds("request-new"))).toEqual([
+      { message: "This form has expired. Check it and send it again.", fieldId: null },
+    ]);
+  });
+
   it("drops a code it doesn't know", () => {
     expect(requestErrors(["toString", "made-up"], requestFieldIds("request-new"))).toEqual([]);
   });
