@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SESSION_COOKIE } from "@/lib/auth/cookies";
 import { readFormState } from "@/lib/auth/form-state";
 import { hashToken } from "@/lib/auth/secrets";
+import { addFollow } from "@/lib/data/follows";
+import { getNotifications } from "@/lib/data/notifications";
 import { getOwnListing, listOwnListings, setOwnListingState } from "@/lib/data/own-listings";
 import { attachPhotos, getPhoto, photoIdOf, storePhotos } from "@/lib/data/photos";
 import { createSession } from "@/lib/data/sessions";
@@ -501,5 +503,52 @@ describe("My listings' buttons and Delete listing (selling spec 2.9, plan decisi
       "/sell",
     );
     expect((await getOwnListing("tech-corner", "l-001"))?.state).toBe("available");
+  });
+});
+
+describe("telling followers (community actions spec 2.19, plan decision 15)", () => {
+  const notes = async () =>
+    (await getNotifications("acc-student", 50)).filter((item) => item.kind === "new-listing");
+
+  it("tells followers about a first publish, and not about an edit", async () => {
+    await addFollow("acc-student", "tech-corner", NOW);
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm()));
+    expect(await notes()).toMatchObject([{ text: "Tech corner listed Desk fan" }]);
+    const row = (await fan())!;
+    await redirectOf(async () => saveListingForm(await fanForm({ listing: row.id, title: "Desk fan, quiet" })));
+    expect(await notes()).toMatchObject([{ text: "Tech corner listed Desk fan" }]);
+  });
+
+  it("tells them when a draft is published, not when it's saved as one", async () => {
+    await addFollow("acc-student", "tech-corner", NOW);
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm({ intent: "draft" })));
+    expect(await notes()).toEqual([]);
+    const row = (await fan())!;
+    await redirectOf(async () => saveListingForm(await fanForm({ listing: row.id })));
+    expect(await notes()).toHaveLength(1);
+  });
+
+  it("tells them once for a listing published, saved back as a draft and published again (plan amendment 1)", async () => {
+    await addFollow("acc-student", "tech-corner", NOW);
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm()));
+    const row = (await fan())!;
+    await redirectOf(async () => saveListingForm(await fanForm({ listing: row.id, intent: "draft" })));
+    // On a later SAST day, so a second notification couldn't be folded into the first day's one.
+    vi.setSystemTime(new Date(NOW.getTime() + DAY_MS));
+    await redirectOf(async () => saveListingForm(await fanForm({ listing: row.id })));
+    expect((await getOwnListing("tech-corner", row.id))?.state).toBe("available");
+    expect(await notes()).toMatchObject([{ text: "Tech corner listed Desk fan" }]);
+    expect(await notes()).toHaveLength(1);
+  });
+
+  it("stays quiet while the shop is paused", async () => {
+    await addFollow("acc-student", "tech-corner", NOW);
+    sampleStore().sellerProfiles.get("acc-seller")!.status = "paused";
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm()));
+    expect(await notes()).toEqual([]);
   });
 });

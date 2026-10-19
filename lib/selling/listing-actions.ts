@@ -3,7 +3,14 @@
 import { redirect } from "next/navigation";
 import { writeFormState } from "@/lib/auth/form-state";
 import { getCategories, getPickupPoints } from "@/lib/data";
-import { deleteOwnListing, getOwnListing, saveOwnListing, setOwnListingState } from "@/lib/data/own-listings";
+import { notifyFollowers } from "@/lib/data/follows";
+import {
+  deleteOwnListing,
+  getOwnListing,
+  isFirstPublish,
+  saveOwnListing,
+  setOwnListingState,
+} from "@/lib/data/own-listings";
 import { photoSrcsOf, storePhotos, type Upload } from "@/lib/data/photos";
 import { shopStanding } from "@/lib/data/staff-shops";
 import { listingsChanged } from "@/lib/data/tags";
@@ -227,6 +234,17 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   if (!saved) redirect(myListingsPath());
   await clearForm(form);
   listingsChanged();
+  // A first publish (a new listing, or a draft published for the first time) by an open shop tells its followers, once
+  // a day (community actions plan decision 15 and amendment 1). Edits, relists, a shop resuming, and a listing
+  // published again after a save back to draft don't. `existing` is the row as it was before this save.
+  if (isFirstPublish(existing, saved.state) && owner.status === "approved" && !saved.hiddenAt) {
+    await notifyFollowers({
+      sellerSlug: owner.shop.slug,
+      shopName: owner.shop.name,
+      listing: { id: saved.id, title: saved.title },
+      now,
+    });
+  }
   let notice = "published";
   if (saved.state === "draft") notice = "drafted";
   else if (existing && existing.state !== "draft") notice = "saved";
