@@ -223,7 +223,7 @@ The controller adds amendments here; they override the tasks below wherever they
     3. **The limits say what they count:** "You've posted 5 requests in the last 24 hours. Try again later." and the same for offers (plan decision 4; messaging amendment 3.7).
     4. **An offer thread shows the request's current title** while the request is up: `getThread` and the inbox use `request?.title ?? row.requestTitle`. The kept title is only for once the request has gone.
     5. **A shop that has gone is "A closed shop" in every offer thread:** the asker's panel, the inbox, the thread and the export. Other conversations keep "Deleted account". There is one `CLOSED_SHOP` constant.
-    6. **A Hub-paused shop you follow shows on Saved, marked Paused,** with Unfollow and no storefront link (spec 2.17). Before this, it disappeared from Saved but still counted toward the 200.
+    6. **A Hub-paused shop you follow shows on Saved, marked Paused,** with Unfollow and no storefront link (spec 2.17). Before this, it disappeared from Saved but still counted toward the 200. As built (`72eb71d`): `FollowedShop` has a required `storefront: boolean`, and Task 18's `FollowedShopsView` links a card to `/sellers/<slug>` only when it is true (its test helper sets `storefront: true`). Follow and Unfollow's status lines name the shop through `shopNameOf(slug)`.
     7. **Tidying up:**
        - The synchronous `offerRow` moves into `lib/data/offers.ts`; `startOffer`, `findOffer` and `offerThreadCount` use it.
        - `notify`'s comment names the new kinds.
