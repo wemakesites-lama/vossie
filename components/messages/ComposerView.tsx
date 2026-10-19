@@ -43,7 +43,10 @@ type ComposerViewProps = {
 
 /** The composer (messaging spec 3.1): the listing or shop, "Message {shop}", the form or why there's none, the tips. */
 export function ComposerView({ subject, status, form }: ComposerViewProps) {
-  const { listing, seller, campusName } = subject;
+  const { listing, seller, campusName, target } = subject;
+  // The tips' heading id ends with the listing or shop, like the fields' ids, so two kept composers never share one
+  // (messaging plan amendment 5; community actions plan amendment 19.9).
+  const item = target.kind === "listing" ? target.listingId : target.sellerSlug;
   const back = listing
     ? { href: `/listings/${listing.id}`, label: "Back to the listing" }
     : { href: `/sellers/${seller.slug}`, label: "Back to the shop" };
@@ -96,7 +99,7 @@ export function ComposerView({ subject, status, form }: ComposerViewProps) {
           <MessageSummary listing={listing} listingTitle={null} shop={seller} campusName={campusName} />
           {main}
         </div>
-        <SafetyTips />
+        <SafetyTips id={`composer-${item}-tips`} />
       </div>
     </>
   );

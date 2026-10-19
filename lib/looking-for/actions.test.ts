@@ -81,6 +81,15 @@ describe("Post request (community actions spec 2.3 to 2.5)", () => {
     expect(sampleStore().requests.size).toBe(16);
   });
 
+  // Review of Tasks 6 to 15 (plan amendment 19.8): form state holds no stranger's text, as selling's listing form.
+  it("keeps only a category and a campus that exist when it hands the typed values back", async () => {
+    await asStudent();
+    await send({ title: "Lamp", category: "x".repeat(500), campus: "<b>mars</b>" });
+    expect((await readFormState(requestFormKey(null)))?.values).toMatchObject({ category: "", campus: "", title: "Lamp" });
+    await send({ title: "Lamp", category: "res-living", campus: "online" });
+    expect((await readFormState(requestFormKey(null)))?.values).toMatchObject({ category: "res-living", campus: "online" });
+  });
+
   it("stops at 5 open requests, then at 5 posted in a day (spec 2.5, plan decision 4)", async () => {
     await asStudent();
     for (let n = 0; n < 5; n += 1) await posted();
@@ -216,6 +225,30 @@ describe("Save changes (spec 2.6, plan decision 6)", () => {
     );
     expect((await getOwnRequest("acc-student", id))?.request.title).toBe("Clip-on desk lamp");
     expect(await readFormState(requestNoteKey(id))).toMatchObject({ notice: "saved" });
+  });
+
+  // Review of Tasks 6 to 15 (plan amendment 19.6): a request can be edited after its needed-by date has gone by.
+  it("saves an edit that leaves a passed needed-by date as it is, and refuses a changed date that has passed", async () => {
+    await asStudent();
+    const { id } = await createRequest({
+      askerId: "acc-student",
+      fields: { ...FIELDS, neededBy: "2026-10-10" },
+      now: STAFF_NOW,
+    });
+    expect(
+      await redirectOf(() =>
+        saveMyRequest(form({ ...FORM, request: id, title: "Clip-on desk lamp", neededBy: "2026-10-10" })),
+      ),
+    ).toBe(`/looking-for/${id}`);
+    expect((await getOwnRequest("acc-student", id))?.request).toMatchObject({
+      title: "Clip-on desk lamp",
+      neededBy: "2026-10-10",
+    });
+    expect(await redirectOf(() => saveMyRequest(form({ ...FORM, request: id, neededBy: "2026-10-11" })))).toBe(
+      `/looking-for/${id}/edit`,
+    );
+    expect((await readFormState(requestFormKey(id)))?.errors).toEqual(["needed-past"]);
+    expect((await getOwnRequest("acc-student", id))?.request.neededBy).toBe("2026-10-10");
   });
 
   it("never edits someone else's request, a sample, or a closed one", async () => {

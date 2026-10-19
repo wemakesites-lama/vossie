@@ -12,6 +12,7 @@ import type {
   Thread,
   UnreadCounts,
 } from "@/lib/types";
+import { toSeller } from "./catalog";
 import { getListingDetail, getListingsByIds, getRequest, getSeller } from "./index";
 import {
   countNewNotifications,
@@ -22,6 +23,7 @@ import {
   notifyAboutMessage,
 } from "./notifications";
 import { CLOSED_SHOP, offerRow } from "./offers";
+import { requestIsHidden } from "./requests";
 import type { ConversationRow, MessageRow } from "./rows";
 import { sampleStore } from "./store";
 
@@ -80,10 +82,25 @@ function buyerName(row: ConversationRow): string {
   return buyer?.firstName ?? DELETED;
 }
 
+/**
+ * The shop a conversation is with. A shop the Hub paused has no storefront, so no seller to read through the cache, but
+ * its row is there with its name and photo: it is the same shop in every thread (plan amendment 19.3). Only a shop whose
+ * row has gone is "A closed shop".
+ */
 async function shopOf(sellerSlug: string): Promise<ConversationShop> {
-  const seller = await getSeller(sellerSlug);
+  const row = sampleStore().sellers.get(sellerSlug);
+  const seller = (await getSeller(sellerSlug)) ?? (row ? toSeller(row) : null);
   if (!seller) return { slug: sellerSlug, name: CLOSED_SHOP, image: null, campusSlug: null };
   return { slug: seller.slug, name: seller.name, image: seller.image, campusSlug: seller.campusSlug };
+}
+
+/**
+ * The request an offer thread is about, by its title as it is now while the request's page is up, and by the title it
+ * had when it was offered on once it isn't (plan amendments 17.4 and 19.5). Null for any other conversation.
+ */
+async function currentRequestTitle(row: ConversationRow): Promise<string | null> {
+  if (!row.requestId) return null;
+  return (await getRequest(row.requestId))?.title ?? row.requestTitle ?? null;
 }
 
 /**
@@ -129,8 +146,8 @@ async function tellOtherSide(row: ConversationRow, from: Side, now: Date): Promi
   await notifyAboutMessage({
     accountId: to,
     conversationId: row.id,
-    // An offer thread is named by its request (community actions plan decision 14).
-    text: messageNoteText({ sender, listingTitle: row.requestTitle ?? row.listingTitle, first }),
+    // An offer thread is named by its request, as it is titled now (community actions plan decision 14, amendment 19.5).
+    text: messageNoteText({ sender, listingTitle: (await currentRequestTitle(row)) ?? row.listingTitle, first }),
     href: threadPath(row.id),
     now,
   });
@@ -309,7 +326,10 @@ export async function markCompleted(change: SaleChange): Promise<SaleResult> {
     accountId: row.buyerId,
     kind: "sale-to-confirm",
     subjectId: row.id,
-    text: saleNoteText({ shop: (await shopOf(row.sellerSlug)).name, listingTitle: row.requestTitle ?? row.listingTitle }),
+    text: saleNoteText({
+      shop: (await shopOf(row.sellerSlug)).name,
+      listingTitle: (await currentRequestTitle(row)) ?? row.listingTitle,
+    }),
     href: threadPath(row.id),
     now: change.now,
   });
@@ -409,7 +429,12 @@ export async function getThread(id: string, accountId: string, now: Date): Promi
     listing: detail ? { ...detail.listing } : null,
     // The request's title as it is now while it's up; the title it had when it was offered on once it has gone.
     request: row.requestId
-      ? { id: row.requestId, title: request?.title ?? row.requestTitle ?? "", live: request !== null }
+      ? {
+          id: row.requestId,
+          title: request?.title ?? row.requestTitle ?? "",
+          live: request !== null,
+          hidden: request === null && requestIsHidden(row.requestId),
+        }
       : null,
     status: row.status,
     completedAt: row.completedAt,
@@ -525,9 +550,10 @@ export async function exportConversations(accountId: string, now: Date): Promise
   return Promise.all(
     rows.map(async (row) => {
       const side = sideOf(row, accountId)!;
+      const requestTitle = await currentRequestTitle(row);
       return {
         with: otherName(row, side, (await shopOf(row.sellerSlug)).name),
-        about: row.requestTitle ? offerAbout(side, row.requestTitle) : row.listingTitle,
+        about: requestTitle ? offerAbout(side, requestTitle) : row.listingTitle,
         status: row.status,
         startedAt: row.createdAt,
         messages: messagesOf(row.id).map((message) => ({

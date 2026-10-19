@@ -625,7 +625,7 @@ describe("offers on Looking For requests (community actions spec 2.7 to 2.12)", 
       role: "buyer",
       otherName: "Tech corner",
       status: "offered",
-      request: { id: "r-001", title: "Accounting 1 tutor this week", live: true },
+      request: { id: "r-001", title: "Accounting 1 tutor this week", live: true, hidden: false },
     });
     expect(thread?.messages).toMatchObject([
       { fromViewer: false, author: "Tech corner", body: "I passed Accounting 1 with 78%. Evenings work." },
@@ -701,6 +701,7 @@ describe("offers on Looking For requests (community actions spec 2.7 to 2.12)", 
       id: "r-001",
       title: "Accounting 1 tutor this week",
       live: false,
+      hidden: false,
     });
   });
 
@@ -738,6 +739,7 @@ describe("offers on Looking For requests (community actions spec 2.7 to 2.12)", 
       id: posted.id,
       title: "Clip-on desk lamp",
       live: true,
+      hidden: false,
     });
     expect((await getInbox("acc-student", "buying", later(6))).find((row) => row.id === id)?.requestTitle).toBe(
       "Clip-on desk lamp",
@@ -751,6 +753,7 @@ describe("offers on Looking For requests (community actions spec 2.7 to 2.12)", 
       id: posted.id,
       title: "Desk lamp for res",
       live: false,
+      hidden: true,
     });
     expect((await getInbox("acc-student", "buying", later(8))).find((row) => row.id === id)?.requestTitle).toBe(
       "Desk lamp for res",
@@ -784,5 +787,79 @@ describe("offers on Looking For requests (community actions spec 2.7 to 2.12)", 
     expect((await getInbox(buyer.id, "buying", later(4))).find((row) => row.id === conversationId)?.otherName).toBe(
       "Deleted account",
     );
+  });
+
+  // Plan amendment 19.3: a shop the Hub paused is still a shop with a name; only one that has gone is "A closed shop".
+  it("uses the name of a shop the Hub paused in offer threads, the inbox, the export and the notifications", async () => {
+    const id = await offer();
+    await sendMessage({ conversationId: id, accountId: "acc-student", body: "Yes please.", now: later(1) });
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, { status: "paused", pausedBy: "staff" });
+    expect(await sendMessage({ conversationId: id, accountId: "acc-seller", body: "Thursday?", now: later(2) })).toBe("sent");
+    expect(await getThread(id, "acc-student", later(3))).toMatchObject({
+      otherName: "Tech corner",
+      otherPresent: true,
+      shop: { slug: "tech-corner", name: "Tech corner" },
+    });
+    expect((await getInbox("acc-student", "buying", later(3))).find((row) => row.id === id)?.otherName).toBe("Tech corner");
+    expect((await exportConversations("acc-student", later(3))).find((row) => row.about?.startsWith("Your request"))?.with).toBe(
+      "Tech corner",
+    );
+    expect((await getNotifications("acc-student", 1))[0].text).toBe(
+      "Tech corner replied about Accounting 1 tutor this week",
+    );
+    // It is the same shop in an ordinary enquiry.
+    const { buyer, conversationId } = await ayandaAsks();
+    expect((await getThread(conversationId, buyer.id, later(3)))?.otherName).toBe("Tech corner");
+  });
+
+  // Plan amendment 19.4: the Hub hid it, which is not the same as the asker taking it down.
+  it("says a request is hidden, as against gone, so the thread can tell the asker the Hub hid it", async () => {
+    const id = await offer({ askerId: "acc-mentor" });
+    expect((await getThread(id, "acc-mentor", later(1)))?.request).toMatchObject({ live: true, hidden: false });
+    await hideRequest("r-001", "Not allowed.", later(2));
+    expect((await getThread(id, "acc-mentor", later(3)))?.request).toEqual({
+      id: "r-001",
+      title: "Accounting 1 tutor this week",
+      live: false,
+      hidden: true,
+    });
+    expect((await getThread(id, "acc-seller", later(3)))?.request).toMatchObject({ live: false, hidden: true });
+    sampleStore().requests.delete("r-001");
+    expect((await getThread(id, "acc-mentor", later(4)))?.request).toMatchObject({ live: false, hidden: false });
+  });
+
+  // Plan amendment 19.5: the notifications and the export read the request's title as the inbox and the thread do.
+  it("names the request by its current title in reply and sale notifications and in both sides' exports", async () => {
+    const posted = await createRequest({
+      askerId: "acc-student",
+      fields: {
+        title: "Desk lamp for res",
+        categorySlug: "res-living",
+        campusSlug: "midrand",
+        details: "A lamp that clips onto a desk, by the weekend.",
+        budgetZar: 150,
+        swapWelcome: false,
+        neededBy: null,
+      },
+      now: OFFER_NOW,
+    });
+    const id = await offer({ request: { id: posted.id, title: posted.title } });
+    const renamed = { ...(await requestFields(posted.id)), title: "Clip-on desk lamp" };
+    expect(await updateRequest("acc-student", posted.id, renamed, later(1))).not.toBeNull();
+    await sendMessage({ conversationId: id, accountId: "acc-student", body: "Yes, Thursday.", now: later(2) });
+    expect((await getNotifications("acc-seller", 1))[0].text).toBe("Thandi replied about Clip-on desk lamp");
+    await sendMessage({ conversationId: id, accountId: "acc-seller", body: "18:00 at the library.", now: later(3) });
+    expect((await getNotifications("acc-student", 1))[0].text).toBe("Tech corner replied about Clip-on desk lamp");
+    expect(await markCompleted({ conversationId: id, accountId: "acc-seller", now: later(4) })).toBe("done");
+    expect((await getNotifications("acc-student", 1))[0].text).toBe(
+      "Tech corner marked Clip-on desk lamp as done. Did the sale happen?",
+    );
+    const aboutOf = async (account: string, start: string) =>
+      (await exportConversations(account, later(5))).map((row) => row.about).filter((about) => about?.startsWith(start));
+    expect(await aboutOf("acc-student", "Your request")).toEqual(["Your request: Clip-on desk lamp"]);
+    expect(await aboutOf("acc-seller", "Request")).toEqual(["Request: Clip-on desk lamp"]);
+    // Once the request has gone, the title it had when it went up is the one that is left.
+    sampleStore().requests.delete(posted.id);
+    expect(await aboutOf("acc-student", "Your request")).toEqual(["Your request: Desk lamp for res"]);
   });
 });

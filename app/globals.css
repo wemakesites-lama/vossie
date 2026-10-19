@@ -9006,7 +9006,11 @@
     overflow-wrap: anywhere;
   }
 
+  /* The title link is a tap target: 44px tall, its words centred (plan amendment 19.10). */
   .requests-item-title a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     color: var(--color-sky-dark);
     text-decoration: underline;
     text-underline-offset: 3px;

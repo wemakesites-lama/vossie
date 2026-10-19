@@ -3,7 +3,7 @@ import { ErrorSummary } from "@/components/forms/ErrorSummary";
 import { ArrowLeftIcon } from "@/components/icons";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
-import { OFFER_SENT_NOTE, SHOP_WAITS_NOTE } from "@/lib/looking-for/words";
+import { OFFER_SENT_NOTE, SHOP_CLOSED_NOTE, SHOP_WAITS_NOTE } from "@/lib/looking-for/words";
 import { sendReply } from "@/lib/messaging/actions";
 import { messagingErrors, replyFields } from "@/lib/messaging/errors";
 import { inboxPath, threadPath } from "@/lib/messaging/paths";
@@ -49,6 +49,12 @@ type ThreadViewProps = {
 export function ThreadView({ thread, now, reply, sent, campusName }: ThreadViewProps) {
   // The shop that offered waits for the asker's reply before writing again (community actions spec 2.9).
   const waiting = thread.request !== null && thread.role === "seller" && thread.status === "offered";
+  // The note after the composer sent the first message. A shop's offer says who is told, only while the asker has not
+  // replied; it never gets the enquiry's line about sellers replying (plan amendment 19.2).
+  const sentNote = !thread.request ? "Sent. Sellers usually reply within a day." : waiting ? OFFER_SENT_NOTE : null;
+  // The asker of an offer dealt with a shop, not a person, so a shop that has gone has closed (plan amendment 19.2).
+  const goneNote =
+    thread.request && thread.role === "buyer" ? SHOP_CLOSED_NOTE : "This person has left Vossie, so you can't reply.";
   return (
     <div className="thread-column">
       <Link href={inboxPath(thread.role === "seller" ? "selling" : "buying")} prefetch={false} className="msg-crumb">
@@ -79,9 +85,9 @@ export function ThreadView({ thread, now, reply, sent, campusName }: ThreadViewP
           <StatusPill status={thread.status} />
         </MessageSummary>
       )}
-      {sent && (
+      {sent && sentNote && (
         <p role="status" className="form-notice">
-          {thread.request && thread.role === "seller" ? OFFER_SENT_NOTE : "Sent. Sellers usually reply within a day."}
+          {sentNote}
         </p>
       )}
       <section aria-labelledby="thread-messages-title">
@@ -110,7 +116,7 @@ export function ThreadView({ thread, now, reply, sent, campusName }: ThreadViewP
       <SaleActions thread={thread} />
       {thread.otherPresent && waiting && <p className="form-notice">{SHOP_WAITS_NOTE}</p>}
       {thread.otherPresent && !waiting && <ReplyFormView thread={thread} reply={reply} />}
-      {!thread.otherPresent && <p className="form-notice">This person has left Vossie, so you can&apos;t reply.</p>}
+      {!thread.otherPresent && <p className="form-notice">{goneNote}</p>}
     </div>
   );
 }

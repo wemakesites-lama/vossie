@@ -391,9 +391,10 @@ export type Thread = {
   listing: Listing | null;
   /**
    * The request an offer answers, or null for any other conversation (community actions spec 2.7). `live` is false
-   * once its page has gone (deleted or hidden), and the thread then says so (plan decision 8).
+   * once its page has gone (deleted or hidden), and the thread then says so (plan decision 8). `hidden` is true when
+   * it is the Hub that hid it, which the asker is told (plan amendment 19.4).
    */
-  request: { id: string; title: string; live: boolean } | null;
+  request: { id: string; title: string; live: boolean; hidden: boolean } | null;
   status: ConversationStatus;
   completedAt: string | null;
   confirmedAt: string | null;

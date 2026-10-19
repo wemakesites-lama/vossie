@@ -103,6 +103,27 @@ describe("the composer's field ids (messaging plan amendment 5)", () => {
   });
 });
 
+describe("the composer's safety tips ids (community actions plan amendment 19.9)", () => {
+  it("gives each composer's tips heading an id of its own, so two kept composers never share one", async () => {
+    const views = [
+      await showComposer({ kind: "listing", listingId: "l-007" }),
+      await showComposer({ kind: "listing", listingId: "l-028" }),
+      await showComposer({ kind: "shop", sellerSlug: "tech-corner" }),
+    ].map((view) => view.container);
+    const ids = views.map((view) => view.querySelector(".msg-tips h2")?.id);
+    expect(ids).toEqual([
+      "composer-l-007-tips-title",
+      "composer-l-028-tips-title",
+      "composer-tech-corner-tips-title",
+    ]);
+    // Each section is named by the heading in its own view, and no heading id is on the page twice.
+    for (const [index, view] of views.entries()) {
+      expect(view.querySelector(".msg-tips")?.getAttribute("aria-labelledby")).toBe(ids[index]);
+      expect(document.querySelectorAll(`[id="${ids[index]}"]`)).toHaveLength(1);
+    }
+  });
+});
+
 describe("the thread's field ids (messaging plan amendment 5)", () => {
   function showThread(id: string) {
     const reply = replyForm(state("reply", { errors: ["message-missing"], values: { body: "" } }), id);

@@ -59,12 +59,15 @@ export type RequestFields = {
 // --- Contact details (spec 2.4, plan decision 3) -------------------------------------------------------------------
 
 const EMAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*\.\p{L}{2,}/u;
-/** A run of digits that may hold spaces, dots, dashes, slashes, pluses and brackets, perhaps after a "+". */
-const DIGIT_RUN = /\+?\d[\d\s().\/+-]*\d/g;
+/**
+ * A run of digits that may hold spaces, dots, dashes, slashes, pluses, brackets, commas, underscores and colons, perhaps
+ * after a "+" (plan amendment 19.1: "082,123,4567" is a number as "082-123-4567" is).
+ */
+const DIGIT_RUN = /\+?\d[\d\s().\/+,_:-]*\d/g;
 /** A date, written 2026-10-01 or 01.10.2026 or 01/10/2026: its digits are never part of a phone number. */
 const DATE = /\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[./]\d{1,2}[./]\d{2,4})\b/g;
-/** Where one number ends and the next begins inside a run. */
-const RUN_BREAK = /[\s()./+-]+/;
+/** Where one number ends and the next begins inside a run: the characters a run may hold, but the digits. */
+const RUN_BREAK = /[\s()./+,_:-]+/;
 /** 13 digits starting 978 or 979, each perhaps after one space or dash. */
 const ISBN_13 = /\b97[89](?:[\s-]?\d){10}\b/g;
 /** 10 characters, digits and a last X, each perhaps after one space or dash. */
@@ -155,12 +158,16 @@ export function addDays(date: string, days: number): string {
 
 export type NeededByCheck = { value: string | null; error: "needed-invalid" | "needed-past" | "needed-far" | null };
 
-/** Needed by (spec 2.3): empty is none; otherwise a real date from `today` (in SAST) to 90 days on. */
-export function checkNeededBy(raw: string, today: string): NeededByCheck {
+/**
+ * Needed by (spec 2.3): empty is none; otherwise a real date from `today` (in SAST) to 90 days on. When a request is
+ * being edited, `kept` is the date it holds already: that date is fine even once it has passed, and only a changed date
+ * must be today or later (plan amendment 19.6).
+ */
+export function checkNeededBy(raw: string, today: string, kept: string | null = null): NeededByCheck {
   const value = raw.trim();
   if (value === "") return { value: null, error: null };
   if (!isRealDate(value)) return { value: null, error: "needed-invalid" };
-  if (value < today) return { value: null, error: "needed-past" };
+  if (value < today && value !== kept) return { value: null, error: "needed-past" };
   if (value > addDays(today, NEEDED_BY_DAYS)) return { value: null, error: "needed-far" };
   return { value, error: null };
 }
@@ -170,8 +177,16 @@ function cleanTitle(raw: string): string {
   return cleanText(raw).replace(/\s+/g, " ");
 }
 
-/** What the form needs to know: the categories and campuses there are, and today's date in SAST. */
-export type RequestContext = { categorySlugs: readonly string[]; campusSlugs: readonly string[]; today: string };
+/**
+ * What the form needs to know: the categories and campuses there are, and today's date in SAST. `keptNeededBy` is the
+ * needed-by date an edited request holds already (plan amendment 19.6); a new request has none.
+ */
+export type RequestContext = {
+  categorySlugs: readonly string[];
+  campusSlugs: readonly string[];
+  today: string;
+  keptNeededBy?: string | null;
+};
 
 /**
  * The request form's checks (spec 2.3 and 2.4), in the form's order: the fields once they're right, or every problem.
@@ -196,7 +211,7 @@ export function checkRequest(
   else if (hasContactDetails(details)) errors.push("details-contact");
   const budget = parseBudget(input.budget);
   if (budget === "invalid") errors.push("budget-invalid");
-  const neededBy = checkNeededBy(input.neededBy, known.today);
+  const neededBy = checkNeededBy(input.neededBy, known.today, known.keptNeededBy ?? null);
   if (neededBy.error) errors.push(neededBy.error);
   if (errors.length > 0 || budget === "invalid") return { value: null, errors };
   return {

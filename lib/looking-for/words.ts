@@ -14,6 +14,10 @@ export const OFFER_SENT_NOTE = "Sent. The student who asked gets a notification.
 export const SHOP_WAITS_NOTE = "You can write again when they reply.";
 /** An offer thread's card once its request has gone (spec 2.6). */
 export const REQUEST_REMOVED_NOTE = "This request was removed.";
+/** The asker's offer thread once the Hub has hidden the request (plan amendment 19.4); the shop reads the note above. */
+export const REQUEST_HIDDEN_NOTE = "The Hub hid this request.";
+/** In place of the asker's reply form once the shop that offered has gone: the asker dealt with a shop (amendment 19.2). */
+export const SHOP_CLOSED_NOTE = "This shop has closed, so you can't reply.";
 
 const NOTICES: ReadonlyMap<string, string> = new Map([
   ["posted", "Your request is up."],

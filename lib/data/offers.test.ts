@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { forgetAccountInMessaging, sendMessage, startOffer, type NewOffer } from "./messages";
 import { CLOSED_SHOP, countOffersSince, findOffer, offerRow, offersForRequest, offerThreadCount } from "./offers";
-import { resetSampleStore } from "./store";
+import { resetSampleStore, sampleStore } from "./store";
 
 const at = (hour: number) => new Date(`2026-10-14T${String(hour).padStart(2, "0")}:00:00.000Z`);
 
@@ -51,6 +51,15 @@ describe("offers on a request (community actions spec 2.9 and 2.13)", () => {
     expect(await countOffersSince("tech-corner", at(7))).toBe(1);
     expect(await countOffersSince("tech-corner", at(5))).toBe(2);
     expect(await countOffersSince("code-coach", at(5))).toBe(0);
+  });
+
+  // Amendment 19.3: the Hub pausing a shop doesn't close it. Its name stays; "A closed shop" is for a shop that has gone.
+  it("names a shop the Hub paused by its own name, as the asker's threads do", async () => {
+    const id = await offer({ now: at(8) });
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, { status: "paused", pausedBy: "staff" });
+    expect(await offersForRequest("r-001")).toEqual([
+      { conversationId: id, shopName: "Tech corner", preview: "I passed Accounting 1 with 78%.", offeredAt: at(8).toISOString() },
+    ]);
   });
 
   // Amendment 9: the asker still sees the offer, as "A closed shop", but a shop that has gone is nobody's 20 a day.

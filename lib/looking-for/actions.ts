@@ -40,6 +40,7 @@ import {
   OFFERS_PER_DAY,
   OPEN_REQUESTS_MAX,
   REQUESTS_PER_DAY,
+  type RequestContext,
   type RequestError,
   type RequestInput,
 } from "./rules";
@@ -83,12 +84,21 @@ function requestInput(formData: FormData): RequestInput {
   };
 }
 
-/** What was typed, for the form to show again after a failed post (E's keepTyped caps the long fields). */
-function typedValues(input: RequestInput): Record<string, string> {
+/** The categories and campuses there are. */
+type Choices = Pick<RequestContext, "categorySlugs" | "campusSlugs">;
+
+/** A choice field's posted value when it is one of its choices, else nothing: form state holds no stranger's text. */
+const known = (raw: string, choices: readonly string[]) => (choices.includes(raw) ? raw : "");
+
+/**
+ * What was typed, for the form to show again after a failed post (E's keepTyped caps the long fields). The category and
+ * the campus are kept only when they are ones that exist, as selling's listing form does (plan amendment 19.8).
+ */
+function typedValues(input: RequestInput, choices: Choices): Record<string, string> {
   return {
     title: keepTyped(input.title),
-    category: input.categorySlug,
-    campus: input.campusSlug,
+    category: known(input.categorySlug, choices.categorySlugs),
+    campus: known(input.campusSlug, choices.campusSlugs),
     details: keepTyped(input.details),
     budget: keepTyped(input.budget),
     swap: input.swap ? "yes" : "",
@@ -112,11 +122,14 @@ export async function saveMyRequest(formData: FormData): Promise<void> {
   const path = editing ? editRequestPath(editing) : NEW_REQUEST_PATH;
   const account = await requireAccount(path);
   const now = new Date();
+  // The date an edited request holds already may have passed; only a changed date must be today or later (amendment 19.6).
+  let keptNeededBy: string | null = null;
   if (editing) {
     const own = await getOwnRequest(account.id, editing);
     if (!own) redirect(YOUR_REQUESTS_PATH);
     // The edit page says why a closed or hidden request can't be changed.
     if (own.state !== "open") back(path);
+    keptNeededBy = own.request.neededBy;
   }
   // A token that has made its request already: go where that post went, before any limit can turn this one away.
   const once = editing ? "" : field(formData, "once");
@@ -125,11 +138,11 @@ export async function saveMyRequest(formData: FormData): Promise<void> {
   const form = requestFormKey(editing);
   const [categories, campuses] = await Promise.all([getCategories(), getCampuses()]);
   const input = requestInput(formData);
-  const check = checkRequest(input, {
+  const choices = {
     categorySlugs: categories.map((category) => category.slug),
     campusSlugs: campuses.map((campus) => campus.slug),
-    today: sastDate(now),
-  });
+  };
+  const check = checkRequest(input, { ...choices, today: sastDate(now), keptNeededBy });
   const errors: RequestError[] = [...check.errors];
   if (!editing && errors.length === 0) {
     if ((await countOpenRequests(account.id)) >= OPEN_REQUESTS_MAX) errors.push("open-limit");
@@ -138,7 +151,7 @@ export async function saveMyRequest(formData: FormData): Promise<void> {
     }
   }
   if (errors.length > 0 || !check.value) {
-    await writeFormState(form, { errors, values: typedValues(input), notice: null }, now);
+    await writeFormState(form, { errors, values: typedValues(input, choices), notice: null }, now);
     back(path);
   }
   // Only now, with a request about to be made, is the token taken. Taking it is one step, so of two posts sent together
@@ -146,7 +159,8 @@ export async function saveMyRequest(formData: FormData): Promise<void> {
   if (!editing) {
     const token = await takeOnceToken(once, now);
     if (token.kind === "none") {
-      await writeFormState(form, { errors: ["form-expired"], values: typedValues(input), notice: null }, now);
+      const values = typedValues(input, choices);
+      await writeFormState(form, { errors: ["form-expired"], values, notice: null }, now);
       back(path);
     }
     if (token.kind === "again") done(token.sent?.path ?? YOUR_REQUESTS_PATH);

@@ -66,6 +66,26 @@ describe("who can offer (community actions spec 2.8, plan decisions 12 and 13)",
     expect(await offerStatus((await offerSubject("r-002"))!, TECH_CORNER)).toEqual({ kind: "sample" });
   });
 
+  // Review of Tasks 6 to 15 (plan amendment 19.7): the offer a shop made stays reachable whatever has happened to the shop.
+  it("shows a paused shop the offer it already made, and only otherwise that it is paused", async () => {
+    const subject = await postedSubject();
+    const paused = viewer("acc-seller", { status: "paused", sellerSlug: "tech-corner" });
+    expect(await offerStatus(subject, paused)).toEqual({ kind: "paused" });
+    const conversationId = await startOffer({
+      askerId: "acc-student",
+      request: { id: subject.request.id, title: subject.request.title },
+      sellerSlug: "tech-corner",
+      listing: null,
+      body: "I can help.",
+      now: NOW,
+    });
+    expect(await offerStatus(subject, paused)).toEqual({ kind: "offered", conversationId });
+    // A shop waiting for approval has no link yet, so it can have made no offer.
+    expect(await offerStatus(subject, viewer("acc-pending", { status: "pending", sellerSlug: null }))).toEqual({
+      kind: "pending",
+    });
+  });
+
   it("has no subject for a hidden or unknown request: the composer is the 404", async () => {
     await hideRequest("r-001", "Not allowed.", NOW);
     expect(await offerSubject("r-001")).toBeNull();

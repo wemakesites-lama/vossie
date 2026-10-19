@@ -51,6 +51,15 @@ export function publicRequest(id: string): LookingForRequest | null {
   return row && notHidden(row) ? toRequest(row) : null;
 }
 
+/**
+ * Whether the Hub has hidden this request: its page is gone but the request is not, so an offer thread can say who took
+ * it down (plan amendment 19.4). False for one that has been deleted.
+ */
+export function requestIsHidden(id: string): boolean {
+  const row = sampleStore().requests.get(id);
+  return row !== undefined && !notHidden(row);
+}
+
 /** Every request with a page, for prerendering and the sitemap. */
 export function publicRequestIds(): string[] {
   return [...sampleStore().requests.values()].filter(notHidden).map((row) => row.id);

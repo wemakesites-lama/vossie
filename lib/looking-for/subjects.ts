@@ -28,7 +28,9 @@ export type OfferStatus =
 
 /**
  * Only shops offer (spec 2.8): an approved shop with a storefront, not paused. One offer per shop per request, so an
- * offer already made is "offered" (spec 2.9); then a closed request, and a sample one, which has no one to answer.
+ * offer already made is "offered" (spec 2.9), checked before the shop's own standing: a shop that offered and was
+ * paused since can still open its offer (plan amendment 19.7). Then a closed request, and a sample one, which has no
+ * one to answer.
  */
 export async function offerStatus(subject: OfferSubject, account: Pick<Account, "id" | "seller">): Promise<OfferStatus> {
   const { request } = subject;
@@ -36,10 +38,11 @@ export async function offerStatus(subject: OfferSubject, account: Pick<Account, 
   if (askerId === account.id) return { kind: "own" };
   const seller = account.seller;
   if (!seller) return { kind: "no-shop" };
+  // A shop with no link yet has made no offer.
+  const existing = seller.sellerSlug ? await findOffer(request.id, seller.sellerSlug) : null;
+  if (existing) return { kind: "offered", conversationId: existing };
   if (seller.status === "pending" || !seller.sellerSlug) return { kind: "pending" };
   if (seller.status === "paused") return { kind: "paused" };
-  const existing = await findOffer(request.id, seller.sellerSlug);
-  if (existing) return { kind: "offered", conversationId: existing };
   if (request.status !== "open") return { kind: "closed" };
   if (!askerId) return { kind: "sample" };
   const listings = await getSellerListings(seller.sellerSlug);

@@ -67,6 +67,19 @@ describe("contact details (community actions spec 2.4, plan decision 3)", () => 
     }
   });
 
+  // Review of Tasks 6 to 15 (plan amendment 19.1): a comma, an underscore or a colon between digits joins them too.
+  it("finds phone numbers split by commas, underscores or colons", () => {
+    for (const text of ["082,123,4567", "082_123_4567", "082:123:4567", "Call 082, 123, 4567 after six", "R300,0821234567"]) {
+      expect(hasContactDetails(text), text).toBe(true);
+    }
+  });
+
+  it("lets prices, ranges and times with commas and colons through", () => {
+    for (const text of ["R1,200", "1,200 - 2,000", "R1,200 - R2,000", "Room 12, block 3, from 18:00", "Tuesdays 17:30, 18:00"]) {
+      expect(hasContactDetails(text), text).toBe(false);
+    }
+  });
+
   it("lets dates and ranges of dates or prices through, in both of the ways they are written", () => {
     for (const text of ["2026-10-01 - 2026-10-05", "01.10.2026 - 05.10.2026", "R1 200 - R2 000"]) {
       expect(hasContactDetails(text), text).toBe(false);
@@ -138,6 +151,15 @@ describe("needed by (community actions spec 2.3)", () => {
       expect(checkNeededBy(raw, "2026-10-14").error, raw).toBe("needed-invalid");
     }
   });
+
+  // Review of Tasks 6 to 15 (plan amendment 19.6): editing a request after its date has gone by must not turn it away.
+  it("accepts the date a request already holds after it has passed; only a changed date must be today or later", () => {
+    expect(checkNeededBy("2026-10-10", "2026-10-14", "2026-10-10")).toEqual({ value: "2026-10-10", error: null });
+    expect(checkNeededBy("2026-10-11", "2026-10-14", "2026-10-10").error).toBe("needed-past");
+    expect(checkNeededBy("2026-10-10", "2026-10-14", null).error).toBe("needed-past");
+    expect(checkNeededBy("2026-10-10", "2026-10-14").error).toBe("needed-past");
+    expect(checkNeededBy("2026-10-20", "2026-10-14", "2026-10-10")).toEqual({ value: "2026-10-20", error: null });
+  });
 });
 
 describe("the request form's checks (community actions spec 2.3)", () => {
@@ -184,6 +206,18 @@ describe("the request form's checks (community actions spec 2.3)", () => {
     expect(checkRequest(input({ title: "x".repeat(70) }), KNOWN).errors).toEqual([]);
     expect(checkRequest(input({ details: "Too short." }), KNOWN).errors).toEqual(["details-length"]);
     expect(checkRequest(input({ details: "x".repeat(601) }), KNOWN).errors).toEqual(["details-length"]);
+  });
+
+  it("keeps a passed needed-by date unchanged when the request is being edited (plan amendment 19.6)", () => {
+    const edited = input({ neededBy: "2026-10-10" });
+    expect(checkRequest(edited, KNOWN).errors).toEqual(["needed-past"]);
+    expect(checkRequest(edited, { ...KNOWN, keptNeededBy: "2026-10-10" })).toMatchObject({
+      value: { neededBy: "2026-10-10" },
+      errors: [],
+    });
+    expect(checkRequest(input({ neededBy: "2026-10-11" }), { ...KNOWN, keptNeededBy: "2026-10-10" }).errors).toEqual([
+      "needed-past",
+    ]);
   });
 
   it("refuses contact details in the title or the details (spec 2.4)", () => {

@@ -1,4 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { OwnRequest } from "@/lib/types";
 import { YourRequestsView } from "./YourRequestsView";
@@ -67,5 +69,20 @@ describe("Your requests (community actions spec 2.13, plan decision 18)", () => 
     unmount();
     render(<YourRequestsView items={[]} notice={null} />);
     expect(screen.getByText("You haven't asked for anything yet.")).toBeInTheDocument();
+  });
+});
+
+// Plan amendment 19.10: the title link is a tap target, so it is 44px tall (the tap targets rule). A test of the CSS text.
+describe("the title link's target (community actions plan amendment 19.10)", () => {
+  it("is at least 44px tall, centred in its row", () => {
+    const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+    const rule = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find((match) =>
+      match[1].split(",").some((selector) => selector.trim() === ".requests-item-title a"),
+    );
+    expect(rule).toBeDefined();
+    const body = rule![2].replace(/\s+/g, " ");
+    expect(body).toMatch(/display:\s*inline-flex/);
+    expect(body).toMatch(/align-items:\s*center/);
+    expect(body).toMatch(/min-height:\s*44px/);
   });
 });

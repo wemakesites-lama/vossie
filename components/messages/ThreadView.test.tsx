@@ -223,7 +223,7 @@ describe("offer threads (community actions spec 2.7 to 2.10, plan decision 8)", 
   const OFFER_NOW = new Date("2026-10-14T12:00:00.000Z");
   const offer = makeThread({
     status: "offered",
-    request: { id: "r-abc", title: "Desk lamp for res", live: true },
+    request: { id: "r-abc", title: "Desk lamp for res", live: true, hidden: false },
     listing: null,
     listingTitle: null,
     messages: [
@@ -275,7 +275,7 @@ describe("offer threads (community actions spec 2.7 to 2.10, plan decision 8)", 
       <ThreadView
         thread={{
           ...offer,
-          request: { id: "r-abc", title: "Desk lamp for res", live: false },
+          request: { id: "r-abc", title: "Desk lamp for res", live: false, hidden: false },
           listing: makeListing({ id: "l-test", title: "Clip-on lamp" }),
           listingTitle: "Clip-on lamp",
         }}
@@ -294,8 +294,43 @@ describe("offer threads (community actions spec 2.7 to 2.10, plan decision 8)", 
     const { unmount } = show(makeThread(), { sent: true });
     expect(screen.getByRole("status")).toHaveTextContent("Sent. Sellers usually reply within a day.");
     unmount();
-    show({ ...offer, otherPresent: false, otherName: "A closed shop" });
+    show(makeThread({ otherPresent: false, otherName: "Deleted account" }));
     expect(screen.getByText("This person has left Vossie, so you can't reply.")).toBeInTheDocument();
     expect(screen.queryByLabelText("Your reply")).toBeNull();
+  });
+
+  // Plan amendment 19.2: the asker dealt with a shop, so a shop that has gone is a shop that has closed.
+  it("tells the asker the shop has closed, not that a person has left; the shop still reads about a person", () => {
+    const { unmount } = show({ ...offer, otherPresent: false, otherName: "A closed shop" });
+    expect(screen.getByText("This shop has closed, so you can't reply.")).toBeInTheDocument();
+    expect(screen.queryByText(/has left Vossie/)).toBeNull();
+    expect(screen.queryByLabelText("Your reply")).toBeNull();
+    unmount();
+    show({ ...offer, role: "seller", otherPresent: false, otherName: "Deleted account" });
+    expect(screen.getByText("This person has left Vossie, so you can't reply.")).toBeInTheDocument();
+    expect(screen.queryByText(/shop has closed/)).toBeNull();
+  });
+
+  it("says the offer was sent only while the asker hasn't replied, and never with the sellers' line", () => {
+    const seller = { ...offer, role: "seller" as const, otherName: "Thandi" };
+    const { unmount } = show({ ...seller, status: "replied" }, { sent: true });
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByText(/Sent\./)).toBeNull();
+    unmount();
+    show({ ...seller, status: "offered" }, { sent: true });
+    expect(screen.getByRole("status")).toHaveTextContent("Sent. The student who asked gets a notification.");
+  });
+
+  // Plan amendment 19.4: the Hub hiding a request is not the asker taking it down.
+  it("tells the asker the Hub hid the request, and the shop only that it was removed", () => {
+    const hidden = { id: "r-abc", title: "Desk lamp for res", live: false, hidden: true };
+    const { unmount } = show({ ...offer, request: hidden });
+    expect(screen.getByText("The Hub hid this request.")).toBeInTheDocument();
+    expect(screen.queryByText("This request was removed.")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Desk lamp for res" })).toBeNull();
+    unmount();
+    show({ ...offer, role: "seller", otherName: "The student who asked", request: hidden });
+    expect(screen.getByText("This request was removed.")).toBeInTheDocument();
+    expect(screen.queryByText("The Hub hid this request.")).toBeNull();
   });
 });
