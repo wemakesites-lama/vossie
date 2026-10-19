@@ -128,6 +128,66 @@ Lama can veto any of these at plan review. In this plan, "plan decision N" means
 The controller adds amendments here; they override the tasks below wherever they differ.
 
 1. **The match hangs on F's own first-publish rule** (selling plan amendment 9.2 and community actions plan amendment 1, controller, 2026-10-15). The `firstPublish` condition this plan reuses from H is `isFirstPublish(existing, saved.state)` from `lib/data/own-listings.ts`, true only while `firstPublishedAt` is null, so a listing republished from a draft alerts no saved search a second time. Add that case to Task 2's tests. The export's key order ends `…, shop, listings, onboardingDraft`, then H's keys, then `savedSearches`.
+2. **Save this search's views get their own file** (as H's `FollowViews.tsx`; Task 4; plan review, Claude under decision 54, 2026-10-19).
+   - `SaveSearchSignedOut`, `SaveSearchRow` and the private `ManageLink` go in `components/browse/SaveSearchViews.tsx`.
+   - `SaveSearchControl.tsx` keeps only the box and its `<Suspense>`, and imports `SaveSearchSignedOut` from `./SaveSearchViews`.
+   - `ViewerSaveSearch.tsx` imports `SaveSearchRow` and `SaveSearchSignedOut` from `./SaveSearchViews`.
+   - `tests/helpers/viewer-save-search.tsx` imports from `@/components/browse/SaveSearchViews`, and `SaveSearchControl.test.tsx` imports `SaveSearchRow` from there.
+   - Without this, `BrowseView.test.tsx`'s mock factory would import the mocked `ViewerSaveSearch` and never finish, the trap `tests/helpers/viewer-follow.tsx` describes.
+   - Add the file to Task 4's files and to the file map.
+3. **Save this search carries a one-time token** (`lib/staff/once.ts`; selling amendment 14.1, staff tools amendment 15.7, community actions amendment 3).
+   - **The row:** `ViewerSaveSearch` calls `issueOnceToken()` only in the `new` state, after `getViewer()`, inside the row's `<Suspense>`. `SaveSearchRow` takes `once: string | null` and renders `<input type="hidden" name="once" value={once ?? ""} />` in its form. Task 4's hidden-fields test expects `once`, and `ViewerSaveSearch.test.tsx` mocks `@/lib/staff/once` with `issueOnceToken: async () => "t"`.
+   - **The action:** in `saveThisSearch`, after `isWorthSaving` and before `addSavedSearch`, call `const once = await takeOnceToken(field(formData, "once"), now)`.
+     - On `"again"` with `sent`: write `{ errors: [], values: {}, notice: "saved" }` under `saveSearchNoteKey(search)`, then `done(sent.path)`. Nothing is saved.
+     - Otherwise (`"first"`, `"none"`, or `"again"` with no `sent`), go on as written. After a `"saved"` result, call `leaveOnceToken(token, { path: back, notice: "saved" }, now)`.
+     - Unlike other create forms, a missing or expired token is not refused. The search key already keeps a save single, and a browse page left open for more than an hour should still save.
+   - **Tests** (`actions.test.ts`), 2 more:
+     - Posts carry `once: (await issueOnceToken()) ?? ""` after signing in.
+     - Two posts with one token save once, and both leave "saved".
+     - A post with no token still saves.
+   - **Records:** log this as plan decision 21. Task 10 adds a go-live note: the row writes one form-state row per signed-in browse view that offers Save, kept for an hour.
+4. **The export test destructures `savedSearches`** (Task 7). In `lib/data/accounts.test.ts`'s export test, add `savedSearches` to the destructured keys after `following`, and add `expect(savedSearches).toEqual([]);`. The built key order is `…, onboardingDraft, hubRsvps, slotRequests, requests, following`, then `savedSearches`.
+5. **Task 2's tests await `fanForm`.** Write `redirectOf(async () => saveListingForm(await fanForm(…)))` everywhere, and add the republish test:
+   ```ts
+   it("tells it once for a listing published, saved back as a draft and published again (plan amendment 1)", async () => {
+     await addSavedSearch("acc-student", FAN, NOW);
+     await signedInAs("acc-seller");
+     await redirectOf(async () => saveListingForm(await fanForm()));
+     const row = (await fan())!;
+     await redirectOf(async () => saveListingForm(await fanForm({ listing: row.id, intent: "draft" })));
+     vi.setSystemTime(new Date(NOW.getTime() + DAY_MS));
+     await redirectOf(async () => saveListingForm(await fanForm({ listing: row.id })));
+     expect(await matches()).toHaveLength(1);
+   });
+   ```
+   Step 3.2's line is now `if (isFirstPublish(existing, saved.state) && owner.status === "approved" && !saved.hiddenAt) {`. Task 2 has 7 tests.
+6. **The save row is keyed by its search.** `SaveSearchControl` renders `<Suspense key={searchKey(search)} …>` (messaging amendment 6.1, selling plan decision 2, community actions amendment 14). A client move from one search to another then starts a new boundary and a new form, and never shows the previous search's line. Test: the box's child has that key.
+7. **Task 9's e2e rows use the built shapes, and add slow-network rows.**
+   - In `cls.spec.ts` `PAGES`, use `"Student, Midrand"` where the plan writes `true`.
+   - In `SIGNED_IN_PAGES`, add `"Student, Midrand"` as each row's third value.
+   - Add these rows to `SLOW_PAGES` (`[name, path, signIn?, cookies?]`):
+     - `["browse page, a search (signed out)", "/browse?q=calculator"]`
+     - `["browse page, a search", "/browse?q=calculator", "Student, Midrand"]`
+     - `["Saved page's Searches tab (none saved)", "/saved?tab=searches", "Student, Midrand"]`
+     - `["Saved page's Searches tab (signed out)", "/saved?tab=searches"]`
+   - Import `seriousIssues` from `./helpers/axe`. `SavedTabs.test.tsx`'s amendment-14 test also expects the Searches tab's key to be `"searches"`.
+8. **The second test in Task 8, Step 4, waits for each press to land.** After Mark sold and Relist, add `await expect(main(shop).getByRole("status")).toContainText("Marked as sold.", POST_LANDS)` and `…toContainText("It's available again.", POST_LANDS)`, with `POST_LANDS` imported from `./helpers/selling`.
+9. **Privacy words and CLAUDE.md.**
+   - **Task 7:** add "your saved searches" to the privacy page's "What this site stores today" memory list and to its "While Vossie is a preview…" bullet.
+   - **Task 10, Step 6:** add "saved searches" to CLAUDE.md's POPIA memory list. After H's `community-writes` line, add this line: e2e tests that publish listings to test saved-search alerts go in `tests/e2e/alerts-writes.spec.ts`, in an `alerts-writes` project that runs after `community-writes`.
+10. **The JS ledger gains a "New listing form (signed in)" column,** starting at 152,265 B, 40 B under the stop line (as community actions amendment 10). Task 2 changes the action that page posts to, so it runs the signed-in "new listing form" row before and after its change. Every later measuring task records it too.
+11. **A deleted shop's listing alerts go too** (plan decision 15; Claude's call). When a shop is deleted, its listings' `search-match` notifications are deleted, as H deletes its `new-listing` notifications, since they would only lead to a 404.
+12. **Renames and quote fixes** (the review, against the built code; edit in place, no behaviour change):
+
+    | Plan (task, step) | Built code | File |
+    |---|---|---|
+    | Recheck 3; Task 1 Step 3.3: `STORE_VERSION` "5 after H, so 6" | It is **7**, so set it to **8** (or one more than it is when you start) | `lib/data/store.ts` |
+    | Recheck 9; Task 2 Step 3.2: `const firstPublish = …`, `if (firstPublish && …)` | No variable. The line is `if (isFirstPublish(existing, saved.state) && owner.status === "approved" && !saved.hiddenAt) {` | `lib/selling/listing-actions.ts` |
+    | Task 2 Step 3.3: H's comment "…once a day…" | Edit the built comment by meaning | same |
+    | Recheck 12; Task 5 Step 6: the `LinkTabs` and the ternary in `SavedTabs` | `SavedTabs` returns `<Suspense key={tab}>`. The `LinkTabs` and the ternary are in the private `SavedTabContent`, so edit there | `components/saved/SavedTabs.tsx` |
+    | Amendment 1: "…onboardingDraft, then H's keys" | The key order is `…, onboardingDraft, hubRsvps, slotRequests, requests, following` | `lib/data/accounts.ts` |
+    | Task 10 Step 2: the import lines | The file already imports `button, newBuyer, sellerPage, signUp` and the selling helpers. Add only `pressSave` and `publishListing` | `tests/e2e/screenshots.spec.ts` |
+    | "Where things stand", "Before you start", Recheck 1, and the figures | Stages F to H are built. `git status` shows the other sessions' uncommitted docs, which must never be staged. Browse is 151,338 B, Saved 151,226 B and the listing forms 152,265 B | — |
 
 ## Store design
 
