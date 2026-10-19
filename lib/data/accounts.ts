@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { sampleAccounts, sampleConsents } from "@/data/fixtures/accounts";
 import type { Account, Consent, SellerStatus, StaffRole, ViewerActivity } from "@/lib/types";
+import { exportFollowing, forgetFollowsOf } from "./follows";
 import type { AccountRow } from "./rows";
 import { listSessions } from "./sessions";
 import { exportConversations, forgetAccountInMessaging, unreadCounts, type ConversationExport } from "./messages";
 import { exportNotifications, type NotificationExport } from "./notifications";
 import { deleteReportsBy, exportReports, type ReportExport } from "./reports";
+import { exportRequests, forgetRequestsOf, type RequestExport } from "./requests";
 import { exportShop, forgetShopOf, type ListingExport, type OnboardingDraftExport, type ShopExport } from "./shops";
 import { exportStaffToolsData, forgetAccountInStaffTools, type StaffToolsExport } from "./staff-privacy";
 import { sampleStore } from "./store";
@@ -146,7 +148,7 @@ export async function restoreSampleAccount(email: string): Promise<Account | nul
 /**
  * "Download your data" (spec 3.3, plan decision 20). Messaging adds conversations, reports and notifications
  * (messaging plan decision 15); selling adds the shop, its listings and the wizard's draft (selling plan decision 22
- * and amendment 9.6).
+ * and amendment 9.6). Community actions add requests and follows.
  */
 export type AccountExport = {
   exportedAt: string;
@@ -173,6 +175,10 @@ export type AccountExport = {
   /** The Hub's events the account said it's going to, and its office-hours slot requests (staff tools plan decision 16). */
   hubRsvps: StaffToolsExport["hubRsvps"];
   slotRequests: StaffToolsExport["slotRequests"];
+  /** The Looking For requests the account posted, by name, with no ids (community actions plan decision 21). */
+  requests: RequestExport[];
+  /** The names of the shops it follows, newest first. A shop never sees who follows it. */
+  following: string[];
 };
 
 /** The account's data, as the export gives it. Null when the account has gone. */
@@ -190,6 +196,7 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
   const [reports, notifications] = await Promise.all([exportReports(accountId), exportNotifications(accountId)]);
   const selling = await exportShop(accountId);
   const hub = await exportStaffToolsData(accountId);
+  const [requests, following] = await Promise.all([exportRequests(accountId), exportFollowing(accountId)]);
   return {
     exportedAt: now.toISOString(),
     account: {
@@ -210,6 +217,8 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
     onboardingDraft: selling.onboardingDraft,
     hubRsvps: hub.hubRsvps,
     slotRequests: hub.slotRequests,
+    requests,
+    following,
   };
 }
 
@@ -217,8 +226,8 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
  * Deletes an account straight away (spec 2.13): the account, its shop, its consent, its sessions and their forms'
  * state, any sign-in under way for its email, every sample outbox row addressed to its email (found by address, so
  * a row whose attempt has already ended goes too), and its code count. Messaging's tables go first (messaging plan
- * decision 14), then selling's shop, listings and photos (selling plan decision 22). Nothing of anyone else's is
- * touched.
+ * decision 14), then community actions' requests and follows go before selling's shop, listings and photos (selling
+ * plan decision 22). Nothing of anyone else's is touched.
  */
 export async function deleteAccountData(accountId: string): Promise<void> {
   const store = sampleStore();
@@ -228,6 +237,10 @@ export async function deleteAccountData(accountId: string): Promise<void> {
   // the other side keeps its own side of each conversation (messaging plan decision 14).
   await forgetAccountInMessaging(accountId, store.sellerProfiles.get(accountId)?.sellerSlug ?? null);
   await deleteReportsBy(accountId);
+  // Then its requests and follows, and its shop's followers, while the shop still names its owner (community actions
+  // plan decision 21). Its offer threads have just followed messaging's rules.
+  await forgetRequestsOf(accountId);
+  await forgetFollowsOf(accountId);
   // Then its shop, the shop's listings, every photo it uploaded and its wizard draft (selling plan decision 22).
   await forgetShopOf(accountId);
   // Then the staff tools: notes about it, its RSVPs and slot requests go; the audit log forgets it (staff tools plan, Task 8).

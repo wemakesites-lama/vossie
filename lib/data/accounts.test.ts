@@ -14,9 +14,12 @@ import {
   restoreSampleAccount,
   updateAccountDetails,
 } from "./accounts";
+import { addFollow } from "./follows";
 import { saveFormState } from "./form-states";
+import { getThread, startOffer } from "./messages";
 import { storePhotos } from "./photos";
 import { createReport } from "./reports";
+import { createRequest } from "./requests";
 import { createSession } from "./sessions";
 import { changeShopSlug, emptyDraft, saveOnboardingDraft } from "./shops";
 import { recordCodeSent, saveSampleEmail, saveSignInAttempt } from "./sign-in";
@@ -145,8 +148,19 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
     const data = await exportAccountData("acc-seller", NOW);
     // Messaging adds three keys (messaging plan decision 15) and selling three (selling plan decision 22 and
     // amendment 9.6), checked below; everything else is compared in full.
-    const { conversations, reports, notifications, shop, listings, onboardingDraft, hubRsvps, slotRequests, ...rest } =
-      data!;
+    const {
+      conversations,
+      reports,
+      notifications,
+      shop,
+      listings,
+      onboardingDraft,
+      hubRsvps,
+      slotRequests,
+      requests,
+      following,
+      ...rest
+    } = data!;
     expect(rest).toEqual({
       exportedAt: NOW.toISOString(),
       account: {
@@ -174,6 +188,8 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
       "onboardingDraft",
       "hubRsvps",
       "slotRequests",
+      "requests",
+      "following",
     ]);
     expect(conversations.map((row) => [row.with, row.about])).toEqual([
       ["Thandi", "Casio fx-991ZA Plus calculator"],
@@ -191,6 +207,9 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
     // Sipho has no RSVPs or slot requests (staff tools plan amendment 4).
     expect(hubRsvps).toEqual([]);
     expect(slotRequests).toEqual([]);
+    // Nor has he posted a request or followed a shop (community actions plan decision 21, amendment 11).
+    expect(requests).toEqual([]);
+    expect(following).toEqual([]);
     const text = JSON.stringify(data);
     expect(text).not.toContain("session-key-1");
     expect(text).not.toContain("acc-seller");
@@ -355,5 +374,51 @@ describe("sample accounts come back (plan decision 15)", () => {
 
   it("is only for the sample addresses", async () => {
     expect(await restoreSampleAccount("someone@eduvos.com")).toBeNull();
+  });
+});
+
+describe("community actions in the export and in deletion (community actions spec 2.23, plan decision 21)", () => {
+  const FIELDS = {
+    title: "Desk lamp for res",
+    categorySlug: "res-living",
+    campusSlug: "midrand",
+    details: "A lamp that clips onto a desk, by the weekend.",
+    budgetZar: 150,
+    swapWelcome: false,
+    neededBy: null,
+  };
+
+  it("exports the account's requests and the names of the shops it follows, with no ids", async () => {
+    const posted = await createRequest({ askerId: "acc-student", fields: FIELDS, now: NOW });
+    await addFollow("acc-student", "tech-corner", NOW);
+    const data = await exportAccountData("acc-student", NOW);
+    expect(data?.requests).toMatchObject([{ title: "Desk lamp for res", category: "Res & living", state: "open" }]);
+    expect(data?.following).toEqual(["Tech corner"]);
+    expect(JSON.stringify(data)).not.toContain(posted.id);
+  });
+
+  it("deletes the account's requests and follows, and the follows of its shop", async () => {
+    const posted = await createRequest({ askerId: "acc-seller", fields: FIELDS, now: NOW });
+    await addFollow("acc-seller", "code-coach", NOW);
+    await addFollow("acc-student", "tech-corner", NOW);
+    await addFollow("acc-student", "code-coach", NOW);
+    await deleteAccountData("acc-seller");
+    expect(sampleStore().requests.has(posted.id)).toBe(false);
+    expect([...sampleStore().follows.values()].map((row) => [row.accountId, row.sellerSlug])).toEqual([
+      ["acc-student", "code-coach"],
+    ]);
+  });
+
+  it("leaves an offer thread with the shop when the asker goes, with no one to reply to", async () => {
+    const id = await startOffer({
+      askerId: "acc-student",
+      request: { id: "r-001", title: "Accounting 1 tutor this week" },
+      sellerSlug: "tech-corner",
+      listing: null,
+      body: "I passed Accounting 1 and can help this week.",
+      now: NOW,
+    });
+    await deleteAccountData("acc-student");
+    expect(await getThread(id, "acc-seller", NOW)).toMatchObject({ otherName: "Deleted account", otherPresent: false });
   });
 });
