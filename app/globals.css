@@ -9229,3 +9229,50 @@
     font-size: 14px;
   }
 }
+
+/* --- Community actions: the asker's offers panel (community actions plan, Task 15, spec 2.13) --- */
+@layer components {
+  .request-offers-eyebrow {
+    color: var(--color-navy);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .request-offers-state {
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .request-offers-list {
+    display: grid;
+    gap: 8px;
+    width: 100%;
+  }
+
+  /* White cards on the grey panel, each a 44px+ link to its thread. */
+  .request-offers-row {
+    display: grid;
+    gap: 2px;
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: var(--radius-card);
+    background: var(--color-white);
+    color: var(--color-ink);
+  }
+
+  .request-offers-shop {
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .request-offers-time {
+    color: var(--color-muted);
+    font-size: 13px;
+  }
+
+  .request-offers-preview {
+    overflow-wrap: anywhere;
+  }
+}

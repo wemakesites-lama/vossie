@@ -258,7 +258,7 @@ The two tables, the fields added to earlier rows, and who touches them:
 | Point | `/` | `/browse` | Listing | Storefront | Saved | Board | Request | `/sell` (signed out) | New listing form (signed in; amendment 10) |
 |---|---|---|---|---|---|---|---|---|---|
 | Start (G's final figures) | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | not measured at the start (Task 15 measures it) | 151,089 | 150,613 | 152,287 |
-| Task 15, the asker's panel | | | | | | | | | |
+| Task 15, the asker's panel | 150,613 | 151,360 | 151,769 | 151,373 | 151,248 | 150,613 | 151,089 | 150,613 | 152,287 |
 | Task 16, Post a request | | | | | | | | | |
 | Task 17, Follow | | | | | | | | | |
 | Task 18, Saved's tabs | | | | | | | | | |

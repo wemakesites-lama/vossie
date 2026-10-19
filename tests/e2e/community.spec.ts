@@ -136,7 +136,7 @@ test.describe("a request's page (spec 4.2)", () => {
     await expect(page.getByText("2 offers so far")).toBeVisible();
     await expect(page.getByRole("link", { name: "Offer to help" })).toHaveAttribute(
       "href",
-      "/login?next=%2Flooking-for%2Fr-001",
+      "/login?next=%2Flooking-for%2Fr-001%2Foffer",
     );
     await expect(page).toHaveTitle("Accounting 1 tutor this week · Vossie");
     await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /^I'm stuck on adjustments/);
@@ -158,11 +158,11 @@ test.describe("a request's page (spec 4.2)", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tutoring");
   });
 
-  test("Offer to help goes through the sign-in page and back", async ({ page }) => {
+  test("Offer to help goes through the sign-in page to the composer, and back", async ({ page }) => {
     onlyAt("phone-390", "desktop-1440");
     await page.goto("/looking-for/r-001");
     await page.getByRole("link", { name: "Offer to help" }).click();
-    await expect(page).toHaveURL(/\/login\?next=%2Flooking-for%2Fr-001$/);
+    await expect(page).toHaveURL(/\/login\?next=%2Flooking-for%2Fr-001%2Foffer$/);
     await page.getByRole("link", { name: "Go back" }).click();
     await expect(page).toHaveURL(/\/looking-for\/r-001$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Accounting 1 tutor this week");

@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { FlagIcon } from "@/components/icons";
 import { ReportLink } from "@/components/messages/SessionLinks";
-import { budgetLabel, dayMonth, offersSoFarLabel } from "@/lib/format";
-import { signInHref } from "@/lib/next-path";
+import { budgetLabel, dayMonth } from "@/lib/format";
 import { shortSastDate } from "@/lib/time";
 import type { Category, LookingForRequest } from "@/lib/types";
+import { OffersPanel } from "./OffersPanel";
 import { RelatedListings } from "./RelatedListings";
 
 type RequestViewProps = {
@@ -16,11 +16,11 @@ type RequestViewProps = {
 /**
  * A request's page (community spec 4.2): what's asked for, in the asker's words, the offers so far and a way to help,
  * then listings already on Vossie that might do. The asker stays unnamed (community spec decision 2). On desktop the
- * offers sit beside the request (plan decision 18).
+ * offers sit beside the request (plan decision 18). The offers panel follows the session: the asker manages their
+ * request there (community actions plan decision 19).
  */
 export function RequestView({ request, category, campusNames }: RequestViewProps) {
   const campusName = campusNames.get(request.campusSlug) ?? "";
-  const signIn = signInHref(`/looking-for/${request.id}`);
 
   return (
     <div className="page request-page">
@@ -61,16 +61,7 @@ export function RequestView({ request, category, campusNames }: RequestViewProps
           <h2 id="request-offers-title" className="sr-only">
             Offers
           </h2>
-          {request.status === "open" ? (
-            <>
-              <p className="request-offers-count">{offersSoFarLabel(request.offers)}</p>
-              <Link href={signIn} prefetch={false} className="btn btn-primary request-offer">
-                Offer to help
-              </Link>
-            </>
-          ) : (
-            <p className="request-offers-count">This request is closed</p>
-          )}
+          <OffersPanel request={request} />
         </section>
       </div>
 

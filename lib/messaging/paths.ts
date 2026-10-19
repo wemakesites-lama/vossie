@@ -63,12 +63,17 @@ export function parseReportTarget(params: Readonly<Record<string, string | strin
 const ACCOUNT_ONLY = ["/account", "/messages", "/notifications", "/admin", "/mentor", "/hub/manage", "/hub/new"];
 const HUB_EDIT = /^\/hub\/[a-z0-9][a-z0-9-]*\/edit$/;
 const HUB_BOOK = /^\/hub\/([a-z0-9][a-z0-9-]*)\/book$/;
+// Looking For's pages that need an account (community actions plan decision 22).
+const NEW_REQUEST = "/looking-for/new";
+const REQUEST_ACTION = /^\/looking-for\/([a-z0-9][a-z0-9-]*)\/(offer|edit|delete)$/;
 const COMPOSER = /^\/(listings|sellers)\/([a-z0-9][a-z0-9-]*)\/message$/;
 
 /**
  * Where the sign-in page's back link goes for `next` (plan decision 4): the listing, shop or request behind a composer
  * or a report form; nowhere for pages that need an account, or a staff role, since going back would only come back to
- * sign-in; a slot request's post for its request page; and `next` itself otherwise. `next` has already been through safeNextPath.
+ * sign-in; a slot request's post for its request page; the board for the request form, and the request for its offer,
+ * edit and delete pages (community actions plan decision 22); and `next` itself otherwise. `next` has already been
+ * through safeNextPath.
  */
 export function backPathFor(next: string): string | null {
   const url = new URL(next, "https://vossie.invalid");
@@ -77,6 +82,9 @@ export function backPathFor(next: string): string | null {
   if (HUB_EDIT.test(path)) return null;
   const booking = HUB_BOOK.exec(path);
   if (booking) return `/hub/${booking[1]}`;
+  if (path === NEW_REQUEST) return "/looking-for";
+  const requestAction = REQUEST_ACTION.exec(path);
+  if (requestAction) return `/looking-for/${requestAction[1]}`;
   const composer = COMPOSER.exec(path);
   if (composer) return `/${composer[1]}/${composer[2]}`;
   if (path === "/report" || path === "/report/sent") {

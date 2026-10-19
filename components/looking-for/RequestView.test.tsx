@@ -10,6 +10,9 @@ vi.mock("./RelatedListings", () => ({ RelatedListings: () => <section aria-label
 // The session's links are async Server Components; here they're the signed-out links (messaging plan, Task 7).
 vi.mock("@/components/messages/ViewerLinks", async () => (await import("@/tests/helpers/viewer-links")).signedOutViewerLinks);
 
+// The offers panel's session part is an async Server Component; here it's the signed-out panel (community actions plan, Task 15).
+vi.mock("@/components/looking-for/ViewerOffers", async () => (await import("@/tests/helpers/viewer-offers")).signedOutViewerOffers);
+
 // Requests come from the sample store (community actions plan decision 1). A fresh one for each test.
 beforeEach(() => {
   resetSampleStore();
@@ -70,13 +73,13 @@ describe("RequestView (community spec 4.2)", () => {
     expect(screen.getByText(/stuck on adjustments and the trial balance/)).toHaveClass("request-details");
   });
 
-  it("counts the offers so far and offers to help, through the sign-in page", async () => {
+  it("counts the offers so far and offers to help, through the sign-in page to the composer", async () => {
     await show("r-001");
     const offers = screen.getByRole("region", { name: "Offers" });
     expect(within(offers).getByText("2 offers so far")).toBeInTheDocument();
     expect(within(offers).getByRole("link", { name: "Offer to help" })).toHaveAttribute(
       "href",
-      "/login?next=%2Flooking-for%2Fr-001",
+      "/login?next=%2Flooking-for%2Fr-001%2Foffer",
     );
   });
 

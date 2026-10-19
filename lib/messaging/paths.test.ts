@@ -87,6 +87,15 @@ describe("messaging addresses (messaging spec 2.1, 2.8 and 3)", () => {
     expect(backPathFor("/hub/h-002")).toBe("/hub/h-002");
   });
 
+  it("goes back from Looking For's new pages (community actions plan decision 22)", () => {
+    expect(backPathFor("/looking-for/new")).toBe("/looking-for");
+    expect(backPathFor("/looking-for/r-001/offer")).toBe("/looking-for/r-001");
+    expect(backPathFor("/looking-for/r-001/edit")).toBe("/looking-for/r-001");
+    expect(backPathFor("/looking-for/r-001/delete")).toBe("/looking-for/r-001");
+    expect(backPathFor("/account/requests")).toBeNull();
+    expect(backPathFor("/looking-for/r-001")).toBe("/looking-for/r-001");
+  });
+
   it("keys each form's state by what it's about, so two drafts never mix (D decision 3)", () => {
     const keys = [
       composerFormKey({ kind: "listing", listingId: "l-001" }),
