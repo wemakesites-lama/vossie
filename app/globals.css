@@ -8892,3 +8892,66 @@
     overflow-wrap: anywhere;
   }
 }
+
+/* --- Community actions: the request form (community actions plan, Task 11, spec 2.3) --- */
+@layer components {
+  /* .page and .request-form-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
+  .request-form-page {
+    padding: 24px 16px 64px;
+  }
+
+  .request-form-column {
+    display: grid;
+    gap: 20px;
+    max-width: 40rem;
+  }
+
+  .request-form-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .request-form-lede {
+    max-width: 60ch;
+    color: var(--color-muted);
+  }
+
+  .request-form-textarea {
+    min-height: 9rem;
+    resize: vertical;
+  }
+
+  /* A budget and a date need little room. */
+  .request-form-short {
+    max-width: 14rem;
+  }
+
+  .request-form-note {
+    display: grid;
+    justify-items: start;
+    gap: 12px;
+  }
+
+  .request-form-skeleton-crumb {
+    width: 10rem;
+    height: 44px;
+  }
+
+  .request-form-skeleton-title {
+    width: 16rem;
+    height: 2.5rem;
+  }
+
+  .request-form-skeleton-field {
+    height: 5.5rem;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .request-form-page {
+      padding-inline: 40px;
+    }
+  }
+}

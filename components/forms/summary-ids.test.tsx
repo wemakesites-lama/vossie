@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { AccountView, detailsForm } from "@/components/account/AccountView";
 import { PrivacySettingsView } from "@/components/account/PrivacySettingsView";
 import { CodeStep, EmailStep, ProfileStep } from "@/components/auth/SignInSteps";
+import { RequestFormView, startValues } from "@/components/looking-for/RequestFormView";
 import { composerForm, ComposerView } from "@/components/messages/ComposerView";
 import { reportForm, ReportView } from "@/components/messages/ReportView";
 import { replyForm, ThreadView } from "@/components/messages/ThreadView";
@@ -72,6 +73,13 @@ vi.mock("@/lib/staff/admin-actions", () => ({
 vi.mock("@/lib/staff/hub-actions", () => ({ answerSlot: async () => {}, savePost: async () => {} }));
 vi.mock("@/lib/hub-actions", () => ({ cancelRsvp: async () => {}, rsvpToEvent: async () => {}, sendSlotRequest: async () => {} }));
 vi.mock("@/lib/staff/mentor-actions", () => ({ addCheckIn: async () => {}, addMentorNote: async () => {} }));
+vi.mock("@/lib/looking-for/actions", () => ({
+  closeMyRequest: async () => {},
+  deleteMyRequest: async () => {},
+  reopenMyRequest: async () => {},
+  saveMyRequest: async () => {},
+  sendOffer: async () => {},
+}));
 
 const account: Account = {
   id: "acc-student",
@@ -287,10 +295,26 @@ describe("error summary ids (accounts spec 6)", () => {
           checkInOnce="9a3c1d5e-7b2f-4e8a-b6d4-1c0e5f7a2d83"
           today="2026-10-14"
         />
+        <RequestFormView
+          requestId={null}
+          once="3d8e5c2a-1f47-4b9d-a6c0-7e2b9f1d4a58"
+          form={{ values: startValues(null, "midrand"), errors: oops }}
+          campuses={campuses}
+          categories={categories}
+          today="2026-10-14"
+        />
+        <RequestFormView
+          requestId="r-001"
+          once={null}
+          form={{ values: startValues(null, "midrand"), errors: oops }}
+          campuses={campuses}
+          categories={categories}
+          today="2026-10-14"
+        />
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(29);
+    expect(summaries).toHaveLength(31);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -324,6 +348,8 @@ describe("error summary ids (accounts spec 6)", () => {
       "book-h-002-summary",
       "note-tech-corner-summary",
       "check-in-tech-corner-summary",
+      "request-new-summary",
+      "request-r-001-summary",
     ]);
   });
 });
