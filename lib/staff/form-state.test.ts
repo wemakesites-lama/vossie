@@ -3,7 +3,17 @@ import { readFormState, writeFormState } from "@/lib/auth/form-state";
 import { resetSampleStore } from "@/lib/data/store";
 import { resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { signedInAs, STAFF_NOW } from "@/tests/helpers/staff";
-import { clearStaffForm, declineForm, HUB_NOTICE, leaveNotice, postForm, postPrefix, takeNotice } from "./form-state";
+import {
+  clearStaffForm,
+  declineForm,
+  GIVE_ROLE_FORM,
+  HUB_NOTICE,
+  leaveNotice,
+  postForm,
+  postPrefix,
+  removeRoleForm,
+  takeNotice,
+} from "./form-state";
 
 const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
 
@@ -46,5 +56,13 @@ describe("the post editor's names", () => {
   it("names a new post's form and ids apart from an edit's, and each edit's apart from the others", () => {
     expect([postForm(null), postForm("h-002")]).toEqual(["post:new", "post:h-002"]);
     expect([postPrefix(null), postPrefix("h-002")]).toEqual(["new-post", "edit-h-002"]);
+  });
+});
+
+describe("stage J's form keys (plan decision 9)", () => {
+  it("keeps Give a staff role's state under one key, and each removal's under its person and role", () => {
+    expect(GIVE_ROLE_FORM).toBe("staff-give-role");
+    expect(removeRoleForm("acc-mentor", "mentor")).toBe("staff-remove:acc-mentor:mentor");
+    expect(removeRoleForm("acc-admin", "admin")).toBe("staff-remove:acc-admin:admin");
   });
 });

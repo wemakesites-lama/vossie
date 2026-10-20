@@ -26,10 +26,14 @@ const EVERY_ACTION: AuditAction[] = [
   "booking-declined",
   "note-added",
   "check-in-added",
+  "role-given",
+  "role-removed",
+  "listing-shown",
+  "request-shown",
 ];
 
 describe("the audit log's words (staff tools spec 2.2 and 2.3)", () => {
-  it("words every action and files it under one of the seven kinds", () => {
+  it("words every action and files it under one of the eight kinds", () => {
     const kinds = new Set(AUDIT_KINDS.map((item) => item.kind));
     for (const action of EVERY_ACTION) {
       expect(auditLabel(action), action).toMatch(/^[A-Z]/);
@@ -53,5 +57,27 @@ describe("hiding a request (community actions plan decision 20)", () => {
   it("is Hid a request, filed under Reports", () => {
     expect(auditLabel("request-hidden")).toBe("Hid a request");
     expect(auditKindOf("request-hidden")).toBe("reports");
+  });
+});
+
+describe("staff accounts and Show again (stage J spec decisions 7 and 14)", () => {
+  it("words the role changes, filed under Staff accounts, the last kind in the filter", () => {
+    expect(auditLabel("role-given")).toBe("Gave a staff role");
+    expect(auditLabel("role-removed")).toBe("Removed a staff role");
+    expect(auditKindOf("role-given")).toBe("staff");
+    expect(auditKindOf("role-removed")).toBe("staff");
+    expect(AUDIT_KINDS.at(-1)).toEqual({ kind: "staff", label: "Staff accounts" });
+    expect(AUDIT_KINDS.at(-2)?.kind).toBe("mentoring");
+  });
+
+  it("words Show again, filed under Reports beside the hides", () => {
+    expect(auditLabel("listing-shown")).toBe("Showed a listing again");
+    expect(auditLabel("request-shown")).toBe("Showed a request again");
+    expect(auditKindOf("listing-shown")).toBe("reports");
+    expect(auditKindOf("request-shown")).toBe("reports");
+  });
+
+  it("reads kind=staff from the link", () => {
+    expect(parseAuditFilter({ kind: "staff" })).toEqual({ staff: null, kind: "staff" });
   });
 });

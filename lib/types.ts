@@ -325,6 +325,7 @@ export type ReportTarget = { kind: "listing" | "seller" | "request"; id: string 
  * listing ("shop-update"), and slot requests ("booking"). Community actions add an offer on your request, the Hub's
  * update about your request, and a followed shop's new listing (community actions plan decision 14).
  * Saved-search alerts add a saved search's new match (search alerts spec 2.12).
+ * Staff accounts add a staff role given or taken away (stage J spec decision 7).
  */
 export type NotificationKind =
   | "message"
@@ -336,7 +337,8 @@ export type NotificationKind =
   | "offer"
   | "request-update"
   | "new-listing"
-  | "search-match";
+  | "search-match"
+  | "staff-role";
 
 /** The shop a conversation is with, as a thread shows it. `image` and `campusSlug` are null once the shop has gone. */
 export type ConversationShop = {
@@ -497,13 +499,25 @@ export type AuditAction =
   | "booking-accepted"
   | "booking-declined"
   | "note-added"
-  | "check-in-added";
+  | "check-in-added"
+  | "role-given"
+  | "role-removed"
+  | "listing-shown"
+  | "request-shown";
 
 /** The audit log's filter by kind (staff tools spec 2.3). Each action belongs to one (lib/staff/audit-words.ts). */
-export type AuditKind = "shops" | "reports" | "featured" | "pickup-points" | "posts" | "office-hours" | "mentoring";
+export type AuditKind =
+  | "shops"
+  | "reports"
+  | "featured"
+  | "pickup-points"
+  | "posts"
+  | "office-hours"
+  | "mentoring"
+  | "staff";
 
 /** What an audit entry is about. */
-export type AuditTargetKind = "shop" | "listing" | "report" | "pickup-point" | "post" | "booking" | "request";
+export type AuditTargetKind = "shop" | "listing" | "report" | "pickup-point" | "post" | "booking" | "request" | "account";
 
 /** One line of the audit log (staff tools spec 2.2): who, what, the target, the reason or detail, and when. */
 export type AuditEntry = {

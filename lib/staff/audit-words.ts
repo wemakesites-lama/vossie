@@ -28,6 +28,11 @@ const ACTIONS: Readonly<Record<AuditAction, { label: string; kind: AuditKind }>>
   "booking-declined": { label: "Declined a slot request", kind: "office-hours" },
   "note-added": { label: "Added a mentor's note", kind: "mentoring" },
   "check-in-added": { label: "Added a check-in", kind: "mentoring" },
+  // Stage J: staff accounts (spec decision 7), and Show again beside the hides (spec decision 14).
+  "role-given": { label: "Gave a staff role", kind: "staff" },
+  "role-removed": { label: "Removed a staff role", kind: "staff" },
+  "listing-shown": { label: "Showed a listing again", kind: "reports" },
+  "request-shown": { label: "Showed a request again", kind: "reports" },
 };
 
 /** The log's kinds, in the filter's order. */
@@ -39,6 +44,7 @@ export const AUDIT_KINDS: ReadonlyArray<{ kind: AuditKind; label: string }> = [
   { kind: "posts", label: "Hub posts" },
   { kind: "office-hours", label: "Office hours" },
   { kind: "mentoring", label: "Mentoring" },
+  { kind: "staff", label: "Staff accounts" },
 ];
 
 export function auditLabel(action: AuditAction): string {

@@ -25,6 +25,10 @@ export const postPrefix = (id: string | null) => (id ? `edit-${id}` : "new-post"
 export const noteForm = (slug: string) => `mentor-note:${slug}`;
 export const checkInForm = (slug: string) => `check-in:${slug}`;
 export const slotForm = (postId: string) => `slot:${postId}`;
+/** Give a staff role (stage J spec decision 3): one form, its errors and typed email. */
+export const GIVE_ROLE_FORM = "staff-give-role";
+/** A role's confirm page: a refusal (your own admin role, the last admin) shows there (stage J spec decision 5). */
+export const removeRoleForm = (accountId: string, role: "mentor" | "admin") => `staff-remove:${accountId}:${role}`;
 
 /** Forgets this browser's state for `form`. Signed out, it does nothing. */
 export async function clearStaffForm(form: string): Promise<void> {

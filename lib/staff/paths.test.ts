@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  ADMIN_HIDDEN_PATH,
+  ADMIN_NUMBERS_PATH,
+  ADMIN_STAFF_PATH,
   adminReportPath,
   adminSellerPath,
   AREA_HOME,
@@ -9,8 +12,12 @@ import {
   editPostPath,
   hideReportedPath,
   mentorShopPath,
+  numbersPath,
   pauseReportedPath,
   pauseSellerPath,
+  removeRolePath,
+  showListingPath,
+  showRequestPath,
   STAFF_SECTIONS,
 } from "./paths";
 
@@ -45,5 +52,22 @@ describe("the staff pages' addresses (staff tools spec section 3)", () => {
       "Mentoring",
     ]);
     expect(AREA_HOME.hub).toEqual({ href: "/hub/manage", label: "Hub posts and office hours" });
+  });
+});
+
+describe("stage J's addresses (spec section 3)", () => {
+  it("puts staff accounts, the numbers and the hidden list under /admin", () => {
+    expect(ADMIN_STAFF_PATH).toBe("/admin/staff");
+    expect(ADMIN_NUMBERS_PATH).toBe("/admin/numbers");
+    expect(ADMIN_HIDDEN_PATH).toBe("/admin/hidden");
+    expect(removeRolePath("acc-mentor", "mentor")).toBe("/admin/staff/acc-mentor/remove-mentor");
+    expect(removeRolePath("acc-admin", "admin")).toBe("/admin/staff/acc-admin/remove-admin");
+    expect(showListingPath("l-001")).toBe("/admin/hidden/listings/l-001");
+    expect(showRequestPath("r-001")).toBe("/admin/hidden/requests/r-001");
+  });
+
+  it("puts a campus's view of the numbers in the link", () => {
+    expect(numbersPath(null)).toBe("/admin/numbers");
+    expect(numbersPath("midrand")).toBe("/admin/numbers?campus=midrand");
   });
 });

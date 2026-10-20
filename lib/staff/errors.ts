@@ -46,6 +46,16 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
     "once-expired",
     { message: "This form is out of date, so nothing was saved. What you typed is kept: check it and send it again.", field: "none" },
   ],
+  // Give a staff role (stage J spec decision 3), in the form's order, and a refused removal (spec decision 5).
+  ["staff-email-missing", { message: "Enter their Eduvos email.", field: "email" }],
+  [
+    "staff-email-unknown",
+    { message: "No Vossie account uses that email. Ask them to sign in once, then try again.", field: "email" },
+  ],
+  ["staff-role-missing", { message: "Choose Mentor or Admin.", field: "role" }],
+  ["staff-role-held", { message: "That account has that role already.", field: "role" }],
+  ["staff-own-admin", { message: "You can't remove your own admin role. Ask another admin.", field: "none" }],
+  ["staff-last-admin", { message: "Vossie needs at least one admin.", field: "none" }],
   // The Hub's post editor (lib/staff/post-rules.ts), in the form's order.
   ["post-kind-missing", { message: "Choose a tip, an event or office hours.", field: "kind" }],
   ["post-title-missing", { message: "Give the post a title.", field: "title" }],
@@ -107,3 +117,9 @@ export function postFieldIds(prefix: string) {
     published: `${prefix}-published`,
   } as const;
 }
+
+/**
+ * Give a staff role's field ids (stage J plan decision 9). One form on one page, so no prefix by thing. The role's
+ * error goes to its first radio.
+ */
+export const GIVE_ROLE_FIELDS = { email: "give-role-email", role: "give-role-role-mentor" } as const;

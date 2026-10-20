@@ -27,6 +27,11 @@ const NOTICES: ReadonlyMap<string, string> = new Map([
   ["booking-declined", "Declined. The student has been told."],
   ["note-added", "Note saved."],
   ["check-in-added", "Check-in saved."],
+  // Stage J (spec decisions 7 and 14).
+  ["role-given", "Role given. They've been told, and their tools are on their account page."],
+  ["role-removed", "Role removed. They've been told."],
+  ["listing-shown", "Showing again. Its seller has been told."],
+  ["request-shown", "Showing again. The asker has been told."],
   ["nothing", "Nothing changed. It was already done."],
   // A student's own, on a Hub post and its slot request page (plan decision 13).
   ["rsvp", "You're going. See you there."],

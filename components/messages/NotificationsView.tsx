@@ -15,6 +15,7 @@ import type { NotificationItem, NotificationKind } from "@/lib/types";
  * Each kind's icon (plan decision 13; staff tools plan decision 7 adds "shop-update" and "booking"). Community actions
  * add "offer", "request-update" and "new-listing" (community actions plan decision 14).
  * Saved-search alerts add "search-match", drawn with the search icon (search alerts plan decision 14).
+ * Staff accounts add "staff-role", drawn with the shield like the Hub's other word about you (stage J spec decision 7).
  */
 function KindIcon({ kind }: { kind: NotificationKind }) {
   switch (kind) {
@@ -38,6 +39,8 @@ function KindIcon({ kind }: { kind: NotificationKind }) {
       return <PlusSquareIcon className="notes-icon" />;
     case "search-match":
       return <SearchIcon className="notes-icon" />;
+    case "staff-role":
+      return <ShieldIcon className="notes-icon" />;
   }
 }
 

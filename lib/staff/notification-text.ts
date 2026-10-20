@@ -1,3 +1,5 @@
+import type { StaffRole } from "@/lib/types";
+
 // The sentences staff actions send (staff tools spec 2.3 and 2.4; plan decisions 7 and 22), fixed when each
 // notification is made. Reasons stay out of them: each links to where its reason shows (/sell, My listings). The
 // words are samples for Lama to change.
@@ -50,4 +52,26 @@ export function slotAnswerText(answer: "accepted" | "declined", postTitle: strin
 /** A new slot request, for the office hours' author (plan decision 13), with the "booking" kind. */
 export function slotRequestedText(student: string, postTitle: string): string {
   return `${student} asked for a slot at ${postTitle}.`;
+}
+
+/** A staff role given or taken away, with the "staff-role" kind (stage J spec decision 7). */
+export function staffRoleText(change: "given" | "removed", role: StaffRole): string {
+  if (change === "given") {
+    return role === "mentor"
+      ? "You're a Vossie mentor now. The Hub's tools and the mentor dashboard are on your account page."
+      : "You're a Vossie admin now. The admin console is on your account page.";
+  }
+  return role === "mentor"
+    ? "Your mentor role on Vossie has ended. Thank you for helping student sellers."
+    : "Your admin role on Vossie has ended.";
+}
+
+/** A hidden listing shown again, for its seller, with the "shop-update" kind (stage J spec decision 14). */
+export function listingShownText(title: string): string {
+  return `The Hub is showing ${title} again. It's back in My listings.`;
+}
+
+/** A hidden request shown again, for its asker, with the "request-update" kind (stage J spec decision 14). */
+export function requestShownText(title: string): string {
+  return `The Hub is showing your request ${title} again.`;
 }

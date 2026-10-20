@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { sellingErrors } from "@/lib/selling/errors";
-import { postFieldIds, staffErrors, staffFieldIds } from "./errors";
+import { GIVE_ROLE_FIELDS, postFieldIds, staffErrors, staffFieldIds } from "./errors";
 
 describe("the staff forms' error words (plan decision 22)", () => {
   it("words each code and links it to its field on this form", () => {
@@ -49,6 +49,34 @@ describe("the staff forms' error words (plan decision 22)", () => {
     expect(all.map((error) => error.message)).toEqual([
       expect.stringMatching(/^This form is out of date/),
       "Use a JPG, PNG or WebP photo.",
+    ]);
+  });
+});
+
+describe("Give a staff role and Remove a role (stage J spec decisions 3 and 5)", () => {
+  it("words each of the form's errors, linked to the email or the first role radio", () => {
+    expect(
+      staffErrors(["staff-email-missing", "staff-role-missing"], GIVE_ROLE_FIELDS).map((error) => [error.message, error.fieldId]),
+    ).toEqual([
+      ["Enter their Eduvos email.", "give-role-email"],
+      ["Choose Mentor or Admin.", "give-role-role-mentor"],
+    ]);
+    expect(staffErrors(["staff-email-unknown"], GIVE_ROLE_FIELDS)).toEqual([
+      {
+        message: "No Vossie account uses that email. Ask them to sign in once, then try again.",
+        fieldId: "give-role-email",
+      },
+    ]);
+    expect(staffErrors(["staff-role-held"], GIVE_ROLE_FIELDS)).toEqual([
+      { message: "That account has that role already.", fieldId: "give-role-role-mentor" },
+    ]);
+    expect(GIVE_ROLE_FIELDS).toEqual({ email: "give-role-email", role: "give-role-role-mentor" });
+  });
+
+  it("words a refused removal, linked to no field", () => {
+    expect(staffErrors(["staff-own-admin", "staff-last-admin"], {})).toEqual([
+      { message: "You can't remove your own admin role. Ask another admin.", fieldId: null },
+      { message: "Vossie needs at least one admin.", fieldId: null },
     ]);
   });
 });

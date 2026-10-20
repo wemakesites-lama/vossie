@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   listingHiddenText,
+  listingShownText,
   reportOutcomeText,
+  requestShownText,
   shopApprovedText,
   shopDecisionText,
   slotAnswerText,
   slotRequestedText,
+  staffRoleText,
 } from "./notification-text";
 
 describe("the sentences staff actions send (staff tools spec 2.3 and 2.4, plan decision 7)", () => {
@@ -41,5 +44,23 @@ describe("the sentences staff actions send (staff tools spec 2.3 and 2.4, plan d
     expect(slotRequestedText("Thandi", "Office hours: your first listing")).toBe(
       "Thandi asked for a slot at Office hours: your first listing.",
     );
+  });
+});
+
+describe("staff roles and Show again (stage J spec decisions 7 and 14)", () => {
+  it("tells someone given a role where their tools are, and someone who lost one that it has ended", () => {
+    expect(staffRoleText("given", "mentor")).toBe(
+      "You're a Vossie mentor now. The Hub's tools and the mentor dashboard are on your account page.",
+    );
+    expect(staffRoleText("given", "admin")).toBe("You're a Vossie admin now. The admin console is on your account page.");
+    expect(staffRoleText("removed", "mentor")).toBe(
+      "Your mentor role on Vossie has ended. Thank you for helping student sellers.",
+    );
+    expect(staffRoleText("removed", "admin")).toBe("Your admin role on Vossie has ended.");
+  });
+
+  it("tells a seller or an asker the Hub is showing their listing or request again", () => {
+    expect(listingShownText("Desk lamp")).toBe("The Hub is showing Desk lamp again. It's back in My listings.");
+    expect(requestShownText("Lab coat")).toBe("The Hub is showing your request Lab coat again.");
   });
 });
