@@ -6,6 +6,7 @@ import { SavedTabs } from "./SavedTabs";
 // The lists are async and tested on their own; here they stand in.
 vi.mock("./SavedList", () => ({ SavedList: () => <p>The saved listings</p> }));
 vi.mock("./FollowedShops", () => ({ FollowedShops: () => <p>The shops you follow</p> }));
+vi.mock("./SavedSearches", () => ({ SavedSearches: () => <p>Your saved searches</p> }));
 
 const tabs = async (params: Record<string, string>) => render(await SavedTabs({ searchParams: Promise.resolve(params) }));
 
@@ -43,5 +44,21 @@ describe("Saved's tabs (community actions spec 2.17, plan decision 17)", () => {
     expect(shops.type).toBe(Suspense);
     expect(listings.key).toBe("listings");
     expect(shops.key).toBe("shops");
+  });
+
+  it("opens Searches for ?tab=searches: kept with the account, one notification a day (search alerts spec 2.7)", async () => {
+    await tabs({ tab: "searches" });
+    expect(screen.getByRole("link", { name: "Searches" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Searches" })).toHaveAttribute("href", "/saved?tab=searches");
+    expect(screen.getByRole("link", { name: "Shops" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByText("Kept with your account. Each search sends at most one notification a day.")).toBeInTheDocument();
+    expect(screen.getByText("Your saved searches")).toBeInTheDocument();
+    expect(screen.queryByText("The shops you follow")).toBeNull();
+    expect(screen.queryByText(/Saved on this device/)).toBeNull();
+  });
+
+  it("keys the Searches tab's <Suspense> as \"searches\"", async () => {
+    const searches = await SavedTabs({ searchParams: Promise.resolve({ tab: "searches" }) });
+    expect(searches.key).toBe("searches");
   });
 });

@@ -4,12 +4,16 @@
 
 export const FOLLOW_LIMIT = 200;
 
-/** Saved's tabs (community actions spec 2.17; search alerts spec 2.7). parseSavedTab learns "searches" in Task 5. */
+/** Saved's tabs (community actions spec 2.17; search alerts spec 2.7). */
 export type SavedTab = "listings" | "shops" | "searches";
 
-/** "?tab=shops" opens Shops; anything else is Listings (plan decision 17). */
+/**
+ * "?tab=shops" opens Shops and "?tab=searches" Searches; anything else is Listings (community actions plan decision
+ * 17, search alerts plan decision 10).
+ */
 export function parseSavedTab(raw: string | string[] | undefined): SavedTab {
-  return (Array.isArray(raw) ? raw[0] : raw) === "shops" ? "shops" : "listings";
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return value === "shops" || value === "searches" ? value : "listings";
 }
 
 export function savedTabPath(tab: SavedTab): string {

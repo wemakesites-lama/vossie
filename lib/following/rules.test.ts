@@ -52,4 +52,9 @@ describe("Saved's Searches tab (search alerts spec 2.7, plan decision 10)", () =
   it("has an address of its own", () => {
     expect(savedTabPath("searches")).toBe("/saved?tab=searches");
   });
+
+  it("opens for ?tab=searches", () => {
+    expect(parseSavedTab("searches")).toBe("searches");
+    expect(parseSavedTab(["searches", "shops"])).toBe("searches");
+  });
 });

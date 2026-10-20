@@ -9528,3 +9528,77 @@
     }
   }
 }
+
+/* --- Search alerts: Saved's Searches tab (search alerts plan, Task 5, spec 2.7 and 2.8) --- */
+@layer components {
+  .saved-searches-notice {
+    margin-top: 20px;
+  }
+
+  /* The delete line's link sits on the pale notice, where links are navy (sky-dark is for white). */
+  .saved-searches-notice a {
+    color: var(--color-navy);
+    text-decoration: underline 1.5px;
+    text-underline-offset: 3px;
+  }
+
+  .saved-searches {
+    margin-top: 8px;
+  }
+
+  /* One search a row, a line between them. From the desktop step its buttons sit to the right of its label. */
+  .saved-search {
+    display: grid;
+    gap: 4px;
+    padding-block: 14px;
+    border-bottom: 1px solid var(--color-panel);
+  }
+
+  /* A link on white is sky-dark (4.7:1), 44px high. */
+  .saved-search-label {
+    display: inline-flex;
+    align-items: center;
+    justify-self: start;
+    min-height: 44px;
+    color: var(--color-sky-dark);
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: underline 1.5px;
+    text-underline-offset: 4px;
+  }
+
+  .saved-search-meta {
+    color: var(--color-muted);
+    font-size: 13px;
+  }
+
+  .saved-search-state {
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .saved-search-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .saved-search-btn {
+    min-height: 44px;
+  }
+
+  @media (min-width: 64rem) and (min-height: 30rem) {
+    .saved-search {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      column-gap: 24px;
+    }
+
+    .saved-search-actions {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      margin-top: 0;
+    }
+  }
+}
