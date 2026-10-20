@@ -465,20 +465,22 @@ Task 9 adds them, with a note that `/admin/numbers` returns 404 until Task 10. T
 | Point | `/` | `/browse` | Listing | Storefront | Saved | Privacy | Notifications (signed in) | New listing form (signed in) |
 |---|---|---|---|---|---|---|---|---|
 | I's final figures (2026-10-20) | 150,591 | 151,338 | 151,747 | 151,351 | 151,226 | 150,591 | not in I's ledger | 152,265 |
-| Start (Task 1, Step 2, from HEAD) | | | | | | | | |
+| Start (Task 1, Step 2, from HEAD `3b59045`) | 150,591 | 151,338 | 151,747 | 151,351 | 151,226 | 150,591 | 150,591 | 152,265 |
 | Task 12, the privacy words | | | | | | | | |
 | Task 13, the stage's checks | | | | | | | | |
 | **Final (Task 14)** | | | | | | | | |
 
 Staff pages, signed in as the admin (Task 13): Staff accounts —, Numbers —, Hidden —. The shell's figure is 150,591 B.
 
-The stop line used: 152,305 B (decision 52). Unit tests at the start: — (Task 1 records them). End to end at the start: 1,247 passed, 1,144 skipped (I's final run, `d3526fd`).
+The stop line used: 152,305 B (decision 52). Unit tests at the start: 2,303 in 302 files at HEAD (the working tree has more: another session's uncommitted header tests). End to end at the start: 1,247 passed, 1,144 skipped (I's final run, `d3526fd`).
 
 ## Changes made during the build
 
 Written in Task 14 from `git log` and the code. Where an entry differs from the tasks above, the entry wins.
 
-(Filled in at Task 14.)
+- **Task 1 failed, so Task 2 is skipped and every later task follows "If Task 1 failed" with `STAFF_404_IS_REAL = false`.** In the scratch copy, `/admin` and `/admin/sellers/[slug]` with `instant = false` and the gate at the top level built (`ƒ` instead of `◐`) and left every public route's line in the build output unchanged, but every request still answered 200: the response carries `x-nextjs-prerender: 1` and `x-nextjs-postponed: 1`, so the root layout's streaming shell (its `<Suspense>` round the header's `AccountLink` and the menu's `MenuAccountLinks`) sends 200 before the page's role check runs, and the redirect and the 404 arrive inside the stream as before. A real status needs the root layout changed, which this stage may not touch (another session has uncommitted edits to it). Staff pages keep G's pattern (status 200 with the 404 view and `noindex`); the go-live item for a status from the proxy or the real backend's auth stays. Nothing from the spike reached the working tree.
+
+(The rest is filled in at Task 14.)
 
 ## Conventions for every task
 
