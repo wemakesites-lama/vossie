@@ -6,6 +6,7 @@ import { WORKER_REGISTRATION } from "../../lib/boot-script";
 const PAGES: ReadonlyArray<[name: string, path: string, saved?: string]> = [
   ["homepage", "/"],
   ["browse page", "/browse"],
+  ["browse page, a search", "/browse?q=calculator"],
   ["listing page", "/listings/l-001"],
   ["info page", "/how-it-works"],
   ["sign-in page", "/login"],

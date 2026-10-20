@@ -20,6 +20,13 @@ vi.mock("@/lib/data", async (importOriginal) => {
   };
 });
 
+// Save this search's session part is an async Server Component; here it's the signed-out row (search alerts plan,
+// Task 4). The actions only need something to post to.
+vi.mock("@/components/browse/ViewerSaveSearch", async () =>
+  (await import("@/tests/helpers/viewer-save-search")).signedOutViewerSaveSearch,
+);
+vi.mock("@/lib/saved-searches/actions", () => ({ saveThisSearch: async () => {} }));
+
 afterEach(() => {
   viewer.campus = "all";
   search.failing = false;
@@ -77,5 +84,24 @@ describe("BrowseView (spec 4.1 to 4.7)", () => {
     expect(screen.getByText("We couldn't load listings just now.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Try again" })).toHaveAttribute("href", "/browse?cat=food");
     expect(screen.getByRole("heading", { level: 1, name: "Food" })).toBeInTheDocument();
+  });
+
+  it("offers Save this search for a search, through sign-in, and not on plain browse (search alerts spec 2.4 and 2.5)", async () => {
+    const { unmount } = await view({ q: "calculator" });
+    expect(screen.getByRole("link", { name: "Save this search" })).toHaveAttribute(
+      "href",
+      "/login?next=%2Fbrowse%3Fq%3Dcalculator",
+    );
+    unmount();
+    viewer.campus = "midrand";
+    await view();
+    expect(screen.queryByRole("link", { name: "Save this search" })).toBeNull();
+  });
+
+  it("offers it above the empty state too, when nothing matches yet (search alerts spec 2.5)", async () => {
+    await view({ q: "xylophone", campus: "midrand" });
+    const save = screen.getByRole("link", { name: "Save this search" });
+    const empty = screen.getByRole("heading", { level: 2, name: "Nothing here yet" });
+    expect(save.compareDocumentPosition(empty) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

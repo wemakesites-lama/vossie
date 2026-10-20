@@ -3,6 +3,7 @@ import { getCampuses, getCategories, searchListings } from "@/lib/data";
 import { getViewerContext } from "@/lib/data/viewer";
 import { browseHref } from "@/lib/browse/href";
 import { knownSlugs, parseBrowseParams, toSearchQuery, type BrowseParams } from "@/lib/browse/query";
+import { isWorthSaving, matchQueryOf } from "@/lib/saved-searches/rules";
 import { ActiveFilters } from "./ActiveFilters";
 import { BrowseEmpty } from "./BrowseEmpty";
 import { BrowseError } from "./BrowseError";
@@ -10,11 +11,13 @@ import { BrowseHeader } from "./BrowseHeader";
 import { BrowseToolbar } from "./BrowseToolbar";
 import { CategoryTabs } from "./CategoryTabs";
 import { ResultsGrid } from "./ResultsGrid";
+import { SaveSearchControl } from "./SaveSearchControl";
 
 /**
  * The browse page's body (browse and listing spec 4). It reads the link and the viewer's campus, so it renders per
  * request, inside the page's <Suspense>. A failed search shows an error in the results' place; everything above it
- * still works.
+ * still works. Save this search sits under the chips for any search worth saving, above the results, the empty state or
+ * the error, with the session in its own <Suspense> (search alerts spec 2.5).
  */
 export async function BrowseView({ searchParams }: { searchParams: Promise<BrowseParams> }) {
   const [params, viewer, campuses, categories] = await Promise.all([
@@ -49,6 +52,7 @@ export async function BrowseView({ searchParams }: { searchParams: Promise<Brows
       <CategoryTabs query={query} categories={categories} />
       <BrowseToolbar query={query} campuses={campuses} total={result ? result.items.length : null} />
       <ActiveFilters query={query} campusNames={campusNames} />
+      {isWorthSaving(matchQueryOf(query)) && <SaveSearchControl query={query} />}
       {results}
     </>
   );

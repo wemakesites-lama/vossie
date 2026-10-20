@@ -9481,3 +9481,50 @@
     font-size: 14px;
   }
 }
+
+/* --- Search alerts: Save this search on browse (search alerts plan, Task 4, spec 2.5 and 2.6) --- */
+@layer components {
+  /* Always there and the same height in every state, whatever the session says, so nothing below moves when it
+     streams in (plan decision 6): one 20px line over one 44px control on phones, side by side from the tablet step. */
+  .save-search {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    min-height: 72px;
+    margin-top: 14px;
+  }
+
+  .save-search-line {
+    color: var(--color-ink);
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  /* A white pill with a navy outline and navy text (spec 4): sky never carries text on white. */
+  .save-search-btn {
+    min-height: 44px;
+    background: var(--color-white);
+  }
+
+  /* A link on white is sky-dark (4.7:1), 44px high. */
+  .save-search-manage {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-sky-dark);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline 1.5px;
+    text-underline-offset: 4px;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .save-search {
+      flex-direction: row;
+      align-items: center;
+      gap: 16px;
+      min-height: 44px;
+    }
+  }
+}
