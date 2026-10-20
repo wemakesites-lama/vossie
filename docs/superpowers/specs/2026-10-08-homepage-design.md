@@ -172,8 +172,8 @@ Revised 2026-10-20 (decision 75). Until then the crest stayed pinned on screen a
 | State | When | What it looks like |
 |---|---|---|
 | Expanded | Page is near the top (scrolled less than 120px) | The full header: announcement bar, quick-link row on large screens, the header bar with all its items (78px desktop, 64px phone), and the pennant at full size hanging into the hero with its white edge: about 28px of navy on desktop, about 15px on phones (25px with the white edge) |
-| Hidden | Scrolled down past 120px | Everything slides up out of sight and fades (250ms): the quick links, the bar, its items and the pennant. The announcement bar scrolls away with the page. Nothing of the header is left on screen |
-| Shown | Hidden, then scrolled back up 40px | The whole header slides back down (300ms) at the current scroll position, its items fading in one after another (40ms apart). The bar is compact (56px phones, 64px larger screens), and the pennant hangs below it with a soft shadow so it reads over any content. The page does not move |
+| Hidden | Scrolled down past 120px | The quick links, the bar, its items and the pennant slide up out of sight together, as one sheet (220ms, accelerating). The announcement bar scrolls away with the page. Nothing of the header is left on screen |
+| Shown | Hidden, then scrolled back up 40px | The same sheet slides back down (320ms, decelerating) at the current scroll position. The bar is compact (56px phones, 64px larger screens), and the pennant hangs below it with a soft shadow so it reads over any content. It takes that look while out of sight, so the slide is the only movement. The page does not move |
 
 **Moving between states:**
 - **Scrolling down** past 120px from Expanded goes to Hidden.
@@ -387,7 +387,7 @@ See 6.6.
 - **Not in this stage.** View Transitions between pages are left for when the other pages exist.
 
 **Signature moments:**
-- Header hiding (250ms) and coming back on the way up (300ms, items 40ms apart).
+- Header hiding (220ms, accelerating) and coming back on the way up (320ms, decelerating), as one sheet.
 - Pennant pop (420ms spring).
 - Hero word change.
 - Collections photo deal.

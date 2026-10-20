@@ -32,8 +32,6 @@ describe("the header's account icon (accounts spec 3.4)", () => {
     render(<AccountLink signedIn={false} />);
     const link = screen.getByRole("link", { name: "Sign in" });
     expect(link).toHaveAttribute("href", "/login");
-    // Fourth in the header's reveal stagger (spec section 6.2).
-    expect(link.style.getPropertyValue("--i")).toBe("3");
   });
 
   it("says Your account and goes to the account when signed in", () => {

@@ -475,7 +475,6 @@
     z-index: 1;
     height: var(--ql-h);
     background: var(--color-white);
-    transition: translate 300ms var(--ease-out), opacity 300ms var(--ease-out), visibility 0s;
   }
 
   @media (min-width: 64rem) and (min-height: 30rem) {
@@ -562,12 +561,6 @@
     justify-content: flex-end;
   }
 
-  .hdr-item {
-    transition:
-      opacity 250ms var(--ease-out) calc(var(--i, 0) * 40ms),
-      translate 300ms var(--ease-out) calc(var(--i, 0) * 40ms);
-  }
-
   .hdr-menu-btn {
     display: inline-flex;
     align-items: center;
@@ -646,30 +639,51 @@
     }
   }
 
-  /* The quick links and the bar move as one, so the bar carries the pennant with it. */
+  /* Hiding and showing is one motion: the quick links and the bar slide together as a single sheet, the bar
+     carrying the pennant, and nothing else moves while they do. Leaving accelerates and is quick; arriving
+     decelerates and is a little longer, so it settles rather than snaps. The sheet is on its own layer, so the
+     slide stays smooth while the page scrolls under it. */
+  .site-header {
+    --hide-y: calc(-1 * (var(--ql-h) + var(--bar-h)) - 48px); /* the bar, the quick links and the pennant's hang */
+    --hdr-out: 220ms cubic-bezier(0.4, 0, 1, 1);
+    --hdr-in: 320ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .hdr-quick,
   .hdr-bar {
-    transition: translate 300ms var(--ease-out), visibility 0s;
+    will-change: translate;
   }
 
-  /* Hidden: everything slides up out of sight, the pennant (and its hang below the bar) included, and fades out. */
-  .site-header[data-mode="hidden"] .hdr-quick {
-    translate: 0 -100%;
-    opacity: 0;
+  .hdr-bar {
+    transition: translate var(--hdr-in), visibility 0s;
   }
 
-  .site-header[data-mode="hidden"] .hdr-bar {
-    translate: 0 calc(-100% - var(--ql-h) - 64px);
+  .hdr-quick {
+    transition: translate var(--hdr-in), visibility 0s;
   }
 
+  /* Hidden: the sheet slides up out of sight, then turns invisible (and stays out of the tab order, with inert). */
   .site-header[data-mode="hidden"] :is(.hdr-quick, .hdr-bar) {
+    translate: 0 var(--hide-y);
     visibility: hidden;
-    transition: translate 250ms var(--ease-out), opacity 250ms var(--ease-out), visibility 0s linear 250ms;
+    transition: translate var(--hdr-out), visibility 0s linear 220ms;
   }
 
-  .site-header[data-mode="hidden"] .hdr-item {
-    opacity: 0;
-    translate: 0 -10px;
-    transition: opacity 250ms var(--ease-out), translate 250ms var(--ease-out);
+  /* Out of sight, the bar takes on its shown look (compact, the pennant shadowed) without animating, so it comes
+     back already in shape and the only thing that moves on the way in is the slide. */
+  .site-header[data-mode="hidden"] .hdr-bar-bg {
+    scale: 1 var(--bar-compact);
+    transition: scale 0s linear 220ms;
+  }
+
+  .site-header[data-mode="hidden"] .hdr-group {
+    translate: 0 var(--compact-shift);
+    transition: translate 0s linear 220ms;
+  }
+
+  .site-header[data-mode="hidden"] .pennant-shadow {
+    opacity: 1;
+    transition: opacity 0s linear 220ms;
   }
 
   /* Hidden, for the keyboard: unseen until focused, then a pill at the top centre, like the skip link. */

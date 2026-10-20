@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import { UserIcon } from "@/components/icons";
 import { getViewer } from "@/lib/auth/session";
 import { countNewNotifications } from "@/lib/data/notifications";
@@ -16,8 +15,7 @@ import { countNewNotifications } from "@/lib/data/notifications";
  */
 export function AccountLink({ signedIn, unread = 0 }: { signedIn: boolean; unread?: number }) {
   const badge = signedIn && unread > 0;
-  // --i is the header's reveal stagger: fourth in its group, as before (spec section 6.2). Phones have the tab bar's
-  // Account tab instead (components/tabbar/TabBar.tsx).
+  // Phones have the tab bar's Account tab instead (components/tabbar/TabBar.tsx).
   return (
     <Link
       href={signedIn ? "/account" : "/login"}
@@ -25,7 +23,6 @@ export function AccountLink({ signedIn, unread = 0 }: { signedIn: boolean; unrea
       aria-label={signedIn ? "Your account" : "Sign in"}
       aria-describedby={badge ? "hdr-account-new" : undefined}
       className="hdr-item icon-btn relative hidden wide:inline-grid"
-      style={{ "--i": 3 } as CSSProperties}
     >
       <UserIcon />
       {badge && (

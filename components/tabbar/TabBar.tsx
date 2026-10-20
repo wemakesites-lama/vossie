@@ -1,9 +1,12 @@
 import type { ReactNode } from "react";
-import { SAVED_COUNT_ID, SavedCount } from "@/components/header/SavedLink";
+import { SavedCount } from "@/components/header/SiteHeader";
 import { BagIcon, HeartIcon, HomeIcon, PlusIcon, UserIcon } from "@/components/icons";
 import { NavLink } from "@/components/ui/NavLink";
 import { getViewer } from "@/lib/auth/session";
 import { countNewNotifications } from "@/lib/data/notifications";
+
+/** The id of the words that describe the Saved tab (its count). */
+const SAVED_COUNT_ID = "tab-saved-count";
 
 /**
  * The phone tab bar (spec section 6.2): Home, Shop, Sell, Saved and Account, fixed to the bottom of the screen below
@@ -28,7 +31,7 @@ export function TabBar({ account }: { account: ReactNode }) {
         </li>
         <li>
           <Tab href="/saved" icon={<HeartIcon />} label="Saved" prefetch={false} describedBy={SAVED_COUNT_ID}>
-            <SavedCount />
+            <SavedCount id={SAVED_COUNT_ID} />
           </Tab>
         </li>
         {/* AccountTab, or TabAccount in <Suspense>: the layout passes it, as it does the header's icon. */}
@@ -51,7 +54,7 @@ type TabProps = {
 
 function Tab({ href, icon, label, match, prefetch, className = "tab", describedBy, children }: TabProps) {
   return (
-    <NavLink href={href} match={match} prefetch={prefetch} className={className} describedBy={describedBy}>
+    <NavLink href={href} match={match} prefetch={prefetch} className={className} aria-describedby={describedBy}>
       <span className="tab-icon">{icon}</span>
       <span className="tab-label">{label}</span>
       {children}

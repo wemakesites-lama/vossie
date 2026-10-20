@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, type CSSProperties, type MouseEvent, type ReactNode } from "react";
+import { useRef, type MouseEvent, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { Pennant } from "@/components/brand/Pennant";
 import { MenuIcon, SearchIcon } from "@/components/icons";
@@ -12,10 +12,14 @@ import { openOverlay } from "@/lib/overlays";
 import type { Campus } from "@/lib/types";
 import { CampusPill } from "./CampusPill";
 import { SavedLink } from "./SavedLink";
-import { useHeaderMode } from "./useHeaderMode";
 
-/** Reveal stagger: each item fades in 40ms after the one before (spec section 6.2). */
-const stagger = (index: number) => ({ "--i": index }) as CSSProperties;
+/**
+ * The tab bar's Saved count, re-exported so the tab bar (a server component) reaches it through this module, which the
+ * layout already loads. Imported from SavedLink.tsx directly, it became a client entry of its own, and Turbopack split
+ * the merged layout chunk (decision 63) in two: about 600 B more on every page's first visit.
+ */
+export { SavedCount } from "./SavedLink";
+import { useHeaderMode } from "./useHeaderMode";
 
 type SiteHeaderProps = {
   campuses: readonly Campus[];
@@ -90,12 +94,11 @@ export function SiteHeader({ campuses, account }: SiteHeaderProps) {
               aria-haspopup="dialog"
               onClick={(event) => openOverlay("menu", event.currentTarget)}
               className="hdr-item hdr-menu-btn"
-              style={stagger(0)}
             >
               <MenuIcon />
               <span className="sr-only wide:not-sr-only">Menu</span>
             </button>
-            <CampusPill campuses={campuses} className="hdr-item hidden wide:inline-flex" style={stagger(1)} />
+            <CampusPill campuses={campuses} className="hdr-item hidden wide:inline-flex" />
           </div>
 
           <div className="hdr-pennant-slot">
@@ -111,14 +114,13 @@ export function SiteHeader({ campuses, account }: SiteHeaderProps) {
               aria-haspopup="dialog"
               onClick={(event) => openOverlay("search", event.currentTarget)}
               className="hdr-item icon-btn"
-              style={stagger(2)}
             >
               <SearchIcon />
             </button>
             {/* Phones have Account and Saved in the tab bar (components/tabbar/TabBar.tsx), so the header keeps
                 Menu, the pennant and Search there. */}
             {account}
-            <SavedLink className="hdr-item hidden wide:inline-grid" style={stagger(4)} />
+            <SavedLink className="hdr-item hidden wide:inline-grid" />
           </div>
         </div>
       </div>
