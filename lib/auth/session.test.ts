@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createSession } from "@/lib/data/sessions";
-import { resetSampleStore, sampleStore } from "@/lib/data/store";
+import { resetSampleStore, sampleStore, STORE_VERSION } from "@/lib/data/store";
 import { redirectOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { SESSION_COOKIE } from "./cookies";
 import { hashToken } from "./secrets";
@@ -65,6 +65,19 @@ describe("getViewer (accounts spec 2.9)", () => {
     await signedInAs("acc-student");
     vi.stubEnv("VOSSIE_SAMPLE_MODE", "0");
     expect(await getViewer()).toBeNull();
+  });
+
+  it("finds no session stored before the store's version moved, as the keyed hashes need (stage K spec decision 15)", async () => {
+    await signedInAs("acc-student");
+    expect((await getViewer())?.id).toBe("acc-student");
+    sampleStore().version = STORE_VERSION - 1;
+    expect(await getViewer()).toBeNull();
+  });
+
+  it("hashes nothing with sample mode off, so a missing key can't break signing out (stage K spec decision 14)", async () => {
+    await signedInAs("acc-student");
+    vi.stubEnv("VOSSIE_SAMPLE_MODE", "0");
+    expect(await getSessionKey()).toBeNull();
   });
 });
 

@@ -8,6 +8,13 @@ import { SAVED_COOKIE } from "./lib/saved";
 import { dismissToast } from "./lib/toast";
 import { createMediaQueryList } from "./tests/helpers/dom";
 
+// --- A key for the keyed hashes ---------------------------------------------
+
+// lib/auth/secrets.ts hashes under VOSSIE_AUTH_HMAC_KEY and, without it in sample mode, warns once per process with
+// the development key (stage K plan decision 19). Every unit test file is a process of its own here, so without this
+// the warning would print in each. lib/auth/secrets.test.ts unsets it where a test needs that.
+process.env.VOSSIE_AUTH_HMAC_KEY ??= "vitest-only-key-0123456789-0123456789-ab";
+
 // --- Next.js modules that need the App Router at runtime -------------------
 
 vi.mock("next/navigation", () => ({

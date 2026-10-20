@@ -99,8 +99,11 @@ export type SampleStore = {
   savedSearches: Map<string, SavedSearchRow>;
 };
 
-/** Bump it when a table is added or a row changes shape, so `next dev` reseeds instead of keeping an old store. */
-export const STORE_VERSION = 9;
+/**
+ * Bump it when a table is added or a row changes shape, so `next dev` reseeds instead of keeping an old store. 10:
+ * sessions, sign-in attempts and codes are hashed with a key (stage K spec decision 15), so no old row is ever matched.
+ */
+export const STORE_VERSION = 10;
 
 type StoreHolder = { __vossieSampleStore?: SampleStore };
 

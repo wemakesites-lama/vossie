@@ -11,6 +11,8 @@ import { hashToken, newToken } from "./secrets";
 
 /** The store's key for this browser's session, or null when it has no session cookie. Request-time. */
 export async function getSessionKey(): Promise<string | null> {
+  // Sample mode off: nothing is hashed, so a missing key can't break signing out (stage K spec decision 14).
+  if (!isSampleMode()) return null;
   const token = await readCookieValue(SESSION_COOKIE);
   return token ? hashToken(token) : null;
 }
