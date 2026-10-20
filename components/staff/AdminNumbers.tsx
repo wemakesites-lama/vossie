@@ -82,8 +82,8 @@ export function AdminNumbers({ weeks, shown, campuses, campus, sampleMode }: Adm
         </h2>
         <p>
           Counted from Vossie&apos;s store as this page opens. Weeks run Monday to Sunday, South African time. Things
-          deleted since aren&apos;t counted. Small numbers of private things show as &quot;Under 5&quot; so no one can be
-          picked out.
+          deleted since aren&apos;t counted. Small numbers of private things show as &quot;Under 5&quot; or &quot;Hidden&quot;,
+          so no one can be picked out.
         </p>
         <p className="staff-muted">
           Something whose campus has gone, such as an enquiry to a shop that has closed, counts only in the All campuses

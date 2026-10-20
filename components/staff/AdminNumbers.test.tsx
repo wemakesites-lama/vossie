@@ -30,6 +30,16 @@ function shown() {
   return protectCounts(raw, SLUGS);
 }
 
+/** A row's cells as the values shown, without each cell's hidden column label (the first cell is a row header or link). */
+function values(row: HTMLElement | null) {
+  return within(row!)
+    .getAllByRole("cell")
+    .map((cell) => {
+      const label = cell.querySelector(".staff-cell-label")?.textContent ?? "";
+      return (cell.textContent ?? "").slice(label.length);
+    });
+}
+
 function view(campus: (typeof CAMPUSES)[number] | null = null, sampleMode = true) {
   return render(<AdminNumbers weeks={WEEKS} shown={shown()} campuses={CAMPUSES} campus={campus} sampleMode={sampleMode} />);
 }
@@ -38,7 +48,7 @@ describe("the admin's numbers (stage J spec decisions 10 to 13)", () => {
   it("says how it counts, and that the preview's store starts again on restart", () => {
     view();
     expect(screen.getByText(/^Counted from Vossie's store as this page opens\./)).toHaveTextContent(
-      'Small numbers of private things show as "Under 5" so no one can be picked out.',
+      'Small numbers of private things show as "Under 5" or "Hidden", so no one can be picked out.',
     );
     expect(screen.getByText("In this preview the store starts again whenever the server restarts.")).toBeInTheDocument();
   });
@@ -60,14 +70,16 @@ describe("the admin's numbers (stage J spec decisions 10 to 13)", () => {
     ]);
     const listings = within(table).getByRole("rowheader", { name: "Listings published" });
     expect(listings).toHaveAttribute("scope", "row");
-    expect(listings.closest("tr")).toHaveTextContent(/Listings published.*8.*4.*\+4.*49/);
+    expect(values(listings.closest("tr"))).toEqual(["8", "4", "+4", "49"]);
     // Enquiries are private: the week before's total is 8, so last week's change shows; since the start is in tens.
-    expect(within(table).getByRole("rowheader", { name: "Enquiries started" }).closest("tr")).toHaveTextContent(
-      /Enquiries started.*15.*8.*\+7.*20\+/,
-    );
-    const open = within(table).getByRole("rowheader", { name: "Open shops now" }).closest("tr")!;
-    expect(within(open).getAllByText("Not counted by week")).toHaveLength(3);
-    expect(open).toHaveTextContent("7");
+    expect(values(within(table).getByRole("rowheader", { name: "Enquiries started" }).closest("tr"))).toEqual([
+      "15",
+      "8",
+      "+7",
+      "20+",
+    ]);
+    const open = within(table).getByRole("rowheader", { name: "Open shops now" }).closest("tr");
+    expect(values(open)).toEqual(["Not counted by week", "Not counted by week", "Not counted by week", "7"]);
   });
 
   it("has a By campus table for last week, each campus a 44px link to its view, then All campuses", () => {
@@ -81,10 +93,19 @@ describe("the admin's numbers (stage J spec decisions 10 to 13)", () => {
     const midrand = within(table).getByRole("link", { name: "Midrand" });
     expect(midrand).toHaveAttribute("href", "/admin/numbers?campus=midrand");
     expect(midrand).toHaveClass("min-h-11");
-    // Midrand had 3 enquiries, so last week's enquiries aren't shown by campus at all.
-    expect(midrand.closest("tr")).toHaveTextContent("Hidden");
-    expect(within(table).getByRole("link", { name: "Pretoria" }).closest("tr")).toHaveTextContent("Hidden");
-    expect(within(table).getByRole("rowheader", { name: "All campuses" }).closest("tr")).toHaveTextContent("15");
+    // Columns: the seven measures, then Open shops now. Midrand had 3 enquiries, so last week's enquiries aren't shown
+    // by campus at all (Pretoria's 12 too). Listings are last week's (6 and 2), not since the start (40 and 9).
+    expect(values(midrand.closest("tr"))).toEqual(["6", "0", "0", "Hidden", "0", "0", "0", "5"]);
+    expect(values(within(table).getByRole("link", { name: "Pretoria" }).closest("tr"))).toEqual([
+      "2", "0", "0", "Hidden", "0", "0", "0", "2",
+    ]);
+    expect(values(within(table).getByRole("rowheader", { name: "All campuses" }).closest("tr"))).toEqual([
+      "8", "0", "0", "15", "0", "0", "0", "7",
+    ]);
+    expect(within(table).getAllByRole("link").map((link) => link.textContent)).toEqual(["Midrand", "Pretoria"]);
+    const section = table.closest("section")!;
+    expect(within(section).getByText(/^Under 5: a private total from 1 to 4\.$/)).toBeInTheDocument();
+    expect(within(section).getByText(/^Hidden: not shown by campus/)).toBeInTheDocument();
   });
 
   it("explains every word under each table, and names, ids or links nothing counted", () => {
@@ -92,6 +113,7 @@ describe("the admin's numbers (stage J spec decisions 10 to 13)", () => {
     expect(screen.getAllByText(
         "Hidden: not shown by campus, because a campus had from 1 to 4 that week (or 1 to 9 since the start), so no one can be picked out.",
       )).toHaveLength(2);
+    expect(screen.getAllByText("Under 5: a private total from 1 to 4.")).toHaveLength(2);
     expect(screen.getAllByText(/Admins can still open each report in the Reports queue/)).toHaveLength(2);
     const links = [...container.querySelectorAll("a")].map((link) => link.getAttribute("href"));
     expect(links.every((href) => href?.startsWith("/admin/numbers?campus="))).toBe(true);
@@ -100,12 +122,27 @@ describe("the admin's numbers (stage J spec decisions 10 to 13)", () => {
   it("shows one campus's view, captioned with its name, with a link back to All campuses", () => {
     view(CAMPUSES[0]);
     const table = screen.getByRole("table", { name: "Midrand, by week" });
-    expect(within(table).getByRole("rowheader", { name: "Listings published" }).closest("tr")).toHaveTextContent(
-      /Listings published.*6.*4.*\+2.*40/,
-    );
-    expect(within(table).getByRole("rowheader", { name: "Enquiries started" }).closest("tr")).toHaveTextContent(
-      /Hidden.*8.*—.*Hidden/,
-    );
+    expect(values(within(table).getByRole("rowheader", { name: "Listings published" }).closest("tr"))).toEqual([
+      "6",
+      "4",
+      "+2",
+      "40",
+    ]);
+    expect(values(within(table).getByRole("rowheader", { name: "Enquiries started" }).closest("tr"))).toEqual([
+      "Hidden",
+      "8",
+      "—",
+      "Hidden",
+    ]);
+    expect(values(within(table).getByRole("rowheader", { name: "Open shops now" }).closest("tr"))).toEqual([
+      "Not counted by week",
+      "Not counted by week",
+      "Not counted by week",
+      "5",
+    ]);
+    // The campus view has its own key, with the Hidden and Under 5 lines.
+    expect(screen.getByText("Under 5: a private total from 1 to 4.")).toBeInTheDocument();
+    expect(screen.getAllByText(/^Hidden: not shown by campus/)).toHaveLength(1);
     expect(screen.getByRole("link", { name: "All campuses" })).toHaveAttribute("href", "/admin/numbers");
     expect(screen.queryByRole("table", { name: /^By campus/ })).toBeNull();
   });

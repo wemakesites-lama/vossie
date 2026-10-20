@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { StaffFrame } from "@/components/staff/StaffFrame";
-import { StaffRoleConfirm } from "@/components/staff/StaffRoleConfirm";
+import { roleConfirmTitle, StaffRoleConfirm } from "@/components/staff/StaffRoleConfirm";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
 import { readFormState } from "@/lib/auth/form-state";
 import { getStaffAccount } from "@/lib/data/staff-accounts";
@@ -40,7 +40,7 @@ async function Remove({ params }: Pick<PageProps<"/admin/staff/[id]/remove-admin
     <StaffFrame
       account={account}
       area="Admin console"
-      title={`Remove ${person.firstName}'s admin role`}
+      title={roleConfirmTitle(person, "admin", account.id)}
       current={ADMIN_STAFF_PATH}
       notice={null}
     >

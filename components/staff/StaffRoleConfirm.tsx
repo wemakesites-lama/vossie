@@ -31,6 +31,11 @@ export function removalLines(person: Pick<StaffAccount, "firstName" | "roles" | 
   ];
 }
 
+/** The page's heading: your own admin role is named as yours, since the page refuses rather than asks. */
+export function roleConfirmTitle(person: Pick<StaffAccount, "id" | "firstName">, role: StaffRole, viewerId: string): string {
+  return role === "admin" && person.id === viewerId ? "Your admin role" : `Remove ${person.firstName}'s ${role} role`;
+}
+
 /**
  * A role's confirm page (spec decisions 4 and 5): what will happen, then the button, with no reason field. Your own
  * admin role gets the refusal and no button; the action refuses it too.

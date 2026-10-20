@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { StaffAccount } from "@/lib/data/staff-accounts";
-import { removalLines, StaffRoleConfirm } from "./StaffRoleConfirm";
+import { removalLines, roleConfirmTitle, StaffRoleConfirm } from "./StaffRoleConfirm";
 
 vi.mock("@/lib/staff/account-actions", () => ({ giveStaffRole: async () => {}, removeStaffRole: async () => {} }));
 
@@ -66,5 +66,12 @@ describe("taking a role away (stage J spec decisions 4 and 5)", () => {
       />,
     );
     expect(screen.getByRole("alert", { name: "There's a problem" })).toHaveTextContent("Vossie needs at least one admin.");
+  });
+
+  it("titles the page Your admin role only for your own, otherwise Remove {name}'s role", () => {
+    const pieter: StaffAccount = { ...naledi, id: "acc-admin", firstName: "Pieter", roles: ["admin"], mentors: [] };
+    expect(roleConfirmTitle(pieter, "admin", "acc-admin")).toBe("Your admin role");
+    expect(roleConfirmTitle(pieter, "admin", "acc-other")).toBe("Remove Pieter's admin role");
+    expect(roleConfirmTitle(naledi, "mentor", "acc-mentor")).toBe("Remove Naledi's mentor role");
   });
 });
