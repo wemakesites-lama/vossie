@@ -24,15 +24,16 @@ insert into auth.users (id, email) values
 -- A later version of the policy, as a migration would add it.
 insert into private.policy_versions (version) values ('2026-11');
 
--- Every public function is either a user action (authenticated) or the server's (service role), and none is anon's.
+-- Every public function is either a user action (authenticated) or the server's (service role), and anon runs only the
+-- named read-only counts (schema catch-up Task 2: hub_going; Task 3: request_offer_count).
 select is(
   array(
     select p.oid::regprocedure::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute')
     order by 1
   ),
-  '{}'::text[],
-  'anon can run no function in public'
+  array['hub_going(text)', 'request_offer_count(text)'],
+  'anon can run no function in public but the named counts'
 );
 select is(
   array(
@@ -59,25 +60,66 @@ select is(
     order by 1
   ),
   array[
+    'add_check_in(uuid,date,text,text)',
+    'add_hub_photo(text)',
+    'add_mentor_note(uuid,text,text)',
     'add_photos(text[])',
+    'add_pickup_point(text,text)',
+    'answer_booking(uuid,boolean)',
+    'approve_shop(uuid)',
+    'cancel_rsvp(text)',
     'change_shop_slug(text)',
     'complete_profile(text,text,text)',
     'confirm_sale(uuid)',
     'create_report(text,text,text,text,text)',
     'create_shop(text,text,text,text,uuid,text,uuid[])',
+    'decline_shop(uuid,text)',
     'delete_listing(text)',
+    'delete_request(text)',
+    'delete_search(text)',
+    'dismiss_report(uuid,text)',
+    'follow_shop(uuid)',
+    'follower_count(uuid)',
+    'give_role(text,text,text)',
+    'hide_listing(text,text)',
+    'hide_request(text,text)',
+    'hub_going(text)',
     'mark_completed(uuid)',
     'mark_notifications_read()',
     'mark_thread_read(uuid)',
+    'mentor_shop_numbers(uuid,timestamp with time zone)',
+    'pin_shop(uuid,text,date)',
     'record_consent(text)',
     'reject_sale(uuid)',
+    'remove_role(uuid,text)',
+    'rename_pickup_point(uuid,text)',
+    'request_offer_count(text)',
+    'request_slot(text,text,text)',
+    'resend_for_approval()',
+    'restore_pickup_point(uuid)',
+    'retire_pickup_point(uuid)',
+    'rsvp(text)',
+    'save_hub_post(text,text,text,text,timestamp with time zone,text,integer,text,text,boolean,uuid,text)',
     'save_listing(text,text,text,text,text,integer,boolean,text,text,text,text,uuid,jsonb,boolean)',
     'save_onboarding_draft(text,text,text,text,uuid,text,uuid[])',
+    'save_request(text,text,text,text,text,integer,boolean,date,text)',
+    'save_search(text,text,text,text,text,text,text)',
     'send_message(uuid,text)',
     'set_listing_state(text,text)',
+    'set_request_open(text,boolean)',
+    'set_search_paused(text,boolean)',
+    'set_shop_mentor(uuid,uuid)',
     'set_shop_paused(boolean)',
+    'set_shop_verified(uuid,boolean)',
     'settle_sales()',
+    'show_listing(text)',
+    'show_request(text)',
+    'staff_pause_shop(uuid,text)',
+    'staff_resume_shop(uuid)',
     'start_conversation(text,text,text,text)',
+    'start_offer(text,text,text)',
+    'unfollow_shop(uuid)',
+    'unpin_shop(uuid)',
     'update_profile(text,text)',
     'update_shop(text,text,text,text,text,uuid[],uuid,boolean,text)'
   ],
@@ -91,7 +133,9 @@ select is(
     order by 1
   ),
   array[
+    'admin_weekly_counts(timestamp with time zone)',
     'forget_account(uuid)',
+    'record_search_matches(text,text[],jsonb)',
     'record_wrong_try(text)',
     'reserve_code_send(text,integer)',
     'settle_auto_confirm(timestamp with time zone)'
@@ -235,7 +279,13 @@ select is(
     where n.nspname = 'private' and has_function_privilege('authenticated', p.oid, 'execute')
     order by 1
   ),
-  array['private.conversation_side(uuid)', 'private.is_staff(text)', 'private.owns_shop(uuid)', 'private.shop_is_public(uuid)'],
+  array[
+    'private.can_mentor(uuid)', 'private.conversation_buyer_name(uuid)', 'private.conversation_request_state(uuid)',
+    'private.conversation_side(uuid)', 'private.is_my_request(text)', 'private.is_shop_contact(uuid)',
+    'private.is_staff(text)', 'private.mentors_shop(uuid)',
+    'private.owns_shop(uuid)', 'private.shop_is_public(uuid)', 'private.staff_hub_posts()', 'private.staff_reports()',
+    'private.staff_seller_profiles()'
+  ],
   'and authenticated only the ones theirs need'
 );
 select ok(not has_schema_privilege('authenticated', 'private', 'usage'), 'the private schema stays closed');

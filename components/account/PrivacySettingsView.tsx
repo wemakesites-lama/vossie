@@ -113,7 +113,8 @@ export function PrivacySettingsView({ consent, deleteErrors, reports, staff = nu
         {staff && (
           <p>
             You&apos;re Hub staff. Your Hub posts stay with no author, your notes and check-ins stay as &quot;Deleted
-            account&quot;, the shops you mentor lose their mentor, and the audit log keeps your entries without your name.
+            account&quot;, the shops you mentor lose their mentor, and the audit log keeps your entries, and those naming
+            you as a mentor, without your name.
           </p>
         )}
         {/* A warning, not a block: deleting your account is your right under POPIA (spec decision 8). */}

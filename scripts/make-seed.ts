@@ -18,20 +18,22 @@ registerHooks({
   },
 });
 
-const [{ makeSeedSql }, { campuses }, { categories }, { pickupPoints }, accounts, shops, messages] = await Promise.all([
-  import("./seed-sql.ts"),
-  import("../data/fixtures/campuses.ts"),
-  import("../data/fixtures/categories.ts"),
-  import("../data/fixtures/pickup-points.ts"),
-  import("../data/fixtures/accounts.ts"),
-  import("../data/fixtures/shops.ts"),
-  import("../data/fixtures/messages.ts"),
-]);
+const [{ makeSeedSql }, { campuses }, { categories }, staff, { sampleRequestRows }, accounts, shops, messages] =
+  await Promise.all([
+    import("./seed-sql.ts"),
+    import("../data/fixtures/campuses.ts"),
+    import("../data/fixtures/categories.ts"),
+    import("../data/fixtures/staff.ts"),
+    import("../data/fixtures/request-rows.ts"),
+    import("../data/fixtures/accounts.ts"),
+    import("../data/fixtures/shops.ts"),
+    import("../data/fixtures/messages.ts"),
+  ]);
 
 const fixtures: SeedFixtures = {
   campuses,
   categories,
-  pickupPoints,
+  pickupPoints: staff.samplePickupPointRows,
   accounts: accounts.sampleAccounts,
   consents: accounts.sampleConsents,
   shopOwners: shops.sampleShopOwners,
@@ -40,6 +42,10 @@ const fixtures: SeedFixtures = {
   conversations: messages.sampleConversations,
   messages: messages.sampleMessages,
   notifications: messages.sampleNotifications,
+  requests: sampleRequestRows,
+  hubPosts: staff.sampleHubPostRows,
+  mentorNotes: staff.sampleMentorNotes,
+  hubBookings: staff.sampleHubBookings,
 };
 
 writeFileSync("supabase/seed.sql", makeSeedSql(fixtures));

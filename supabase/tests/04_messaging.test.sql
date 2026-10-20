@@ -206,7 +206,7 @@ select throws_ok(
   $$insert into public.reports (reporter_id, target_kind, target_id, target_title, reason) values ('00000000-0000-4000-8000-000000000021', 'listing', 'l-m2', 'Desk', 'spam')$$,
   '23505', null, 'one open report per reporter and target'
 );
-update public.reports set status = 'closed' where reporter_id = '00000000-0000-4000-8000-000000000021';
+update public.reports set status = 'closed', outcome = 'dismissed', closed_at = now() where reporter_id = '00000000-0000-4000-8000-000000000021';
 select lives_ok(
   $$insert into public.reports (reporter_id, target_kind, target_id, target_title, reason) values ('00000000-0000-4000-8000-000000000021', 'listing', 'l-m2', 'Desk', 'spam')$$,
   'a new report once the last is closed'

@@ -30,6 +30,20 @@ describe("deleting an account, in the staff tools (POPIA; plan decisions 6, 11, 
     expect(rows[1]).toMatchObject({ staffName: "Deleted account", targetName: "Hair studio" });
   });
 
+  it("forgets a deleted mentor's name in the entries that assigned them, not a namesake's (Lama, 2026-10-20)", async () => {
+    const staff = { id: "acc-admin", firstName: "Pieter" };
+    const shop = { kind: "shop" as const, id: "tech-corner", name: "Tech corner" };
+    const assign = (relatedId: string) =>
+      recordAudit({ staff, action: "mentor-assigned", target: shop, detail: "Naledi", subjectId: "acc-seller", relatedId, now: NOW });
+    await assign("acc-mentor");
+    await assign("acc-mentor-2");
+    await forgetAccountInStaffTools("acc-mentor");
+    expect([...sampleStore().auditLog.values()].map((row) => [row.detail, row.relatedId, row.subjectId, row.targetName])).toEqual([
+      ["Deleted account", null, "acc-seller", "Tech corner"],
+      ["Naledi", "acc-mentor-2", "acc-seller", "Tech corner"],
+    ]);
+  });
+
   it("deletes the notes about a seller, and keeps a deleted mentor's notes, unsigned", async () => {
     await forgetAccountInStaffTools("acc-mentor");
     expect([...sampleStore().mentorNotes.values()].map((note) => [note.authorId, note.authorName])).toEqual([

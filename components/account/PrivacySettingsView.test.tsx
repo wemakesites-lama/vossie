@@ -142,7 +142,7 @@ describe("Privacy settings (accounts spec 3.3)", () => {
 
 describe("deleting a staff account (stage J spec decision 8)", () => {
   const STAFF_LINE =
-    "You're Hub staff. Your Hub posts stay with no author, your notes and check-ins stay as \"Deleted account\", the shops you mentor lose their mentor, and the audit log keeps your entries without your name.";
+    "You're Hub staff. Your Hub posts stay with no author, your notes and check-ins stay as \"Deleted account\", the shops you mentor lose their mentor, and the audit log keeps your entries, and those naming you as a mentor, without your name.";
   const ONLY_ADMIN = "You're Vossie's only admin. Give someone else the admin role first, or no one can use the admin console.";
 
   it("says nothing about staff work to a student", () => {

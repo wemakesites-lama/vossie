@@ -10,7 +10,8 @@ const DELETED = "Deleted account";
 /**
  * Forgets an account in the staff tools:
  * - the audit log keeps every entry (plan decision 6): the account's own say "Deleted account", and those about it
- *   lose its name, id and reason;
+ *   lose its name, id and reason, and those whose detail names it (a mentor-assigned entry's mentor, relatedId) say
+ *   "Deleted account" there instead (Lama, 2026-10-20);
  * - notes and check-ins about it go; ones it wrote stay, as "Deleted account", and its shops lose it as their mentor;
  * - its RSVPs and slot requests go, and so do the "asked for a slot" notifications that name it (plan amendment 2);
  * - its posts stay for the Hub (plan decision 11), and the answers, pins and closed reports it left stay, unsigned.
@@ -19,6 +20,8 @@ export async function forgetAccountInStaffTools(accountId: string): Promise<void
   const store = sampleStore();
   for (const row of store.auditLog.values()) {
     if (row.staffId === accountId) Object.assign(row, { staffId: null, staffName: DELETED });
+    // The detail is only the name (assignMentor), so it's replaced whole. An id, not the name: mentors can share one.
+    if (row.relatedId === accountId) Object.assign(row, { relatedId: null, detail: DELETED });
     if (row.subjectId === accountId) {
       Object.assign(row, { subjectId: null, targetId: "", targetName: DELETED, detail: "" });
     }

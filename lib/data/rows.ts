@@ -361,6 +361,11 @@ export type AuditRow = {
   detail: string;
   /** The student it was about (a shop's owner, a reporter, a slot request's student), or null. */
   subjectId: string | null;
+  /**
+   * The person `detail` names who is neither the staff member nor the subject (a mentor-assigned entry's mentor), or
+   * null, so deleting their account can forget the name. Never shown, never in any export.
+   */
+  relatedId: string | null;
 };
 
 /** A seller pinned to one campus's Featured row for one day (staff tools spec 2.8). */
