@@ -6,7 +6,7 @@ import type { ReportView } from "@/lib/data/staff-reports";
 import { targetPath } from "@/lib/messaging/paths";
 import { reasonLabel } from "@/lib/messaging/rules";
 import { dismissReport } from "@/lib/staff/admin-actions";
-import { hideReportedPath, pauseReportedPath } from "@/lib/staff/paths";
+import { hideReportedPath, pauseReportedPath, showListingPath, showRequestPath } from "@/lib/staff/paths";
 import { REASON_MAX } from "@/lib/staff/rules";
 import { longSastDate } from "@/lib/time";
 import { kindWords, outcomeWords } from "./AdminReports";
@@ -54,6 +54,20 @@ export function AdminReport({ report, note, errors }: AdminReportProps) {
                       : "Buyers can't see this listing: the Hub has hidden it."
                     : "Buyers can't see this shop while the Hub's pause lasts."}
                 </span>
+              )}
+              {/* Show it again (stage J spec decision 14): a hide closes every report on its target. */}
+              {!report.open && report.unseen === "hidden" && report.target.kind !== "seller" && (
+                <>
+                  {" "}
+                  <Link
+                    href={
+                      report.target.kind === "request" ? showRequestPath(report.target.id) : showListingPath(report.target.id)
+                    }
+                    prefetch={false}
+                  >
+                    Show it again
+                  </Link>
+                </>
               )}
             </dd>
           </div>

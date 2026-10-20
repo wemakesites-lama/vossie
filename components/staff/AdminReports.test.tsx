@@ -69,3 +69,10 @@ describe("the reports queue (staff tools spec 2.3)", () => {
     expect(screen.getByText("Nothing closed yet.")).toBeInTheDocument();
   });
 });
+
+describe("the way to hidden listings and requests (stage J spec decision 14)", () => {
+  it("links to them above the queue", () => {
+    render(<AdminReports reports={[]} />);
+    expect(screen.getByRole("link", { name: "Hidden listings and requests" })).toHaveAttribute("href", "/admin/hidden");
+  });
+});

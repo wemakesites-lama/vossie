@@ -6,7 +6,7 @@ import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
 import { recalculateBadges } from "@/lib/data/badges";
 import { openBookingCount } from "@/lib/data/hub-posts";
-import { openReportCount } from "@/lib/data/staff-reports";
+import { countHidden, openReportCount } from "@/lib/data/staff-reports";
 import { countWaitingShops } from "@/lib/data/staff-shops";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { takeNotice } from "@/lib/staff/form-state";
@@ -33,15 +33,22 @@ async function Overview() {
   await connection();
   // Overview works the badges out as it renders (spec 2.7, plan decision 8). A render can't expire cache tags.
   const changed = await recalculateBadges(new Date());
-  const [waiting, openReports, openSlots, notice] = await Promise.all([
+  const [waiting, openReports, openSlots, hidden, notice] = await Promise.all([
     countWaitingShops(),
     openReportCount(),
     openBookingCount(),
+    countHidden(),
     takeNotice(),
   ]);
   return (
     <StaffFrame account={account} area="Admin console" title="Overview" current={ADMIN_PATH} notice={staffNoticeText(notice)}>
-      <AdminOverview waiting={waiting} openReports={openReports} openSlots={openSlots} badgesChanged={changed.length} />
+      <AdminOverview
+        waiting={waiting}
+        openReports={openReports}
+        openSlots={openSlots}
+        badgesChanged={changed.length}
+        hidden={hidden}
+      />
     </StaffFrame>
   );
 }

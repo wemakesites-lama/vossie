@@ -1,6 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createReport } from "@/lib/data/reports";
+import { hideRequest } from "@/lib/data/requests";
+import { hideListing } from "@/lib/data/staff-shops";
 import { closeReport, closeReportsOn, getReport } from "@/lib/data/staff-reports";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import type { ReportTarget } from "@/lib/types";
@@ -128,5 +130,31 @@ describe("a report's page (staff tools spec 2.3, plan decision 5)", () => {
     expect(screen.getByText("Dismissed on 14 October 2026 by Pieter.")).toBeInTheDocument();
     expect(screen.getByText("Looked fine.")).toBeInTheDocument();
     expect(screen.queryByRole("button")).toBeNull();
+  });
+});
+
+describe("Show it again (stage J spec decision 14, plan decision 18)", () => {
+  it("links a closed report's hidden listing to its Show again page", async () => {
+    const id = await reportOn({ kind: "listing", id: "l-001" }, "Casio fx-991ZA Plus calculator");
+    await hideListing("l-001", "Not allowed.", NOW);
+    await closeReportsOn({ kind: "listing", id: "l-001" }, "hidden", "Not allowed.", "acc-admin", NOW);
+    render(<AdminReport report={(await getReport(id))!} note="" errors={[]} />);
+    const facts = screen.getByRole("region", { name: "The report" });
+    expect(within(facts).getByText("Buyers can't see this listing: the Hub has hidden it.")).toBeInTheDocument();
+    expect(within(facts).getByRole("link", { name: "Show it again" })).toHaveAttribute("href", "/admin/hidden/listings/l-001");
+  });
+
+  it("links a closed report's hidden request to its Show again page", async () => {
+    const id = await reportOn({ kind: "request", id: "r-001" }, "Looking for a lab coat");
+    await hideRequest("r-001", "Not allowed.", NOW);
+    await closeReportsOn({ kind: "request", id: "r-001" }, "hidden", "Not allowed.", "acc-admin", NOW);
+    render(<AdminReport report={(await getReport(id))!} note="" errors={[]} />);
+    expect(screen.getByRole("link", { name: "Show it again" })).toHaveAttribute("href", "/admin/hidden/requests/r-001");
+  });
+
+  it("offers nothing on a report that's still open, or whose target is there to see", async () => {
+    const id = await reportOn({ kind: "listing", id: "l-001" }, "Casio fx-991ZA Plus calculator");
+    render(<AdminReport report={(await getReport(id))!} note="" errors={[]} />);
+    expect(screen.queryByRole("link", { name: "Show it again" })).toBeNull();
   });
 });

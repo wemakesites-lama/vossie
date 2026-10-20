@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReportView } from "@/lib/data/staff-reports";
 import { reasonLabel } from "@/lib/messaging/rules";
-import { adminReportPath } from "@/lib/staff/paths";
+import { ADMIN_HIDDEN_PATH, adminReportPath } from "@/lib/staff/paths";
 import { shortSastDate } from "@/lib/time";
 import type { ReportOutcome, ReportTarget } from "@/lib/types";
 import { StaffTable } from "./StaffTable";
@@ -48,6 +48,11 @@ export function AdminReports({ reports }: { reports: readonly ReportView[] }) {
   const closed = reports.filter((report) => !report.open);
   return (
     <>
+      <p>
+        <Link href={ADMIN_HIDDEN_PATH} prefetch={false}>
+          Hidden listings and requests
+        </Link>
+      </p>
       <section aria-labelledby="admin-open-reports-title" className="staff-section">
         <h2 id="admin-open-reports-title" className="staff-section-title">
           Open
