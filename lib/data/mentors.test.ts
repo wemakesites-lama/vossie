@@ -69,6 +69,14 @@ describe("the mentor dashboard (staff tools spec 2.6, plan decision 15)", () => 
     expect((await mentoredShops(pieter, NOW)).map((row) => row.slug)).toEqual(["tech-corner"]);
   });
 
+  it("hides Tech corner from Sipho made an admin while Naledi mentors it: the case stage L's spec found (decision 5)", async () => {
+    const sipho = { id: "acc-seller", roles: ["admin"] as const };
+    expect(sampleStore().sellerProfiles.get("acc-seller")?.mentorId).toBe("acc-mentor");
+    expect(await mentoredShops(sipho, NOW)).toEqual([]);
+    expect(await getMentoredShop("tech-corner", sipho, NOW)).toBeNull();
+    expect((await mentoredShops(pieter, NOW)).map((row) => row.slug)).toEqual(["tech-corner"]);
+  });
+
   it("opens a shop's mentor page only for its mentor or an admin", async () => {
     expect((await getMentoredShop("tech-corner", naledi, NOW))?.name).toBe("Tech corner");
     expect((await getMentoredShop("tech-corner", pieter, NOW))?.mentorName).toBe("Naledi");

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { resetSampleStore } from "@/lib/data/store";
+import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { redirectOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { signedInAs, STAFF_NOW } from "@/tests/helpers/staff";
 import { GET } from "./route";
@@ -42,5 +42,13 @@ describe("the mentor dashboard's CSV (staff tools spec 2.6, plan decision 17)", 
     expect(await redirectOf(() => GET())).toBe("/login?next=%2Fmentor");
     await signedInAs(request, "acc-student");
     await expect(GET()).rejects.toThrow("notFound");
+  });
+
+  it("leaves the viewer's own shop out of the file, for an admin too: nobody reads about themselves (stage L spec 2.5)", async () => {
+    sampleStore().accounts.get("acc-seller")!.roles = ["admin"];
+    await signedInAs(request, "acc-seller");
+    const body = new TextDecoder("utf-8").decode(await (await GET()).arrayBuffer());
+    expect(body).toContain('"Shop","Campus"');
+    expect(body).not.toContain("Tech corner");
   });
 });

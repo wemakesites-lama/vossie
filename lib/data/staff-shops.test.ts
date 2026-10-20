@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { listedListings, publicListing, shopStatus } from "./catalog";
+import { createRequest } from "./requests";
 import {
   approveShop,
   declineShop,
   getShopForReview,
   hideListing,
+  isOwnListing,
+  isOwnRequest,
+  isOwnShop,
   listMentors,
   listShopsForReview,
   resendForApproval,
@@ -253,5 +257,56 @@ describe("Show again (stage J spec decision 14)", () => {
     expect(sampleStore().listings.get("l-001")).toMatchObject({ hiddenAt: null, hiddenReason: null, state: "sold" });
     expect(await showListing("l-001")).toBeNull();
     expect(await showListing("l-nope")).toBeNull();
+  });
+});
+
+describe("whose it is (stage L spec decision 2)", () => {
+  it("knows a shop's owner now, a waiting shop's too; a sample shop no account owns is nobody's", () => {
+    expect(isOwnShop("acc-seller", "tech-corner")).toBe(true);
+    expect(isOwnShop("acc-admin", "tech-corner")).toBe(false);
+    expect(isOwnShop("acc-pending", "crochet-corner")).toBe(true);
+    expect(isOwnShop("acc-admin", "hair-studio")).toBe(false);
+    expect(isOwnShop("acc-seller", "no-such-shop")).toBe(false);
+  });
+
+  it("reads the store when it's asked, never a form: a shop that changes hands changes owner", () => {
+    sampleStore().sellers.get("tech-corner")!.ownerId = "acc-student";
+    expect(isOwnShop("acc-seller", "tech-corner")).toBe(false);
+    expect(isOwnShop("acc-student", "tech-corner")).toBe(true);
+  });
+
+  it("knows a listing by its shop's owner", () => {
+    expect(isOwnListing("acc-seller", "l-001")).toBe(true);
+    expect(isOwnListing("acc-admin", "l-001")).toBe(false);
+    expect(isOwnListing("acc-seller", "l-nope")).toBe(false);
+  });
+
+  it("knows a request by its asker; a sample request has none, so it's nobody's", async () => {
+    const { id } = await createRequest({
+      askerId: "acc-seller",
+      fields: {
+        title: "Desk lamp for res",
+        categorySlug: "res-living",
+        campusSlug: "midrand",
+        details: "A lamp that clips onto a desk, by the weekend.",
+        budgetZar: 150,
+        swapWelcome: false,
+        neededBy: null,
+      },
+      now: NOW,
+    });
+    expect(isOwnRequest("acc-seller", id)).toBe(true);
+    expect(isOwnRequest("acc-admin", id)).toBe(false);
+    expect(isOwnRequest("acc-seller", "r-001")).toBe(false);
+    expect(isOwnRequest("acc-seller", "r-nope")).toBe(false);
+  });
+});
+
+describe("the mentor choice leaves out the shop's owner (stage L spec decision 5)", () => {
+  it("lists every mentor but the owner it's told to leave out", async () => {
+    sampleStore().accounts.get("acc-seller")!.roles.push("mentor");
+    expect(await listMentors("acc-seller")).toEqual([{ id: "acc-mentor", firstName: "Naledi" }]);
+    expect(await listMentors(null)).toContainEqual({ id: "acc-seller", firstName: "Sipho" });
+    expect(await listMentors()).toContainEqual({ id: "acc-seller", firstName: "Sipho" });
   });
 });

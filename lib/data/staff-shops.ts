@@ -204,10 +204,14 @@ export async function staffResumeShop(slug: string): Promise<(ShopDecision & { s
   return { ...decided(shop.row), stillPausedBySeller: sellerPausedToo };
 }
 
-/** The accounts with the mentor role, by first name, for the seller page's choice (plan decision 15). */
-export async function listMentors(): Promise<{ id: string; firstName: string }[]> {
+/**
+ * The accounts with the mentor role, by first name, for the seller page's choice (plan decision 15), leaving out
+ * `exceptOwnerId`: a shop's owner can't be its mentor (amendment 15.3), so the choice never offers them (stage L spec
+ * decision 5). Null leaves nobody out.
+ */
+export async function listMentors(exceptOwnerId: string | null = null): Promise<{ id: string; firstName: string }[]> {
   return [...sampleStore().accounts.values()]
-    .filter((row) => row.roles.includes("mentor"))
+    .filter((row) => row.roles.includes("mentor") && row.id !== exceptOwnerId)
     .map((row) => ({ id: row.id, firstName: row.firstName }))
     .sort((a, b) => a.firstName.localeCompare(b.firstName));
 }
@@ -274,3 +278,26 @@ export async function shopStanding(accountId: string): Promise<OwnStanding | nul
   };
 }
 
+
+// --- Whose it is (stage L spec decision 2) ------------------------------------------------------------------------
+
+/**
+ * Whether `accountId` owns the shop on this link now, read from the store at the moment of asking, never from a form
+ * (stage L spec decision 2). A waiting shop's row names its owner too; a sample shop no account owns is nobody's.
+ */
+export function isOwnShop(accountId: string, slug: string): boolean {
+  const ownerId = sampleStore().sellers.get(slug)?.ownerId ?? null;
+  return ownerId !== null && ownerId === accountId;
+}
+
+/** Whether the listing is in `accountId`'s own shop now. */
+export function isOwnListing(accountId: string, listingId: string): boolean {
+  const slug = sampleStore().listings.get(listingId)?.sellerSlug;
+  return slug !== undefined && isOwnShop(accountId, slug);
+}
+
+/** Whether `accountId` asked for this Looking For request. A sample request has no asker, so it's nobody's. */
+export function isOwnRequest(accountId: string, requestId: string): boolean {
+  const askerId = sampleStore().requests.get(requestId)?.askerId ?? null;
+  return askerId !== null && askerId === accountId;
+}
