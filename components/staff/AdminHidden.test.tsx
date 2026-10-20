@@ -46,6 +46,19 @@ describe("hidden listings and requests (stage J spec decision 14)", () => {
     expect(within(row).getByText("14 Oct")).toHaveAttribute("datetime", "2026-10-14T08:42:00.000Z");
   });
 
+  it("names each Show again link with an aria-label that starts with its visible words, and has no sr-only span", () => {
+    render(<AdminHidden listings={[listing]} requests={[request]} campusNames={campusNames} />);
+    const links = screen.getAllByRole("link");
+    expect(links.map((link) => link.getAttribute("aria-label"))).toEqual([
+      "Show again: Casio fx-991ZA Plus calculator",
+      "Show again: Graphing calculator for MAT2",
+    ]);
+    for (const link of links) {
+      expect(link).toHaveTextContent(/^Show again$/);
+      expect(link.querySelector(".sr-only")).toBeNull();
+    }
+  });
+
   it("lists hidden requests without anyone's name", () => {
     render(<AdminHidden listings={[]} requests={[request]} campusNames={campusNames} />);
     const table = screen.getByRole("table", { name: "Hidden requests (1)" });

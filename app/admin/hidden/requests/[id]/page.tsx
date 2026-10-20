@@ -21,7 +21,7 @@ export function generateStaticParams() {
 /** Show a hidden request again: its confirm page (stage J spec decision 14). One that isn't hidden is the 404. */
 export default function ShowRequestPage({ params }: PageProps<"/admin/hidden/requests/[id]">) {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
+    <Suspense fallback={<StaffSkeleton short />}>
       <Show params={params} />
     </Suspense>
   );

@@ -15,7 +15,7 @@ const BOTH = ["phone-390", "desktop-1440"];
 const onlyAtBoth = () => test.skip(!BOTH.includes(test.info().project.name), "Checked at 390 and 1440");
 
 /**
- * Axe on the page once it has drawn. A staff page's title streams in with its request-time parts (plan decision 1: it
+ * Axe on the page once it has drawn. A staff page's title comes from its request-time parts (plan decision 1: it
  * reads the session), so it can arrive a moment after the heading; the page isn't whole, and axe's document-title rule
  * would fire, until it has. A title that never arrives still fails here.
  */

@@ -467,10 +467,10 @@ Task 9 adds them, with a note that `/admin/numbers` returns 404 until Task 10. T
 | I's final figures (2026-10-20) | 150,591 | 151,338 | 151,747 | 151,351 | 151,226 | 150,591 | not in I's ledger | 152,265 |
 | Start (Task 1, Step 2, from HEAD `3b59045`) | 150,591 | 151,338 | 151,747 | 151,351 | 151,226 | 150,591 | 150,591 | 152,265 |
 | Task 12, the privacy words | | | | | | | | |
-| Task 13, the stage's checks | | | | | | | | |
+| Task 13, the stage's checks | 150,591 | 151,338 | 151,747 | 151,351 | 151,226 | 150,591 | 150,591 | 152,265 |
 | **Final (Task 14)** | | | | | | | | |
 
-Staff pages, signed in as the admin (Task 13): Staff accounts —, Numbers —, Hidden —. The shell's figure is 150,591 B.
+Staff pages, signed in as the admin (Task 13): Overview 150,591, Staff accounts 150,591, Numbers 150,591, Hidden 150,591. The shell's figure is 150,591 B: the staff pages load no new JavaScript.
 
 The stop line used: 152,305 B (decision 52). Unit tests at the start: 2,303 in 302 files at HEAD (the working tree has more: another session's uncommitted header tests). End to end at the start: 1,247 passed, 1,144 skipped (I's final run, `d3526fd`).
 

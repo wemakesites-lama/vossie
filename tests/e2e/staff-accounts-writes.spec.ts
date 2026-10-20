@@ -133,9 +133,8 @@ test("a hidden listing is shown again from /admin/hidden: back in browse and on 
   const row = main(admin).getByRole("row").filter({ hasText: title });
   await expect(row).toContainText("Tech corner");
   await expect(row).toContainText("Hidden while the Hub checks it.");
-  // The link reads "Show again" and is named for the listing (amendment 12). Playwright puts a space before the
-  // sr-only part (an absolutely positioned span counts as a block), so the name is "Show again : …" here.
-  await row.getByRole("link", { name: new RegExp(`^Show again ?: ${title}$`) }).click();
+  // The link reads "Show again" and is named for the listing by its aria-label (amendment 12).
+  await row.getByRole("link", { name: `Show again: ${title}`, exact: true }).click();
   await expect(main(admin).getByRole("heading", { level: 1, name: `Show ${title} again` })).toBeVisible();
   await expect(main(admin)).toContainText("To hide it again, someone has to report it.");
   await button(admin, `Show ${title} again`).click();

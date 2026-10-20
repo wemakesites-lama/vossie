@@ -14,9 +14,8 @@ type AdminHiddenProps = {
 function ShowLink({ item }: { item: HiddenItem }) {
   const href = item.kind === "listing" ? showListingPath(item.id) : showRequestPath(item.id);
   return (
-    <Link href={href} prefetch={false} className="staff-row-action">
+    <Link href={href} prefetch={false} className="staff-row-action" aria-label={`Show again: ${item.title}`}>
       Show again
-      <span className="sr-only">{`: ${item.title}`}</span>
     </Link>
   );
 }

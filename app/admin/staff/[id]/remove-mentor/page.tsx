@@ -24,7 +24,7 @@ export function generateStaticParams() {
 /** Remove a mentor role's confirm page (stage J spec decision 4). Someone who isn't a mentor is the 404. */
 export default function RemoveMentorPage({ params }: PageProps<"/admin/staff/[id]/remove-mentor">) {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
+    <Suspense fallback={<StaffSkeleton short />}>
       <Remove params={params} />
     </Suspense>
   );

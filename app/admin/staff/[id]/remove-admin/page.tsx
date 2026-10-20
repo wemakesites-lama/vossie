@@ -24,7 +24,7 @@ export function generateStaticParams() {
 /** Remove an admin role's confirm page (stage J spec decisions 4 and 5). Someone who isn't an admin is the 404; your own admin role shows the refusal and no button. */
 export default function RemoveAdminPage({ params }: PageProps<"/admin/staff/[id]/remove-admin">) {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
+    <Suspense fallback={<StaffSkeleton short />}>
       <Remove params={params} />
     </Suspense>
   );
