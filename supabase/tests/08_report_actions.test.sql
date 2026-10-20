@@ -30,6 +30,11 @@ insert into public.seller_profiles (account_id, status, shop_id) values
 insert into public.listings (id, shop_id, state, kind, title, category_slug, condition, price_zar, pay_mode, description, handover, campus_slug, first_published_at) values
   ('t-r1', '10000000-0000-4000-8000-000000000071', 'available', 'item', 'Calculator', 'test-category', 'good', 200, 'cash', 'A calculator.', 'online', 'test-campus', now()),
   ('t-r-draft', '10000000-0000-4000-8000-000000000071', 'draft', 'item', 'Draft', 'test-category', 'good', 200, 'cash', 'A draft.', 'online', 'test-campus', null);
+-- Requests, since stage H (schema catch-up Task 6): two samples, and one the Hub has hidden.
+insert into public.requests (id, title, category_slug, campus_slug, details, hidden_at, hidden_reason) values
+  ('r-001', 'Need a lift to Midrand', 'test-category', 'test-campus', 'A lift to Midrand on Friday.', null, null),
+  ('r-11', 'Need a calculator', 'test-category', 'test-campus', 'A calculator for the exam.', null, null),
+  ('r-003', 'Need a hidden thing', 'test-category', 'test-campus', 'A request the Hub has hidden.', now(), 'Rude.');
 
 select ok(not has_function_privilege('anon', 'public.create_report(text, text, text, text, text)', 'execute'), 'anon cannot report');
 select ok(has_function_privilege('authenticated', 'public.create_report(text, text, text, text, text)', 'execute'), 'a signed-in user can');
@@ -48,20 +53,17 @@ select is(
 select pg_temp.sign_in('00000000-0000-4000-8000-000000000071');
 select is(public.create_report('listing', 't-r1', 'Calculator', 'spam', ''), 'already-open', 'a second report on the same target is not stored (plan decision 17)');
 select is(public.create_report('seller', 'test-report-shop', 'x', 'misleading', ''), 'created', 'a report on a shop is made');
-select is(public.create_report('request', 'r-001', 'Need a lift to Midrand', 'other', 'Odd.'), 'created', 'a report on a request keeps the title it was given');
--- A request's id and title come from the app until stage H (M2 of the phase A review): checked here all the same.
+select is(public.create_report('request', 'r-001', 'A made-up title', 'other', 'Odd.'), 'created', 'a report on a request takes the request''s own title');
+-- Since stage H a request is looked up in the table (schema catch-up Task 6): an id of any other shape finds none.
 select is(public.create_report('request', 'R-001', 'Need a lift', 'other', ''), 'not-found', 'a request id has no capitals');
 select is(public.create_report('request', 'r_001', 'Need a lift', 'other', ''), 'not-found', 'no underscores');
 select is(public.create_report('request', 'r-001-', 'Need a lift', 'other', ''), 'not-found', 'no loose hyphen');
 select is(public.create_report('request', repeat('r', 21), 'Need a lift', 'other', ''), 'not-found', 'and is at most 20 characters');
 select is(public.create_report('request', null, 'Need a lift', 'other', ''), 'not-found', 'and is given');
-select throws_ok(
-  format($$select public.create_report('request', 'r-002', %L, 'other', '')$$, repeat('a', 71)),
-  '22023', null, 'a request''s title is at most 70 characters'
-);
-select throws_ok($$select public.create_report('request', 'r-002', E'Need a\nlift', 'other', '')$$, '22023', null, 'one line');
-select throws_ok($$select public.create_report('request', 'r-002', E'Need a lift\u202e', 'other', '')$$, '22023', null, 'clean');
-select throws_ok($$select public.create_report('request', 'r-002', '  ', 'other', '')$$, '22023', null, 'and not empty');
+select is(public.create_report('request', 'r-002', repeat('a', 71), 'other', ''), 'not-found', 'a request that isn''t there can''t be reported, whatever title is given');
+select is(public.create_report('request', 'r-001', E'Need a\nlift', 'other', ''), 'already-open', 'a second report on a request finds the first, whatever title is given');
+select is(public.create_report('request', 'r-003', 'Need a hidden thing', 'other', ''), 'not-found', 'a request the Hub has hidden can''t be reported');
+select is(public.create_report('request', 'r-002', '  ', 'other', ''), 'not-found', 'an empty title changes nothing');
 select is(public.create_report('listing', 't-r-draft', 'Draft', 'scam', ''), 'not-found', 'a draft cannot be reported');
 select is(public.create_report('listing', 'no-such', 'x', 'scam', ''), 'not-found', 'nor an unknown listing');
 select is(public.create_report('seller', 'test-hidden-shop', 'x', 'scam', ''), 'created', 'an ownerless sample shop can be');
