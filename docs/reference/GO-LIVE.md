@@ -2,7 +2,7 @@
 
 Every page and view the marketplace needs before it can go live, plus the work that isn't a screen. Drawn from the app's routes, the old demo's function map (`FUNCTION-MAP.md`) and the homepage spec's "Not in this stage" list.
 
-Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) after Looking For and the Hub (part B), after sign-in and accounts, in sample mode (stage D), after messaging, reports and notifications, in sample mode (stage E), after selling, in sample mode (stage F), after the staff tools, in sample mode (stage G), after community actions, in sample mode (stage H), and after saved-search alerts, in sample mode (stage I), and after staff accounts, the admin's numbers and Show again, in sample mode (stage J). Update the status column as each stage lands.
+Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) after Looking For and the Hub (part B), after sign-in and accounts, in sample mode (stage D), after messaging, reports and notifications, in sample mode (stage E), after selling, in sample mode (stage F), after the staff tools, in sample mode (stage G), after community actions, in sample mode (stage H), and after saved-search alerts, in sample mode (stage I), and after staff accounts, the admin's numbers and Show again, in sample mode (stage J), and after hardening (sign-in, sign-out and account deletion as full page loads, message limits, keyed hashes, info pages; stage K). Update the status column as each stage lands.
 
 **Status key**
 - **Built:** done.
@@ -96,14 +96,18 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] Save this search writes one form-state row per signed-in browse view that offers Save, kept for an hour; the real backend should keep these cheaply or issue the token on demand (search alerts plan decision 21).
 - [ ] Supabase Auth or the real database behind `lib/data/accounts.ts`, `sessions.ts`, `sign-in.ts` and `form-states.ts`; then set `VOSSIE_SAMPLE_MODE=0`, which removes the sample accounts' buttons.
 - [ ] Sign-in rate limits on the real backend: per IP address as well as per email.
-- [ ] **Keyed hashes for codes.** Sign-in codes and tokens are stored as plain SHA-256 hashes (a code is salted with its attempt's key, which sits in the same row). A 6-digit code has only a million values, so a leaked store gives the codes away. The real backend hashes them with a server secret (HMAC).
+- [x] **Keyed hashes for codes.** Sign-in codes and tokens are stored as plain SHA-256 hashes (a code is salted with its attempt's key, which sits in the same row). A 6-digit code has only a million values, so a leaked store gives the codes away. The real backend hashes them with a server secret (HMAC). Built in stage K: HMAC-SHA-256 under `VOSSIE_AUTH_HMAC_KEY`.
+- [ ] Set `VOSSIE_AUTH_HMAC_KEY` (32+ characters) in every deployed environment before any real account signs in, then sign in once on that environment: a key shorter than 32 characters turns every signed-in page and sign-in post into a 500. The Vercel preview runs on the development key, with its warning, until then (Lama, 2026-10-20). Changing the key signs everyone out.
+- [ ] Phase B: `authKey()` refuses the development key, and `isSampleAccount()` is false, whenever `VOSSIE_BACKEND=supabase`, whatever `VOSSIE_SAMPLE_MODE` says. If Postgres ever computes these HMACs, it uses the same `token:`/`code:` purpose prefixes.
+- [ ] Phase B: confirm from Supabase's own docs how Supabase Auth stores email codes. (`getSessionKey` is replaced by phase B too.)
 - [ ] **Counting tries.** The real backend counts a wrong try (atomically) before it compares the code, so guesses sent in parallel can't get past 5 tries. The same goes for the 5 codes an hour: `recordWrongTry` and `reserveCodeSend` in `lib/data/sign-in.ts` say what each needs (a single `UPDATE … RETURNING`, and a single upsert or a per-email lock).
 - [ ] **The store's scope.** The sample store lives in one server process. Running more than one instance, or serverless functions, needs the real database first.
 - [ ] Scheduled jobs: recalculating trust badges nightly (Overview does it on demand today), confirming sales automatically after 7 days, closing old Looking For requests (stage H leaves them open), and the numbers' weekly roll-up (stage J). Featured's draw needs no job: each campus's row is recorded on its first view of the day.
 - [ ] Supabase tables for conversations, messages, reports and notifications replace the sample store's (`lib/data/messages.ts`, `notifications.ts`, `reports.ts`).
 - [ ] Live updates and the header's count without a page load (Supabase Realtime), if wanted: messaging spec 2.6 left them out.
 - [ ] A scheduled job for the 7-day auto-confirm (it's checked on read today) and for deleting old messages, reports and notifications once Eduvos sets how long they're kept.
-- [ ] A limit on messages per account (reports have one: 10 in 24 hours).
+- [x] A limit on messages per account (reports have one: 10 in 24 hours). Built in stage K: 40 new conversations a day and 120 messages an hour (Lama, 2026-10-20); the numbers can be raised.
+- [ ] The message limits counted in the database: `start_conversation` and `send_message` count with the write, under an advisory lock on the sender, because the sample store counts with awaits before the write and forms sent at the same moment can pass the limits; `messages.sender_id` with an index on `(sender_id, sent_at)`; a partial index on `conversations (buyer_id, created_at) where request_id is null` (stage K spec decision 11).
 - [ ] Supabase tables for shops, listings and onboarding drafts, and Supabase Storage for photos, replace the sample store's (`lib/data/shops.ts`, `own-listings.ts`, `photos.ts`, `catalog.ts`); `/photos/[id]` goes. Storage's own resizing (or a cache handler that can purge) replaces next/image's, with a purge when a photo is deleted (selling plan decision 12).
 - [ ] Photos uploaded straight to storage from the browser (signed upload links), not through a Server Action: many hosts cap a request body far below the 32 MB set in `next.config.ts` (Vercel's functions take 4.5 MB). The no-JavaScript path then needs its own answer.
 - [ ] Storage quotas per account (sample mode keeps only each account's newest 12 waiting photos), and a look at photos of people (consent, CLAUDE.md).
@@ -148,7 +152,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] The Hub's real posts and office hours, and give the real staff their roles in `/admin/staff` (stage J).
 - [ ] Real Hub events, tips and story. The 18 posts and the Hub's two paragraphs are sample wording.
 - [ ] Real Looking For requests. The 16 requests (and the offers counts on them) are samples to remove, with their `seedOffers` (stage H).
-- [ ] Info pages say what's true today; update them as stages land (How it works' "What can I do on Vossie today?", the trust page's sample notes, the privacy page's "Your account" section).
+- [ ] Info pages say what's true today; update them as stages land (How it works' "What can I do on Vossie today?", the trust page's sample notes, the privacy page's "Your account" section). Brought up to date after stages H to J in stage K; keep updating them as stages land. The trust page's "When something is reported" is sample wording Lama kept for now.
 - [ ] Remove every sample listing and the sample accounts (sample mode off). The development sign-in switch went in stage D.
 
 ### Production
@@ -167,6 +171,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] Error monitoring.
 - [ ] Backups.
 - [ ] A decision on analytics: none, or a privacy-friendly one.
+- [x] Sign-out and account deletion end with a full page load (`/logout` and `/account/privacy/delete`, stage K), so a shared computer keeps no hidden signed-in pages. See the iOS Safari back/forward-cache check under Quality.
 
 ### Quality
 - [ ] End-to-end, accessibility and per-page speed tests for every new flow.
@@ -175,16 +180,19 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] A test on a cheap Android phone.
 - [ ] Decide whether a browser with JavaScript off needs the forms. "Works without JavaScript" means without the app's bundle: React's small inline script still places streamed parts, so with JavaScript off the composer, the thread's forms and the report form stay on their skeletons (messaging plan amendment 4).
 - [ ] The offline worker's kill switch (stage H): a version that removes itself and its cache, tried on a real phone before launch. `WORKER_ON = false` in `lib/offline.ts` serves it and stops the pages registering the worker, but it reaches a phone that already has the worker only through the browser's own update check, which can take up to about a day (a plain reload doesn't trigger it). Plan for that delay when deciding whether to switch it off (community actions plan amendment 21.3).
-- [ ] **Stage D's sign-in replay of a gated page's redirect.** After a client navigation to a page that redirected to sign-in, signing in repeats that redirect (the browser kept it from the first visit), so the visitor is stranded on sign-in and the page never opens. Post a request, Offer to help and Follow work round it (links that follow the session), but a link straight at any other gated page still has it, so CLAUDE.md says never to link a signed-out visitor at one. A `refresh()` in `afterSignIn` didn't clear it; the fix belongs in the sign-in flow (community actions plan amendment 18).
+- [x] **Stage D's sign-in replay of a gated page's redirect.** After a client navigation to a page that redirected to sign-in, signing in repeats that redirect (the browser kept it from the first visit), so the visitor is stranded on sign-in and the page never opens. Post a request, Offer to help and Follow work round it (links that follow the session), but a link straight at any other gated page still has it, so CLAUDE.md says never to link a signed-out visitor at one. A `refresh()` in `afterSignIn` didn't clear it; the fix belongs in the sign-in flow (community actions plan amendment 18). Fixed in stage K: the posts that start a session go to Route Handlers that answer 303, so sign-in ends with a full page load (the spike confirmed the replay first).
+- [ ] **Back/forward cache after sign-out and account deletion, on iOS Safari.** Playwright turns the cache off, so no test sees it. By hand: open `/`, sign in, open `/account`, sign out, press Back twice, and confirm no signed-in header or email comes back; repeat after deleting a test account. Checked on desktop Chromium only (2026-10-20). If it leaks, the options are `Clear-Site-Data: "cache"` on the 303 or a `pageshow` reload in the boot script (stage K plan amendment 4).
 
 ### Launch
 - [ ] A support contact, and a privacy contact address. `/privacy` says one will be added; `/terms` and `/seller-guidelines` tell people to "contact the Hub" without saying how.
 - [ ] Enough sellers listed before day one, so it doesn't open empty.
 - [ ] Possibly a pilot on one campus.
+- [ ] Remove the sample accounts' exemption from the message limits with sample mode (it goes by itself, since `isSampleAccount` needs sample mode; listed so nobody keeps it on purpose).
 - [ ] Unset `VOSSIE_NOINDEX` on the live deployment and rebuild, so search engines can find Vossie (decision 68).
 
 ## 7. Decisions for Lama and Eduvos
 
+- [ ] **Report the kept-redirect behaviour to Next.js, if necessary** (Lama, 2026-10-20). `tests/e2e/sign-in-return.spec.ts` with `SIGN_IN_SPIKE=1` is the reproduction.
 - [ ] **Who can sell?** Sellers the Hub approves (selling spec 2.7), built that way; a lighter path for one-off sales is still open. An approval queue suits a hustle selling braids but is heavy for one textbook. The choice also shapes the admin tools, and who can make offers on Looking For requests (stage H: approved shops only).
 - [ ] **Which email proves someone is a student?** The demo's `@vossie.net` was a stand-in.
 - [ ] **Plus addresses.** `thandi+1@eduvos.com` counts as a new address, which gets round the per-email code limit and allows several accounts per student. Decide with Eduvos whether to treat plus addresses as the same person, or reject them, once its mail system is known.
@@ -208,8 +216,9 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 6. **Done in sample mode (2026-10-19): community actions (stage H).** Posting Looking For requests, offers, following shops and the offline page.
    - **Done in sample mode (2026-10-20): saved-search alerts (stage I).** Save this search on browse, Saved's Searches tab, and a notification when a new listing matches. No email.
    - **Done in sample mode (2026-10-20): staff accounts, the admin's numbers and Show again (stage J).** Roles given by exact email, weekly counts per campus under a small-number rule, and hidden listings and requests shown again. Staff pages still answer 200 with the 404 view (the 404 status item stays).
+   - **Done in sample mode (2026-10-20): hardening (stage K).** Sign-in, sign-out and account deletion end with a full page load, 40 new conversations a day and 120 messages an hour, HMAC-keyed codes and tokens, and the info pages brought up to date.
 7. **Done in sample mode (2026-10-14): messaging, reports and notifications.** Supabase replaces the sample store at go-live.
-   - Stage E builds messaging, then stage F selling. Stage G adds the staff tools: admin, the Hub's posting tools and the mentors' dashboard. Stage H adds community actions: posting Looking For requests, offers, following shops and the offline page. Stage I adds saved-search alerts. Stage J adds staff accounts, the admin's numbers and Show again.
+   - Stage E builds messaging, then stage F selling. Stage G adds the staff tools: admin, the Hub's posting tools and the mentors' dashboard. Stage H adds community actions: posting Looking For requests, offers, following shops and the offline page. Stage I adds saved-search alerts. Stage J adds staff accounts, the admin's numbers and Show again. Stage K adds hardening: sign-in, sign-out and account deletion as full page loads, message limits, keyed hashes and brought-up-to-date info pages.
 8. **Launch readiness:** legal sign-off, domain, monitoring, content, and the pilot.
 
 **After launch:** delivery between campuses, saved-search email alerts or a digest (once there's an email service and a consent choice), and alerts on price drops (search alerts spec 7).

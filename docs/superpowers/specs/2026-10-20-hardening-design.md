@@ -1,7 +1,7 @@
 # Vossie hardening: design spec
 
 - **Date:** 2026-10-20
-- **Status:** Draft (2026-10-20), decided by Claude under Lama's standing goal (decision 54); Lama may revisit.
+- **Status:** Built (2026-10-20), in sample mode. Decided by Claude under Lama's standing goal (decision 54); Lama may revisit.
 - **Scope:** stage K. Four items from the go-live checklist (`docs/reference/GO-LIVE.md`) that sample mode can build:
   1. **Stage D's sign-in replay of a gated page's redirect** (section 6, Quality; PROGRESS's stage H open point; community actions plan amendment 18).
   2. **A limit on messages per account** (section 6, Backend).
@@ -519,3 +519,26 @@ For `docs/reference/GO-LIVE.md`, when the stage is built:
 3. **Report the kept-redirect behaviour to Next.js?** The spike's reproduction would be the issue's example.
 4. **The key on the Vercel preview:** set `VOSSIE_AUTH_HMAC_KEY` there now, so the preview never logs the development key's warning?
 5. **The new trust page section's wording**, in particular "never names them to the seller" and the line about who Hub staff are.
+
+## 11. Changes on plan review and build
+
+Where a line here differs from sections 1 to 10, this section wins. "Plan decision N" and "amendment N" are in `docs/superpowers/plans/2026-10-20-hardening.md`.
+
+1. **The spike confirmed the replay** (plan decision 6). On today's code, variants 1 to 4 (client navigations) failed 3 of 3 at 390 and at 1440, and a kept `/account` held the email after the Server Action sign-out. So item 1 was built as section 3 describes, and the stop rule never fired.
+2. **Lama's answers of 2026-10-20** (plan decisions 1 to 5; section 10's five questions are all answered):
+   - the limits are 40 new conversations a day and 120 messages an hour, not 20 and 60 (section 4 and section 9 read 40 and 120);
+   - signing out ends with a full page load, built as `/logout` (section 8's item moves into this stage, and `signOut` leaves `lib/auth/actions.ts`);
+   - the kept-redirect behaviour is reported to Next.js only if needed;
+   - the Vercel preview runs on the development key, with its warning, until real accounts;
+   - the trust page's new section stays as written, marked as sample wording for later review.
+3. **The steps' helpers moved to a plain module,** `lib/auth/sign-in-finish.ts`, because every export of a `"use server"` file is an endpoint (plan decision 8).
+4. **`isSameOrigin` and the handlers** (plan decisions 10 and 11, amendments 2 and 9). A missing `Origin` falls back to a same-host `Referer`, so proxy browsers can still sign in; `Origin: null` and a foreign `Referer` are refused. The `GET`s call `connection()`, and a body that can't be read answers a 303 instead of a 500.
+5. **Continue is left out for `next=/account`** and for public pages whose way back is the page itself (plan decision 12, amendment 8). `app/login/page.tsx` needed no change.
+6. **The offer's 20-a-day check moved before the scam words** (plan decision 14); `lib/looking-for/errors.ts` needed no change (plan decision 17).
+7. **Unit tests get a key of their own** (plan decision 19). With sample mode off, `getSessionKey()` and the sign-in attempt read return null before hashing, so a missing key can't break signing out (amendment 3).
+8. **Test changes the spec missed:** the trust and safety page tests and `info.spec.ts`; the key phrase "save a search and hear when a new listing matches it" (plan decision 20); `accounts.spec.ts`'s local `signInAsSample` now waits for the header to hydrate after the 303.
+9. **Account deletion was added** to the full page loads, by Claude under decision 54 (section 8 left it out): `/account/privacy/delete` is a Route Handler that answers 303 to `/`, mirroring Lama's sign-out answer. `updateTag` can't run in a Route Handler, so the handlers use `sellersChangedNow`, `hubChangedNow` and `requestsChangedNow`.
+10. **The privacy wording changed on review:** the policy says a sign-in code is also kept as written while the preview shows it on screen, and lists the two slot notifications. The off-site `next` tests (`//evil.example`, `https://evil.example/x`) cover the code, profile and sample steps.
+11. **The back/forward cache** (amendment 4): the tests can't see it, because Playwright launches Chromium with it off. The controller checked the desktop Chromium: after the 303 sign-out, Back twice showed no signed-in content and no email. iOS Safari is unchecked and is a go-live item. Neither of amendment 4's fixes was built.
+12. **JS:** no page moved by a byte from stage K. The header session's `16dab6a` moved the figures (+69 B over stage J); Lama accepted the listing forms 29 B past the stop line (decision 78).
+13. **Amendments 1, 5, 6 and 10, briefly:** `signOut` had a second caller in `lib/auth/account-actions.test.ts`, whose test went to `app/logout/route.test.ts`; the spike's body checks name the destination's own heading and run three times; a leaking `console.warn` spy is restored after each case; four e2e tests that look as if a reload would break them pass unchanged.

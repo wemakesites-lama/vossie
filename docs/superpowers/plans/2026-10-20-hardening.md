@@ -319,19 +319,50 @@ Reviewed 2026-10-20 (opus, read-only); all accepted by the controller. Amendment
 | Point | `/` | `/browse` | Listing | Storefront | Saved | Privacy | Sign-in | New listing form (signed in) |
 |---|---|---|---|---|---|---|---|---|
 | J's final figures (2026-10-20) | 150,591 | 151,338 | 151,747 | 151,351 | 151,226 | 150,591 | 150,591 | 152,265 |
-| Start (Task 1, from HEAD `<hash>`) | | | | | | | | |
-| Task 2, sign-out posts to `/logout` | | | | | | | | |
-| Task 5, sign-in posts to the handlers | | | | | | | | |
-| Task 10, the stage's checks | | | | | | | | |
-| **Final (Task 11)** | | | | | | | | |
+| Start (Task 1, from HEAD `0b969aa`, after the header commit `6c71c0b`) | J + 723 | J + 723 | J + 723 | J + 723 | J + 723 | J + 723 | J + 723 | J + 723 |
+| Start, re-measured after the header session's `16dab6a` | 150,660 | 151,407 | 151,816 | 151,420 | 151,295 | 150,660 | 150,660 | 152,334 |
+| Task 2, sign-out posts to `/logout` | 150,660 | 151,407 | 151,816 | 151,420 | 151,295 | 150,660 | 150,660 | 152,334 |
+| Task 5, sign-in posts to the handlers | 150,660 | 151,407 | 151,816 | 151,420 | 151,295 | 150,660 | 150,660 | 152,334 |
+| Task 10, the stage's checks | 150,660 | 151,407 | 151,816 | 151,420 | 151,295 | 150,660 | 150,660 | 152,334 |
+| **Final (Task 11)** | 150,660 | 151,407 | 151,816 | 151,420 | 151,295 | 150,660 | 150,660 | 152,334 |
 
-The stop line used: 152,305 B (decision 52). Unit tests at the start: `<count>` in `<files>` files at HEAD. End to end at the start: J's final run (1,277 passed, 1,159 skipped).
+Every figure after the second Start row is the stage K commits measured against `16dab6a`: no page moved by a byte. The header session's `16dab6a` (not this stage) brought every page to J + 69 B; the "New listing form (signed in)" column is also the listing forms' figure (152,334), which Lama accepted 29 B past the stop line as decision 78. The Final row's figures are the controller's `performance.spec.ts` run; fill in the full-suite counts where marked.
+
+The stop line used: 152,305 B (decision 52). Unit tests at the start: J's final count (the start of Task 1 recorded it). End to end at the start: J's final run (1,277 passed, 1,159 skipped). Unit tests at the end: 2,551 (`5aae6b0`). End to end at the end: `E2E_RESULT`.
 
 ## Changes made during the build
 
+- **The final run** (controller): the device projects at 2 workers on `5aae6b0`: 1,248 passed, 1,210 skipped by design, 7 failed. Three were the shared sign-in helper clicking before the new document hydrated, fixed in `4201d55` (`settled()`) and passing on rerun; the other four fail the same way on a clean build of `16dab6a`, before stage K (see the open points). The six write projects, run with `--no-deps`: 62 passed, 1 skipped. A first run at the default workers, with the machine's load average at 59 from other sessions' builds, timed out 44 tests. `4201d55` adds `settled()` to `tests/e2e/helpers/messaging.ts`: `signInAsSample` and `signUp` wait for the header's buttons to hydrate after the 303 (skipped when the app's JavaScript is blocked), as `accounts.spec.ts`'s own helper already did.
+
 Written in Task 11 from `git log` and the code. Where an entry differs from the tasks below, the entry wins.
 
-(none yet)
+**The spike's outcome first.** Task 1 **confirmed the replay** on today's code: variants 1 to 4 (client navigations) failed 3 of 3 at both 390 and 1440, and a kept `/account` held the email after the old Server Action sign-out. So Tasks 3 to 5 went ahead as written, and `SIGN_IN_ENDS_IN_A_PAGE_LOAD` is `true`.
+
+**Commits** (`git log --oneline 0b969aa..HEAD`):
+
+| Commit | Task | What |
+|---|---|---|
+| `9df3d75` | 1 | The spike: `tests/e2e/sign-in-return.spec.ts` |
+| `33acfcb` | 2 | `isSameOrigin`, `/logout`, `signOut` leaves the actions |
+| `fa71050` | 3, 4, 5 | The steps' logic in `lib/auth/sign-in-finish.ts`, the three sign-in Route Handlers, the forms and the signed-in note's Continue (committed together) |
+| `9d58e72` | 6 | The message limits' rules, words, counts and the sample exemption |
+| `16dab6a` | none | The header session's work (not this stage); moved the JS Start row, see below |
+| `40a9e76` | 7 | The limits in the three send actions |
+| `534af03` | 8 | Keyed hashes under `VOSSIE_AUTH_HMAC_KEY`, `STORE_VERSION` 10 |
+| `a82a293` | 9 | The info pages |
+| `d0501d6` | 10 | The message limit end to end, the `hardening-writes` project |
+| `5aae6b0` | review fixes | See the last bullet below |
+
+**Where the build differed from the tasks:**
+- **The JS Start row moved twice.** `0b969aa` (after the header commit `6c71c0b`) was +723 B over stage J on every page. The header session's `16dab6a` brought it to +69 B over J. Lama accepted the listing forms 29 B past the stop line (decision 78). Stage K was measured against `16dab6a`: every page unchanged (`/` 150,660; listing 151,816; browse 151,407; storefront 151,420; Saved 151,295; forms 152,334).
+- **Tasks 3 to 5 were committed together** (`fa71050`). Some component tests were written with their code, so they had no red run.
+- **Task 8:** `vi.stubEnv(undefined)` worked under Vitest 5.
+- **Existing e2e changed because a page now reloads:** `accounts.spec.ts`'s local `signInAsSample` now waits for the header to hydrate after the 303. Amendment 10's list passed unchanged.
+- **Amendment 4's manual back/forward-cache check** was done by the controller in the desktop Chromium built-in browser. After the 303 sign-out, Back twice showed no signed-in content and no email (the only match was the public sample sign-in button's value). **iOS Safari is unchecked** and becomes a go-live item; nothing from amendment 4's options was built.
+- **The review fixes (`5aae6b0`):**
+  - the privacy policy says a sign-in code is also kept as written while the preview shows it on screen, and lists the two slot notifications;
+  - the off-site `next` tests (`//evil.example`, `https://evil.example/x`) run at the code, profile and sample steps (a raw read fails all 10);
+  - **account deletion moved to a Route Handler** at `/account/privacy/delete` (303 to `/`), made by Claude under decision 54, mirroring Lama's sign-out answer, so the kept account page can't linger in the document. `updateTag` can't run in a Route Handler, so the handlers use `hubChangedNow` and `requestsChangedNow` (like `sellersChangedNow`). This replaces plan decision 2's "account deletion stays a Server Action" and the go-live line that said so.
 
 ## Conventions for every task
 
@@ -450,11 +481,11 @@ Spec 2.6's stop rule, before anything changes. Write the reproduction tests, run
 **Files:**
 - Create: `tests/e2e/sign-in-return.spec.ts`
 
-- [ ] **Step 1: Read Next's words on it**
+- [x] **Step 1: Read Next's words on it**
 
 Read `node_modules/next/dist/docs/01-app/02-guides/preserving-ui-state.md` and `03-api-reference/04-functions/cacheLife.md` ("Client cache behavior"). Note in your report anything that contradicts spec 2.1.
 
-- [ ] **Step 2: Measure the Start row, from HEAD, before changing anything**
+- [x] **Step 2: Measure the Start row, from HEAD, before changing anything**
 
 Make the scratch copy (conventions) with **no** files copied in: `S="<your scratchpad>/vossie-k-task1-start"`. From `$S`:
 
@@ -465,7 +496,7 @@ pnpm test 2>&1 | tail -5
 
 Expected: every test passes; one line per page such as `homepage: {"script":…,"scriptBrotli":150591}`. Write the `scriptBrotli` figures for homepage, browse page, listing page, storefront, Saved page, privacy page, sign-in page and new listing form (signed in) into your report, and the unit count (tests and files).
 
-- [ ] **Step 3: Write the reproduction tests**
+- [x] **Step 3: Write the reproduction tests**
 
 Create `tests/e2e/sign-in-return.spec.ts`:
 
@@ -753,7 +784,7 @@ test.describe("checks (stage K spec 3 \"Checks\")", () => {
 Run: `pnpm lint tests/e2e/sign-in-return.spec.ts`
 Expected: no output.
 
-- [ ] **Step 4: Run it on HEAD with the spike switch**
+- [x] **Step 4: Run it on HEAD with the spike switch**
 
 Make a second scratch copy, `S="<your scratchpad>/vossie-k-task1"`, copying in `tests/e2e/sign-in-return.spec.ts`. From `$S`:
 
@@ -770,7 +801,7 @@ Expected on HEAD:
 
 If variant 5 or 6 fails on HEAD, stop and report: the controls must hold, or nothing below can be read.
 
-- [ ] **Step 5: Decide, by plan decision 6, and report**
+- [x] **Step 5: Decide, by plan decision 6, and report**
 
 Report one of:
 - **Confirmed:** list which of variants 1 to 4 failed, at which sizes; quote their `POST` lines (`x-action-redirect` set to the gated page and `carries-gated-heading=true`) and their `urls:` lines (ending on `/login?next=…`). Tasks 3 to 5 follow.
@@ -779,7 +810,7 @@ Report one of:
 
 Also report the sign-out test's result on HEAD (it shows whether a kept `/account` really holds the email after a Server Action sign-out; Task 2 goes ahead either way), and the Start row's figures from Step 2.
 
-- [ ] **Step 6: Hand over**
+- [x] **Step 6: Hand over**
 
 Files: `tests/e2e/sign-in-return.spec.ts` (both constants still `false`, so a normal run skips the tests of the fix; plan decision 7). Message (fill in the outcome and the figures):
 
@@ -802,7 +833,7 @@ Lama's answer 2 (plan decision 2) and spec 2.3's check. Built whatever Task 1 fo
 - Modify: `components/account/AccountView.tsx`, `components/account/AccountView.test.tsx`
 - Modify: `tests/e2e/sign-in-return.spec.ts` (one constant)
 
-- [ ] **Step 1: The check's test**
+- [x] **Step 1: The check's test**
 
 Create `lib/auth/same-origin.test.ts`:
 
@@ -858,7 +889,7 @@ describe("posts that start or end a session come from Vossie (stage K spec decis
 Run: `pnpm test lib/auth/same-origin.test.ts`
 Expected: FAIL (`./same-origin` doesn't exist).
 
-- [ ] **Step 2: The check**
+- [x] **Step 2: The check**
 
 Create `lib/auth/same-origin.ts`:
 
@@ -907,7 +938,7 @@ export function seeOther(path: string): Response {
 Run: `pnpm test lib/auth/same-origin.test.ts`
 Expected: PASS (6 tests).
 
-- [ ] **Step 3: The handler's test**
+- [x] **Step 3: The handler's test**
 
 Create `lib/auth/post-paths.ts`:
 
@@ -1004,7 +1035,7 @@ describe("GET /logout", () => {
 Run: `pnpm test app/logout/route.test.ts`
 Expected: FAIL (`./route` doesn't exist).
 
-- [ ] **Step 4: The handler**
+- [x] **Step 4: The handler**
 
 Create `app/logout/route.ts`:
 
@@ -1036,7 +1067,7 @@ export async function GET(): Promise<Response> {
 Run: `pnpm test app/logout/route.test.ts`
 Expected: PASS (4 tests).
 
-- [ ] **Step 5: The two forms post to it**
+- [x] **Step 5: The two forms post to it**
 
 In `components/menu/MenuAccount.tsx`:
 - replace `import { signOut } from "@/lib/auth/actions";` with `import { SIGN_OUT_PATH } from "@/lib/auth/post-paths";`;
@@ -1063,7 +1094,7 @@ In `components/account/AccountView.test.tsx`, change the mock to `vi.mock("@/lib
     expect(screen.getByRole("button", { name: "Sign out" }).closest("form")).toHaveAttribute("action", "/logout");
 ```
 
-- [ ] **Step 6: `signOut` leaves the actions**
+- [x] **Step 6: `signOut` leaves the actions**
 
 In `lib/auth/actions.ts`:
 - delete the whole `signOut` function with its doc comment (`/** Sign out (spec 2.5): … */` through its closing `}`);
@@ -1077,11 +1108,11 @@ Expected: only `components/menu/MenuAccount.test.tsx`'s local `const signOut = s
 Run: `pnpm test lib/auth components/menu components/account app/logout`
 Expected: PASS.
 
-- [ ] **Step 7: Switch the sign-out tests on**
+- [x] **Step 7: Switch the sign-out tests on**
 
 In `tests/e2e/sign-in-return.spec.ts`, change `const SIGN_OUT_ENDS_IN_A_PAGE_LOAD = false;` to `const SIGN_OUT_ENDS_IN_A_PAGE_LOAD = true;`.
 
-- [ ] **Step 8: Build, measure and run in a scratch copy**
+- [x] **Step 8: Build, measure and run in a scratch copy**
 
 Make the scratch copy `S="<your scratchpad>/vossie-k-task2"`, copying in every file in this task's list (`mkdir -p` each folder first: `app/logout`). From `$S`:
 
@@ -1100,7 +1131,7 @@ Expected:
 - `accounts.spec.ts`: every test passes. **If one fails because signing out now reloads the page**, fix it in `accounts.spec.ts` with the smallest change that keeps what it checks, and list the change in your hand-over ("Before you start"). The toast-once test, which counts toasts across a Back, is the likeliest; if what it checks can't be kept, report to the controller before changing it;
 - every `scriptBrotli` equal to the Start row. If any page moved, stop and find out why.
 
-- [ ] **Step 9: Hand over**
+- [x] **Step 9: Hand over**
 
 Files: `lib/auth/same-origin.ts`, `lib/auth/same-origin.test.ts`, `lib/auth/post-paths.ts`, `app/logout/route.ts`, `app/logout/route.test.ts`, `lib/auth/actions.ts`, `components/menu/MenuAccount.tsx`, `components/menu/MenuAccount.test.tsx`, `components/account/AccountView.tsx`, `components/account/AccountView.test.tsx`, `tests/e2e/sign-in-return.spec.ts`, and `tests/e2e/accounts.spec.ts` only if Step 8 changed it. Message:
 
@@ -1120,7 +1151,7 @@ Spec 3 "Data and code" and plan decision 8. Behaviour doesn't change: the same c
 - Create: `lib/auth/sign-in-finish.ts`, `lib/auth/sign-in-finish.test.ts`
 - Modify: `lib/auth/actions.ts`, `lib/auth/sign-in-actions.test.ts`
 
-- [ ] **Step 1: The tests, moved and reshaped**
+- [x] **Step 1: The tests, moved and reshaped**
 
 Create `lib/auth/sign-in-finish.test.ts`. It holds every path `sign-in-actions.test.ts` covers for step 2, step 3 and the sample buttons, now as returned paths (spec 3 "Tests"):
 
@@ -1411,7 +1442,7 @@ describe("the sample accounts' buttons (accounts spec 2.8)", () => {
 Run: `pnpm test lib/auth/sign-in-finish.test.ts`
 Expected: FAIL (`./sign-in-finish` doesn't exist).
 
-- [ ] **Step 2: The module**
+- [x] **Step 2: The module**
 
 Create `lib/auth/sign-in-finish.ts`:
 
@@ -1629,7 +1660,7 @@ export async function finishSample(formData: FormData, now: Date): Promise<strin
 }
 ```
 
-- [ ] **Step 3: The Server Actions keep the three steps that start no session**
+- [x] **Step 3: The Server Actions keep the three steps that start no session**
 
 Replace the whole of `lib/auth/actions.ts` (as Task 2 left it, without `signOut`) with:
 
@@ -1665,7 +1696,7 @@ function backToSignIn(next: string | null): never {
 
 followed, unchanged, by HEAD's `startSignIn`, `resendCode` and `cancelSignIn` (with their doc comments), then `// --- Your account ---` and HEAD's `updateDetails` and `deleteAccount` (with their doc comments). Nothing in those five bodies changes: they call `beginAttempt`, `currentAttempt`, `endAttempt`, `sendCode`, `saveAfterPost`, `text`, `nextFrom` and `backToSignIn` by the same names.
 
-- [ ] **Step 4: Trim the old test file**
+- [x] **Step 4: Trim the old test file**
 
 In `lib/auth/sign-in-actions.test.ts`:
 - delete the `describe` blocks "step 2: the code (accounts spec 3.1)", "the stamp that lets a step's errors show only straight after their post (accounts spec 3.1)", "step 3: first sign-in (accounts spec 2.6)" and "the sample accounts' buttons (accounts spec 2.8)" (all moved to `sign-in-finish.test.ts`);
@@ -1689,7 +1720,7 @@ Expected: no output (an unused import left behind would show here).
 Run: `pnpm test lib/auth`
 Expected: PASS, with the same number of tests in `lib/auth` as before plus the new ones (2 path tests and "does nothing with sample mode off" for step 2).
 
-- [ ] **Step 5: Hand over (with Tasks 4 and 5)**
+- [x] **Step 5: Hand over (with Tasks 4 and 5)**
 
 Files: `lib/auth/sign-in-finish.ts`, `lib/auth/sign-in-finish.test.ts`, `lib/auth/actions.ts`, `lib/auth/sign-in-actions.test.ts`. Committed together with Tasks 4 and 5 (Task 5's message).
 
@@ -1705,7 +1736,7 @@ Spec 2.2 to 2.4 and 3 "Data and code". Each handler: `isSameOrigin` first, then 
 - Modify: `lib/auth/post-paths.ts`
 - Create: `app/login/code/route.ts`, `app/login/profile/route.ts`, `app/login/sample/route.ts`, and a `route.test.ts` beside each
 
-- [ ] **Step 1: The test helper records `revalidateTag`**
+- [x] **Step 1: The test helper records `revalidateTag`**
 
 In `tests/helpers/next-request.ts`:
 - in `FakeRequest`, after the `updatedTags?: string[];` line, add:
@@ -1726,7 +1757,7 @@ In `tests/helpers/next-request.ts`:
 
 and add "and revalidateTag()" to its doc comment's list.
 
-- [ ] **Step 2: `sellersChangedNow()`**
+- [x] **Step 2: `sellersChangedNow()`**
 
 In `lib/data/tags.ts`:
 - change the first line to `import { cacheTag, revalidateTag, updateTag } from "next/cache";`;
@@ -1744,7 +1775,7 @@ export function sellersChangedNow(): void {
 
 If `lib/data/tags.test.ts` exists, add a test there in its style that `sellersChangedNow()` calls `revalidateTag` with `("sellers", { expire: 0 })` and not `updateTag`. If it doesn't, Task 3's two sample tests cover it.
 
-- [ ] **Step 3: The paths**
+- [x] **Step 3: The paths**
 
 In `lib/auth/post-paths.ts`, add after `SIGN_OUT_PATH`:
 
@@ -1753,7 +1784,7 @@ In `lib/auth/post-paths.ts`, add after `SIGN_OUT_PATH`:
 export const SIGN_IN_POSTS = { code: "/login/code", profile: "/login/profile", sample: "/login/sample" } as const;
 ```
 
-- [ ] **Step 4: The handlers' tests**
+- [x] **Step 4: The handlers' tests**
 
 Create `app/login/code/route.test.ts`:
 
@@ -1921,7 +1952,7 @@ describe("GET /login/sample", () => {
 Run: `pnpm test app/login`
 Expected: FAIL (no `route.ts` files yet).
 
-- [ ] **Step 5: The handlers**
+- [x] **Step 5: The handlers**
 
 Create `app/login/code/route.ts`:
 
@@ -1955,7 +1986,7 @@ Expected: PASS.
 Run: `pnpm lint app/login lib/auth lib/data/tags.ts tests/helpers/next-request.ts`
 Expected: no output.
 
-- [ ] **Step 6: Hand over (with Tasks 3 and 5)**
+- [x] **Step 6: Hand over (with Tasks 3 and 5)**
 
 Files: `tests/helpers/next-request.ts`, `lib/data/tags.ts` (and its test if changed), `lib/auth/post-paths.ts`, `app/login/code/route.ts`, `app/login/code/route.test.ts`, `app/login/profile/route.ts`, `app/login/profile/route.test.ts`, `app/login/sample/route.ts`, `app/login/sample/route.test.ts`. Committed with Tasks 3 and 5.
 
@@ -1972,7 +2003,7 @@ Spec 2.2's forms and 2.5's anchors, then the e2e run that proves the fix. After 
 
 `app/login/page.tsx` doesn't change: it already passes `next` to `SignIn` (the spec's file list names it, but there's nothing to do).
 
-- [ ] **Step 1: The tests**
+- [x] **Step 1: The tests**
 
 In `components/auth/SignInSteps.test.tsx`:
 - change the `vi.mock("@/lib/auth/actions", …)` factory to `({ cancelSignIn: async () => {}, resendCode: async () => {}, startSignIn: async () => {} })`;
@@ -2031,7 +2062,7 @@ In `components/auth/SignIn.test.tsx`:
 Run: `pnpm test components/auth`
 Expected: FAIL (the forms still post to Server Actions; no Continue).
 
-- [ ] **Step 2: The forms and the note**
+- [x] **Step 2: The forms and the note**
 
 In `components/auth/SignInSteps.tsx`:
 - replace the actions import with `import { cancelSignIn, resendCode, startSignIn } from "@/lib/auth/actions";` and add `import { SIGN_IN_POSTS } from "@/lib/auth/post-paths";`;
@@ -2092,11 +2123,11 @@ Expected: PASS (`components/forms/summary-ids.test.tsx` mocks `@/lib/auth/action
 Run: `pnpm lint components/auth`
 Expected: no output. (`@next/next/no-html-link-for-pages` doesn't fire in this app: `components/saved/SavedList.tsx` already has `<a href="/saved">`.)
 
-- [ ] **Step 3: Switch the sign-in tests on**
+- [x] **Step 3: Switch the sign-in tests on**
 
 In `tests/e2e/sign-in-return.spec.ts`, change `const SIGN_IN_ENDS_IN_A_PAGE_LOAD = false;` to `const SIGN_IN_ENDS_IN_A_PAGE_LOAD = true;`.
 
-- [ ] **Step 4: Build, prove, measure**
+- [x] **Step 4: Build, prove, measure**
 
 Make the scratch copy `S="<your scratchpad>/vossie-k-task5"`, copying in every file from Tasks 3, 4 and 5 (`mkdir -p "$S/app/login/code" "$S/app/login/profile" "$S/app/login/sample"` first). From `$S`:
 
@@ -2120,7 +2151,7 @@ Expected:
 - the other specs: every test passes. **A failure in any of them because a step now reloads the page** (a wait for a soft navigation, say) is fixed in its own file with the smallest change that keeps what it checks, and listed in the hand-over with the file added to the task's files. Any other failure: report it to the controller with the error before changing anything;
 - the sign-in page's `scriptBrotli` is the Start row's 150,591, and every other page equals the Start row.
 
-- [ ] **Step 5: Hand over (Tasks 3, 4 and 5 together)**
+- [x] **Step 5: Hand over (Tasks 3, 4 and 5 together)**
 
 Files: Task 3's, Task 4's, and `components/auth/SignInSteps.tsx`, `components/auth/SignInSteps.test.tsx`, `components/auth/SignIn.tsx`, `components/auth/SignIn.test.tsx`, `tests/e2e/sign-in-return.spec.ts`, and any existing e2e spec Step 4 changed. Message:
 
@@ -2141,7 +2172,7 @@ Spec 4 with plan decision 1's numbers. Server only: no component changes.
 - Modify: `lib/data/messages.ts`, `lib/data/messages.test.ts`
 - Create: `lib/messaging/limits.ts`, `lib/messaging/limits.test.ts`
 
-- [ ] **Step 1: The tests**
+- [x] **Step 1: The tests**
 
 In `lib/messaging/rules.test.ts` add (importing `CONVERSATIONS_PER_DAY`, `HOUR_MS`, `MESSAGES_PER_HOUR` from `./rules`):
 
@@ -2407,7 +2438,7 @@ describe("messageLimitErrors (stage K spec 4; Lama, 2026-10-20)", () => {
 Run: `pnpm test lib/messaging lib/auth/sample-accounts.test.ts lib/data/messages.test.ts`
 Expected: FAIL (the new names don't exist).
 
-- [ ] **Step 2: The constants**
+- [x] **Step 2: The constants**
 
 In `lib/messaging/rules.ts`, after `export const DAY_MS = 24 * 60 * 60 * 1000;` add:
 
@@ -2427,7 +2458,7 @@ export const CONVERSATIONS_PER_DAY = 40;
 export const MESSAGES_PER_HOUR = 120;
 ```
 
-- [ ] **Step 3: The words**
+- [x] **Step 3: The words**
 
 In `lib/messaging/errors.ts`:
 - change `import { REPORT_REASONS, REPORTS_PER_DAY } from "./rules";` to `import { CONVERSATIONS_PER_DAY, MESSAGES_PER_HOUR, REPORT_REASONS, REPORTS_PER_DAY } from "./rules";`;
@@ -2448,7 +2479,7 @@ In `lib/messaging/errors.ts`:
   ],
 ```
 
-- [ ] **Step 4: The sample accounts**
+- [x] **Step 4: The sample accounts**
 
 Create `lib/auth/sample-accounts.ts`:
 
@@ -2469,7 +2500,7 @@ export function isSampleAccount(account: Pick<Account, "email">): boolean {
 }
 ```
 
-- [ ] **Step 5: The counts**
+- [x] **Step 5: The counts**
 
 In `lib/data/messages.ts`, after `findConversation`, add:
 
@@ -2506,7 +2537,7 @@ export async function countMessagesSentSince(accountId: string, shopSlug: string
 }
 ```
 
-- [ ] **Step 6: `messageLimitErrors`**
+- [x] **Step 6: `messageLimitErrors`**
 
 Create `lib/messaging/limits.ts`:
 
@@ -2552,7 +2583,7 @@ Expected: PASS.
 Run: `pnpm lint lib/messaging lib/auth/sample-accounts.ts lib/data/messages.ts`
 Expected: no output.
 
-- [ ] **Step 7: Hand over**
+- [x] **Step 7: Hand over**
 
 Files: `lib/messaging/rules.ts`, `lib/messaging/rules.test.ts`, `lib/messaging/errors.ts`, `lib/messaging/errors.test.ts`, `lib/auth/sample-accounts.ts`, `lib/auth/sample-accounts.test.ts`, `lib/data/messages.ts`, `lib/data/messages.test.ts`, `lib/messaging/limits.ts`, `lib/messaging/limits.test.ts`. Message:
 
@@ -2571,7 +2602,7 @@ Spec 2.9 with plan decisions 14 to 16.
 - Modify: `lib/looking-for/actions.ts`, `lib/looking-for/actions.test.ts`
 - Modify: `lib/looking-for/errors.test.ts`
 
-- [ ] **Step 1: The tests**
+- [x] **Step 1: The tests**
 
 In `lib/messaging/actions.test.ts`, after the `vi.mock("next/cache", …)` line, add:
 
@@ -2729,7 +2760,7 @@ it("words the hour's message limit as messaging does (stage K spec 4)", () => {
 Run: `pnpm test lib/messaging/actions.test.ts lib/looking-for`
 Expected: FAIL on the new limit tests (nothing checks the limits yet; the offer-rate order test fails because the scam check comes first); `errors.test.ts`'s new test passes already (plan decision 17).
 
-- [ ] **Step 2: The composer and a reply**
+- [x] **Step 2: The composer and a reply**
 
 In `lib/messaging/actions.ts`:
 - change `import { confirmSale, markCompleted, rejectSale, sendMessage, startConversation } from "@/lib/data/messages";` to `import { confirmSale, findConversation, markCompleted, rejectSale, sendMessage, startConversation } from "@/lib/data/messages";`;
@@ -2760,7 +2791,7 @@ In `lib/messaging/actions.ts`:
 
 - add to `sendFirstMessage`'s doc comment, after "…unless Send anyway was pressed (spec 2.3, plan decision 9).": " The message limits come between the two (stage K spec decision 9)."
 
-- [ ] **Step 3: The offer**
+- [x] **Step 3: The offer**
 
 In `lib/looking-for/actions.ts`:
 - add `import { messageLimitErrors } from "@/lib/messaging/limits";` after the `@/lib/messaging/form-state` import;
@@ -2793,12 +2824,12 @@ Expected: PASS, the existing tests included (the "stops at 20 offers a shop in a
 Run: `pnpm lint lib/messaging lib/looking-for`
 Expected: no output.
 
-- [ ] **Step 4: The whole suite in a scratch copy**
+- [x] **Step 4: The whole suite in a scratch copy**
 
 Make the scratch copy `S="<your scratchpad>/vossie-k-task7"` with Task 6's and this task's files. From `$S`: `pnpm lint`, `pnpm typecheck`, `pnpm test 2>&1 | tail -5`.
 Expected: clean, all passing.
 
-- [ ] **Step 5: Hand over**
+- [x] **Step 5: Hand over**
 
 Files: `lib/messaging/actions.ts`, `lib/messaging/actions.test.ts`, `lib/looking-for/actions.ts`, `lib/looking-for/actions.test.ts`, `lib/looking-for/errors.test.ts`. Message:
 
@@ -2819,11 +2850,11 @@ Spec 5 and decisions 12 to 15, with plan decisions 18 and 19.
 - Modify: `vitest.setup.ts`
 - Modify: `.env.example`
 
-- [ ] **Step 1: Re-read `.env.example` at HEAD**
+- [x] **Step 1: Re-read `.env.example` at HEAD**
 
 The Supabase merge changed it. Read it whole; Step 6 appends after its last block.
 
-- [ ] **Step 2: The tests**
+- [x] **Step 2: The tests**
 
 Replace `lib/auth/secrets.test.ts`'s test "keeps a token as its SHA-256, in hex" with the block below, and add `readdirSync` to the `node:fs` import and `afterEach, vi` to the vitest import:
 
@@ -2922,7 +2953,7 @@ In `lib/auth/session.test.ts`, add `STORE_VERSION` to the import from `@/lib/dat
 Run: `pnpm test lib/auth/secrets.test.ts lib/auth/session.test.ts`
 Expected: FAIL (still SHA-256; no warning; nothing refused). The session test passes already (a version move has always reseeded); it pins the behaviour spec decision 15 relies on.
 
-- [ ] **Step 3: The keyed hashes**
+- [x] **Step 3: The keyed hashes**
 
 Replace the whole of `lib/auth/secrets.ts` with:
 
@@ -3001,7 +3032,7 @@ export function codeMatches(attemptKey: string, code: string, storedHash: string
 }
 ```
 
-- [ ] **Step 4: A key for the unit tests**
+- [x] **Step 4: A key for the unit tests**
 
 In `vitest.setup.ts`, after the imports and before `// --- Next.js modules …`, add:
 
@@ -3014,7 +3045,7 @@ In `vitest.setup.ts`, after the imports and before `// --- Next.js modules …`,
 process.env.VOSSIE_AUTH_HMAC_KEY ??= "vitest-only-key-0123456789-0123456789-ab";
 ```
 
-- [ ] **Step 5: The store's version**
+- [x] **Step 5: The store's version**
 
 In `lib/data/store.ts`, `export const STORE_VERSION = 9;` → `export const STORE_VERSION = 10;` (or one more than whatever Recheck item 4 found), and change its comment to:
 
@@ -3028,7 +3059,7 @@ In `lib/data/store.ts`, `export const STORE_VERSION = 9;` → `export const STOR
 Run: `pnpm test lib/auth lib/data/store.test.ts`
 Expected: PASS.
 
-- [ ] **Step 6: `.env.example`**
+- [x] **Step 6: `.env.example`**
 
 The Supabase block (`84f61a1`) already lists `# VOSSIE_AUTH_HMAC_KEY=` with no explanation. So the variable appears once, with its rules: delete that one line from the Supabase block (its other lines stay as they are), then append to `.env.example`, after its last block and a blank line:
 
@@ -3039,7 +3070,7 @@ The Supabase block (`84f61a1`) already lists `# VOSSIE_AUTH_HMAC_KEY=` with no e
 # VOSSIE_AUTH_HMAC_KEY=
 ```
 
-- [ ] **Step 7: The whole suite, and a build with no key, in a scratch copy**
+- [x] **Step 7: The whole suite, and a build with no key, in a scratch copy**
 
 Make the scratch copy `S="<your scratchpad>/vossie-k-task8"` with this task's files. From `$S`:
 
@@ -3059,7 +3090,7 @@ pnpm e2e tests/e2e/accounts.spec.ts tests/e2e/sign-in-return.spec.ts --project=d
 
 Expected: all pass (sign-in works under the development key). Treat any `accounts.spec.ts` failure as in Task 2, Step 8.
 
-- [ ] **Step 8: Hand over**
+- [x] **Step 8: Hand over**
 
 Files: `lib/auth/secrets.ts`, `lib/auth/secrets.test.ts`, `lib/auth/session.test.ts`, `lib/data/store.ts`, `vitest.setup.ts`, `.env.example`. Message:
 
@@ -3080,11 +3111,11 @@ Spec 6 and decisions 16 and 17, with plan decisions 5 and 20. Words only. Use th
 - Modify: `app/privacy/page.tsx`, `app/privacy/page.test.tsx`
 - Modify: `tests/e2e/info.spec.ts`
 
-- [ ] **Step 1: Re-read `app/privacy/page.test.tsx` at HEAD**
+- [x] **Step 1: Re-read `app/privacy/page.test.tsx` at HEAD**
 
 The Supabase merge changed it. Keep every test that's there. If one pins a sentence spec 6 changes, report it to the controller before editing.
 
-- [ ] **Step 2: The tests**
+- [x] **Step 2: The tests**
 
 In `app/how-it-works/page.test.tsx`, in "answers six short questions, including what works today", after the `queryByText(/once selling opens|Selling arrives/)` line, add:
 
@@ -3162,7 +3193,7 @@ In `tests/e2e/info.spec.ts`, the `/trust` case's `sections` becomes `["Verified 
 Run: `pnpm test app/how-it-works app/trust app/safety app/privacy app/info-pages.test.tsx`
 Expected: FAIL on the new checks.
 
-- [ ] **Step 3: How it works**
+- [x] **Step 3: How it works**
 
 In `app/how-it-works/page.tsx`, replace the paragraph under `<h3>Who can use Vossie?</h3>` with:
 
@@ -3191,7 +3222,7 @@ and the paragraph under `<h3>What can I do on Vossie today?</h3>` with:
 
 `updated="2026-10-15"` → `updated="2026-10-20"`.
 
-- [ ] **Step 4: How trust works**
+- [x] **Step 4: How trust works**
 
 In `app/trust/page.tsx`:
 - `description` becomes `"How Vossie decides who to trust: Verified sellers, the New seller, Responsive and Trusted badges, what happens after a report, and how Featured today is picked."`;
@@ -3225,7 +3256,7 @@ In `app/trust/page.tsx`:
 
 - `updated="2026-10-18"` → `updated="2026-10-20"`.
 
-- [ ] **Step 5: Safety**
+- [x] **Step 5: Safety**
 
 In `app/safety/page.tsx`, the first paragraph of `safety-reporting` becomes:
 
@@ -3240,7 +3271,7 @@ In `app/safety/page.tsx`, the first paragraph of `safety-reporting` becomes:
 
 `updated="2026-10-14"` → `updated="2026-10-20"`.
 
-- [ ] **Step 6: The privacy policy**
+- [x] **Step 6: The privacy policy**
 
 In `app/privacy/page.tsx`, editing by the exact text that's there now:
 - in "What this site stores today"'s first paragraph, `your sign-ins, your consent, your` → `your sign-ins, your consent, your staff role if you have one, your`;
@@ -3305,7 +3336,7 @@ Expected: PASS, `app/info-pages.test.tsx` included (the new section id starts `t
 Run: `pnpm lint app/how-it-works app/trust app/safety app/privacy tests/e2e/info.spec.ts`
 Expected: no output.
 
-- [ ] **Step 7: Measure the privacy page, and the info pages' e2e, in a scratch copy**
+- [x] **Step 7: Measure the privacy page, and the info pages' e2e, in a scratch copy**
 
 Make the scratch copy `S="<your scratchpad>/vossie-k-task9"` with this task's files. From `$S`:
 
@@ -3316,7 +3347,7 @@ pnpm e2e tests/e2e/performance.spec.ts --project=phone-390 2>&1 | grep -E "priva
 
 Expected: all pass; `privacy page` and `info page` `scriptBrotli` equal to the Start row. Axe on the four pages runs in `a11y.spec.ts` (every device project); Task 10's run includes it.
 
-- [ ] **Step 8: Hand over**
+- [x] **Step 8: Hand over**
 
 Files: the four pages and their tests, `tests/e2e/info.spec.ts`. Message:
 
@@ -3334,12 +3365,12 @@ Spec 4 "Tests" and the stage's checks, with plan decision 22.
 - Modify: `playwright.config.ts`
 - Create: `tests/e2e/hardening-writes.spec.ts`
 
-- [ ] **Step 1: Check the files are still yours to edit**
+- [x] **Step 1: Check the files are still yours to edit**
 
 Run: `git --no-optional-locks status --short playwright.config.ts tests/e2e`
 Expected: only this stage's uncommitted files, if any. If `playwright.config.ts` is modified by someone else, stop and report.
 
-- [ ] **Step 2: The project**
+- [x] **Step 2: The project**
 
 In `playwright.config.ts`, after the `STAFF_ACCOUNTS` line add:
 
@@ -3361,7 +3392,7 @@ In each of the five device projects, add `HARDENING_WRITES` to the end of `testI
     },
 ```
 
-- [ ] **Step 3: The test**
+- [x] **Step 3: The test**
 
 Create `tests/e2e/hardening-writes.spec.ts`:
 
@@ -3447,7 +3478,7 @@ test("a fresh account starts 40 conversations in a day; the 41st is refused with
 Run: `pnpm lint tests/e2e/hardening-writes.spec.ts playwright.config.ts`
 Expected: no output.
 
-- [ ] **Step 4: Run it, the stage's checks and the size, in a scratch copy**
+- [x] **Step 4: Run it, the stage's checks and the size, in a scratch copy**
 
 Make the scratch copy `S="<your scratchpad>/vossie-k-task10"` with this task's files. From `$S`:
 
@@ -3459,7 +3490,7 @@ pnpm e2e tests/e2e/performance.spec.ts --project=phone-390
 
 Expected: 1 passed; the device runs pass (any failure from a reloaded sign-in or sign-out is handled as in Task 5, Step 4); every `scriptBrotli` equal to the Start row. Fill in the ledger's Task 10 row in your report.
 
-- [ ] **Step 5: Hand over**
+- [x] **Step 5: Hand over**
 
 Files: `playwright.config.ts`, `tests/e2e/hardening-writes.spec.ts`. Message:
 
@@ -3480,16 +3511,16 @@ The stage's records. **`docs/PROGRESS.md` and `docs/reference/LANDING-DECISIONS.
 - Modify: `docs/superpowers/plans/2026-10-20-hardening.md` (this plan)
 - Create (scratchpad, not the project): `k-progress.md`, `k-decision.md`
 
-- [ ] **Step 1: Check the docs are still yours to edit**
+- [x] **Step 1: Check the docs are still yours to edit**
 
 Run: `git --no-optional-locks status --short CLAUDE.md docs/reference/GO-LIVE.md docs/superpowers/specs/2026-10-20-hardening-design.md docs/superpowers/plans/2026-10-20-hardening.md`
 Expected: no output. If any shows as modified by someone else, stop and report.
 
-- [ ] **Step 2: Screenshots: none**
+- [x] **Step 2: Screenshots: none**
 
 Nothing new is drawn except Continue on the signed-in note and the limit's message in an existing summary. No screenshots spec is added; say so in the progress snippet.
 
-- [ ] **Step 3: CLAUDE.md**
+- [x] **Step 3: CLAUDE.md**
 
 **Only if the sign-in fix was built (Tasks 3 to 5):**
 - in the line that starts `- Who's signed in comes only from`, replace `Forms are plain \`<form action={serverAction}>\`:` with `Forms are plain \`<form action={serverAction}>\`, except the three sign-in posts that start a session and sign-out, which post to Route Handlers that answer 303 (stage K):`;
@@ -3514,7 +3545,7 @@ and after the `staff-accounts-writes` line:
 - End-to-end tests that reach the message limits go in `tests/e2e/hardening-writes.spec.ts`, which runs last, in the `hardening-writes` project, after `staff-accounts-writes`. Sign-in's and sign-out's full page loads are checked in `tests/e2e/sign-in-return.spec.ts` (device projects).
 ```
 
-- [ ] **Step 4: The spec's "Changes on plan review and build"**
+- [x] **Step 4: The spec's "Changes on plan review and build"**
 
 At the end of `docs/superpowers/specs/2026-10-20-hardening-design.md`, add `## 11. Changes on plan review and build`, a numbered list, one sentence or two each, naming the plan decision:
 1. The spike's outcome and its figures (plan decision 6); what it means for item 1.
@@ -3527,7 +3558,7 @@ At the end of `docs/superpowers/specs/2026-10-20-hardening-design.md`, add `## 1
 8. The test changes the spec missed: the trust and safety page tests and `info.spec.ts`; the key phrase "save a search…" (plan decision 20).
 9. Anything in "Changes made during the build" that changes what the spec says, and every existing test changed (or reported) because a page now reloads.
 
-- [ ] **Step 5: The go-live checklist**
+- [x] **Step 5: The go-live checklist**
 
 In `docs/reference/GO-LIVE.md`:
 - line 5's "Updated …" sentence: append ", and after hardening (sign-in and sign-out as full page loads, message limits, keyed hashes, info pages; stage K)" to the end of that same line;
@@ -3544,11 +3575,11 @@ In `docs/reference/GO-LIVE.md`:
 - **Section 7:** add `- [ ] **Report the kept-redirect behaviour to Next.js?** Only if needed (Lama, 2026-10-20). \`tests/e2e/sign-in-return.spec.ts\` with \`SIGN_IN_SPIKE=1\` is the reproduction.`;
 - **Section 8:** add stage K after stage J, as J's line is written.
 
-- [ ] **Step 6: This plan's ledger and changes**
+- [x] **Step 6: This plan's ledger and changes**
 
 In this plan, fill in the JS ledger's rows from Tasks 1, 2, 5, 9 and 10's reports and the unit and e2e counts at the start; under "Changes made during the build", list each task with its commit (`git --no-optional-locks log --oneline`, one command) and every place the build differed from the tasks (the spike's outcome first), and every existing test changed because a page now reloads.
 
-- [ ] **Step 7: The snippets for the controller**
+- [x] **Step 7: The snippets for the controller**
 
 Write, in the scratchpad named above:
 - `k-progress.md`: a section for `docs/PROGRESS.md` in the shape of stage J's (`## 2026-10-<day>: Hardening, built in sample mode (stage K)`): what was built; the spike's outcome; Lama's five answers; the JS figures; the unit and e2e counts; no screenshots (Step 2); the open points for Lama: the existing tests changed because a page now reloads, account deletion still a Server Action, the key on the preview, the sample wording (plan decision 21), and the go-live items;
