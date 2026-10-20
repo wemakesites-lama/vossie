@@ -23,6 +23,8 @@ export type FakeRequest = {
   refreshed?: boolean;
   /** The cache tags a Server Action expired with updateTag, in order (selling plan, Task 4). */
   updatedTags?: string[];
+  /** The cache tags a Route Handler expired with revalidateTag, with their profile, in order (stage K plan decision 13). */
+  revalidatedTags?: Array<{ tag: string; profile: unknown }>;
 };
 
 export function resetRequest(request: FakeRequest): void {
@@ -31,6 +33,7 @@ export function resetRequest(request: FakeRequest): void {
   request.proto = "http";
   request.refreshed = false;
   request.updatedTags = [];
+  request.revalidatedTags = [];
 }
 
 export function nextHeaders(request: FakeRequest) {
@@ -99,7 +102,7 @@ export async function redirectSignalOf(run: () => Promise<unknown>): Promise<Red
 }
 
 /**
- * Stands in for next/cache (messaging plan, Task 6; selling plan, Task 4): refresh() and updateTag() note what they
+ * Stands in for next/cache (messaging plan, Task 6; selling plan, Task 4): refresh(), updateTag() and revalidateTag() note what they
  * were asked, and the cached readers' cacheTag() and cacheLife() do nothing, as there's no cache outside Next.
  */
 export function nextCache(request: FakeRequest) {
@@ -109,6 +112,9 @@ export function nextCache(request: FakeRequest) {
     },
     updateTag: (tag: string) => {
       request.updatedTags = [...(request.updatedTags ?? []), tag];
+    },
+    revalidateTag: (tag: string, profile: unknown) => {
+      request.revalidatedTags = [...(request.revalidatedTags ?? []), { tag, profile }];
     },
     cacheTag: () => {},
     cacheLife: () => {},

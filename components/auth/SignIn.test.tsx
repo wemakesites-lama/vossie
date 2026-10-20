@@ -11,11 +11,8 @@ vi.mock("@/lib/auth/sign-in-view", () => ({ getSignInView: async () => view.curr
 // The forms only need something to post to; the actions have their own tests.
 vi.mock("@/lib/auth/actions", () => ({
   cancelSignIn: async () => {},
-  completeProfile: async () => {},
   resendCode: async () => {},
-  signInAsSample: async () => {},
   startSignIn: async () => {},
-  verifyCode: async () => {},
 }));
 
 afterEach(() => {
@@ -52,8 +49,9 @@ describe("SignIn (accounts spec 3.1)", () => {
 
   it("says who's signed in, or that sign-in isn't available", async () => {
     view.current = { step: "signed-in", email: "student@eduvos.com" };
-    const { unmount } = render(await SignIn({ next: null }));
+    const { unmount } = render(await SignIn({ next: "/looking-for/new" }));
     expect(screen.getByText(/You're signed in as/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Continue" })).toHaveAttribute("href", "/looking-for/new");
     unmount();
     view.current = { step: "unavailable" };
     render(await SignIn({ next: null }));

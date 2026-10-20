@@ -1,4 +1,4 @@
-import { cacheTag, updateTag } from "next/cache";
+import { cacheTag, revalidateTag, updateTag } from "next/cache";
 
 // The data layer's cache tags (selling spec 2.1, plan decision 6). The cached readers in index.ts call the tag
 // functions inside "use cache"; Server Actions call the "changed" functions after a write, so the next request, and
@@ -26,6 +26,14 @@ export function listingsChanged(): void {
 /** After a shop changes: its seller and, through their second tag, its listings. Server Actions only. */
 export function sellersChanged(): void {
   updateTag(SELLERS_TAG);
+}
+
+/**
+ * The same, from a Route Handler, where updateTag throws (stage K spec decision 4): `{ expire: 0 }` means the next
+ * request never gets the stale catalog, as updateTag's would (Next 16.4's revalidateTag docs).
+ */
+export function sellersChangedNow(): void {
+  revalidateTag(SELLERS_TAG, { expire: 0 });
 }
 
 // The staff tools' tags (staff tools plan decisions 10 and 11): the Hub's posts, which staff write and RSVPs count, and

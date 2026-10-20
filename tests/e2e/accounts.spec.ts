@@ -69,6 +69,14 @@ async function signUp(page: Page, email: string, path = "/login") {
 async function signInAsSample(page: Page, label: string, path = "/login") {
   await page.goto(path);
   await button(page, label).click();
+  // Signing in now ends with a full page load (stage K): wait for the new document's app to be there, so a click on
+  // its menu isn't lost to a page that hasn't hydrated yet.
+  await expect(page).not.toHaveURL(/\/login(\?|$)/);
+  await page.waitForFunction(() => {
+    // React puts its props on an element when it hydrates it: wait for every button in the header.
+    const buttons = [...document.querySelectorAll("header button, [role=banner] button")];
+    return buttons.length > 0 && buttons.every((el) => Object.keys(el).some((key) => key.startsWith("__reactProps")));
+  });
 }
 
 test.describe("signing in with an email code (accounts spec 2.2 and 3.1)", () => {

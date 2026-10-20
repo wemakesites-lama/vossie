@@ -11,7 +11,7 @@ export async function SignIn({ next }: { next: string | null }) {
     case "unavailable":
       return <SignInUnavailable />;
     case "signed-in":
-      return <SignedInNote email={view.email} />;
+      return <SignedInNote email={view.email} next={next} />;
     case "code":
       return (
         <CodeStep

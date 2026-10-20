@@ -11,7 +11,7 @@ import { expectStill, holdFonts, recordShifts } from "./helpers/shifts";
  * Whether the posts that start a session end with a full page load (plan Task 5). Until then the tests of the fix
  * skip, unless SIGN_IN_SPIKE=1, which runs them on today's code as the spike's reproduction (plan Task 1).
  */
-const SIGN_IN_ENDS_IN_A_PAGE_LOAD = false;
+const SIGN_IN_ENDS_IN_A_PAGE_LOAD = true;
 /** Whether signing out ends with a full page load (plan Task 2; Lama, 2026-10-20). */
 const SIGN_OUT_ENDS_IN_A_PAGE_LOAD = true;
 const SPIKE = process.env.SIGN_IN_SPIKE === "1";

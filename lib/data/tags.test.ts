@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
-import { hubChanged, pickupPointsChanged } from "./tags";
+import { hubChanged, pickupPointsChanged, sellersChangedNow } from "./tags";
 
 const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
 
@@ -15,5 +15,13 @@ describe("the staff tools' cache tags (staff tools plan decisions 10 and 11)", (
     hubChanged();
     pickupPointsChanged();
     expect(request.updatedTags).toEqual(["hub", "pickup-points"]);
+  });
+});
+
+describe("expiring the sellers tag from a Route Handler (stage K spec decision 4)", () => {
+  it("calls revalidateTag with expire 0, never updateTag", () => {
+    sellersChangedNow();
+    expect(request.revalidatedTags).toEqual([{ tag: "sellers", profile: { expire: 0 } }]);
+    expect(request.updatedTags).toEqual([]);
   });
 });

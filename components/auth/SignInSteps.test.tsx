@@ -2,16 +2,14 @@ import { render, screen, within } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { campuses } from "@/data/fixtures/campuses";
+import { SIGN_IN_POSTS } from "@/lib/auth/post-paths";
 import { CodeStep, EmailStep, ProfileStep, SignedInNote, SignInUnavailable } from "./SignInSteps";
 
 // The forms only need something to post to; the actions have their own tests.
 vi.mock("@/lib/auth/actions", () => ({
   cancelSignIn: async () => {},
-  completeProfile: async () => {},
   resendCode: async () => {},
-  signInAsSample: async () => {},
   startSignIn: async () => {},
-  verifyCode: async () => {},
 }));
 
 const samples = [
@@ -63,6 +61,9 @@ describe("step 1, the email (accounts spec 3.1)", () => {
     expect(buttons.map((button) => button.textContent)).toEqual(["Student, Midrand", "Admin"]);
     expect(buttons[0]).toHaveAttribute("name", "email");
     expect(buttons[0]).toHaveAttribute("value", "student@eduvos.com");
+    // A plain post to a Route Handler, which answers 303: a full page load (stage K spec decision 2).
+    const list = buttons[0].closest("form")!;
+    expect([list.getAttribute("action"), list.getAttribute("method")]).toEqual([SIGN_IN_POSTS.sample, "post"]);
   });
 
   it("carries next through both of its forms, and nothing when there's none", () => {
@@ -87,6 +88,8 @@ describe("step 2, the code (accounts spec 3.1)", () => {
     expect(code).toHaveAttribute("autocomplete", "one-time-code");
     expect(code).toHaveAccessibleDescription("We sent a code to t•••@eduvos.com. It lasts 10 minutes.");
     expect(screen.getByRole("button", { name: "Sign in" })).toHaveAttribute("type", "submit");
+    const signIn = screen.getByRole("button", { name: "Sign in" }).closest("form")!;
+    expect([signIn.getAttribute("action"), signIn.getAttribute("method")]).toEqual([SIGN_IN_POSTS.code, "post"]);
     expect(screen.getByRole("button", { name: "Send a new code" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Use a different email" })).toBeInTheDocument();
     expect(screen.queryByText(/Sample mode/)).toBeNull();
@@ -130,6 +133,8 @@ describe("step 3, first sign-in (accounts spec 3.1)", () => {
     expect(name).toHaveAccessibleDescription("Sellers see it when you message them. 2 to 40 characters.");
     expect(screen.getByRole("combobox", { name: "Your campus" })).toHaveValue("pretoria");
     expect(screen.getByRole("button", { name: "Continue" })).toHaveAttribute("type", "submit");
+    const step3 = screen.getByRole("button", { name: "Continue" }).closest("form")!;
+    expect([step3.getAttribute("action"), step3.getAttribute("method")]).toEqual([SIGN_IN_POSTS.profile, "post"]);
   });
 
   it("shows its errors and keeps what was typed", () => {
@@ -155,10 +160,25 @@ describe("step 3, first sign-in (accounts spec 3.1)", () => {
 });
 
 describe("the other states (accounts spec 2.1 and 3.1)", () => {
-  it("says who's signed in, with the way to the account (plan decision 10)", () => {
-    render(<SignedInNote email="student@eduvos.com" />);
+  it("says who's signed in, with plain links on to next and to the account (stage K spec decision 5)", () => {
+    const { unmount } = render(<SignedInNote email="student@eduvos.com" next="/looking-for/new" />);
     expect(screen.getByText(/You're signed in as/)).toHaveTextContent("You're signed in as student@eduvos.com.");
+    const onward = screen.getByRole("link", { name: "Continue" });
+    expect(onward).toHaveAttribute("href", "/looking-for/new");
     expect(screen.getByRole("link", { name: "Your account" })).toHaveAttribute("href", "/account");
+    // Plain anchors, not Next's Link: a full page load, so no kept redirect can catch them.
+    expect(onward.tagName).toBe("A");
+    expect(onward).not.toHaveAttribute("data-prefetch");
+    unmount();
+  });
+
+  it("has no Continue without a next, under /login, the account itself or a public page (plan decision 12, amendment 8)", () => {
+    for (const next of [null, "/login?next=%2Fsaved", "/account", "/sellers/tech-corner"]) {
+      const { unmount } = render(<SignedInNote email="student@eduvos.com" next={next} />);
+      expect(screen.queryByRole("link", { name: "Continue" })).toBeNull();
+      expect(screen.getByRole("link", { name: "Your account" })).toHaveAttribute("href", "/account");
+      unmount();
+    }
   });
 
   it("says sign-in isn't available with sample mode off (plan decision 17)", () => {

@@ -2,12 +2,16 @@ import Link from "next/link";
 import { CampusSelect } from "@/components/forms/CampusSelect";
 import { ErrorSummary } from "@/components/forms/ErrorSummary";
 import { describedBy, FieldError } from "@/components/forms/FieldError";
-import { cancelSignIn, completeProfile, resendCode, signInAsSample, startSignIn, verifyCode } from "@/lib/auth/actions";
+import { cancelSignIn, resendCode, startSignIn } from "@/lib/auth/actions";
 import { errorFor, SIGN_IN_FIELDS, type FormError } from "@/lib/auth/messages";
+import { SIGN_IN_POSTS } from "@/lib/auth/post-paths";
+import { backPathFor } from "@/lib/messaging/paths";
 import type { Campus } from "@/lib/types";
 
-// The sign-in card's states (accounts spec 3.1). Server Components: every form posts to a Server Action, so each step
-// works before the app's JavaScript arrives (plan decision 2).
+// The sign-in card's states (accounts spec 3.1). Server Components: every form is a plain post, so each step works
+// before the app's JavaScript arrives (plan decision 2). Step 1, Send a new code and Use a different email post to
+// Server Actions; the three posts that can start a session post to Route Handlers that answer 303, so signing in ends
+// with a full page load (stage K spec decision 2).
 
 const FIELDS = SIGN_IN_FIELDS;
 
@@ -98,7 +102,7 @@ function SampleAccounts({ next, samples }: { next: string | null; samples: reado
         Sign in as a sample account
       </h2>
       <p className="form-hint">Sample mode only: straight in, no code.</p>
-      <form action={signInAsSample} className="signin-sample-list">
+      <form action={SIGN_IN_POSTS.sample} method="post" className="signin-sample-list">
         <NextField next={next} />
         {samples.map((sample) => (
           <button
@@ -144,7 +148,7 @@ export function CodeStep({ next, maskedEmail, errors, resent, sampleCode }: Code
           Sample mode: your code is <strong>{sampleCode}</strong>
         </p>
       )}
-      <form action={verifyCode} noValidate className="form-stack">
+      <form action={SIGN_IN_POSTS.code} method="post" noValidate className="form-stack">
         <NextField next={next} />
         <div className="form-field">
           <label htmlFor={FIELDS.code} className="form-label">
@@ -205,7 +209,7 @@ export function ProfileStep({ next, firstName, campus, campuses, errors }: Profi
     <div className="signin-card">
       <ErrorSummary id="signin-profile-summary" errors={errors} />
       <p className="signin-lede">First time on Vossie? Tell us two things and you&apos;re in.</p>
-      <form action={completeProfile} noValidate className="form-stack">
+      <form action={SIGN_IN_POSTS.profile} method="post" noValidate className="form-stack">
         <NextField next={next} />
         <div className="form-field">
           <label htmlFor={FIELDS.firstName} className="form-label">
@@ -249,16 +253,36 @@ export function ProfileStep({ next, firstName, campus, campuses, errors }: Profi
   );
 }
 
-/** Signed in already (spec 3.1, plan decision 10): who as, and the way to the account. The back link sits below. */
-export function SignedInNote({ email }: { email: string }) {
+/**
+ * Where Continue leads: `next`, unless it's missing, the sign-in page itself, the account, or a public page the back
+ * link below already leads to (plan decision 12, amendment 8): a public page has no redirect a kept page could replay.
+ */
+function continuePath(next: string | null): string | null {
+  return next && !next.startsWith("/login") && next !== "/account" && backPathFor(next) !== next ? next : null;
+}
+
+/**
+ * Signed in already (spec 3.1, plan decision 10): who as, Continue on to `next`, and the account. Plain anchors, not
+ * Link (stage K spec decision 5): each is a full page load, so a redirect Next kept from before signing in can't catch
+ * it. The back link sits below.
+ */
+export function SignedInNote({ email, next }: { email: string; next: string | null }) {
+  const onward = continuePath(next);
   return (
     <div className="signin-card">
       <p className="signin-lede">
         You&apos;re signed in as <strong>{email}</strong>.
       </p>
-      <Link href="/account" prefetch={false} className="btn btn-primary form-submit">
-        Your account
-      </Link>
+      <div className="flex flex-col gap-3">
+        {onward && (
+          <a href={onward} className="btn btn-primary form-submit">
+            Continue
+          </a>
+        )}
+        <a href="/account" className={onward ? "btn btn-outline text-navy form-submit" : "btn btn-primary form-submit"}>
+          Your account
+        </a>
+      </div>
     </div>
   );
 }
