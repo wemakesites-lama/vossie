@@ -41,6 +41,9 @@ const ALERTS_WRITES = /alerts-writes\.spec\.ts$/;
 // numbers, with their checks and screenshots, run after every other test, so a new staff role or a hidden listing never
 // lands under another test (stage J plan decision 21).
 const STAFF_ACCOUNTS = /staff-accounts-(writes|checks|screenshots)\.spec\.ts$/;
+// Stage K's message-limit test starts 40 conversations as a fresh account, which the sample shops' inboxes then show,
+// so it runs after every other test (stage K plan decision 22).
+const HARDENING_WRITES = /hardening-writes\.spec\.ts$/;
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -68,15 +71,15 @@ export default defineConfig({
     timeout: 240_000,
   },
   projects: [
-    { name: "phone-360", use: phone(360, 780), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES, STAFF_ACCOUNTS] },
-    { name: "phone-390", use: phone(390, 844), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES, STAFF_ACCOUNTS] },
+    { name: "phone-360", use: phone(360, 780), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES, STAFF_ACCOUNTS, HARDENING_WRITES] },
+    { name: "phone-390", use: phone(390, 844), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES, STAFF_ACCOUNTS, HARDENING_WRITES] },
     {
       name: "tablet-768",
       use: { ...desktop(768, 1024), screen: { width: 768, height: 1024 }, hasTouch: true },
-      testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES, STAFF_ACCOUNTS],
+      testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES, STAFF_ACCOUNTS, HARDENING_WRITES],
     },
-    { name: "laptop-1024", use: desktop(1024, 768), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES, STAFF_ACCOUNTS] },
-    { name: "desktop-1440", use: desktop(1440, 900), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES, STAFF_ACCOUNTS] },
+    { name: "laptop-1024", use: desktop(1024, 768), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES, STAFF_ACCOUNTS, HARDENING_WRITES] },
+    { name: "desktop-1440", use: desktop(1440, 900), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES, STAFF_ACCOUNTS, HARDENING_WRITES] },
     // After the five above (selling plan decision 25). Run it alone with --project=selling-writes --no-deps.
     { name: "selling-writes", use: phone(390, 844), testMatch: SELLING_WRITES, dependencies: DEVICE_PROJECTS },
     // After everything else (staff tools plan decision 21). Run it alone with --project=staff-writes --no-deps.
@@ -106,6 +109,13 @@ export default defineConfig({
       use: desktop(1440, 900),
       testMatch: STAFF_ACCOUNTS,
       dependencies: [...DEVICE_PROJECTS, "selling-writes", "staff-writes", "community-writes", "alerts-writes"],
+    },
+    // After everything else (stage K plan decision 22). Run it alone with --project=hardening-writes --no-deps.
+    {
+      name: "hardening-writes",
+      use: desktop(1440, 900),
+      testMatch: HARDENING_WRITES,
+      dependencies: [...DEVICE_PROJECTS, "selling-writes", "staff-writes", "community-writes", "alerts-writes", "staff-accounts-writes"],
     },
   ],
 });
