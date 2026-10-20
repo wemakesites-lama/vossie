@@ -3,6 +3,7 @@ import type { FormError } from "@/lib/auth/messages";
 import type { ReportView } from "@/lib/data/staff-reports";
 import { hideReportedListing, hideReportedRequest, pauseReportedShop } from "@/lib/staff/admin-actions";
 import { adminReportPath } from "@/lib/staff/paths";
+import { ownReportLine } from "./AdminReport";
 import { ConfirmAction } from "./ConfirmAction";
 
 type ReportConfirmProps = {
@@ -21,6 +22,17 @@ type ReportConfirmProps = {
 export function ReportConfirm({ kind, report, reason, errors }: ReportConfirmProps) {
   const back = adminReportPath(report.id);
   const shop = report.shop;
+  // The admin's own shop, listing or request (stage L spec section 3): the line and the way back, no form.
+  if (report.own) {
+    return (
+      <p>
+        {ownReportLine(report.own)}{" "}
+        <Link href={back} prefetch={false}>
+          Back to the report
+        </Link>
+      </p>
+    );
+  }
   // This branch is the listing's; the next is a Looking For request's (amendment 7).
   if (kind === "hide" && report.can.hide && report.target.kind === "listing") {
     return (

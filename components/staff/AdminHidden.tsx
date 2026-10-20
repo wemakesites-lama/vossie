@@ -27,6 +27,7 @@ function HiddenOn({ item }: { item: HiddenItem }) {
 /**
  * What the Hub has hidden (spec decision 14): listings and Looking For requests, newest hidden first, each with Show
  * again. A request never names its asker. The words are samples for Lama to change.
+ * The admin's own listing or request says "Yours" where Show again was (stage L).
  */
 export function AdminHidden({ listings, requests, campusNames }: AdminHiddenProps) {
   const campus = (slug: string) => campusNames.get(slug) ?? slug;
@@ -51,7 +52,7 @@ export function AdminHidden({ listings, requests, campusNames }: AdminHiddenProp
               campus(item.campusSlug),
               <HiddenOn key="on" item={item} />,
               item.reason,
-              <ShowLink key="show" item={item} />,
+              item.own ? "Yours" : <ShowLink key="show" item={item} />,
             ],
           }))}
           empty="No hidden listings."
@@ -71,7 +72,7 @@ export function AdminHidden({ listings, requests, campusNames }: AdminHiddenProp
               campus(item.campusSlug),
               <HiddenOn key="on" item={item} />,
               item.reason,
-              <ShowLink key="show" item={item} />,
+              item.own ? "Yours" : <ShowLink key="show" item={item} />,
             ],
           }))}
           empty="No hidden requests."

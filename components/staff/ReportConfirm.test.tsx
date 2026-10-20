@@ -81,4 +81,19 @@ describe("the reports' confirm pages (staff tools spec 2.9, plan decision 18)", 
     expect(screen.getByRole("link", { name: "Back to the report" })).toHaveAttribute("href", `/admin/reports/${report.id}`);
     expect(screen.queryByRole("button")).toBeNull();
   });
+
+  it("says why for the admin's own, with no form and the way back (stage L spec section 3)", async () => {
+    const id = await createReport({
+      reporterId: "acc-student",
+      target: { kind: "seller", id: "tech-corner" },
+      targetTitle: "Tech corner",
+      reason: "scam",
+      detail: "",
+      now: NOW,
+    });
+    render(<ReportConfirm kind="pause" report={(await getReport(id, "acc-seller"))!} reason="" errors={[]} />);
+    expect(screen.getByText(/^This report is about your own shop, so another admin must handle it\./)).toBeInTheDocument();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getByRole("link", { name: "Back to the report" })).toHaveAttribute("href", `/admin/reports/${id}`);
+  });
 });

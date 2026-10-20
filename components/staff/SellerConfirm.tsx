@@ -4,10 +4,14 @@ import type { ShopReview } from "@/lib/data/staff-shops";
 import { declineSeller, pauseSeller } from "@/lib/staff/admin-actions";
 import { adminSellerPath } from "@/lib/staff/paths";
 import { ConfirmAction } from "./ConfirmAction";
+import { OwnShopLine } from "./OwnShopLine";
 
 type SellerConfirmProps = {
   kind: "decline" | "pause";
   review: ShopReview;
+  /** The signed-in admin owns this shop: the line and the way back, no form (stage L spec section 3). */
+  own: boolean;
+  onlyAdmin: boolean;
   /** What was typed before a failed post. */
   reason: string;
   errors: readonly FormError[];
@@ -18,10 +22,22 @@ type SellerConfirmProps = {
  * A shop that can't be declined or paused now (already done, a sample shop) gets a sentence and the way back instead.
  * The words are samples for Lama to change.
  */
-export function SellerConfirm({ kind, review, reason, errors }: SellerConfirmProps) {
+export function SellerConfirm({ kind, review, own, onlyAdmin, reason, errors }: SellerConfirmProps) {
   const { shop, owner, standing } = review;
   const back = adminSellerPath(shop.slug);
   const who = owner?.firstName ?? "The seller";
+  if (own) {
+    return (
+      <>
+        <OwnShopLine onlyAdmin={onlyAdmin} />
+        <p>
+          <Link href={back} prefetch={false}>
+            Back to {shop.name}
+          </Link>
+        </p>
+      </>
+    );
+  }
   const allowed =
     kind === "decline"
       ? standing === "waiting"

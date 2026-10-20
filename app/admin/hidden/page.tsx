@@ -25,7 +25,7 @@ export default function AdminHiddenPage() {
 
 async function Hidden() {
   const account = await requireStaff("admin", ADMIN_HIDDEN_PATH);
-  const [hidden, campuses, notice] = await Promise.all([listHidden(), getCampuses(), takeNotice()]);
+  const [hidden, campuses, notice] = await Promise.all([listHidden(account.id), getCampuses(), takeNotice()]);
   return (
     <StaffFrame
       account={account}

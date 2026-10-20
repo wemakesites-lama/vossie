@@ -35,7 +35,7 @@ export default function HideReportedPage({ params }: PageProps<"/admin/reports/[
 async function Hide({ params }: Pick<PageProps<"/admin/reports/[id]/hide">, "params">) {
   const { id } = await params;
   const account = await requireStaff("admin", hideReportedPath(id));
-  const report = isId(id) ? await getReport(id) : null;
+  const report = isId(id) ? await getReport(id, account.id) : null;
   if (!report) notFound();
   const state = await readFormState(hideForm(id));
   return (

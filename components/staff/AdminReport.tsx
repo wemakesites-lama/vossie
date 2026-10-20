@@ -6,6 +6,7 @@ import type { ReportView } from "@/lib/data/staff-reports";
 import { targetPath } from "@/lib/messaging/paths";
 import { reasonLabel } from "@/lib/messaging/rules";
 import { dismissReport } from "@/lib/staff/admin-actions";
+import type { OwnKind } from "@/lib/staff/own";
 import { hideReportedPath, pauseReportedPath, showListingPath, showRequestPath } from "@/lib/staff/paths";
 import { REASON_MAX } from "@/lib/staff/rules";
 import { longSastDate } from "@/lib/time";
@@ -17,6 +18,11 @@ type AdminReportProps = {
   note: string;
   errors: readonly FormError[];
 };
+
+/** What the admin reads about a report on their own shop, listing or request (stage L spec section 3; sample words). */
+export function ownReportLine(kind: OwnKind): string {
+  return `This report is about your own ${kind}, so another admin must handle it.`;
+}
 
 /**
  * A report's page (spec 2.3, plan decision 5): what was reported (linked while it's there), the reason, the detail,
@@ -56,7 +62,7 @@ export function AdminReport({ report, note, errors }: AdminReportProps) {
                 </span>
               )}
               {/* Show it again (stage J spec decision 14): a hide closes every report on its target. */}
-              {!report.open && report.unseen === "hidden" && report.target.kind !== "seller" && (
+              {!report.open && report.unseen === "hidden" && report.target.kind !== "seller" && !report.own && (
                 <>
                   {" "}
                   <Link
@@ -97,52 +103,58 @@ export function AdminReport({ report, note, errors }: AdminReportProps) {
           <h2 id="admin-report-actions-title" className="staff-section-title">
             What you can do
           </h2>
-          {(report.can.hide || report.can.pause) && (
-            <div className="staff-row-actions">
-              {report.can.hide && (
-                <Link href={hideReportedPath(report.id)} prefetch={false} className="btn btn-danger">
-                  Hide {report.targetTitle}
-                </Link>
+          {report.own ? (
+            <p>{ownReportLine(report.own)}</p>
+          ) : (
+            <>
+              {(report.can.hide || report.can.pause) && (
+                <div className="staff-row-actions">
+                  {report.can.hide && (
+                    <Link href={hideReportedPath(report.id)} prefetch={false} className="btn btn-danger">
+                      Hide {report.targetTitle}
+                    </Link>
+                  )}
+                  {report.can.pause && report.shop && (
+                    <Link href={pauseReportedPath(report.id)} prefetch={false} className="btn btn-danger">
+                      Pause {report.shop.name}
+                    </Link>
+                  )}
+                </div>
               )}
-              {report.can.pause && report.shop && (
-                <Link href={pauseReportedPath(report.id)} prefetch={false} className="btn btn-danger">
-                  Pause {report.shop.name}
-                </Link>
+              {!report.can.hide && !report.can.pause && (
+                <p>
+                  This report is about something that has gone, or a shop the Hub can&apos;t pause, so it can only be
+                  dismissed.
+                </p>
               )}
-            </div>
+              <ErrorSummary id={`dismiss-${report.id}-summary`} errors={errors} />
+              <form action={dismissReport} noValidate className="form-stack staff-inline-form">
+                <input type="hidden" name="report" value={report.id} />
+                <div className="form-field">
+                  <label htmlFor={noteId} className="form-label">
+                    Note
+                  </label>
+                  <p id={`${noteId}-hint`} className="form-hint">
+                    Only Hub staff see it. Up to {REASON_MAX} characters.
+                  </p>
+                  <FieldError id={`${noteId}-error`} message={noteError} />
+                  <textarea
+                    id={noteId}
+                    name="note"
+                    rows={3}
+                    required
+                    defaultValue={note}
+                    aria-invalid={noteError ? true : undefined}
+                    aria-describedby={describedBy(`${noteId}-hint`, noteError && `${noteId}-error`)}
+                    className="form-input staff-textarea"
+                  />
+                </div>
+                <button type="submit" className="btn btn-outline text-navy form-submit">
+                  Dismiss <span className="sr-only">the report about {report.targetTitle}</span>
+                </button>
+              </form>
+            </>
           )}
-          {!report.can.hide && !report.can.pause && (
-            <p>
-              This report is about something that has gone, or a shop the Hub can&apos;t pause, so it can only be
-              dismissed.
-            </p>
-          )}
-          <ErrorSummary id={`dismiss-${report.id}-summary`} errors={errors} />
-          <form action={dismissReport} noValidate className="form-stack staff-inline-form">
-            <input type="hidden" name="report" value={report.id} />
-            <div className="form-field">
-              <label htmlFor={noteId} className="form-label">
-                Note
-              </label>
-              <p id={`${noteId}-hint`} className="form-hint">
-                Only Hub staff see it. Up to {REASON_MAX} characters.
-              </p>
-              <FieldError id={`${noteId}-error`} message={noteError} />
-              <textarea
-                id={noteId}
-                name="note"
-                rows={3}
-                required
-                defaultValue={note}
-                aria-invalid={noteError ? true : undefined}
-                aria-describedby={describedBy(`${noteId}-hint`, noteError && `${noteId}-error`)}
-                className="form-input staff-textarea"
-              />
-            </div>
-            <button type="submit" className="btn btn-outline text-navy form-submit">
-              Dismiss <span className="sr-only">the report about {report.targetTitle}</span>
-            </button>
-          </form>
         </section>
       ) : (
         <section aria-labelledby="admin-report-outcome-title" className="staff-section">

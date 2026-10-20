@@ -30,7 +30,7 @@ export default function ShowRequestPage({ params }: PageProps<"/admin/hidden/req
 async function Show({ params }: Pick<PageProps<"/admin/hidden/requests/[id]">, "params">) {
   const { id } = await params;
   const account = await requireStaff("admin", showRequestPath(id));
-  const item = isId(id) ? await getHidden("request", id) : null;
+  const item = isId(id) ? await getHidden("request", id, account.id) : null;
   if (!item) notFound();
   return (
     <StaffFrame account={account} area="Admin console" title={`Show ${item.title} again`} current={ADMIN_REPORTS_PATH} notice={null}>

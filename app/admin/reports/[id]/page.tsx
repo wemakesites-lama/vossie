@@ -35,7 +35,7 @@ export default function AdminReportPage({ params }: PageProps<"/admin/reports/[i
 async function Report({ params }: Pick<PageProps<"/admin/reports/[id]">, "params">) {
   const { id } = await params;
   const account = await requireStaff("admin", adminReportPath(id));
-  const report = isId(id) ? await getReport(id) : null;
+  const report = isId(id) ? await getReport(id, account.id) : null;
   if (!report) notFound();
   const [state, notice] = await Promise.all([readFormState(dismissForm(id)), takeNotice()]);
   return (

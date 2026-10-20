@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { HiddenItem } from "@/lib/data/staff-reports";
 import { showListingAgain, showRequestAgain } from "@/lib/staff/admin-actions";
 import { ADMIN_HIDDEN_PATH } from "@/lib/staff/paths";
@@ -37,6 +38,17 @@ export function showAgainLines(item: HiddenItem): string[] {
  * new report, so it's confirmed. No reason field: the student needs none, and the log records the action.
  */
 export function ShowAgainConfirm({ item }: { item: HiddenItem }) {
+  // The admin's own listing or request (stage L spec section 3): the line and the way back, no button.
+  if (item.own) {
+    return (
+      <p>
+        {`This is your own ${item.kind}, so another admin must show it again.`}{" "}
+        <Link href={ADMIN_HIDDEN_PATH} prefetch={false}>
+          Back to hidden listings and requests
+        </Link>
+      </p>
+    );
+  }
   return (
     <ConfirmAction
       id={`show-${item.kind}-${item.id}`}

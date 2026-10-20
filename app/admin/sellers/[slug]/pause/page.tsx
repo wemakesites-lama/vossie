@@ -5,7 +5,8 @@ import { SellerConfirm } from "@/components/staff/SellerConfirm";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
 import { readFormState } from "@/lib/auth/form-state";
-import { getShopForReview } from "@/lib/data/staff-shops";
+import { countAdmins } from "@/lib/data/staff-accounts";
+import { getShopForReview, isOwnShop } from "@/lib/data/staff-shops";
 import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
@@ -34,12 +35,18 @@ async function Pause({ params }: Pick<PageProps<"/admin/sellers/[slug]/pause">, 
   const account = await requireStaff("admin", pauseSellerPath(slug));
   const review = isId(slug) ? await getShopForReview(slug) : null;
   if (!review) notFound();
-  const state = await readFormState(shopPauseForm(slug));
+  const own = isOwnShop(account.id, slug);
+  const [state, admins] = await Promise.all([
+    readFormState(shopPauseForm(slug)),
+    own ? countAdmins() : Promise.resolve(0),
+  ]);
   return (
     <StaffFrame account={account} area="Admin console" title={`Pause ${review.shop.name}`} current={ADMIN_SELLERS_PATH} notice={null}>
       <SellerConfirm
         kind="pause"
         review={review}
+        own={own}
+        onlyAdmin={own && admins === 1}
         reason={state?.values.reason ?? ""}
         errors={staffErrors(state?.errors ?? [], staffFieldIds(`pause-${slug}`))}
       />

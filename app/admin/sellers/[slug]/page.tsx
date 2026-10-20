@@ -6,7 +6,8 @@ import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
 import { getCampuses, getCategories } from "@/lib/data";
 import { pickupPointName } from "@/lib/data/pickup-points";
-import { getShopForReview, listMentors } from "@/lib/data/staff-shops";
+import { countAdmins } from "@/lib/data/staff-accounts";
+import { getShopForReview, isOwnShop, listMentors } from "@/lib/data/staff-shops";
 import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { takeNotice } from "@/lib/staff/form-state";
@@ -37,11 +38,15 @@ async function SellerReview({ params }: Pick<PageProps<"/admin/sellers/[slug]">,
   const account = await requireStaff("admin", adminSellerPath(slug));
   const review = isId(slug) ? await getShopForReview(slug) : null;
   if (!review) notFound();
-  const [campuses, categories, mentors, notice] = await Promise.all([
+  // The admin's own shop shows why in place of its controls, and its owner is never offered as its mentor (stage L
+  // spec decisions 4 to 6).
+  const own = isOwnShop(account.id, slug);
+  const [campuses, categories, mentors, notice, admins] = await Promise.all([
     getCampuses(),
     getCategories(),
-    listMentors(),
+    listMentors(review.shop.ownerId),
     takeNotice(),
+    own ? countAdmins() : Promise.resolve(0),
   ]);
   return (
     <StaffFrame
@@ -57,6 +62,8 @@ async function SellerReview({ params }: Pick<PageProps<"/admin/sellers/[slug]">,
         categoryName={categories.find((category) => category.slug === review.shop.categorySlug)?.name ?? ""}
         pointNames={review.shop.pickupPointIds.flatMap((id) => pickupPointName(id) ?? [])}
         mentors={mentors}
+        own={own}
+        onlyAdmin={own && admins === 1}
       />
     </StaffFrame>
   );

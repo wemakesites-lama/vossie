@@ -82,4 +82,10 @@ describe("hidden listings and requests (stage J spec decision 14)", () => {
     expect(screen.getByText("No hidden listings.")).toBeInTheDocument();
     expect(screen.getByText("No hidden requests.")).toBeInTheDocument();
   });
+
+  it("says Yours on the admin's own, where Show again was (stage L spec section 3)", () => {
+    render(<AdminHidden listings={[{ ...listing, own: true }]} requests={[{ ...request, own: true }]} campusNames={campusNames} />);
+    expect(screen.queryByRole("link", { name: /^Show again/ })).toBeNull();
+    expect(screen.getAllByRole("cell", { name: "Yours" })).toHaveLength(2);
+  });
 });

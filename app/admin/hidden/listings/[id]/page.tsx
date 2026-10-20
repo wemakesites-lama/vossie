@@ -30,7 +30,7 @@ export default function ShowListingPage({ params }: PageProps<"/admin/hidden/lis
 async function Show({ params }: Pick<PageProps<"/admin/hidden/listings/[id]">, "params">) {
   const { id } = await params;
   const account = await requireStaff("admin", showListingPath(id));
-  const item = isId(id) ? await getHidden("listing", id) : null;
+  const item = isId(id) ? await getHidden("listing", id, account.id) : null;
   if (!item) notFound();
   return (
     <StaffFrame account={account} area="Admin console" title={`Show ${item.title} again`} current={ADMIN_REPORTS_PATH} notice={null}>

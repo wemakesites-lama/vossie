@@ -64,4 +64,17 @@ describe("Show again's confirm page (stage J spec decision 14)", () => {
     expect(document.querySelector('input[name="request"]')).toHaveValue("r-001");
     expect(screen.getByRole("button", { name: "Show Graphing calculator for MAT2 again" })).toBeInTheDocument();
   });
+
+  it("says why for the admin's own, with no button (stage L spec section 3)", () => {
+    const { unmount } = render(<ShowAgainConfirm item={{ ...listing, own: true }} />);
+    expect(screen.getByText(/^This is your own listing, so another admin must show it again\./)).toBeInTheDocument();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getByRole("link", { name: "Back to hidden listings and requests" })).toHaveAttribute(
+      "href",
+      "/admin/hidden",
+    );
+    unmount();
+    render(<ShowAgainConfirm item={{ ...request, own: true }} />);
+    expect(screen.getByText(/^This is your own request, so another admin must show it again\./)).toBeInTheDocument();
+  });
 });

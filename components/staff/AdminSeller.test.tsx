@@ -18,7 +18,7 @@ beforeEach(() => {
   resetSampleStore();
 });
 
-async function show(slug: string) {
+async function show(slug: string, { own = false, onlyAdmin = false }: { own?: boolean; onlyAdmin?: boolean } = {}) {
   render(
     <AdminSeller
       review={(await getShopForReview(slug))!}
@@ -26,6 +26,8 @@ async function show(slug: string) {
       categoryName="Tech"
       pointNames={["Library entrance", "Main reception"]}
       mentors={[{ id: "acc-mentor", firstName: "Naledi" }]}
+      own={own}
+      onlyAdmin={onlyAdmin}
     />,
   );
 }
@@ -115,5 +117,31 @@ describe("a shop's review page (staff tools spec 2.3)", () => {
     expect(screen.getByRole("button", { name: "Remove Verified from Hair studio" })).toBeInTheDocument();
     expect(screen.getByText("A sample shop no account owns")).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Mentor" })).toBeNull();
+  });
+});
+
+describe("an admin's own shop (stage L spec section 3)", () => {
+  const LINE =
+    "This is your own shop, so another admin must make the Hub's decisions about it: approving, verifying, pausing, pinning and choosing its mentor.";
+
+  it("says why in place of every control, and names its mentor as text", async () => {
+    await show("tech-corner", { own: true });
+    expect(screen.getByRole("region", { name: "What you can do" })).toHaveTextContent(LINE);
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Pause Tech corner" })).toBeNull();
+    expect(screen.queryByRole("combobox")).toBeNull();
+    expect(screen.getByRole("region", { name: "Mentor" })).toHaveTextContent("Naledi mentors Tech corner.");
+    expect(screen.queryByText(/You're the only admin/)).toBeNull();
+    // The storefront isn't a decision (plan decision 9).
+    expect(screen.getByRole("link", { name: "See Tech corner's storefront" })).toHaveAttribute("href", "/sellers/tech-corner");
+  });
+
+  it("tells the only admin how to hand it on, with a link to Staff", async () => {
+    await show("crochet-corner", { own: true, onlyAdmin: true });
+    expect(screen.getByRole("region", { name: "What you can do" })).toHaveTextContent(LINE);
+    expect(screen.getByText("You're the only admin. Give someone else the Admin role in Staff first.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Staff" })).toHaveAttribute("href", "/admin/staff");
+    expect(screen.queryByRole("button", { name: "Approve Crochet corner" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Decline Crochet corner" })).toBeNull();
   });
 });

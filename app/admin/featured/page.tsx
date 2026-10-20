@@ -42,9 +42,12 @@ async function Featured() {
   const rows = await Promise.all(
     places.map(async (place) => ({ campus: place, sellers: await featuredFor(place.slug, today) })),
   );
-  const [pins, choices, state, notice] = await Promise.all([
-    listPins(today),
+  // The admin's own shop isn't a choice and its pins aren't theirs to remove (stage L spec decision 1); the field
+  // says so when it would have been listed (plan decision 4).
+  const [pins, everyone, choices, state, notice] = await Promise.all([
+    listPins(today, account.id),
     featuredChoices(),
+    featuredChoices(account.id),
     readFormState(PIN_FORM),
     takeNotice(),
   ]);
@@ -55,6 +58,7 @@ async function Featured() {
         rows={rows}
         pins={pins}
         choices={choices}
+        ownLeftOut={choices.length < everyone.length}
         places={places}
         values={state?.values ?? {}}
         errors={staffErrors(state?.errors ?? [], staffFieldIds("pin"))}

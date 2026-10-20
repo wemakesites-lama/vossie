@@ -248,8 +248,8 @@ describe("error summary ids (accounts spec 6)", () => {
         {shopProfile()}
         {listingForm(null)}
         {listingForm("l-001")}
-        <SellerConfirm kind="decline" review={crochet} reason="" errors={oops} />
-        <SellerConfirm kind="pause" review={tech} reason="" errors={oops} />
+        <SellerConfirm kind="decline" review={crochet} own={false} onlyAdmin={false} reason="" errors={oops} />
+        <SellerConfirm kind="pause" review={tech} own={false} onlyAdmin={false} reason="" errors={oops} />
         <AdminReport report={report} note="" errors={oops} />
         <ReportConfirm kind="hide" report={report} reason="" errors={oops} />
         <ReportConfirm kind="pause" report={report} reason="" errors={oops} />
@@ -258,6 +258,7 @@ describe("error summary ids (accounts spec 6)", () => {
           rows={[]}
           pins={[]}
           choices={[]}
+          ownLeftOut={false}
           places={[{ slug: "midrand", name: "Midrand" }]}
           values={{}}
           errors={oops}

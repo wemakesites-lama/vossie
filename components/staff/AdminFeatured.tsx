@@ -19,6 +19,8 @@ type AdminFeaturedProps = {
   pins: readonly PinView[];
   /** Who can be pinned: Verified, open, with something listed. */
   choices: readonly Seller[];
+  /** The signed-in admin's own shop would be a choice, and is left out: the field says so (stage L spec section 3). */
+  ownLeftOut: boolean;
   places: readonly Place[];
   /** What was chosen before a failed pin. */
   values: Readonly<Record<string, string>>;
@@ -31,7 +33,7 @@ const FIELDS = staffFieldIds("pin");
  * Featured (spec 2.3 and 2.8, plan decision 9): each campus's row as its visitors see it today, the pin form, and the
  * pins from today on, each with Remove. The words are samples for Lama to change.
  */
-export function AdminFeatured({ today, rows, pins, choices, places, values, errors }: AdminFeaturedProps) {
+export function AdminFeatured({ today, rows, pins, choices, ownLeftOut, places, values, errors }: AdminFeaturedProps) {
   const pinnedToday = new Set(pins.filter((pin) => pin.day === today).map((pin) => `${pin.campusSlug}:${pin.sellerSlug}`));
   const placeName = (slug: string) => places.find((place) => place.slug === slug)?.name ?? slug;
   const sellerError = errorFor(errors, FIELDS.seller);
@@ -83,13 +85,18 @@ export function AdminFeatured({ today, rows, pins, choices, places, values, erro
               Seller
             </label>
             <FieldError id={`${FIELDS.seller}-error`} message={sellerError} />
+            {ownLeftOut && (
+              <p id={`${FIELDS.seller}-hint`} className="form-hint">
+                Your own shop isn&apos;t in the list. Another admin can pin it.
+              </p>
+            )}
             <select
               id={FIELDS.seller}
               name="seller"
               required
               defaultValue={values.seller ?? ""}
               aria-invalid={sellerError ? true : undefined}
-              aria-describedby={describedBy(sellerError && `${FIELDS.seller}-error`)}
+              aria-describedby={describedBy(ownLeftOut && `${FIELDS.seller}-hint`, sellerError && `${FIELDS.seller}-error`)}
               className="form-input form-select"
             >
               <option value="">Choose a Verified seller</option>
@@ -163,15 +170,19 @@ export function AdminFeatured({ today, rows, pins, choices, places, values, erro
               placeName(pin.campusSlug),
               pin.sellerName,
               pin.pinnedByName,
-              <form key="remove" action={unpinSeller}>
-                <input type="hidden" name="pin" value={pin.id} />
-                <button type="submit" className="staff-row-action staff-row-action-danger">
-                  Remove{" "}
-                  <span className="sr-only">
-                    the pin for {pin.sellerName} at {placeName(pin.campusSlug)} on {dayMonth(pin.day)}
-                  </span>
-                </button>
-              </form>,
+              pin.own ? (
+                "Another admin must remove this pin."
+              ) : (
+                <form key="remove" action={unpinSeller}>
+                  <input type="hidden" name="pin" value={pin.id} />
+                  <button type="submit" className="staff-row-action staff-row-action-danger">
+                    Remove{" "}
+                    <span className="sr-only">
+                      the pin for {pin.sellerName} at {placeName(pin.campusSlug)} on {dayMonth(pin.day)}
+                    </span>
+                  </button>
+                </form>
+              ),
             ],
           }))}
           empty="No pins from today on."

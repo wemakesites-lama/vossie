@@ -32,7 +32,7 @@ export default function PauseReportedPage({ params }: PageProps<"/admin/reports/
 async function Pause({ params }: Pick<PageProps<"/admin/reports/[id]/pause">, "params">) {
   const { id } = await params;
   const account = await requireStaff("admin", pauseReportedPath(id));
-  const report = isId(id) ? await getReport(id) : null;
+  const report = isId(id) ? await getReport(id, account.id) : null;
   if (!report) notFound();
   const state = await readFormState(reportPauseForm(id));
   return (

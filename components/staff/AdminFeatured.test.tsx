@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { addPin, featuredChoices, featuredFor, listPins } from "@/lib/data/featured";
-import { resetSampleStore } from "@/lib/data/store";
+import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { AdminFeatured } from "./AdminFeatured";
 
 vi.mock("@/lib/staff/admin-actions", () => ({ pinSeller: async () => {}, unpinSeller: async () => {} }));
@@ -26,6 +26,7 @@ async function show(values: Record<string, string> = {}, errors: { message: stri
       rows={rows}
       pins={await listPins(TODAY)}
       choices={await featuredChoices()}
+      ownLeftOut={false}
       places={places}
       values={values}
       errors={errors}
@@ -87,5 +88,31 @@ describe("Featured (staff tools spec 2.3 and 2.8)", () => {
     expect(screen.getByRole("combobox", { name: "Seller" })).toHaveValue("nail-bar");
     expect(screen.getByLabelText("Day")).toHaveValue("2026-10-13");
     expect(screen.getByLabelText("Day")).toHaveAttribute("aria-invalid", "true");
+  });
+});
+
+describe("the admin's own shop on Featured (stage L spec section 3)", () => {
+  it("says it isn't in the list, tied to the field, and leaves its pins to another admin", async () => {
+    sampleStore().sellers.get("tech-corner")!.verified = true;
+    await addPin({ sellerSlug: "tech-corner", campusSlug: "pretoria", day: TODAY, staffId: "acc-admin", now: NOW });
+    const rows = await Promise.all(places.map(async (campus) => ({ campus, sellers: await featuredFor(campus.slug, TODAY) })));
+    render(
+      <AdminFeatured
+        today={TODAY}
+        rows={rows}
+        pins={await listPins(TODAY, "acc-seller")}
+        choices={await featuredChoices("acc-seller")}
+        ownLeftOut
+        places={places}
+        values={{}}
+        errors={[]}
+      />,
+    );
+    const seller = screen.getByLabelText("Seller");
+    expect(seller).toHaveAccessibleDescription("Your own shop isn't in the list. Another admin can pin it.");
+    expect(within(seller).queryByRole("option", { name: "Tech corner" })).toBeNull();
+    const pins = screen.getByRole("table", { name: "Pins from today on, soonest first" });
+    expect(within(pins).getByText("Another admin must remove this pin.")).toBeInTheDocument();
+    expect(within(pins).queryByRole("button")).toBeNull();
   });
 });

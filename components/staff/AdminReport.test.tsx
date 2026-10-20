@@ -6,7 +6,7 @@ import { hideListing } from "@/lib/data/staff-shops";
 import { closeReport, closeReportsOn, getReport } from "@/lib/data/staff-reports";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import type { ReportTarget } from "@/lib/types";
-import { AdminReport } from "./AdminReport";
+import { AdminReport, ownReportLine } from "./AdminReport";
 
 vi.mock("@/lib/staff/admin-actions", () => ({ dismissReport: async () => {} }));
 
@@ -155,6 +155,31 @@ describe("Show it again (stage J spec decision 14, plan decision 18)", () => {
   it("offers nothing on a report that's still open, or whose target is there to see", async () => {
     const id = await reportOn({ kind: "listing", id: "l-001" }, "Casio fx-991ZA Plus calculator");
     render(<AdminReport report={(await getReport(id))!} note="" errors={[]} />);
+    expect(screen.queryByRole("link", { name: "Show it again" })).toBeNull();
+  });
+});
+
+describe("a report about the admin's own (stage L spec section 3)", () => {
+  it("says so in place of Hide, Pause and Dismiss", async () => {
+    const id = await reportOn({ kind: "listing", id: "l-001" }, "Casio fx-991ZA Plus calculator");
+    render(<AdminReport report={(await getReport(id, "acc-seller"))!} note="" errors={[]} />);
+    const actions = screen.getByRole("region", { name: "What you can do" });
+    expect(actions).toHaveTextContent("This report is about your own listing, so another admin must handle it.");
+    expect(within(actions).queryByRole("link")).toBeNull();
+    expect(within(actions).queryByRole("button")).toBeNull();
+    expect(within(actions).queryByRole("textbox")).toBeNull();
+  });
+
+  it("names a shop and a request in the same words", () => {
+    expect(ownReportLine("shop")).toBe("This report is about your own shop, so another admin must handle it.");
+    expect(ownReportLine("request")).toBe("This report is about your own request, so another admin must handle it.");
+  });
+
+  it("offers no Show it again on a closed report about the admin's own hidden listing", async () => {
+    const id = await reportOn({ kind: "listing", id: "l-001" }, "Casio fx-991ZA Plus calculator");
+    await hideListing("l-001", "Checking it.", NOW);
+    await closeReportsOn({ kind: "listing", id: "l-001" }, "hidden", "Checking it.", "acc-admin", NOW);
+    render(<AdminReport report={(await getReport(id, "acc-seller"))!} note="" errors={[]} />);
     expect(screen.queryByRole("link", { name: "Show it again" })).toBeNull();
   });
 });
