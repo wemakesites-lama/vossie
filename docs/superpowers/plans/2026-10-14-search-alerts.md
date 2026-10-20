@@ -214,15 +214,45 @@ The table, the field it reuses, and who touches them:
 
 | Point | `/` | `/browse` | Browse, a search | Listing | Storefront | Saved | Saved, Searches tab | Privacy | New listing form (signed in) |
 |---|---|---|---|---|---|---|---|---|---|
-| Start (H's final figures, 2026-10-20; the three open columns are measured at Tasks 4, 5 and 7, Step 1) | 150,591 | 151,338 | | 151,747 | 151,351 | 151,226 | | | 152,265 |
-| Task 4, Save this search | | | | | | | | | |
-| Task 5, the Searches tab | | | | | | | | | |
-| Task 7, the privacy words | | | | | | | | | |
-| **Final (Task 10)** | | | | | | | | | |
+| Start (H's final figures, 2026-10-20; the three open columns are measured at Tasks 4, 5 and 7, Step 1) | 150,591 | 151,338 | 151,338 | 151,747 | 151,351 | 151,226 | 151,226 | 150,591 | 152,265 |
+| Task 4, Save this search | 150,591 | 151,338 | 151,338 | 151,747 | 151,351 | 151,226 | 151,226 | 150,591 | 152,265 |
+| Task 5, the Searches tab | 150,591 | 151,338 | 151,338 | 151,747 | 151,351 | 151,226 | 151,226 | 150,591 | 152,265 |
+| Task 7, the privacy words | 150,591 | 151,338 | 151,338 | 151,747 | 151,351 | 151,226 | 151,226 | 150,591 | 152,265 |
+| **Final (Task 10)** | 150,591 | 151,338 | 151,338 | 151,747 | 151,351 | 151,226 | 151,226 | 150,591 | 152,265 |
 
-Signed in (Task 9): browse with a search ________ B, Saved's Searches tab ________ B.
+Signed in (Task 9): browse with a search 151,338 B, Saved's Searches tab 151,226 B. Also unchanged through the stage: request and collection pages 151,067 B, Saved's Shops tab 151,226 B, and the new and edit listing forms 152,265 B (40 B under the stop line). The Final row carries the Task 9 figures; the controller re-measures at Task 10, Step 9.
+
+Unit tests at the end: 2,316. End to end for the stage: devices 225 passed in the checks specs, `search-alerts` 10 passed, `alerts-writes` 3 passed. The full-suite count is added by the controller.
 
 The stop line used: 152,305 B (decision 52; the new listing form is 40 B under it, `/browse` 967 B under it). Unit tests at the start: 2,219 (294 files). End to end at the start: 1,199 pass, 1,074 skipped.
+
+## Changes made during the build
+
+Written in Task 10 from the build (HEAD `9efecd5`). Where an entry differs from the tasks above, the entry wins.
+
+- **Task 3:** `leaveOnceToken` is skipped when the token is `none` (missing, made-up, expired or another session's). Recording it would store any posted string as a key, could make a forged token look "already sent", and could revive an expired real one. One extra test covers `again` with no `sent`.
+- **Task 3, plan decision 21:** the token on Save this search (amendment 3). Go-live note: the row writes one form-state row per signed-in browse view that offers Save, kept for an hour.
+- **Task 4:**
+  - The views are in `components/browse/SaveSearchViews.tsx` (amendment 2).
+  - The token is issued only in the `new` state with no status note.
+  - The plan's `toBeInTheDocument` on a detached container was replaced by `textContent`.
+- **Task 5:** dates use the existing `shortSastDate` ("Saved 12 Oct"), not a new `sastDayMonth`.
+- **Task 6:** `SearchIcon` already existed, so only `NotificationsView` changed.
+- **Task 7:**
+  - Amendment 11 is an href match on `/listings/<id>`, because a search-match's `subjectId` is the saved search's id.
+  - The privacy page's perf row moved to Task 9.
+- **Review fixes (commit `e1de51a`):**
+  - The limit line is now "You're at the 20-search limit.", one line at 320px, and the same sentence before and after a press. The old sentence wrapped and grew the 72px row.
+  - Deleting one listing deletes the `search-match` and `new-listing` notifications whose href is that listing.
+  - The amendment 11 test now checks that what should survive does.
+- **Task 8:**
+  - E2E runs in a scratch copy on port 3204, because another session shared the tree.
+  - Locators filter on `visible` because of kept pages.
+  - Specs go by URL, never by the header's Account or Saved links: a pending header change moves those into a phone tab bar.
+- **Task 9:**
+  - The axe rows are in `tests/e2e/alerts-checks.spec.ts`, not `a11y.spec.ts`, which had another session's uncommitted edits.
+  - The at-the-limit row is held at 72px at 360px (layout shift 0.0000) in `alerts-writes`.
+- **Task 10:** this stage's edits to `docs/PROGRESS.md` and `docs/reference/LANDING-DECISIONS.md` are written by the controller, because other sessions hold uncommitted lines in them.
 
 ## Conventions for every task
 
@@ -349,7 +379,7 @@ Everything the rest of the plan stands on, with no page changed: browse's per-li
 - Modify: `lib/data/notifications.ts`, `lib/data/notifications.test.ts`
 - Create: `lib/data/saved-searches.ts`, `lib/data/saved-searches.test.ts`
 
-- [ ] **Step 1: The types**
+- [x] **Step 1: The types**
 
 In `lib/types.ts`:
 
@@ -393,7 +423,7 @@ export type SavedSearchItem = {
 Run: `pnpm typecheck`
 Expected: PASS. (`KindIcon` in `NotificationsView.tsx` has no case for the new kind yet; a `switch` that falls through returns nothing, which TypeScript allows here. Task 6 adds the icon.)
 
-- [ ] **Step 2: Change the store's test first**
+- [x] **Step 2: Change the store's test first**
 
 In `lib/data/store.test.ts`, in the "is seeded with …, and nothing else" test, add at its end (after H's `expect(store.follows.size).toBe(0);`):
 
@@ -406,7 +436,7 @@ and add ", no saved searches" before ", and nothing else" in its name.
 Run: `pnpm test lib/data/store.test.ts`
 Expected: FAIL: the store has no `savedSearches`.
 
-- [ ] **Step 3: The row and the table**
+- [x] **Step 3: The row and the table**
 
 In `lib/data/rows.ts`:
 1. Add `CampusChoice`, `PayFilter` and `PriceFilter` to the `import type { … } from "@/lib/types";` block, keeping the names in alphabetical order.
@@ -466,7 +496,7 @@ In `lib/data/store.ts`:
 Run: `pnpm test lib/data/store.test.ts`
 Expected: PASS.
 
-- [ ] **Step 4: Write the matcher's tests**
+- [x] **Step 4: Write the matcher's tests**
 
 In `lib/browse/results.test.ts`:
 1. Change `import type { Listing, SearchQuery } from "@/lib/types";` to `import type { Listing, MatchQuery, SearchQuery } from "@/lib/types";`, change `import { findListings, passesFilters } from "./results";` to `import { findListings, listingMatches, passesFilters } from "./results";`, and add, above the `@/tests/helpers/fakes` import:
@@ -540,7 +570,7 @@ describe("listingMatches (search alerts spec 2.2, plan decision 1)", () => {
 Run: `pnpm test lib/browse/results.test.ts`
 Expected: FAIL: `listingMatches` isn't exported.
 
-- [ ] **Step 5: Pull the per-listing test out of findListings**
+- [x] **Step 5: Pull the per-listing test out of findListings**
 
 In `lib/browse/results.ts`:
 1. Change `import type { BrowseSort, Listing, PriceFilter, SearchQuery, SearchResult } from "@/lib/types";` to `import type { BrowseSort, Listing, MatchQuery, PriceFilter, SearchQuery, SearchResult } from "@/lib/types";`.
@@ -599,7 +629,7 @@ Expected: PASS: the two new tests, and every one of browse's own (`results.test.
 Run: `pnpm test components/browse lib/data/index.test.ts`
 Expected: PASS: the browse page's components and the data layer's search give the same results as before.
 
-- [ ] **Step 6: Saved's third tab's address**
+- [x] **Step 6: Saved's third tab's address**
 
 In `lib/following/rules.test.ts` (H Task 2), add at the end of the file:
 
@@ -633,7 +663,7 @@ Leave `parseSavedTab` as it is: until Task 5 renders the tab, `?tab=searches` mu
 Run: `pnpm test lib/following/rules.test.ts`
 Expected: PASS, H's tests unchanged.
 
-- [ ] **Step 7: Write the rules' and words' tests**
+- [x] **Step 7: Write the rules' and words' tests**
 
 Create `lib/saved-searches/rules.test.ts`:
 
@@ -853,7 +883,7 @@ describe("saved searches' words (search alerts spec 2.6 to 2.8 and 2.12)", () =>
 Run: `pnpm test lib/saved-searches`
 Expected: FAIL, because `./rules` and `./words` don't exist.
 
-- [ ] **Step 8: Write the rules and the words**
+- [x] **Step 8: Write the rules and the words**
 
 Create `lib/saved-searches/rules.ts`:
 
@@ -1059,7 +1089,7 @@ export function searchMatchesText(count: number, label: string): string {
 Run: `pnpm test lib/saved-searches`
 Expected: PASS (16 tests).
 
-- [ ] **Step 9: Write the notifications' tests**
+- [x] **Step 9: Write the notifications' tests**
 
 In `lib/data/notifications.test.ts`, add `notifySearchMatch` to the import from `./notifications` (with `notifyNewListing` and `markNotificationsRead`, which H added), keeping the names in alphabetical order, and add at the end of the file:
 
@@ -1155,7 +1185,7 @@ describe("a saved search's matches (search alerts spec 2.12, plan decision 12)",
 Run: `pnpm test lib/data/notifications.test.ts`
 Expected: FAIL: `notifySearchMatch` doesn't exist.
 
-- [ ] **Step 10: One rule, two kinds**
+- [x] **Step 10: One rule, two kinds**
 
 In `lib/data/notifications.ts`:
 1. Add `import { searchMatchesText, searchMatchText } from "@/lib/saved-searches/words";` among the `@/lib/…` imports, in alphabetical order (after H's `@/lib/following/rules` import, before `@/lib/time`).
@@ -1284,7 +1314,7 @@ export async function notifySearchMatch({
 Run: `pnpm test lib/data/notifications.test.ts lib/data/follows.test.ts lib/data/shops.test.ts`
 Expected: PASS: the six new tests, and H's "a followed shop's new listings" tests, follows' tests and `moveShop`'s test unchanged.
 
-- [ ] **Step 11: Write the saved searches' tests**
+- [x] **Step 11: Write the saved searches' tests**
 
 Create `lib/data/saved-searches.test.ts`:
 
@@ -1511,7 +1541,7 @@ describe("deleting an account, and its data export (spec 2.15, plan decision 15)
 Run: `pnpm test lib/data/saved-searches.test.ts`
 Expected: FAIL: `./saved-searches` doesn't exist.
 
-- [ ] **Step 12: Write the saved searches**
+- [x] **Step 12: Write the saved searches**
 
 Create `lib/data/saved-searches.ts`:
 
@@ -1712,12 +1742,12 @@ export async function exportSavedSearches(accountId: string): Promise<SavedSearc
 Run: `pnpm test lib/data/saved-searches.test.ts`
 Expected: PASS (11 tests).
 
-- [ ] **Step 13: Run every check**
+- [x] **Step 13: Run every check**
 
 Run, one after another: `pnpm typecheck`, `pnpm test`, `pnpm lint`.
 Expected: all pass; 36 more unit tests than at the start. If `pnpm typecheck` names a `Record<NotificationKind, …>` a later stage added, add `"search-match"` to it (the words: "A saved search's new match") and say so in the hand-over.
 
-- [ ] **Step 14: Hand over for commit**
+- [x] **Step 14: Hand over for commit**
 
 Files: `lib/types.ts`, `lib/data/rows.ts`, `lib/data/store.ts`, `lib/data/store.test.ts`, `lib/browse/results.ts`, `lib/browse/results.test.ts`, `lib/following/rules.ts`, `lib/following/rules.test.ts`, `lib/saved-searches/rules.ts`, `lib/saved-searches/rules.test.ts`, `lib/saved-searches/words.ts`, `lib/saved-searches/words.test.ts`, `lib/data/notifications.ts`, `lib/data/notifications.test.ts`, `lib/data/saved-searches.ts`, `lib/data/saved-searches.test.ts`.
 Message: `feat: saved searches' data and rules: browse's per-listing test as listingMatches, the savedSearches table, labels, links and sameness, and one search-match notification a day made unread again by a later match, through H's one-a-day rule moved into a shared helper (search alerts spec 2.1 to 2.4, 2.8, 2.11, 2.12 and 2.15)`
@@ -1731,7 +1761,7 @@ The match runs on F's publish write (spec 2.9 to 2.11; plan decision 13): in `sa
 **Files:**
 - Modify: `lib/selling/listing-actions.ts`, `lib/selling/listing-actions.test.ts`
 
-- [ ] **Step 1: Write the tests**
+- [x] **Step 1: Write the tests**
 
 In `lib/selling/listing-actions.test.ts` (F Task 8, with H Task 9's changes):
 1. Add, among the `@/lib/data/…` imports in alphabetical order: `import { addSavedSearch, listSavedSearches, setSavedSearchPaused } from "@/lib/data/saved-searches";`. Keep H's `import { getNotifications } from "@/lib/data/notifications";`, and add `import type { MatchQuery } from "@/lib/types";` after the `@/lib/…` imports.
@@ -1814,12 +1844,12 @@ describe("saved-search alerts (search alerts spec 2.9 and 2.10, plan decision 13
 
 (`listOwnListings` and `changeListingState` are already imported for F's tests, and `sampleStore` for H's; add any that aren't.)
 
-- [ ] **Step 2: Run them to make sure they fail**
+- [x] **Step 2: Run them to make sure they fail**
 
 Run: `pnpm test lib/selling/listing-actions.test.ts`
 Expected: FAIL: the first two tests find no `search-match` notification. The other four pass already (nothing tells anyone yet); they guard what mustn't change.
 
-- [ ] **Step 3: Publishing tells the matching saved searches**
+- [x] **Step 3: Publishing tells the matching saved searches**
 
 In `lib/selling/listing-actions.ts` (F Task 8, with G's and H's changes):
 1. Add `import { notifySavedSearches } from "@/lib/data/saved-searches";` among the `@/lib/data/…` imports, in alphabetical order.
@@ -1833,17 +1863,17 @@ In `lib/selling/listing-actions.ts` (F Task 8, with G's and H's changes):
 
 3. Change H's comment above the block from "tells its followers, once a day" to "tells its followers and the matching saved searches, once a day" (edit by meaning if H's built comment differs), keeping "Edits, relists and a shop resuming don't."
 
-- [ ] **Step 4: Run them to make sure they pass**
+- [x] **Step 4: Run them to make sure they pass**
 
 Run: `pnpm test lib/selling/listing-actions.test.ts`
 Expected: PASS: the six new tests, F's and H's tests unchanged.
 
-- [ ] **Step 5: Run every check**
+- [x] **Step 5: Run every check**
 
 Run, one after another: `pnpm test`, `pnpm typecheck`, `pnpm lint`.
 Expected: all pass; 6 more unit tests than after Task 1.
 
-- [ ] **Step 6: Hand over for commit**
+- [x] **Step 6: Hand over for commit**
 
 Files: `lib/selling/listing-actions.ts`, `lib/selling/listing-actions.test.ts`.
 Message: `feat: a listing's first publish tells the matching saved searches, after the shop's followers and under the same condition; edits, relists, resumes, a paused shop, a paused search and the shop's own owner don't (search alerts spec 2.9 to 2.11)`
@@ -1857,11 +1887,11 @@ Four plain forms' actions (spec 2.5, 2.6 and 2.8; plan decisions 7, 9 and 11): i
 **Files:**
 - Create: `lib/saved-searches/actions.ts`, `lib/saved-searches/actions.test.ts`
 
-- [ ] **Step 1: Read the docs**
+- [x] **Step 1: Read the docs**
 
 Read `node_modules/next/dist/docs/01-app/02-guides/server-actions.md` ("Security"), `02-guides/forms.md`, `03-api-reference/04-functions/refresh.md`, `redirect.md` and `03-api-reference/01-directives/use-server.md`. Note: every action is a public endpoint, so check every field and take identity only from the session; `refresh()` comes before `redirect()`, which throws, never inside a `try`; a `"use server"` file may export only async functions.
 
-- [ ] **Step 2: Write the tests**
+- [x] **Step 2: Write the tests**
 
 Create `lib/saved-searches/actions.test.ts`:
 
@@ -2023,12 +2053,12 @@ describe("Pause, Resume and Delete on Saved (spec 2.8, plan decision 11)", () =>
 });
 ```
 
-- [ ] **Step 3: Run them to make sure they fail**
+- [x] **Step 3: Run them to make sure they fail**
 
 Run: `pnpm test lib/saved-searches/actions.test.ts`
 Expected: FAIL, because `./actions` doesn't exist.
 
-- [ ] **Step 4: Write the actions**
+- [x] **Step 4: Write the actions**
 
 Create `lib/saved-searches/actions.ts`:
 
@@ -2115,17 +2145,17 @@ export async function deleteSearch(formData: FormData): Promise<void> {
 }
 ```
 
-- [ ] **Step 5: Run them to make sure they pass**
+- [x] **Step 5: Run them to make sure they pass**
 
 Run: `pnpm test lib/saved-searches/actions.test.ts`
 Expected: PASS (11 tests).
 
-- [ ] **Step 6: Run every check**
+- [x] **Step 6: Run every check**
 
 Run, one after another: `pnpm test`, `pnpm typecheck`, `pnpm lint`.
 Expected: all pass; 11 more unit tests than after Task 2.
 
-- [ ] **Step 7: Hand over for commit**
+- [x] **Step 7: Hand over for commit**
 
 Files: `lib/saved-searches/actions.ts`, `lib/saved-searches/actions.test.ts`.
 Message: `feat: the saved-search Server Actions: Save this search read with browse's own parser and back to its browse link with a status line, and Pause, Resume and Delete back to Saved's Searches tab (search alerts spec 2.5, 2.6 and 2.8)`
@@ -2144,7 +2174,7 @@ The row under browse's chips (spec 2.5, 2.6 and section 4; plan decisions 6 and 
 - Modify: `tests/e2e/performance.spec.ts`
 - Modify: `app/globals.css` (end of file)
 
-- [ ] **Step 1: Measure browse with a search before changing it**
+- [x] **Step 1: Measure browse with a search before changing it**
 
 In `tests/e2e/performance.spec.ts`, add this row to `PAGES`, straight after `["browse page", "/browse"],`:
 
@@ -2155,11 +2185,11 @@ In `tests/e2e/performance.spec.ts`, add this row to `PAGES`, straight after `["b
 Run: `pnpm e2e tests/e2e/performance.spec.ts --project=phone-390`
 Expected: PASS. Write every page's `scriptBrotli` into the ledger's "Start" row, the new "Browse, a search" column included (plan decision 20). Every existing figure must equal H's final ones; if one doesn't, stop and report.
 
-- [ ] **Step 2: Read the docs**
+- [x] **Step 2: Read the docs**
 
 Read `node_modules/next/dist/docs/01-app/02-guides/forms.md` (a form whose action is a Server Action, rendered by a Server Component), `02-guides/authentication-with-cache-components.md` (the session in its own `<Suspense>`) and `02-guides/preserving-ui-state.md` (why the e2e tests look only at what's visible).
 
-- [ ] **Step 3: Write the tests**
+- [x] **Step 3: Write the tests**
 
 Create `components/browse/SaveSearchControl.test.tsx`:
 
@@ -2349,12 +2379,12 @@ vi.mock("@/lib/saved-searches/actions", () => ({ saveThisSearch: async () => {} 
   });
 ```
 
-- [ ] **Step 4: Run them to make sure they fail**
+- [x] **Step 4: Run them to make sure they fail**
 
 Run: `pnpm test components/browse`
 Expected: FAIL: the two components and the helper don't exist, and browse has no row.
 
-- [ ] **Step 5: Write the row**
+- [x] **Step 5: Write the row**
 
 Create `components/browse/SaveSearchControl.tsx`:
 
@@ -2513,7 +2543,7 @@ export const signedOutViewerSaveSearch = {
 };
 ```
 
-- [ ] **Step 6: Put it under the chips**
+- [x] **Step 6: Put it under the chips**
 
 In `components/browse/BrowseView.tsx`:
 1. Add `import { isWorthSaving, matchQueryOf } from "@/lib/saved-searches/rules";` after the `@/lib/browse/query` import, and `import { SaveSearchControl } from "./SaveSearchControl";` among the `./…` imports, in alphabetical order (after `./ResultsGrid`).
@@ -2536,7 +2566,7 @@ with:
 
 Find every other test that renders `BrowseView` or `app/browse/page.tsx`: `grep -rln "BrowseView\|app/browse/page" components app --include="*.test.tsx"`, and add the same two `vi.mock` lines to each.
 
-- [ ] **Step 7: Style it**
+- [x] **Step 7: Style it**
 
 Check the names are free (`grep -n "\.save-search" app/globals.css` prints nothing), then append to the end of `app/globals.css`:
 
@@ -2590,22 +2620,22 @@ Check the names are free (`grep -n "\.save-search" app/globals.css` prints nothi
 }
 ```
 
-- [ ] **Step 8: Run them to make sure they pass**
+- [x] **Step 8: Run them to make sure they pass**
 
 Run: `pnpm test components/browse`
 Expected: PASS: the nine new tests, and browse's own tests unchanged.
 
-- [ ] **Step 9: Run every check**
+- [x] **Step 9: Run every check**
 
 Run, one after another: `pnpm test`, `pnpm typecheck`, `pnpm lint`.
 Expected: all pass; 9 more unit tests than after Task 3.
 
-- [ ] **Step 10: Measure the JavaScript**
+- [x] **Step 10: Measure the JavaScript**
 
 Run: `pnpm e2e tests/e2e/performance.spec.ts --project=phone-390`
 Expected: PASS. Write every page's `scriptBrotli` into the ledger's "Task 4" row. **Every figure must equal the "Start" row's to the byte** (spec 5): the row is a Server Component with a form and a `Link`, both already in browse's code. If any page moved, stop and find out why before going on. If any page is past the stop line, stop and report.
 
-- [ ] **Step 11: Look at it**
+- [x] **Step 11: Look at it**
 
 Start the build (`pnpm start --port 3201`) at 390 × 844, 768 × 1024 and 1280 × 800.
 - `/browse`: no row. `/browse?campus=midrand`: no row (a campus alone isn't a search).
@@ -2616,7 +2646,7 @@ Start the build (`pnpm start --port 3201`) at 390 × 844, 768 × 1024 and 1280 �
 
 Stop the server.
 
-- [ ] **Step 12: Hand over for commit**
+- [x] **Step 12: Hand over for commit**
 
 Files: `components/browse/SaveSearchControl.tsx`, `components/browse/SaveSearchControl.test.tsx`, `components/browse/ViewerSaveSearch.tsx`, `components/browse/ViewerSaveSearch.test.tsx`, `tests/helpers/viewer-save-search.tsx`, `components/browse/BrowseView.tsx`, `components/browse/BrowseView.test.tsx`, `tests/e2e/performance.spec.ts`, `app/globals.css` (and any other test file Step 6's grep found).
 Message: `feat: Save this search on browse: a fixed-height row under the chips for any search worth saving, a sign-in link signed out and a plain form signed in, saved or at the limit with Manage saved searches, and its status line or refusal once (search alerts spec 2.5 and 2.6). JS: browse <n> B, browse with a search <n> B, unchanged`
@@ -2636,7 +2666,7 @@ Saved gains a third tab link, **Searches** (`/saved?tab=searches`; spec 2.7, 2.8
 - Modify: `tests/e2e/performance.spec.ts`
 - Modify: `app/globals.css` (end of file)
 
-- [ ] **Step 1: Measure the tab's address before changing it**
+- [x] **Step 1: Measure the tab's address before changing it**
 
 In `tests/e2e/performance.spec.ts`, add this row to `PAGES`, after H's `["Saved page, Shops tab", "/saved?tab=shops"],`:
 
@@ -2647,7 +2677,7 @@ In `tests/e2e/performance.spec.ts`, add this row to `PAGES`, after H's `["Saved 
 Run: `pnpm e2e tests/e2e/performance.spec.ts --project=phone-390`
 Expected: PASS. Every figure equals Task 4's. Write the new row's `scriptBrotli` (today it shows Listings: `parseSavedTab` doesn't know "searches" yet) into the ledger's "Start" row, "Saved, Searches tab" column (plan decision 20).
 
-- [ ] **Step 2: Write the tests**
+- [x] **Step 2: Write the tests**
 
 In `lib/following/rules.test.ts`, add to the end of the describe "Saved's Searches tab (search alerts spec 2.7, plan decision 10)" (Task 1):
 
@@ -2858,12 +2888,12 @@ vi.mock("./SavedSearches", () => ({ SavedSearches: () => <p>Your saved searches<
   });
 ```
 
-- [ ] **Step 3: Run them to make sure they fail**
+- [x] **Step 3: Run them to make sure they fail**
 
 Run: `pnpm test lib/following lib/time.test.ts components/saved`
 Expected: FAIL: `parseSavedTab` gives Listings for "searches", `sastDayMonth` and the two components don't exist, and the tabs have no Searches.
 
-- [ ] **Step 4: The tab's address and the date**
+- [x] **Step 4: The tab's address and the date**
 
 In `lib/following/rules.ts`, replace `parseSavedTab`'s body and comment with:
 
@@ -2897,7 +2927,7 @@ export function sastDayMonth(iso: string): string {
 }
 ```
 
-- [ ] **Step 5: Write the tab**
+- [x] **Step 5: Write the tab**
 
 Create `components/saved/SavedSearchesView.tsx`:
 
@@ -3027,7 +3057,7 @@ export async function SavedSearches() {
 }
 ```
 
-- [ ] **Step 6: The third tab**
+- [x] **Step 6: The third tab**
 
 In `components/saved/SavedTabs.tsx` (H Task 18):
 1. Add `import { SEARCHES_NOTE } from "@/lib/saved-searches/words";` after the `@/lib/following/rules` import, and `import { SavedSearches } from "./SavedSearches";` among the `./…` imports, in alphabetical order.
@@ -3064,7 +3094,7 @@ In `components/saved/SavedTabs.tsx` (H Task 18):
 
 4. Change "Saved's two tabs" to "Saved's three tabs" in its comment, and add "Searches are kept with the account too (search alerts spec 2.7)."
 
-- [ ] **Step 7: Style it**
+- [x] **Step 7: Style it**
 
 Check the names are free (`grep -n "\.saved-search" app/globals.css` prints nothing), then append to the end of `app/globals.css`:
 
@@ -3145,22 +3175,22 @@ Check the names are free (`grep -n "\.saved-search" app/globals.css` prints noth
 }
 ```
 
-- [ ] **Step 8: Run them to make sure they pass**
+- [x] **Step 8: Run them to make sure they pass**
 
 Run: `pnpm test lib/following lib/time.test.ts components/saved`
 Expected: PASS: the nine new tests; H's Saved tests and `SavedList.test.tsx` unchanged.
 
-- [ ] **Step 9: Run every check**
+- [x] **Step 9: Run every check**
 
 Run, one after another: `pnpm test`, `pnpm typecheck`, `pnpm lint`.
 Expected: all pass; 9 more unit tests than after Task 4.
 
-- [ ] **Step 10: Measure the JavaScript**
+- [x] **Step 10: Measure the JavaScript**
 
 Run: `pnpm e2e tests/e2e/performance.spec.ts --project=phone-390`
 Expected: PASS. Write every page's `scriptBrotli` into the ledger's "Task 5" row. **Every figure must equal Task 4's, and the Searches tab's must equal its Step 1 figure, to the byte** (spec 5): the tab is a `LinkTabs` link and a Server Component list with forms and `Link`s, all on the route Saved already loads. If any page moved, stop and find out why before going on. If any page is past the stop line, stop and report.
 
-- [ ] **Step 11: Look at it**
+- [x] **Step 11: Look at it**
 
 Start the build (`pnpm start --port 3201`) at 390 × 844, 768 × 1024 and 1280 × 800.
 - `/saved?tab=searches` signed out: the three tabs (Searches underlined), "Kept with your account. Each search sends at most one notification a day.", "SAVED SEARCHES", the sentence and SIGN IN, which comes back to the tab.
@@ -3170,7 +3200,7 @@ Start the build (`pnpm start --port 3201`) at 390 × 844, 768 × 1024 and 1280 �
 
 Stop the server.
 
-- [ ] **Step 12: Hand over for commit**
+- [x] **Step 12: Hand over for commit**
 
 Files: `lib/following/rules.ts`, `lib/following/rules.test.ts`, `lib/time.ts`, `lib/time.test.ts`, `components/saved/SavedSearchesView.tsx`, `components/saved/SavedSearchesView.test.tsx`, `components/saved/SavedSearches.tsx`, `components/saved/SavedSearches.test.tsx`, `components/saved/SavedTabs.tsx`, `components/saved/SavedTabs.test.tsx`, `tests/e2e/performance.spec.ts`, `app/globals.css`.
 Message: `feat: Saved's Searches tab: each saved search with its results, when it was saved and its alerts, Pause or Resume and Delete with status lines, and sign-in or Browse when there's nothing to show (search alerts spec 2.7 and 2.8). JS: Saved <n> B, Searches tab <n> B, unchanged`
@@ -3184,7 +3214,7 @@ E's `/notifications` shows the new kind (spec 2.12 and section 4; plan decision 
 **Files:**
 - Modify: `components/messages/NotificationsView.tsx`, `components/messages/NotificationsView.test.tsx`
 
-- [ ] **Step 1: Write the test**
+- [x] **Step 1: Write the test**
 
 In `components/messages/NotificationsView.test.tsx`, add `render` and `screen` from `@testing-library/react` and `NotificationsView` from `./NotificationsView` to the imports if they aren't there, and add at the end of the file:
 
@@ -3219,12 +3249,12 @@ describe("a saved search's matches (search alerts spec 2.12 and section 4)", () 
 });
 ```
 
-- [ ] **Step 2: Run it to make sure it fails**
+- [x] **Step 2: Run it to make sure it fails**
 
 Run: `pnpm test components/messages/NotificationsView.test.tsx`
 Expected: FAIL: the row has no icon for `search-match`.
 
-- [ ] **Step 3: Draw it**
+- [x] **Step 3: Draw it**
 
 In `components/messages/NotificationsView.tsx`:
 1. Add `SearchIcon` to the `@/components/icons` import, in alphabetical order.
@@ -3240,12 +3270,12 @@ In `components/messages/NotificationsView.tsx`:
 Run: `pnpm test components/messages/NotificationsView.test.tsx`
 Expected: PASS, E's, G's and H's tests in the file unchanged.
 
-- [ ] **Step 4: Run every check**
+- [x] **Step 4: Run every check**
 
 Run, one after another: `pnpm test`, `pnpm typecheck`, `pnpm lint`.
 Expected: all pass; 1 more unit test than after Task 5.
 
-- [ ] **Step 5: Hand over for commit**
+- [x] **Step 5: Hand over for commit**
 
 Files: `components/messages/NotificationsView.tsx`, `components/messages/NotificationsView.test.tsx`.
 Message: `feat: search-match notifications show the search icon on /notifications (search alerts spec 2.12)`
@@ -3263,7 +3293,7 @@ POPIA (spec 2.15; plan decisions 15 to 17): deleting an account removes its save
 - Modify: `app/robots.test.ts`
 - Modify: `tests/e2e/performance.spec.ts`
 
-- [ ] **Step 1: Measure the privacy page before changing it**
+- [x] **Step 1: Measure the privacy page before changing it**
 
 In `tests/e2e/performance.spec.ts`, add this row to `PAGES`, straight after `["info page", "/how-it-works"],`:
 
@@ -3274,7 +3304,7 @@ In `tests/e2e/performance.spec.ts`, add this row to `PAGES`, straight after `["i
 Run: `pnpm e2e tests/e2e/performance.spec.ts --project=phone-390`
 Expected: PASS. Every figure equals Task 5's. Write the new row's `scriptBrotli` into the ledger's "Start" row, "Privacy" column (plan decision 20).
 
-- [ ] **Step 2: Change the tests first**
+- [x] **Step 2: Change the tests first**
 
 In `lib/data/accounts.test.ts` (D Task 3, with E's to H's changes):
 1. Add, among the `./…` imports in alphabetical order: `import { addSavedSearch, listSavedSearches } from "./saved-searches";`, and add `import type { MatchQuery } from "@/lib/types";` after the `@/tests/helpers/fakes` import.
@@ -3363,7 +3393,7 @@ In `app/robots.test.ts`, add at the end of its `describe`:
 Run: `pnpm test lib/data/accounts.test.ts app/privacy components/account/PrivacySettingsView.test.tsx app/robots.test.ts`
 Expected: FAIL: the export has no `savedSearches`, deletion leaves them, and the privacy words aren't there. The robots test passes already (`/saved` is disallowed): it guards that.
 
-- [ ] **Step 3: Deletion and the export**
+- [x] **Step 3: Deletion and the export**
 
 In `lib/data/accounts.ts`:
 1. Add, among the `./…` imports in alphabetical order:
@@ -3400,7 +3430,7 @@ and add to its comment: "saved-search alerts' searches go with community actions
 Run: `pnpm test lib/data/accounts.test.ts`
 Expected: PASS.
 
-- [ ] **Step 4: The words**
+- [x] **Step 4: The words**
 
 In `app/privacy/page.tsx` (edit by meaning: E to H changed these lists):
 1. In the `privacy-sign-in` section's list, straight after H's bullet that starts `<strong>The shops you follow.</strong>`, add:
@@ -3427,17 +3457,17 @@ In `components/account/PrivacySettingsView.tsx` (edit by meaning: E to H changed
 Run: `pnpm test app/privacy components/account/PrivacySettingsView.test.tsx app/robots.test.ts`
 Expected: PASS, with `app/privacy/page.test.tsx`'s test that every `vossie_…` name is on the page unchanged.
 
-- [ ] **Step 5: Run every check**
+- [x] **Step 5: Run every check**
 
 Run, one after another: `pnpm test`, `pnpm typecheck`, `pnpm lint`.
 Expected: all pass; 5 more unit tests than after Task 6.
 
-- [ ] **Step 6: Measure the JavaScript**
+- [x] **Step 6: Measure the JavaScript**
 
 Run: `pnpm e2e tests/e2e/performance.spec.ts --project=phone-390`
 Expected: PASS. Write every page's `scriptBrotli` into the ledger's "Task 7" row. **Every figure must equal Task 5's, and the privacy page's must equal its Step 1 figure, to the byte** (spec 5): the privacy page is a Server Component, and only its text changed. If any page moved, stop and find out why before going on.
 
-- [ ] **Step 7: Hand over for commit**
+- [x] **Step 7: Hand over for commit**
 
 Files: `lib/data/accounts.ts`, `lib/data/accounts.test.ts`, `app/privacy/page.tsx`, `app/privacy/page.test.tsx`, `components/account/PrivacySettingsView.tsx`, `components/account/PrivacySettingsView.test.tsx`, `app/robots.test.ts`, `tests/e2e/performance.spec.ts`.
 Message: `feat: deleting an account removes its saved searches, the data export gains them by name, and the privacy policy and settings say what they keep and who sees them (search alerts spec 2.15). JS: privacy <n> B, unchanged`
@@ -3453,7 +3483,7 @@ Every flow in spec 6's end-to-end list, with plan decision 19's split: the devic
 - Create: `tests/e2e/helpers/alerts.ts`
 - Create: `tests/e2e/search-alerts.spec.ts`, `tests/e2e/alerts-writes.spec.ts`
 
-- [ ] **Step 1: A project that runs last of all**
+- [x] **Step 1: A project that runs last of all**
 
 In `playwright.config.ts` (F Task 16, G Task 20, H Tasks 22 and 23):
 1. After H's `const COMMUNITY_WRITES = …;` line, add:
@@ -3480,7 +3510,7 @@ const ALERTS_WRITES = /alerts-writes\.spec\.ts$/;
 Run: `pnpm exec playwright test --list --project=alerts-writes`
 Expected: it lists nothing yet, and no error (the file comes in Step 4).
 
-- [ ] **Step 2: Write the helpers**
+- [x] **Step 2: Write the helpers**
 
 Create `tests/e2e/helpers/alerts.ts` (Playwright only runs `*.spec.ts`, so this file is never run on its own):
 
@@ -3514,7 +3544,7 @@ export const pathOf = (page: Page) => {
 };
 ```
 
-- [ ] **Step 3: Write the tests that change nothing anyone counts**
+- [x] **Step 3: Write the tests that change nothing anyone counts**
 
 Create `tests/e2e/search-alerts.spec.ts`:
 
@@ -3615,7 +3645,7 @@ test.describe("saved searches (search alerts spec section 6)", () => {
 
 (If D's built sign-up lands somewhere else before following `next`, adjust only the URL check after `signUpHere`, and say so in the hand-over.)
 
-- [ ] **Step 4: Write the tests that publish**
+- [x] **Step 4: Write the tests that publish**
 
 Create `tests/e2e/alerts-writes.spec.ts`:
 
@@ -3703,7 +3733,7 @@ test.describe("saved-search alerts (search alerts spec section 6)", () => {
 
 (If F's built listing form names its save button differently on an available listing's edit page, use its name.)
 
-- [ ] **Step 5: Run them**
+- [x] **Step 5: Run them**
 
 Run, one after another:
 - `pnpm e2e tests/e2e/search-alerts.spec.ts`
@@ -3713,7 +3743,7 @@ Expected: PASS. Then run the whole suite once: `pnpm e2e`. Expected: all pass, t
 
 If the first write test counts more than one line, two of the test's publishes landed on different SAST days (run it again away from midnight) or `notifySavedSearches` told the account twice: check the oldest-first loop's `told` set. If H's follow test in `community-writes` now counts a third new listing, `alerts-writes` didn't wait for it: check its `dependencies`.
 
-- [ ] **Step 6: Hand over for commit**
+- [x] **Step 6: Hand over for commit**
 
 Files: `playwright.config.ts`, `tests/e2e/helpers/alerts.ts`, `tests/e2e/search-alerts.spec.ts`, `tests/e2e/alerts-writes.spec.ts`.
 Message: `test: end to end for saved-search alerts: saving through sign-in and without JavaScript, the Searches tab's link, pause, resume and delete, a match named and opened then made unread again by two more, and no alert for an edit or a relist, in a project that runs last (search alerts spec section 6)`
@@ -3728,7 +3758,7 @@ axe on every state of the Save row and on the Searches tab (with rows, empty and
 - Modify: `tests/e2e/a11y.spec.ts`, `tests/e2e/cls.spec.ts`, `tests/e2e/performance.spec.ts`
 - Create: `tests/e2e/alerts-checks.spec.ts`
 
-- [ ] **Step 1: axe on the states that need nothing saved**
+- [x] **Step 1: axe on the states that need nothing saved**
 
 Add to the end of `tests/e2e/a11y.spec.ts` (it has `seriousIssues(page)` and its own `signInAsSample(page, label?)`, D Task 14):
 
@@ -3753,7 +3783,7 @@ test("Saved's Searches tab, signed out and with none yet (search alerts spec 2.7
 
 (The sample student only reads here: no test saves a search for a sample account, so "No saved searches yet" holds.)
 
-- [ ] **Step 2: axe on the states that need a saved search**
+- [x] **Step 2: axe on the states that need a saved search**
 
 Create `tests/e2e/alerts-checks.spec.ts`:
 
@@ -3822,7 +3852,7 @@ test("a save refused in another tab says why in the row, as an alert (search ale
 });
 ```
 
-- [ ] **Step 3: Layout shift**
+- [x] **Step 3: Layout shift**
 
 In `tests/e2e/cls.spec.ts`, add these rows at the end of `PAGES` (after the rows D to H added):
 
@@ -3835,7 +3865,7 @@ In `tests/e2e/cls.spec.ts`, add these rows at the end of `PAGES` (after the rows
 
 The row's box keeps its height whatever the session says (plan decision 6); Saved's Searches tab streams in with H's tabs behind `SavedSkeleton`.
 
-- [ ] **Step 4: The JavaScript, signed in**
+- [x] **Step 4: The JavaScript, signed in**
 
 In `tests/e2e/performance.spec.ts`, add these rows at the end of H's `SIGNED_IN_PAGES` list:
 
@@ -3846,7 +3876,7 @@ In `tests/e2e/performance.spec.ts`, add these rows at the end of H's `SIGNED_IN_
 
 (If H's build named the list or its loop differently, add the two paths to whatever measures pages signed in.)
 
-- [ ] **Step 5: Run them**
+- [x] **Step 5: Run them**
 
 Run, one after another:
 - `pnpm e2e tests/e2e/a11y.spec.ts tests/e2e/alerts-checks.spec.ts tests/e2e/cls.spec.ts`
@@ -3854,7 +3884,7 @@ Run, one after another:
 
 Expected: PASS: no serious or critical axe issues; every layout shift 0.05 or less at 390 and 1440; every page inside the budget. Write the two signed-in figures into the ledger's line under the table. Every page's signed-out `scriptBrotli` must still equal the ledger's "Task 7" row (spec 5). If an axe check fails, fix the page (contrast, names, ids), not the test. If browse's shift fails, check that `.save-search` keeps its 72px (44px from the tablet step) in every state; if Saved's fails, check `SavedSkeleton`'s tabs and note against the Searches tab's note, which may run to two lines at 360px.
 
-- [ ] **Step 6: Hand over for commit**
+- [x] **Step 6: Hand over for commit**
 
 Files: `tests/e2e/a11y.spec.ts`, `tests/e2e/alerts-checks.spec.ts`, `tests/e2e/cls.spec.ts`, `tests/e2e/performance.spec.ts`.
 Message: `test: axe, layout shift and the JS budget for Save this search's states and Saved's Searches tab, and a save refused in another tab (search alerts spec sections 4 to 6). JS signed in: browse with a search <n> B, Searches tab <n> B`
@@ -3961,7 +3991,7 @@ In `docs/reference/GO-LIVE.md` (edit by meaning; earlier stages changed it):
 - Section 8: mark stage I done in sample mode, in the style of the earlier stages. On its "After launch" line, add "saved-search email alerts or a digest, once there's an email service and a consent choice, and alerts on price drops (search alerts spec 7)".
 - The "Totals" line: add the screens this stage built (Save this search on browse, Saved's Searches tab).
 
-- [ ] **Step 6: Update CLAUDE.md**
+- [x] **Step 6: Update CLAUDE.md**
 
 In `CLAUDE.md`:
 - Under "Code rules", after H's line about Looking For requests (or after the line that starts `- Who's signed in comes only from`, if H's isn't there), add:
@@ -3998,7 +4028,7 @@ Fill in the numbers from your runs. Then make "Next" say:
 - Then the go-live checklist's backend work (`docs/reference/GO-LIVE.md`, section 6): Supabase and an email service in place of the sample store.
 ```
 
-- [ ] **Step 8: Fill in this plan**
+- [x] **Step 8: Fill in this plan**
 
 Fill in the JS ledger, and add a "Changes made during the build" section after it, listing every place the build differed from the tasks as written, with the commit that made each change.
 

@@ -2,7 +2,7 @@
 
 Every page and view the marketplace needs before it can go live, plus the work that isn't a screen. Drawn from the app's routes, the old demo's function map (`FUNCTION-MAP.md`) and the homepage spec's "Not in this stage" list.
 
-Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) after Looking For and the Hub (part B), after sign-in and accounts, in sample mode (stage D), after messaging, reports and notifications, in sample mode (stage E), after selling, in sample mode (stage F), after the staff tools, in sample mode (stage G), and after community actions, in sample mode (stage H). Update the status column as each stage lands.
+Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) after Looking For and the Hub (part B), after sign-in and accounts, in sample mode (stage D), after messaging, reports and notifications, in sample mode (stage E), after selling, in sample mode (stage F), after the staff tools, in sample mode (stage G), after community actions, in sample mode (stage H), and after saved-search alerts, in sample mode (stage I). Update the status column as each stage lands.
 
 **Status key**
 - **Built:** done.
@@ -47,7 +47,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Post, edit, close, reopen and delete a Looking For request | `/looking-for/new`, `/looking-for/[id]/edit`, `/looking-for/[id]/delete` | **Built (sample mode)** |
 | Your requests | `/account/requests` | **Built (sample mode)** |
 | Offer to help with a request (shops only) | `/looking-for/[id]/offer` | **Built (sample mode)** |
-| Saved searches: save from browse, pause and delete on Saved, a notification when a new listing matches | `/browse`, `/saved?tab=searches` | Designed (stage I) |
+| Saved searches: save from browse, pause and delete on Saved, a notification when a new listing matches | `/browse`, `/saved?tab=searches` | **Built (sample mode)** (stage I): Save this search on browse, and Saved's Searches tab with pause, resume and delete |
 
 ## 3. Messaging
 
@@ -81,7 +81,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Hub post editor and the office-hours queue | `/hub/new`, `/hub/[id]/edit`, `/hub/manage` | **Built in sample mode** |
 | Mentor dashboard, seller detail, notes, check-ins, CSV export | `/mentor/*` | **Built in sample mode** |
 
-**Totals:** about 45 screens and views, one of them (the WhatsApp handoff) cut. 40 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, the privacy policy, terms of use and seller guidelines as drafts, Looking For's board and request pages and the Hub's feed and post pages, the offline page, and, in sample mode, sign-in, your account and privacy settings, messaging (the composer, inbox, thread, notifications and report pages), selling (the pitch, the application steps and waiting page, the dashboard, My listings, the listing form and Edit shop), the staff tools (the admin console, the Hub's post editor and office-hours queue, and the mentor dashboard) and community actions (the request form and its edit page, Delete request, Your requests, the offer composer, and Saved's Shops tab)), and 4 are placeholders or missing. Most of the rest are stage I's (saved-search alerts).
+**Totals:** about 45 screens and views, one of them (the WhatsApp handoff) cut. 42 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, the privacy policy, terms of use and seller guidelines as drafts, Looking For's board and request pages and the Hub's feed and post pages, the offline page, and, in sample mode, sign-in, your account and privacy settings, messaging (the composer, inbox, thread, notifications and report pages), selling (the pitch, the application steps and waiting page, the dashboard, My listings, the listing form and Edit shop), the staff tools (the admin console, the Hub's post editor and office-hours queue, and the mentor dashboard), community actions (the request form and its edit page, Delete request, Your requests, the offer composer, and Saved's Shops tab) and saved-search alerts (Save this search on browse, and Saved's Searches tab)), and 2 are placeholders or missing.
 
 ## 6. Work that isn't a screen
 
@@ -91,6 +91,8 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] A proper email sending service for sign-in codes. Supabase's built-in email is heavily rate-limited.
 - [ ] The email service replaces sample mode's outbox (`saveSampleEmail` in `sendCode`, `lib/auth/actions.ts`), and the sign-in page stops showing the code.
 - [ ] Saved-search matching runs inside the publish Server Action (stage I). On the real backend, run it as a database query or from a queue, so publishing doesn't wait.
+- [ ] Supabase behind `lib/data/saved-searches.ts`. The match keeps browse's rules: `listingMatches` becomes the query's WHERE, or the queue worker calls it.
+- [ ] Save this search writes one form-state row per signed-in browse view that offers Save, kept for an hour; the real backend should keep these cheaply or issue the token on demand (search alerts plan decision 21).
 - [ ] Supabase Auth or the real database behind `lib/data/accounts.ts`, `sessions.ts`, `sign-in.ts` and `form-states.ts`; then set `VOSSIE_SAMPLE_MODE=0`, which removes the sample accounts' buttons.
 - [ ] Sign-in rate limits on the real backend: per IP address as well as per email.
 - [ ] **Keyed hashes for codes.** Sign-in codes and tokens are stored as plain SHA-256 hashes (a code is salted with its attempt's key, which sits in the same row). A 6-digit code has only a million values, so a leaked store gives the codes away. The real backend hashes them with a server secret (HMAC).
@@ -196,9 +198,10 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 3. **Done in sample mode (2026-10-14): sign-in, account and privacy.** Supabase and an email service replace the sample store at go-live.
 4. **Done in sample mode (2026-10-15): onboarding, the listing form and the dashboard.** The staff tools that approve shops are stage G's (item 5).
 5. **Done in sample mode (2026-10-19): the staff tools (stage G).**
-6. **Done in sample mode (2026-10-19): community actions (stage H).** Posting Looking For requests, offers, following shops and the offline page. Stage I adds saved-search alerts.
+6. **Done in sample mode (2026-10-19): community actions (stage H).** Posting Looking For requests, offers, following shops and the offline page.
+   - **Done in sample mode (2026-10-20): saved-search alerts (stage I).** Save this search on browse, Saved's Searches tab, and a notification when a new listing matches. No email.
 7. **Done in sample mode (2026-10-14): messaging, reports and notifications.** Supabase replaces the sample store at go-live.
    - Stage E builds messaging, then stage F selling. Stage G adds the staff tools: admin, the Hub's posting tools and the mentors' dashboard. Stage H adds community actions: posting Looking For requests, offers, following shops and the offline page. Stage I adds saved-search alerts.
 8. **Launch readiness:** legal sign-off, domain, monitoring, content, and the pilot.
 
-**After launch:** delivery between campuses.
+**After launch:** delivery between campuses, saved-search email alerts or a digest (once there's an email service and a consent choice), and alerts on price drops (search alerts spec 7).

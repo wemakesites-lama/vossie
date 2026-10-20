@@ -1,7 +1,7 @@
 # Vossie saved-search alerts: design spec
 
 - **Date:** 2026-10-14
-- **Status:** Approved under Lama's standing goal (2026-10-14): "make recommended decisions where needed and continue working in the same manner". Each decision is Claude's recommendation, logged in the decisions log.
+- **Status:** Built (2026-10-20), in sample mode. Approved under Lama's standing goal (2026-10-14): "make recommended decisions where needed and continue working in the same manner". Each decision is Claude's recommendation, logged in the decisions log.
 - **Scope:** stage I, after stages D to H. It is the last functional item on the go-live list ("After launch: saved-search alerts") that no stage covers:
   - saving a search from the browse page;
   - your saved searches on a new Searches tab on Saved, where you can pause and delete them;
@@ -163,3 +163,24 @@ There are no new routes. On browse, only the row reads the session, in its own `
 - Telling shops about new Looking For requests in their category (community actions spec section 7).
 - A scheduler or queue for matching (a go-live note).
 - Showing staff or shops what students search for.
+
+## 8. Changes on plan review and build
+
+The plan and the build refined this spec. Where they differ from the decisions above, these win (plan decision numbers are in `docs/superpowers/plans/2026-10-14-search-alerts.md`; the build's changes are in its "Changes made during the build").
+
+- Words that are all stop words or single letters are kept as no words, and a post without a campus is for every campus (plan decision 2).
+- The Save row also shows above browse's error, and its states stack on phones and sit side by side from the tablet step (plan decision 6).
+- Status lines wait under `save-search:<the search's key>` and `saved-searches` (plan decision 7), and no form has an error summary (plan decision 8).
+- The Searches tab's count line and the date "Saved 12 Oct" go through the existing `shortSastDate`, not a new helper and not "12 October" (plan decision 10; the build's Task 5 entry).
+- A read notification made unread again counts from one and names that listing. "Never more than one unread" holds within a SAST day (plan decision 12).
+- The match also refuses a hidden listing, a draft and a shop that isn't approved on its own, not only through F's condition (plan decision 13).
+- The export's fields, and other students' notifications naming a deleted shop's listing staying (plan decision 15); privacy settings' words too (plan decision 16).
+- The refusal at the limit is "You're at the 20-search limit.": one line at 320px, and the same sentence before and after a press, so the 72px row never grows (review fix `e1de51a`). This replaces the plan's "You have 20 saved searches. Delete one first." (plan decision 18).
+- Deleting one listing deletes the `search-match` and `new-listing` notifications that link to it, and a deleted shop's listing-link alerts go too. Both match on the notification's `/listings/<id>` href, because a `search-match` row's `subjectId` is the saved search's id (plan amendment 11; review fix `e1de51a`).
+- Save this search carries a one-time token (plan amendment 3, decision 21). A missing or unknown token isn't refused, and nothing is recorded under it. The token is issued only in the `new` state with no status note. It costs one form-state row per signed-in browse view that offers Save, kept for an hour (a go-live note).
+- The views are in `components/browse/SaveSearchViews.tsx` (plan amendment 2), and the row is keyed by its search so a client move to another search never shows the previous one's line (plan amendment 6).
+- `SearchIcon` already existed, so only `NotificationsView` changed for the search-match icon.
+- The end-to-end tests that publish run in their own `alerts-writes` project after H's `community-writes`, not in F's `selling-writes` (plan decision 19). The at-the-limit row is held at 72px at 360px with no layout shift in that project.
+- The axe checks live in `tests/e2e/alerts-checks.spec.ts`, not `a11y.spec.ts`, which another session had open.
+- The review screenshots are taken by `tests/e2e/alerts-screenshots.spec.ts`, not `screenshots.spec.ts`, for the same reason.
+- The saved-search JavaScript figures did not move: every page's first visit is unchanged to the byte.
