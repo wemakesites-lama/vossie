@@ -197,7 +197,7 @@ const SECTIONS: readonly InfoSection[] = [
           </li>
           <li>
             <strong>A log of what Hub staff do.</strong> Who approved, declined, verified, hid or paused what, when and
-            why, so staff actions can be checked. Nobody can edit it. If you delete your account, entries about you
+            why, and who was given or lost a staff role, so staff actions can be checked. Nobody can edit it. If you delete your account, entries about you
             lose your name and the reason. Allowed under POPIA section 11: our legitimate interest in running Vossie
             fairly.
           </li>
@@ -251,7 +251,9 @@ const SECTIONS: readonly InfoSection[] = [
           <li>
             <strong>Hub staff</strong> can see reports, account details, RSVPs and slot requests when they need to, to
             approve sellers, run the Hub&apos;s events and keep Vossie safe. A mentor sees your shop&apos;s numbers,
-            never your messages.
+            never your messages.{" "}
+            Hub admins see weekly counts for each campus (listings, shops, requests, enquiries, reports and follows),
+            never who; small numbers are hidden so no one can be picked out.
           </li>
           <li>
             <strong>Service providers</strong> that run Vossie for Eduvos, such as hosting, the database and the service
@@ -332,7 +334,7 @@ export default function PrivacyPage() {
     <InfoPage
       title="Privacy policy"
       lede="How Vossie handles your personal information, under the Protection of Personal Information Act (POPIA)."
-      updated="2026-10-19"
+      updated="2026-10-20"
       draft
       sections={SECTIONS}
     />

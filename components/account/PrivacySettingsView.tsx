@@ -15,13 +15,18 @@ type PrivacySettingsViewProps = {
   deleteErrors: readonly FormError[];
   /** The account's reports, newest first (messaging plan decision 18). */
   reports: readonly ReportSummary[];
+  /**
+   * Set for an account with a staff role (stage J spec decision 8): the delete step says what happens to their work,
+   * and warns Vossie's only admin. Absent or null for everyone else.
+   */
+  staff?: { onlyAdmin: boolean } | null;
 };
 
 /**
  * Privacy settings (accounts spec 3.3): the consent record, the download, the reports the account has made
  * (messaging plan decision 18), and deleting the account (spec 2.13).
  */
-export function PrivacySettingsView({ consent, deleteErrors, reports }: PrivacySettingsViewProps) {
+export function PrivacySettingsView({ consent, deleteErrors, reports, staff = null }: PrivacySettingsViewProps) {
   const confirmError = errorFor(deleteErrors, DELETE_FIELDS.confirm);
   let consentLine: ReactNode;
   if (consent) {
@@ -105,6 +110,19 @@ export function PrivacySettingsView({ consent, deleteErrors, reports }: PrivacyS
             sent and mentors&apos; notes about your shop, and your shop&apos;s link stops working.
           </li>
         </ul>
+        {staff && (
+          <p>
+            You&apos;re Hub staff. Your Hub posts stay with no author, your notes and check-ins stay as &quot;Deleted
+            account&quot;, the shops you mentor lose their mentor, and the audit log keeps your entries without your name.
+          </p>
+        )}
+        {/* A warning, not a block: deleting your account is your right under POPIA (spec decision 8). */}
+        {staff?.onlyAdmin && (
+          <p>
+            <strong>You&apos;re Vossie&apos;s only admin.</strong> Give someone else the admin role first, or no one can
+            use the admin console.
+          </p>
+        )}
         <p>Saved listings stay on this device until you clear them.</p>
         <ErrorSummary id="account-privacy-delete-summary" errors={deleteErrors} />
         <form action={deleteAccount} noValidate className="form-stack">

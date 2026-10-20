@@ -9,6 +9,7 @@ import { formErrors } from "@/lib/auth/messages";
 import { requireAccount } from "@/lib/auth/session";
 import { getLatestConsent } from "@/lib/data/accounts";
 import { listReportsBy } from "@/lib/data/reports";
+import { countAdmins } from "@/lib/data/staff-accounts";
 
 /** Like every account page, kept out of search engines (accounts spec 3.3). */
 export const metadata: Metadata = { title: "Privacy settings", robots: { index: false } };
@@ -39,11 +40,15 @@ async function PrivacySettings() {
     readFormState(DELETE_FORM),
     listReportsBy(account.id),
   ]);
+  // Staff see what happens to their work; Vossie's only admin is warned (stage J spec decision 8).
+  const staff =
+    account.roles.length > 0 ? { onlyAdmin: account.roles.includes("admin") && (await countAdmins()) === 1 } : null;
   return (
     <PrivacySettingsView
       consent={consent}
       deleteErrors={formErrors(state?.errors ?? [], DELETE_FIELDS)}
       reports={reports}
+      staff={staff}
     />
   );
 }

@@ -135,3 +135,33 @@ describe("Privacy settings (accounts spec 3.3)", () => {
     expect(screen.getAllByText(/your saved searches/)).toHaveLength(2);
   });
 });
+
+describe("deleting a staff account (stage J spec decision 8)", () => {
+  const STAFF_LINE =
+    "You're Hub staff. Your Hub posts stay with no author, your notes and check-ins stay as \"Deleted account\", the shops you mentor lose their mentor, and the audit log keeps your entries without your name.";
+  const ONLY_ADMIN = "You're Vossie's only admin. Give someone else the admin role first, or no one can use the admin console.";
+
+  it("says nothing about staff work to a student", () => {
+    render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} />);
+    const section = screen.getByRole("region", { name: "Delete your account" });
+    expect(within(section).queryByText(/Hub staff/)).toBeNull();
+    expect(within(section).getAllByRole("listitem")).toHaveLength(7);
+  });
+
+  it("tells staff what happens to their work, without blocking the delete", () => {
+    render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} staff={{ onlyAdmin: false }} />);
+    const section = screen.getByRole("region", { name: "Delete your account" });
+    expect(within(section).getByText(STAFF_LINE)).toBeInTheDocument();
+    expect(within(section).queryByText(/only admin/)).toBeNull();
+    expect(within(section).getAllByRole("listitem")).toHaveLength(7);
+    expect(within(section).getByRole("button", { name: "Delete my account" })).toBeEnabled();
+  });
+
+  it("warns Vossie's only admin to give the role to someone else first", () => {
+    render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} staff={{ onlyAdmin: true }} />);
+    const section = screen.getByRole("region", { name: "Delete your account" });
+    expect(within(section).getByText(STAFF_LINE)).toBeInTheDocument();
+    expect(within(section).getByText(/^You're Vossie's only admin\./).closest("p")).toHaveTextContent(ONLY_ADMIN);
+    expect(within(section).getByRole("button", { name: "Delete my account" })).toBeEnabled();
+  });
+});

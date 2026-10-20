@@ -25,6 +25,16 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     expect(metadata.description).toMatch(/POPIA/);
   });
 
+  it("says Hub admins see weekly counts, never who, and that the staff log records roles (stage J spec section 6)", () => {
+    render(<PrivacyPage />);
+    expect(screen.getByRole("region", { name: "Who it is shared with" })).toHaveTextContent(
+      "Hub admins see weekly counts for each campus (listings, shops, requests, enquiries, reports and follows), never who; small numbers are hidden so no one can be picked out.",
+    );
+    expect(screen.getByRole("region", { name: "Your account" })).toHaveTextContent(
+      "Who approved, declined, verified, hid or paused what, when and why, and who was given or lost a staff role, so staff actions can be checked.",
+    );
+  });
+
   it("is kept out of search results until Eduvos signs it off (controller amendment 1)", () => {
     expect(metadata.robots).toEqual({ index: false });
   });
