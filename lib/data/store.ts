@@ -25,6 +25,7 @@ import type {
   ReportRow,
   RequestRow,
   SampleEmailRow,
+  SavedSearchRow,
   SellerProfileRow,
   SellerRow,
   SessionRow,
@@ -94,10 +95,12 @@ export type SampleStore = {
   requests: Map<string, RequestRow>;
   /** By id: who follows which shop (community actions spec 2.15). */
   follows: Map<string, FollowRow>;
+  /** By id: saved searches (search alerts spec 2.1). */
+  savedSearches: Map<string, SavedSearchRow>;
 };
 
 /** Bump it when a table is added or a row changes shape, so `next dev` reseeds instead of keeping an old store. */
-export const STORE_VERSION = 7;
+export const STORE_VERSION = 8;
 
 type StoreHolder = { __vossieSampleStore?: SampleStore };
 
@@ -153,5 +156,6 @@ function seedStore(): SampleStore {
     // Copies, like the others (community actions plan decision 1).
     requests: new Map(structuredClone(sampleRequestRows).map((row) => [row.id, row])),
     follows: new Map(),
+    savedSearches: new Map(),
   };
 }

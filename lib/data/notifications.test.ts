@@ -11,6 +11,7 @@ import {
   notify,
   notifyAboutMessage,
   notifyNewListing,
+  notifySearchMatch,
 } from "./notifications";
 import { resetSampleStore, sampleStore } from "./store";
 
@@ -207,5 +208,97 @@ describe("a followed shop's new listings (community actions spec 2.19, plan deci
       "Tech corner listed Desk lamp",
       "Tech corner listed Casio fx-991ZA Plus calculator",
     ]);
+  });
+});
+
+describe("a saved search's matches (search alerts spec 2.12, plan decision 12)", () => {
+  const SEARCH = {
+    accountId: "acc-student",
+    savedSearchId: "ss-1",
+    label: "“calculator” at Midrand",
+    resultsHref: "/browse?q=calculator&campus=midrand&sort=new",
+  };
+  // 10:00, 14:00 and 18:00 on Wednesday 14 October in SAST, then 00:01 on Thursday.
+  const morning = new Date("2026-10-14T08:00:00.000Z");
+  const afternoon = new Date("2026-10-14T12:00:00.000Z");
+  const evening = new Date("2026-10-14T16:00:00.000Z");
+  const nextDay = new Date("2026-10-14T22:01:00.000Z");
+  const casio = { id: "l-001", title: "Casio fx-991ZA Plus calculator" };
+  const sharp = { id: "l-026", title: "Sharp scientific calculator" };
+  const lamp = { id: "l-016", title: "Desk lamp" };
+  const matches = async () =>
+    (await getNotifications("acc-student", 50)).filter((item) => item.kind === "search-match");
+
+  it("names the first match of the day, linking to it", async () => {
+    expect(await notifySearchMatch({ ...SEARCH, listing: casio, now: morning })).toBe(true);
+    expect(await matches()).toMatchObject([
+      {
+        text: "Casio fx-991ZA Plus calculator matches your search “calculator” at Midrand",
+        href: "/listings/l-001",
+        isNew: true,
+      },
+    ]);
+  });
+
+  it("counts more while it's unread, linking to the results Newest first and moving to the top", async () => {
+    await notifySearchMatch({ ...SEARCH, listing: casio, now: morning });
+    await notifySearchMatch({ ...SEARCH, listing: sharp, now: afternoon });
+    await notifySearchMatch({ ...SEARCH, listing: lamp, now: evening });
+    expect(await matches()).toMatchObject([
+      {
+        text: "3 new listings match your search “calculator” at Midrand",
+        href: SEARCH.resultsHref,
+        createdAt: evening.toISOString(),
+        isNew: true,
+      },
+    ]);
+  });
+
+  it("makes a read one unread again, counting only the matches since it was read", async () => {
+    await notifySearchMatch({ ...SEARCH, listing: casio, now: morning });
+    await markNotificationsRead("acc-student", morning);
+    expect(await notifySearchMatch({ ...SEARCH, listing: sharp, now: afternoon })).toBe(true);
+    expect(await matches()).toMatchObject([
+      {
+        text: "Sharp scientific calculator matches your search “calculator” at Midrand",
+        href: "/listings/l-026",
+        createdAt: afternoon.toISOString(),
+        isNew: true,
+      },
+    ]);
+    await notifySearchMatch({ ...SEARCH, listing: lamp, now: evening });
+    expect(await matches()).toMatchObject([
+      { text: "2 new listings match your search “calculator” at Midrand", href: SEARCH.resultsHref, isNew: true },
+    ]);
+  });
+
+  it("starts a new one on a new SAST day", async () => {
+    await notifySearchMatch({ ...SEARCH, listing: casio, now: morning });
+    await notifySearchMatch({ ...SEARCH, listing: sharp, now: nextDay });
+    expect((await matches()).map((item) => item.text)).toEqual([
+      "Sharp scientific calculator matches your search “calculator” at Midrand",
+      "Casio fx-991ZA Plus calculator matches your search “calculator” at Midrand",
+    ]);
+  });
+
+  it("keeps each saved search's notification apart", async () => {
+    await notifySearchMatch({ ...SEARCH, listing: casio, now: morning });
+    await notifySearchMatch({
+      ...SEARCH,
+      savedSearchId: "ss-2",
+      label: "Tech at every campus",
+      listing: casio,
+      now: morning,
+    });
+    expect(await matches()).toHaveLength(2);
+  });
+
+  it("still never reopens a followed shop's new-listing notification (community actions plan decision 15)", async () => {
+    const shop = { accountId: "acc-student", sellerSlug: "tech-corner", shopName: "Tech corner" };
+    await notifyNewListing({ ...shop, listing: casio, now: morning });
+    await markNotificationsRead("acc-student", morning);
+    await notifyNewListing({ ...shop, listing: { id: "l-007", title: "Gaming headset, barely used" }, now: evening });
+    const newListings = (await getNotifications("acc-student", 50)).filter((item) => item.kind === "new-listing");
+    expect(newListings).toMatchObject([{ text: "Tech corner listed Casio fx-991ZA Plus calculator", isNew: false }]);
   });
 });

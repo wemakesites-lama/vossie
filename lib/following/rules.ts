@@ -4,7 +4,8 @@
 
 export const FOLLOW_LIMIT = 200;
 
-export type SavedTab = "listings" | "shops";
+/** Saved's tabs (community actions spec 2.17; search alerts spec 2.7). parseSavedTab learns "searches" in Task 5. */
+export type SavedTab = "listings" | "shops" | "searches";
 
 /** "?tab=shops" opens Shops; anything else is Listings (plan decision 17). */
 export function parseSavedTab(raw: string | string[] | undefined): SavedTab {
@@ -12,7 +13,7 @@ export function parseSavedTab(raw: string | string[] | undefined): SavedTab {
 }
 
 export function savedTabPath(tab: SavedTab): string {
-  return tab === "shops" ? "/saved?tab=shops" : "/saved";
+  return tab === "listings" ? "/saved" : `/saved?tab=${tab}`;
 }
 
 /** The storefront's status line after Follow or Unfollow, and Saved's after Unfollow (plan decision 7). */

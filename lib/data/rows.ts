@@ -2,6 +2,7 @@ import type {
   AuditAction,
   AuditTargetKind,
   BookingStatus,
+  CampusChoice,
   Condition,
   ConversationStatus,
   Handover,
@@ -10,8 +11,10 @@ import type {
   ListingKind,
   ListingState,
   NotificationKind,
+  PayFilter,
   PayMode,
   PhotoType,
+  PriceFilter,
   ReportOutcome,
   ReportReason,
   ReportTarget,
@@ -224,7 +227,10 @@ export type NotificationRow = {
   href: string;
   createdAt: string;
   readAt: string | null;
-  /** How many new listings a "new-listing" notification is about (community actions spec 2.19). Absent means one. */
+  /**
+   * How many new listings a "new-listing" or "search-match" notification is about since it was last read (community
+   * actions spec 2.19, search alerts spec 2.12). Absent means one.
+   */
   count?: number | null;
 };
 
@@ -476,4 +482,27 @@ export type FollowRow = {
   accountId: string;
   sellerSlug: string;
   createdAt: string;
+};
+
+// --- Saved-search alerts (search alerts plan, Task 1; "Store design") ---------------------------------------------
+
+/**
+ * A saved search (search alerts spec 2.1): browse's filters, the campus always pinned, and when its alerts were
+ * paused. Category and campus names aren't kept: its label looks them up each time it's shown.
+ */
+export type SavedSearchRow = {
+  /** "ss-" and a UUID. */
+  id: string;
+  accountId: string;
+  /** As typed, trimmed and cut to 100 characters; null when it has no search words (plan decision 2). */
+  q: string | null;
+  category: string | null;
+  /** A campus slug, or "all". */
+  campus: CampusChoice;
+  price: PriceFilter | null;
+  pay: PayFilter | null;
+  deals: "free-and-swaps" | null;
+  createdAt: string;
+  /** When its alerts were paused; null while they're on. */
+  pausedAt: string | null;
 };

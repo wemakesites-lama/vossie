@@ -324,6 +324,7 @@ export type ReportTarget = { kind: "listing" | "seller" | "request"; id: string 
  * staff tools make the rest: a report's outcome, a shop's approval, the Hub's other decisions about a shop or a
  * listing ("shop-update"), and slot requests ("booking"). Community actions add an offer on your request, the Hub's
  * update about your request, and a followed shop's new listing (community actions plan decision 14).
+ * Saved-search alerts add a saved search's new match (search alerts spec 2.12).
  */
 export type NotificationKind =
   | "message"
@@ -334,7 +335,8 @@ export type NotificationKind =
   | "booking"
   | "offer"
   | "request-update"
-  | "new-listing";
+  | "new-listing"
+  | "search-match";
 
 /** The shop a conversation is with, as a thread shows it. `image` and `campusSlug` are null once the shop has gone. */
 export type ConversationShop = {
@@ -607,4 +609,27 @@ export type FollowedShop = {
   storefront: boolean;
   /** How many of its listings buyers can see now. */
   listed: number;
+};
+
+// --- Saved-search alerts (search alerts plan, Task 1) -------------------------------------------------------------
+
+/**
+ * What a listing is matched against (search alerts spec 2.1 and 2.2, plan decision 2): browse's search without its
+ * order. The browse page's query is one, and so is a saved search.
+ */
+export type MatchQuery = Omit<SearchQuery, "sort">;
+
+/** Whether this account can save the browse page's search (search alerts spec 2.6). */
+export type SaveSearchState = "new" | "saved" | "limit";
+
+/** One of the account's saved searches, as Saved's Searches tab shows it (search alerts spec 2.7). */
+export type SavedSearchItem = {
+  id: string;
+  /** "“calculator” in Tech at Midrand, under R100" (spec 2.3). */
+  label: string;
+  /** Its results, with the campus pinned. */
+  href: string;
+  /** When it was saved, ISO 8601 in UTC. */
+  savedAt: string;
+  paused: boolean;
 };

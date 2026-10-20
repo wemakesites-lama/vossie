@@ -11,7 +11,7 @@ beforeEach(() => {
 });
 
 describe("the sample store (accounts spec 2.1)", () => {
-  it("is seeded with the sample accounts, their consents, their shops, the sample conversations, the sample listings, the staff tools' seeds and the sample requests, and nothing else", () => {
+  it("is seeded with the sample accounts, their consents, their shops, the sample conversations, the sample listings, the staff tools' seeds and the sample requests, no saved searches, and nothing else", () => {
     const store = sampleStore();
     expect([...store.accounts.keys()]).toEqual(sampleAccounts.map(({ account }) => account.id));
     expect(store.consents.size).toBe(5);
@@ -41,6 +41,7 @@ describe("the sample store (accounts spec 2.1)", () => {
     expect([...store.hubBookings.keys()]).toEqual(["bk-s1"]);
     expect([...store.requests.keys()]).toEqual(sampleRequestRows.map((row) => row.id));
     expect(store.follows.size).toBe(0);
+    expect(store.savedSearches.size).toBe(0);
   });
 
   it("is one store for the whole process, so a module loaded again still shares it", async () => {

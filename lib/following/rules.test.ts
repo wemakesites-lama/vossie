@@ -47,3 +47,9 @@ describe("following shops (community actions spec 2.15 to 2.19)", () => {
     expect(followersLine(12)).toBe("12 people follow your shop");
   });
 });
+
+describe("Saved's Searches tab (search alerts spec 2.7, plan decision 10)", () => {
+  it("has an address of its own", () => {
+    expect(savedTabPath("searches")).toBe("/saved?tab=searches");
+  });
+});

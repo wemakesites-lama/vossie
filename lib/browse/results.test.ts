@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { categories } from "@/data/fixtures/categories";
+import { listings } from "@/data/fixtures/listings";
+import { sellers } from "@/data/fixtures/sellers";
 import { makeListing } from "@/tests/helpers/fakes";
-import type { Listing, SearchQuery } from "@/lib/types";
-import { findListings, passesFilters } from "./results";
+import type { Listing, MatchQuery, SearchQuery } from "@/lib/types";
+import { findListings, listingMatches, passesFilters } from "./results";
 
 const names = {
   sellers: new Map([["tech-corner", "Tech corner"]]),
@@ -112,5 +115,60 @@ describe("findListings (spec 4.8, 4.9)", () => {
     const result = findListings([inTitle, inDescription, bySeller], search({ q: "headset", sort: "match" }), names);
     expect(ids(result.items)).toEqual(["title", "description"]);
     expect(ids(findListings([bySeller], search({ q: "corner", sort: "match" }), names).items)).toEqual(["seller"]);
+  });
+});
+
+const match = (overrides: Partial<MatchQuery> = {}): MatchQuery => ({
+  q: null,
+  category: null,
+  campus: "all",
+  price: null,
+  pay: null,
+  deals: null,
+  ...overrides,
+});
+
+describe("listingMatches (search alerts spec 2.2, plan decision 1)", () => {
+  it("gives a matching listing's Best match score, and null for one that doesn't match", () => {
+    const listing = makeListing({ title: "Casio calculator", description: "Barely used." });
+    const query = match({ q: "casio", category: "tech", campus: "midrand" });
+    expect(listingMatches(listing, query, names)).toBe(3);
+    expect(listingMatches(listing, { ...query, q: null }, names)).toBe(0);
+    expect(listingMatches(listing, { ...query, campus: "all" }, names)).toBe(3);
+    expect(listingMatches(listing, { ...query, campus: "pretoria" }, names)).toBeNull();
+    expect(listingMatches(listing, { ...query, category: "food" }, names)).toBeNull();
+    expect(listingMatches(listing, { ...query, price: "under-50" }, names)).toBeNull();
+    expect(listingMatches(listing, { ...query, q: "sharp" }, names)).toBeNull();
+    expect(listingMatches({ ...listing, availability: "paused" }, query, names)).toBeNull();
+  });
+
+  it("agrees with findListings on every sample listing, so browse and the alerts can't drift apart", () => {
+    const sampleNames = {
+      sellers: new Map(sellers.map((seller) => [seller.slug, seller.name])),
+      categories: new Map(categories.map((category) => [category.slug, category.name])),
+    };
+    const queries = [
+      match(),
+      match({ q: "calculator" }),
+      match({ q: "calculater" }),
+      match({ q: "Tech corner" }),
+      match({ q: "the" }),
+      match({ category: "tech", campus: "midrand" }),
+      match({ q: "textbook", price: "under-250" }),
+      match({ pay: "swap" }),
+      match({ deals: "free-and-swaps", campus: "pretoria" }),
+      match({ category: "tutoring", campus: "online" }),
+    ];
+    let found = 0;
+    for (const query of queries) {
+      const fromBrowse = ids(findListings(listings, { ...query, sort: "new" }, sampleNames).items).sort();
+      const fromAlerts = listings
+        .filter((listing) => listingMatches(listing, query, sampleNames) !== null)
+        .map((listing) => listing.id)
+        .sort();
+      expect(fromAlerts, JSON.stringify(query)).toEqual(fromBrowse);
+      found += fromBrowse.length;
+    }
+    expect(found).toBeGreaterThan(0);
   });
 });

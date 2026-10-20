@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { newListingsText, newListingText } from "@/lib/following/rules";
+import { searchMatchesText, searchMatchText } from "@/lib/saved-searches/words";
 import { sastDate } from "@/lib/time";
 import type { NotificationItem, NotificationKind } from "@/lib/types";
 import type { NotificationRow } from "./rows";
@@ -168,6 +169,58 @@ export async function deleteNotificationsAbout(kind: NotificationKind, subjectId
   }
 }
 
+/** What a once-a-day notification says, and where it leads. */
+type NoteWords = { text: string; href: string };
+
+/**
+ * One notification a SAST day about one thing (community actions plan decision 15; search alerts spec 2.12, plan
+ * decision 12). The day's first says `first`. Another that day, while it's unread, says `more(count)` and moves to the
+ * top. Once it's been read, `reopenWhenRead` decides: off, the day's later ones make none (a followed shop's new
+ * listings); on, the next one makes it unread again and moves it to the top, counting from one, so nothing is missed
+ * (a saved search's matches). True when it made or changed a notification.
+ */
+async function notifyOncePerDay({
+  accountId,
+  kind,
+  subjectId,
+  first,
+  more,
+  reopenWhenRead,
+  now,
+}: {
+  accountId: string;
+  kind: NotificationKind;
+  subjectId: string;
+  first: NoteWords;
+  more: (count: number) => NoteWords;
+  reopenWhenRead: boolean;
+  now: Date;
+}): Promise<boolean> {
+  const today = sastDate(now);
+  for (const row of sampleStore().notifications.values()) {
+    if (row.accountId !== accountId || row.kind !== kind || row.subjectId !== subjectId) continue;
+    if (sastDate(new Date(row.createdAt)) !== today) continue;
+    if (row.readAt !== null) {
+      if (!reopenWhenRead) return false;
+      // Unread again, counting only what came after it was read: this one, so it names it.
+      row.count = 1;
+      row.text = first.text;
+      row.href = first.href;
+      row.readAt = null;
+    } else {
+      const count = (row.count ?? 1) + 1;
+      const words = more(count);
+      row.count = count;
+      row.text = words.text;
+      row.href = words.href;
+    }
+    row.createdAt = now.toISOString();
+    return true;
+  }
+  add({ accountId, kind, subjectId, text: first.text, href: first.href, now });
+  return true;
+}
+
 /**
  * A followed shop's new listing (community actions spec 2.19, plan decision 15): one notification per shop per
  * follower per SAST day. The first names the listing and links to it. Another listing that day, while it's unread,
@@ -187,24 +240,47 @@ export async function notifyNewListing({
   listing: { id: string; title: string };
   now: Date;
 }): Promise<void> {
-  const today = sastDate(now);
-  for (const row of sampleStore().notifications.values()) {
-    if (row.accountId !== accountId || row.kind !== "new-listing" || row.subjectId !== sellerSlug) continue;
-    if (sastDate(new Date(row.createdAt)) !== today) continue;
-    if (row.readAt !== null) return;
-    const count = (row.count ?? 1) + 1;
-    row.count = count;
-    row.text = newListingsText(shopName, count);
-    row.href = `/sellers/${sellerSlug}`;
-    row.createdAt = now.toISOString();
-    return;
-  }
-  add({
+  await notifyOncePerDay({
     accountId,
     kind: "new-listing",
     subjectId: sellerSlug,
-    text: newListingText(shopName, listing.title),
-    href: `/listings/${listing.id}`,
+    first: { text: newListingText(shopName, listing.title), href: `/listings/${listing.id}` },
+    more: (count) => ({ text: newListingsText(shopName, count), href: `/sellers/${sellerSlug}` }),
+    reopenWhenRead: false,
+    now,
+  });
+}
+
+/**
+ * A saved search's new match (search alerts spec 2.12, plan decisions 12 and 14): one notification per saved search
+ * per SAST day. The first names the listing and links to it. More while it's unread make "3 new listings match your
+ * search …", linking to the search's results, Newest first. A match after it's been read makes it unread again,
+ * counting from that match. True when it made or changed one.
+ */
+export async function notifySearchMatch({
+  accountId,
+  savedSearchId,
+  label,
+  resultsHref,
+  listing,
+  now,
+}: {
+  accountId: string;
+  savedSearchId: string;
+  /** The saved search's label (spec 2.3), fixed in the sentence when it's written. */
+  label: string;
+  /** Its results, Newest first. */
+  resultsHref: string;
+  listing: { id: string; title: string };
+  now: Date;
+}): Promise<boolean> {
+  return notifyOncePerDay({
+    accountId,
+    kind: "search-match",
+    subjectId: savedSearchId,
+    first: { text: searchMatchText(listing.title, label), href: `/listings/${listing.id}` },
+    more: (count) => ({ text: searchMatchesText(count, label), href: resultsHref }),
+    reopenWhenRead: true,
     now,
   });
 }

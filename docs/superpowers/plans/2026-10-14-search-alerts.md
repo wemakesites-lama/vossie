@@ -212,17 +212,17 @@ The table, the field it reuses, and who touches them:
 
 **As built** (fill in during the build):
 
-| Point | `/` | `/browse` | Browse, a search | Listing | Storefront | Saved | Saved, Searches tab | Privacy |
-|---|---|---|---|---|---|---|---|---|
-| Start (H's final figures; the three new columns from Tasks 4, 5 and 7, Step 1) | | | | | | | | |
-| Task 4, Save this search | | | | | | | | |
-| Task 5, the Searches tab | | | | | | | | |
-| Task 7, the privacy words | | | | | | | | |
-| **Final (Task 10)** | | | | | | | | |
+| Point | `/` | `/browse` | Browse, a search | Listing | Storefront | Saved | Saved, Searches tab | Privacy | New listing form (signed in) |
+|---|---|---|---|---|---|---|---|---|---|
+| Start (H's final figures, 2026-10-20; the three open columns are measured at Tasks 4, 5 and 7, Step 1) | 150,591 | 151,338 | | 151,747 | 151,351 | 151,226 | | | 152,265 |
+| Task 4, Save this search | | | | | | | | | |
+| Task 5, the Searches tab | | | | | | | | | |
+| Task 7, the privacy words | | | | | | | | | |
+| **Final (Task 10)** | | | | | | | | | |
 
 Signed in (Task 9): browse with a search ________ B, Saved's Searches tab ________ B.
 
-The stop line used: ________ B. Unit tests at the start: ________. End to end at the start: ________ pass, ________ skipped.
+The stop line used: 152,305 B (decision 52; the new listing form is 40 B under it, `/browse` 967 B under it). Unit tests at the start: 2,219 (294 files). End to end at the start: 1,199 pass, 1,074 skipped.
 
 ## Conventions for every task
 

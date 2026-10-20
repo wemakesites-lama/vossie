@@ -1,5 +1,5 @@
 import { ALL_CAMPUSES } from "@/lib/campus";
-import type { BrowseSort, Listing, PriceFilter, SearchQuery, SearchResult } from "@/lib/types";
+import type { BrowseSort, Listing, MatchQuery, PriceFilter, SearchQuery, SearchResult } from "@/lib/types";
 import { matchScore, queryWords } from "./search";
 
 const PRICE_CAPS: Readonly<Record<Exclude<PriceFilter, "free">, number>> = {
@@ -54,33 +54,44 @@ export type ListingNames = {
 };
 
 /**
+ * The per-listing test (browse and listing spec 4.8 and 4.9; search alerts spec 2.2): an available listing in the
+ * query's category and campus that passes its price, pay and deals filters and has every one of its words. Its Best
+ * match score when it matches; null when it doesn't. Browse's results and saved-search alerts both call it, so they
+ * can't disagree.
+ */
+export function listingMatches(listing: Listing, query: MatchQuery, names: ListingNames): number | null {
+  if (listing.availability !== "available") return null;
+  if (query.category && listing.categorySlug !== query.category) return null;
+  if (query.campus !== ALL_CAMPUSES && listing.campusSlug !== query.campus) return null;
+  if (!passesFilters(listing, query)) return null;
+  return matchScore(
+    {
+      title: listing.title,
+      category: names.categories.get(listing.categorySlug) ?? "",
+      seller: names.sellers.get(listing.sellerSlug) ?? "",
+      description: listing.description,
+    },
+    queryWords(query.q),
+  );
+}
+
+/**
  * Every available listing that matches the query, sorted (spec 4.8 and 4.9), and how many matches sit at other
- * campuses when the query is for one campus (for the empty state, spec 4.7).
+ * campuses when the query is for one campus (for the empty state, spec 4.7). A listing at another campus counts when
+ * it would match with every campus.
  */
 export function findListings(all: readonly Listing[], query: SearchQuery, names: ListingNames): SearchResult {
-  const words = queryWords(query.q);
+  const everyCampus = { ...query, campus: ALL_CAMPUSES };
   const found: Scored[] = [];
   let elsewhere = 0;
 
   for (const listing of all) {
-    if (listing.availability !== "available") continue;
-    if (query.category && listing.categorySlug !== query.category) continue;
-    if (!passesFilters(listing, query)) continue;
-    const score = matchScore(
-      {
-        title: listing.title,
-        category: names.categories.get(listing.categorySlug) ?? "",
-        seller: names.sellers.get(listing.sellerSlug) ?? "",
-        description: listing.description,
-      },
-      words,
-    );
-    if (score === null) continue;
-    if (query.campus !== ALL_CAMPUSES && listing.campusSlug !== query.campus) {
+    if (query.campus === ALL_CAMPUSES || listing.campusSlug === query.campus) {
+      const score = listingMatches(listing, query, names);
+      if (score !== null) found.push({ listing, score });
+    } else if (listingMatches(listing, everyCampus, names) !== null) {
       elsewhere += 1;
-      continue;
     }
-    found.push({ listing, score });
   }
 
   found.sort(COMPARE[query.sort]);
