@@ -235,11 +235,11 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     render(<PrivacyPage />);
     const today = screen.getByRole("region", { name: "What this site stores today" });
     expect(
-      within(today).getByText(/your Looking For requests and the shops you follow, your RSVPs and slot requests, .* in its memory only/),
+      within(today).getByText(/your Looking For requests and the shops you follow, your saved searches, your RSVPs and slot requests, .* in its memory only/),
     ).toBeInTheDocument();
     const keep = screen.getByRole("region", { name: "How long we keep it" });
     expect(
-      within(keep).getByText(/While Vossie is a preview, Looking For requests, follows, messages, reports, notifications, shops, listings and photos live in the server/),
+      within(keep).getByText(/While Vossie is a preview, Looking For requests, follows, saved searches, messages, reports, notifications, shops, listings and photos live in the server/),
     ).toBeInTheDocument();
   });
 
@@ -256,5 +256,15 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     expect(names.size).toBeGreaterThanOrEqual(5);
     const { container } = render(<PrivacyPage />);
     for (const name of names) expect(container.textContent, name).toContain(name);
+  });
+
+  it("says what saved searches keep, that only you see them, and that deleting your account removes them (search alerts spec 2.15)", () => {
+    render(<PrivacyPage />);
+    const account = screen.getByRole("region", { name: "Your account" });
+    expect(within(account).getByText("Your saved searches.")).toBeInTheDocument();
+    expect(within(account).getByText(/Only you see them/)).toBeInTheDocument();
+    expect(within(account).getByText(/used only to tell you about new listings/)).toBeInTheDocument();
+    const keep = screen.getByRole("region", { name: "How long we keep it" });
+    expect(within(keep).getByText(/the shops you follow, your saved searches/)).toBeInTheDocument();
   });
 });

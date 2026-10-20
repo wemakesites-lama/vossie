@@ -32,7 +32,7 @@ describe("Privacy settings (accounts spec 3.3)", () => {
   it("says what deleting does, and asks for the box before the red button (spec 2.13)", () => {
     render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} />);
     const section = screen.getByRole("region", { name: "Delete your account" });
-    expect(within(section).getAllByRole("listitem")).toHaveLength(6);
+    expect(within(section).getAllByRole("listitem")).toHaveLength(7);
     // The other side keeps its own messages, and sees the deleted side as "Deleted account" (plan amendment 3.9).
     expect(within(section).getByText(/with your name shown as "Deleted account"/)).toBeInTheDocument();
     expect(within(section).getByRole("checkbox", { name: "I understand this can't be undone" })).not.toBeChecked();
@@ -121,11 +121,17 @@ describe("Privacy settings (accounts spec 3.3)", () => {
   it("says deleting removes your RSVPs and slot requests, and a seller's mentors' notes about the shop (staff tools plan decision 16)", () => {
     render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} />);
     const deletion = screen.getByRole("region", { name: "Delete your account" });
-    expect(within(deletion).getAllByRole("listitem")).toHaveLength(6);
+    expect(within(deletion).getAllByRole("listitem")).toHaveLength(7);
     expect(within(deletion).getByText(/^your RSVPs and slot requests, messages, reports and notifications go/)).toBeInTheDocument();
     // The other side still keeps its own messages and sees "Deleted account".
     expect(within(deletion).getByText(/with your name shown as "Deleted account"/)).toBeInTheDocument();
     // Notes are about a shop, so they sit with the seller's part of the list.
     expect(within(deletion).getByText(/any shop answers you haven't sent and mentors' notes about your shop, and your shop's link stops working/)).toBeInTheDocument();
+  });
+
+  it("says the download holds your saved searches, and deleting removes them (search alerts spec 2.15)", () => {
+    render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} />);
+    expect(screen.getByText(/your saved searches and their notifications go too/)).toBeInTheDocument();
+    expect(screen.getAllByText(/your saved searches/)).toHaveLength(2);
   });
 });

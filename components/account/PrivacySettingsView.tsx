@@ -51,8 +51,8 @@ export function PrivacySettingsView({ consent, deleteErrors, reports }: PrivacyS
         </h2>
         <p>
           A file of what Vossie holds about you: your account, your consent, when you signed in, your Looking For
-          requests and the shops you follow, your RSVPs and slot requests, your conversations, your reports and your
-          notifications. If you sell, it holds your shop and your
+          requests and the shops you follow, your saved searches, your RSVPs and slot requests, your conversations, your
+          reports and your notifications. If you sell, it holds your shop and your
           listings too, with each photo&apos;s address so you can download it. Mentors&apos; notes about your shop
           aren&apos;t in it: you can ask the Information Officer for them. If you have started to set up your shop but
           not sent it, it holds your answers so far too.
@@ -99,6 +99,7 @@ export function PrivacySettingsView({ consent, deleteErrors, reports }: PrivacyS
             own side of each conversation, with your name shown as &quot;Deleted account&quot;;
           </li>
           <li>your requests and follows go too, so the shops you followed count one fewer;</li>
+          <li>your saved searches and their notifications go too;</li>
           <li>
             your shop, your listings and every photo you uploaded go too, along with any shop answers you haven&apos;t
             sent and mentors&apos; notes about your shop, and your shop&apos;s link stops working.

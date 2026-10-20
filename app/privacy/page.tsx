@@ -38,8 +38,8 @@ const SECTIONS: readonly InfoSection[] = [
       <>
         <p>
           Vossie is still a preview. If you sign in, the server keeps your account, your sign-ins, your consent, your
-          Looking For requests and the shops you follow, your RSVPs and slot requests, your messages, your reports, your
-          notifications and, if you sell, your shop, your
+          Looking For requests and the shops you follow, your saved searches, your RSVPs and slot requests, your messages, your
+          reports, your notifications and, if you sell, your shop, your
           listings and their photos in its memory only, so they are wiped whenever it restarts, and no email is sent (the sign-in code shows on the
           screen). Apart from that, a few small things are kept on your own device, so the site can remember your
           choices.
@@ -175,6 +175,12 @@ const SECTIONS: readonly InfoSection[] = [
             service you ask for.
           </li>
           <li>
+            <strong>Your saved searches.</strong> The words and filters of each search you save, when you saved it and
+            whether its alerts are paused, kept with your account. Only you see them: shops never learn who was told,
+            and Hub staff tools don&apos;t show them. They are used only to tell you about new listings that match.
+            Allowed under POPIA section 11: needed to run the service you ask for.
+          </li>
+          <li>
             <strong>If you sell: your shop, your listings and their photos.</strong> Shop name, tagline, about text,
             photo, campus, pickup points and what you list, shown to buyers, and your application while the Hub checks
             it. Your answers while you set up your shop are kept as a draft until you send your application. Your
@@ -212,14 +218,14 @@ const SECTIONS: readonly InfoSection[] = [
         <li>Your account details stay until you delete your account.</li>
         <li>
           Deleting your account removes your account, your sign-in sessions, your record of consent, your Looking For
-          requests, the shops you follow, your RSVPs and slot requests, your messages, your reports and your
-          notifications straight away, along with your shop, your
+          requests, the shops you follow, your saved searches, your RSVPs and slot requests, your messages, your reports
+          and your notifications straight away, along with your shop, your
           listings, every photo you uploaded, any shop answers you had not sent and mentors&apos; notes about your shop,
           if you sell. The other person in a conversation keeps only their own messages, and your name shows as
           &quot;Deleted account&quot;. The log of what Hub staff do keeps its entries, without your name.
         </li>
         <li>
-          While Vossie is a preview, Looking For requests, follows, messages, reports, notifications, shops, listings
+          While Vossie is a preview, Looking For requests, follows, saved searches, messages, reports, notifications, shops, listings
           and photos live in the server&apos;s memory and go whenever it restarts. Eduvos will set how long they are kept before launch, and
           this policy will say so.
         </li>

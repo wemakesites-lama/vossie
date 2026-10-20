@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { makeSignInAttempt } from "@/tests/helpers/fakes";
+import type { MatchQuery } from "@/lib/types";
+import { makeListingRow, makeSignInAttempt } from "@/tests/helpers/fakes";
 import { pngBytes } from "@/tests/helpers/image-bytes";
 import {
   createAccount,
@@ -20,6 +21,7 @@ import { getThread, startOffer } from "./messages";
 import { storePhotos } from "./photos";
 import { createReport } from "./reports";
 import { createRequest } from "./requests";
+import { addSavedSearch, listSavedSearches, notifySavedSearches } from "./saved-searches";
 import { createSession } from "./sessions";
 import { changeShopSlug, emptyDraft, saveOnboardingDraft } from "./shops";
 import { recordCodeSent, saveSampleEmail, saveSignInAttempt } from "./sign-in";
@@ -159,6 +161,7 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
       slotRequests,
       requests,
       following,
+      savedSearches,
       ...rest
     } = data!;
     expect(rest).toEqual({
@@ -190,6 +193,7 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
       "slotRequests",
       "requests",
       "following",
+      "savedSearches",
     ]);
     expect(conversations.map((row) => [row.with, row.about])).toEqual([
       ["Thandi", "Casio fx-991ZA Plus calculator"],
@@ -210,6 +214,7 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
     // Nor has he posted a request or followed a shop (community actions plan decision 21, amendment 11).
     expect(requests).toEqual([]);
     expect(following).toEqual([]);
+    expect(savedSearches).toEqual([]);
     const text = JSON.stringify(data);
     expect(text).not.toContain("session-key-1");
     expect(text).not.toContain("acc-seller");
@@ -420,5 +425,44 @@ describe("community actions in the export and in deletion (community actions spe
     });
     await deleteAccountData("acc-student");
     expect(await getThread(id, "acc-seller", NOW)).toMatchObject({ otherName: "Deleted account", otherPresent: false });
+  });
+});
+
+describe("saved searches in the export and in deletion (search alerts spec 2.15, plan decision 15)", () => {
+  const CALCULATOR: MatchQuery = {
+    q: "calculator",
+    category: "tech",
+    campus: "midrand",
+    price: "under-100",
+    pay: null,
+    deals: null,
+  };
+
+  it("exports each saved search by name, with no ids", async () => {
+    await addSavedSearch("acc-student", CALCULATOR, NOW);
+    const data = await exportAccountData("acc-student", NOW);
+    expect(data?.savedSearches).toEqual([
+      expect.objectContaining({ words: "calculator", category: "Tech", campus: "Midrand", alerts: "on", savedAt: NOW.toISOString() }),
+    ]);
+    const [saved] = await listSavedSearches("acc-student");
+    expect(JSON.stringify(data)).not.toContain(saved.id);
+  });
+
+  it("deletes the account's saved searches with it, and no one else's", async () => {
+    await addSavedSearch("acc-student", CALCULATOR, NOW);
+    await addSavedSearch("acc-seller", CALCULATOR, NOW);
+    await deleteAccountData("acc-student");
+    expect([...sampleStore().savedSearches.values()].map((row) => row.accountId)).toEqual(["acc-seller"]);
+  });
+
+  it("deletes a deleted shop's listing alerts, and leaves the rest (plan amendment 11)", async () => {
+    await addSavedSearch("acc-student", { ...CALCULATOR, category: null, price: null }, NOW);
+    const row = makeListingRow({ id: "l-new", title: "Casio calculator, barely used" });
+    sampleStore().listings.set(row.id, row);
+    await notifySavedSearches({ listingId: row.id, now: NOW });
+    const alerts = () => [...sampleStore().notifications.values()].filter((row) => row.kind === "search-match");
+    expect(alerts()).toHaveLength(1);
+    await deleteAccountData("acc-seller");
+    expect(alerts()).toHaveLength(0);
   });
 });

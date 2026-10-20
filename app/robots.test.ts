@@ -67,6 +67,11 @@ describe("robots.txt (info and system spec 2.8)", () => {
     expect(blocked("/looking-for")).toBe(false);
   });
 
+  it("keeps crawlers off Saved's Searches tab, and not off browse's searches (search alerts spec 3, plan decision 17)", () => {
+    expect(blocked("/saved?tab=searches")).toBe(true);
+    expect(blocked("/browse?q=calculator&campus=midrand")).toBe(false);
+  });
+
   it("doesn't advertise staff pages", () => {
     expect(disallow.join(" ")).not.toMatch(/admin|mentor|manage/);
   });

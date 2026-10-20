@@ -269,6 +269,13 @@ export async function forgetShopOf(accountId: string): Promise<boolean> {
       goneListings.add(id);
       store.listings.delete(id);
     }
+    // Matches that lead to one of its listings would only lead to a 404 (search alerts plan amendment 11). The ones
+    // that lead to a search's results stay.
+    for (const [id, note] of store.notifications) {
+      if (note.kind === "search-match" && [...goneListings].some((gone) => note.href === `/listings/${gone}`)) {
+        store.notifications.delete(id);
+      }
+    }
     // Reports about the shop or its listings now point at nothing, even if a new shop takes the link (amendment 13.1).
     for (const report of store.reports.values()) {
       if (report.targetKind === "seller" ? report.targetId === slug : report.targetKind === "listing" && goneListings.has(report.targetId)) {
