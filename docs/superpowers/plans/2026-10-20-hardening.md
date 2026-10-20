@@ -162,7 +162,150 @@ Lama can veto any of these at plan review. "Plan decision N" means this list; "s
 
 The controller adds amendments here; they override the tasks below wherever they differ.
 
-(none yet)
+Reviewed 2026-10-20 (opus, read-only); all accepted by the controller. Amendment 4's fix, if the manual check shows a leak, waits for Lama.
+
+**1. Task 2 (blocker): `signOut` has another caller.**
+- **Problem:** `lib/auth/account-actions.test.ts` imports `signOut` and tests it (lines 7, 46 to 60). Task 2 deletes the action, so `pnpm typecheck` and the unit suite fail.
+- **Problem:** Step 6's grep expectation is also wrong. `signOut` still matches in three more places, all harmless:
+  - `components/forms/summary-ids.test.tsx:45` (a mock);
+  - `lib/supabase/auth.ts` (`signOutHere`);
+  - `lib/supabase/auth.test.ts`.
+- **Replacement:** Add `lib/auth/account-actions.test.ts` to Task 2's files, and add a step:
+  > In `lib/auth/account-actions.test.ts`, change `import { deleteAccount, signOut, updateDetails } from "./actions";` to `import { deleteAccount, updateDetails } from "./actions";` and delete the `describe("signing out (accounts spec 2.5)", …)` block. `app/logout/route.test.ts` covers both of its tests.
+- Also add to the logout route test's first case:
+  ```ts
+  expect(request.sent.get(FLASH_COOKIE)?.options).toEqual({ sameSite: "lax", secure: false, path: "/", maxAge: 60 });
+  ```
+- Step 6's expected output becomes:
+  > `MenuAccount.test.tsx`'s local `const signOut` lines, `summary-ids.test.tsx`'s mock line, and `lib/supabase/auth*.ts`'s `signOutHere` and `signOut: vi.fn()` lines.
+- Step 8's count becomes "Start's count + 8".
+
+**2. Task 2 (security and compatibility): fall back to `Referer` when `Origin` is missing.**
+- **Problem:** Refusing a missing `Origin` is stricter than Next's check and isn't needed for safety. Chrome, Firefox 70+ and Safari send `Origin` on every POST, but proxy browsers (Opera Mini's extreme mode, UC Mini), some privacy extensions and older WebViews may not.
+  - That matters for South African phones.
+  - Those visitors can sign in today, because Next lets the Server Action through. After stage K they would get a plain 403 and couldn't sign in or sign out.
+  - A browser that sends no `Origin` still sends a same-origin `Referer`. A cross-site attacker's form can't forge one: a modern browser sends `Origin` (refused); an old one sends the attacker's `Referer`, or none.
+- **Replacement for `isSameOrigin`:**
+  ```ts
+  export function isSameOrigin(request: Pick<Request, "headers">): boolean {
+    const forwarded = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+    const host = forwarded || request.headers.get("host");
+    if (!host) return false;
+    // An Origin decides when there is one, and "null" is refused. Without one (proxy browsers such as Opera Mini, older
+    // WebViews), the Referer must be a page on this host: a cross-site form can't forge it (plan decision 11, amended).
+    const source = request.headers.get("origin") ?? request.headers.get("referer");
+    if (!source || source === "null") return false;
+    try {
+      return new URL(source).host === host;
+    } catch {
+      return false;
+    }
+  }
+  ```
+- **Replacement for the test** "refuses a post with no Origin, or Origin null":
+  ```ts
+  it("refuses Origin null, and a post with neither Origin nor a same-host Referer", () => {
+    expect(isSameOrigin(from({ origin: "null", host: "localhost:3204", referer: "http://localhost:3204/login" }))).toBe(false);
+    expect(isSameOrigin(from({ origin: "not a url", host: "localhost:3204" }))).toBe(false);
+    expect(isSameOrigin(from({ host: "localhost:3204" }))).toBe(false);
+    expect(isSameOrigin(from({ host: "localhost:3204", referer: "https://evil.example/x" }))).toBe(false);
+  });
+  it("accepts a post with no Origin when the Referer is a page on this host (proxy browsers)", () => {
+    expect(isSameOrigin(from({ host: "localhost:3204", referer: "http://localhost:3204/login?next=%2Faccount" }))).toBe(true);
+  });
+  ```
+- The route tests' `posted(null)` cases stay 403 (no `Referer`), and so do e2e variant 8 and the foreign sign-out post.
+- Task 11's spec-change item 4 records this.
+
+**3. Task 8 (robustness): with sample mode off and no key, `/logout` would answer 500.**
+- **Problem:** Spec 2.14 says "sample mode off… `getViewer()` returns null before hashing", but `getSessionKey()` hashes whenever a `vossie_session` cookie is present.
+  - It's called directly by `endSession()` (so by `/logout`) and by the form-state and one-time-token modules.
+  - So once Task 8 lands, a stale session cookie with sample mode off and no key makes `authKey()` throw inside `/logout`.
+  - The same happens to `cancelSignIn` through `endAttempt`, with a stale `vossie_signin` cookie.
+- **Replacement:**
+  - In `lib/auth/session.ts`, add `if (!isSampleMode()) return null;` as the first line of `getSessionKey()`.
+  - In `lib/auth/sign-in-finish.ts` (or `actions.ts`, if Task 8 runs before Task 3), add the same as the first line of `currentAttempt()`.
+  - Add to `lib/auth/session.test.ts`:
+    ```ts
+    it("hashes nothing with sample mode off, so a missing key can't break signing out (stage K spec decision 14)", async () => {
+      await signedInAs("acc-student");
+      vi.stubEnv("VOSSIE_SAMPLE_MODE", "0");
+      expect(await getSessionKey()).toBeNull();
+    });
+    ```
+- Add `lib/auth/session.ts` to Task 8's files. Phase B replaces `getSessionKey` anyway (note it in the phase B go-live line).
+
+**4. Tasks 2 and 11 (privacy gap the tests can't see): the back/forward cache.**
+- **Problem:** Playwright 1.64 launches Chromium with `--disable-back-forward-cache` (`playwright-core/lib/coreBundle.js`, line 36212). In a real browser, Back after the 303 sign-out can restore the whole signed-in document from the back/forward cache, kept `/account` (and its email) included.
+  - This happens when that document was first loaded from a cacheable (prerendered) page such as `/`.
+  - Server Action sign-out never left the document, so this is new with stage K.
+  - `sign-in-return.spec.ts` and `accounts.spec.ts` will pass regardless.
+- **Replacement:** Add to Task 2, Step 8:
+  > Manual check, in desktop Chrome and iOS Safari against the scratch server:
+  > 1. Open `/`, sign in as Sample student, open `/account`, then Saved.
+  > 2. Sign out from the menu, then press Back twice.
+  >
+  > Record whether a signed-in header or the email comes back.
+  >
+  > If it does, report it to the controller with the two cheap options:
+  > - `Clear-Site-Data: "cache"` on `/logout`'s 303. Chrome drops the origin's back/forward cache entries; the cost is that the next page load downloads the JS again.
+  > - A `pageshow` listener with `event.persisted` in the inline boot script, which reloads the page. Its bytes are HTML, not a chunk.
+  >
+  > Don't build either without Lama.
+- Task 11's Production line gains: "(the back/forward cache: see the build's manual check)".
+
+**5. Task 1 (the spike's signals are ambiguous).**
+- **Problem:** The two body checks can't tell the outcomes apart.
+  - `carries-gated-heading` matches "Your account" and "Message ". Both occur in many signed-in bodies (the menu, "Message seller").
+  - `carries-redirect-to-sign-in` matches `/login?next=`, which appears in the session-following links' sign-in fallbacks on many pages.
+  - So the "Confirmed" and "Server-side cause" outcomes can't be distinguished.
+  - One run can also miss a replay that only happens sometimes (it's a late `replace`), giving a false "Not reproduced".
+- **Replacement in `sign-in-return.spec.ts`:** `watch(page, label, marker)` takes the destination's `h1` class: `"request-form-title"` for variants 1, 2 and 7, `"account-title"` for 3 and 5, `"composer-title"` for 4. The log line becomes:
+  ```ts
+  ` carries-destination=${body.includes(marker)}` +
+  ` carries-redirect-to-sign-in=${body.includes("NEXT_REDIRECT") && body.includes("/login?next=")}`,
+  ```
+  Delete the `GATED_HEADINGS` constant.
+- **Replacement for Task 1, Step 4's command:** add `--repeat-each=3`.
+- **Replacement for Step 5:**
+  > A variant reproduces only if its `urls:` line ends on `/login?next=…` and the page shows "You're signed in as". Any other failure, such as a timeout, isn't evidence: rerun it once and report.
+  >
+  > Judge each variant by the last POST line before its `urls:` line (variant 3 posts three times). "Confirmed" means `carries-destination=true` and `carries-redirect-to-sign-in=false`. "Server-side cause" means the reverse.
+
+**6. Task 8 (test that leaks between cases): the `console.warn` spy.**
+- **Problem:** The dev-key test spies on `console.warn` and never restores it. The later "reads nothing when imported" test spies again, can get the same spy with its earlier call, and then fails `not.toHaveBeenCalled()`. `vitest.config.mts` doesn't set `restoreMocks`.
+- **Replacement:** In `secrets.test.ts`'s new `afterEach`, add `vi.restoreAllMocks();` after `vi.unstubAllEnvs();`.
+
+**7. Task 11 (go-live notes for phase B and the key).**
+- **Problem 1:** Both the development key and `isSampleAccount` depend only on sample mode. `isSampleMode()` defaults to on, so a phase B deployment with `VOSSIE_BACKEND=supabase` and `VOSSIE_SAMPLE_MODE` unset would hash with the public development key, with only a warning, and exempt the five seeded emails from the limits.
+- **Problem 2:** A short key makes `getViewer()` throw. Every gated page and every sign-in post then answers 500.
+- **Replacement:** Task 11, Step 5, Backend gains:
+  - `- [ ] Phase B: authKey() refuses the development key, and isSampleAccount() is false, whenever VOSSIE_BACKEND=supabase, whatever VOSSIE_SAMPLE_MODE says. If Postgres ever computes these HMACs, it uses the same "token:"/"code:" purpose prefixes.`
+  - The "Set `VOSSIE_AUTH_HMAC_KEY`" line gains: "then sign in once on that environment: a key shorter than 32 characters turns every signed-in page and sign-in post into a 500."
+
+**8. Task 5 (recommended): Continue repeats Go back on public pages.**
+- **Problem:** For a public `next` such as `/sellers/tech-corner` or `/saved`, `backPathFor(next) === next`. The signed-in note would then show Continue, and the page's "Go back" link below it, both to the same place. A public page has no redirect a kept page could replay.
+- **Replacement in `continuePath`:**
+  ```ts
+  return next && !next.startsWith("/login") && next !== "/account" && backPathFor(next) !== next ? next : null;
+  ```
+  It needs `import { backPathFor } from "@/lib/messaging/paths";`.
+- Add `"/sellers/tech-corner"` to the "has no Continue…" test's list.
+- In `SignIn.test.tsx`, use `next: "/looking-for/new"` instead of `"/saved"`.
+- Plan decision 22's "now shows Continue too" for `a11y.spec`'s `/login?next=%2Fsellers%2Ftech-corner` is then no longer true; the Continue axe check in `sign-in-return.spec.ts` covers it.
+
+**9. Tasks 2 and 4 (minor): a malformed body gives a 500.**
+- **Problem:** `await request.formData()` throws when the body or content type is bad.
+- **Replacement in all four handlers:** `const data = await request.formData().catch(() => null); if (!data) return seeOther(<"/login" or "/">);` before the finish function.
+
+**10. Before you start, and Tasks 2 and 5 (guidance, so nobody edits tests that pass).**
+- Add to the "existing e2e test that breaks" bullet:
+  > Expected to pass unchanged:
+  > - `accounts.spec.ts`' toast-once test: its Back is inside the 303's new document, so it stays a client-side Back;
+  > - "Back to the account page after signing out";
+  > - "a wrong code says how many tries are left": the `alert` summary is still there after each reload.
+  >
+  > Edit one only on an actual failure.
 
 ## The JS ledger
 
