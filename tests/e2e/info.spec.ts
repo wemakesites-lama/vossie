@@ -27,7 +27,7 @@ const PAGES: readonly InfoCase[] = [
     path: "/trust",
     title: "How trust works",
     draft: false,
-    sections: ["Verified by the Hub", "The three badges", "What counts", "How Featured today is picked"],
+    sections: ["Verified by the Hub", "The three badges", "What counts", "When something is reported", "How Featured today is picked"],
   },
   {
     path: "/privacy",

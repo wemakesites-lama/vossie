@@ -37,7 +37,7 @@ const SECTIONS: readonly InfoSection[] = [
     children: (
       <>
         <p>
-          Vossie is still a preview. If you sign in, the server keeps your account, your sign-ins, your consent, your
+          Vossie is still a preview. If you sign in, the server keeps your account, your sign-ins, your consent, your staff role if you have one, your
           Looking For requests and the shops you follow, your saved searches, your RSVPs and slot requests, your messages, your
           reports, your notifications and, if you sell, your shop, your
           listings and their photos in its memory only, so they are wiped whenever it restarts, and no email is sent (the sign-in code shows on the
@@ -66,8 +66,9 @@ const SECTIONS: readonly InfoSection[] = [
         </p>
         <ul>
           <li>
-            <code>vossie_session</code>: a random code that keeps you signed in, for up to 30 days. Signing out or
-            deleting your account ends it.
+            <code>vossie_session</code>: a random code that keeps you signed in, for up to 30 days. Vossie&apos;s
+            server keeps only a fingerprint of it, made with a secret key, so the code can&apos;t be read back from the
+            server&apos;s records. Signing out or deleting your account ends it.
           </li>
           <li>
             <code>vossie_signin</code>: a random code that holds your place while you sign in, for up to 30 minutes.
@@ -128,13 +129,16 @@ const SECTIONS: readonly InfoSection[] = [
     children: (
       <>
         <p>
-          Messaging, selling and, later, keeping your saves on every device need an account. This is what your account
+          You need an account to message, sell, report, post on Looking For, follow shops, save searches and RSVP to
+          the Hub. Later, keeping your saved listings on every device will need one too. This is what your account
           holds, and why.
         </p>
         <ul>
           <li>
             <strong>Your Eduvos email address.</strong> To check that you are an Eduvos student and to send you sign-in
-            codes. Allowed under POPIA section 11: it is needed to run the account you ask for.
+            codes. A sign-in code is kept only as a fingerprint made with a secret key, and only until you finish
+            signing in or the attempt runs out after 30 minutes. Allowed under POPIA section 11: it is needed to run the
+            account you ask for.
           </li>
           <li>
             <strong>Your first name and campus.</strong> Sellers see your first name in messages, so they know who they
@@ -161,8 +165,10 @@ const SECTIONS: readonly InfoSection[] = [
             needed to give you what you asked for.
           </li>
           <li>
-            <strong>Your notifications.</strong> A note when someone messages you or a sale needs confirming, which
-            only you see. Allowed under POPIA section 11: needed to run your account.
+            <strong>Your notifications.</strong> A note when someone messages you, a sale needs confirming, a shop
+            offers to help with your request, a shop you follow lists something new, a search you saved has a new
+            match, the Hub acts on your report, your shop, your listing or your request, or your staff role changes.
+            Only you see them. Allowed under POPIA section 11: needed to run your account.
           </li>
           <li>
             <strong>Your Looking For requests.</strong> What you ask for, shown to everyone as &quot;Asked by a student
@@ -200,6 +206,12 @@ const SECTIONS: readonly InfoSection[] = [
             why, and who was given or lost a staff role, so staff actions can be checked. Nobody can edit it. If you delete your account, entries about you
             lose your name and the reason. Allowed under POPIA section 11: our legitimate interest in running Vossie
             fairly.
+          </li>
+          <li>
+            <strong>If you&apos;re Hub staff: your role.</strong> Whether you&apos;re a mentor or an admin. A Hub admin
+            gives the role using your exact Eduvos email, and Hub admins see the first name, email and campus of
+            everyone with a role. Nobody can search or list students who don&apos;t have one. Allowed under POPIA
+            section 11: our legitimate interest in running Vossie safely.
           </li>
         </ul>
         <p>Vossie does not ask for your ID number, your bank details or your home address.</p>

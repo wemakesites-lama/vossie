@@ -89,8 +89,9 @@ const SECTIONS: readonly InfoSection[] = [
       <>
         <h3>Who can use Vossie?</h3>
         <p>
-          Anyone can browse, save and share listings. Messaging and selling need an account, and accounts are for
-          Eduvos students, who sign in with their Eduvos email address.
+          Anyone can browse, save and share listings, and read Looking For and the Hub. Messaging, selling, reporting,
+          posting a request, following a shop, saving a search and saying you&apos;ll go to a Hub event need an
+          account. Accounts are for Eduvos students, who sign in with their Eduvos email address.
         </p>
         <h3>Does it cost anything?</h3>
         <p>Listing is free. Vossie doesn&apos;t handle payments, so it takes no cut of a sale.</p>
@@ -111,9 +112,14 @@ const SECTIONS: readonly InfoSection[] = [
         </p>
         <h3>What can I do on Vossie today?</h3>
         <p>
-          Browse every campus, save listings on your device and share them, sign in with your Eduvos email, message
-          sellers, report a problem and set up a shop of your own. While Vossie is a preview, what you add lives in the
-          server&apos;s memory, so it can disappear when the server restarts.
+          Browse every campus, save listings on your device and share them, and sign in with your Eduvos email. Signed
+          in, you can message sellers, report a problem, ask for something on Looking For and read shops&apos; offers,
+          follow shops, save a search and hear when a new listing matches it, say you&apos;ll go to a Hub event or ask
+          for an office-hours slot, and set up a shop of your own.
+        </p>
+        <p>
+          While Vossie is a preview, what you add lives in the server&apos;s memory, so it can disappear when the
+          server restarts. Notifications show on Vossie only: nothing is emailed yet.
         </p>
       </>
     ),
@@ -125,7 +131,7 @@ export default function HowItWorksPage() {
     <InfoPage
       title="How Vossie works"
       lede="Find it, message the seller, meet on campus, then pay or swap."
-      updated="2026-10-15"
+      updated="2026-10-20"
       sections={SECTIONS}
     />
   );

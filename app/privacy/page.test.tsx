@@ -303,10 +303,42 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     render(<PrivacyPage />);
     const account = screen.getByRole("region", { name: "Your account" });
     expect(within(account).getByText("Your saved searches.")).toBeInTheDocument();
-    expect(within(account).getByText(/Only you see them/)).toBeInTheDocument();
+    expect(within(account).getByText(/Only you see them: shops never learn/)).toBeInTheDocument();
     expect(within(account).getByText(/used only to tell you about new listings/)).toBeInTheDocument();
     const keep = screen.getByRole("region", { name: "How long we keep it" });
     expect(within(keep).getByText(/the shops you follow, your saved searches/)).toBeInTheDocument();
+  });
+});
+
+describe("what stages H to K changed in the policy (stage K spec 6)", () => {
+  it("opens Your account with everything that needs one, never the old \"Messaging, selling and, later\"", () => {
+    render(<PrivacyPage />);
+    const account = screen.getByRole("region", { name: "Your account" });
+    expect(account).toHaveTextContent(
+      "You need an account to message, sell, report, post on Looking For, follow shops, save searches and RSVP to the Hub.",
+    );
+    expect(account).not.toHaveTextContent("Messaging, selling and, later");
+  });
+
+  it("says a code and the session are kept only as keyed fingerprints", () => {
+    render(<PrivacyPage />);
+    expect(screen.getByRole("region", { name: "Your account" })).toHaveTextContent(
+      "A sign-in code is kept only as a fingerprint made with a secret key, and only until you finish signing in or the attempt runs out after 30 minutes.",
+    );
+    expect(screen.getByRole("region", { name: "What this site stores today" })).toHaveTextContent(
+      "Vossie's server keeps only a fingerprint of it, made with a secret key, so the code can't be read back from the server's records.",
+    );
+  });
+
+  it("lists every kind of notification, and what a staff role keeps", () => {
+    render(<PrivacyPage />);
+    const account = screen.getByRole("region", { name: "Your account" });
+    expect(account).toHaveTextContent(/a search you saved has a new match, the Hub acts on your report/);
+    expect(account).toHaveTextContent(/your staff role changes\. Only you see them\./);
+    expect(within(account).getByText(/If you're Hub staff: your role\./)).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "What this site stores today" })).toHaveTextContent(
+      "your consent, your staff role if you have one, your Looking For requests",
+    );
   });
 });
 

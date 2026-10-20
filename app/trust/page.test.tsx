@@ -11,17 +11,28 @@ describe("How trust works (info and system spec 2.3, 2.4 and 3)", () => {
   it("is titled and described for search results and link previews", () => {
     expect(metadata.title).toBe("How trust works");
     expect(metadata.description).toMatch(/Verified sellers/);
+    expect(metadata.description).toMatch(/what happens after a report/);
   });
 
-  it("has one h1 and four sections", () => {
+  it("has one h1 and five sections", () => {
     render(<TrustPage />);
     expect(screen.getByRole("heading", { level: 1, name: "How trust works" })).toBeInTheDocument();
     expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
       "Verified by the Hub",
       "The three badges",
       "What counts",
+      "When something is reported",
       "How Featured today is picked",
     ]);
+  });
+
+  it("says what the Hub does with a report, Show again included (stage K spec 6)", () => {
+    render(<TrustPage />);
+    const reports = screen.getByRole("region", { name: "When something is reported" });
+    expect(within(reports).getByText(/report a listing, a shop or a Looking For request/)).toBeInTheDocument();
+    expect(within(reports).getByText(/never names them to the seller/)).toBeInTheDocument();
+    expect(within(reports).getByText(/it can show it again/)).toBeInTheDocument();
+    expect(within(reports).getByText(/only a Hub admin can give someone that role/)).toBeInTheDocument();
   });
 
   it("explains Verified as a badge the Hub gives after checking, separate from approval, and not a promise (selling spec 8.10)", () => {

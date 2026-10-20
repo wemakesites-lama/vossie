@@ -63,6 +63,11 @@ describe("How it works (info and system spec 3)", () => {
     expect(within(questions).getByText(/set up a shop of your own/)).toBeInTheDocument();
     expect(within(questions).getByText(/can disappear when the server restarts/)).toBeInTheDocument();
     expect(within(questions).queryByText(/once selling opens|Selling arrives/)).toBeNull();
+    // What stages H to J added (stage K spec 6).
+    expect(within(questions).getByText(/Messaging, selling, reporting, posting a request, following a shop, saving a search/)).toBeInTheDocument();
+    expect(within(questions).getByText(/save a search and hear when a new listing matches it/)).toBeInTheDocument();
+    expect(within(questions).getByText(/Notifications show on Vossie only: nothing is emailed yet\./)).toBeInTheDocument();
+    expect(within(questions).queryByText(/Messaging and selling need an account/)).toBeNull();
   });
 
   it("is not a draft", () => {

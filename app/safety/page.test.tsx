@@ -46,7 +46,9 @@ describe("Safety (info and system spec 3)", () => {
   it("says how to report, gives the police number, and links to the trust page and the Hub", () => {
     render(<SafetyPage />);
     const reporting = screen.getByRole("region", { name: "Reporting a problem" });
-    expect(within(reporting).getByText(/Every listing and every seller's page has a Report link/)).toBeInTheDocument();
+    expect(within(reporting).getByText(/Every listing, every seller's page and every Looking For request has a Report link/)).toBeInTheDocument();
+    expect(within(reporting).getByText(/can hide a listing or a request, or pause an account/)).toBeInTheDocument();
+    expect(within(reporting).queryByText(/can hide a listing or pause an account\./)).toBeNull();
     expect(within(reporting).getByText(/10111/)).toBeInTheDocument();
     expect(within(reporting).getByRole("link", { name: "how trust works" })).toHaveAttribute("href", "/trust");
     expect(within(reporting).getByRole("link", { name: "Incubation Hub" })).toHaveAttribute("href", "/hub");

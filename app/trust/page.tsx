@@ -5,7 +5,7 @@ import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
 export const metadata: Metadata = {
   title: "How trust works",
   description:
-    "How Vossie decides who to trust: Verified sellers, the New seller, Responsive and Trusted badges, and how Featured today is picked.",
+    "How Vossie decides who to trust: Verified sellers, the New seller, Responsive and Trusted badges, what happens after a report, and how Featured today is picked.",
 };
 
 const SECTIONS: readonly InfoSection[] = [
@@ -84,6 +84,29 @@ const SECTIONS: readonly InfoSection[] = [
       </>
     ),
   },
+  // Sample wording for later review: Lama kept the spec's sentences "for now" on 2026-10-20 (stage K plan decision 5).
+  {
+    id: "trust-reports",
+    title: "When something is reported",
+    children: (
+      <>
+        <p>
+          Anyone signed in can report a listing, a shop or a Looking For request. A member of the Hub team reads every
+          report.
+        </p>
+        <p>
+          The Hub can hide a listing or a request, or pause a shop. It tells the seller, or the student who asked, and
+          they can see why. It tells the person who reported it that the Hub has acted, and never names them to the
+          seller.
+        </p>
+        <p>
+          If the Hub hid something it shouldn&apos;t have, it can show it again, and tells the seller or the student
+          who asked. Hub staff are mentors and admins from the Eduvos Incubation Hub, and only a Hub admin can give
+          someone that role.
+        </p>
+      </>
+    ),
+  },
   {
     id: "trust-featured",
     title: "How Featured today is picked",
@@ -118,7 +141,7 @@ export default function TrustPage() {
     <InfoPage
       title="How trust works"
       lede="No star ratings. Trust here comes from checks by the Hub and from what sellers actually do."
-      updated="2026-10-18"
+      updated="2026-10-20"
       sections={SECTIONS}
     />
   );
