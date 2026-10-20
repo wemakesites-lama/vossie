@@ -128,7 +128,323 @@ Lama can veto any of these at plan review. In this plan, "plan decision N" means
 
 The controller adds amendments here; they override the tasks below wherever they differ.
 
-(None yet.)
+Reviewed 2026-10-20 (opus, read-only); all accepted by the controller.
+
+**1. Tasks 5, 10, 13, 14, plan decision 14 and spec 2.13: the small-number rule is replaced.**
+
+*Problem.* The drafted rule leaks, and so does an "audit" rule (keep hiding until nothing can be worked out). A brute-force check of the audit version found 765 cases where a hidden figure could be pinned exactly. The cause is that the choice of what to hide depends on the hidden values, so the pattern of hidden cells itself gives values away:
+- "total Hidden, one Under 5" can only be 4;
+- "Under 5 + Hidden, and the next campus hidden too" means exactly 1 and 5.
+
+Rounding totals or cells to fives or tens fails the same way at a band's edges. For example, nine "Under 10" campuses and one "10+" with a "10+" total force every campus to its minimum.
+
+There is also a leak between Since the start and the weeks, in the campus view: Since "Under 10" with last week 8 means the week before is exactly 1. On a new campus this is common.
+
+The fix: the decision to hide must depend only on something the reader can already see.
+
+*Replacement rule.* This replaces spec 2.13's rules 1 to 4 and plan decision 14.
+1. **A private week column with any small number shows no campus breakdown.** If any campus, or the count on a campus that has gone, is from 1 to 4 that week, every campus in that column shows "Hidden", zeros included. Otherwise every campus shows exactly. The total always shows: exact, "Under 5" from 1 to 4, and 0 as 0.
+2. **Change** is "—" unless both figures are exact. This is unchanged.
+3. **Since the start** shows in tens.
+   - Campus figures show only when both week columns are shown by campus and no campus (or gone) is from 1 to 9 since the start. Otherwise every campus shows "Hidden".
+   - The total shows in tens, unless either week's total is "Under 5"; then it shows "Hidden".
+4. **Public measures and open shops** stay exact.
+
+*Paragraph for Lama.* "The page shows every all-campus total, so Vossie-wide figures are always there. A campus breakdown of something private shows only when no campus had between 1 and 4 that week; if one did, the whole column is hidden, zeros too. Hiding only the small cell isn't enough: the total less the cells you can see gives it back, and choosing which extra cells to hide gives clues of its own. Since-the-start figures are in tens, and shown by campus only under the same condition, so two weeks' pages can't be subtracted. No figure from 1 to 4 can be worked out from the page, from two weeks' pages, or from the rule itself."
+
+*Cost.* While campuses are small, private columns in By campus and the campus view will often say Hidden. Totals are unaffected. An "Other campuses" row that groups small campuses is a possible later improvement.
+
+*Task 5, Step 2.* In `lib/staff/numbers.ts`, keep `countAt` and `totalOf`, and replace everything from `const exact = …` through the end of `protectCounts` with:
+
+```ts
+const isSmall = (count: number, below: number) => count >= 1 && count < below;
+const isFigure = (text: string) => /^\d+$/.test(text);
+const everyCampus = (slugs: readonly string[], text: (slug: string) => string) =>
+  Object.fromEntries(slugs.map((slug) => [slug, text(slug)]));
+
+/** Whether any campus in a column, or what's counted on a campus that has gone, is from 1 to `below - 1`. */
+function hasSmall(column: RawColumn, slugs: readonly string[], below: number): boolean {
+  return isSmall(column.gone, below) || slugs.some((slug) => isSmall(countAt(column, slug), below));
+}
+
+/** Exact, for public measures and open shops: each listing, shop and request is already visible with its campus. */
+function exactColumn(column: RawColumn, slugs: readonly string[]): ShownColumn {
+  return { campuses: everyCampus(slugs, (slug) => String(countAt(column, slug))), total: String(totalOf(column, slugs)) };
+}
+
+/**
+ * A private week (spec decision 13, rule 1, amended on review): when any campus, or a campus that has gone, has 1 to 4,
+ * every campus is "Hidden", zeros too, so neither the total nor the gaps can give a small number away. The decision
+ * rests only on whether a small number exists, so the pattern of hidden cells reveals no figure. The total is exact,
+ * or "Under 5" from 1 to 4.
+ */
+function weekColumn(column: RawColumn, slugs: readonly string[], isPrivate: boolean): ShownColumn {
+  if (!isPrivate) return exactColumn(column, slugs);
+  const total = totalOf(column, slugs);
+  const small = hasSmall(column, slugs, SMALL_COUNT);
+  return {
+    campuses: everyCampus(slugs, (slug) => (small ? HIDDEN : String(countAt(column, slug)))),
+    total: isSmall(total, SMALL_COUNT) ? UNDER_FIVE : String(total),
+  };
+}
+
+/** Change (spec decision 13, rule 2): "—" unless both weeks show a figure. */
+function changeOf(last: string, before: string): string {
+  return isFigure(last) && isFigure(before) ? changeText(Number(last) - Number(before)) : NO_CHANGE;
+}
+
+function changeColumn(last: ShownColumn, before: ShownColumn, slugs: readonly string[]): ShownColumn {
+  return {
+    campuses: everyCampus(slugs, (slug) => changeOf(last.campuses[slug], before.campuses[slug])),
+    total: changeOf(last.total, before.total),
+  };
+}
+
+/**
+ * Since the start (spec decision 13, rule 3, amended on review), private in tens. By campus only when both weeks are
+ * shown by campus and nothing since the start is from 1 to 9; otherwise a campus's tens, less its weeks, could leave a
+ * week's hidden figure one value. The total is "Hidden" when a week's total is "Under 5", for the same reason.
+ */
+function sinceColumn(
+  column: RawColumn,
+  slugs: readonly string[],
+  isPrivate: boolean,
+  last: ShownColumn,
+  before: ShownColumn,
+): ShownColumn {
+  if (!isPrivate) return exactColumn(column, slugs);
+  const byCampus =
+    slugs.every((slug) => isFigure(last.campuses[slug]) && isFigure(before.campuses[slug])) && !hasSmall(column, slugs, 10);
+  return {
+    campuses: everyCampus(slugs, (slug) => (byCampus ? sinceText(countAt(column, slug)) : HIDDEN)),
+    total: last.total === UNDER_FIVE || before.total === UNDER_FIVE ? HIDDEN : sinceText(totalOf(column, slugs)),
+  };
+}
+
+/** The small-number rule (spec decision 13, amended on review). `slugs` are the campuses in the page's order. */
+export function protectCounts(raw: RawCounts, slugs: readonly string[]): ShownCounts {
+  const counts = Object.fromEntries(
+    MEASURES.map(({ measure, isPrivate }) => {
+      const columns = raw.counts[measure];
+      const last = weekColumn(columns.last, slugs, isPrivate);
+      const before = weekColumn(columns.before, slugs, isPrivate);
+      return [
+        measure,
+        { last, before, since: sinceColumn(columns.since, slugs, isPrivate, last, before), change: changeColumn(last, before, slugs) },
+      ];
+    }),
+  ) as ShownCounts["counts"];
+  return { counts, openShops: exactColumn(raw.openShops, slugs) };
+}
+```
+
+*Task 5, Step 1.* Replace the `describe("the small-number rule …")` block with the one below, and add the brute-force block after it. The other `describe` blocks and the imports stay.
+
+```ts
+describe("the small-number rule (stage J spec decision 13, as amended on review)", () => {
+  it("shows a private week by campus, exactly, when no campus is from 1 to 4", () => {
+    const shown = protectCounts(raw({ enquiries: { last: column({ a: 0, b: 12, c: 7 }) } }), SLUGS);
+    expect(shown.counts.enquiries.last).toEqual({ campuses: { a: "0", b: "12", c: "7" }, total: "19" });
+  });
+
+  it("hides every campus in a private week, zeros too, when any campus is from 1 to 4, and keeps the total", () => {
+    const shown = protectCounts(raw({ "reports-made": { last: column({ a: 3, b: 20, c: 0 }) } }), SLUGS);
+    expect(shown.counts["reports-made"].last).toEqual({ campuses: { a: HIDDEN, b: HIDDEN, c: HIDDEN }, total: "23" });
+  });
+
+  it("hides every campus when the small number is on a campus that has gone", () => {
+    const shown = protectCounts(raw({ enquiries: { last: column({ a: 7 }, 2) } }), SLUGS);
+    expect(shown.counts.enquiries.last).toEqual({ campuses: { a: HIDDEN, b: HIDDEN, c: HIDDEN }, total: "9" });
+  });
+
+  it("shows a private total from 1 to 4 as Under 5, and 0 as 0", () => {
+    const shown = protectCounts(raw({ "reports-closed": { last: column({ a: 1, b: 1 }) } }), SLUGS);
+    expect(shown.counts["reports-closed"].last).toEqual({ campuses: { a: HIDDEN, b: HIDDEN, c: HIDDEN }, total: UNDER_FIVE });
+    expect(shown.counts["reports-closed"].before).toEqual({ campuses: { a: "0", b: "0", c: "0" }, total: "0" });
+  });
+
+  it("shows Change only where both weeks show a figure, signed", () => {
+    const shown = protectCounts(raw({ enquiries: { last: column({ a: 12, c: 9 }), before: column({ a: 3, c: 11 }) } }), SLUGS);
+    expect(shown.counts.enquiries.change).toEqual({ campuses: { a: NO_CHANGE, b: NO_CHANGE, c: NO_CHANGE }, total: "+7" });
+    const both = protectCounts(raw({ enquiries: { last: column({ a: 12 }), before: column({ a: 5 }) } }), SLUGS);
+    expect(both.counts.enquiries.change).toEqual({ campuses: { a: "+7", b: "0", c: "0" }, total: "+7" });
+  });
+
+  it("rounds a private Since the start down to tens, by campus only when both weeks are by campus and nothing is under 10", () => {
+    const shown = protectCounts(raw({ follows: { since: column({ a: 0, b: 17, c: 23 }) } }), SLUGS);
+    expect(shown.counts.follows.since).toEqual({ campuses: { a: "0", b: "10+", c: "20+" }, total: "40+" });
+    const small = protectCounts(raw({ follows: { since: column({ a: 0, b: 7, c: 23 }) } }), SLUGS);
+    expect(small.counts.follows.since).toEqual({ campuses: { a: HIDDEN, b: HIDDEN, c: HIDDEN }, total: "30+" });
+    const weekHidden = protectCounts(raw({ follows: { last: column({ a: 2, b: 8 }), since: column({ a: 12, b: 18, c: 20 }) } }), SLUGS);
+    expect(weekHidden.counts.follows.since.campuses).toEqual({ a: HIDDEN, b: HIDDEN, c: HIDDEN });
+  });
+
+  it("hides the Since the start total when either week's total is Under 5", () => {
+    // 8 last week and "Under 10" since the start would leave the week before only 1.
+    const shown = protectCounts(raw({ enquiries: { last: column({ a: 8 }), before: column({ a: 1 }), since: column({ a: 9 }) } }), SLUGS);
+    expect(shown.counts.enquiries.before.total).toBe(UNDER_FIVE);
+    expect(shown.counts.enquiries.since.total).toBe(HIDDEN);
+  });
+
+  it("shows public counts exactly, with their change, and open shops exactly", () => {
+    const shown = protectCounts(
+      raw({ listings: { last: column({ a: 1, b: 2 }), before: column({ a: 4 }), since: column({ a: 9, b: 2 }, 1) } }, column({ a: 2, c: 1 })),
+      SLUGS,
+    );
+    expect(shown.counts.listings.last).toEqual({ campuses: { a: "1", b: "2", c: "0" }, total: "3" });
+    expect(shown.counts.listings.change).toEqual({ campuses: { a: "−3", b: "+2", c: "0" }, total: "−1" });
+    expect(shown.counts.listings.since).toEqual({ campuses: { a: "9", b: "2", c: "0" }, total: "12" });
+    expect(shown.openShops).toEqual({ campuses: { a: "2", b: "0", c: "1" }, total: "3" });
+  });
+});
+
+describe("no small figure can be worked out (a brute-force check of the week rule)", () => {
+  it("leaves every campus in a hidden week at least two possible values, for three campuses at 0 to 20 and a gone campus at 0 to 2", () => {
+    const groups = new Map<string, number[][]>();
+    for (let a = 0; a <= 20; a++) for (let b = 0; b <= 20; b++) for (let c = 0; c <= 20; c++) for (const gone of [0, 1, 2]) {
+      const shown = protectCounts(raw({ enquiries: { last: column({ a, b, c }, gone) } }), SLUGS).counts.enquiries.last;
+      // A reader is assumed to know what's counted on a campus that has gone.
+      const key = `${JSON.stringify(shown)}|${gone}`;
+      groups.set(key, [...(groups.get(key) ?? []), [a, b, c]]);
+    }
+    for (const [key, members] of groups) {
+      if (!key.includes(HIDDEN)) continue;
+      // Leave out the grid's edge, where a value can't be larger only because the loop stops at 20.
+      if (members.some((member) => member.some((value) => value > 12))) continue;
+      SLUGS.forEach((slug, index) => {
+        expect(new Set(members.map((member) => member[index])).size, `${key} at ${slug}`).toBeGreaterThan(1);
+      });
+    }
+  });
+});
+```
+
+*Task 5, Step 4 commit message.* Replace "the next-smallest campus Hidden when one would give it away" with "a private week's campuses all Hidden when any campus has 1 to 4, totals always shown".
+
+*Task 10, Step 1 (`AdminNumbers.test.tsx`).*
+- Replace the two lines `// Midrand's 3 enquiries are Under 5, so Pretoria's 12, the next smallest, is Hidden.` and `expect(midrand.closest("tr")).toHaveTextContent("Under 5");` with:
+  ```ts
+  // Midrand had 3 enquiries, so last week's enquiries aren't shown by campus at all.
+  expect(midrand.closest("tr")).toHaveTextContent("Hidden");
+  ```
+- In `getAllByText(…)`, the Hidden key text becomes `"Hidden: not shown by campus, because a campus had from 1 to 4 that week (or 1 to 9 since the start), so no one can be picked out."`.
+- The campus view's regex `/Under 5.*8.*—.*20\+/` becomes `/Hidden.*8.*—.*Hidden/`.
+- The All campuses figures (15, 8, +7, 20+) don't change.
+
+*Task 10, Step 2 (`NumbersKey`).*
+- The `UNDER_FIVE` item becomes `` {`${UNDER_FIVE}: a private total from 1 to 4.`} ``.
+- The `HIDDEN` item becomes `` {`${HIDDEN}: not shown by campus, because a campus had from 1 to 4 that week (or 1 to 9 since the start), so no one can be picked out.`} ``.
+- The tens line stays.
+
+*Task 13.* The numbers test's `getByText("Hidden: not shown, so the total can't reveal a small number.")` takes the same new Hidden text.
+
+*Task 14.*
+- **CLAUDE.md.** In the new numbers line, replace "1 to 4 as "Under 5", a second cell "Hidden" where the total would give one away, Since the start in tens" with "a private week's campuses all "Hidden" when any campus (or a gone one) has 1 to 4, totals exact or "Under 5", Since the start in tens and by campus only when both weeks are".
+- **GO-LIVE.** Drop the item "**The numbers' small-number rule** leaves one inference…".
+- **Hand-over.** Drop item 7, "The small-number rule's residual…".
+- **Spec 2.13.** Record the replacement rule under "Changes on plan review".
+
+*Residuals to note for Lama.*
+- Deletions change past weeks' figures between page loads. Two loads can show that something was deleted, but never a small activity count.
+- The rule assumes a reader may know the gone figure.
+
+**2. Task 5, Step 2: the week label.** At HEAD, `dayMonth` (`lib/format.ts`) returns "12 Oct", so the plan's `weekFrom` gives "12 Oct to 18 Oct". Task 5 and Task 10 both expect "12 to 18 Oct". Import `eventDate` from `@/lib/format` as well, use `label: weekLabel(monday)` in `weekFrom`, and add:
+
+```ts
+/** "12 to 18 Oct", or "28 Sep to 4 Oct" across a month's end. */
+function weekLabel(monday: string): string {
+  const sunday = addDays(monday, 6);
+  return eventDate(monday).month === eventDate(sunday).month
+    ? `${eventDate(monday).day} to ${dayMonth(sunday)}`
+    : `${dayMonth(monday)} to ${dayMonth(sunday)}`;
+}
+```
+
+**3. Task 1: the spike also proves the dynamic-route shape, and the working tree stays clean.**
+- **Edit only the scratch copy.** Do Step 3 in the scratch copy: write the new `/admin` text into `$S/app/admin/page.tsx`. On Pass, Step 10 copies it into the working tree. Step 9 (restoring with Write) goes away.
+- **Add a dynamic route, in `$S` only.** Also apply Task 2's text for `app/admin/sellers/[slug]/page.tsx`. A blocking page with `generateStaticParams` is otherwise untested, and Task 2 converts eight of them. Add to Step 6:
+  ```bash
+  curl -s -o /dev/null -w "%{http_code}\n" -H "Cookie: vossie_session=$STUDENT" http://localhost:3204/admin/sellers/tech-corner   # 404
+  curl -s -o /dev/null -w "%{http_code}\n" -H "Cookie: vossie_session=$ADMIN" http://localhost:3204/admin/sellers/tech-corner     # 200
+  curl -s -o /dev/null -w "%{http_code}\n" -H "Cookie: vossie_session=$ADMIN" http://localhost:3204/admin/sellers/no-such-shop    # 404
+  ```
+  `/admin/featured` then becomes the control (unchanged, G's pattern, still 200 with the 404 page inside), in place of `/admin/sellers`.
+- **Public pages don't move.** In Step 2, also run `pnpm build 2>&1 | tee build.log` in the start copy. In Step 4, add the check below; the expected output is nothing. Pass also requires that no other route's symbol or size changes.
+  ```bash
+  diff <(grep -E "^[┌├└]" "$START/build.log" | grep -v " /admin") <(grep -E "^[┌├└]" build.log | grep -v " /admin")
+  ```
+- **`j-session.mjs`.** Use `browser.newPage({ baseURL: "http://localhost:3204", serviceWorkers: "block" })`.
+- **Confirmed against Next 16.4's docs:**
+  - `instant.md`: `false` opts the segment out of static-shell validation.
+  - `streaming.md` ("The HTTP contract") and `not-found.md`: a `notFound()` before anything streams gives a 404.
+  - `redirect.md`: a page `redirect()` outside streaming gives a 307.
+  - HEAD's root layout has no `<Suspense>` round `{children}`.
+  - `signInHref` gives `/login?next=%2Fadmin`, and `app/not-found.tsx` contains "find that page".
+  - `staff.spec.ts`'s noindex check still holds, because Next adds noindex to every 404.
+  - `routes.spec.ts` checks only the final URL.
+
+**4. Task 8, Step 2 (`giveStaffRole`).** "Already has that role" is checked after the token is taken. That contradicts plan decision 7: sending the same form again would go silently to `/admin/staff`. Replace the three field checks with the code below, and keep the later `given === "held"` branch as the race fallback:
+
+```ts
+  const target = email === "" ? null : await findAccountByEmail(email);
+  if (email === "") errors.push("staff-email-missing");
+  else if (!target) errors.push("staff-email-unknown");
+  if (!role) errors.push("staff-role-missing");
+  else if (target?.roles.includes(role)) errors.push("staff-role-held");
+```
+
+**5. Task 4, Files.** `lib/staff/admin-actions.test.ts` is listed but never changed. Keep it, and add to its "approves a waiting shop" test:
+`expect(sampleStore().sellerProfiles.get("acc-pending")?.approvedAt).toBe(STAFF_NOW.toISOString());`
+Add the file to Step 8's hand-over list.
+
+**6. Task 3, Step 6 → Task 9.** Move these into Task 9, so no admin page links to a 404 between Tasks 3 and 9:
+- the two new `STAFF_SECTIONS` entries (Numbers, Staff);
+- `lib/staff/paths.test.ts`'s section-list change;
+- `staff-parts.test.tsx`'s `toHaveLength(10)`.
+
+Task 9 adds them, with a note that `/admin/numbers` returns 404 until Task 10. The path constants stay in Task 3.
+
+**7. Task 2, Step 3.** Also replace `staffMetadata`'s comment in `lib/staff/access.ts`, which says the title "streams in", with:
+
+```ts
+/**
+ * A staff page's tab title (plan decision 1): its own for staff, "Page not found" for everyone else, so the title never
+ * names the page. Never indexed. It reads the session; staff pages are blocking pages, so it resolves before the first
+ * byte (stage J spec decision 15).
+ */
+```
+
+**8. Task 14, Step 3 (CLAUDE.md, only if Task 1 passed).**
+- Line 42: "(staff pages and `/browse` do this)" becomes "(`/browse` does this; staff pages block instead, so theirs resolves before the first byte)".
+- Line 43: append " (staff pages, which block, call `requireStaff()` at the top instead)" to its first sentence.
+- In the new "Staff pages" line, keep ", which marks them `noindex`" after "Their tab title comes from `staffMetadata()`".
+
+**9. Task 14, Step 5 (GO-LIVE).**
+- Add a stage J row to section 5's table, `| Admin: staff accounts, weekly numbers, hidden listings and requests with Show again (stage J) | /admin/staff, /admin/numbers, /admin/hidden | **Built in sample mode** |`, and update the Totals.
+- Extend line 5's "Updated …" sentence with ", and after staff accounts, the admin's numbers and Show again, in sample mode (stage J)".
+- "add after it" reads "append to the end of that same line".
+
+**10. Task 13, Step 6: stale comments.**
+- `tests/e2e/staff.spec.ts:34` becomes "// Next adds its own noindex to every 404 page, beside the page's: every one says so."
+- `staff.spec.ts:40` becomes "// The CSV is a real 404 too: a route handler answers before anything is sent."
+- `staff-checks.spec.ts`'s `expectNoSeriousIssues` doc drops "streams in".
+
+**11. Task 13, the Show again test.** The fresh Tech corner listing stays published. Say so in the test's comment: "The listing stays published: harmless with a fresh server per run; with E2E_REUSE_SERVER=1, Tech corner's and browse's counts drift, as after selling-writes and alerts-writes." There is no delete flow. No other project's counts are affected: the project runs last, and the listing is a fresh `uniqueWord()` one.
+
+**12. Tasks 9, 11 and 13: WCAG 2.5.3 (Label in Name).** Each link's accessible name now starts with its visible words.
+- In Task 9's `RemoveLink`, the link text is `Remove {role} role<span className="sr-only">{` for ${person.firstName}`}</span>`, named "Remove mentor role for Naledi".
+- In Task 11's `ShowLink`, the link text is `Show again<span className="sr-only">{`: ${item.title}`}</span>`, named "Show again: Casio fx-991ZA Plus".
+- Update the link names in `AdminStaff.test.tsx`, `AdminHidden.test.tsx` and Task 13's e2e to match.
+
+**13. Task 11, Step 4.** `app/admin/hidden/page.tsx` uses `staffMetadata("admin", "Hidden listings and requests")`, so the tab title matches the H1. Record this in spec section 3's page titles.
+
+**14. Task 11: a check.** `components/forms/summary-ids.test.tsx:62` mocks `@/lib/staff/admin-actions` with a fixed list of exports. If any view rendered there imports `showListingAgain` or `showRequestAgain`, add both to that factory. As written, the Show again views render no `ErrorSummary` and aren't rendered there.
+
+**15. Sizing: Task 13 splits in two.**
+- **13a:** `playwright.config.ts` (the `staff-accounts-writes` project), `tests/e2e/helpers/staff-accounts.ts`, `staff-accounts-writes.spec.ts`, and `staff.spec.ts`'s status checks with amendment 10's comments.
+- **13b:** `staff-accounts-checks.spec.ts` (axe, layout shift, size), with the ledger's Task 13 row and the staff pages' sizes.
+
+13b runs after 13a is committed. Task 2 stays one task: it's mechanical, and all 16 pages were diffed against HEAD with nothing lost or reordered.
 
 ## Store design
 
