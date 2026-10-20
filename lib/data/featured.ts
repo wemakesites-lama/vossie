@@ -4,6 +4,7 @@ import { addDays } from "@/lib/staff/rules";
 import type { CampusChoice, Seller } from "@/lib/types";
 import { listedListings, liveSellerRows, toSeller } from "./catalog";
 import type { FeaturedPinRow } from "./rows";
+import { isOwnShop } from "./staff-shops";
 import { sampleStore } from "./store";
 
 // Featured today from the store (staff tools spec 2.8, plan decision 9). Who may be featured: Verified, open (approved,
@@ -31,9 +32,14 @@ function eligibleSellers(): Seller[] {
     .map(toSeller);
 }
 
-/** The sellers an admin may pin (spec 2.8), by name. */
-export async function featuredChoices(): Promise<Seller[]> {
-  return eligibleSellers().sort((a, b) => a.name.localeCompare(b.name));
+/**
+ * The sellers an admin may pin (spec 2.8), by name, leaving out `viewerId`'s own shop: another admin must pin it
+ * (stage L spec decision 1). Null leaves nobody out.
+ */
+export async function featuredChoices(viewerId: string | null = null): Promise<Seller[]> {
+  return eligibleSellers()
+    .filter((seller) => viewerId === null || !isOwnShop(viewerId, seller.slug))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function pinsFor(campus: string, day: string): FeaturedPinRow[] {
@@ -117,11 +123,17 @@ export async function removePin(id: string): Promise<FeaturedPinRow | null> {
   return { ...pin };
 }
 
-/** A pin as the admin's Featured page lists it. */
-export type PinView = FeaturedPinRow & { sellerName: string; pinnedByName: string };
+/** One pin, so Remove can check whose shop it is before anything changes (stage L spec decision 1). Null when none. */
+export async function getPin(id: string): Promise<FeaturedPinRow | null> {
+  const pin = sampleStore().featuredPins.get(id);
+  return pin ? { ...pin } : null;
+}
 
-/** Pins from `fromDay` on, soonest first, then by campus, then in the order made. */
-export async function listPins(fromDay: string): Promise<PinView[]> {
+/** A pin as the admin's Featured page lists it. `own`: the viewing admin's own shop, so another admin removes it. */
+export type PinView = FeaturedPinRow & { sellerName: string; pinnedByName: string; own: boolean };
+
+/** Pins from `fromDay` on, soonest first, then by campus, then in the order made. `viewerId` marks their own. */
+export async function listPins(fromDay: string, viewerId: string | null = null): Promise<PinView[]> {
   const store = sampleStore();
   return [...store.featuredPins.values()]
     .filter((pin) => pin.day >= fromDay)
@@ -130,5 +142,6 @@ export async function listPins(fromDay: string): Promise<PinView[]> {
       ...pin,
       sellerName: store.sellers.get(pin.sellerSlug)?.name ?? pin.sellerSlug,
       pinnedByName: (pin.pinnedBy ? store.accounts.get(pin.pinnedBy)?.firstName : undefined) ?? "Deleted account",
+      own: viewerId !== null && isOwnShop(viewerId, pin.sellerSlug),
     }));
 }

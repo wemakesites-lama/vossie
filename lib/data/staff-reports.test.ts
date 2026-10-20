@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { deleteAccountData } from "./accounts";
 import { createReport, hasOpenReport } from "./reports";
-import { hideRequest } from "./requests";
+import { createRequest, hideRequest } from "./requests";
 import { createShop } from "./shops";
 import { approveShop, hideListing, staffPauseShop } from "./staff-shops";
 import {
@@ -245,6 +245,7 @@ describe("hidden listings and requests (stage J spec decision 14)", () => {
       listingState: "available",
       shopPausedByHub: true,
       requestClosed: false,
+      own: false,
     });
     expect(listings[1].shopPausedByHub).toBe(false);
     expect(requests).toEqual([
@@ -266,5 +267,59 @@ describe("hidden listings and requests (stage J spec decision 14)", () => {
   it("is empty when nothing is hidden", async () => {
     expect(await listHidden()).toEqual({ listings: [], requests: [] });
     expect(await countHidden()).toEqual({ listings: 0, requests: 0 });
+  });
+});
+
+describe("whose a report or a hidden item is (stage L spec decisions 1 and 4)", () => {
+  const sipho = async () =>
+    (
+      await createRequest({
+        askerId: "acc-seller",
+        fields: {
+          title: "Desk lamp for res",
+          categorySlug: "res-living",
+          campusSlug: "midrand",
+          details: "A lamp that clips onto a desk, by the weekend.",
+          budgetZar: null,
+          swapWelcome: false,
+          neededBy: null,
+        },
+        now: NOW,
+      })
+    ).id;
+  const reportOn = (target: { kind: "listing" | "seller" | "request"; id: string }, targetTitle: string) =>
+    createReport({ reporterId: "acc-student", target, targetTitle, reason: "scam", detail: "", now: NOW });
+
+  it("says when a report is about the viewing admin's own shop, listing or request, and then allows nothing", async () => {
+    const aboutShop = await reportOn({ kind: "seller", id: "tech-corner" }, "Tech corner");
+    const aboutListing = await reportOn({ kind: "listing", id: "l-001" }, "Casio fx-991ZA Plus calculator");
+    const aboutRequest = await reportOn({ kind: "request", id: await sipho() }, "Desk lamp for res");
+    for (const [id, kind] of [
+      [aboutShop, "shop"],
+      [aboutListing, "listing"],
+      [aboutRequest, "request"],
+    ] as const) {
+      const view = (await getReport(id, "acc-seller"))!;
+      expect([view.own, view.can], kind).toEqual([kind, { hide: false, pause: false }]);
+      expect((await getReport(id, "acc-admin"))!.own, kind).toBeNull();
+    }
+    // Another admin can still act, and with no viewer the view is as before (plan decision 3).
+    expect((await getReport(aboutListing, "acc-admin"))!.can).toEqual({ hide: true, pause: true });
+    expect((await getReport(aboutListing))!.own).toBeNull();
+    // The queue has no controls, so it names no owner.
+    expect((await listReports()).every((view) => view.own === null)).toBe(true);
+  });
+
+  it("marks the viewer's own hidden listings and requests", async () => {
+    await hideListing("l-001", "Checking it.", NOW);
+    const id = await sipho();
+    await hideRequest(id, "Checking it.", NOW);
+    const mine = await listHidden("acc-seller");
+    expect(mine.listings.map((item) => [item.id, item.own])).toEqual([["l-001", true]]);
+    expect(mine.requests.map((item) => [item.id, item.own])).toEqual([[id, true]]);
+    const theirs = await listHidden("acc-admin");
+    expect([theirs.listings[0].own, theirs.requests[0].own]).toEqual([false, false]);
+    expect((await getHidden("listing", "l-001", "acc-seller"))?.own).toBe(true);
+    expect((await getHidden("request", id))?.own).toBe(false);
   });
 });

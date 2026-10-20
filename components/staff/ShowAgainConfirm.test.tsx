@@ -16,6 +16,7 @@ const listing: HiddenItem = {
   listingState: "available",
   shopPausedByHub: false,
   requestClosed: false,
+  own: false,
 };
 const request: HiddenItem = {
   ...listing,

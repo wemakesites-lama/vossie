@@ -1,5 +1,7 @@
+import { ownsTarget, type OwnKind } from "@/lib/staff/own";
 import type { ListingState, ReportOutcome, ReportReason, ReportTarget } from "@/lib/types";
 import type { ReportRow } from "./rows";
+import { isOwnListing, isOwnRequest } from "./staff-shops";
 import { sampleStore } from "./store";
 
 // The Hub's reports queue (staff tools spec 2.3, plan decision 5), over E's reports. A report names its reporter by
@@ -36,6 +38,12 @@ export type ReportView = {
   shop: { slug: string; name: string } | null;
   /** What the Hub can still do, besides Dismiss (plan decision 5). Nothing once it's closed. */
   can: { hide: boolean; pause: boolean };
+  /**
+   * The viewing admin's own shop, listing or request, when it's one (stage L spec decisions 1 and 4): their page says
+   * why in place of the controls, and `can` is all false. Null for anyone else's, for something that has gone, and
+   * when no viewer is given (the queue, tests).
+   */
+  own: OwnKind | null;
 };
 
 const DELETED = "Deleted account";
@@ -51,7 +59,7 @@ function pausable(slug: string): boolean {
   return Boolean(profile && (profile.status === "approved" || (profile.status === "paused" && profile.pausedBy !== "staff")));
 }
 
-function toView(row: ReportRow): ReportView {
+function toView(row: ReportRow, viewerId: string | null): ReportView {
   const store = sampleStore();
   const open = row.status === "open";
   // A report about a deleted shop never reaches a new one on the same link (amendment 13.1).
@@ -83,6 +91,8 @@ function toView(row: ReportRow): ReportView {
       canHide = open && Boolean(requestRow) && !requestRow?.hiddenAt;
       break;
   }
+  // Whose it is (stage L spec decision 2): read now, from the store. Something that has gone is nobody's.
+  const own = viewerId !== null && exists ? ownsTarget(viewerId, { kind: row.targetKind, id: row.targetId }) : null;
   return {
     id: row.id,
     reporterId: row.reporterId,
@@ -101,13 +111,17 @@ function toView(row: ReportRow): ReportView {
     unseen,
     shop: shopRow ? { slug: shopRow.slug, name: shopRow.name } : null,
     can: {
-      hide: canHide,
-      pause: open && shopRow !== undefined && pausable(shopRow.slug),
+      hide: own === null && canHide,
+      pause: own === null && open && shopRow !== undefined && pausable(shopRow.slug),
     },
+    own,
   };
 }
 
-/** The queue (spec 2.3): open reports first, oldest first; then the 50 most recently closed. */
+/**
+ * The queue (spec 2.3): open reports first, oldest first; then the 50 most recently closed. The queue has no controls,
+ * so it names no owner (stage L plan decision 3).
+ */
 export async function listReports(): Promise<ReportView[]> {
   const rows = [...sampleStore().reports.values()];
   const open = rows.filter((row) => row.status === "open").sort((a, b) => a.createdAt.localeCompare(b.createdAt));
@@ -115,12 +129,13 @@ export async function listReports(): Promise<ReportView[]> {
     .filter((row) => row.status === "closed")
     .sort((a, b) => (b.closedAt ?? "").localeCompare(a.closedAt ?? ""))
     .slice(0, 50);
-  return [...open, ...closed].map(toView);
+  return [...open, ...closed].map((row) => toView(row, null));
 }
 
-export async function getReport(id: string): Promise<ReportView | null> {
+/** A report for its page. `viewerId` is the signed-in admin, so the view knows when it's about their own (stage L). */
+export async function getReport(id: string, viewerId: string | null = null): Promise<ReportView | null> {
   const row = sampleStore().reports.get(id);
-  return row ? toView(row) : null;
+  return row ? toView(row, viewerId) : null;
 }
 
 /** How many reports are open, for Overview (spec 2.3). */
@@ -210,9 +225,11 @@ export type HiddenItem = {
   shopPausedByHub: boolean;
   /** The request's asker had closed it, so it shows as closed. */
   requestClosed: boolean;
+  /** The viewing admin's own listing or request: another admin must show it again (stage L spec decision 1). */
+  own: boolean;
 };
 
-function hiddenListings(): HiddenItem[] {
+function hiddenListings(viewerId: string | null): HiddenItem[] {
   const store = sampleStore();
   return [...store.listings.values()].flatMap((row): HiddenItem[] => {
     if (!row.hiddenAt) return [];
@@ -230,12 +247,13 @@ function hiddenListings(): HiddenItem[] {
         listingState: row.state,
         shopPausedByHub: profile?.status === "paused" && profile.pausedBy === "staff",
         requestClosed: false,
+        own: viewerId !== null && isOwnListing(viewerId, row.id),
       },
     ];
   });
 }
 
-function hiddenRequests(): HiddenItem[] {
+function hiddenRequests(viewerId: string | null): HiddenItem[] {
   return [...sampleStore().requests.values()].flatMap((row): HiddenItem[] => {
     if (row.hiddenAt === null) return [];
     return [
@@ -250,6 +268,7 @@ function hiddenRequests(): HiddenItem[] {
         listingState: null,
         shopPausedByHub: false,
         requestClosed: row.status === "closed",
+        own: viewerId !== null && isOwnRequest(viewerId, row.id),
       },
     ];
   });
@@ -259,18 +278,28 @@ const newestHiddenFirst = (a: HiddenItem, b: HiddenItem) => b.hiddenAt.localeCom
 
 /**
  * Everything the Hub has hidden, newest hidden first (spec decision 14). The Reports queue keeps only the 50 most
- * recently closed reports, so this list is the only place an old hide stays reachable.
+ * recently closed reports, so this list is the only place an old hide stays reachable. `viewerId` marks the viewing
+ * admin's own (stage L).
  */
-export async function listHidden(): Promise<{ listings: HiddenItem[]; requests: HiddenItem[] }> {
-  return { listings: hiddenListings().sort(newestHiddenFirst), requests: hiddenRequests().sort(newestHiddenFirst) };
+export async function listHidden(
+  viewerId: string | null = null,
+): Promise<{ listings: HiddenItem[]; requests: HiddenItem[] }> {
+  return {
+    listings: hiddenListings(viewerId).sort(newestHiddenFirst),
+    requests: hiddenRequests(viewerId).sort(newestHiddenFirst),
+  };
 }
 
 /** One hidden listing or request, for its Show again page. Null when it's gone or isn't hidden. */
-export async function getHidden(kind: "listing" | "request", id: string): Promise<HiddenItem | null> {
-  return (kind === "listing" ? hiddenListings() : hiddenRequests()).find((item) => item.id === id) ?? null;
+export async function getHidden(
+  kind: "listing" | "request",
+  id: string,
+  viewerId: string | null = null,
+): Promise<HiddenItem | null> {
+  return (kind === "listing" ? hiddenListings(viewerId) : hiddenRequests(viewerId)).find((item) => item.id === id) ?? null;
 }
 
 /** How many of each are hidden, for Overview's line (plan decision 17). */
 export async function countHidden(): Promise<{ listings: number; requests: number }> {
-  return { listings: hiddenListings().length, requests: hiddenRequests().length };
+  return { listings: hiddenListings(null).length, requests: hiddenRequests(null).length };
 }

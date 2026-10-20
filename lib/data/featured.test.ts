@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { addPin, featuredChoices, featuredFor, listPins, removePin } from "./featured";
+import { addPin, featuredChoices, featuredFor, getPin, listPins, removePin } from "./featured";
 import type { FeaturedPinRow } from "./rows";
 import { resetSampleStore, sampleStore } from "./store";
 
@@ -100,5 +100,26 @@ describe("pins (staff tools spec 2.8)", () => {
       expect.objectContaining({ sellerName: "Nail bar", campusSlug: "all", day: "2026-10-20" }),
     ]);
     expect(await removePin("pin-nope")).toBeNull();
+  });
+});
+
+describe("an admin's own shop on Featured (stage L spec decision 1)", () => {
+  it("leaves the viewer's own shop out of the choices, and marks its pins", async () => {
+    sampleStore().sellers.get("tech-corner")!.verified = true;
+    expect((await featuredChoices()).map((seller) => seller.slug)).toContain("tech-corner");
+    expect((await featuredChoices("acc-seller")).map((seller) => seller.slug)).not.toContain("tech-corner");
+    expect(await featuredChoices("acc-admin")).toEqual(await featuredChoices());
+    const made = await pin("tech-corner");
+    if (typeof made === "string") throw new Error(`The pin wasn't made: ${made}`);
+    expect((await listPins(DAY, "acc-seller")).map((view) => [view.sellerSlug, view.own])).toEqual([["tech-corner", true]]);
+    expect((await listPins(DAY, "acc-admin"))[0].own).toBe(false);
+    expect((await listPins(DAY))[0].own).toBe(false);
+  });
+
+  it("finds one pin by id, for Remove's check of whose shop it is", async () => {
+    const made = await pin("nail-bar");
+    if (typeof made === "string") throw new Error(`The pin wasn't made: ${made}`);
+    expect(await getPin(made.id)).toEqual(made);
+    expect(await getPin("pin-nope")).toBeNull();
   });
 });
