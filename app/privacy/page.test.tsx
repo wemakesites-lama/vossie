@@ -1,5 +1,5 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { SESSION_COOKIE, SIGN_IN_COOKIE } from "@/lib/auth/cookies";
@@ -265,7 +265,38 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     }
     expect(names.size).toBeGreaterThanOrEqual(5);
     const { container } = render(<PrivacyPage />);
-    for (const name of names) expect(container.textContent, name).toContain(name);
+    for (const name of names) {
+      if (NOT_YET_SET.has(name)) continue;
+      expect(container.textContent, name).toContain(name);
+    }
+  });
+
+  it("lets a cookie go unnamed only while no page or action can set it (Supabase plan, phase A)", () => {
+    // vossie_auth is Supabase's session cookie (lib/supabase/cookies.ts). Until phase B wires lib/supabase into sign-in,
+    // nothing imports it, so no visitor can get the cookie. Phase B names it on this page and empties NOT_YET_SET.
+    // Since the sign-in client sends codes without cookies (lib/supabase/auth.ts), Supabase sets no other cookie, so
+    // vossie_auth-…-code-verifier needs no entry here.
+    const importers: string[] = [];
+    for (const file of appSourceFiles()) {
+      if (file.startsWith(SUPABASE_DIR)) continue;
+      if (supabaseImports(readFileSync(file, "utf8"), file).length > 0) importers.push(file.slice(process.cwd().length + 1));
+    }
+    if (NOT_YET_SET.size > 0) expect(importers).toEqual([]);
+  });
+
+  it("finds every way of reaching lib/supabase or Supabase's packages, relative paths included", () => {
+    const from = join(process.cwd(), "app", "account", "actions.ts");
+    expect(supabaseImports(`import { viewerClient } from "@/lib/supabase/viewer";`, from)).toHaveLength(1);
+    expect(supabaseImports(`import { authClient } from "../../lib/supabase/auth";`, from)).toHaveLength(1);
+    expect(supabaseImports(`export { adminClient } from '../../lib/supabase';`, from)).toHaveLength(1);
+    expect(supabaseImports(`const m = await import("../../lib/supabase/admin");`, from)).toHaveLength(1);
+    expect(supabaseImports(`import "@/lib/supabase/cookies";`, from)).toHaveLength(1);
+    expect(supabaseImports(`import type { Database } from\n  "@/lib/supabase/database.types";`, from)).toHaveLength(1);
+    expect(supabaseImports(`import { createServerClient } from "@supabase/ssr";`, from)).toHaveLength(1);
+    expect(supabaseImports(`import { x } from "../../lib/supabase-notes";`, from)).toEqual([]);
+    expect(supabaseImports(`import { x } from "@/lib/data";`, from)).toEqual([]);
+    // From inside lib, "./supabase/auth" is lib/supabase.
+    expect(supabaseImports(`import { authClient } from "./supabase/auth";`, join(process.cwd(), "lib", "x.ts"))).toHaveLength(1);
   });
 
   it("says what saved searches keep, that only you see them, and that deleting your account removes them (search alerts spec 2.15)", () => {
@@ -278,3 +309,46 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     expect(within(keep).getByText(/the shops you follow, your saved searches/)).toBeInTheDocument();
   });
 });
+
+/** Cookies named in code that nothing can set yet. Must be empty once anything outside lib/supabase imports it. */
+const NOT_YET_SET = new Set(["vossie_auth"]);
+
+const SUPABASE_DIR = join(process.cwd(), "lib", "supabase");
+
+/** The app's own source files: app, components, hooks and lib, and the files at the root (proxy.ts). Not tests. */
+function appSourceFiles(): string[] {
+  const files: string[] = [];
+  const isSource = (file: string) => /\.(tsx?|mts|cts|jsx?|mjs|cjs)$/.test(file) && !/\.test\.tsx?$/.test(file);
+  for (const folder of ["app", "components", "hooks", "lib"]) {
+    for (const file of readdirSync(join(process.cwd(), folder), { recursive: true }) as string[]) {
+      // A route folder can look like a file (app/sw.js serves the worker).
+      const path = join(process.cwd(), folder, file);
+      if (isSource(file) && statSync(path).isFile()) files.push(path);
+    }
+  }
+  for (const file of readdirSync(process.cwd())) {
+    if (isSource(file) && !/\.config\./.test(file) && !/^vitest\./.test(file)) files.push(join(process.cwd(), file));
+  }
+  return files;
+}
+
+/**
+ * The module paths in `source` (written at `file`) that reach Supabase: anything resolving into lib/supabase, by the
+ * "@/" alias or a relative path, and Supabase's own packages. Static imports and re-exports, import() and require().
+ */
+function supabaseImports(source: string, file: string): string[] {
+  const specifiers = [
+    ...source.matchAll(/\b(?:import|export)\b[^"';]*?\bfrom\s*["']([^"']+)["']/g),
+    ...source.matchAll(/\bimport\s*["']([^"']+)["']/g),
+    ...source.matchAll(/\b(?:import|require)\s*\(\s*["']([^"']+)["']\s*\)/g),
+  ].map((match) => match[1]);
+  return specifiers.filter((specifier) => {
+    if (specifier.startsWith("@supabase/")) return true;
+    const target = specifier.startsWith("@/")
+      ? join(process.cwd(), specifier.slice(2))
+      : specifier.startsWith(".")
+        ? resolve(dirname(file), specifier)
+        : null;
+    return target !== null && (target === SUPABASE_DIR || target.startsWith(`${SUPABASE_DIR}/`));
+  });
+}
