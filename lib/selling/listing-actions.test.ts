@@ -6,15 +6,18 @@ import { addFollow } from "@/lib/data/follows";
 import { getNotifications } from "@/lib/data/notifications";
 import { getOwnListing, listOwnListings, setOwnListingState } from "@/lib/data/own-listings";
 import { attachPhotos, getPhoto, photoIdOf, storePhotos } from "@/lib/data/photos";
+import { addSavedSearch, listSavedSearches, setSavedSearchPaused } from "@/lib/data/saved-searches";
 import { createSession } from "@/lib/data/sessions";
 import { setShopPaused } from "@/lib/data/shops";
 import { staffPauseShop, staffResumeShop } from "@/lib/data/staff-shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { DAY_MS, KEEP_MAX } from "@/lib/messaging/rules";
+import type { MatchQuery } from "@/lib/types";
 import { ascii, containsText, GPS, pngBytes } from "@/tests/helpers/image-bytes";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { issueListingToken, listingForm, LISTING_TOKEN_TTL_MS, MY_LISTINGS_FORM, takeListingToken, takeNotice } from "./form-state";
 import { changeListingState, deleteListingForm, saveListingForm } from "./listing-actions";
+import { resumeShop } from "./shop-actions";
 
 const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
 
@@ -550,5 +553,89 @@ describe("telling followers (community actions spec 2.19, plan decision 15)", ()
     await signedInAs("acc-seller");
     await redirectOf(async () => saveListingForm(await fanForm()));
     expect(await notes()).toEqual([]);
+  });
+});
+
+describe("saved-search alerts (search alerts spec 2.9 and 2.10, plan decision 13)", () => {
+  const FAN: MatchQuery = { q: "fan", category: null, campus: "midrand", price: null, pay: null, deals: null };
+  const matches = async (accountId = "acc-student") =>
+    (await getNotifications(accountId, 50)).filter((item) => item.kind === "search-match");
+
+  it("tells a matching saved search about a first publish, naming the listing", async () => {
+    await addSavedSearch("acc-student", FAN, NOW);
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm()));
+    const row = (await fan())!;
+    expect(await matches()).toMatchObject([
+      { text: "Desk fan matches your search “fan” at Midrand", href: `/listings/${row.id}` },
+    ]);
+  });
+
+  it("tells it when a draft is published, not when it's saved as one", async () => {
+    await addSavedSearch("acc-student", FAN, NOW);
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm({ intent: "draft" })));
+    expect(await matches()).toEqual([]);
+    const row = (await fan())!;
+    await redirectOf(async () => saveListingForm(await fanForm({ listing: row.id })));
+    expect(await matches()).toHaveLength(1);
+  });
+
+  it("tells it once for a listing published, saved back as a draft and published again (plan amendment 1)", async () => {
+    await addSavedSearch("acc-student", FAN, NOW);
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm()));
+    const row = (await fan())!;
+    await redirectOf(async () => saveListingForm(await fanForm({ listing: row.id, intent: "draft" })));
+    // On a later SAST day, so a second notification couldn't be folded into the first day's one.
+    vi.setSystemTime(new Date(NOW.getTime() + DAY_MS));
+    await redirectOf(async () => saveListingForm(await fanForm({ listing: row.id })));
+    expect((await getOwnListing("tech-corner", row.id))?.state).toBe("available");
+    expect(await matches()).toHaveLength(1);
+  });
+
+  it("says nothing about an edit, even one that makes the listing match", async () => {
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm({ title: "Desk cooler" })));
+    await addSavedSearch("acc-student", FAN, NOW);
+    const row = (await listOwnListings("tech-corner")).find((item) => item.title === "Desk cooler")!;
+    await redirectOf(async () => saveListingForm(await fanForm({ listing: row.id, title: "Desk fan" })));
+    expect((await fan())?.id).toBe(row.id);
+    expect(await matches()).toEqual([]);
+  });
+
+  it("says nothing about a relist, or a listing resumed", async () => {
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm()));
+    await addSavedSearch("acc-student", FAN, NOW);
+    const row = (await fan())!;
+    const move = (to: string, tab: string) => redirectOf(() => changeListingState(form({ listing: row.id, to, tab })));
+    await move("sold", "available");
+    await move("available", "sold");
+    await move("paused", "available");
+    await move("available", "paused");
+    expect((await fan())?.state).toBe("available");
+    expect(await matches()).toEqual([]);
+  });
+
+  it("stays quiet while the shop is paused, and when it resumes", async () => {
+    await addSavedSearch("acc-student", FAN, NOW);
+    sampleStore().sellerProfiles.get("acc-seller")!.status = "paused";
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm()));
+    await redirectOf(() => resumeShop());
+    expect(sampleStore().sellerProfiles.get("acc-seller")?.status).toBe("approved");
+    expect(await matches()).toEqual([]);
+  });
+
+  it("never tells the shop's own owner, or a paused search", async () => {
+    await addSavedSearch("acc-seller", FAN, NOW);
+    await addSavedSearch("acc-student", FAN, NOW);
+    const [saved] = await listSavedSearches("acc-student");
+    await setSavedSearchPaused("acc-student", saved.id, true, NOW);
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm()));
+    expect(await matches("acc-seller")).toEqual([]);
+    expect(await matches()).toEqual([]);
   });
 });

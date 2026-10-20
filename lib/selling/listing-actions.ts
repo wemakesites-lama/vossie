@@ -12,6 +12,7 @@ import {
   setOwnListingState,
 } from "@/lib/data/own-listings";
 import { photoSrcsOf, storePhotos, type Upload } from "@/lib/data/photos";
+import { notifySavedSearches } from "@/lib/data/saved-searches";
 import { shopStanding } from "@/lib/data/staff-shops";
 import { listingsChanged } from "@/lib/data/tags";
 import { isId } from "@/lib/messaging/paths";
@@ -234,9 +235,10 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   if (!saved) redirect(myListingsPath());
   await clearForm(form);
   listingsChanged();
-  // A first publish (a new listing, or a draft published for the first time) by an open shop tells its followers, once
-  // a day (community actions plan decision 15 and amendment 1). Edits, relists, a shop resuming, and a listing
-  // published again after a save back to draft don't. `existing` is the row as it was before this save.
+  // A first publish (a new listing, or a draft published for the first time) by an open shop tells its followers and
+  // the matching saved searches, once a day (community actions plan decision 15 and amendment 1; search alerts plan
+  // decision 13). Edits, relists, a shop resuming, and a listing published again after a save back to draft don't.
+  // `existing` is the row as it was before this save.
   if (isFirstPublish(existing, saved.state) && owner.status === "approved" && !saved.hiddenAt) {
     await notifyFollowers({
       sellerSlug: owner.shop.slug,
@@ -244,6 +246,9 @@ export async function saveListingForm(formData: FormData): Promise<void> {
       listing: { id: saved.id, title: saved.title },
       now,
     });
+    // …and the students whose saved searches match it, once a day per search, under the same condition, so the two
+    // can't disagree about what's new (search alerts spec 2.9 to 2.11). Matching reads saved searches, never listings.
+    await notifySavedSearches({ listingId: saved.id, now });
   }
   let notice = "published";
   if (saved.state === "draft") notice = "drafted";
