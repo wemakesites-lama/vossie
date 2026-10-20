@@ -10,10 +10,18 @@ export const REPORT_DETAIL_MAX = 500;
 /** Typed text kept in form state after a failed post is cut at this many characters (plan decision 8). */
 export const KEEP_MAX = 4000;
 export const DAY_MS = 24 * 60 * 60 * 1000;
+export const HOUR_MS = 60 * 60 * 1000;
 /** A sale confirms itself 7 days after the seller marks it done (spec 2.5). */
 export const AUTO_CONFIRM_MS = 7 * DAY_MS;
 /** Reports an account can send in any 24 hours (plan decision 17): the 11th within a day of the first is refused. */
 export const REPORTS_PER_DAY = 10;
+/**
+ * New conversations an account can start as a buyer in any 24 hours, offers left out (stage K spec decision 8; Lama,
+ * 2026-10-20): the 41st within a day is refused. Well past a busy first week of term; what a spammer would need.
+ */
+export const CONVERSATIONS_PER_DAY = 40;
+/** Messages an account can send in any hour, as buyer or seller, offers included (Lama, 2026-10-20). */
+export const MESSAGES_PER_HOUR = 120;
 /** How many notifications /notifications shows (plan decision 12). */
 export const NOTIFICATIONS_SHOWN = 50;
 

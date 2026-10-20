@@ -168,6 +168,37 @@ export async function findConversation(buyerId: string, target: MessageTarget): 
   return findRow(buyerId, target)?.id ?? null;
 }
 
+/**
+ * How many conversations `buyerId` started as a buyer after `since` (stage K spec 4): enquiries and shop questions.
+ * Offers are left out (they have their own limit; community actions spec 2.9), and a message that joins a
+ * conversation the buyer has already makes no row, so it isn't counted. A deleted buyer's rows have no buyer.
+ */
+export async function countConversationsStartedSince(buyerId: string, since: Date): Promise<number> {
+  return [...sampleStore().conversations.values()].filter(
+    (row) => row.buyerId === buyerId && !row.requestId && Date.parse(row.createdAt) > since.getTime(),
+  ).length;
+}
+
+/**
+ * How many messages the account sent after `since` (stage K spec 4): as the buyer in its own conversations, and as the
+ * seller in its shop's (`shopSlug`, null for an account with no shop). Offers' first messages count for the shop.
+ */
+export async function countMessagesSentSince(accountId: string, shopSlug: string | null, since: Date): Promise<number> {
+  const { conversations, messages } = sampleStore();
+  let count = 0;
+  for (const message of messages.values()) {
+    if (Date.parse(message.sentAt) <= since.getTime()) continue;
+    const row = conversations.get(message.conversationId);
+    if (!row) continue;
+    const mine =
+      message.from === "buyer"
+        ? row.buyerId === accountId
+        : shopSlug !== null && !row.sellerGone && row.sellerSlug === shopSlug;
+    if (mine) count += 1;
+  }
+  return count;
+}
+
 export type NewConversation = {
   buyerId: string;
   /** The listing, or null for a question about the shop (plan decision 2). */

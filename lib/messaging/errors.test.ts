@@ -51,3 +51,17 @@ describe("messaging's error words (messaging spec 3.1 and 3.4, plan decision 26)
     ]);
   });
 });
+
+describe("the limits' words (stage K spec 4 \"Words\")", () => {
+  it("says what was counted and what still works, linked to no field", () => {
+    const fields = composerFields({ kind: "listing", listingId: "l-001" });
+    expect(messagingErrors(["conversation-rate", "message-rate"], fields)).toEqual([
+      {
+        message:
+          "You've started 40 conversations in the last 24 hours. You can still reply in those. Try again later to start a new one.",
+        fieldId: null,
+      },
+      { message: "You've sent 120 messages in the last hour. Try again later.", fieldId: null },
+    ]);
+  });
+});

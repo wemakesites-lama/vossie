@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createAccount } from "./accounts";
 import {
   confirmSale,
+  countConversationsStartedSince,
+  countMessagesSentSince,
   exportConversations,
   findConversation,
   forgetAccountInMessaging,
@@ -23,6 +25,15 @@ import { resetSampleStore, sampleStore } from "./store";
 const NOW = new Date("2026-10-14T08:42:00.000Z");
 const later = (minutes: number) => new Date(NOW.getTime() + minutes * 60_000);
 const CALCULATOR = { id: "l-001", title: "Casio fx-991ZA Plus calculator" };
+const LAMP = {
+  title: "Desk lamp for res",
+  categorySlug: "res-living",
+  campusSlug: "midrand",
+  details: "A lamp that clips onto a desk, by the weekend.",
+  budgetZar: 150,
+  swapWelcome: false,
+  neededBy: null,
+};
 
 beforeEach(() => {
   resetSampleStore();
@@ -861,5 +872,62 @@ describe("offers on Looking For requests (community actions spec 2.7 to 2.12)", 
     // Once the request has gone, the title it had when it went up is the one that is left.
     sampleStore().requests.delete(posted.id);
     expect(await aboutOf("acc-student", "Your request")).toEqual(["Your request: Desk lamp for res"]);
+  });
+});
+
+describe("counting what an account started and sent (stage K spec 4)", () => {
+  const DAY_AGO = new Date(NOW.getTime() - 24 * 60 * 60 * 1000);
+  const HOUR_AGO = new Date(NOW.getTime() - 60 * 60 * 1000);
+
+  it("counts the conversations a buyer started after since: enquiries and shop questions, never offers", async () => {
+    const buyer = await newBuyer();
+    await startConversation({ buyerId: buyer.id, listing: CALCULATOR, sellerSlug: "tech-corner", body: "Hi", swapOffer: null, now: NOW });
+    await startConversation({ buyerId: buyer.id, listing: null, sellerSlug: "tech-corner", body: "Hi", swapOffer: null, now: NOW });
+    // Joining the conversation it already has about the calculator starts nothing (messaging spec 2.2).
+    await startConversation({ buyerId: buyer.id, listing: CALCULATOR, sellerSlug: "tech-corner", body: "Again", swapOffer: null, now: later(1) });
+    const request = await createRequest({ askerId: buyer.id, fields: LAMP, now: NOW });
+    await startOffer({ askerId: buyer.id, request: { id: request.id, title: request.title }, sellerSlug: "tech-corner", listing: null, body: "I can help.", now: NOW });
+    expect(await countConversationsStartedSince(buyer.id, DAY_AGO)).toBe(2);
+  });
+
+  it("counts only conversations after since, strictly (the 24 hours slide)", async () => {
+    const buyer = await newBuyer();
+    await startConversation({ buyerId: buyer.id, listing: CALCULATOR, sellerSlug: "tech-corner", body: "Hi", swapOffer: null, now: DAY_AGO });
+    expect(await countConversationsStartedSince(buyer.id, DAY_AGO)).toBe(0);
+    expect(await countConversationsStartedSince(buyer.id, new Date(DAY_AGO.getTime() - 1))).toBe(1);
+  });
+
+  it("forgets a deleted buyer's conversations", async () => {
+    const buyer = await newBuyer();
+    await startConversation({ buyerId: buyer.id, listing: CALCULATOR, sellerSlug: "tech-corner", body: "Hi", swapOffer: null, now: NOW });
+    await forgetAccountInMessaging(buyer.id, null);
+    expect(await countConversationsStartedSince(buyer.id, DAY_AGO)).toBe(0);
+  });
+
+  it("counts a buyer's messages and a seller's messages through their shop, never the other side's", async () => {
+    const buyer = await newBuyer();
+    const { conversationId } = await startConversation({ buyerId: buyer.id, listing: CALCULATOR, sellerSlug: "tech-corner", body: "Hi", swapOffer: null, now: NOW });
+    await sendMessage({ conversationId, accountId: "acc-seller", body: "Yes, it is.", now: later(1) });
+    await sendMessage({ conversationId, accountId: buyer.id, body: "Great.", now: later(2) });
+    expect(await countMessagesSentSince(buyer.id, null, HOUR_AGO)).toBe(2);
+    // The sample seller's own fixture conversations are older than the hour.
+    expect(await countMessagesSentSince("acc-seller", "tech-corner", HOUR_AGO)).toBe(1);
+    // The same account, asked about without its shop, counts only what it sent as a buyer.
+    expect(await countMessagesSentSince("acc-seller", null, HOUR_AGO)).toBe(0);
+  });
+
+  it("counts an offer's first message for the shop that sent it", async () => {
+    const asker = await newBuyer();
+    const request = await createRequest({ askerId: asker.id, fields: LAMP, now: NOW });
+    await startOffer({ askerId: asker.id, request: { id: request.id, title: request.title }, sellerSlug: "tech-corner", listing: null, body: "I can help.", now: NOW });
+    expect(await countMessagesSentSince("acc-seller", "tech-corner", HOUR_AGO)).toBe(1);
+    expect(await countMessagesSentSince(asker.id, null, HOUR_AGO)).toBe(0);
+  });
+
+  it("counts only messages after since, strictly (the hour slides)", async () => {
+    const buyer = await newBuyer();
+    await startConversation({ buyerId: buyer.id, listing: CALCULATOR, sellerSlug: "tech-corner", body: "Hi", swapOffer: null, now: HOUR_AGO });
+    expect(await countMessagesSentSince(buyer.id, null, HOUR_AGO)).toBe(0);
+    expect(await countMessagesSentSince(buyer.id, null, new Date(HOUR_AGO.getTime() - 1))).toBe(1);
   });
 });

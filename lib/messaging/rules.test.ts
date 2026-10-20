@@ -6,8 +6,11 @@ import {
   checkReportDetail,
   checkSwapOffer,
   cleanText,
+  CONVERSATIONS_PER_DAY,
   firstLine,
+  HOUR_MS,
   keepTyped,
+  MESSAGES_PER_HOUR,
   parseReason,
   REPORT_REASONS,
   statusLabel,
@@ -111,5 +114,13 @@ describe("report reasons (messaging spec 2.8)", () => {
 describe("an offer's status (community actions spec 2.7)", () => {
   it("says Offered until the asker replies", () => {
     expect(statusLabel("offered")).toBe("Offered");
+  });
+});
+
+describe("the message limits (stage K spec decision 8; Lama, 2026-10-20)", () => {
+  it("allows 40 new conversations in any 24 hours and 120 messages in any hour", () => {
+    expect(CONVERSATIONS_PER_DAY).toBe(40);
+    expect(MESSAGES_PER_HOUR).toBe(120);
+    expect(HOUR_MS).toBe(60 * 60 * 1000);
   });
 });

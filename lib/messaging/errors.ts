@@ -1,7 +1,7 @@
 import type { FormError } from "@/lib/auth/messages";
 import type { ReportTarget } from "@/lib/types";
 import type { MessageTarget } from "./paths";
-import { REPORT_REASONS, REPORTS_PER_DAY } from "./rules";
+import { CONVERSATIONS_PER_DAY, MESSAGES_PER_HOUR, REPORT_REASONS, REPORTS_PER_DAY } from "./rules";
 
 // Messaging's error words (spec 3.1 and 3.4; plan decision 26 for the ones the spec doesn't give), each linked to its
 // field, in the shape D's ErrorSummary and errorFor take.
@@ -43,7 +43,7 @@ export function reportFields(target: ReportTarget): { reason: string; reasonErro
   };
 }
 
-// A Map, so a stray code such as "toString" finds nothing. "report-rate" belongs to no field.
+// A Map, so a stray code such as "toString" finds nothing. "report-rate" and the two message limits belong to no field.
 const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Map([
   ["message-missing", { message: "Write a message first.", field: "body" }],
   ["message-length", { message: "Keep it under 1,000 characters.", field: "body" }],
@@ -53,6 +53,17 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
   [
     "report-rate",
     { message: `You've sent ${REPORTS_PER_DAY} reports in the last 24 hours. Try again later.`, field: "none" },
+  ],
+  [
+    "conversation-rate",
+    {
+      message: `You've started ${CONVERSATIONS_PER_DAY} conversations in the last 24 hours. You can still reply in those. Try again later to start a new one.`,
+      field: "none",
+    },
+  ],
+  [
+    "message-rate",
+    { message: `You've sent ${MESSAGES_PER_HOUR} messages in the last hour. Try again later.`, field: "none" },
   ],
 ]);
 
