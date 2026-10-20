@@ -518,13 +518,89 @@ Review notes that were deliberately not acted on:
 - **Docs still uncommitted, waiting for Lama:** the positioning and editorial spec, the Supabase spec and plan, and the other sessions' lines in this file and in the decisions log. This section, the stage G section above and decision row 73 were written from snippet files (`g-progress.md`, `g-decision.md`) for the same reason; row 73 because rows 71 and 72 are taken.
 - **JS room for stage H and later.** The listing forms are the highest pages at 152,287 B (18 B under the stop line, 1,313 B under the limit); every other page has at least 536 B (the listing page, 151,769 B).
 
+## 2026-10-19: Community actions built, in sample mode (stage H)
+- **Looking For requests** (`lib/data/requests.ts`):
+  - the board, the homepage, request pages and the sitemap read them from the store, tagged `requests`, with the 16 samples as the seed (they have no asker, so they can't take offers);
+  - a signed-in student posts at `/looking-for/new` (no contact details, 5 open and 5 a day, a one-time token so a second press makes nothing), edits, closes, reopens and deletes (`/looking-for/[id]/edit` and `/delete`), and sees them in **Your requests** (`/account/requests`, a row on the account page);
+  - every form works without the app's JavaScript.
+- **Offers** (`/looking-for/[id]/offer`):
+  - approved shops only; anyone else sees why not (no shop, waiting for approval, paused, their own request, offered already, a closed request, a sample request);
+  - an offer is an E conversation: Offered until the asker replies, one per shop per request (even when sent twice at once), 20 a shop a day, out of the reply rate, and the shop sees "The student who asked" until they write;
+  - the asker sees each offer on their request's page and gets a notification;
+  - the Hub can hide a reported request from its queue: the confirm page asks for a reason, every open report closes, the asker and the reporters are told, and the board drops it.
+- **Following shops:** Follow in the storefront's band (its own row; the owner gets none), Saved's Shops tab (a shop the Hub paused stays, marked Paused, with Unfollow), the dashboard's follower count (never who), and one notification a day when a followed shop first publishes a listing.
+- **Post a request, Offer to help and Follow follow the session:** a signed-out visitor gets the sign-in link, with a way back, and a signed-in one the real thing, with no client code. CLAUDE.md now says never to link a signed-out visitor straight at a page that needs sign-in (see the open points).
+- **Offline:** `/offline` (a self-contained page: no scripts, images or outside files, under 4 KB, noindex) and a small service worker, `/sw.js`, that shows it when a page load fails: one cache (`vossie_offline`), GET page loads only, navigation preload, and a kill switch (`WORKER_ON`). One statement in the inline boot script registers it after load, in production builds only (accepted by Lama, 2026-10-14): 65 to 89 B brotli in a page's HTML (this run: `/` 89 B, a listing 66 B, a request 77 B; the cut was 100 B).
+- **Privacy:** the policy and settings say what requests and follows keep and that deleting an account removes them; the privacy page names `vossie_offline`; the data export gains requests and the shops followed (no ids).
+- **Where the build differed from the plan** is in the plan's "Changes made during the build" (`docs/superpowers/plans/2026-10-14-community-actions.md`), with each change's commit. The ones worth knowing:
+  - Two review fix commits, one for each batch of reviews: the budget reads South African money ("R250,00" is 250), joined numbers are caught by the contact check, offer threads name the request as it is now and say "A closed shop", and a Hub-paused shop stays on Saved (`72eb71d`); commas and colons in the contact check, offer threads speak of a shop, a hidden request's threads say so, a passed needed-by date is kept on edit, and 44px request links (`46de4e0`).
+  - Post a request follows the session (`b52d5aa`), after a signed-out click-through was stranded on sign-in.
+  - Found while checking layout shift, and touching earlier stages' pages: on a slow network the footer jumped when a page's content arrived, so the listing, storefront, request, collection and Hub post pages wait behind `PageFallback` (a screen tall) instead of nothing (`625e9a3`); the homepage's hero and browse with no results hold still (`851f544`); the request form, Your requests, the offer composer and messaging's inbox, thread and notifications are a screen tall too (`864b50c`).
+  - Every page's first-visit JavaScript is 22 B smaller than stage G left it: the install event's name moved to `lib/install-event.ts`, because client code importing the boot script had cost 527 B on every page (`519d865`).
+  - Things the plan didn't foresee, now in the spec's section 8: a new request needs a one-time token, a shop that has gone is "A closed shop" while a Hub-paused one keeps its name, and a page that streams is at least a screen tall.
+- **Plan decisions Lama may want to revisit:**
+  - Decision 3: the contact check works by pattern (words for numbers get through; reports and the scam check cover that), and an ISBN passes.
+  - Decision 4: "a day" is the last 24 hours, and deleting a request gives its slot back.
+  - Decision 12: only approved shops offer, and the 16 sample requests can't take offers.
+  - Decision 15: the new-listing notification comes only from an open shop's first publish.
+  - Decision 16: Follow has its own row in the band, and the owner's row is empty (below).
+  - Decision 26: the sample wording (below).
+- **Checks:**
+  - lint and types are clean;
+  - 2,219 unit tests pass, in 294 files;
+  - end to end, 1,199 pass, 1,074 are skipped by design and none fail, across 360, 390, 768, 1024 and 1440px, with `selling-writes`, `staff-writes` and then `community-writes` (390px) run last. Skipped includes the review screenshots, which run only with `SCREENSHOTS=1`;
+  - axe finds no serious or critical issues on the request form (new, edit, and after a refusal), Delete request, Your requests (open, closed and hidden), the offer composer with its scam check, the thread waiting for a reply and the asker's side, the inbox, Hide the request and its error, Saved's Shops tab (signed out, signed in, with a card and after Unfollow), the storefront's Follow, and the offline page.
+- **First visit at 390px, JS brotli:** homepage 150,591 B, browse 151,338 B, listing 151,747 B, storefront 151,351 B, Saved 151,226 B, board 150,591 B, request 151,067 B, `/sell` 150,591 B; signed in: new and edit listing forms 152,265 B, request form 150,591 B, Your requests 150,591 B, offer composer 150,591 B, Saved's Shops tab 151,226 B (stop line 152,305 B, never passed; limit 153,600 B). The stage added no client code, and every page is exactly 22 B smaller than stage G left it (see above). The listing forms are still the highest pages, 40 B under the stop line and 1,335 B under the limit; the listing page is 558 B under it. The homepage's whole first visit, measured as spec 11 defines it, is 313,616 B against the 358,400 B cap.
+- **Layout shift** (fonts held back 800 ms, at 390 and 1440px):
+
+  | Page | 390px | 1440px |
+  |---|---|---|
+  | Looking For board, signed in | 0.0021 | 0.0022 |
+  | A request's page, as its asker | 0.0233 | 0.0029 |
+  | The request form | 0.0272 | 0.0016 |
+  | Edit request | 0.0003 | 0.0021 |
+  | Delete request | 0.0063 | 0.0005 |
+  | Your requests | 0.0003 | 0.0003 |
+  | The offer composer (no shop) | 0.0189 | 0.0006 |
+  | An offer thread, as the shop | 0.0153 | 0.0005 |
+  | Saved's Shops tab, signed in | 0.0013 | 0.0006 |
+  | A storefront with Follow | 0.0010 | 0.0007 |
+  | Inbox, thread and notifications | 0.0004 | 0.0006 |
+  | `/offline` | 0 | 0 |
+
+  All are under the limit of 0.05, on a slow connection as well (350 ms latency, 400 kbps, with the CSS cached).
+- Review screenshots: `docs/progress/community-actions/` (22, at 390 and 1440px).
+
+## 2026-10-19: Open points for Lama after the community actions build
+- **Signing in replays a gated page's redirect** (plan amendment 18). After a client navigation to a page that sent a signed-out visitor to sign-in, signing in replays that redirect, so the visitor is stranded on sign-in and the page never opens. It is stage D's sign-in flow; a `refresh()` in `afterSignIn` didn't clear it. Post a request, Offer to help and Follow work round it (links that follow the session), and CLAUDE.md says never to link a signed-out visitor straight at a gated page, but any other direct link to one still has it. It is on the go-live checklist.
+- **The worker's margin in the HTML is thin.** The registration costs 65 to 89 B brotli against the 100 B cut (this run: `/` 89 B, a listing 66 B, a request 77 B), and the homepage is closest, 11 B under. It varies with the build, so any change to the head, the boot script or a page's first chunk should rerun `tests/e2e/performance.spec.ts` (`the worker's registration costs under 100 B…`).
+- **The owner's empty row.** The storefront's band reserves an empty 52px row for the owner on phones and tablets: it is the Follow row's space, kept so nothing moves when the session's part streams in, and the owner has no Follow. Removing it shows the owner a shorter band than everyone else and moves the page when the session arrives; it is Lama's call (`.seller-follow` in `app/globals.css`).
+- **A Saved card for a Hub-paused shop isn't checked by axe in a browser.** A followed shop the Hub has paused shows "Paused", Unfollow and no storefront link (unit-tested); axe never sees it, because no sample account follows a paused shop and making one needs a Hub pause, a staff write that runs in another project. Its colours are navy on pale (about 11:1, worked out by hand from the CSS).
+- **The `selling-writes` flake did not recur** (plan amendment 21.4). In Task 24's runs all 6 `selling-writes` tests passed in the one run that reached the project; the other runs stopped earlier (see the checks above). Its cause is still unexplained, so a failure there in a later run is worth chasing.
+- **The homepage's whole first visit swung between runs.** Amendment 20.3: it varied by about 3 KB (13 KB at worst, once past the 358,400 B cap) with link prefetches and lazy photos, so the test now measures the first visit as spec 11 defines it (before below-the-fold photos, leaving out `?_rsc=` prefetches and lazy images below the fold). It is 313,616 B in this run (313,540 B in the last, steady to 2 B within a run); the cap is unchanged. The old measure is logged beside it as `everything` (344,530 B this run).
+- **Sample wording to review** (plan decision 26):
+  - the request form's hints and errors: `lib/looking-for/errors.ts`, `components/looking-for/RequestFormView.tsx`; the composer's notes: `components/looking-for/OfferView.tsx`;
+  - the status lines and the notification sentences: `lib/looking-for/words.ts`, `lib/following/rules.ts`; the offer threads' words: `lib/looking-for/words.ts`, `components/messages/OfferAbout.tsx`, `ThreadView.tsx`;
+  - Your requests' and Saved's Shops empty states, and the delete page's lines: `components/looking-for/YourRequestsView.tsx`, `components/saved/FollowedShopsView.tsx`, `components/looking-for/DeleteRequestView.tsx`; the dashboard's followers line: `followersLine` in `lib/following/rules.ts`, shown by `components/sell/Dashboard.tsx`;
+  - the offline page's words beyond the spec's: `lib/offline.ts`;
+  - the privacy policy's and settings' new sentences: `app/privacy/page.tsx`, `components/account/PrivacySettingsView.tsx`.
+- **Requests and offers: limits counted before the write.** The 5 open requests, 5 a day and 20 offers a day are counted with awaits before the write, so forms sent at the same moment can pass them; one offer per shop per request is exact even sent twice at once. The real backend counts them in the database, beside a unique index on the conversation's request and shop (go-live checklist, section 6).
+- **The kill switch reaches phones slowly.** `WORKER_ON = false` stops pages registering the worker and serves one that removes itself, but a phone that already has the worker only gets it through the browser's own update check, which can take up to about a day (a plain reload doesn't trigger it). The go-live checklist says to try it on a real phone before launch.
+- **Nothing closes a request on its own, and nothing shows a hidden one again.** A request stays open until its asker closes it or deletes it; the Hub's hide has no undo, as for G's hidden listings. Closing old requests is on the checklist's scheduled jobs.
+- **Only approved shops offer.** Decision 12 follows the checklist's "Who can sell?" question: if Eduvos opens selling to every student, offers open with it.
+- **A manual screen-reader check is still to do:** the status lines (`role="status"`) after each action and the error summaries on the new forms, and Follow's and Unfollow's names. The tests check the words and roles, not what VoiceOver or TalkBack say.
+- **Unused files, for Lama to delete or keep:** none new. The ones from earlier stages are still there (`components/ComingSoon.tsx` and its test, `data/fixtures/viewer.ts`); no task ran `rm`.
+- **Docs still uncommitted, waiting for Lama:** the positioning and editorial spec, the Supabase spec and plan, and the other sessions' lines in this file and in the decisions log. This section, the stage H section above and decision row 74 were written from snippet files (`h-progress.md`, `h-decision.md`) for the same reason; row 74 because 71 is the positioning decision and 73 is stage G's.
+- **JS room for stage I and later.** The listing forms are the highest pages at 152,265 B (40 B under the stop line, 1,335 B under the limit); every other page has at least 558 B (the listing page, 151,747 B). Stage I's matching runs in the publish Server Action (decision 69), so it adds no script.
+
 ## Next
-- Lama reviews the screenshots in `docs/progress/staff/` (28, at 390 and 1440px), and the selling ones in `docs/progress/selling/` and the messaging ones in `docs/progress/messaging/` if not yet seen. To retake the staff ones, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "staff tools review screenshots"`; the selling ones use `-g "selling review screenshots"` and the messaging ones `-g "messaging review screenshots"`.
-- Then stage H: community actions (`2026-10-14-community-actions-design.md`, plan `2026-10-14-community-actions.md`): posting Looking For requests, offers, following shops and the offline page. Its plan's recheck should read the staff tools' code first: `lib/data/staff-reports.ts` (a report's `toView` and `closeReportsOn`, where Hide the request joins), `lib/staff/once.ts` (a one-time token like the one its new request form needs) and `lib/staff/admin-actions.ts`. Stage I (saved-search alerts) follows.
+- Lama reviews the screenshots in `docs/progress/community-actions/` (22, at 390 and 1440px), and the staff ones in `docs/progress/staff/`, the selling ones in `docs/progress/selling/` and the messaging ones in `docs/progress/messaging/` if not yet seen. To retake the community actions ones, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "community actions review screenshots"`; the staff ones use `-g "staff tools review screenshots"`, the selling ones `-g "selling review screenshots"` and the messaging ones `-g "messaging review screenshots"`.
+- Then stage I: saved-search alerts (`2026-10-14-search-alerts-design.md`, plan `2026-10-14-search-alerts.md`). Its plan's recheck should read stage H's code first: `notifyFollowers` in `lib/data/follows.ts` and the first-publish condition in `saveListingForm` (`lib/selling/listing-actions.ts`: `isFirstPublish(existing, saved.state)`, an open shop, not hidden), where saved-search matching joins; `lib/data/notifications.ts` (`notifyNewListing`, the one-a-day rule per SAST day); and Saved's tabs (`components/saved/SavedTabs.tsx`, `lib/following/rules.ts`: `SavedTab`, `parseSavedTab`), which gain a third tab. The JS room is thin on the listing forms (40 B under the stop line).
 
 ## Waiting on
 - Eduvos font files and licence confirmation.
 - The official crest SVG.
 - Photos. The homepage is built, so each one is now a file drop plus one line in a fixture.
 - The Hub's real posts and office hours, and the real mentor and admin accounts. The 18 posts are samples, and managing staff accounts in the app isn't built.
-- Eduvos's legal review of the privacy policy, terms of use and seller guidelines; the Information Officer's name; a contact address for privacy requests and support; whether POPIA's right of access puts mentors' notes in a seller's data download (today the Information Officer is asked for them); and how long the staff log, RSVPs and slot requests are kept.
+- Eduvos's legal review of the privacy policy, terms of use and seller guidelines; the Information Officer's name; a contact address for privacy requests and support; whether POPIA's right of access puts mentors' notes in a seller's data download (today the Information Officer is asked for them); how long the staff log, RSVPs and slot requests are kept; and how long closed requests and follows are kept.
+- A real phone to try the offline worker and its kill switch on before launch (the kill switch reaches a phone through the browser's own update check, which can take up to about a day).
