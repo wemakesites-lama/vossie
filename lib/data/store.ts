@@ -100,7 +100,7 @@ export type SampleStore = {
 };
 
 /** Bump it when a table is added or a row changes shape, so `next dev` reseeds instead of keeping an old store. */
-export const STORE_VERSION = 9;
+export const STORE_VERSION = 10;
 
 type StoreHolder = { __vossieSampleStore?: SampleStore };
 

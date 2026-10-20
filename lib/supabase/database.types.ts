@@ -7,16 +7,22 @@ export type Database = {
           Tables: {
             "audit_log": {
                   Row: {
-                    "action": string,"at": string,"detail": string,"id": string,"staff_id": string | null,"staff_name": string,"subject_id": string | null,"target_id": string,"target_kind": string,"target_name": string
+                    "action": string,"at": string,"detail": string,"id": string,"related_id": string | null,"staff_id": string | null,"staff_name": string,"subject_id": string | null,"target_id": string,"target_kind": string,"target_name": string
                   }
                   Insert: {
-                    "action": string,"at"?: string,"detail"?: string,"id"?: string,"staff_id"?: string | null,"staff_name": string,"subject_id"?: string | null,"target_id": string,"target_kind": string,"target_name": string
+                    "action": string,"at"?: string,"detail"?: string,"id"?: string,"related_id"?: string | null,"staff_id"?: string | null,"staff_name": string,"subject_id"?: string | null,"target_id": string,"target_kind": string,"target_name": string
                   }
                   Update: {
-                    "action"?: string,"at"?: string,"detail"?: string,"id"?: string,"staff_id"?: string | null,"staff_name"?: string,"subject_id"?: string | null,"target_id"?: string,"target_kind"?: string,"target_name"?: string
+                    "action"?: string,"at"?: string,"detail"?: string,"id"?: string,"related_id"?: string | null,"staff_id"?: string | null,"staff_name"?: string,"subject_id"?: string | null,"target_id"?: string,"target_kind"?: string,"target_name"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "audit_log_related_id_fkey"
+      columns: ["related_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "audit_log_staff_id_fkey"
       columns: ["staff_id"]
 isOneToOne: false

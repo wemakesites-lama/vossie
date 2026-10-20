@@ -288,6 +288,8 @@ export async function assignMentor(formData: FormData): Promise<void> {
     target: { kind: "shop", id: changed.slug, name: changed.name },
     detail: changed.mentorName ?? "",
     subjectId: changed.ownerId,
+    // The detail names the new mentor (a removal names no one), so deleting their account can forget it.
+    relatedId: changed.mentorName ? mentorId : null,
     now,
   });
   await leaveNotice(changed.mentorName ? "mentor-assigned" : "mentor-removed", now);

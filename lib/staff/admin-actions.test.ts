@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readFormState } from "@/lib/auth/form-state";
-import { deleteAccountData } from "@/lib/data/accounts";
+import { deleteAccountData, exportAccountData } from "@/lib/data/accounts";
 import { listAudit } from "@/lib/data/audit";
 import { addPin } from "@/lib/data/featured";
 import { getNotifications } from "@/lib/data/notifications";
@@ -344,6 +344,33 @@ describe("sellers (staff tools spec 2.3)", () => {
     ]);
     await redirectOf(() => assignMentor(form({ shop: "tech-corner", mentor: "acc-student" })));
     expect(await notice()).toBe("nothing");
+  });
+
+  it("forgets a deleted mentor's name in the entries that assigned them, and keeps a namesake's (Lama, 2026-10-20)", async () => {
+    const store = sampleStore();
+    store.accounts.set("acc-mentor-2", { ...store.accounts.get("acc-mentor")!, id: "acc-mentor-2", email: "naledi2@eduvos.com" });
+    await asAdmin();
+    await redirectOf(() => assignMentor(form({ shop: "tech-corner", mentor: "acc-mentor-2" })));
+    vi.advanceTimersByTime(1000);
+    await redirectOf(() => assignMentor(form({ shop: "tech-corner", mentor: "" })));
+    vi.advanceTimersByTime(1000);
+    await redirectOf(() => assignMentor(form({ shop: "tech-corner", mentor: "acc-mentor" })));
+    const mentoring = async () =>
+      (await listAudit({ staff: null, kind: "mentoring" })).map((entry) => [entry.action, entry.targetName, entry.detail]);
+    expect(await mentoring()).toEqual([
+      ["mentor-assigned", "Tech corner", "Naledi"],
+      ["mentor-removed", "Tech corner", ""],
+      ["mentor-assigned", "Tech corner", "Naledi"],
+    ]);
+    await deleteAccountData("acc-mentor");
+    expect(await mentoring()).toEqual([
+      ["mentor-assigned", "Tech corner", "Deleted account"],
+      ["mentor-removed", "Tech corner", ""],
+      ["mentor-assigned", "Tech corner", "Naledi"],
+    ]);
+    // The related account is only for forgetting: never in the log's entries or anyone's data download.
+    for (const entry of await listAudit({ staff: null, kind: null })) expect(entry).not.toHaveProperty("relatedId");
+    expect(JSON.stringify(await exportAccountData("acc-mentor-2", STAFF_NOW))).not.toContain("relatedId");
   });
 
   it("won't make a shop's owner its mentor: it says nothing changed and logs nothing (amendment 15.3)", async () => {

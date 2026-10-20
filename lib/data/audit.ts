@@ -19,6 +19,8 @@ export type NewAuditEntry = {
   detail?: string;
   /** The student it was about (a shop's owner, a reporter, a slot request's student), so their deletion can forget them. */
   subjectId?: string | null;
+  /** The person the detail names, when they're neither the staff member nor the subject (a mentor-assigned entry's mentor), so their deletion can forget the name. */
+  relatedId?: string | null;
   now: Date;
 };
 
@@ -35,6 +37,7 @@ export async function recordAudit(entry: NewAuditEntry): Promise<void> {
     targetName: entry.target.name,
     detail: entry.detail ?? "",
     subjectId: entry.subjectId ?? null,
+    relatedId: entry.relatedId ?? null,
   });
 }
 
