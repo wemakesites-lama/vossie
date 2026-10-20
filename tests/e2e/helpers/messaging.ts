@@ -24,7 +24,9 @@ export const button = (page: Page, name: string) =>
 
 /** The header's account icon (accounts spec 3.4), which carries the new notifications' badge (plan decision 10). */
 export const accountIcon = (page: Page) =>
-  page.locator(".site-header").getByRole("link", { name: /^(Sign in|Your account)$/ });
+  // The header's icon from the tablet step, the tab bar's Account tab on phones (spec section 6.2). Its address says
+  // who's signed in at every width: /account signed in, /login signed out.
+  page.locator(".site-header, .tabbar").getByRole("link", { name: /^(Sign in|Your account|Account)$/ });
 
 /** A status pill on the page that's showing. */
 export const statusPill = (page: Page, label: string) =>

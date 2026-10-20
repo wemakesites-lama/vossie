@@ -35,6 +35,34 @@ export function MenuIcon(props: IconProps) {
   );
 }
 
+/** The tab bar's Home. */
+export function HomeIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1Z" />
+    </Svg>
+  );
+}
+
+/** The tab bar's Shop. */
+export function BagIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M5.5 8h13l-1 12h-11Z" />
+      <path d="M9 10V7a3 3 0 0 1 6 0v3" />
+    </Svg>
+  );
+}
+
+/** The tab bar's Sell. */
+export function PlusIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M12 5v14M5 12h14" />
+    </Svg>
+  );
+}
+
 /** A speech bubble: a new message (messaging spec 3.5). */
 export function MessageIcon(props: IconProps) {
   return (

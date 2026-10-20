@@ -13,7 +13,7 @@ export function hasKeyboardFocusWithin(root: HTMLElement | null): boolean {
   }
 }
 
-/** The header's mode, plus `reveal` for the crest-only pennant. */
+/** The header's mode, plus `show` for the keyboard's "Show navigation" button. */
 export function useHeaderMode(headerRef: RefObject<HTMLElement | null>) {
   const [store] = useState(createHeaderStore);
 
@@ -25,5 +25,5 @@ export function useHeaderMode(headerRef: RefObject<HTMLElement | null>) {
 
   const mode = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
 
-  return { mode, reveal: store.reveal };
+  return { mode, show: store.show };
 }

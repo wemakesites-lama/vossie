@@ -39,60 +39,54 @@ describe("SiteHeader", () => {
     expect(screen.getByRole("link", { name: "Saved" })).toHaveAttribute("href", "/saved");
   });
 
-  it("hides everything but the crest past 120px and makes the hidden items inert", () => {
+  it("hides everything past 120px, crest included, and makes it inert", () => {
     const header = renderHeader();
     act(() => setScrollY(400));
-    expect(header).toHaveAttribute("data-mode", "crest");
-    expect(screen.getByRole("button", { name: "Show navigation" })).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
+    expect(header).toHaveAttribute("data-mode", "hidden");
     expect(header.querySelector(".hdr-quick")).toHaveAttribute("inert");
-    for (const group of header.querySelectorAll(".hdr-group")) {
-      expect(group).toHaveAttribute("inert");
-    }
+    expect(header.querySelector(".hdr-bar")).toHaveAttribute("inert");
+    expect(header.querySelector(".hdr-pennant")?.closest("[inert]")).not.toBeNull();
+    // The keyboard's way back is the one thing left.
+    expect(screen.getByRole("button", { name: "Show navigation" })).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("reveals everything on a tap without moving the page, and focuses the first item", async () => {
-    const user = userEvent.setup();
+  it("shows the whole header again when the page scrolls back up", () => {
     const header = renderHeader();
-    act(() => setScrollY(400));
-    await user.click(screen.getByRole("button", { name: "Show navigation" }));
-    expect(header).toHaveAttribute("data-mode", "revealed");
+    act(() => setScrollY(900));
+    act(() => setScrollY(850));
+    expect(header).toHaveAttribute("data-mode", "shown");
+    expect(header.querySelector(".hdr-bar")).not.toHaveAttribute("inert");
     expect(screen.getByRole("link", { name: "Vossie home" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Menu" })).toHaveFocus();
-    expect(window.scrollTo).not.toHaveBeenCalled();
-    for (const group of header.querySelectorAll(".hdr-group")) {
-      expect(group).not.toHaveAttribute("inert");
-    }
-    expect(header.querySelector(".hdr-quick")).not.toHaveAttribute("inert");
-  });
-
-  it("hides again after another 160px down, and expands back near the top", async () => {
-    const user = userEvent.setup();
-    const header = renderHeader();
-    act(() => setScrollY(400));
-    await user.click(screen.getByRole("button", { name: "Show navigation" }));
-    // A mouse user's focus isn't a visible focus ring; blur so the keyboard-focus hold doesn't apply.
-    act(() => (document.activeElement as HTMLElement).blur());
-    act(() => setScrollY(570));
-    expect(header).toHaveAttribute("data-mode", "crest");
+    expect(screen.queryByRole("button", { name: "Show navigation" })).not.toBeInTheDocument();
+    act(() => setScrollY(930));
+    expect(header).toHaveAttribute("data-mode", "hidden");
     act(() => setScrollY(40));
     expect(header).toHaveAttribute("data-mode", "expanded");
   });
 
-  it("stays revealed while a header control has keyboard focus", async () => {
+  it("shows everything from the keyboard without moving the page, and focuses Menu", async () => {
+    const user = userEvent.setup();
+    const header = renderHeader();
+    act(() => setScrollY(400));
+    act(() => screen.getByRole("button", { name: "Show navigation" }).focus());
+    await user.keyboard("{Enter}");
+    expect(header).toHaveAttribute("data-mode", "shown");
+    expect(screen.getByRole("button", { name: "Menu" })).toHaveFocus();
+    expect(window.scrollTo).not.toHaveBeenCalled();
+  });
+
+  it("stays shown while a header control has keyboard focus", async () => {
     const user = userEvent.setup();
     const header = renderHeader();
     act(() => setScrollY(400));
     // The keyboard, not user.click: after a pointer interaction jsdom stops reporting :focus-visible.
     act(() => screen.getByRole("button", { name: "Show navigation" }).focus());
     await user.keyboard("{Enter}");
-    act(() => setScrollY(570));
-    expect(header).toHaveAttribute("data-mode", "revealed");
+    act(() => setScrollY(900));
+    expect(header).toHaveAttribute("data-mode", "shown");
     act(() => (document.activeElement as HTMLElement).blur());
-    act(() => setScrollY(571));
-    expect(header).toHaveAttribute("data-mode", "crest");
+    act(() => setScrollY(901));
+    expect(header).toHaveAttribute("data-mode", "hidden");
   });
 
   it("scrolls to the top instead of reloading when the home link is used on the homepage", async () => {
@@ -116,7 +110,7 @@ describe("SiteHeader", () => {
     const menuButton = screen.getByRole("button", { name: "Menu" });
     await user.click(menuButton);
     expect(menu).toHaveBeenCalledWith(menuButton);
-    await user.click(screen.getAllByRole("button", { name: "Search" })[0]);
+    await user.click(screen.getByRole("button", { name: "Search" }));
     expect(search).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole("button", { name: /^Shopping at/ }));
     await user.click(screen.getByRole("button", { name: "Campuses" }));
@@ -176,6 +170,13 @@ describe("SiteHeader", () => {
     const link = screen.getByRole("link", { name: "Your account" });
     expect(link).toHaveAttribute("href", "/account");
     act(() => setScrollY(400));
-    expect(link.closest(".hdr-group")).toHaveAttribute("inert");
+    expect(link.closest(".hdr-bar")).toHaveAttribute("inert");
+  });
+
+  it("leaves Account and Saved to the tab bar on phones", () => {
+    renderHeader();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveClass("hidden", "wide:inline-grid");
+    expect(screen.getByRole("link", { name: "Saved" })).toHaveClass("hidden", "wide:inline-grid");
+    expect(screen.getAllByRole("button", { name: "Search" })).toHaveLength(1);
   });
 });

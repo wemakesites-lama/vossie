@@ -403,7 +403,7 @@ test.describe("notifications and the header's badge (messaging spec 2.9, 3.5 and
     await signUp(page, newBuyer());
     const id = await sendFirstMessage(page, "l-001", "Hi! Is it still available?");
     await page.goto("/");
-    await expect(accountIcon(page)).toHaveAccessibleName("Your account");
+    await expect(accountIcon(page)).toHaveAttribute("href", "/account");
     await expect(accountIcon(page)).not.toHaveAttribute("aria-describedby");
 
     const seller = await sellerPage(browser, baseURL!);
@@ -414,7 +414,7 @@ test.describe("notifications and the header's badge (messaging spec 2.9, 3.5 and
 
     // The header is drawn again on a full page load (plan decision 11).
     await page.goto("/");
-    await expect(accountIcon(page)).toHaveAccessibleName("Your account");
+    await expect(accountIcon(page)).toHaveAttribute("href", "/account");
     await expect(accountIcon(page)).toHaveAccessibleDescription("1 new notification");
     await expect(page.getByText("1 new message", { exact: true })).toBeVisible();
     await page.goto("/account");
@@ -432,7 +432,7 @@ test.describe("notifications and the header's badge (messaging spec 2.9, 3.5 and
     // then the strip's signed-out fallback is there beside it: wait for the one left, then count.
     await page.goto("/");
     await expect(page.locator(".context-strip")).toHaveCount(1);
-    await expect(accountIcon(page)).toHaveAccessibleName("Your account");
+    await expect(accountIcon(page)).toHaveAttribute("href", "/account");
     expect(await accountIcon(page).getAttribute("aria-describedby")).toBeNull();
     expect(await page.getByText("1 new message", { exact: true }).count()).toBe(0);
   });

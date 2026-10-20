@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/header/SiteHeader";
 import { MenuAccount, MenuAccountLinks } from "@/components/menu/MenuAccount";
 import { MenuDrawer } from "@/components/menu/MenuDrawer";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
+import { AccountTab, TabAccount, TabBar } from "@/components/tabbar/TabBar";
 import { ToastRegion } from "@/components/ui/ToastRegion";
 import { BOOT_SCRIPT } from "@/lib/boot-script";
 import { getAnnouncements, getCampuses, getCategories, getTrendingSearches } from "@/lib/data";
@@ -71,6 +72,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           {children}
         </main>
         <SiteFooter campuses={campuses} />
+        <TabBar
+          account={
+            // Streams in like the header's icon; the static shell links to sign-in.
+            <Suspense fallback={<AccountTab signedIn={false} />}>
+              <TabAccount />
+            </Suspense>
+          }
+        />
         <MenuDrawer
           campuses={campuses}
           categories={categories}

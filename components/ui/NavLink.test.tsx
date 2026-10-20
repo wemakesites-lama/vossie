@@ -19,4 +19,29 @@ describe("NavLink", () => {
     expect(link).toHaveAttribute("href", "/sell");
     expect(link).toHaveClass("menu-link");
   });
+
+  it("marks a section's pages when asked, and not its neighbours", () => {
+    render(
+      <>
+        <NavLink href="/" match="section">
+          Home
+        </NavLink>
+        <NavLink href="/sel" match="section">
+          Not sell
+        </NavLink>
+      </>,
+    );
+    // The tests' page is /, so only the exact match counts; a section never matches a longer word.
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Not sell" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("passes prefetch through", () => {
+    render(
+      <NavLink href="/browse" prefetch={false}>
+        Shop
+      </NavLink>,
+    );
+    expect(screen.getByRole("link", { name: "Shop" })).toHaveAttribute("href", "/browse");
+  });
 });

@@ -100,8 +100,17 @@ test.describe("Saved (spec 5)", () => {
     await expect(page).toHaveURL(/\/listings\/l-001$/);
 
     await page.getByRole("button", { name: "Save Casio fx-991ZA Plus calculator" }).click();
-    const savedLink = page.locator(".site-header").getByRole("link", { name: "Saved, 1 item" });
+    // The header's link from the tablet step, the tab bar's Saved tab on phones (spec section 6.2). On a phone the
+    // listing's dock stands in for the tab bar, so Back to browse first.
+    if (project() === "phone-390") {
+      await page.goBack();
+      await expect(page).toHaveURL(/\/browse$/);
+    }
+    const savedLink = page.locator(".site-header, .tabbar").getByRole("link", { name: /^Saved(, 1 item)?$/ });
     await expect(savedLink).toBeVisible();
+    // The header's link says the count in its name, the tab in its description.
+    if (project() === "phone-390") await expect(savedLink).toHaveAccessibleDescription("1 item");
+    else await expect(savedLink).toHaveAccessibleName("Saved, 1 item");
     await savedLink.click();
 
     await expect(page).toHaveURL(/\/saved$/);
@@ -162,7 +171,7 @@ test.describe("Saved (spec 5)", () => {
     await page.goto("/saved");
     await expect(page.getByRole("heading", { level: 2, name: "Nothing saved yet" })).toBeVisible();
     // The header first counts both ids, then Saved forgets them and the count goes.
-    const header = page.locator(".site-header");
+    const header = page.locator(".site-header, .tabbar");
     await expect(header.getByRole("link", { name: "Saved", exact: true })).toBeVisible();
     await expect(header.getByRole("link", { name: /^Saved, / })).toHaveCount(0);
     // The cookie itself is gone, not just hidden.

@@ -464,8 +464,8 @@
     }
   }
 
-  /* Crest only: the header box keeps its size (nothing below moves) but lets clicks through. */
-  .site-header[data-mode="crest"] {
+  /* Hidden: the header box keeps its size (nothing below moves) but lets clicks through. */
+  .site-header[data-mode="hidden"] {
     pointer-events: none;
   }
 
@@ -646,58 +646,213 @@
     }
   }
 
-  /* Crest only: everything slides up and fades out; the pennant pins to the top at ~80%. */
-  .site-header[data-mode="crest"] .hdr-quick,
-  .site-header[data-mode="crest"] .hdr-bar-bg {
+  /* The quick links and the bar move as one, so the bar carries the pennant with it. */
+  .hdr-bar {
+    transition: translate 300ms var(--ease-out), visibility 0s;
+  }
+
+  /* Hidden: everything slides up out of sight, the pennant (and its hang below the bar) included, and fades out. */
+  .site-header[data-mode="hidden"] .hdr-quick {
     translate: 0 -100%;
     opacity: 0;
   }
 
-  .site-header[data-mode="crest"] .hdr-bar-bg {
-    transition: translate 250ms var(--ease-out), opacity 250ms var(--ease-out), scale 250ms var(--ease-out);
+  .site-header[data-mode="hidden"] .hdr-bar {
+    translate: 0 calc(-100% - var(--ql-h) - 64px);
   }
 
-  .site-header[data-mode="crest"] .hdr-quick,
-  .site-header[data-mode="crest"] .hdr-group {
+  .site-header[data-mode="hidden"] :is(.hdr-quick, .hdr-bar) {
     visibility: hidden;
     transition: translate 250ms var(--ease-out), opacity 250ms var(--ease-out), visibility 0s linear 250ms;
   }
 
-  .site-header[data-mode="crest"] .hdr-item {
+  .site-header[data-mode="hidden"] .hdr-item {
     opacity: 0;
     translate: 0 -10px;
     transition: opacity 250ms var(--ease-out), translate 250ms var(--ease-out);
   }
 
-  .site-header[data-mode="crest"] .hdr-pennant-slot {
-    translate: 0 calc(var(--ql-h) * -1);
-    scale: var(--crest-scale);
-    transition: scale 250ms var(--ease-out), translate 250ms var(--ease-out);
+  /* Hidden, for the keyboard: unseen until focused, then a pill at the top centre, like the skip link. */
+  .hdr-show {
+    position: absolute;
+    top: max(8px, env(safe-area-inset-top));
+    left: 50%;
+    z-index: 3;
+    translate: -50% calc(-100% - max(8px, env(safe-area-inset-top)) - 4px);
+    padding: 12px 18px;
+    border-radius: 999px;
+    background: var(--color-navy);
+    color: var(--color-white);
+    font-weight: 600;
+    pointer-events: auto;
+    --focus-ring: var(--color-sky);
+    --focus-halo: var(--color-navy);
   }
 
-  .site-header[data-mode="crest"] .pennant-shadow {
-    opacity: 1;
+  .hdr-show:focus {
+    translate: -50% 0;
   }
 
-  /* Revealed mid-page: the bar comes back compact (56px phones, 64px larger screens). */
-  .site-header[data-mode="revealed"] .hdr-bar-bg {
+  /* Shown mid-page (scrolled back up): the bar comes back compact (56px phones, 64px larger screens), and the
+     pennant keeps a soft shadow so it reads over whatever is underneath. */
+  .site-header[data-mode="shown"] .hdr-bar-bg {
     scale: 1 var(--bar-compact);
   }
 
-  .site-header[data-mode="revealed"] .hdr-group {
+  .site-header[data-mode="shown"] .hdr-group {
     translate: 0 var(--compact-shift);
   }
 
-  /* In revealed mode the bar's background shrinks, but the header's box doesn't. That leaves an invisible strip
+  .site-header[data-mode="shown"] .pennant-shadow {
+    opacity: 1;
+  }
+
+  /* In shown mode the bar's background shrinks, but the header's box doesn't. That leaves an invisible strip
      below the bar (8px on phones, 14px from wide:) that swallows taps on the content showing through. So the
      header ignores the pointer, and the parts you can see take it back. The bar's background is scaled, and so
      is its hit area: it covers the visible bar and not the strip. */
-  .site-header[data-mode="revealed"] {
+  .site-header[data-mode="shown"] {
     pointer-events: none;
   }
 
-  .site-header[data-mode="revealed"] :is(.hdr-quick, .hdr-bar-bg, .hdr-group, .hdr-pennant-slot) {
+  .site-header[data-mode="shown"] :is(.hdr-quick, .hdr-bar-bg, .hdr-group, .hdr-pennant-slot) {
     pointer-events: auto;
+  }
+}
+
+/* --- Tab bar (spec section 6.2): phones only, fixed to the bottom, always visible ----------------------------------
+   The page keeps room under the footer and under anything focused, so the bar never covers either (WCAG 2.4.11), and
+   toasts sit above it. A listing's dock takes its place (below). While someone types, the bar steps aside, so it never
+   rides up on the on-screen keyboard. */
+@layer components {
+  .tabbar {
+    display: none;
+  }
+
+  @media not all and (min-width: 48rem) and (min-height: 30rem) {
+    .tabbar {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 30;
+      display: block;
+      padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      border-top: 1px solid var(--color-line);
+      background: var(--color-white);
+    }
+
+    body {
+      padding-bottom: calc(57px + env(safe-area-inset-bottom));
+    }
+
+    :is(main, footer),
+    :is(main, footer) * {
+      scroll-margin-bottom: calc(72px + env(safe-area-inset-bottom));
+    }
+
+    .toast-pop {
+      bottom: calc(73px + env(safe-area-inset-bottom));
+    }
+
+    body:has(:is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"]), textarea):focus)
+      .tabbar {
+      display: none;
+    }
+  }
+
+  .tabbar ul {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    max-width: 32rem;
+    margin-inline: auto;
+  }
+
+  .tab {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    height: 56px;
+    color: var(--color-muted);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tab:focus-visible {
+    outline-offset: -4px;
+  }
+
+  /* The active indicator: a pale pill behind the icon (navy on pale is 10.6:1). It fades and grows in, so only
+     opacity and transform move. */
+  .tab-icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 30px;
+    border-radius: 999px;
+    transition: scale 150ms var(--ease-out);
+  }
+
+  .tab-icon::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--color-pale);
+    opacity: 0;
+    scale: 0.6 1;
+    transition: opacity 200ms var(--ease-out), scale 200ms var(--ease-out);
+  }
+
+  .tab-icon > svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .tab:active .tab-icon {
+    scale: 0.92;
+  }
+
+  .tab[aria-current] {
+    color: var(--color-navy);
+  }
+
+  .tab[aria-current] .tab-icon::before {
+    opacity: 1;
+    scale: 1;
+  }
+
+  .tab[aria-current] .tab-icon > svg {
+    stroke-width: 2.2;
+  }
+
+  /* Sell, the one action: always a solid sky pill with a navy plus; navy with a white plus on its own pages. */
+  .tab-sell .tab-icon {
+    background: var(--color-sky);
+    color: var(--color-navy);
+  }
+
+  .tab-sell .tab-icon::before {
+    display: none;
+  }
+
+  .tab-sell[aria-current] .tab-icon {
+    background: var(--color-navy);
+    color: var(--color-white);
+  }
+
+  /* Badges sit on the icon's top-right corner, measured from the tab's centre, after the label in the reading order. */
+  .tab .hdr-badge {
+    top: 3px;
+    right: auto;
+    left: calc(50% + 8px);
   }
 }
 
@@ -4855,6 +5010,12 @@
 
     body:has(.listing-page:not([style*="display"]) .listing-actions) .toast-pop {
       bottom: calc(84px + env(safe-area-inset-bottom));
+    }
+
+    /* The dock takes the tab bar's place: a listing's own actions come first there, and two bars would hide too
+       much of a small screen. The header's Menu still reaches everything. */
+    body:has(.listing-page:not([style*="display"]) .listing-actions) .tabbar {
+      display: none;
     }
   }
 }

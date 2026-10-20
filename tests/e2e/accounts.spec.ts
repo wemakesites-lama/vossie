@@ -22,7 +22,9 @@ const button = (page: Page, name: string) => main(page).getByRole("button", { na
 
 /** The header's account icon (accounts spec 3.4). */
 const accountIcon = (page: Page) =>
-  page.locator(".site-header").getByRole("link", { name: /^(Sign in|Your account)$/ });
+  // The header's icon from the tablet step, the tab bar's Account tab on phones (spec section 6.2). Its address says
+  // who's signed in at every width: /account signed in, /login signed out.
+  page.locator(".site-header, .tabbar").getByRole("link", { name: /^(Sign in|Your account|Account)$/ });
 
 /** The code sample mode shows on step 2 (spec 2.3). */
 async function shownCode(page: Page): Promise<string> {
@@ -93,7 +95,6 @@ test.describe("signing in with an email code (accounts spec 2.2 and 3.1)", () =>
     await field(page, "Your first name").fill("Ayanda");
     await button(page, "Continue").click();
     await expect(page).toHaveURL(/\/listings\/l-001\/message$/);
-    await expect(accountIcon(page)).toHaveAccessibleName("Your account");
     await expect(accountIcon(page)).toHaveAttribute("href", "/account");
   });
 
@@ -188,7 +189,6 @@ test.describe("sample accounts (accounts spec 2.8)", () => {
 test.describe("the header and the menu (accounts spec 3.4)", () => {
   test("say Sign in when signed out, and Your account and Sign out when signed in", async ({ page, baseURL }) => {
     await page.goto("/");
-    await expect(accountIcon(page)).toHaveAccessibleName("Sign in");
     await expect(accountIcon(page)).toHaveAttribute("href", "/login");
     const menuButton = page.getByRole("button", { name: "Menu", exact: true });
     const menu = page.getByRole("dialog", { name: "Menu" });
@@ -199,7 +199,7 @@ test.describe("the header and the menu (accounts spec 3.4)", () => {
 
     await signInAsSample(page, "Student, Midrand");
     await expect(page).toHaveURL(/\/account$/);
-    await expect(accountIcon(page)).toHaveAccessibleName("Your account");
+    await expect(accountIcon(page)).toHaveAttribute("href", "/account");
     await menuButton.click();
     await expect(menu.getByRole("link", { name: "Your account" })).toHaveAttribute("href", "/account");
 
@@ -208,7 +208,7 @@ test.describe("the header and the menu (accounts spec 3.4)", () => {
     await expect(menu).toBeHidden();
     await expect(page).toHaveURL(`${baseURL}/`);
     await expect(page.locator(".toast")).toHaveText("You're signed out");
-    await expect(accountIcon(page)).toHaveAccessibleName("Sign in");
+    await expect(accountIcon(page)).toHaveAttribute("href", "/login");
   });
 });
 
@@ -270,7 +270,7 @@ test.describe("no stale pages after signing in or out (plan decision 2)", () => 
     );
     await expect(field(page, "Your Eduvos email address")).toHaveCount(0);
     // Nor is the header a stale copy.
-    await expect(accountIcon(page)).toHaveAccessibleName("Your account");
+    await expect(accountIcon(page)).toHaveAttribute("href", "/account");
   });
 
   test("Back to the account page after signing out asks you to sign in", async ({ page, baseURL }) => {
@@ -285,12 +285,12 @@ test.describe("no stale pages after signing in or out (plan decision 2)", () => 
     await page.goBack();
     await expect(page).toHaveURL(/\/saved$/);
     // The kept copy of /saved must not bring back its signed-in header.
-    await expect(accountIcon(page)).toHaveAccessibleName("Sign in");
+    await expect(accountIcon(page)).toHaveAttribute("href", "/login");
     await page.goBack();
     // The kept copy of /account must not come back: the server sends a signed-out visitor to sign in.
     await expect(page).toHaveURL(/\/login\?next=%2Faccount$/);
     await expect(main(page).getByRole("heading", { level: 2, name: "Thandi" })).toHaveCount(0);
-    await expect(accountIcon(page)).toHaveAccessibleName("Sign in");
+    await expect(accountIcon(page)).toHaveAttribute("href", "/login");
   });
 });
 
@@ -352,7 +352,7 @@ test.describe("your account (accounts spec 3.2 and 3.3)", () => {
     await button(page, "Delete my account").click();
     await expect(page).toHaveURL(`${baseURL}/`);
     await expect(page.locator(".toast")).toHaveText("Your account has been deleted");
-    await expect(accountIcon(page)).toHaveAccessibleName("Sign in");
+    await expect(accountIcon(page)).toHaveAttribute("href", "/login");
     // The account has gone: the same email starts a first sign-in again.
     await page.goto("/login");
     await sendCode(page, email);
@@ -428,12 +428,13 @@ test.describe("without the app's JavaScript (spec 2.2, plan decisions 2 and 11)"
     await button(page, "Sign in").click();
     await finishFirstSignIn(page);
     await expect(page).toHaveURL(/\/listings\/l-001$/);
-    await expect(accountIcon(page)).toHaveAccessibleName("Your account");
+    // On a phone a listing's dock stands in for the tab bar (spec section 6.2); /account below shows the sign-in.
+    if (test.info().project.name !== "phone-390") await expect(accountIcon(page)).toHaveAttribute("href", "/account");
     await page.goto("/account");
     await expect(main(page).getByRole("heading", { level: 2, name: "Ayanda" })).toBeVisible();
     await button(page, "Sign out").click();
     await expect(page).toHaveURL(`${baseURL}/`);
-    await expect(accountIcon(page)).toHaveAccessibleName("Sign in");
+    await expect(accountIcon(page)).toHaveAttribute("href", "/login");
   });
 
   test("Edit details and Delete my account work", async ({ page, baseURL }) => {
@@ -447,7 +448,7 @@ test.describe("without the app's JavaScript (spec 2.2, plan decisions 2 and 11)"
     await field(page, "I understand this can't be undone").check();
     await button(page, "Delete my account").click();
     await expect(page).toHaveURL(`${baseURL}/`);
-    await expect(accountIcon(page)).toHaveAccessibleName("Sign in");
+    await expect(accountIcon(page)).toHaveAttribute("href", "/login");
   });
 
   test("a sample account's button and the redirect to sign in work", async ({ page }) => {

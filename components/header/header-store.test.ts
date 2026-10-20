@@ -1,6 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { setScrollY } from "@/tests/helpers/dom";
 import { createHeaderStore } from "./header-store";
+
+function setPageHeight(height: number) {
+  Object.defineProperty(document.documentElement, "scrollHeight", { configurable: true, value: height });
+}
+
+afterEach(() => {
+  Reflect.deleteProperty(document.documentElement, "scrollHeight");
+});
 
 describe("header store", () => {
   it("follows window scrolling while subscribed", () => {
@@ -9,33 +17,42 @@ describe("header store", () => {
     const unsubscribe = store.subscribe(listener);
     expect(store.getSnapshot()).toBe("expanded");
     setScrollY(400);
-    expect(store.getSnapshot()).toBe("crest");
+    expect(store.getSnapshot()).toBe("hidden");
     expect(listener).toHaveBeenCalledTimes(1);
     unsubscribe();
     setScrollY(0);
-    expect(store.getSnapshot()).toBe("crest");
+    expect(store.getSnapshot()).toBe("hidden");
   });
 
   it("starts from the current scroll position when it subscribes", () => {
     setScrollY(500);
     const store = createHeaderStore();
     const unsubscribe = store.subscribe(() => {});
-    expect(store.getSnapshot()).toBe("crest");
+    expect(store.getSnapshot()).toBe("hidden");
     unsubscribe();
   });
 
-  it("reveals, and a hold stops it hiding again", () => {
+  it("shows when scrolled back up, and a hold stops it hiding again", () => {
     const store = createHeaderStore();
     const unsubscribe = store.subscribe(() => {});
     setScrollY(500);
-    store.reveal();
-    expect(store.getSnapshot()).toBe("revealed");
+    setScrollY(450);
+    expect(store.getSnapshot()).toBe("shown");
     store.setHold(() => true);
     setScrollY(900);
-    expect(store.getSnapshot()).toBe("revealed");
+    expect(store.getSnapshot()).toBe("shown");
     store.setHold(() => false);
     setScrollY(901);
-    expect(store.getSnapshot()).toBe("crest");
+    expect(store.getSnapshot()).toBe("hidden");
+    unsubscribe();
+  });
+
+  it("shows on the keyboard's button", () => {
+    const store = createHeaderStore();
+    const unsubscribe = store.subscribe(() => {});
+    setScrollY(500);
+    store.show();
+    expect(store.getSnapshot()).toBe("shown");
     unsubscribe();
   });
 
@@ -43,16 +60,15 @@ describe("header store", () => {
     expect(createHeaderStore().getServerSnapshot()).toBe("expanded");
   });
 
-  it("moves the reveal anchor up as the page scrolls up", () => {
+  it("doesn't take iOS's bounce at the bottom of the page for scrolling up", () => {
+    // 768px screen (jsdom's innerHeight), 2000px page: the bottom is at 1232.
+    setPageHeight(2000);
     const store = createHeaderStore();
     const unsubscribe = store.subscribe(() => {});
-    setScrollY(500);
-    store.reveal();
-    setScrollY(300);
-    setScrollY(459);
-    expect(store.getSnapshot()).toBe("revealed");
-    setScrollY(460);
-    expect(store.getSnapshot()).toBe("crest");
+    setScrollY(1232);
+    setScrollY(1300);
+    setScrollY(1232);
+    expect(store.getSnapshot()).toBe("hidden");
     unsubscribe();
   });
 
@@ -64,7 +80,7 @@ describe("header store", () => {
     expect(store.getSnapshot()).toBe("expanded");
     store.setHold(() => false);
     setScrollY(401);
-    expect(store.getSnapshot()).toBe("crest");
+    expect(store.getSnapshot()).toBe("hidden");
     store.setHold(() => true);
     setScrollY(50);
     expect(store.getSnapshot()).toBe("expanded");
@@ -82,11 +98,11 @@ describe("header store", () => {
     unsubscribe();
   });
 
-  it("ignores a reveal unless the header is crest only", () => {
+  it("ignores a show unless the header is hidden", () => {
     const store = createHeaderStore();
     const listener = vi.fn();
     const unsubscribe = store.subscribe(listener);
-    store.reveal();
+    store.show();
     expect(store.getSnapshot()).toBe("expanded");
     expect(listener).not.toHaveBeenCalled();
     unsubscribe();

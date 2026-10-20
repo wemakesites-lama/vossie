@@ -29,11 +29,11 @@ type SiteHeaderProps = {
 export function SiteHeader({ campuses, account }: SiteHeaderProps) {
   const headerRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const { mode, reveal } = useHeaderMode(headerRef);
-  const hidden = mode === "crest";
+  const { mode, show } = useHeaderMode(headerRef);
+  const hidden = mode === "hidden";
 
   function showNavigation() {
-    flushSync(() => reveal());
+    flushSync(() => show());
     menuButtonRef.current?.focus({ preventScroll: true });
   }
 
@@ -47,6 +47,14 @@ export function SiteHeader({ campuses, account }: SiteHeaderProps) {
 
   return (
     <header ref={headerRef} data-mode={mode} className="site-header">
+      {/* Hidden, the header can't take focus, so keyboard and screen-reader users get this instead: unseen until
+          focused, like the skip link (spec section 6.2). Scrolling up does the same for everyone else. */}
+      {hidden && (
+        <button type="button" aria-expanded={false} onClick={showNavigation} className="hdr-show">
+          Show navigation
+        </button>
+      )}
+
       <nav aria-label="Quick links" className="hdr-quick" inert={hidden}>
         <ul>
           <li>
@@ -72,10 +80,10 @@ export function SiteHeader({ campuses, account }: SiteHeaderProps) {
         </ul>
       </nav>
 
-      <div className="hdr-bar">
+      <div className="hdr-bar" inert={hidden}>
         <div className="hdr-bar-bg" aria-hidden="true" />
         <div className="hdr-bar-inner">
-          <div className="hdr-group" inert={hidden}>
+          <div className="hdr-group">
             <button
               ref={menuButtonRef}
               type="button"
@@ -87,50 +95,30 @@ export function SiteHeader({ campuses, account }: SiteHeaderProps) {
               <MenuIcon />
               <span className="sr-only wide:not-sr-only">Menu</span>
             </button>
-            <button
-              type="button"
-              aria-label="Search"
-              aria-haspopup="dialog"
-              onClick={(event) => openOverlay("search", event.currentTarget)}
-              className="hdr-item icon-btn wide:hidden"
-              style={stagger(1)}
-            >
-              <SearchIcon />
-            </button>
             <CampusPill campuses={campuses} className="hdr-item hidden wide:inline-flex" style={stagger(1)} />
           </div>
 
           <div className="hdr-pennant-slot">
-            {/* The pennant stays mounted while the header changes mode, so its shadow fades and the crest
-                image isn't re-created. The link or button on top carries the name and the focus ring,
-                sized to cover the pennant's white edge. */}
+            {/* The link on top carries the name and the focus ring, sized to cover the pennant's white edge. */}
             <Pennant />
-            {hidden ? (
-              <button
-                type="button"
-                aria-label="Show navigation"
-                aria-expanded={false}
-                onClick={showNavigation}
-                className="hdr-pennant"
-              />
-            ) : (
-              <Link href="/" aria-label="Vossie home" onClick={goHome} className="hdr-pennant" />
-            )}
+            <Link href="/" aria-label="Vossie home" onClick={goHome} className="hdr-pennant" />
           </div>
 
-          <div className="hdr-group hdr-group--end" inert={hidden}>
+          <div className="hdr-group hdr-group--end">
             <button
               type="button"
               aria-label="Search"
               aria-haspopup="dialog"
               onClick={(event) => openOverlay("search", event.currentTarget)}
-              className="hdr-item icon-btn hidden wide:inline-grid"
+              className="hdr-item icon-btn"
               style={stagger(2)}
             >
               <SearchIcon />
             </button>
+            {/* Phones have Account and Saved in the tab bar (components/tabbar/TabBar.tsx), so the header keeps
+                Menu, the pennant and Search there. */}
             {account}
-            <SavedLink className="hdr-item" style={stagger(4)} />
+            <SavedLink className="hdr-item hidden wide:inline-grid" style={stagger(4)} />
           </div>
         </div>
       </div>

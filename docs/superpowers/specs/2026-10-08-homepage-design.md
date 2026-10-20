@@ -30,7 +30,7 @@ This stage delivers the homepage and shell on realistic sample data. Other pages
 3. **Structure:** the 14-section page in `mockups/home-v2.html`, including all eight extras.
 4. **Layout rule:** no two neighbouring sections may share a layout.
 5. **Footer:** bold.
-6. **Header behaviour:** after scrolling, every header item hides except the crest pennant, which stays pinned on screen. Tapping the pennant pops the whole header back out, crest included (section 6.2).
+6. **Header behaviour:** scrolling down hides the whole header, crest included; scrolling back up brings all of it back. Phones also get a tab bar (Home, Shop, Sell, Saved, Account) that is always on screen (section 6.2; Lama, 2026-10-20, replacing the pinned crest).
 7. **Priority:** works at every screen size, with mobile usability first.
 8. **Codebase:** a new repo at `~/Projects/Vossie`, same stack as the demo, with sample data behind a data layer that can switch to Supabase later. Package manager: pnpm.
 9. **Fonts:** try Eduvos's own fonts (Cocogoose Pro and Larken) once Eduvos supplies the files; until then use the mockup fonts, and compare the two before choosing (section 4).
@@ -153,7 +153,9 @@ Every component uses three font variables, never a font name: `--font-display` (
 - **Rotation.** Up to 3 messages, cross-fading every 6 seconds, pausing on hover or focus.
 - **Phone.** Wraps to at most two lines. Full-width tap target.
 
-### 6.2 Header (the crest always stays; everything else hides on scroll and pops back on tap)
+### 6.2 Header (hides on the way down, comes back whole on the way up) and the phone tab bar
+
+Revised 2026-10-20 (decision 75). Until then the crest stayed pinned on screen and a tap on it brought the header back.
 
 **Contents:**
 - **Desktop and tablet:**
@@ -162,7 +164,7 @@ Every component uses three font variables, never a font name: `--font-display` (
   - Right: Search, Account, and Saved with its count.
   - Above the header from the desktop step (`desk:`) up: a quick-link row (Shop, Sell, Campuses, Hub, How it works, Safety).
 - **Phone:**
-  - Left: Menu and Search. Centre: the pennant. Right: Account and Saved.
+  - Left: Menu. Centre: the pennant. Right: Search. Account and Saved are in the tab bar.
   - The campus chip lives at the top of the hero panel and in the menu.
 
 **States:**
@@ -170,26 +172,32 @@ Every component uses three font variables, never a font name: `--font-display` (
 | State | When | What it looks like |
 |---|---|---|
 | Expanded | Page is near the top (scrolled less than 120px) | The full header: announcement bar, quick-link row on large screens, the header bar with all its items (78px desktop, 64px phone), and the pennant at full size hanging into the hero with its white edge: about 28px of navy on desktop, about 15px on phones (25px with the white edge) |
-| Crest only | Scrolled down past 120px | Every header item slides up and fades out (250ms): the bar's background, Menu, campus pill, Search, Account, Saved and the quick links. The announcement bar scrolls away with the page. **Only the pennant stays**, pinned to the top centre of the screen at about 80% size, keeping its white edge plus a soft shadow so it reads over any content |
-| Revealed | The crest-only pennant is tapped or clicked | Everything pops back out at the current scroll position, crest included: the header bar slides down (300ms), its items fade in one after another (40ms apart) and the pennant springs back to full size (420ms, slight overshoot). The page does not move. The quick-link row returns on large screens; the announcement bar stays at the top of the page only |
+| Hidden | Scrolled down past 120px | Everything slides up out of sight and fades (250ms): the quick links, the bar, its items and the pennant. The announcement bar scrolls away with the page. Nothing of the header is left on screen |
+| Shown | Hidden, then scrolled back up 40px | The whole header slides back down (300ms) at the current scroll position, its items fading in one after another (40ms apart). The bar is compact (56px phones, 64px larger screens), and the pennant hangs below it with a soft shadow so it reads over any content. The page does not move |
 
 **Moving between states:**
-- **Scrolling down** past 120px from Expanded goes to Crest only.
-- **From Revealed,** scrolling down another 160px returns to Crest only.
+- **Scrolling down** past 120px from Expanded goes to Hidden.
+- **Scrolling up** 40px from the lowest point since hiding goes to Shown. Less is a wobble and does nothing.
+- **From Shown,** scrolling down 80px from the highest point since showing returns to Hidden.
 - **Scrolling back** above 120px always returns to Expanded.
-- **Scrolling up mid-page** does not reveal the header by itself; only a tap on the pennant does.
-- **What a tap on the pennant does:**
-  - In Crest only, it reveals the header.
-  - In Expanded or Revealed, it is the home link (on the homepage it scrolls to the top).
+- **iOS's bounce** past the bottom of the page is not scrolling up: positions are kept inside the page.
+- **The pennant** is always the home link (on the homepage it scrolls to the top).
 
 **Rules:**
-- **Never gone.** The pennant is on screen at every scroll position, on every screen size.
-- **Phones:** the same behaviour. In Crest only, the pinned pennant is about 56px tall. Revealed shows the 56px bar with Menu, Search, Account and Saved.
 - **Accessibility:**
-  - In Crest only, the pennant is a button named "Show navigation" (`aria-expanded="false"`) and the hidden items are made `inert`, so keyboard and screen-reader users can't land on invisible controls.
-  - When revealed, the pennant becomes the "Vossie home" link and focus moves to the first header item.
-- **Reduced motion:** with reduced motion or low-data mode on, every change is instant (no slide, fade or spring).
-- **Focus:** hiding never moves focus out of a control someone is using.
+  - While hidden, the quick links and the bar (pennant included) are `inert`, so keyboard and screen-reader users can't land on invisible controls.
+  - In their place, a "Show navigation" button (`aria-expanded="false"`) is unseen until focused, like the skip link, then shows as a navy pill at the top centre. It shows the header without moving the page and moves focus to Menu.
+- **Reduced motion:** with reduced motion or low-data mode on, every change is instant (no slide or fade).
+- **Focus:** hiding never moves focus out of a control someone is using; the header stays while keyboard focus is in it.
+
+**Phone tab bar** (below the tablet step, landscape phones included):
+- **Tabs:** Home (`/`), Shop (`/browse`), Sell (`/sell`), Saved (with its count) and Account (`/account`, or sign-in when signed out, with the red new-notifications badge). Each is an icon with a visible label, 56px tall and a fifth of the width.
+- **Always on screen,** fixed to the bottom, clear of the iPhone home bar. It does not hide with the header.
+- **Current tab:** navy with a pale pill behind its icon (`aria-current`). Shop, Sell and Account also mark the pages under them.
+- **Sell** is a solid sky pill with a navy plus, and navy with a white plus on its own pages.
+- **Room:** the page keeps room under the footer and under anything focused, and toasts sit above the bar.
+- **Gives way:** to a listing's dock (a listing's own actions first, and two bars would cover too much of a small screen), and while someone types in a text field, so it never rides on the on-screen keyboard.
+- **Cost:** rendered on the server; the only client code is the current-tab check (shared with the header) and Saved's count. Only Home and Sell prefetch, as the header already does.
 
 ### 6.3 Menu
 - **Panel.** Full-screen navy panel with the star texture and big condensed links: Shop, Sell, Campuses, Hub, How it works, Safety, Account. Arrows drill into Categories and Campuses.
@@ -379,7 +387,7 @@ See 6.6.
 - **Not in this stage.** View Transitions between pages are left for when the other pages exist.
 
 **Signature moments:**
-- Header hiding to crest only (250ms) and popping back (300ms bar, 420ms pennant spring).
+- Header hiding (250ms) and coming back on the way up (300ms, items 40ms apart).
 - Pennant pop (420ms spring).
 - Hero word change.
 - Collections photo deal.
@@ -491,11 +499,12 @@ Types live in `lib/types.ts`. The homepage only calls these functions, which rea
 
 **Automated tests:**
 - Header states:
-  - Crest only after 120px: only the pennant is visible, hidden items are inert.
-  - A tap reveals everything without moving the page.
-  - Another 160px of scrolling returns to crest only.
+  - Hidden after 120px: nothing of the header is visible, and it is inert.
+  - 40px back up shows everything without moving the page; a smaller wobble doesn't.
+  - Another 80px down hides it again.
   - Back at the top: expanded.
-  - The pennant's role switches between "Show navigation" and "Vossie home".
+  - Hidden, the keyboard's "Show navigation" button shows it and focuses Menu.
+- Tab bar: five tabs in order, the current one marked, Saved's count and Account's badge.
 - Hero autoplay and pause rules.
 - Carousel buttons and keyboard.
 - Campus choice saved and applied.
@@ -504,8 +513,8 @@ Types live in `lib/types.ts`. The homepage only calls these functions, which rea
 
 **Playwright, at 360, 390, 768, 1024 and 1440px:**
 - No sideways scrolling at any width.
-- After scrolling, only the pennant stays visible, at every width.
-- Tapping it brings the full header back without moving the page.
+- After scrolling down, the header is gone at every width; scrolling up brings it back without moving the page.
+- On phones the tab bar stays on screen and never covers the footer.
 - Every interactive element is reachable by keyboard.
 - With reduced motion on, nothing autoplays.
 - axe finds no serious or critical issues.
@@ -532,7 +541,7 @@ Types live in `lib/types.ts`. The homepage only calls these functions, which rea
 
 | # | Question | Answer |
 |---|---|---|
-| 1 | Pennant behaviour | After scrolling, only the crest stays; tapping it pops the whole header back out (section 6.2) |
+| 1 | Pennant behaviour | After scrolling, only the crest stays; tapping it pops the whole header back out (section 6.2). Replaced 2026-10-20 (decision 75): the whole header hides and comes back on scrolling up, with a tab bar on phones |
 | 2 | Fonts | Try Eduvos's own (Cocogoose Pro, Larken); interim mockup fonts until the files arrive (section 4) |
 | 3 | Categories | Keep the ten in 7.5 for now |
 | 4 | Crest | Approved inside the pennant; use the current artwork until the official SVG arrives |

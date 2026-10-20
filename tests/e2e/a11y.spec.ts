@@ -10,10 +10,10 @@ test("the homepage", async ({ page }) => {
   expect(await seriousIssues(page)).toEqual([]);
 });
 
-test("the homepage scrolled to crest only", async ({ page }) => {
+test("the homepage scrolled with the header hidden", async ({ page }) => {
   await page.goto("/");
   await page.evaluate(() => window.scrollTo(0, 900));
-  await expect(page.getByRole("button", { name: "Show navigation" })).toBeVisible();
+  await expect(page.locator(".site-header")).toHaveAttribute("data-mode", "hidden");
   expect(await seriousIssues(page)).toEqual([]);
 });
 
@@ -442,7 +442,8 @@ test("the header with a new notification's badge, and the account page's counts"
   await reply(seller, "Yes, it is.");
   await seller.context().close();
   await page.goto("/");
-  await expect(page.locator(".site-header .hdr-badge-alert")).toBeVisible();
+  // The header's badge from the tablet step, the tab bar's on phones (spec section 6.2).
+  await expect(page.locator(":is(.site-header, .tabbar) .hdr-badge-alert").filter({ visible: true })).toBeVisible();
   expect(await seriousIssues(page)).toEqual([]);
   await page.goto("/account");
   await expect(page.getByRole("link", { name: /^Notifications\s*,\s*1 new$/ })).toBeVisible();

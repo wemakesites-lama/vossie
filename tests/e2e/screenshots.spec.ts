@@ -18,11 +18,13 @@ test("shell review screenshots", async ({ page }) => {
   await page.goto("/");
   await shot("01-top");
 
+  // The file names are the first header's; the states are now hidden and shown (spec section 6.2, 2026-10-20).
   await page.evaluate(() => window.scrollTo(0, 700));
-  await page.getByRole("button", { name: "Show navigation" }).waitFor();
+  await expect(page.locator(".site-header")).toHaveAttribute("data-mode", "hidden");
   await shot("02-crest-only");
 
-  await page.getByRole("button", { name: "Show navigation" }).click();
+  await page.mouse.wheel(0, -60);
+  await expect(page.locator(".site-header")).toHaveAttribute("data-mode", "shown");
   await shot("03-revealed");
 
   // Each overlay is waited for before its shot, and waited out after Escape before the next step.

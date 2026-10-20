@@ -28,3 +28,27 @@ export function SavedLink({ className, style }: { className?: string; style?: CS
     </Link>
   );
 }
+
+/** The id of the words that describe the tab bar's Saved tab. */
+export const SAVED_COUNT_ID = "tab-saved-count";
+
+/**
+ * The tab bar's Saved count: a badge for the eye, and words that describe the tab ("2 items") without changing its
+ * name, as the account badge does. The words are always there (empty with nothing saved), so the tab's
+ * aria-describedby always points at something. Both are hidden from the name; a description still reads them.
+ */
+export function SavedCount() {
+  const count = useSavedCount();
+  return (
+    <>
+      <span id={SAVED_COUNT_ID} className="sr-only" aria-hidden="true">
+        {count > 0 ? `${count} ${count === 1 ? "item" : "items"}` : ""}
+      </span>
+      {count > 0 && (
+        <span className="hdr-badge" aria-hidden="true">
+          {count > 99 ? "99+" : count}
+        </span>
+      )}
+    </>
+  );
+}

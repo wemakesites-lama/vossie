@@ -13,30 +13,41 @@ async function openCampusPicker(page: Page) {
 }
 
 test.describe("header", () => {
-  test("hides to the crest, pops back without moving the page, and hides again 160px later", async ({ page }) => {
+  test("hides completely on the way down and comes back whole on the way up, without moving the page", async ({ page }) => {
     await page.goto("/");
     const menu = page.getByRole("button", { name: "Menu", exact: true });
+    const home = page.getByRole("link", { name: "Vossie home" });
     await expect(menu).toBeVisible();
 
-    await page.evaluate(() => window.scrollTo(0, 700));
+    await page.mouse.wheel(0, 900);
     await expect(menu).toBeHidden();
-    const pennant = page.getByRole("button", { name: "Show navigation" });
-    await expect(pennant).toBeVisible();
-    await expect.poll(async () => (await pennant.boundingBox())?.y ?? 99).toBeLessThanOrEqual(1);
+    // The crest goes too (spec section 6.2, Lama 2026-10-20).
+    await expect(home).toBeHidden();
 
     const scrollBefore = await page.evaluate(() => window.scrollY);
-    // A real tap on touch screens (the spec says "tap"), a click elsewhere.
-    if (test.info().project.use.hasTouch) await pennant.tap();
-    else await pennant.click();
+    await page.mouse.wheel(0, -60);
     await expect(menu).toBeVisible();
-    await expect(page.getByRole("link", { name: "Vossie home" })).toBeVisible();
-    expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
+    await expect(home).toBeVisible();
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore - 60);
 
-    await page.evaluate(() => window.scrollBy(0, 200));
+    await page.mouse.wheel(0, 200);
     await expect(menu).toBeHidden();
 
     await page.evaluate(() => window.scrollTo(0, 0));
     await expect(menu).toBeVisible();
+  });
+
+  test("hidden, the keyboard gets a Show navigation button that brings it back and focuses Menu", async ({ page }) => {
+    test.skip(Boolean(test.info().project.use.hasTouch), "A keyboard path");
+    await page.goto("/");
+    await page.evaluate(() => window.scrollTo(0, 900));
+    const show = page.getByRole("button", { name: "Show navigation" });
+    await show.focus();
+    await expect(show).toBeInViewport();
+    const scrollBefore = await page.evaluate(() => window.scrollY);
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("button", { name: "Menu", exact: true })).toBeFocused();
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
   });
 
   test.describe("on a landscape phone", () => {
@@ -69,6 +80,37 @@ test.describe("header", () => {
     await page.evaluate(() => window.scrollTo(0, 900));
     await expect(page.locator(".site-header")).toHaveAttribute("data-mode", "expanded");
     await expect(menu).toBeFocused();
+  });
+});
+
+test.describe("tab bar", () => {
+  test("on phones: Home, Shop, Sell, Saved and Account, always on screen and never over the footer", async ({ page }) => {
+    const bar = page.getByRole("navigation", { name: "Main" });
+    await page.goto("/");
+    if (isTabletOrWider(page)) {
+      await expect(bar).toBeHidden();
+      return;
+    }
+    await expect(bar.getByRole("link")).toHaveText(["Home", "Shop", "Sell", "Saved", "Account"]);
+    await expect(bar.getByRole("link", { name: "Home" })).toHaveAttribute("aria-current", "page");
+    await page.mouse.wheel(0, 900);
+    await expect(page.getByRole("button", { name: "Menu", exact: true })).toBeHidden();
+    await expect(bar).toBeInViewport({ ratio: 1 });
+
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const footer = await page.locator("footer").boundingBox();
+    const tabs = await bar.boundingBox();
+    expect(footer!.y + footer!.height).toBeLessThanOrEqual(tabs!.y + 1);
+
+    await bar.getByRole("link", { name: "Shop" }).click();
+    await expect(page).toHaveURL(/\/browse$/);
+    await expect(bar.getByRole("link", { name: "Shop" })).toHaveAttribute("aria-current", "page");
+  });
+
+  test("gives way to a listing's dock on phones", async ({ page }) => {
+    test.skip(isTabletOrWider(page), "Phones only");
+    await page.goto("/listings/l-001");
+    await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
   });
 });
 

@@ -1,10 +1,20 @@
 import {
-  headerOnReveal,
   headerOnScroll,
+  headerOnShow,
   initialHeaderState,
   type HeaderMode,
   type HeaderState,
 } from "./header-state";
+
+/**
+ * The scroll position, kept inside the page. iOS reports positions past the bottom while the page bounces there, and
+ * the bounce back would read as scrolling up and show the header. (The top needs no clamp: anything below
+ * EXPAND_ABOVE is the top.) A page no taller than the screen can't scroll, so there is nothing to clamp.
+ */
+function pageScrollY(): number {
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+  return max > 0 ? Math.min(window.scrollY, max) : window.scrollY;
+}
 
 /**
  * Feeds window scroll positions into the header state machine, for useSyncExternalStore.
@@ -22,8 +32,8 @@ export function createHeaderStore() {
   };
 
   const sync = () => {
-    const next = headerOnScroll(state, window.scrollY);
-    if (next.mode === "crest" && state.mode !== "crest" && hold()) return;
+    const next = headerOnScroll(state, pageScrollY());
+    if (next.mode === "hidden" && state.mode !== "hidden" && hold()) return;
     commit(next);
   };
 
@@ -39,8 +49,8 @@ export function createHeaderStore() {
     },
     getSnapshot: (): HeaderMode => state.mode,
     getServerSnapshot: (): HeaderMode => "expanded",
-    reveal() {
-      commit(headerOnReveal(state, window.scrollY));
+    show() {
+      commit(headerOnShow(state, pageScrollY()));
     },
     setHold(check: () => boolean) {
       hold = check;

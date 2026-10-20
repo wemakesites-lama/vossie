@@ -16,14 +16,15 @@ import { countNewNotifications } from "@/lib/data/notifications";
  */
 export function AccountLink({ signedIn, unread = 0 }: { signedIn: boolean; unread?: number }) {
   const badge = signedIn && unread > 0;
-  // --i is the header's reveal stagger: fourth in its group, as before (spec section 6.2).
+  // --i is the header's reveal stagger: fourth in its group, as before (spec section 6.2). Phones have the tab bar's
+  // Account tab instead (components/tabbar/TabBar.tsx).
   return (
     <Link
       href={signedIn ? "/account" : "/login"}
       prefetch={false}
       aria-label={signedIn ? "Your account" : "Sign in"}
       aria-describedby={badge ? "hdr-account-new" : undefined}
-      className="hdr-item icon-btn relative"
+      className="hdr-item icon-btn relative hidden wide:inline-grid"
       style={{ "--i": 3 } as CSSProperties}
     >
       <UserIcon />
