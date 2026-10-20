@@ -25,14 +25,14 @@ insert into auth.users (id, email) values
 insert into private.policy_versions (version) values ('2026-11');
 
 -- Every public function is either a user action (authenticated) or the server's (service role), and anon runs only the
--- named read-only counts (schema catch-up Task 2: hub_going).
+-- named read-only counts (schema catch-up Task 2: hub_going; Task 3: request_offer_count).
 select is(
   array(
     select p.oid::regprocedure::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute')
     order by 1
   ),
-  array['hub_going(text)'],
+  array['hub_going(text)', 'request_offer_count(text)'],
   'anon can run no function in public but the named counts'
 );
 select is(
@@ -67,6 +67,7 @@ select is(
     'create_report(text,text,text,text,text)',
     'create_shop(text,text,text,text,uuid,text,uuid[])',
     'delete_listing(text)',
+    'follower_count(uuid)',
     'hub_going(text)',
     'mark_completed(uuid)',
     'mark_notifications_read()',
@@ -74,6 +75,7 @@ select is(
     'mentor_shop_numbers(uuid,timestamp with time zone)',
     'record_consent(text)',
     'reject_sale(uuid)',
+    'request_offer_count(text)',
     'save_listing(text,text,text,text,text,integer,boolean,text,text,text,text,uuid,jsonb,boolean)',
     'save_onboarding_draft(text,text,text,text,uuid,text,uuid[])',
     'send_message(uuid,text)',
@@ -239,7 +241,8 @@ select is(
     order by 1
   ),
   array[
-    'private.can_mentor(uuid)', 'private.conversation_side(uuid)', 'private.is_staff(text)', 'private.mentors_shop(uuid)',
+    'private.can_mentor(uuid)', 'private.conversation_buyer_name(uuid)', 'private.conversation_request_state(uuid)',
+    'private.conversation_side(uuid)', 'private.is_my_request(text)', 'private.is_staff(text)', 'private.mentors_shop(uuid)',
     'private.owns_shop(uuid)', 'private.shop_is_public(uuid)', 'private.staff_hub_posts()', 'private.staff_reports()',
     'private.staff_seller_profiles()'
   ],
