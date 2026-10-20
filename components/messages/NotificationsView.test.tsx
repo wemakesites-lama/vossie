@@ -101,3 +101,29 @@ describe("notifications (messaging spec 3.5)", () => {
     expect(screen.queryByRole("list")).toBeNull();
   });
 });
+
+describe("a saved search's matches (search alerts spec 2.12 and section 4)", () => {
+  it("draws the search icon, decorative, beside the sentence, and leads to the results", () => {
+    const { container } = render(
+      <NotificationsView
+        now={NOW}
+        items={[
+          item({
+            id: "note-ss",
+            kind: "search-match",
+            text: "3 new listings match your search “calculator” at Midrand",
+            href: "/browse?q=calculator&campus=midrand&sort=new",
+          }),
+        ]}
+      />,
+    );
+    const icon = container.querySelector(".notes-row svg.notes-icon");
+    expect(icon).toHaveAttribute("aria-hidden", "true");
+    expect(icon?.querySelector("circle")).not.toBeNull();
+    expect(icon?.querySelector("path")).toHaveAttribute("d", "m16 16 4.5 4.5");
+    expect(screen.getByRole("link", { name: /3 new listings match your search “calculator” at Midrand/ })).toHaveAttribute(
+      "href",
+      "/browse?q=calculator&campus=midrand&sort=new",
+    );
+  });
+});

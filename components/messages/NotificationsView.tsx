@@ -1,11 +1,20 @@
 import Link from "next/link";
-import { CheckIcon, ClockIcon, FlagIcon, MessageIcon, PlusSquareIcon, ShieldIcon } from "@/components/icons";
+import {
+  CheckIcon,
+  ClockIcon,
+  FlagIcon,
+  MessageIcon,
+  PlusSquareIcon,
+  SearchIcon,
+  ShieldIcon,
+} from "@/components/icons";
 import { inboxTime } from "@/lib/time";
 import type { NotificationItem, NotificationKind } from "@/lib/types";
 
 /**
  * Each kind's icon (plan decision 13; staff tools plan decision 7 adds "shop-update" and "booking"). Community actions
  * add "offer", "request-update" and "new-listing" (community actions plan decision 14).
+ * Saved-search alerts add "search-match", drawn with the search icon (search alerts plan decision 14).
  */
 function KindIcon({ kind }: { kind: NotificationKind }) {
   switch (kind) {
@@ -27,6 +36,8 @@ function KindIcon({ kind }: { kind: NotificationKind }) {
       return <FlagIcon className="notes-icon" />;
     case "new-listing":
       return <PlusSquareIcon className="notes-icon" />;
+    case "search-match":
+      return <SearchIcon className="notes-icon" />;
   }
 }
 
