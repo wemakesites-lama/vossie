@@ -80,7 +80,7 @@ select is(
 );
 
 -- Closed, a target can be reported again.
-update public.reports set status = 'closed' where target_id = 't-r1';
+update public.reports set status = 'closed', outcome = 'dismissed', closed_at = now() where target_id = 't-r1';
 select pg_temp.sign_in('00000000-0000-4000-8000-000000000071');
 select is(public.create_report('listing', 't-r1', 'x', 'spam', ''), 'created', 'once the last report is closed, a new one is made');
 select pg_temp.sign_out();

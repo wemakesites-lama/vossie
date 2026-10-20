@@ -37,10 +37,11 @@ insert into public.shops (id, slug, owner_id, name, category_slug, campus_slug, 
   ('10000000-0000-4000-8000-00000000000c', 'shop-pending', '00000000-0000-4000-8000-000000000013', 'Pending shop', 'test-category', 'test-campus', '2026-01'),
   ('10000000-0000-4000-8000-00000000000d', 'shop-gone', '00000000-0000-4000-8000-000000000014', 'Gone shop', 'test-category', 'test-campus', '2026-01'),
   ('10000000-0000-4000-8000-00000000000e', 'shop-sample', null, 'Sample shop', 'test-category', 'test-campus', '2026-01');
-insert into public.seller_profiles (account_id, status, shop_id) values
-  ('00000000-0000-4000-8000-000000000011', 'approved', '10000000-0000-4000-8000-00000000000a'),
-  ('00000000-0000-4000-8000-000000000012', 'paused', '10000000-0000-4000-8000-00000000000b'),
-  ('00000000-0000-4000-8000-000000000013', 'pending', '10000000-0000-4000-8000-00000000000c');
+-- A paused profile says who paused it (schema catch-up Task 1's check).
+insert into public.seller_profiles (account_id, status, shop_id, paused_by) values
+  ('00000000-0000-4000-8000-000000000011', 'approved', '10000000-0000-4000-8000-00000000000a', null),
+  ('00000000-0000-4000-8000-000000000012', 'paused', '10000000-0000-4000-8000-00000000000b', 'seller'),
+  ('00000000-0000-4000-8000-000000000013', 'pending', '10000000-0000-4000-8000-00000000000c', null);
 insert into public.shop_pickup_points (shop_id, pickup_point_id) values
   ('10000000-0000-4000-8000-00000000000a', '20000000-0000-4000-8000-000000000001'),
   ('10000000-0000-4000-8000-00000000000c', '20000000-0000-4000-8000-000000000001');

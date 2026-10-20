@@ -423,7 +423,7 @@ select is(
 
 -- A paused shop (I2 of the phase A review): its listings count as paused (toListing in lib/data/catalog.ts), so they
 -- can't be messaged; a question to the shop still can (composerSubject's open is true for a shop).
-update public.seller_profiles set status = 'paused' where account_id = '00000000-0000-4000-8000-000000000062';
+update public.seller_profiles set status = 'paused', paused_by = 'seller' where account_id = '00000000-0000-4000-8000-000000000062';
 select pg_temp.sign_in('00000000-0000-4000-8000-000000000063');
 select is(public.start_conversation('t-calc', null, 'Hi', null), '{"result": "closed"}'::jsonb, 'an available listing in a paused shop is closed');
 select is(public.start_conversation('t-headset', null, 'Hi', null), '{"result": "closed"}'::jsonb, 'every one of them');
@@ -435,7 +435,7 @@ select is(
   0::bigint,
   'and no conversation about its listings started'
 );
-update public.seller_profiles set status = 'approved' where account_id = '00000000-0000-4000-8000-000000000062';
+update public.seller_profiles set status = 'approved', paused_by = null where account_id = '00000000-0000-4000-8000-000000000062';
 select pg_temp.sign_in('00000000-0000-4000-8000-000000000063');
 select is(public.start_conversation('t-calc', null, 'Hi', null) ->> 'result', 'started', 'resumed, its listings can be messaged again');
 select pg_temp.sign_out();

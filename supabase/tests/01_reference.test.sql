@@ -44,14 +44,14 @@ select throws_ok(
   '23503', null, 'a pickup point belongs to a campus'
 );
 
--- anon reads all three, and only live pickup points.
+-- anon reads all three, retired pickup points included.
 set local role anon;
 select is((select count(*) from public.campuses where slug = 'test-campus'), 1::bigint, 'anon reads campuses');
 select is((select count(*) from public.categories where slug = 'test-category'), 1::bigint, 'anon reads categories');
 select is(
-  (select array_agg(name) from public.pickup_points where campus_slug = 'test-campus'),
-  array['Library entrance'],
-  'anon reads live pickup points, not retired ones'
+  (select array_agg(name order by name) from public.pickup_points where campus_slug = 'test-campus'),
+  array['Library entrance', 'Old gate'],
+  'anon reads pickup points, retired ones too (schema catch-up Task 1: a listing names its retired point)'
 );
 reset role;
 
@@ -61,9 +61,9 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-0000000
 select is((select count(*) from public.campuses where slug = 'test-campus'), 1::bigint, 'authenticated reads campuses');
 select is((select count(*) from public.categories where slug = 'test-category'), 1::bigint, 'authenticated reads categories');
 select is(
-  (select array_agg(name) from public.pickup_points where campus_slug = 'test-campus'),
-  array['Library entrance'],
-  'authenticated reads live pickup points, not retired ones'
+  (select array_agg(name order by name) from public.pickup_points where campus_slug = 'test-campus'),
+  array['Library entrance', 'Old gate'],
+  'authenticated reads pickup points, retired ones too (schema catch-up Task 1: a listing names its retired point)'
 );
 reset role;
 
