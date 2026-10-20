@@ -1,11 +1,11 @@
 import { NavLink } from "@/components/ui/NavLink";
-import { signOut } from "@/lib/auth/actions";
+import { SIGN_OUT_PATH } from "@/lib/auth/post-paths";
 import { getViewer } from "@/lib/auth/session";
 
 /**
  * The menu's account rows (accounts spec 3.4): "Sign in" when signed out; "Your account" and Sign out when signed in.
  * Rendered on the server and handed to MenuDrawer, like the header's icon (plan decision 1). Sign out is a plain form
- * posting to a Server Action; the menu closes as it's pressed (plan decision 14).
+ * posting to `/logout`, which answers with a full page load (stage K); the menu closes as it's pressed (plan decision 14).
  */
 export function MenuAccountLinks({ signedIn }: { signedIn: boolean }) {
   if (!signedIn) {
@@ -21,7 +21,7 @@ export function MenuAccountLinks({ signedIn }: { signedIn: boolean }) {
         <NavLink href="/account">Your account</NavLink>
       </li>
       <li>
-        <form action={signOut}>
+        <form action={SIGN_OUT_PATH} method="post">
           <button type="submit" className="menu-link-button menu-signout">
             Sign out
           </button>

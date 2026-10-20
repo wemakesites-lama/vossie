@@ -9,7 +9,7 @@ import { AccountView, detailsForm } from "./AccountView";
 vi.mock("next/link", async () => (await import("@/tests/helpers/next-link")).nextLinkShowingPrefetch);
 
 // The forms only need something to post to; the actions have their own tests.
-vi.mock("@/lib/auth/actions", () => ({ signOut: async () => {}, updateDetails: async () => {} }));
+vi.mock("@/lib/auth/actions", () => ({ updateDetails: async () => {} }));
 
 const account: Account = {
   id: "acc-student",
@@ -90,6 +90,7 @@ describe("Your account (accounts spec 3.2)", () => {
       ["Privacy settings", "/account/privacy"],
     ]);
     expect(screen.getByRole("button", { name: "Sign out" })).toHaveAttribute("type", "submit");
+    expect(screen.getByRole("button", { name: "Sign out" }).closest("form")).toHaveAttribute("action", "/logout");
   });
 
   it("points a seller at their shop's pages, and says when it's waiting or paused (selling plan decision 21)", () => {

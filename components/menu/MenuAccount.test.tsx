@@ -6,7 +6,6 @@ const viewer = vi.hoisted(() => ({ account: null as { id: string } | null }));
 
 vi.mock("@/lib/auth/session", () => ({ getViewer: async () => viewer.account }));
 // The form only needs something to post to; the action has its own test.
-vi.mock("@/lib/auth/actions", () => ({ signOut: async () => {} }));
 
 afterEach(() => {
   viewer.account = null;
@@ -33,6 +32,9 @@ describe("the menu's account rows (accounts spec 3.4)", () => {
     const signOut = screen.getByRole("button", { name: "Sign out" });
     expect(signOut).toHaveAttribute("type", "submit");
     expect(signOut.closest("form")).not.toBeNull();
+    // A plain post to /logout, which answers with a full page load (stage K plan decision 2).
+    expect(signOut.closest("form")).toHaveAttribute("action", "/logout");
+    expect(signOut.closest("form")).toHaveAttribute("method", "post");
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
   });
 

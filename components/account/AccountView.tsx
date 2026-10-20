@@ -3,7 +3,8 @@ import { CampusSelect } from "@/components/forms/CampusSelect";
 import { ErrorSummary } from "@/components/forms/ErrorSummary";
 import { describedBy, FieldError } from "@/components/forms/FieldError";
 import { ChevronRightIcon } from "@/components/icons";
-import { signOut, updateDetails } from "@/lib/auth/actions";
+import { updateDetails } from "@/lib/auth/actions";
+import { SIGN_OUT_PATH } from "@/lib/auth/post-paths";
 import { DETAILS_FIELDS } from "@/lib/auth/form-state";
 import { errorFor, formErrors, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
@@ -170,7 +171,7 @@ export function AccountView({ account, campuses, details, counts }: AccountViewP
         </ul>
       </nav>
 
-      <form action={signOut}>
+      <form action={SIGN_OUT_PATH} method="post">
         <button type="submit" className="btn btn-outline text-navy">
           Sign out
         </button>

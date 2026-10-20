@@ -4,7 +4,7 @@ import { createSession } from "@/lib/data/sessions";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { FLASH_COOKIE } from "@/lib/flash";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
-import { deleteAccount, signOut, updateDetails } from "./actions";
+import { deleteAccount, updateDetails } from "./actions";
 import { SESSION_COOKIE } from "./cookies";
 import { DELETE_FORM, DETAILS_FORM, readFormState } from "./form-state";
 import { hashToken } from "./secrets";
@@ -42,22 +42,6 @@ async function signedInAs(accountId: string, token = "token-1") {
   await createSession({ key: hashToken(token), accountId, createdAt: NOW, expiresAt: IN_30_DAYS });
   request.cookies.set(SESSION_COOKIE, token);
 }
-
-describe("signing out (accounts spec 2.5)", () => {
-  it("ends the session, leaves the toast's code, and goes to the homepage", async () => {
-    await signedInAs("acc-student");
-    const redirect = await redirectSignalOf(() => signOut());
-    expect([redirect.url, redirect.type]).toEqual(["/", undefined]);
-    expect(sampleStore().sessions.size).toBe(0);
-    expect(request.cookies.has(SESSION_COOKIE)).toBe(false);
-    expect(request.cookies.get(FLASH_COOKIE)).toBe("signed-out");
-    expect(request.sent.get(FLASH_COOKIE)?.options).toEqual({ sameSite: "lax", secure: false, path: "/", maxAge: 60 });
-  });
-
-  it("does no harm when already signed out", async () => {
-    expect(await redirectOf(() => signOut())).toBe("/");
-  });
-});
 
 describe("editing details (accounts spec 3.2)", () => {
   it("saves the first name and campus, and says so", async () => {

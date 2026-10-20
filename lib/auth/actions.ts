@@ -28,7 +28,7 @@ import { checkEmail, normaliseEmail } from "./email";
 import { DELETE_FORM, DETAILS_FORM, writeFormState } from "./form-state";
 import { checkCampus, checkFirstName } from "./profile";
 import { codeMatches, hashCode, hashToken, newCode, newToken } from "./secrets";
-import { endSession, requireAccount, startSession } from "./session";
+import { requireAccount, startSession } from "./session";
 
 // The Server Actions behind every account form (accounts spec 2 and 3). Each is a plain form's action, so it works
 // before the app's JavaScript arrives (plan decision 2). It checks its own input, takes identity only from the
@@ -272,13 +272,6 @@ export async function signInAsSample(formData: FormData): Promise<void> {
 }
 
 // --- Your account ---------------------------------------------------------------
-
-/** Sign out (spec 2.5): the session goes, and the homepage says so in a toast (plan decision 12). */
-export async function signOut(): Promise<void> {
-  await endSession();
-  await setFlash("signed-out");
-  redirect("/");
-}
 
 /** "Edit details" on the account page (spec 3.2): the first name and the campus, checked as step 3 checks them. */
 export async function updateDetails(formData: FormData): Promise<void> {

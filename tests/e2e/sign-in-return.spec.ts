@@ -13,7 +13,7 @@ import { expectStill, holdFonts, recordShifts } from "./helpers/shifts";
  */
 const SIGN_IN_ENDS_IN_A_PAGE_LOAD = false;
 /** Whether signing out ends with a full page load (plan Task 2; Lama, 2026-10-20). */
-const SIGN_OUT_ENDS_IN_A_PAGE_LOAD = false;
+const SIGN_OUT_ENDS_IN_A_PAGE_LOAD = true;
 const SPIKE = process.env.SIGN_IN_SPIKE === "1";
 
 function needsTheFix(built: boolean) {
