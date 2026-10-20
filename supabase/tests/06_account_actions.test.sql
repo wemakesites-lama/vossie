@@ -133,6 +133,7 @@ select is(
     order by 1
   ),
   array[
+    'admin_weekly_counts(timestamp with time zone)',
     'forget_account(uuid)',
     'record_search_matches(text,text[],jsonb)',
     'record_wrong_try(text)',
