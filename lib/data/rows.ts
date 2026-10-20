@@ -477,8 +477,13 @@ export type RequestRow = {
   status: RequestStatus;
   createdAt: string;
   updatedAt: string;
-  /** When the asker closed it; null while it's open, and for the sample requests. */
+  /**
+   * When it closed: the asker's Close, or the start of its closing day in SAST when it closed by itself (stage L). Null
+   * while it's open, and for the sample requests.
+   */
   closedAt: string | null;
+  /** Who closed it (stage L spec decision 11): its asker, or "auto" when it closed by itself. Null while it's open, and on the samples. */
+  closedBy: "asker" | "auto" | null;
   /** The fixture's offers number, kept only on the samples, which have no offer threads (spec 2.11). 0 otherwise. */
   seedOffers: number;
   /** When and why the Hub hid it (spec 2.14), as G's hidden listings. Null while it isn't hidden. */

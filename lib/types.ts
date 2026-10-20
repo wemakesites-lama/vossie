@@ -162,6 +162,11 @@ export type LookingForRequest = {
   /** ISO 8601 in UTC, e.g. "2026-10-13T07:30:00Z". */
   createdAt: string;
   status: RequestStatus;
+  /**
+   * The SAST date it closes by itself from (stage L spec decision 10), or null for a sample request. A function of the
+   * stored row, so a cached copy is never wrong about it; whether it's open today is `requestOpenOn`.
+   */
+  closesOn: string | null;
 };
 
 export type FreeSwapItem = {

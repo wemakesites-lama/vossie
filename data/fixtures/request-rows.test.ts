@@ -25,7 +25,17 @@ describe("the sample requests as the store's rows (community actions plan decisi
 
   it("names no asker, and none is closed by anyone or hidden", () => {
     for (const row of sampleRequestRows) {
-      expect([row.askerId, row.closedAt, row.hiddenAt, row.hiddenReason], row.id).toEqual([null, null, null, null]);
+      expect([row.askerId, row.closedAt, row.closedBy, row.hiddenAt, row.hiddenReason], row.id).toEqual([
+        null,
+        null,
+        null,
+        null,
+        null,
+      ]);
     }
+  });
+
+  it("never closes a sample by itself: none has a closing day (stage L spec decision 9)", () => {
+    for (const request of requests) expect(request.closesOn, request.id).toBeNull();
   });
 });

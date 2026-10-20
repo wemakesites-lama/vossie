@@ -1,5 +1,5 @@
 import type { RequestState } from "@/lib/types";
-import { OPEN_REQUESTS_MAX } from "./rules";
+import { type CloseReason, IDLE_CLOSE_DAYS, NEEDED_BY_GRACE_DAYS, OPEN_REQUESTS_MAX } from "./rules";
 
 // Looking For's words (community actions spec 2.10, 2.13, 2.14 and section 4; plan decisions 7 to 9, 14 and 26). The
 // status lines are kept as codes in form state, never words, so a stale or made-up code shows nothing. The words are
@@ -26,6 +26,8 @@ const NOTICES: ReadonlyMap<string, string> = new Map([
   ["reopened", "Request reopened."],
   ["deleted", "Request deleted."],
   ["reopen-limit", `You have ${OPEN_REQUESTS_MAX} open requests. Close one before you reopen this one.`],
+  // Stage L (spec decision 13): reopening took off a needed-by date that had passed, or it would close again at once.
+  ["reopened-date-cleared", "Request reopened. Its needed-by date had passed, so it's been removed. Add a new one with Edit."],
 ]);
 
 export function requestNoticeText(code: string | null | undefined): string | null {
@@ -41,6 +43,23 @@ export function offerNoteText(shop: string, requestTitle: string): string {
 export function requestHiddenText(title: string): string {
   return `The Hub hid your request ${title}. See why in Your requests.`;
 }
+
+/** Why a request closed by itself, as the asker's notification and lines end it (stage L spec section 4, Words). */
+export const AUTO_CLOSE_WHY: Readonly<Record<CloseReason, string>> = {
+  "needed-by": `${NEEDED_BY_GRACE_DAYS} days after the date you needed it by`,
+  idle: `after ${IDLE_CLOSE_DAYS} days with no changes`,
+};
+
+/** The asker's notification when their request closes by itself (stage L spec decision 12), "request-update" kind. */
+export function requestAutoClosedText(title: string, reason: CloseReason): string {
+  return `Your request ${title} closed automatically ${AUTO_CLOSE_WHY[reason]}. Reopen it in Your requests if you still need it.`;
+}
+
+/** Under Reopen when the request's needed-by date has passed (stage L spec decision 13). */
+export const REOPEN_CLEARS_DATE_HINT = "Reopening removes the needed-by date, which has passed.";
+
+/** Added to the request form's needed-by hint (stage L spec section 4). */
+export const CLOSES_BY_ITSELF_HINT = `Your request closes automatically ${NEEDED_BY_GRACE_DAYS} days after this date. Without one, it closes after ${IDLE_CLOSE_DAYS} days with no changes.`;
 
 /** What an offer thread is about, in the inbox (plan decision 8). */
 export function offerAbout(role: "buyer" | "seller", requestTitle: string): string {

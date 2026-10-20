@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
-import type { RequestFields } from "@/lib/looking-for/rules";
+import { closingDay, type RequestFields } from "@/lib/looking-for/rules";
 import type { LookingForRequest, OwnRequest, RequestState } from "@/lib/types";
 import { deleteNotificationsAbout } from "./notifications";
 import { offerThreadCount } from "./offers";
@@ -27,6 +27,7 @@ function toRequest(row: RequestRow): LookingForRequest {
     neededBy: row.neededBy,
     createdAt: row.createdAt,
     status: row.status,
+    closesOn: closingDay(row),
   };
 }
 
@@ -118,6 +119,7 @@ export async function createRequest({
     createdAt: at,
     updatedAt: at,
     closedAt: null,
+    closedBy: null,
     seedOffers: 0,
     hiddenAt: null,
     hiddenReason: null,
@@ -156,6 +158,7 @@ export async function setRequestOpen(
   if (!row) return null;
   row.status = open ? "open" : "closed";
   row.closedAt = open ? null : now.toISOString();
+  row.closedBy = open ? null : "asker";
   row.updatedAt = now.toISOString();
   return toRequest(row);
 }

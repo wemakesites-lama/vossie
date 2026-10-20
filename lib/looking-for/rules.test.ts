@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { addDays, checkNeededBy, checkRequest, hasContactDetails, parseBudget, type RequestInput } from "./rules";
+import {
+  addDays,
+  checkNeededBy,
+  checkRequest,
+  closedAtFor,
+  closeReasonOf,
+  closingDay,
+  hasContactDetails,
+  IDLE_CLOSE_DAYS,
+  NEEDED_BY_GRACE_DAYS,
+  parseBudget,
+  requestOpenOn,
+  type RequestInput,
+} from "./rules";
 
 const KNOWN = { categorySlugs: ["tutoring", "tech"], campusSlugs: ["midrand", "online"], today: "2026-10-14" };
 
@@ -228,5 +241,55 @@ describe("the request form's checks (community actions spec 2.3)", () => {
     expect(checkRequest(input({ details: "The textbook is ISBN 978-0-306-40615-7, any edition." }), KNOWN).errors).toEqual(
       [],
     );
+  });
+});
+
+describe("when a request closes itself (stage L spec decisions 8 to 10)", () => {
+  const ROW = { askerId: "acc-student", neededBy: null, updatedAt: "2026-10-13T09:30:00.000Z" };
+
+  it("keeps a request 3 whole days after its needed-by date, or 30 days after it last changed", () => {
+    expect([NEEDED_BY_GRACE_DAYS, IDLE_CLOSE_DAYS]).toEqual([3, 30]);
+    // Needed by Friday 16 October: open through Monday 19, closed from Tuesday 20.
+    expect(closingDay({ ...ROW, neededBy: "2026-10-16" })).toBe("2026-10-20");
+    // Posted 13 October: closed from 12 November.
+    expect(closingDay(ROW)).toBe("2026-11-12");
+  });
+
+  it("counts the 30 days from the South African date: 22:30 UTC on 13 October is the 14th there", () => {
+    expect(closingDay({ ...ROW, updatedAt: "2026-10-13T22:30:00.000Z" })).toBe("2026-11-13");
+  });
+
+  it("starts the 30 days again when the request changes, and lets a needed-by date win even when it's later", () => {
+    expect(closingDay({ ...ROW, updatedAt: "2026-10-20T08:00:00.000Z" })).toBe("2026-11-19");
+    expect(closingDay({ ...ROW, neededBy: "2027-01-10" })).toBe("2027-01-14");
+  });
+
+  it("never closes a sample request, which has no asker (decision 9)", () => {
+    expect(closingDay({ ...ROW, askerId: null, neededBy: "2026-10-16" })).toBeNull();
+    expect(closingDay({ ...ROW, askerId: null })).toBeNull();
+  });
+
+  it("is open the day before its closing day, and closed on it and after", () => {
+    const request = { status: "open" as const, closesOn: "2026-10-20" };
+    expect(requestOpenOn(request, "2026-10-19")).toBe(true);
+    expect(requestOpenOn(request, "2026-10-20")).toBe(false);
+    expect(requestOpenOn(request, "2026-10-21")).toBe(false);
+    expect(requestOpenOn({ status: "open", closesOn: null }, "2030-01-01")).toBe(true);
+    expect(requestOpenOn({ status: "closed", closesOn: null }, "2026-10-14")).toBe(false);
+  });
+
+  it("stores the close at the start of the closing day in South Africa, as UTC", () => {
+    expect(closedAtFor("2026-10-20")).toBe("2026-10-19T22:00:00.000Z");
+  });
+
+  it("says why: its needed-by date, else the 30 days", () => {
+    expect(closeReasonOf({ neededBy: "2026-10-16" })).toBe("needed-by");
+    expect(closeReasonOf({ neededBy: null })).toBe("idle");
+  });
+
+  it("crosses the year in South African dates", () => {
+    expect(closingDay({ ...ROW, neededBy: "2026-12-30" })).toBe("2027-01-03");
+    expect(closingDay({ ...ROW, updatedAt: "2026-12-15T22:30:00.000Z" })).toBe("2027-01-15");
+    expect(closedAtFor("2027-01-01")).toBe("2026-12-31T22:00:00.000Z");
   });
 });

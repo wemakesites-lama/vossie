@@ -31,6 +31,8 @@ const request = (
   neededBy: neededBy ?? null,
   createdAt,
   status,
+  // The samples never close themselves (stage L spec decision 9): they have no asker to tell or to reopen them.
+  closesOn: null,
 });
 
 // Looking For requests, newest first (community spec 4.3). The first seven are the homepage's: their ids, titles,

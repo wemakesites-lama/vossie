@@ -99,6 +99,7 @@ describe("the request form (community actions spec 2.3 and section 4)", () => {
         neededBy: "2026-10-20",
         createdAt: "2026-10-14T08:42:00.000Z",
         status: "open",
+        closesOn: null,
       },
       "midrand",
     );

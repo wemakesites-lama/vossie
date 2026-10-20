@@ -20,6 +20,7 @@ const own = (id: string, title: string, state: OwnRequest["state"], hiddenReason
     neededBy: null,
     createdAt: "2026-10-13T07:30:00.000Z",
     status: state === "closed" ? "closed" : "open",
+    closesOn: null,
   },
   state,
   hiddenReason,

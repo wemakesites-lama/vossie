@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  AUTO_CLOSE_WHY,
+  CLOSES_BY_ITSELF_HINT,
   offerAbout,
   offerNoteText,
+  REOPEN_CLEARS_DATE_HINT,
+  requestAutoClosedText,
   requestHiddenText,
   requestNoticeText,
   requestStateLabel,
@@ -39,5 +43,30 @@ describe("Looking For's words (community actions spec 2.10, 2.13, 2.14 and secti
       "Closed",
       "Hidden by the Hub",
     ]);
+  });
+});
+
+describe("requests that close themselves (stage L spec section 4, Words)", () => {
+  it("tells the asker once, in the app, why it closed and that they can reopen it", () => {
+    expect(requestAutoClosedText("Kettle for res", "needed-by")).toBe(
+      "Your request Kettle for res closed automatically 3 days after the date you needed it by. Reopen it in Your requests if you still need it.",
+    );
+    expect(requestAutoClosedText("Kettle for res", "idle")).toBe(
+      "Your request Kettle for res closed automatically after 30 days with no changes. Reopen it in Your requests if you still need it.",
+    );
+  });
+
+  it("gives the asker's lines their reasons, the reopen hint and notice, and the form's hint", () => {
+    expect(AUTO_CLOSE_WHY).toEqual({
+      "needed-by": "3 days after the date you needed it by",
+      idle: "after 30 days with no changes",
+    });
+    expect(REOPEN_CLEARS_DATE_HINT).toBe("Reopening removes the needed-by date, which has passed.");
+    expect(requestNoticeText("reopened-date-cleared")).toBe(
+      "Request reopened. Its needed-by date had passed, so it's been removed. Add a new one with Edit.",
+    );
+    expect(CLOSES_BY_ITSELF_HINT).toBe(
+      "Your request closes automatically 3 days after this date. Without one, it closes after 30 days with no changes.",
+    );
   });
 });

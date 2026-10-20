@@ -103,8 +103,9 @@ export type SampleStore = {
  * Bump it when a table is added or a row changes shape, so `next dev` reseeds instead of keeping an old store. 10:
  * sessions, sign-in attempts and codes are hashed with a key (stage K spec decision 15), so no old row is ever matched.
  * 11: audit rows gain relatedId, so a deleted mentor's name leaves the entries that assigned them.
+ * 12: a Looking For request says who closed it, its asker or the rule (`closedBy`, stage L spec decision 11).
  */
-export const STORE_VERSION = 11;
+export const STORE_VERSION = 12;
 
 type StoreHolder = { __vossieSampleStore?: SampleStore };
 

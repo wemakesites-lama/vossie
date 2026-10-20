@@ -1,5 +1,7 @@
 import { characterCount, cleanText } from "@/lib/messaging/rules";
 import { parsePrice } from "@/lib/selling/rules";
+import { sastDate } from "@/lib/time";
+import type { RequestStatus } from "@/lib/types";
 
 // Looking For's limits and checks (community actions spec 2.3 to 2.5 and 2.9; plan decisions 3 to 5). Plain values
 // and functions: safe anywhere on the server and in tests.
@@ -170,6 +172,50 @@ export function checkNeededBy(raw: string, today: string, kept: string | null = 
   if (value < today && value !== kept) return { value: null, error: "needed-past" };
   if (value > addDays(today, NEEDED_BY_DAYS)) return { value: null, error: "needed-far" };
   return { value, error: null };
+}
+
+// --- Closing by itself (stage L spec decisions 8 to 10) ----------------------------------------------------------
+
+/** Whole days a request stays up after the date it was needed by (stage L spec decision 8). */
+export const NEEDED_BY_GRACE_DAYS = 3;
+/** Days a request with no needed-by date stays up after it was posted, last edited or reopened. */
+export const IDLE_CLOSE_DAYS = 30;
+
+/** Why a request closed by itself: its needed-by date passed, or 30 days went by with no changes. */
+export type CloseReason = "needed-by" | "idle";
+
+/**
+ * The SAST date (YYYY-MM-DD) an open request counts as closed from (stage L spec decision 8): 4 days after its
+ * needed-by date (3 whole days of grace), else 30 days after the SAST date it last changed (`updatedAt`: posted,
+ * edited, reopened, or hidden and shown again by the Hub). A needed-by date always wins, even when it's later: it's
+ * the asker's own word, and the form caps it at 90 days. Null for a sample request, which has no asker and never
+ * closes itself (decision 9). A function of the row alone: it reads no clock, so a cached reader can hold it.
+ */
+export function closingDay(row: { askerId: string | null; neededBy: string | null; updatedAt: string }): string | null {
+  if (row.askerId === null) return null;
+  if (row.neededBy !== null) return addDays(row.neededBy, NEEDED_BY_GRACE_DAYS + 1);
+  return addDays(sastDate(new Date(row.updatedAt)), IDLE_CLOSE_DAYS);
+}
+
+/** Why a request that closed by itself did: the needed-by date it had, else the 30 days. */
+export function closeReasonOf(row: { neededBy: string | null }): CloseReason {
+  return row.neededBy !== null ? "needed-by" : "idle";
+}
+
+/**
+ * The one test of whether a request is open on `today`, a SAST date (stage L spec decision 10): open, and not yet at
+ * its closing day. True of a stored close or not, so the board, the homepage, the sitemap and offers agree at midnight.
+ */
+export function requestOpenOn(request: { status: RequestStatus; closesOn: string | null }, today: string): boolean {
+  return request.status === "open" && (request.closesOn === null || today < request.closesOn);
+}
+
+/**
+ * The start of a SAST day as a UTC time (stage L spec decision 11): what a request that closed by itself stores as
+ * `closedAt`, so the date it shows is the rule's, not the day someone happened to look.
+ */
+export function closedAtFor(day: string): string {
+  return new Date(`${day}T00:00:00+02:00`).toISOString();
 }
 
 /** A title on one line: E's cleanText, then every run of white space as one space. */
