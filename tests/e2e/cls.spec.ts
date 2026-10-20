@@ -67,6 +67,11 @@ const PAGES: ReadonlyArray<
   ["Saved page, Shops tab", "/saved?tab=shops"],
   ["Saved page, Shops tab (signed in)", "/saved?tab=shops", undefined, "Student, Midrand"],
   ["storefront (a student's view: Follow)", "/sellers/tech-corner", undefined, "Student, Midrand"],
+  // Search alerts (search alerts plan, Task 9). The row keeps its height whatever the session says (decision 6).
+  ["browse page, a search", "/browse?q=calculator"],
+  ["browse page, a search (signed in)", "/browse?q=calculator", undefined, "Student, Midrand"],
+  ["Saved page, Searches tab", "/saved?tab=searches"],
+  ["Saved page, Searches tab (signed in)", "/saved?tab=searches", undefined, "Student, Midrand"],
   ["offline page", "/offline"],
 ];
 
@@ -131,6 +136,11 @@ const SLOW_PAGES: ReadonlyArray<
   ["homepage", "/"],
   ["browse page (campus mbombela: no results)", "/browse", undefined, { vossie_campus: "mbombela" }],
   ["browse page (campus midrand)", "/browse", undefined, { vossie_campus: "midrand" }],
+  // Search alerts (plan amendment 7): the Save row streams in under the chips, and the Searches tab under its tabs.
+  ["browse page, a search (signed out)", "/browse?q=calculator"],
+  ["browse page, a search", "/browse?q=calculator", "Student, Midrand"],
+  ["Saved page's Searches tab (none saved)", "/saved?tab=searches", "Student, Midrand"],
+  ["Saved page's Searches tab (signed out)", "/saved?tab=searches"],
 ];
 
 for (const [name, path, signIn, cookies] of SLOW_PAGES) {

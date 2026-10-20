@@ -22,6 +22,7 @@ const PAGES: ReadonlyArray<[name: string, path: string, saved?: string]> = [
   ["sell page", "/sell"],
   ["Saved page, Shops tab", "/saved?tab=shops"],
   ["Saved page, Searches tab", "/saved?tab=searches"],
+  ["privacy page", "/privacy"],
 ];
 
 /**
@@ -132,6 +133,9 @@ const SIGNED_IN_PAGES: ReadonlyArray<[name: string, path: string, account: strin
   ["Looking For board", "/looking-for", "Student, Midrand"],
   ["request page", "/looking-for/r-001", "Student, Midrand"],
   ["storefront, a student's view", "/sellers/tech-corner", "Student, Midrand"],
+  // Search alerts (search alerts plan, Task 9): the Save row and the Searches tab add no client code.
+  ["browse page, a search", "/browse?q=calculator", "Student, Midrand"],
+  ["Saved page, Searches tab", "/saved?tab=searches", "Student, Midrand"],
 ];
 
 for (const [name, path, account] of SIGNED_IN_PAGES) {

@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { matchNotes, pathOf, pressSave, searchAt } from "./helpers/alerts";
+import { matchNotes, pathOf, pressSave, saveRow, searchAt } from "./helpers/alerts";
+import { seriousIssues } from "./helpers/axe";
 import { button, field, main, newBuyer, sellerPage, signUp } from "./helpers/messaging";
 import { POST_LANDS, publishListing, uniqueWord } from "./helpers/selling";
+import { expectStill, holdFonts, recordShifts } from "./helpers/shifts";
 
 // Runs in the alerts-writes project, after every other test (search alerts plan decision 19): publishing changes
 // browse's counts, and Tech corner's new listings would otherwise land in community-writes' follow test.
@@ -83,5 +85,31 @@ test.describe("saved-search alerts (search alerts spec section 6)", () => {
     await page.goto("/notifications");
     await expect(main(page).getByRole("heading", { level: 1 }).filter({ visible: true })).toBeVisible();
     await expect(matchNotes(page, word)).toHaveCount(0);
+  });
+});
+
+// Reaching 20 saved searches takes 20 writes, so the "at the limit" state is checked here and not in the device
+// projects (search alerts plan, Task 9 and the review). At 360px its line is the longest that must still fit the row.
+test.describe("the Save this search row at the limit, at 360px (search alerts spec 2.6, plan decision 6)", () => {
+  test.use({ viewport: { width: 360, height: 780 }, screen: { width: 360, height: 780 } });
+
+  test("keeps its 72px and holds still while fonts and the row stream in", async ({ page }) => {
+    test.setTimeout(240_000);
+    await signUp(page, newBuyer());
+    const words = Array.from({ length: 20 }, () => uniqueWord());
+    for (const word of words) {
+      await page.goto(searchAt(word));
+      await pressSave(page);
+    }
+    const atLimit = searchAt(uniqueWord());
+
+    await holdFonts(page);
+    await recordShifts(page);
+    await expectStill(page, "Save this search row, at the limit (360px)", atLimit);
+    await expect(saveRow(page)).toContainText("You're at the 20-search limit.");
+    await expect(saveRow(page).getByRole("link", { name: "Manage saved searches" })).toBeVisible();
+    const height = (await saveRow(page).boundingBox())?.height;
+    expect(height, "the row's height, as in every other state").toBe(72);
+    expect(await seriousIssues(page)).toEqual([]);
   });
 });
