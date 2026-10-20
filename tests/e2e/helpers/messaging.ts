@@ -50,18 +50,38 @@ export async function signUpHere(page: Page, buyer: { email: string; firstName: 
 // the other specs run alongside), so the wait for them to land is longer than the 5 seconds an assertion gets.
 const POST_LANDS = { timeout: 20_000 };
 
+/**
+ * Signing in ends with a full page load (stage K), so the page a test lands on is a new document: wait until React has
+ * hydrated the header's buttons (it puts its props on each element), so a click on Menu isn't lost.
+ */
+export async function settled(page: Page) {
+  // With the app's JavaScript blocked (the no-JavaScript tests), nothing hydrates: there is nothing to wait for.
+  await page.waitForLoadState("load");
+  if (!(await page.evaluate(() => "next" in window))) return;
+  await page.waitForFunction(
+    () => {
+      const buttons = [...document.querySelectorAll("header button, [role=banner] button")];
+      return buttons.length > 0 && buttons.every((el) => Object.keys(el).some((key) => key.startsWith("__reactProps")));
+    },
+    undefined,
+    POST_LANDS,
+  );
+}
+
 /** A whole first sign-in with a new buyer. It lands on /account. */
 export async function signUp(page: Page, buyer: { email: string; firstName: string }) {
   await page.goto("/login");
   await signUpHere(page, buyer);
   await expect(page).toHaveURL(/\/account$/, POST_LANDS);
+  await settled(page);
 }
 
 /** A sample account's button (accounts spec 2.8), landing on `next`. */
 export async function signInAsSample(page: Page, label: string, next = "/account") {
   await page.goto(`/login?next=${encodeURIComponent(next)}`);
   await button(page, label).click();
-  await page.waitForURL((url) => `${url.pathname}${url.search}` === next);
+  await page.waitForURL((url) => `${url.pathname}${url.search}` === next, POST_LANDS);
+  await settled(page);
 }
 
 /** A first message from a listing's composer. It ends on the new thread and gives back its id. */
