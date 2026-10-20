@@ -5,9 +5,13 @@ import { listAudit } from "@/lib/data/audit";
 import { addPin } from "@/lib/data/featured";
 import { getNotifications } from "@/lib/data/notifications";
 import { createReport } from "@/lib/data/reports";
-import { createRequest } from "@/lib/data/requests";
+import { isHiddenFrom } from "@/lib/data/photos";
+import { createRequest, hideRequest } from "@/lib/data/requests";
 import { createShop } from "@/lib/data/shops";
+import { closeReportsOn } from "@/lib/data/staff-reports";
+import { hideListing } from "@/lib/data/staff-shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
+import { myListingsPath } from "@/lib/selling/paths";
 import type { ReportTarget } from "@/lib/types";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { form, signedInAs, STAFF_NOW } from "@/tests/helpers/staff";
@@ -27,6 +31,8 @@ import {
   restorePoint,
   resumeSeller,
   retirePoint,
+  showListingAgain,
+  showRequestAgain,
   unpinSeller,
   verifySeller,
 } from "./admin-actions";
@@ -123,6 +129,19 @@ const GATE_CASES: Readonly<Record<string, GateCase>> = {
       sampleStore().pickupPoints.get("pp-midrand-library")!.retiredAt = STAFF_NOW.toISOString();
     },
     fields: () => ({ point: "pp-midrand-library" }),
+  },
+  // Stage J: Show again acts on something hidden, so each setup hides one (spec decision 14).
+  showListingAgain: {
+    setup: () => {
+      Object.assign(sampleStore().listings.get("l-001")!, { hiddenAt: STAFF_NOW.toISOString(), hiddenReason: REASON });
+    },
+    fields: () => ({ listing: "l-001" }),
+  },
+  showRequestAgain: {
+    setup: () => {
+      Object.assign(sampleStore().requests.get("r-002")!, { hiddenAt: STAFF_NOW.toISOString(), hiddenReason: REASON });
+    },
+    fields: () => ({ request: "r-002" }),
   },
 };
 
@@ -586,5 +605,105 @@ describe("hiding a reported request (community actions spec 2.14, plan decision 
     await signedInAs(request, "acc-mentor");
     await expect(hideReportedRequest(form({ report: id, reason: "No." }))).rejects.toThrow("notFound");
     expect(sampleStore().requests.get(posted.id)?.hiddenAt).toBeNull();
+  });
+});
+
+describe("Show again (stage J spec decision 14)", () => {
+  const title = "Casio fx-991ZA Plus calculator";
+  const photo = "ph-00000000-0000-4000-8000-000000000001";
+  const auditRows = () => [...sampleStore().auditLog.values()];
+  const alerts = () =>
+    [...sampleStore().notifications.values()].filter((row) => row.kind === "new-listing" || row.kind === "search-match").length;
+
+  /** l-001, with an uploaded photo, reported by Thandi and hidden, its report closed, as G's Hide leaves it. */
+  async function hiddenListing(): Promise<string> {
+    const reportId = await report("acc-student", { kind: "listing", id: "l-001" }, title);
+    sampleStore().listings.get("l-001")!.photos.push({ src: `/photos/${photo}`, alt: "" });
+    await hideListing("l-001", "Checking it.", STAFF_NOW);
+    await closeReportsOn({ kind: "listing", id: "l-001" }, "hidden", "Checking it.", "acc-admin", STAFF_NOW);
+    return reportId;
+  }
+
+  it("shows a hidden listing again: one entry, its seller told, buyers' pages expired, its photos public, a notice", async () => {
+    const reportId = await hiddenListing();
+    expect(isHiddenFrom(photo, null)).toBe(true);
+    const notes = sampleStore().notifications.size;
+    const before = alerts();
+    await asAdmin();
+    expect(await redirectOf(() => showListingAgain(form({ listing: "l-001" })))).toBe("/admin/hidden");
+    expect(sampleStore().listings.get("l-001")).toMatchObject({ hiddenAt: null, hiddenReason: null, state: "available" });
+    expect(auditRows()).toHaveLength(1);
+    expect(auditRows()[0]).toMatchObject({
+      action: "listing-shown",
+      targetKind: "listing",
+      targetId: "l-001",
+      targetName: title,
+      detail: "",
+      subjectId: "acc-seller",
+      staffId: "acc-admin",
+    });
+    expect(await newest("acc-seller")).toMatchObject({
+      kind: "shop-update",
+      text: `The Hub is showing ${title} again. It's back in My listings.`,
+      href: "/sell/listings",
+    });
+    // Only the seller is told: not the reporter again, and no follower or saved search (it isn't a first publish).
+    expect(sampleStore().notifications.size).toBe(notes + 1);
+    expect(alerts()).toBe(before);
+    expect(sampleStore().reports.get(reportId)).toMatchObject({ status: "closed", outcome: "hidden" });
+    expect(request.updatedTags).toEqual(["listings"]);
+    expect(await notice()).toBe("listing-shown");
+    expect(isHiddenFrom(photo, null)).toBe(false);
+  });
+
+  it("keeps a sold listing sold, and links its seller to the tab it's on", async () => {
+    sampleStore().listings.get("l-001")!.state = "sold";
+    await hiddenListing();
+    await asAdmin();
+    await redirectOf(() => showListingAgain(form({ listing: "l-001" })));
+    expect(sampleStore().listings.get("l-001")?.state).toBe("sold");
+    expect((await newest("acc-seller")).href).toBe(myListingsPath("sold"));
+  });
+
+  it("says nothing changed for a listing that isn't hidden or has gone, writing and sending nothing", async () => {
+    await asAdmin();
+    for (const listing of ["l-001", "l-nope", "<bad>"]) {
+      expect(await redirectOf(() => showListingAgain(form({ listing })))).toBe("/admin/hidden");
+      expect(await notice(), listing).toBe("nothing");
+    }
+    expect(sampleStore().auditLog.size).toBe(0);
+    expect(request.updatedTags).toEqual([]);
+  });
+
+  it("shows a hidden request again: its asker told, the board expired, its reports still closed, the reporter not told", async () => {
+    const requestTitle = "Graphic calculator to borrow for exams";
+    sampleStore().requests.get("r-002")!.askerId = "acc-student";
+    const reportId = await report("acc-mentor", { kind: "request", id: "r-002" }, requestTitle);
+    await hideRequest("r-002", "Checking it.", STAFF_NOW);
+    await closeReportsOn({ kind: "request", id: "r-002" }, "hidden", "Checking it.", "acc-admin", STAFF_NOW);
+    const mentorNotes = (await getNotifications("acc-mentor", 50)).length;
+    await asAdmin();
+    expect(await redirectOf(() => showRequestAgain(form({ request: "r-002" })))).toBe("/admin/hidden");
+    expect(sampleStore().requests.get("r-002")).toMatchObject({ hiddenAt: null, hiddenReason: null, status: "open" });
+    expect(auditRows()[0]).toMatchObject({ action: "request-shown", targetKind: "request", subjectId: "acc-student" });
+    expect(await newest("acc-student")).toMatchObject({
+      kind: "request-update",
+      text: `The Hub is showing your request ${requestTitle} again.`,
+      href: "/account/requests",
+    });
+    expect(await getNotifications("acc-mentor", 50)).toHaveLength(mentorNotes);
+    expect(sampleStore().reports.get(reportId)).toMatchObject({ status: "closed", outcome: "hidden" });
+    expect(request.updatedTags).toEqual(["requests"]);
+    expect(await notice()).toBe("request-shown");
+  });
+
+  it("shows a hidden sample request, which has no asker to tell", async () => {
+    await hideRequest("r-002", "Checking it.", STAFF_NOW);
+    const notes = sampleStore().notifications.size;
+    await asAdmin();
+    await redirectOf(() => showRequestAgain(form({ request: "r-002" })));
+    expect(sampleStore().requests.get("r-002")?.hiddenAt).toBeNull();
+    expect(sampleStore().notifications.size).toBe(notes);
+    expect(auditRows()[0]).toMatchObject({ action: "request-shown", subjectId: null });
   });
 });

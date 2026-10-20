@@ -1,4 +1,4 @@
-import type { ReportOutcome, ReportReason, ReportTarget } from "@/lib/types";
+import type { ListingState, ReportOutcome, ReportReason, ReportTarget } from "@/lib/types";
 import type { ReportRow } from "./rows";
 import { sampleStore } from "./store";
 
@@ -189,4 +189,88 @@ export async function closeReportsAboutShop(
     closed.push({ id: row.id, reporterId: row.reporterId, title: row.targetTitle });
   }
   return closed;
+}
+
+// --- Hidden listings and requests (stage J spec decision 14) -----------------------------------------------------
+
+/** A listing or request the Hub has hidden, as /admin/hidden and its confirm pages show it. */
+export type HiddenItem = {
+  kind: "listing" | "request";
+  id: string;
+  title: string;
+  /** The listing's shop's name; null for a request, which never names its asker. */
+  shopName: string | null;
+  campusSlug: string;
+  hiddenAt: string;
+  /** The Hub's reason, which the seller or asker saw. */
+  reason: string;
+  /** A listing's own state, which showing it again keeps (plan decision 16); null for a request. */
+  listingState: ListingState | null;
+  /** The listing's shop is paused by the Hub, so buyers won't see it until the shop is resumed. */
+  shopPausedByHub: boolean;
+  /** The request's asker had closed it, so it shows as closed. */
+  requestClosed: boolean;
+};
+
+function hiddenListings(): HiddenItem[] {
+  const store = sampleStore();
+  return [...store.listings.values()].flatMap((row): HiddenItem[] => {
+    if (!row.hiddenAt) return [];
+    const shop = store.sellers.get(row.sellerSlug);
+    const profile = shop?.ownerId ? store.sellerProfiles.get(shop.ownerId) : undefined;
+    return [
+      {
+        kind: "listing",
+        id: row.id,
+        title: row.title,
+        shopName: shop?.name ?? row.sellerSlug,
+        campusSlug: row.campusSlug,
+        hiddenAt: row.hiddenAt,
+        reason: row.hiddenReason ?? "",
+        listingState: row.state,
+        shopPausedByHub: profile?.status === "paused" && profile.pausedBy === "staff",
+        requestClosed: false,
+      },
+    ];
+  });
+}
+
+function hiddenRequests(): HiddenItem[] {
+  return [...sampleStore().requests.values()].flatMap((row): HiddenItem[] => {
+    if (row.hiddenAt === null) return [];
+    return [
+      {
+        kind: "request",
+        id: row.id,
+        title: row.title,
+        shopName: null,
+        campusSlug: row.campusSlug,
+        hiddenAt: row.hiddenAt,
+        reason: row.hiddenReason ?? "",
+        listingState: null,
+        shopPausedByHub: false,
+        requestClosed: row.status === "closed",
+      },
+    ];
+  });
+}
+
+const newestHiddenFirst = (a: HiddenItem, b: HiddenItem) => b.hiddenAt.localeCompare(a.hiddenAt);
+
+/**
+ * Everything the Hub has hidden, newest hidden first (spec decision 14). The Reports queue keeps only the 50 most
+ * recently closed reports, so this list is the only place an old hide stays reachable.
+ */
+export async function listHidden(): Promise<{ listings: HiddenItem[]; requests: HiddenItem[] }> {
+  return { listings: hiddenListings().sort(newestHiddenFirst), requests: hiddenRequests().sort(newestHiddenFirst) };
+}
+
+/** One hidden listing or request, for its Show again page. Null when it's gone or isn't hidden. */
+export async function getHidden(kind: "listing" | "request", id: string): Promise<HiddenItem | null> {
+  return (kind === "listing" ? hiddenListings() : hiddenRequests()).find((item) => item.id === id) ?? null;
+}
+
+/** How many of each are hidden, for Overview's line (plan decision 17). */
+export async function countHidden(): Promise<{ listings: number; requests: number }> {
+  return { listings: hiddenListings().length, requests: hiddenRequests().length };
 }

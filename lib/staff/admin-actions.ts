@@ -14,7 +14,7 @@ import {
   restorePickupPoint,
   retirePickupPoint,
 } from "@/lib/data/pickup-points";
-import { hideRequest } from "@/lib/data/requests";
+import { hideRequest, showRequest } from "@/lib/data/requests";
 import {
   closeReport,
   closeReportsAboutShop,
@@ -28,6 +28,7 @@ import {
   hideListing,
   setShopMentor,
   setVerified,
+  showListing,
   staffPauseShop,
   staffResumeShop,
   type ShopDecision,
@@ -54,9 +55,17 @@ import {
   reportPauseForm,
   shopPauseForm,
 } from "./form-state";
-import { listingHiddenText, reportOutcomeText, shopApprovedText, shopDecisionText } from "./notification-text";
+import {
+  listingHiddenText,
+  listingShownText,
+  reportOutcomeText,
+  requestShownText,
+  shopApprovedText,
+  shopDecisionText,
+} from "./notification-text";
 import {
   ADMIN_FEATURED_PATH,
+  ADMIN_HIDDEN_PATH,
   ADMIN_POINTS_PATH,
   ADMIN_REPORTS_PATH,
   ADMIN_SELLERS_PATH,
@@ -66,6 +75,8 @@ import {
   hideReportedPath,
   pauseReportedPath,
   pauseSellerPath,
+  showListingPath,
+  showRequestPath,
 } from "./paths";
 import { checkDismissNote, checkPinDay, checkPointName, checkReason } from "./rules";
 
@@ -591,4 +602,71 @@ export async function retirePoint(formData: FormData): Promise<void> {
 
 export async function restorePoint(formData: FormData): Promise<void> {
   await setRetired(formData, false);
+}
+
+// --- Show again (stage J spec decision 14) ----------------------------------------------------------------------
+
+/**
+ * Show the listing again, from its confirm page: the mirror of Hide the listing. Its seller is told and buyers' pages
+ * read it again. The reports that closed stay closed and their reporters aren't told again; followers and saved
+ * searches aren't told, since it isn't a first publish. Its own state (sold, paused, a draft) stays.
+ */
+export async function showListingAgain(formData: FormData): Promise<void> {
+  const id = idFrom(formData, "listing");
+  const staff = await requireStaff("admin", id ? showListingPath(id) : ADMIN_HIDDEN_PATH);
+  const now = new Date();
+  const shown = id ? await showListing(id) : null;
+  if (!shown) return nothingChanged(ADMIN_HIDDEN_PATH, now);
+  await recordAudit({
+    staff: staffOf(staff),
+    action: "listing-shown",
+    target: { kind: "listing", id: shown.id, name: shown.title },
+    subjectId: shown.ownerId,
+    now,
+  });
+  if (shown.ownerId) {
+    await notify({
+      accountId: shown.ownerId,
+      kind: "shop-update",
+      subjectId: shown.id,
+      text: listingShownText(shown.title),
+      href: myListingsPath(tabFor(shown.state)),
+      now,
+    });
+  }
+  listingsChanged();
+  await leaveNotice("listing-shown", now);
+  done(ADMIN_HIDDEN_PATH);
+}
+
+/**
+ * Show the request again, from its confirm page: the mirror of Hide the request. Its asker is told and the board, the
+ * homepage, the sitemap and its page read it again. Open or closed stays as its asker left it.
+ */
+export async function showRequestAgain(formData: FormData): Promise<void> {
+  const id = idFrom(formData, "request");
+  const staff = await requireStaff("admin", id ? showRequestPath(id) : ADMIN_HIDDEN_PATH);
+  const now = new Date();
+  const shown = id ? await showRequest(id, now) : null;
+  if (!shown) return nothingChanged(ADMIN_HIDDEN_PATH, now);
+  await recordAudit({
+    staff: staffOf(staff),
+    action: "request-shown",
+    target: { kind: "request", id: shown.id, name: shown.title },
+    subjectId: shown.askerId,
+    now,
+  });
+  if (shown.askerId) {
+    await notify({
+      accountId: shown.askerId,
+      kind: "request-update",
+      subjectId: shown.id,
+      text: requestShownText(shown.title),
+      href: YOUR_REQUESTS_PATH,
+      now,
+    });
+  }
+  requestsChanged();
+  await leaveNotice("request-shown", now);
+  done(ADMIN_HIDDEN_PATH);
 }

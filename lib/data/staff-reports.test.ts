@@ -1,13 +1,17 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { deleteAccountData } from "./accounts";
 import { createReport, hasOpenReport } from "./reports";
+import { hideRequest } from "./requests";
 import { createShop } from "./shops";
-import { approveShop, staffPauseShop } from "./staff-shops";
+import { approveShop, hideListing, staffPauseShop } from "./staff-shops";
 import {
   closeReport,
   closeReportsAboutShop,
   closeReportsOn,
+  countHidden,
+  getHidden,
   getReport,
+  listHidden,
   listReports,
   openReportCount,
 } from "./staff-reports";
@@ -215,5 +219,52 @@ describe("reports about a request (community actions spec 2.14, plan decision 20
     const id = await report("acc-student", { kind: "request", id: "r-002" }, 8);
     await closeReport(id, "Nothing wrong.", "acc-admin", NOW);
     expect((await getReport(id))!.can).toEqual({ hide: false, pause: false });
+  });
+});
+
+describe("hidden listings and requests (stage J spec decision 14)", () => {
+  const early = new Date("2026-10-13T08:00:00.000Z");
+  const late = new Date("2026-10-14T08:00:00.000Z");
+
+  it("lists what the Hub has hidden, newest first, with what the page and its confirm pages need", async () => {
+    await hideListing("l-004", "Not allowed.", early);
+    await hideListing("l-001", "Checking it.", late);
+    Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, { status: "paused", pausedBy: "staff" });
+    Object.assign(sampleStore().requests.get("r-001")!, { status: "closed" });
+    await hideRequest("r-001", "Exam answers.", early);
+    const { listings, requests } = await listHidden();
+    expect(listings.map((item) => item.id)).toEqual(["l-001", "l-004"]);
+    expect(listings[0]).toEqual({
+      kind: "listing",
+      id: "l-001",
+      title: "Casio fx-991ZA Plus calculator",
+      shopName: "Tech corner",
+      campusSlug: "midrand",
+      hiddenAt: late.toISOString(),
+      reason: "Checking it.",
+      listingState: "available",
+      shopPausedByHub: true,
+      requestClosed: false,
+    });
+    expect(listings[1].shopPausedByHub).toBe(false);
+    expect(requests).toEqual([
+      expect.objectContaining({
+        kind: "request",
+        id: "r-001",
+        shopName: null,
+        reason: "Exam answers.",
+        listingState: null,
+        requestClosed: true,
+      }),
+    ]);
+    expect(await countHidden()).toEqual({ listings: 2, requests: 1 });
+    expect(await getHidden("listing", "l-001")).toEqual(listings[0]);
+    expect(await getHidden("listing", "l-002")).toBeNull();
+    expect(await getHidden("request", "l-001")).toBeNull();
+  });
+
+  it("is empty when nothing is hidden", async () => {
+    expect(await listHidden()).toEqual({ listings: [], requests: [] });
+    expect(await countHidden()).toEqual({ listings: 0, requests: 0 });
   });
 });

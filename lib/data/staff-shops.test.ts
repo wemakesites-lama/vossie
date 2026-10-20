@@ -11,6 +11,7 @@ import {
   setShopMentor,
   setVerified,
   shopStanding,
+  showListing,
   staffPauseShop,
   staffResumeShop,
 } from "./staff-shops";
@@ -236,5 +237,21 @@ describe("hiding a listing (staff tools spec 2.3, plan decision 4)", () => {
     expect(await hideListing("l-001", "Again.", NOW)).toBeNull();
     expect(await hideListing("l-nope", "No.", NOW)).toBeNull();
     expect(await hideListing("l-004", "A sample shop's.", NOW)).toMatchObject({ ownerId: null });
+  });
+});
+
+describe("Show again (stage J spec decision 14)", () => {
+  it("clears a listing's hide and keeps its own state; null when it isn't hidden or has gone", async () => {
+    sampleStore().listings.get("l-001")!.state = "sold";
+    await hideListing("l-001", "Checking it.", NOW);
+    expect(await showListing("l-001")).toEqual({
+      id: "l-001",
+      title: "Casio fx-991ZA Plus calculator",
+      state: "sold",
+      ownerId: "acc-seller",
+    });
+    expect(sampleStore().listings.get("l-001")).toMatchObject({ hiddenAt: null, hiddenReason: null, state: "sold" });
+    expect(await showListing("l-001")).toBeNull();
+    expect(await showListing("l-nope")).toBeNull();
   });
 });

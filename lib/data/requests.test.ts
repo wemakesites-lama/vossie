@@ -16,6 +16,7 @@ import {
   publicRequestIds,
   requestAskerId,
   setRequestOpen,
+  showRequest,
   updateRequest,
 } from "./requests";
 import { resetSampleStore, sampleStore } from "./store";
@@ -204,5 +205,25 @@ describe("who asked (community actions spec 2.7 and 2.11)", () => {
     expect(await requestAskerId(id)).toBe("acc-student");
     expect(await requestAskerId("r-001")).toBeNull();
     expect(await requestAskerId("r-nope")).toBeNull();
+  });
+});
+
+describe("Show again (stage J spec decision 14)", () => {
+  const hiddenAt = new Date("2026-10-14T08:42:00.000Z");
+  const shownAt = new Date("2026-10-15T09:00:00.000Z");
+
+  it("clears a request's hide and keeps it closed if its asker had closed it; null when it isn't hidden or has gone", async () => {
+    const row = sampleStore().requests.get("r-001")!;
+    Object.assign(row, { status: "closed", closedAt: hiddenAt.toISOString() });
+    await hideRequest("r-001", "Checking it.", hiddenAt);
+    expect(await showRequest("r-001", shownAt)).toEqual({ id: "r-001", title: row.title, askerId: null });
+    expect(sampleStore().requests.get("r-001")).toMatchObject({
+      hiddenAt: null,
+      hiddenReason: null,
+      status: "closed",
+      updatedAt: shownAt.toISOString(),
+    });
+    expect(await showRequest("r-001", shownAt)).toBeNull();
+    expect(await showRequest("r-nope", shownAt)).toBeNull();
   });
 });

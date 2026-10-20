@@ -186,6 +186,19 @@ export async function hideRequest(id: string, reason: string, now: Date): Promis
   return { id: row.id, title: row.title, askerId: row.askerId };
 }
 
+/**
+ * Show again (stage J spec decision 14): the mirror of Hide the request. Its hide and reason are cleared; open or
+ * closed stays as its asker left it (stage J plan decision 16). Null when it's gone or isn't hidden.
+ */
+export async function showRequest(id: string, now: Date): Promise<HiddenRequest | null> {
+  const row = sampleStore().requests.get(id);
+  if (!row || row.hiddenAt === null) return null;
+  row.hiddenAt = null;
+  row.hiddenReason = null;
+  row.updatedAt = now.toISOString();
+  return { id: row.id, title: row.title, askerId: row.askerId };
+}
+
 /** Deleting an account (spec 2.23): its requests go. Their offer threads follow messaging's rules. */
 export async function forgetRequestsOf(accountId: string): Promise<void> {
   const { requests } = sampleStore();
