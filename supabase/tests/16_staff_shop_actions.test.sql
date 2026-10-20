@@ -426,6 +426,10 @@ select is(
   'the seller and each reporter are told'
 );
 
+-- Task 5: hiding needs an open report on the target, so the textbook and the lamp are reported first.
+insert into public.reports (id, reporter_id, target_kind, target_id, target_title, reason) values
+  (pg_temp.r('fa'), pg_temp.a('f4'), 'listing', 'act-l2', 'Old textbook', 'misleading'),
+  (pg_temp.r('fb'), pg_temp.a('f9'), 'listing', 'act-l3', 'Sample lamp', 'prohibited');
 select pg_temp.clear();
 select pg_temp.sign_in(pg_temp.a('f5'));
 select is(public.hide_listing('act-l2', 'Sold elsewhere too.'), 'changed', 'a sold listing can be hidden');
@@ -433,8 +437,12 @@ select is(public.hide_listing('act-l3', 'Not allowed.'), 'changed', 'and the sam
 select pg_temp.sign_out();
 select is(
   pg_temp.notes(),
-  array['Lerato | shop-update | act-l2 | The Hub hid Old textbook. See why in My listings. | /sell/listings?tab=sold'],
-  'the link opens My listings on the listing''s tab; the sample stall has nobody to tell'
+  array[
+    'Lerato | shop-update | act-l2 | The Hub hid Old textbook. See why in My listings. | /sell/listings?tab=sold',
+    'Thandi | report-handled | ' || pg_temp.r('fa') || ' | Thanks, we''ve acted on your report about Old textbook. | /account/privacy#account-privacy-reports-title',
+    'Zola | report-handled | ' || pg_temp.r('fb') || ' | Thanks, we''ve acted on your report about Sample lamp. | /account/privacy#account-privacy-reports-title'
+  ],
+  'the link opens My listings on the listing''s tab; the sample stall has nobody to tell (its reporter is told)'
 );
 select is(
   pg_temp.audit(),
@@ -585,6 +593,9 @@ select is(pg_temp.report('f6'), 'open | - | - | - | -', 'and it stays open');
 
 -- --- Hide the request, and show it again (hideRequest, showRequest: requests.ts:181 and :193) ----------------------
 
+-- Task 5: the sample request is reported first, as hiding needs an open report.
+insert into public.reports (id, reporter_id, target_kind, target_id, target_title, reason) values
+  (pg_temp.r('fc'), pg_temp.a('f9'), 'request', 'act-r2', 'Lift to Midrand', 'spam');
 select pg_temp.clear();
 select pg_temp.sign_in(pg_temp.a('f5'));
 select throws_ok($$select public.hide_request('act-r1', '')$$, '23514', null, 'hiding a request needs a reason');
@@ -611,6 +622,7 @@ select is(
   pg_temp.notes(),
   array[
     'Thandi | report-handled | ' || pg_temp.r('f8') || ' | Thanks, we''ve acted on your report about Need a desk lamp. | /account/privacy#account-privacy-reports-title',
+    'Zola | report-handled | ' || pg_temp.r('fc') || ' | Thanks, we''ve acted on your report about Lift to Midrand. | /account/privacy#account-privacy-reports-title',
     'Zola | request-update | act-r1 | The Hub hid your request Need a desk lamp. See why in Your requests. | /account/requests'
   ],
   'the asker and the reporter are told; a sample request has nobody to tell'

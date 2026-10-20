@@ -398,9 +398,12 @@ select pg_temp.sign_in('00000000-0000-4000-8000-0000000000d4');
 insert into public.form_states (session_id, form, account_id, expires_at)
 values ('50000000-0000-4000-8000-0000000000d1', 'staff-once:widen', '00000000-0000-4000-8000-0000000000d4', now() + interval '1 hour');
 select is((select taken from public.form_states where form = 'staff-once:widen'), false, 'a new form state is not taken');
-select throws_ok(
-  $$update public.form_states set taken = false where form = 'staff-once:widen'$$,
-  '42501', null, 'a person cannot clear their own token (lib/staff/once.ts)'
+-- Task 5 (review fix I1) replaced the column grant with triggers: taken is set, never cleared.
+update public.form_states set taken = true where form = 'staff-once:widen';
+update public.form_states set taken = false where form = 'staff-once:widen';
+select is(
+  (select taken from public.form_states where form = 'staff-once:widen'), true,
+  'a person cannot clear their own token (lib/staff/once.ts)'
 );
 select lives_ok(
   $$update public.form_states set notice = 'post-saved' where form = 'staff-once:widen'$$,
@@ -408,10 +411,11 @@ select lives_ok(
 );
 select pg_temp.sign_out();
 select ok(
-  not has_column_privilege('authenticated', 'public.form_states', 'taken', 'update')
+  (select count(*) from pg_trigger where tgrelid = 'public.form_states'::regclass and not tgisinternal
+     and tgname in ('form_states_keep_taken', 'form_states_keep_taken_rows')) = 2
   and has_column_privilege('authenticated', 'public.form_states', 'values', 'update')
   and has_column_privilege('service_role', 'public.form_states', 'taken', 'update'),
-  'taken is left out of authenticated''s update grant only'
+  'taken is kept by triggers, not by authenticated''s update grant (Task 5)'
 );
 
 -- --- photos (plan decision 6) ----------------------------------------------------------------------------------------
