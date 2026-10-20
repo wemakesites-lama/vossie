@@ -10,6 +10,7 @@ import {
   setOwnListingState,
   type ListingSave,
 } from "./own-listings";
+import { notifyNewListing, notifySearchMatch } from "./notifications";
 import { getPhoto, photoIdOf, photoSrcsOf, storePhotos } from "./photos";
 import { resetSampleStore, sampleStore } from "./store";
 
@@ -153,5 +154,34 @@ describe("a shop's own listings (selling spec 2.9 and 2.10, plan decision 3)", (
     });
     const fresh = (await save())!;
     expect("hiddenAt" in fresh).toBe(false);
+  });
+  it("deletes the alerts that link to a deleted listing, and keeps the rest", async () => {
+    const row = (await save())!;
+    const other = (await save())!;
+    const notify = (accountId: string, listingId: string, savedSearchId: string) =>
+      notifySearchMatch({
+        accountId,
+        savedSearchId,
+        label: "fan",
+        resultsHref: "/browse?q=fan&sort=new",
+        listing: { id: listingId, title: "Desk fan" },
+        now: NOW,
+      });
+    await notify("acc-student", row.id, "ss-a");
+    await notify("acc-student", other.id, "ss-c");
+    await notifyNewListing({
+      accountId: "acc-student",
+      sellerSlug: "tech-corner",
+      shopName: "Tech corner",
+      listing: { id: row.id, title: "Desk fan" },
+      now: NOW,
+    });
+    const hrefs = () => [...sampleStore().notifications.values()].filter((n) => n.kind === "search-match" || n.kind === "new-listing").map((n) => n.href);
+    expect(hrefs().filter((h) => h === `/listings/${row.id}`)).toHaveLength(2);
+    // A second match for search ss-b turns that row into its results link, which must survive.
+    await notify("acc-student", other.id, "ss-b");
+    await notify("acc-student", row.id, "ss-b");
+    await deleteOwnListing("tech-corner", "acc-seller", row.id);
+    expect(hrefs().sort()).toEqual(["/browse?q=fan&sort=new", `/listings/${other.id}`].sort());
   });
 });

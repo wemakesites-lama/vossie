@@ -19,10 +19,10 @@ describe("saved searches' words (search alerts spec 2.6 to 2.8 and 2.12)", () =>
     expect(SAVE_SEARCH_BUTTON).toBe("Save this search");
     expect(MANAGE_SEARCHES).toBe("Manage saved searches");
     expect(ALREADY_SAVED_LINE).toBe("You've saved this search.");
-    expect(AT_LIMIT_LINE).toBe("You have 20 saved searches.");
+    expect(AT_LIMIT_LINE).toBe("You're at the 20-search limit.");
     expect(saveNoteText("saved")).toBe("Search saved.");
     expect(saveNoteText("already")).toBe("You've saved this search already.");
-    expect(saveNoteText("limit")).toBe("You have 20 saved searches. Delete one first.");
+    expect(saveNoteText("limit")).toBe("You're at the 20-search limit.");
   });
 
   it("has the Searches tab's words (spec 2.7 and section 4)", () => {

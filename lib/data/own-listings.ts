@@ -108,6 +108,14 @@ export async function deleteOwnListing(sellerSlug: string, ownerId: string, id: 
   const row = listings.get(id);
   if (!row || row.sellerSlug !== sellerSlug) return false;
   listings.delete(id);
+  // Alerts that lead to this listing would only lead to a 404 (search alerts plan amendment 11). The ones that lead to
+  // a search's results, or to the shop, stay.
+  const { notifications } = sampleStore();
+  for (const [noteId, note] of notifications) {
+    if ((note.kind === "search-match" || note.kind === "new-listing") && note.href === `/listings/${id}`) {
+      notifications.delete(noteId);
+    }
+  }
   await deletePhotosUsedBy(ownerId, listingPhotoUse(id));
   return true;
 }

@@ -79,7 +79,7 @@ describe("Save this search on browse (search alerts spec 2.5, 2.6 and section 4)
     expect(screen.queryByRole("button")).toBeNull();
     unmount();
     render(<SaveSearchRow search={SEARCH} from={FROM} state="limit" note={null} once={null} />);
-    expect(screen.getByText("You have 20 saved searches.")).toBeInTheDocument();
+    expect(screen.getByText("You're at the 20-search limit.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Manage saved searches" })).toBeInTheDocument();
   });
 
@@ -91,7 +91,7 @@ describe("Save this search on browse (search alerts spec 2.5, 2.6 and section 4)
     expect(screen.getByRole("alert")).toHaveTextContent("You've saved this search already.");
     again.unmount();
     render(<SaveSearchRow search={SEARCH} from={FROM} state="limit" note="limit" once={null} />);
-    expect(screen.getByRole("alert")).toHaveTextContent("You have 20 saved searches. Delete one first.");
+    expect(screen.getByRole("alert")).toHaveTextContent("You're at the 20-search limit.");
     expect(screen.getByRole("link", { name: "Manage saved searches" })).toBeInTheDocument();
   });
 });

@@ -8,7 +8,7 @@ export const SAVE_SEARCH_PROMPT = "Hear when something new matches.";
 export const SAVE_SEARCH_BUTTON = "Save this search";
 export const MANAGE_SEARCHES = "Manage saved searches";
 export const ALREADY_SAVED_LINE = "You've saved this search.";
-export const AT_LIMIT_LINE = `You have ${SAVED_SEARCH_LIMIT} saved searches.`;
+export const AT_LIMIT_LINE = `You're at the ${SAVED_SEARCH_LIMIT}-search limit.`;
 
 /** The line after a press (spec 2.6): a status after a save, an alert after a refusal. */
 export function saveNoteText(note: SaveNote): string {
@@ -18,7 +18,7 @@ export function saveNoteText(note: SaveNote): string {
     case "already":
       return "You've saved this search already.";
     case "limit":
-      return `You have ${SAVED_SEARCH_LIMIT} saved searches. Delete one first.`;
+      return AT_LIMIT_LINE;
   }
 }
 

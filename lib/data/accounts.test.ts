@@ -456,13 +456,37 @@ describe("saved searches in the export and in deletion (search alerts spec 2.15,
   });
 
   it("deletes a deleted shop's listing alerts, and leaves the rest (plan amendment 11)", async () => {
+    const alerts = () => [...sampleStore().notifications.values()].filter((row) => row.kind === "search-match");
+    const hrefs = () => alerts().map((row) => row.href);
     await addSavedSearch("acc-student", { ...CALCULATOR, category: null, price: null }, NOW);
     const row = makeListingRow({ id: "l-new", title: "Casio calculator, barely used" });
     sampleStore().listings.set(row.id, row);
     await notifySavedSearches({ listingId: row.id, now: NOW });
-    const alerts = () => [...sampleStore().notifications.values()].filter((row) => row.kind === "search-match");
-    expect(alerts()).toHaveLength(1);
+    expect(hrefs()).toEqual(["/listings/l-new"]);
     await deleteAccountData("acc-seller");
     expect(alerts()).toHaveLength(0);
+
+    // Two of the shop's listings the same day make the row the browse-results link, which stays.
+    resetSampleStore();
+    await addSavedSearch("acc-student", { ...CALCULATOR, category: null, price: null }, NOW);
+    for (const id of ["l-two-a", "l-two-b"]) {
+      sampleStore().listings.set(id, makeListingRow({ id, title: "Casio calculator " + id }));
+      await notifySavedSearches({ listingId: id, now: NOW });
+    }
+    expect(alerts()).toHaveLength(1);
+    expect(alerts()[0].text).toContain("2 new listings match");
+    const results = alerts()[0].href;
+    expect(results).toMatch(/^\/browse\?/);
+    await deleteAccountData("acc-seller");
+    expect(hrefs()).toEqual([results]);
+
+    // Another shop's listing-link alert stays too.
+    resetSampleStore();
+    await addSavedSearch("acc-student", { ...CALCULATOR, category: null, price: null }, NOW);
+    sampleStore().listings.set("l-other", makeListingRow({ id: "l-other", sellerSlug: "hair-studio", title: "Casio calculator crochet" }));
+    await notifySavedSearches({ listingId: "l-other", now: NOW });
+    expect(hrefs()).toEqual(["/listings/l-other"]);
+    await deleteAccountData("acc-seller");
+    expect(hrefs()).toEqual(["/listings/l-other"]);
   });
 });
