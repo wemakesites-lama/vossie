@@ -34,6 +34,9 @@ const STAFF_WRITES = /staff-writes\.spec\.ts$/;
 // the homepage's and browse's counts never move under another test (community actions plan decision 27). Their checks
 // (axe, layout shift and size on the pages that need a posted request or an offer) run with them.
 const COMMUNITY_WRITES = /community-(writes|checks)\.spec\.ts$/;
+// The saved-search tests that publish run after every other test: new listings change browse's counts, and Tech
+// corner's would land in community-writes' follow test, which counts them (search alerts plan decision 19).
+const ALERTS_WRITES = /alerts-writes\.spec\.ts$/;
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -61,15 +64,15 @@ export default defineConfig({
     timeout: 240_000,
   },
   projects: [
-    { name: "phone-360", use: phone(360, 780), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES] },
-    { name: "phone-390", use: phone(390, 844), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES] },
+    { name: "phone-360", use: phone(360, 780), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES] },
+    { name: "phone-390", use: phone(390, 844), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES] },
     {
       name: "tablet-768",
       use: { ...desktop(768, 1024), screen: { width: 768, height: 1024 }, hasTouch: true },
-      testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES],
+      testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES],
     },
-    { name: "laptop-1024", use: desktop(1024, 768), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES] },
-    { name: "desktop-1440", use: desktop(1440, 900), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES] },
+    { name: "laptop-1024", use: desktop(1024, 768), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES] },
+    { name: "desktop-1440", use: desktop(1440, 900), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES] },
     // After the five above (selling plan decision 25). Run it alone with --project=selling-writes --no-deps.
     { name: "selling-writes", use: phone(390, 844), testMatch: SELLING_WRITES, dependencies: DEVICE_PROJECTS },
     // After everything else (staff tools plan decision 21). Run it alone with --project=staff-writes --no-deps.
@@ -85,6 +88,13 @@ export default defineConfig({
       use: phone(390, 844),
       testMatch: COMMUNITY_WRITES,
       dependencies: [...DEVICE_PROJECTS, "selling-writes", "staff-writes"],
+    },
+    // After everything else (search alerts plan decision 19). Run it alone with --project=alerts-writes --no-deps.
+    {
+      name: "alerts-writes",
+      use: phone(390, 844),
+      testMatch: ALERTS_WRITES,
+      dependencies: [...DEVICE_PROJECTS, "selling-writes", "staff-writes", "community-writes"],
     },
   ],
 });
