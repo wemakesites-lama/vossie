@@ -604,7 +604,7 @@ select is(
   'pickup points, retired ones too'
 );
 select is(
-  array(select owner_id from public.mentor_notes group by owner_id order by 1),
+  array(select owner_id from public.mentor_notes where owner_id::text like '00000000-0000-4000-8000-0000000000e_' group by owner_id order by 1),
   array[pg_temp.a('e1'), pg_temp.a('e2'), pg_temp.a('e7'), pg_temp.a('e8')],
   'the notes about every mentored open shop''s owner, not a pending one''s'
 );
@@ -624,7 +624,7 @@ select pg_temp.sign_out();
 
 select pg_temp.sign_in(pg_temp.a('e8'));
 select is(
-  array(select owner_id from public.mentor_notes group by owner_id order by 1),
+  array(select owner_id from public.mentor_notes where owner_id::text like '00000000-0000-4000-8000-0000000000e_' group by owner_id order by 1),
   array[pg_temp.a('e1'), pg_temp.a('e2'), pg_temp.a('e7')],
   'an admin never reads the notes about themselves (amendment 15.3)'
 );

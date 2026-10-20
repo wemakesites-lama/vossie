@@ -760,7 +760,7 @@ select is(public.add_check_in(pg_temp.a('e3'), pg_temp.today() - 3, 'Met at the 
 select throws_ok(format('select public.add_check_in(%L, null, %L, %L)', pg_temp.a('e3'), 'No day.', pg_temp.t('c2')), '22023', null, 'a check-in has a day');
 select pg_temp.sign_out();
 select is(
-  (select row(check_in_on = pg_temp.today(), text, author_name)::text from public.mentor_notes where kind = 'check-in'),
+  (select row(check_in_on = pg_temp.today(), text, author_name)::text from public.mentor_notes where kind = 'check-in' and owner_id = pg_temp.a('e3')),
   row(true, 'Met at the stall.', 'Mona')::text,
   'one check-in, on today'
 );

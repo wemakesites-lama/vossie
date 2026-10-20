@@ -3,26 +3,35 @@ import type { SampleAccount } from "../data/fixtures/accounts.ts";
 import type {
   ConsentRow,
   ConversationRow,
+  HubBookingRow,
+  HubPostRow,
   ListingRow,
+  MentorNoteRow,
   MessageRow,
   NotificationRow,
+  PickupPointRow,
+  RequestRow,
   SellerRow,
 } from "../lib/data/rows.ts";
-import type { Campus, Category, PickupPoint } from "../lib/types.ts";
+import type { Campus, Category } from "../lib/types.ts";
 
 // supabase/seed.sql from the fixtures (supabase foundation plan, Task 11; plan decision 4): the same campuses,
 // categories, pickup points, shops, listings, sample accounts and conversations as the sample store, so local Supabase
-// and staging show what sample mode shows. scripts/make-seed.ts writes the file (pnpm db:seed); seed-sql.test.ts fails
+// and staging show what sample mode shows. Stages G to J add what the store seeds for them (supabase schema catch-up
+// plan, Task 10): the seller profiles' mentor and first approval, the 16 Looking For requests, the Hub's 18 posts,
+// Naledi's two notes and Thandi's open slot request (lib/data/store.ts, seedStore). scripts/make-seed.ts writes the file (pnpm db:seed); seed-sql.test.ts fails
 // when the file is out of date. Pure: the fixtures come in as arguments, so Vitest and plain Node can both run it.
 //
-// Ids the database keeps as uuids (accounts, shops, pickup points, conversations, messages, notifications) are made
-// from the fixture's own id, so they're the same on every run and on every machine. Listing ids stay as they are
-// ("l-001", "fs-001"): the short-id column takes them.
+// Ids the database keeps as uuids (accounts, shops, pickup points, conversations, messages, notifications, mentor
+// notes, slot requests) are made
+// from the fixture's own id, so they're the same on every run and on every machine. Listing, request and Hub post ids
+// stay as they are ("l-001", "r-001", "h-001"): their short-id columns take them.
 
 export type SeedFixtures = {
   campuses: readonly Campus[];
   categories: readonly Category[];
-  pickupPoints: readonly PickupPoint[];
+  /** The store's rows (data/fixtures/staff.ts), with when each was retired. */
+  pickupPoints: readonly PickupPointRow[];
   accounts: readonly SampleAccount[];
   consents: readonly ConsentRow[];
   /** Shop slug to the sample account that owns it. */
@@ -32,6 +41,12 @@ export type SeedFixtures = {
   conversations: readonly ConversationRow[];
   messages: readonly MessageRow[];
   notifications: readonly NotificationRow[];
+  /** Stage H's Looking For requests (data/fixtures/request-rows.ts): no asker, the fixture's offers as seedOffers. */
+  requests: readonly RequestRow[];
+  /** Stage G's Hub posts, mentor notes and slot requests (data/fixtures/staff.ts). */
+  hubPosts: readonly HubPostRow[];
+  mentorNotes: readonly MentorNoteRow[];
+  hubBookings: readonly HubBookingRow[];
 };
 
 /**
@@ -126,6 +141,12 @@ export function makeSeedSql(f: SeedFixtures): string {
     return null;
   };
   const threadPath = (id: string) => `/messages/${knownConversation(id)}`;
+  const knownHubPost = (id: string) => {
+    if (!f.hubPosts.some((post) => post.id === id)) throw new Error(`Unknown sample Hub post ${id}`);
+    return id;
+  };
+  /** The app's "all" is every campus, which the database keeps as null (schema catch-up plan decision 2). */
+  const campusOrEvery = (slug: string) => (slug === "all" ? null : slug);
 
   const parts: string[] = [
     [
@@ -161,8 +182,8 @@ export function makeSeedSql(f: SeedFixtures): string {
   parts.push(
     insert(
       "public.pickup_points",
-      ["id", "campus_slug", "name"],
-      f.pickupPoints.map((point) => [pointId(point.id), point.campusSlug, point.name]),
+      ["id", "campus_slug", "name", "retired_at", "created_at"],
+      f.pickupPoints.map((point) => [pointId(point.id), point.campusSlug, point.name, point.retiredAt, point.createdAt]),
     ),
   );
 
@@ -307,9 +328,35 @@ export function makeSeedSql(f: SeedFixtures): string {
   parts.push(
     insert(
       "public.seller_profiles",
-      ["account_id", "status", "shop_id", "applied_at"],
+      [
+        "account_id",
+        "status",
+        "shop_id",
+        "applied_at",
+        "declined_at",
+        "paused_by",
+        "seller_paused_too",
+        "staff_reason",
+        "mentor_id",
+        "approved_at",
+      ],
       f.accounts.flatMap(({ account, seller }) =>
-        seller ? [[accountId(account.id), seller.status, shopOfSeller(account.id, seller.sellerSlug), seller.appliedAt]] : [],
+        seller
+          ? [
+              [
+                accountId(account.id),
+                seller.status,
+                shopOfSeller(account.id, seller.sellerSlug),
+                seller.appliedAt,
+                seller.declinedAt ?? null,
+                seller.pausedBy ?? null,
+                seller.sellerPausedToo ?? false,
+                seller.staffReason ?? null,
+                seller.mentorId ? knownAccount(seller.mentorId) : null,
+                seller.approvedAt ?? null,
+              ],
+            ]
+          : [],
       ),
     ),
   );
@@ -337,6 +384,8 @@ export function makeSeedSql(f: SeedFixtures): string {
         "created_at",
         "first_published_at",
         "updated_at",
+        "hidden_at",
+        "hidden_reason",
       ],
       f.listings.map((listing) => [
         listing.id,
@@ -357,6 +406,8 @@ export function makeSeedSql(f: SeedFixtures): string {
         listing.createdAt,
         listing.firstPublishedAt,
         listing.updatedAt,
+        listing.hiddenAt ?? null,
+        listing.hiddenReason ?? null,
       ]),
     ),
   );
@@ -392,21 +443,25 @@ export function makeSeedSql(f: SeedFixtures): string {
         "confirmed_at",
         "confirmed_by",
       ],
-      f.conversations.map((row) => [
-        conversationId(row.id),
-        row.listingId,
-        row.listingTitle,
-        knownShop(row.sellerSlug),
-        row.buyerId ? knownAccount(row.buyerId) : null,
-        row.sellerGone,
-        row.status,
-        row.createdAt,
-        row.lastMessageAt,
-        row.firstReplyAt,
-        row.completedAt,
-        row.confirmedAt,
-        row.confirmedBy,
-      ]),
+      f.conversations.map((row) => {
+        // An offer thread needs a request with an asker; the sample requests have none (request-rows.ts).
+        if (row.requestId) throw new Error(`${row.id}: the seed has no offer threads (sample requests have no asker)`);
+        return [
+          conversationId(row.id),
+          row.listingId,
+          row.listingTitle,
+          knownShop(row.sellerSlug),
+          row.buyerId ? knownAccount(row.buyerId) : null,
+          row.sellerGone,
+          row.status,
+          row.createdAt,
+          row.lastMessageAt,
+          row.firstReplyAt,
+          row.completedAt,
+          row.confirmedAt,
+          row.confirmedBy,
+        ];
+      }),
     ),
   );
   parts.push(
@@ -427,7 +482,7 @@ export function makeSeedSql(f: SeedFixtures): string {
   parts.push(
     insert(
       "public.notifications",
-      ["id", "account_id", "kind", "subject_id", "text", "href", "created_at", "read_at"],
+      ["id", "account_id", "kind", "subject_id", "text", "href", "created_at", "read_at", "count"],
       f.notifications.map((row) => {
         if (row.href !== `/messages/${row.subjectId}`) throw new Error(`${row.id}: expected a link to its conversation`);
         return [
@@ -439,8 +494,132 @@ export function makeSeedSql(f: SeedFixtures): string {
           threadPath(row.subjectId),
           row.createdAt,
           row.readAt,
+          row.count ?? null,
         ];
       }),
+    ),
+  );
+
+  parts.push("-- Stages G to J: Looking For requests, the Hub's posts, a mentor's notes and a slot request.");
+  parts.push(
+    insert(
+      "public.requests",
+      [
+        "id",
+        "asker_id",
+        "title",
+        "category_slug",
+        "campus_slug",
+        "details",
+        "budget_zar",
+        "swap_welcome",
+        "needed_by",
+        "status",
+        "created_at",
+        "updated_at",
+        "closed_at",
+        "seed_offers",
+        "hidden_at",
+        "hidden_reason",
+      ],
+      f.requests.map((row) => [
+        row.id,
+        row.askerId ? knownAccount(row.askerId) : null,
+        row.title,
+        row.categorySlug,
+        row.campusSlug,
+        row.details,
+        row.budgetZar,
+        row.swapWelcome,
+        row.neededBy,
+        row.status,
+        row.createdAt,
+        row.updatedAt,
+        row.closedAt,
+        row.seedOffers,
+        row.hiddenAt,
+        row.hiddenReason,
+      ]),
+    ),
+  );
+  parts.push(
+    insert(
+      "public.hub_posts",
+      [
+        "id",
+        "kind",
+        "title",
+        "summary",
+        "place",
+        "body",
+        "campus_slug",
+        "starts_at",
+        "capacity",
+        "going",
+        "image_src",
+        "image_alt",
+        "published",
+        "published_at",
+        "author_id",
+        "created_at",
+        "updated_at",
+      ],
+      f.hubPosts.map((post) => {
+        // Seed posts keep placeholder art; a cover photo (cover_photo_id) is only ever a staff member's upload.
+        if (!PLACEHOLDER.test(post.image.src)) throw new Error(`${post.id}: not a placeholder image`);
+        return [
+          post.id,
+          post.kind,
+          post.title,
+          post.summary,
+          post.place,
+          post.body,
+          campusOrEvery(post.campusSlug),
+          post.startsAt,
+          post.capacity,
+          post.going,
+          post.image.src,
+          post.image.alt,
+          post.published,
+          post.publishedAt,
+          post.authorId ? knownAccount(post.authorId) : null,
+          post.createdAt,
+          post.updatedAt,
+        ];
+      }),
+    ),
+  );
+  parts.push(
+    insert(
+      "public.mentor_notes",
+      ["id", "owner_id", "kind", "check_in_on", "text", "author_id", "author_name", "created_at"],
+      f.mentorNotes.map((note) => [
+        seedUuid("mentor-note", note.id),
+        knownAccount(note.ownerId),
+        note.kind,
+        note.checkInOn,
+        note.text,
+        note.authorId ? knownAccount(note.authorId) : null,
+        note.authorName,
+        note.createdAt,
+      ]),
+    ),
+  );
+  parts.push(
+    insert(
+      "public.hub_bookings",
+      ["id", "post_id", "account_id", "help", "time", "status", "created_at", "answered_at", "answered_by"],
+      f.hubBookings.map((booking) => [
+        seedUuid("hub-booking", booking.id),
+        knownHubPost(booking.postId),
+        knownAccount(booking.accountId),
+        booking.help,
+        booking.time,
+        booking.status,
+        booking.createdAt,
+        booking.answeredAt,
+        booking.answeredBy ? knownAccount(booking.answeredBy) : null,
+      ]),
     ),
   );
 

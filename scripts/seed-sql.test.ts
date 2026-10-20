@@ -6,13 +6,15 @@ import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
 import { sampleConversations, sampleMessages, sampleNotifications } from "@/data/fixtures/messages";
 import { pickupPoints } from "@/data/fixtures/pickup-points";
+import { sampleRequestRows } from "@/data/fixtures/request-rows";
 import { sampleListingRows, sampleSellerRows, sampleShopOwners } from "@/data/fixtures/shops";
+import { sampleHubBookings, sampleHubPostRows, sampleMentorNotes, samplePickupPointRows } from "@/data/fixtures/staff";
 import { makeSeedSql, seedEmail, seedUuid, type SeedFixtures } from "./seed-sql";
 
 const fixtures: SeedFixtures = {
   campuses,
   categories,
-  pickupPoints,
+  pickupPoints: samplePickupPointRows,
   accounts: sampleAccounts,
   consents: sampleConsents,
   shopOwners: sampleShopOwners,
@@ -21,9 +23,33 @@ const fixtures: SeedFixtures = {
   conversations: sampleConversations,
   messages: sampleMessages,
   notifications: sampleNotifications,
+  requests: sampleRequestRows,
+  hubPosts: sampleHubPostRows,
+  mentorNotes: sampleMentorNotes,
+  hubBookings: sampleHubBookings,
 };
 
-describe("supabase/seed.sql (supabase foundation plan, Task 11)", () => {
+/** The rows of one table's INSERT, one string a row (each value list without its parentheses' line indent). */
+function rowsOf(sql: string, table: string): string[] {
+  const start = sql.indexOf(`insert into ${table} (`);
+  if (start < 0) return [];
+  const end = sql.indexOf(";\n", start);
+  return sql
+    .slice(start, end)
+    .split("\n")
+    .slice(1)
+    .map((line) => line.trim().replace(/,$/, ""));
+}
+
+/** The column list of one table's INSERT. */
+function columnsOf(sql: string, table: string): string[] {
+  const match = new RegExp(`insert into ${table.replace(".", "\\.")} \\(([^)]*)\\) values`).exec(sql);
+  return match ? match[1].split(", ") : [];
+}
+
+const q = (text: string) => `'${text.replace(/'/g, "''")}'`;
+
+describe("supabase/seed.sql (supabase foundation plan, Task 11; schema catch-up plan, Task 10)", () => {
   it("is what the fixtures make: run `pnpm db:seed` after changing a fixture", () => {
     const onDisk = readFileSync(join(process.cwd(), "supabase/seed.sql"), "utf8");
     expect(onDisk === makeSeedSql(fixtures), "supabase/seed.sql is out of date: run `pnpm db:seed`").toBe(true);
@@ -72,5 +98,149 @@ describe("supabase/seed.sql (supabase foundation plan, Task 11)", () => {
     // Sipho's reply has a line break, and Thandi's message an apostrophe.
     expect(sql).toContain("E'Hi Thandi, it is. Can I see the speaker first?\\nI''m at the library entrance after 12:00 most days.'");
     expect(sql).toContain("'Hi! Is the headset still available? I''d like to swap for it if you''re open to that.'");
+  });
+
+  it("keeps phase A's 24 pickup points, same ids and names, from the store's rows with when each was retired", () => {
+    const sql = makeSeedSql(fixtures);
+    expect(columnsOf(sql, "public.pickup_points")).toEqual(["id", "campus_slug", "name", "retired_at", "created_at"]);
+    expect(rowsOf(sql, "public.pickup_points")).toEqual(
+      pickupPoints.map(
+        (point) =>
+          `(${q(seedUuid("pickup-point", point.id))}, ${q(point.campusSlug)}, ${q(point.name)}, null, '2025-01-15T08:00:00.000Z')`,
+      ),
+    );
+  });
+
+  it("gives Tech corner's profile its mentor and first approval, and the waiting shop neither", () => {
+    const sql = makeSeedSql(fixtures);
+    expect(columnsOf(sql, "public.seller_profiles")).toEqual([
+      "account_id",
+      "status",
+      "shop_id",
+      "applied_at",
+      "declined_at",
+      "paused_by",
+      "seller_paused_too",
+      "staff_reason",
+      "mentor_id",
+      "approved_at",
+    ]);
+    expect(rowsOf(sql, "public.seller_profiles")).toEqual([
+      `('${seedUuid("account", "acc-seller")}', 'approved', '${seedUuid("shop", "tech-corner")}', '2026-03-02T09:40:00.000Z', null, null, false, null, '${seedUuid("account", "acc-mentor")}', '2026-03-01T08:00:00.000Z')`,
+      `('${seedUuid("account", "acc-pending")}', 'pending', '${seedUuid("shop", "crochet-corner")}', '2026-10-10T12:20:00.000Z', null, null, false, null, null, null)`,
+    ]);
+  });
+
+  it("holds the 16 Looking For requests with no asker, their offer numbers, and the two closed ones as they are", () => {
+    const sql = makeSeedSql(fixtures);
+    const rows = rowsOf(sql, "public.requests");
+    expect(columnsOf(sql, "public.requests")).toEqual([
+      "id",
+      "asker_id",
+      "title",
+      "category_slug",
+      "campus_slug",
+      "details",
+      "budget_zar",
+      "swap_welcome",
+      "needed_by",
+      "status",
+      "created_at",
+      "updated_at",
+      "closed_at",
+      "seed_offers",
+      "hidden_at",
+      "hidden_reason",
+    ]);
+    expect(rows).toHaveLength(16);
+    sampleRequestRows.forEach((request, i) => {
+      expect(rows[i].startsWith(`(${q(request.id)}, null, ${q(request.title)}, ${q(request.categorySlug)}, ${q(request.campusSlug)}, `)).toBe(true);
+      expect(rows[i].endsWith(`, ${q(request.status)}, ${q(request.createdAt)}, ${q(request.createdAt)}, null, ${request.seedOffers}, null, null)`)).toBe(true);
+    });
+    expect(rows.filter((row) => row.includes(", 'closed', ")).map((row) => row.slice(1, 8))).toEqual(["'r-015'", "'r-016'"]);
+  });
+
+  it("holds the Hub's 18 posts, every campus as null, Naledi's three, and their placeholder art", () => {
+    const sql = makeSeedSql(fixtures);
+    const rows = rowsOf(sql, "public.hub_posts");
+    expect(columnsOf(sql, "public.hub_posts")).toEqual([
+      "id",
+      "kind",
+      "title",
+      "summary",
+      "place",
+      "body",
+      "campus_slug",
+      "starts_at",
+      "capacity",
+      "going",
+      "image_src",
+      "image_alt",
+      "published",
+      "published_at",
+      "author_id",
+      "created_at",
+      "updated_at",
+    ]);
+    expect(rows).toHaveLength(18);
+    const naledi = seedUuid("account", "acc-mentor");
+    sampleHubPostRows.forEach((post, i) => {
+      expect(rows[i].startsWith(`(${q(post.id)}, ${q(post.kind)}, ${q(post.title)}, `)).toBe(true);
+      expect(rows[i]).toContain(`, '/placeholders/hub/${post.id}.svg', '', true, ${q(post.publishedAt ?? "")}, `);
+      const author = ["h-002", "h-007", "h-012"].includes(post.id) ? q(naledi) : "null";
+      expect(rows[i].endsWith(`, ${author}, ${q(post.createdAt)}, ${q(post.updatedAt)})`)).toBe(true);
+    });
+    expect(sql).not.toContain("'all'");
+    expect(rows.filter((row) => row.includes(`'${naledi}'`))).toHaveLength(3);
+  });
+
+  it("holds Naledi's two entries about Sipho and Thandi's open slot request", () => {
+    const sql = makeSeedSql(fixtures);
+    const sipho = seedUuid("account", "acc-seller");
+    const naledi = seedUuid("account", "acc-mentor");
+    expect(columnsOf(sql, "public.mentor_notes")).toEqual([
+      "id",
+      "owner_id",
+      "kind",
+      "check_in_on",
+      "text",
+      "author_id",
+      "author_name",
+      "created_at",
+    ]);
+    expect(rowsOf(sql, "public.mentor_notes")).toEqual(
+      sampleMentorNotes.map(
+        (note) =>
+          `('${seedUuid("mentor-note", note.id)}', '${sipho}', ${q(note.kind)}, ${note.checkInOn ? q(note.checkInOn) : "null"}, ${q(note.text)}, '${naledi}', 'Naledi', ${q(note.createdAt)})`,
+      ),
+    );
+    expect(columnsOf(sql, "public.hub_bookings")).toEqual([
+      "id",
+      "post_id",
+      "account_id",
+      "help",
+      "time",
+      "status",
+      "created_at",
+      "answered_at",
+      "answered_by",
+    ]);
+    expect(rowsOf(sql, "public.hub_bookings")).toEqual([
+      `('${seedUuid("hub-booking", "bk-s1")}', 'h-007', '${seedUuid("account", "acc-student")}', ${q(sampleHubBookings[0].help)}, 'Any time after 13:30', 'open', '2026-10-13T10:15:00.000Z', null, null)`,
+    ]);
+  });
+
+  it("refuses fixtures it can't seed faithfully", () => {
+    const [post] = sampleHubPostRows;
+    expect(() => makeSeedSql({ ...fixtures, hubPosts: [{ ...post, authorId: "acc-nobody" }] })).toThrow(/acc-nobody/);
+    expect(() => makeSeedSql({ ...fixtures, hubPosts: [{ ...post, image: { src: "https://x.example/a.png", alt: "" } }] })).toThrow(
+      /placeholder/,
+    );
+    const [booking] = sampleHubBookings;
+    expect(() => makeSeedSql({ ...fixtures, hubBookings: [{ ...booking, postId: "h-999" }] })).toThrow(/h-999/);
+    const [conversation] = sampleConversations;
+    expect(() =>
+      makeSeedSql({ ...fixtures, conversations: [{ ...conversation, requestId: "r-001", requestTitle: "x" }] }),
+    ).toThrow(/offer/);
   });
 });
