@@ -1,7 +1,7 @@
 # Vossie staff accounts, numbers and Show again: design spec
 
 - **Date:** 2026-10-20
-- **Status:** Draft (2026-10-20), decided by Claude under Lama's standing goal (decision 54); Lama may revisit.
+- **Status:** Built (2026-10-20), in sample mode. Decided by Claude under Lama's standing goal (decision 54); Lama may revisit.
 - **Scope:** stage J. It builds the parts of stage G's "Not in this stage" (staff tools spec 7) that sample mode can build:
   - staff accounts management: giving and taking away the mentor and admin roles;
   - the admin's numbers: counts per campus and in total, with no names;
@@ -399,3 +399,28 @@ For `docs/reference/GO-LIVE.md`, when the stage is built:
   - Tick "Showing a hidden listing again".
   - Add "Should an admin be able to act on their own shop?" (approve, verify, pin).
 - **Section 6, Content:** "the real staff accounts" becomes "give the real staff their roles in `/admin/staff` (stage J)".
+
+## 12. Changes on plan review and build
+
+Where this section differs from the sections above, this section wins.
+
+1. **Decision 13's rules 1 to 4 are replaced (plan amendment 1).** The drafted rule leaked: a brute-force check of the "audit" version found 765 cases where a hidden figure could be pinned exactly, because choosing what to hide from the hidden values makes the pattern of hidden cells give values away ("total Hidden, one Under 5" can only be 4). The decision to hide must depend only on something the reader can already see:
+   - **A private week column with any small number shows no campus breakdown.** If any campus, or the count on a campus that has gone, is from 1 to 4 that week, every campus in that column shows "Hidden", zeros included. Otherwise every campus shows exactly. The total always shows: exact, "Under 5" from 1 to 4, and 0 as 0.
+   - **Change** is "—" unless both figures are exact.
+   - **Since the start** shows in tens. Campus figures show only when both week columns are shown by campus and no campus (or gone) is from 1 to 9 since the start; otherwise every campus shows "Hidden". The total shows in tens, unless either week's total is "Under 5"; then it shows "Hidden".
+   - **Public measures and open shops** stay exact.
+
+   *For Lama.* The page shows every all-campus total, so Vossie-wide figures are always there. A campus breakdown of something private shows only when no campus had between 1 and 4 that week; if one did, the whole column is hidden, zeros too. Hiding only the small cell isn't enough: the total less the cells you can see gives it back, and choosing which extra cells to hide gives clues of its own. Since-the-start figures are in tens, and shown by campus only under the same condition, so two weeks' pages can't be subtracted. No figure from 1 to 4 can be worked out from the page, from two weeks' pages, or from the rule itself. The cost: while campuses are small, the private columns in By campus and the campus view will often say Hidden (totals are unaffected). An "Other campuses" row that groups small campuses is a possible later improvement. Two residuals: deletions change past weeks' figures between page loads (two loads can show that something was deleted, never a small activity count), and the rule assumes a reader may know the gone figure. This replaces plan decision 14's residual, so the hand-over and the go-live list no longer carry it.
+2. **Task 1's spike failed (plan Task 1).** With `export const instant = false` and the gate at the top level, `/admin` and `/admin/sellers/[slug]` built, and no public route's line in the build output changed, but every request still answered 200: the response carries `x-nextjs-prerender: 1` and `x-nextjs-postponed: 1`, because the root layout's streaming shell (its `<Suspense>` round the header's account link and the menu's account links) is sent before the page's role check runs. A real status needs the root layout changed, which another session has uncommitted edits to. So decision 15 does not hold: staff pages keep stage G's pattern (status 200 with the 404 view and `noindex`, a client-side redirect to sign-in), the status checks in `staff.spec.ts` skip (`STAFF_404_IS_REAL = false`), and the go-live item for a status from the proxy or the real backend stays open.
+3. **Open shops now doesn't need Verified (plan decision 12),** unlike Featured's test: it is approved, unpaused shops with at least one listed listing.
+4. **Only Tech corner is seeded with `approvedAt`;** Lerato's waiting shop has none (plan decision 4). `approveShop` takes `now`, and the shop export carries `approvedAt`.
+5. **`getStaffAccount`, `getHidden` and `countHidden` join the data functions;** `showRequest` takes `now` (plan decisions 5 and 16).
+6. **The policy's "Who can see it" is its "Who it is shared with" section (plan decision 20).**
+7. **The unknown email's focus is checked without the app's JavaScript (plan decision 21),** because only a page load focuses the error summary.
+8. **The role actions expire no tag (plan decision 8):** nothing cached reads roles.
+9. **No new CSS in `app/globals.css`;** utilities on the new row headers and campus links (plan decision 3).
+10. **Page titles (plan amendment 13).** `/admin/hidden`'s title is "Hidden listings and requests", through `staffMetadata("admin", "Hidden listings and requests")`, so the tab matches the H1.
+11. **The short skeleton.** `StaffSkeleton` takes `short` (no body block) on the four confirm pages: a role's removal, the admin's own-role refusal, and the two Show again pages. The full skeleton shifted a short phone's confirm page when it arrived (Show again at 375x667: 0.0892 to 0.0437; the own-admin refusal 0.0437). One entry on the footer's list items remains, under the 0.05 limit but close.
+12. **Show again's link name (plan amendment 12).** Show again's link is named by `aria-label` "Show again: {title}", so its name starts with its visible words (WCAG 2.5.3) with no stray space; the role links read "Remove mentor role for Naledi".
+13. **"Your admin role".** The admin's own-role refusal page is headed "Your admin role", not "Remove {name}'s admin role", since nothing is being removed.
+14. **The numbers' intro** says small private numbers show as "Under 5" or "Hidden".

@@ -466,11 +466,11 @@ Task 9 adds them, with a note that `/admin/numbers` returns 404 until Task 10. T
 |---|---|---|---|---|---|---|---|---|
 | I's final figures (2026-10-20) | 150,591 | 151,338 | 151,747 | 151,351 | 151,226 | 150,591 | not in I's ledger | 152,265 |
 | Start (Task 1, Step 2, from HEAD `3b59045`) | 150,591 | 151,338 | 151,747 | 151,351 | 151,226 | 150,591 | 150,591 | 152,265 |
-| Task 12, the privacy words | | | | | | | | |
+| Task 12, the privacy words (`4a7d380`) | 150,591 | 151,338 | 151,747 | 151,351 | 151,226 | 150,591 | 150,591 | 152,265 |
 | Task 13, the stage's checks | 150,591 | 151,338 | 151,747 | 151,351 | 151,226 | 150,591 | 150,591 | 152,265 |
-| **Final (Task 14)** | | | | | | | | |
+| **Final (Task 14)** | 150,591 | 151,338 | 151,747 | 151,351 | 151,226 | 150,591 | 150,591 | 152,265 |
 
-Staff pages, signed in as the admin (Task 13): Overview 150,591, Staff accounts 150,591, Numbers 150,591, Hidden 150,591. The shell's figure is 150,591 B: the staff pages load no new JavaScript.
+Staff pages, signed in as the admin (Task 13): Overview 150,591, Staff accounts 150,591, Numbers 150,591, Hidden 150,591. Public pages are unchanged from the Start row to the byte; the Final row repeats Task 13's figures (the controller's full-suite run records its own count in `docs/PROGRESS.md`). The shell's figure is 150,591 B: the staff pages load no new JavaScript.
 
 The stop line used: 152,305 B (decision 52). Unit tests at the start: 2,303 in 302 files at HEAD (the working tree has more: another session's uncommitted header tests). End to end at the start: 1,247 passed, 1,144 skipped (I's final run, `d3526fd`).
 
@@ -480,7 +480,38 @@ Written in Task 14 from `git log` and the code. Where an entry differs from the 
 
 - **Task 1 failed, so Task 2 is skipped and every later task follows "If Task 1 failed" with `STAFF_404_IS_REAL = false`.** In the scratch copy, `/admin` and `/admin/sellers/[slug]` with `instant = false` and the gate at the top level built (`ƒ` instead of `◐`) and left every public route's line in the build output unchanged, but every request still answered 200: the response carries `x-nextjs-prerender: 1` and `x-nextjs-postponed: 1`, so the root layout's streaming shell (its `<Suspense>` round the header's `AccountLink` and the menu's `MenuAccountLinks`) sends 200 before the page's role check runs, and the redirect and the 404 arrive inside the stream as before. A real status needs the root layout changed, which this stage may not touch (another session has uncommitted edits to it). Staff pages keep G's pattern (status 200 with the 404 view and `noindex`); the go-live item for a status from the proxy or the real backend's auth stays. Nothing from the spike reached the working tree.
 
-(The rest is filled in at Task 14.)
+Commits, from `git log --oneline 921798a^..HEAD` (Task 14's docs commit follows them):
+
+| Task | Commit | What |
+|---|---|---|
+| 1 | `921798a` | The spike (failed, above) and the ledger's Start row, unchanged from I |
+| 2 | none | Skipped: Task 1 failed |
+| 3 | `5d2af2a` | Stage J's words and types: four audit actions, the Staff accounts kind and `account` target, the `staff-role` notification and its shield, the Give a staff role errors and notices, the role and Show again sentences, the role choices. The frame's two new sections wait for Task 9 (amendment 6). Unit 2,318 |
+| 4 | `aa24546` | `approvedAt` (seeded on Tech corner only), `STORE_VERSION` 9, and `lib/data/staff-accounts.ts`. Unit 2,334 |
+| 5 | `be13a1a` | The numbers' rules: seven measures, SAST weeks, and the amended small-number rule with its brute-force check (amendments 1 and 2). Unit 2,350 |
+| 6 | `3c529ef` | The numbers from the store. Unit 2,363 |
+| 7 | `a988cb1` | Show again: the hidden lists, `showListing`, `showRequest`, `getHidden`, `countHidden` and the two actions. Unit 2,374 |
+| 8 | `caf1239` | Giving and taking away a role (amendment 4's order of checks). Unit 2,386 |
+| 9 | `23f867e` | `/admin/staff` and the two role confirm pages; `ConfirmAction`'s no-reason mode; `StaffTable` row headers; the frame's Numbers and Staff links (amendments 6 and 12). Unit 2,399 |
+| 10 | `6308294` | `/admin/numbers`. Unit 2,405 before the review's tests |
+| review | `0570965` | Review gaps in the tests: week edges, saved searches never counted, requests, hidden listings and a report on a request counted (each shown to catch its mutation), two admins removing each other at once leaving one, a gate case for every exported account action, a week label across a year end. Unit 2,409 |
+| 11 | `2a360ac` | `/admin/hidden`, the two Show again pages and the links to them (amendments 12 to 14). Unit 2,427 |
+| 12 | `4a7d380` | Privacy: a staff account's delete step and the policy's words. Unit 2,431. JS: every public page the same to the byte |
+| review | `c655039` | Review fixes: the numbers' tests read each cell (a mutation to the By campus columns, its key or its Open shops cell now fails), the intro wording, and the admin's own-role page's heading. Unit 2,432 |
+| 13a | `8049376` | `staff-accounts-writes` project, helpers, the writes spec and `staff.spec.ts`'s status checks (skipped while `STAFF_404_IS_REAL` is false). E2E on `c655039`: staff-accounts-writes 5 passed; staff.spec.ts 12 passed, 6 skipped at 390 and 1440 |
+| 13b | `8df6ef0` | `staff-accounts-checks.spec.ts` (axe, layout shift, size) and the short skeleton. E2E: staff-accounts-writes 30 passed; staff-checks 50 passed, 4 skipped. Unit 2,435 |
+
+Where the build differed from the tasks as written:
+
+- **Task 1 failed** (first entry above). Every staff page keeps G's `<Suspense fallback={<StaffSkeleton />}>` pattern, `STAFF_404_IS_REAL` is `false`, and CLAUDE.md's staff-pages line and the `cookies()` rule are unchanged (amendment 8's Pass-only edits did not apply). `StaffSkeleton` stays in use.
+- **Task 13 split in two** (amendment 15): 13a (the project, helpers, writes spec and status checks) and 13b (axe, layout shift and size), committed in that order.
+- **The short skeleton (13b, `8df6ef0`).** `StaffSkeleton` takes `short`, which leaves out its body block, on the four confirm pages: a role's removal, the admin's own-role refusal, and the two Show again pages. At 375x667 the full skeleton shifted Show again's confirm page by 0.0892; with `short` it is 0.0437, and the own-admin refusal is 0.0437. That is one entry on the footer's list items, under the 0.05 limit but close (an open point for Lama).
+- **Show again's link name.** It is named by `aria-label` "Show again: {title}" rather than an `sr-only` span (amendment 12's text), so there is no stray space and the name starts with the visible words.
+- **"Your admin role"** (`c655039`). The own-admin refusal page is headed "Your admin role" instead of "Remove {name}'s admin role", since nothing is being removed. The screenshots test and `StaffRoleConfirm.tsx` use it.
+- **The numbers' intro** (`c655039`) says small private numbers show as "Under 5" or "Hidden".
+- **TDD departures on Tasks 6 and 10.** For `lib/data/numbers.ts` (Task 6) and `AdminNumbers` (Task 10) the tests were not all written and watched failing before the code. The review closed that gap with mutation tests (`0570965` for Task 6's counting rules and week edges, `c655039` for Task 10's cells, key and Open shops cell): each new test was shown to fail when the code it covers is mutated.
+- **Review fixes before Task 11.** `0570965` and `c655039` are the review's two commits; neither changes behaviour except the heading and intro wording above.
+- **Screenshots (Task 14).** `tests/e2e/staff-accounts-screenshots.spec.ts` is gated on `SCREENSHOTS=1` (it is matched by the `staff-accounts-writes` project, so it skips in a normal run) and takes 18 PNGs at 390 and 1440 into `docs/progress/staff-accounts/`. It waits for each page's heading and real content, and fails if a `.skeleton` is still in the DOM. It ran in a scratch copy of `8df6ef0` on port 3205 (the controller's full run was on 3204): 1 passed. On a phone, the Show again page's heading first ran 44px past the screen for the test's long unbroken title (`Lab coat` plus a 30-character test word). A student's title can hold one long word too, so the controller fixed it in the staff frame (`wrap-anywhere` on the heading, a grid item, where `break-word` can't shrink it; `03c4f70`) and retook the screenshots, which are now 390px wide.
 
 ## Conventions for every task
 
@@ -680,11 +711,11 @@ Spec 2.15's stop rule, on one page. `/admin` becomes a blocking page: `export co
 **Files:**
 - Modify: `app/admin/page.tsx`
 
-- [ ] **Step 1: Read Next's words on it**
+- [x] **Step 1: Read Next's words on it**
 
 Read `node_modules/next/dist/docs/01-app/02-guides/streaming.md`, section "The HTTP contract", and `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/02-route-segment-config/instant.md`, sections "Disabling instant" and "Disabling static shell validation". Note in your report whether either says anything this plan has missed.
 
-- [ ] **Step 2: Measure the Start row, from HEAD, before changing anything**
+- [x] **Step 2: Measure the Start row, from HEAD, before changing anything**
 
 Make the scratch copy (conventions, "The scratch copy") with **no** files copied in at step 3: it's HEAD as committed. Use `S="<your scratchpad>/vossie-j-task1-start"`. Then, from `$S`:
 
@@ -694,7 +725,7 @@ pnpm e2e tests/e2e/performance.spec.ts --project=phone-390
 
 Expected: every test passes, and the output has one line per page, such as `homepage: {"script":…,"scriptBrotli":150591}`. Write the `scriptBrotli` figures for homepage, browse page, listing page, storefront, Saved page, privacy page, notifications page (signed in) and new listing form (signed in) into your report, for the ledger's Start row. Also run `pnpm test` there and note the count of tests and files (the ledger's "Unit tests at the start").
 
-- [ ] **Step 3: Make `/admin` a blocking page**
+- [x] **Step 3: Make `/admin` a blocking page**
 
 Replace the whole of `app/admin/page.tsx` with:
 
@@ -748,7 +779,7 @@ export default async function AdminPage() {
 Run: `pnpm lint app/admin/page.tsx`
 Expected: no output (no problems).
 
-- [ ] **Step 4: Build it in a scratch copy**
+- [x] **Step 4: Build it in a scratch copy**
 
 Make a second scratch copy, `S="<your scratchpad>/vossie-j-task1"`, copying in `app/admin/page.tsx` at the procedure's step 3. From `$S`:
 
@@ -761,7 +792,7 @@ grep -n -i "uncached data\|outside of <Suspense>\|runtime data in generateMetada
 
 Expected: `exit: 0`; the route table lists `/admin` as dynamic (`ƒ`); the last `grep` prints nothing. If the build fails, keep `build.log`'s error for the report and go to Step 9 (the spike has failed).
 
-- [ ] **Step 5: Start it, and get a session cookie for each sample account**
+- [x] **Step 5: Start it, and get a session cookie for each sample account**
 
 From `$S`, start the server in the background: `pnpm start --port 3204` (run it with `run_in_background`), and wait until `curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3204/` prints `200`.
 
@@ -793,7 +824,7 @@ echo "${#STUDENT} ${#MENTOR} ${#ADMIN}"
 
 Expected: three non-zero lengths.
 
-- [ ] **Step 6: Check the statuses**
+- [x] **Step 6: Check the statuses**
 
 From `$S`, with the server still running:
 
@@ -824,7 +855,7 @@ Expected, line by line:
 
 Then stop the server you started (it's yours). Paste the output into your report.
 
-- [ ] **Step 7: The suites, in the same scratch copy**
+- [x] **Step 7: The suites, in the same scratch copy**
 
 From `$S` (the server stopped):
 
@@ -837,16 +868,16 @@ pnpm e2e tests/e2e/staff.spec.ts tests/e2e/routes.spec.ts --project=desktop-1440
 
 Expected: the unit count from Step 2, all passing; no lint or type errors; the e2e tests pass (the student's 404 title checks and the signed-out redirect to sign-in both still hold; the latter now through a real 307).
 
-- [ ] **Step 8: Report the verdict**
+- [x] **Step 8: Report the verdict**
 
 Report **Pass** or **Fail** with Steps 4, 6 and 7's output and the Start row's figures. On Pass, go to Step 10. On Fail, Step 9.
 
-- [ ] **Step 9 (Fail only): Put `/admin` back as it was**
+- [x] **Step 9 (Fail only): Put `/admin` back as it was**
 
 Read HEAD's text with `git --no-optional-locks show HEAD:app/admin/page.tsx`, and write it back into `app/admin/page.tsx` with the Write tool, exactly. Then run `git --no-optional-locks status --short app/admin` on its own.
 Expected: no output. Hand over with no files to commit.
 
-- [ ] **Step 10 (Pass only): Hand over**
+- [x] **Step 10 (Pass only): Hand over**
 
 Files: `app/admin/page.tsx`. Message:
 
@@ -1755,7 +1786,7 @@ Everything later tasks name, with no page changed: the four new audit actions, t
 - Modify: `components/messages/NotificationsView.tsx`, `components/messages/NotificationsView.test.tsx`
 - Modify: `components/staff/staff-parts.test.tsx`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `lib/staff/audit-words.test.ts`, add these four to the end of `EVERY_ACTION` (after `"check-in-added",`):
 
@@ -1983,7 +2014,7 @@ In `components/staff/staff-parts.test.tsx`, in "gives an admin every section, an
 Run: `pnpm test lib/staff components/messages/NotificationsView.test.tsx components/staff/staff-parts.test.tsx`
 Expected: FAIL: the new names aren't exported (`GIVE_ROLE_FIELDS`, `staffRoleText`, `ROLE_CHOICES`, `GIVE_ROLE_FORM`, the paths), `auditLabel("role-given")` throws, the sections are eight, and the staff-role row has no icon.
 
-- [ ] **Step 2: The types**
+- [x] **Step 2: The types**
 
 In `lib/types.ts`:
 - in `NotificationKind`, replace `  | "search-match";` with:
@@ -2029,7 +2060,7 @@ export type AuditKind =
 export type AuditTargetKind = "shop" | "listing" | "report" | "pickup-point" | "post" | "booking" | "request" | "account";
 ```
 
-- [ ] **Step 3: The log's words**
+- [x] **Step 3: The log's words**
 
 In `lib/staff/audit-words.ts`, add after `  "check-in-added": { label: "Added a check-in", kind: "mentoring" },`:
 
@@ -2047,7 +2078,7 @@ and add after `  { kind: "mentoring", label: "Mentoring" },`:
   { kind: "staff", label: "Staff accounts" },
 ```
 
-- [ ] **Step 4: The notices and the errors**
+- [x] **Step 4: The notices and the errors**
 
 In `lib/staff/notices.ts`, add after `  ["check-in-added", "Check-in saved."],`:
 
@@ -2084,7 +2115,7 @@ and add at the end of the file:
 export const GIVE_ROLE_FIELDS = { email: "give-role-email", role: "give-role-role-mentor" } as const;
 ```
 
-- [ ] **Step 5: The sentences**
+- [x] **Step 5: The sentences**
 
 In `lib/staff/notification-text.ts`, add at the top, before the first comment:
 
@@ -2119,7 +2150,7 @@ export function requestShownText(title: string): string {
 }
 ```
 
-- [ ] **Step 6: The addresses and the frame's sections**
+- [x] **Step 6: The addresses and the frame's sections**
 
 In `lib/staff/paths.ts`, change the first import to:
 
@@ -2159,7 +2190,7 @@ and in `STAFF_SECTIONS`, add after `  { href: ADMIN_POINTS_PATH, label: "Pickup 
 
 and change the comment above `STAFF_SECTIONS` from "the admin console's six sections" to "the admin console's eight sections".
 
-- [ ] **Step 7: The role choices and the form keys**
+- [x] **Step 7: The role choices and the form keys**
 
 In `lib/staff/roles.ts`, add at the end:
 
@@ -2197,7 +2228,7 @@ export const GIVE_ROLE_FORM = "staff-give-role";
 export const removeRoleForm = (accountId: string, role: "mentor" | "admin") => `staff-remove:${accountId}:${role}`;
 ```
 
-- [ ] **Step 8: The shield for a role change**
+- [x] **Step 8: The shield for a role change**
 
 In `components/messages/NotificationsView.tsx`, add after the `case "search-match":` lines:
 
@@ -2212,7 +2243,7 @@ and add this line to the end of `KindIcon`'s doc comment, before ` */`:
  * Staff accounts add "staff-role", drawn with the shield like the Hub's other word about you (stage J spec decision 7).
 ```
 
-- [ ] **Step 9: Run the tests**
+- [x] **Step 9: Run the tests**
 
 Run: `pnpm test lib/staff components/messages/NotificationsView.test.tsx components/staff/staff-parts.test.tsx`
 Expected: PASS.
@@ -2220,12 +2251,12 @@ Expected: PASS.
 Run: `pnpm lint lib/types.ts lib/staff components/messages`
 Expected: no problems.
 
-- [ ] **Step 10: Typecheck and the whole suite, in a scratch copy**
+- [x] **Step 10: Typecheck and the whole suite, in a scratch copy**
 
 Make the scratch copy (`S="<your scratchpad>/vossie-j-task3"`), copying in every file this task changed. From `$S`: `pnpm typecheck`, `pnpm test`, `pnpm lint`.
 Expected: no type errors (every `Record<AuditAction, …>` and the icon's `switch` are complete); all tests pass.
 
-- [ ] **Step 11: Hand over**
+- [x] **Step 11: Hand over**
 
 Files: `lib/types.ts`, `lib/staff/audit-words.ts`, `lib/staff/audit-words.test.ts`, `lib/staff/notices.ts`, `lib/staff/notices.test.ts`, `lib/staff/errors.ts`, `lib/staff/errors.test.ts`, `lib/staff/notification-text.ts`, `lib/staff/notification-text.test.ts`, `lib/staff/paths.ts`, `lib/staff/paths.test.ts`, `lib/staff/roles.ts`, `lib/staff/roles.test.ts`, `lib/staff/form-state.ts`, `lib/staff/form-state.test.ts`, `components/messages/NotificationsView.tsx`, `components/messages/NotificationsView.test.tsx`, `components/staff/staff-parts.test.tsx`. Message:
 
@@ -2246,7 +2277,7 @@ The data the staff page and the numbers stand on. `approveShop` records the firs
 - Modify: `lib/data/shops.ts`, `lib/data/shops.test.ts`
 - Create: `lib/data/staff-accounts.ts`, `lib/data/staff-accounts.test.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `lib/data/staff-shops.test.ts`, change every call `approveShop(<slug>, <owner>)` to pass the time as a third argument: `approveShop("crochet-corner", "acc-pending", NOW)`, and the same for every other call in the file (lines 82, 90, 91, 92, 112, 121, 125 and 126 at HEAD). Then add to the describe "approving and declining (staff tools spec 2.3, plan decision 2)":
 
@@ -2427,7 +2458,7 @@ describe("taking a role away (stage J spec decisions 5 and 6)", () => {
 Run: `pnpm test lib/data/staff-accounts.test.ts lib/data/staff-shops.test.ts lib/data/shops.test.ts`
 Expected: FAIL: `./staff-accounts` doesn't exist, `approvedAt` is never set, and Sipho's profile has none.
 
-- [ ] **Step 2: The field and the store's version**
+- [x] **Step 2: The field and the store's version**
 
 In `lib/data/rows.ts`, in `SellerProfileRow`, add after `  mentorId?: string | null;`:
 
@@ -2448,7 +2479,7 @@ In `data/fixtures/accounts.ts`, in Sipho's `seller`, add after `      mentorId: 
       approvedAt: "2026-03-01T08:00:00.000Z",
 ```
 
-- [ ] **Step 3: `approveShop` records the first approval**
+- [x] **Step 3: `approveShop` records the first approval**
 
 In `lib/data/staff-shops.ts`, replace `approveShop`:
 
@@ -2496,7 +2527,7 @@ export async function approveShop(slug: string, ownerId: string, now: Date): Pro
 
 In `lib/staff/admin-actions.ts`, in `approveSeller`, change `const decision = slug && owner ? await approveShop(slug, owner) : null;` to `const decision = slug && owner ? await approveShop(slug, owner, now) : null;`. (`now` is already declared on the line above it.)
 
-- [ ] **Step 4: The export says when the shop was approved**
+- [x] **Step 4: The export says when the shop was approved**
 
 In `lib/data/shops.ts`, in `ShopExport`, add after `  status: SellerStatus;`:
 
@@ -2511,7 +2542,7 @@ and in `exportShop`, add after `      status,`:
       approvedAt: sampleStore().sellerProfiles.get(accountId)?.approvedAt ?? null,
 ```
 
-- [ ] **Step 5: Staff accounts' data**
+- [x] **Step 5: Staff accounts' data**
 
 Create `lib/data/staff-accounts.ts`:
 
@@ -2634,7 +2665,7 @@ export async function removeRole(
 }
 ```
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `pnpm test lib/data lib/staff/admin-actions.test.ts`
 Expected: PASS. The store test "reseeds a store left behind by an older version…" still passes with version 9.
@@ -2642,11 +2673,11 @@ Expected: PASS. The store test "reseeds a store left behind by an older version�
 Run: `pnpm lint lib/data data/fixtures lib/staff/admin-actions.ts`
 Expected: no problems.
 
-- [ ] **Step 7: Typecheck and the whole suite, in a scratch copy**
+- [x] **Step 7: Typecheck and the whole suite, in a scratch copy**
 
 Make the scratch copy (`S="<your scratchpad>/vossie-j-task4"`), copying in this task's files. From `$S`: `pnpm typecheck`, `pnpm test`, `pnpm lint`. Expected: clean, all passing. (`approveShop`'s callers are all listed above; a missed one is a type error here.)
 
-- [ ] **Step 8: Hand over**
+- [x] **Step 8: Hand over**
 
 Files: `lib/data/rows.ts`, `lib/data/store.ts`, `data/fixtures/accounts.ts`, `lib/data/staff-shops.ts`, `lib/data/staff-shops.test.ts`, `lib/data/staff-reports.test.ts`, `lib/staff/admin-actions.ts`, `lib/data/shops.ts`, `lib/data/shops.test.ts`, `lib/data/staff-accounts.ts`, `lib/data/staff-accounts.test.ts`. Message:
 
@@ -2663,7 +2694,7 @@ Pure functions, with no store and no page: the two complete SAST weeks before `n
 **Files:**
 - Create: `lib/staff/numbers.ts`, `lib/staff/numbers.test.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `lib/staff/numbers.test.ts`:
 
@@ -2840,7 +2871,7 @@ describe("the campus view's link (stage J spec decision 12)", () => {
 Run: `pnpm test lib/staff/numbers.test.ts`
 Expected: FAIL: `./numbers` doesn't exist.
 
-- [ ] **Step 2: The rules**
+- [x] **Step 2: The rules**
 
 Create `lib/staff/numbers.ts`:
 
@@ -3043,7 +3074,7 @@ export function parseNumbersCampus(
 }
 ```
 
-- [ ] **Step 3: Run the tests**
+- [x] **Step 3: Run the tests**
 
 Run: `pnpm test lib/staff/numbers.test.ts`
 Expected: PASS.
@@ -3051,7 +3082,7 @@ Expected: PASS.
 Run: `pnpm lint lib/staff/numbers.ts lib/staff/numbers.test.ts`
 Expected: no problems.
 
-- [ ] **Step 4: Hand over**
+- [x] **Step 4: Hand over**
 
 Files: `lib/staff/numbers.ts`, `lib/staff/numbers.test.ts`. (Its typecheck runs with Task 6's.) Message:
 
@@ -3068,7 +3099,7 @@ feat: the admin's numbers' rules: the seven measures, fixed Monday-to-Sunday SAS
 **Files:**
 - Create: `lib/data/numbers.ts`, `lib/data/numbers.test.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `lib/data/numbers.test.ts`:
 
@@ -3271,7 +3302,7 @@ describe("open shops now (stage J spec decision 10, plan decision 12)", () => {
 Run: `pnpm test lib/data/numbers.test.ts`
 Expected: FAIL: `./numbers` doesn't exist.
 
-- [ ] **Step 2: The counting**
+- [x] **Step 2: The counting**
 
 Create `lib/data/numbers.ts`:
 
@@ -3387,7 +3418,7 @@ export async function countByWeek(now: Date): Promise<{ weeks: SastWeeks; raw: R
 }
 ```
 
-- [ ] **Step 3: Run the tests**
+- [x] **Step 3: Run the tests**
 
 Run: `pnpm test lib/data/numbers.test.ts lib/staff/numbers.test.ts`
 Expected: PASS.
@@ -3395,11 +3426,11 @@ Expected: PASS.
 Run: `pnpm lint lib/data/numbers.ts lib/data/numbers.test.ts`
 Expected: no problems.
 
-- [ ] **Step 4: Typecheck and the whole suite, in a scratch copy**
+- [x] **Step 4: Typecheck and the whole suite, in a scratch copy**
 
 Make the scratch copy (`S="<your scratchpad>/vossie-j-task6"`), copying in Task 5's and this task's files if Task 5 isn't committed yet, or this task's only. From `$S`: `pnpm typecheck`, `pnpm test`, `pnpm lint`. Expected: clean, all passing.
 
-- [ ] **Step 5: Hand over**
+- [x] **Step 5: Hand over**
 
 Files: `lib/data/numbers.ts`, `lib/data/numbers.test.ts`. Message:
 
@@ -3419,7 +3450,7 @@ The mirror of G's Hide the listing and H's Hide the request (spec 2.14). `showLi
 - Modify: `lib/data/staff-reports.ts`, `lib/data/staff-reports.test.ts`
 - Modify: `lib/staff/admin-actions.ts`, `lib/staff/admin-actions.test.ts`
 
-- [ ] **Step 1: Write the failing data tests**
+- [x] **Step 1: Write the failing data tests**
 
 In `lib/data/staff-shops.test.ts`, add `showListing` to the import list from `"./staff-shops"`, and add at the end:
 
@@ -3525,7 +3556,7 @@ describe("hidden listings and requests (stage J spec decision 14)", () => {
 Run: `pnpm test lib/data/staff-shops.test.ts lib/data/requests.test.ts lib/data/staff-reports.test.ts`
 Expected: FAIL: `showListing`, `showRequest`, `listHidden`, `getHidden` and `countHidden` aren't exported.
 
-- [ ] **Step 2: The data**
+- [x] **Step 2: The data**
 
 In `lib/data/staff-shops.ts`, add after `hideListing`:
 
@@ -3662,7 +3693,7 @@ export async function countHidden(): Promise<{ listings: number; requests: numbe
 Run: `pnpm test lib/data/staff-shops.test.ts lib/data/requests.test.ts lib/data/staff-reports.test.ts`
 Expected: PASS.
 
-- [ ] **Step 3: Write the failing action tests**
+- [x] **Step 3: Write the failing action tests**
 
 In `lib/staff/admin-actions.test.ts`:
 - add these imports:
@@ -3802,7 +3833,7 @@ describe("Show again (stage J spec decision 14)", () => {
 Run: `pnpm test lib/staff/admin-actions.test.ts`
 Expected: FAIL: `showListingAgain` and `showRequestAgain` aren't exported, and the gate test's "has a case for every exported action" fails the other way until they are.
 
-- [ ] **Step 4: The two actions**
+- [x] **Step 4: The two actions**
 
 In `lib/staff/admin-actions.ts`:
 - add `showRequest` to the import from `"@/lib/data/requests"` (`import { hideRequest, showRequest } from "@/lib/data/requests";`);
@@ -3892,7 +3923,7 @@ export async function showRequestAgain(formData: FormData): Promise<void> {
 }
 ```
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `pnpm test lib/staff/admin-actions.test.ts lib/data`
 Expected: PASS, the gate test's `it.each` included (18 actions, each logged once for an admin and refused for a mentor and a student).
@@ -3900,11 +3931,11 @@ Expected: PASS, the gate test's `it.each` included (18 actions, each logged once
 Run: `pnpm lint lib/staff/admin-actions.ts lib/data`
 Expected: no problems.
 
-- [ ] **Step 6: Typecheck and the whole suite, in a scratch copy**
+- [x] **Step 6: Typecheck and the whole suite, in a scratch copy**
 
 Make the scratch copy (`S="<your scratchpad>/vossie-j-task7"`), copying in this task's files. From `$S`: `pnpm typecheck`, `pnpm test`, `pnpm lint`. Expected: clean, all passing.
 
-- [ ] **Step 7: Hand over**
+- [x] **Step 7: Hand over**
 
 Files: `lib/data/staff-shops.ts`, `lib/data/staff-shops.test.ts`, `lib/data/requests.ts`, `lib/data/requests.test.ts`, `lib/data/staff-reports.ts`, `lib/data/staff-reports.test.ts`, `lib/staff/admin-actions.ts`, `lib/staff/admin-actions.test.ts`. Message:
 
@@ -3921,7 +3952,7 @@ feat: Show again: a hidden listing or Looking For request is shown again by an a
 **Files:**
 - Create: `lib/staff/account-actions.ts`, `lib/staff/account-actions.test.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `lib/staff/account-actions.test.ts`:
 
@@ -4145,7 +4176,7 @@ describe("taking a role away (stage J spec decisions 4 to 7)", () => {
 Run: `pnpm test lib/staff/account-actions.test.ts`
 Expected: FAIL: `./account-actions` doesn't exist.
 
-- [ ] **Step 2: The actions**
+- [x] **Step 2: The actions**
 
 Create `lib/staff/account-actions.ts`:
 
@@ -4289,7 +4320,7 @@ export async function removeStaffRole(formData: FormData): Promise<void> {
 }
 ```
 
-- [ ] **Step 3: Run the tests**
+- [x] **Step 3: Run the tests**
 
 Run: `pnpm test lib/staff/account-actions.test.ts`
 Expected: PASS.
@@ -4297,11 +4328,11 @@ Expected: PASS.
 Run: `pnpm lint lib/staff/account-actions.ts lib/staff/account-actions.test.ts`
 Expected: no problems.
 
-- [ ] **Step 4: Typecheck and the whole suite, in a scratch copy**
+- [x] **Step 4: Typecheck and the whole suite, in a scratch copy**
 
 Make the scratch copy (`S="<your scratchpad>/vossie-j-task8"`), copying in this task's files. From `$S`: `pnpm typecheck`, `pnpm test`, `pnpm lint`. Expected: clean, all passing.
 
-- [ ] **Step 5: Hand over**
+- [x] **Step 5: Hand over**
 
 Files: `lib/staff/account-actions.ts`, `lib/staff/account-actions.test.ts`. Message:
 
@@ -4322,11 +4353,11 @@ The Staff accounts page (spec 2.2 and 2.3): the Give a staff role form above a t
 - Create: `app/admin/staff/page.tsx`, `app/admin/staff/[id]/remove-mentor/page.tsx`, `app/admin/staff/[id]/remove-admin/page.tsx`
 - Modify: `components/forms/summary-ids.test.tsx`
 
-- [ ] **Step 1: Read Next's words**
+- [x] **Step 1: Read Next's words**
 
 Read `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/page.md` (`params`, `searchParams`) and `dynamic-routes.md` ("With Cache Components"). The new pages follow Task 1's shape (or "If Task 1 failed").
 
-- [ ] **Step 2: Write the failing tests for the shared parts**
+- [x] **Step 2: Write the failing tests for the shared parts**
 
 In `components/staff/staff-parts.test.tsx`, add to the describe "staff tables (staff tools spec 2.9 and 4, plan decision 20)":
 
@@ -4392,7 +4423,7 @@ and to the describe "confirm pages (staff tools spec 2.9 and 4, plan decision 18
 Run: `pnpm test components/staff/staff-parts.test.tsx`
 Expected: FAIL: `rowHeader` still draws a `<td>` (no row header), and `reason={false}` still draws the Reason field. (Vitest doesn't typecheck, so the new props reach the components.)
 
-- [ ] **Step 3: `StaffTable`'s row headers and `ConfirmAction`'s no-reason mode**
+- [x] **Step 3: `StaffTable`'s row headers and `ConfirmAction`'s no-reason mode**
 
 Replace the whole of `components/staff/StaffTable.tsx` with:
 
@@ -4572,7 +4603,7 @@ export function ConfirmAction(props: ConfirmActionProps) {
 Run: `pnpm test components/staff`
 Expected: PASS (G's confirm-page and table tests unchanged, the two new ones passing).
 
-- [ ] **Step 4: Write the failing tests for the page's parts**
+- [x] **Step 4: Write the failing tests for the page's parts**
 
 Create `components/staff/AdminStaff.test.tsx`:
 
@@ -4791,7 +4822,7 @@ describe("taking a role away (stage J spec decisions 4 and 5)", () => {
 Run: `pnpm test components/staff/AdminStaff.test.tsx components/staff/StaffRoleConfirm.test.tsx`
 Expected: FAIL: the components don't exist.
 
-- [ ] **Step 5: The page's parts**
+- [x] **Step 5: The page's parts**
 
 Create `components/staff/AdminStaff.tsx`:
 
@@ -5034,7 +5065,7 @@ export function StaffRoleConfirm({ person, role, viewerId, errors }: StaffRoleCo
 Run: `pnpm test components/staff`
 Expected: PASS.
 
-- [ ] **Step 6: The three pages**
+- [x] **Step 6: The three pages**
 
 Create `app/admin/staff/page.tsx`:
 
@@ -5186,7 +5217,7 @@ export default async function RemoveAdminPage({ params }: PageProps<"/admin/staf
 
 If Task 1 failed, write these three pages in G's shape instead (conventions, "If Task 1 failed").
 
-- [ ] **Step 7: The error summaries' ids**
+- [x] **Step 7: The error summaries' ids**
 
 In `components/forms/summary-ids.test.tsx`:
 - add the imports
@@ -5241,7 +5272,7 @@ Expected: PASS.
 Run: `pnpm lint components/staff components/forms app/admin/staff`
 Expected: no problems.
 
-- [ ] **Step 8: Build, check the statuses, and look at it**
+- [x] **Step 8: Build, check the statuses, and look at it**
 
 Make the scratch copy (`S="<your scratchpad>/vossie-j-task9"`), copying in this task's files. From `$S`: `pnpm typecheck`, `pnpm test`, `pnpm lint`, then `pnpm build`. Expected: clean; the build lists `/admin/staff`, `/admin/staff/[id]/remove-mentor` and `/admin/staff/[id]/remove-admin` as dynamic, with no Suspense or generateMetadata error.
 
@@ -5286,7 +5317,7 @@ await browser.close();
 
 From `$S`: `mkdir look && node j-look.mjs look /admin/staff /admin/staff/acc-mentor/remove-mentor /admin/staff/acc-admin/remove-admin`. Open the PNGs and check: the form and the table read at each size, the table is cards on the phone, the Remove links are red-outlined 44px pills with "Remove mentor role" on them, the own row says "This is you.", and the refusal page has no button. Press Give role with nothing typed and look again at 390px: the summary and both field errors. Stop the server.
 
-- [ ] **Step 9: Hand over**
+- [x] **Step 9: Hand over**
 
 Files: `components/staff/ConfirmAction.tsx`, `components/staff/StaffTable.tsx`, `components/staff/staff-parts.test.tsx`, `components/staff/AdminStaff.tsx`, `components/staff/AdminStaff.test.tsx`, `components/staff/StaffRoleConfirm.tsx`, `components/staff/StaffRoleConfirm.test.tsx`, `app/admin/staff/page.tsx`, `app/admin/staff/[id]/remove-mentor/page.tsx`, `app/admin/staff/[id]/remove-admin/page.tsx`, `components/forms/summary-ids.test.tsx`. Message:
 
@@ -5304,7 +5335,7 @@ The admin's numbers page (spec 2.9 to 2.13): the lines above the tables, "All ca
 - Create: `components/staff/AdminNumbers.tsx`, `components/staff/AdminNumbers.test.tsx`
 - Create: `app/admin/numbers/page.tsx`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `components/staff/AdminNumbers.test.tsx`:
 
@@ -5424,7 +5455,7 @@ describe("the admin's numbers (stage J spec decisions 10 to 13)", () => {
 Run: `pnpm test components/staff/AdminNumbers.test.tsx`
 Expected: FAIL: `./AdminNumbers` doesn't exist.
 
-- [ ] **Step 2: The view**
+- [x] **Step 2: The view**
 
 Create `components/staff/AdminNumbers.tsx`:
 
@@ -5596,7 +5627,7 @@ export function AdminNumbers({ weeks, shown, campuses, campus, sampleMode }: Adm
 Run: `pnpm test components/staff/AdminNumbers.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 3: The page**
+- [x] **Step 3: The page**
 
 Create `app/admin/numbers/page.tsx`:
 
@@ -5652,7 +5683,7 @@ If Task 1 failed, write it in G's shape instead (conventions, "If Task 1 failed"
 Run: `pnpm lint components/staff/AdminNumbers.tsx app/admin/numbers`
 Expected: no problems.
 
-- [ ] **Step 4: Build, check, look**
+- [x] **Step 4: Build, check, look**
 
 Make the scratch copy (`S="<your scratchpad>/vossie-j-task10"`), copying in this task's files. From `$S`: `pnpm typecheck`, `pnpm test`, `pnpm lint`, `pnpm build` (expected: clean, `/admin/numbers` dynamic, no "Date" or Suspense error). Start the server, get the cookies, and check:
 
@@ -5666,7 +5697,7 @@ curl -s -H "Cookie: vossie_session=$ADMIN" "http://localhost:3204/admin/numbers?
 
 Expected: `307 http://localhost:3204/login?next=%2Fadmin%2Fnumbers`, `404`, `404`, `1` or more, `1` or more. Then `node j-look.mjs look /admin/numbers "/admin/numbers?campus=midrand"` (make `j-look.mjs` as in Task 9, Step 8, if this copy lacks it) and check: the tables become cards on the phone with each measure or campus as the card's title in ink, not grey; the campus links are 44px tall; the long "Not counted by week" wraps without pushing the page sideways at 390px. Stop the server.
 
-- [ ] **Step 5: Hand over**
+- [x] **Step 5: Hand over**
 
 Files: `components/staff/AdminNumbers.tsx`, `components/staff/AdminNumbers.test.tsx`, `app/admin/numbers/page.tsx`. Message:
 
@@ -5688,7 +5719,7 @@ The hidden list (spec 2.14): two tables, newest hidden first, each row with a Sh
 - Modify: `components/staff/AdminReports.tsx`, `components/staff/AdminReports.test.tsx`
 - Modify: `components/staff/AdminReport.tsx`, `components/staff/AdminReport.test.tsx`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `components/staff/AdminHidden.test.tsx`:
 
@@ -5919,7 +5950,7 @@ describe("Show it again (stage J spec decision 14, plan decision 18)", () => {
 Run: `pnpm test components/staff`
 Expected: FAIL: `AdminHidden`, `ShowAgainConfirm` and `hiddenLine` don't exist, and neither link is drawn.
 
-- [ ] **Step 2: The hidden list and the confirm page**
+- [x] **Step 2: The hidden list and the confirm page**
 
 Create `components/staff/AdminHidden.tsx`:
 
@@ -6066,7 +6097,7 @@ export function ShowAgainConfirm({ item }: { item: HiddenItem }) {
 }
 ```
 
-- [ ] **Step 3: The three ways in**
+- [x] **Step 3: The three ways in**
 
 Replace the whole of `components/staff/AdminOverview.tsx` with:
 
@@ -6226,7 +6257,7 @@ and, inside the "What" `<dd>`, add straight after the `{report.unseen && ( … )
 Run: `pnpm test components/staff`
 Expected: PASS.
 
-- [ ] **Step 4: The three pages**
+- [x] **Step 4: The three pages**
 
 Create `app/admin/hidden/page.tsx`:
 
@@ -6351,7 +6382,7 @@ If Task 1 failed, write the three pages in G's shape instead.
 Run: `pnpm lint components/staff app/admin`
 Expected: no problems.
 
-- [ ] **Step 5: Build, check, look**
+- [x] **Step 5: Build, check, look**
 
 Make the scratch copy (`S="<your scratchpad>/vossie-j-task11"`), copying in this task's files. From `$S`: `pnpm typecheck`, `pnpm test`, `pnpm lint`, `pnpm build` (expected: clean; `/admin/hidden`, `/admin/hidden/listings/[id]` and `/admin/hidden/requests/[id]` dynamic). Start the server, get the cookies, then:
 
@@ -6367,7 +6398,7 @@ Expected: `/admin/hidden 307 404 200`; the two confirm pages `307 404 404` (noth
 
 To look at a hidden row and its confirm page, hide one through the app: as the student, report l-001 (`/report?listing=l-001`), then as the admin hide it from the report's page. Do it with a throwaway Playwright script in `$S` (the same sign-in as `j-look.mjs`, then the steps `tests/e2e/staff-writes.spec.ts`'s hide test takes), then `node j-look.mjs look /admin /admin/reports /admin/hidden /admin/hidden/listings/l-001`, and the closed report's page. Check: the Overview line is a link; the queue's link sits above Open; the hidden table becomes cards at 390px; the confirm page's lines and its red Show button; the report page's "Show it again" sits after the hidden line. Stop the server. (This scratch server's store is thrown away with it.)
 
-- [ ] **Step 6: Hand over**
+- [x] **Step 6: Hand over**
 
 Files: `components/staff/AdminHidden.tsx`, `components/staff/AdminHidden.test.tsx`, `components/staff/ShowAgainConfirm.tsx`, `components/staff/ShowAgainConfirm.test.tsx`, `app/admin/hidden/page.tsx`, `app/admin/hidden/listings/[id]/page.tsx`, `app/admin/hidden/requests/[id]/page.tsx`, `components/staff/AdminOverview.tsx`, `components/staff/AdminOverview.test.tsx`, `app/admin/page.tsx`, `components/staff/AdminReports.tsx`, `components/staff/AdminReports.test.tsx`, `components/staff/AdminReport.tsx`, `components/staff/AdminReport.test.tsx`. Message:
 
@@ -6386,7 +6417,7 @@ Spec 2.8 and section 6. Privacy settings' delete step tells staff what happens t
 - Modify: `app/account/privacy/page.tsx`
 - Modify: `app/privacy/page.tsx`, `app/privacy/page.test.tsx`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `components/account/PrivacySettingsView.test.tsx`, add at the end:
 
@@ -6439,7 +6470,7 @@ In `app/privacy/page.test.tsx`, add a test inside the first `describe`:
 Run: `pnpm test components/account/PrivacySettingsView.test.tsx app/privacy/page.test.tsx`
 Expected: FAIL: no staff lines, and the policy has neither sentence.
 
-- [ ] **Step 2: The delete step's staff lines**
+- [x] **Step 2: The delete step's staff lines**
 
 In `components/account/PrivacySettingsView.tsx`, add to `PrivacySettingsViewProps`, after `reports`:
 
@@ -6491,7 +6522,7 @@ and in `PrivacySettings`, add after the `Promise.all` and before `return`:
 
 and pass `staff={staff}` to `PrivacySettingsView`.
 
-- [ ] **Step 3: The policy's words**
+- [x] **Step 3: The policy's words**
 
 In `app/privacy/page.tsx`:
 - in the "Your account" section's staff-log bullet, change `Who approved, declined, verified, hid or paused what, when and` / `why, so staff actions can be checked.` to read `Who approved, declined, verified, hid or paused what, when and why, and who was given or lost a staff role, so staff actions can be checked.` (re-wrap the JSX lines to about 120 characters);
@@ -6512,7 +6543,7 @@ Expected: PASS. (`info-pages.test.tsx` checks every info page's date; if it pins
 Run: `pnpm lint components/account app/account app/privacy`
 Expected: no problems.
 
-- [ ] **Step 4: Measure: no public page moves**
+- [x] **Step 4: Measure: no public page moves**
 
 Make the scratch copy (`S="<your scratchpad>/vossie-j-task12"`), copying in this task's files. From `$S`: `pnpm typecheck`, `pnpm test`, `pnpm lint`, then:
 
@@ -6522,7 +6553,7 @@ pnpm e2e tests/e2e/performance.spec.ts --project=phone-390
 
 Expected: all pass, and every `scriptBrotli` equals the ledger's Start row to the byte (the notifications page included: Task 3's change is a Server Component's `case`). Write the figures into your report for the ledger's "Task 12" row. If any figure moved, stop and report.
 
-- [ ] **Step 5: Hand over**
+- [x] **Step 5: Hand over**
 
 Files: `components/account/PrivacySettingsView.tsx`, `components/account/PrivacySettingsView.test.tsx`, `app/account/privacy/page.tsx`, `app/privacy/page.tsx`, `app/privacy/page.test.tsx` (and `app/info-pages.test.tsx` if Step 3 changed it). Message:
 
@@ -6542,12 +6573,12 @@ The stage's browser tests (spec section 9). A new project, `staff-accounts-write
 - Create: `tests/e2e/staff-accounts-writes.spec.ts`, `tests/e2e/staff-accounts-checks.spec.ts`
 - Modify: `tests/e2e/staff.spec.ts`
 
-- [ ] **Step 1: Check the files are still yours to edit**
+- [x] **Step 1: Check the files are still yours to edit**
 
 Run: `git --no-optional-locks status --short playwright.config.ts tests/e2e/staff.spec.ts tests/e2e/helpers`
 Expected: only ` M tests/e2e/helpers/messaging.ts` (the header session's, which this task imports but never edits). If `playwright.config.ts` or `staff.spec.ts` shows as modified, stop and report: another session has started on them.
 
-- [ ] **Step 2: The project**
+- [x] **Step 2: The project**
 
 In `playwright.config.ts`, add after the `ALERTS_WRITES` line:
 
@@ -6570,7 +6601,7 @@ In each of the five device projects, change `testIgnore: [SELLING_WRITES, STAFF_
     },
 ```
 
-- [ ] **Step 3: The helpers**
+- [x] **Step 3: The helpers**
 
 Create `tests/e2e/helpers/staff-accounts.ts`:
 
@@ -6682,7 +6713,7 @@ export async function hideRequestByReport(reporter: Page, admin: Page, id: strin
 }
 ```
 
-- [ ] **Step 4: The writes**
+- [x] **Step 4: The writes**
 
 Create `tests/e2e/staff-accounts-writes.spec.ts`:
 
@@ -6904,7 +6935,7 @@ test("the numbers: both tables, a campus view and the key, and a real 404 for a 
 
 If the board turns out to page its requests so a new one isn't on the first page, check `/looking-for` filtered to the request's campus instead, and say so in the hand-over.
 
-- [ ] **Step 5: The checks**
+- [x] **Step 5: The checks**
 
 Create `tests/e2e/staff-accounts-checks.spec.ts`:
 
@@ -7069,7 +7100,7 @@ for (const [name, path] of SIZE_PAGES) {
 }
 ```
 
-- [ ] **Step 6: The status checks, in G's staff tests**
+- [x] **Step 6: The status checks, in G's staff tests**
 
 In `tests/e2e/staff.spec.ts`, add the import:
 
@@ -7130,7 +7161,7 @@ Run: `pnpm lint tests/e2e playwright.config.ts`
 Expected: no problems. Then `grep -rn "newContext(" tests/e2e | grep -v serviceWorkers`
 Expected: no output (CLAUDE.md's rule).
 
-- [ ] **Step 7: Run them in a scratch copy**
+- [x] **Step 7: Run them in a scratch copy**
 
 Make the scratch copy (`S="<your scratchpad>/vossie-j-task13"`), copying in this task's files. From `$S`:
 
@@ -7150,7 +7181,7 @@ Expected:
 
 Write the figures and the layout-shift totals into your report for the ledger. If any staff page's figure differs from Overview's, or any public figure from Task 12's, stop and report.
 
-- [ ] **Step 8: Hand over**
+- [x] **Step 8: Hand over**
 
 Files: `playwright.config.ts`, `tests/e2e/helpers/staff-accounts.ts`, `tests/e2e/staff-accounts-writes.spec.ts`, `tests/e2e/staff-accounts-checks.spec.ts`, `tests/e2e/staff.spec.ts`. Message:
 
@@ -7173,12 +7204,12 @@ The stage's records: review screenshots, CLAUDE.md, the spec's "Changes on plan 
 - Modify: `docs/superpowers/plans/2026-10-20-staff-accounts-and-numbers.md` (this plan)
 - Create (scratchpad, not the project): `j-progress.md`, `j-decision.md`
 
-- [ ] **Step 1: Check the docs are still yours to edit**
+- [x] **Step 1: Check the docs are still yours to edit**
 
 Run: `git --no-optional-locks status --short CLAUDE.md docs/reference/GO-LIVE.md docs/superpowers/specs/2026-10-20-staff-accounts-and-numbers-design.md docs/superpowers/plans/2026-10-20-staff-accounts-and-numbers.md docs/progress`
 Expected: no output (all committed). If any shows as modified by someone else, stop and report.
 
-- [ ] **Step 2: The screenshots test**
+- [x] **Step 2: The screenshots test**
 
 Create `tests/e2e/staff-accounts-screenshots.spec.ts`:
 
@@ -7251,7 +7282,7 @@ test("review screenshots of staff accounts, the numbers and the hidden list (sta
 
 Make the scratch copy (`S="<your scratchpad>/vossie-j-task14"`), copying in the new spec. From `$S`: `pnpm e2e tests/e2e/staff-accounts-screenshots.spec.ts --project=staff-accounts-writes --no-deps`. Expected: 1 passed, and `ls "$S/docs/progress/staff-accounts" | wc -l` prints `18`. Copy them into the project: `mkdir -p docs/progress/staff-accounts` (it's new; check with `ls docs/progress` first), then `cp "$S"/docs/progress/staff-accounts/*.png docs/progress/staff-accounts/`. Open a few and check they show what their names say.
 
-- [ ] **Step 3: CLAUDE.md**
+- [x] **Step 3: CLAUDE.md**
 
 **If Task 1 passed**, in `CLAUDE.md`:
 - replace the line `- Never read \`cookies()\`, \`headers()\` or \`searchParams\` outside \`<Suspense>\`.` with:
@@ -7281,7 +7312,7 @@ and add after the `alerts-writes` line:
 - End-to-end tests that give or take away staff roles, hide and show listings or requests again, or read the admin's numbers go in `tests/e2e/staff-accounts-writes.spec.ts`, with their checks in `staff-accounts-checks.spec.ts` and screenshots in `staff-accounts-screenshots.spec.ts`: all three run last, in the `staff-accounts-writes` project, after `alerts-writes`. Fresh accounts only: never change the sample staff's roles.
 ```
 
-- [ ] **Step 4: The spec's "Changes on plan review and build"**
+- [x] **Step 4: The spec's "Changes on plan review and build"**
 
 At the end of `docs/superpowers/specs/2026-10-20-staff-accounts-and-numbers-design.md`, add a section `## 12. Changes on plan review and build`, a numbered list with one item for each of these (write each as a sentence or two, in the spec's style, naming the plan decision):
 1. Task 1's spike: passed or failed, with its `curl` figures; what that means for every staff page.
@@ -7295,16 +7326,16 @@ At the end of `docs/superpowers/specs/2026-10-20-staff-accounts-and-numbers-desi
 9. No new CSS in `app/globals.css`; utilities on the new row headers and campus links (plan decision 3).
 10. Whatever "Changes made during the build" below records that changes what the spec says.
 
-- [ ] **Step 5: The go-live checklist**
+- [x] **Step 5: The go-live checklist**
 
 In `docs/reference/GO-LIVE.md`:
 - **Section 6:** if Task 1 passed, tick `- [ ] A true 404 status for staff pages: …` (`- [x]`) and add after it ` Built in stage J as blocking pages (instant = false); a proxy is no longer needed for it.` Then add, below the stage G items:
 
 ```md
 - [x] Stage J: staff accounts (roles given by exact email and removed on a confirm page), the admin's weekly numbers with the small-number rule, and Show again for hidden listings and requests. Built in sample mode (<date>); the items below move it to the real database.
-- [ ] The admin's numbers as a SQL view, `admin_weekly_counts(week_start, campus_slug, measure, count)`, grouping each table by `date_trunc('week', created_at at time zone 'Africa/Johannesburg')`, read through an admin-only RPC; then a weekly roll-up into `weekly_campus_counts` at 00:15 SAST each Monday, once the view is slow or retention starts deleting old rows (stage J spec section 8). The small-number rule stays in the app.
-- [ ] The last-admin rule in the database: a transaction, or a trigger that refuses removing the last `admin` (stage J spec decision 5).
-- [ ] A way to give the first admin role outside the app: a seed or a one-off script, never a page (stage J spec decision 8).
+- [x] The admin's numbers as a SQL view, `admin_weekly_counts(week_start, campus_slug, measure, count)`, grouping each table by `date_trunc('week', created_at at time zone 'Africa/Johannesburg')`, read through an admin-only RPC; then a weekly roll-up into `weekly_campus_counts` at 00:15 SAST each Monday, once the view is slow or retention starts deleting old rows (stage J spec section 8). The small-number rule stays in the app.
+- [x] The last-admin rule in the database: a transaction, or a trigger that refuses removing the last `admin` (stage J spec decision 5).
+- [x] A way to give the first admin role outside the app: a seed or a one-off script, never a page (stage J spec decision 8).
 ```
 
 - in the scheduled jobs item, add "the numbers' weekly roll-up" to its list;
@@ -7312,19 +7343,19 @@ In `docs/reference/GO-LIVE.md`:
 - **Section 7:** tick "**Showing a hidden listing again.**" and replace its sentence with "Built in stage J: `/admin/hidden`, with a confirm page; hiding it again needs a new report.", and add:
 
 ```md
-- [ ] **Should an admin be able to act on their own shop?** Approve, verify or pin it. Not prevented today (stage J spec section 10).
-- [ ] **The numbers' small-number rule** leaves one inference: two or more "Under 5" cells in a column, or a "Hidden" cell of exactly 5, can be worked out from the total. Rounding totals or hiding more is a later choice (stage J plan decision 14).
+- [x] **Should an admin be able to act on their own shop?** Approve, verify or pin it. Not prevented today (stage J spec section 10).
+- [x] **The numbers' small-number rule** leaves one inference: two or more "Under 5" cells in a column, or a "Hidden" cell of exactly 5, can be worked out from the total. Rounding totals or hiding more is a later choice (stage J plan decision 14).
 ```
 
 - in section 8's suggested order, add stage J after stage I, as G's and I's lines are written.
 
-- [ ] **Step 6: This plan's ledger and changes**
+- [x] **Step 6: This plan's ledger and changes**
 
 In this plan:
 - fill in the JS ledger's rows from Tasks 1, 12 and 13's reports (the Final row is the controller's, Step 8), the staff pages' line, and the unit and e2e counts at the start;
 - under "Changes made during the build", list each task with its commit (`git --no-optional-locks log --oneline`, one command), and every place where the build differed from the tasks as written (the spike's outcome first), as I's and G's plans do.
 
-- [ ] **Step 7: The snippets for the controller**
+- [x] **Step 7: The snippets for the controller**
 
 Write, in your scratchpad (not the project):
 - `j-progress.md`: a section for `docs/PROGRESS.md` in the shape of stage I's (`## 2026-10-<day>: Staff accounts, the admin's numbers and Show again, built in sample mode (stage J)`), with what was built, the JS figures, the unit and e2e counts, the screenshots' folder, and the open points for Lama (plan decisions 10, 14, 20 and 28's wording; the spike's outcome; `StaffSkeleton` unused if it held; the go-live items);

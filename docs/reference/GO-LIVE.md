@@ -2,7 +2,7 @@
 
 Every page and view the marketplace needs before it can go live, plus the work that isn't a screen. Drawn from the app's routes, the old demo's function map (`FUNCTION-MAP.md`) and the homepage spec's "Not in this stage" list.
 
-Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) after Looking For and the Hub (part B), after sign-in and accounts, in sample mode (stage D), after messaging, reports and notifications, in sample mode (stage E), after selling, in sample mode (stage F), after the staff tools, in sample mode (stage G), after community actions, in sample mode (stage H), and after saved-search alerts, in sample mode (stage I). Update the status column as each stage lands.
+Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, after the browse and listing pages, and 2026-10-14, after the shopping pages (storefront, Saved and collections), after the info, legal and system pages (part C) after Looking For and the Hub (part B), after sign-in and accounts, in sample mode (stage D), after messaging, reports and notifications, in sample mode (stage E), after selling, in sample mode (stage F), after the staff tools, in sample mode (stage G), after community actions, in sample mode (stage H), and after saved-search alerts, in sample mode (stage I), and after staff accounts, the admin's numbers and Show again, in sample mode (stage J). Update the status column as each stage lands.
 
 **Status key**
 - **Built:** done.
@@ -78,10 +78,11 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 | Screen or view | Route | Status |
 |---|---|---|
 | Admin: seller approvals, reports queue, hide a listing or hide a request (stage H) or pause an account, Verified badge, Featured pins, pickup points, audit log | `/admin/*` | **Built in sample mode**, with Hide the request (stage H) |
+| Admin: staff accounts, weekly numbers, hidden listings and requests with Show again (stage J) | /admin/staff, /admin/numbers, /admin/hidden | **Built in sample mode** |
 | Hub post editor and the office-hours queue | `/hub/new`, `/hub/[id]/edit`, `/hub/manage` | **Built in sample mode** |
 | Mentor dashboard, seller detail, notes, check-ins, CSV export | `/mentor/*` | **Built in sample mode** |
 
-**Totals:** about 45 screens and views, one of them (the WhatsApp handoff) cut. 42 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, the privacy policy, terms of use and seller guidelines as drafts, Looking For's board and request pages and the Hub's feed and post pages, the offline page, and, in sample mode, sign-in, your account and privacy settings, messaging (the composer, inbox, thread, notifications and report pages), selling (the pitch, the application steps and waiting page, the dashboard, My listings, the listing form and Edit shop), the staff tools (the admin console, the Hub's post editor and office-hours queue, and the mentor dashboard), community actions (the request form and its edit page, Delete request, Your requests, the offer composer, and Saved's Shops tab) and saved-search alerts (Save this search on browse, and Saved's Searches tab)), and 2 are placeholders or missing.
+**Totals:** about 46 screens and views, one of them (the WhatsApp handoff) cut. 43 are built (home, browse, the listing page, the category and campus redirects, the 404, the seller storefront, Saved, the collection page, How it works, Safety, How trust works, the privacy policy, terms of use and seller guidelines as drafts, Looking For's board and request pages and the Hub's feed and post pages, the offline page, and, in sample mode, sign-in, your account and privacy settings, messaging (the composer, inbox, thread, notifications and report pages), selling (the pitch, the application steps and waiting page, the dashboard, My listings, the listing form and Edit shop), the staff tools (the admin console, the Hub's post editor and office-hours queue, and the mentor dashboard), community actions (the request form and its edit page, Delete request, Your requests, the offer composer, and Saved's Shops tab) saved-search alerts (Save this search on browse, and Saved's Searches tab) and the admin's staff accounts, weekly numbers and Show again (stage J)), and 2 are placeholders or missing.
 
 ## 6. Work that isn't a screen
 
@@ -98,7 +99,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] **Keyed hashes for codes.** Sign-in codes and tokens are stored as plain SHA-256 hashes (a code is salted with its attempt's key, which sits in the same row). A 6-digit code has only a million values, so a leaked store gives the codes away. The real backend hashes them with a server secret (HMAC).
 - [ ] **Counting tries.** The real backend counts a wrong try (atomically) before it compares the code, so guesses sent in parallel can't get past 5 tries. The same goes for the 5 codes an hour: `recordWrongTry` and `reserveCodeSend` in `lib/data/sign-in.ts` say what each needs (a single `UPDATE … RETURNING`, and a single upsert or a per-email lock).
 - [ ] **The store's scope.** The sample store lives in one server process. Running more than one instance, or serverless functions, needs the real database first.
-- [ ] Scheduled jobs: recalculating trust badges nightly (Overview does it on demand today), confirming sales automatically after 7 days, and closing old Looking For requests (stage H leaves them open). Featured's draw needs no job: each campus's row is recorded on its first view of the day.
+- [ ] Scheduled jobs: recalculating trust badges nightly (Overview does it on demand today), confirming sales automatically after 7 days, closing old Looking For requests (stage H leaves them open), and the numbers' weekly roll-up (stage J). Featured's draw needs no job: each campus's row is recorded on its first view of the day.
 - [ ] Supabase tables for conversations, messages, reports and notifications replace the sample store's (`lib/data/messages.ts`, `notifications.ts`, `reports.ts`).
 - [ ] Live updates and the header's count without a page load (Supabase Realtime), if wanted: messaging spec 2.6 left them out.
 - [ ] A scheduled job for the 7-day auto-confirm (it's checked on read today) and for deleting old messages, reports and notifications once Eduvos sets how long they're kept.
@@ -110,6 +111,11 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] A true 404 status for staff pages: a proxy checks the session's role before rendering, once sessions live in the real database (staff tools plan decision 1).
 - [ ] Supabase tables for the audit log (insert-only: no update or delete grant for anyone), Featured pins and draws, pickup points, mentors' notes, Hub posts, RSVPs and slot requests replace the sample store's.
 - [ ] Hub covers move to Supabase Storage with the other photos.
+- [x] Stage J: staff accounts (roles given by exact email and removed on a confirm page), the admin's weekly numbers with the small-number rule, and Show again for hidden listings and requests. Built in sample mode (2026-10-20); the items below move it to the real database. Task 1's spike failed, so the 404 status item above stays open.
+- [ ] The admin's numbers as a SQL view, `admin_weekly_counts(week_start, campus_slug, measure, count)`, grouping each table by `date_trunc('week', created_at at time zone 'Africa/Johannesburg')`, read through an admin-only RPC; then a weekly roll-up into `weekly_campus_counts` at 00:15 SAST each Monday, once the view is slow or retention starts deleting old rows (stage J spec section 8). The small-number rule stays in the app.
+- [ ] The last-admin rule in the database: a transaction, or a trigger that refuses removing the last `admin` (stage J spec decision 5).
+- [ ] A way to give the first admin role outside the app: a seed or a one-off script, never a page (stage J spec decision 8).
+- [ ] **Re-check the actor's role inside the transaction** for every staff action. A just-demoted admin can finish one action that was already in flight, because the page checked the role before the write (stage J).
 - [x] Stage H: posting, editing, closing, reopening and deleting Looking For requests, offers from approved shops, Hide the request, following shops, and the offline page and worker. Built in sample mode (2026-10-19); the items below move it to the real database.
 - [ ] Supabase behind `lib/data/requests.ts`, `offers.ts` and `follows.ts`; the `requests` cache tag stays.
 - [ ] **A unique index on the conversation's request and shop,** where the request is set. Sample mode keeps one offer per shop per request by finding and inserting with no `await` between, which two requests at the same moment can't get past in one process; a database needs the index (community actions plan amendment 7).
@@ -139,7 +145,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] Eduvos fonts and the licence.
 - [ ] The official crest SVG.
 - [ ] Real pickup points for each campus.
-- [ ] The Hub's real posts and office hours, and the real staff accounts (mentors and admins); managing them in the app is not built (staff tools spec 7).
+- [ ] The Hub's real posts and office hours, and give the real staff their roles in `/admin/staff` (stage J).
 - [ ] Real Hub events, tips and story. The 18 posts and the Hub's two paragraphs are sample wording.
 - [ ] Real Looking For requests. The 16 requests (and the offers counts on them) are samples to remove, with their `seedOffers` (stage H).
 - [ ] Info pages say what's true today; update them as stages land (How it works' "What can I do on Vossie today?", the trust page's sample notes, the privacy page's "Your account" section).
@@ -183,7 +189,8 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] **Which email proves someone is a student?** The demo's `@vossie.net` was a stand-in.
 - [ ] **Plus addresses.** `thandi+1@eduvos.com` counts as a new address, which gets round the per-email code limit and allows several accounts per student. Decide with Eduvos whether to treat plus addresses as the same person, or reject them, once its mail system is known.
 - [ ] **Who moderates reports and approvals,** and how fast do they respond?
-- [ ] **Showing a hidden listing again.** Not built: the seller can edit or delete it, and only a change in the store brings it back (staff tools plan decision 4).
+- [x] **Showing a hidden listing again.** Built in stage J: `/admin/hidden`, with a confirm page; hiding it again needs a new report.
+- [ ] **Should an admin be able to act on their own shop?** Approve, verify or pin it. Not prevented today (stage J spec section 10).
 - [ ] **Featured with few Verified sellers.** The week's break is a preference, not a rule: with nine Verified sellers for four places, a seller who has just been featured comes after everyone else rather than leaving the row short (staff tools spec section 8). Once more sellers are Verified the break holds in full.
 - [ ] **Email to staff** when an application, a report or a slot request waits (staff tools spec 7).
 - [ ] **Do new messages, or saved-search alerts (stage I), send an email?** Messages are in-app only (decision 57); email notifications are still to decide.
@@ -200,8 +207,9 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 5. **Done in sample mode (2026-10-19): the staff tools (stage G).**
 6. **Done in sample mode (2026-10-19): community actions (stage H).** Posting Looking For requests, offers, following shops and the offline page.
    - **Done in sample mode (2026-10-20): saved-search alerts (stage I).** Save this search on browse, Saved's Searches tab, and a notification when a new listing matches. No email.
+   - **Done in sample mode (2026-10-20): staff accounts, the admin's numbers and Show again (stage J).** Roles given by exact email, weekly counts per campus under a small-number rule, and hidden listings and requests shown again. Staff pages still answer 200 with the 404 view (the 404 status item stays).
 7. **Done in sample mode (2026-10-14): messaging, reports and notifications.** Supabase replaces the sample store at go-live.
-   - Stage E builds messaging, then stage F selling. Stage G adds the staff tools: admin, the Hub's posting tools and the mentors' dashboard. Stage H adds community actions: posting Looking For requests, offers, following shops and the offline page. Stage I adds saved-search alerts.
+   - Stage E builds messaging, then stage F selling. Stage G adds the staff tools: admin, the Hub's posting tools and the mentors' dashboard. Stage H adds community actions: posting Looking For requests, offers, following shops and the offline page. Stage I adds saved-search alerts. Stage J adds staff accounts, the admin's numbers and Show again.
 8. **Launch readiness:** legal sign-off, domain, monitoring, content, and the pilot.
 
 **After launch:** delivery between campuses, saved-search email alerts or a digest (once there's an email service and a consent choice), and alerts on price drops (search alerts spec 7).
