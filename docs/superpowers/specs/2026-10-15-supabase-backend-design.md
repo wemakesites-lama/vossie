@@ -225,3 +225,21 @@ The app's lazy settling (`settle()` on read) stays as well, so a sale is right o
 - Search moving into Postgres. While listings number in the hundreds, the current search runs over the cached list of live listings. Full-text search with `pg_trgm` replaces it when the catalogue grows (about 2,000 listings), as the browse spec planned.
 - Moving saved listings into the account (accounts spec decision 12). It follows phase C.
 - Copying anything from the old demo's project.
+
+## 12. Amendments (2026-10-20, schema catch-up for stages G to J)
+
+Lama confirmed these with the step 2 plan (`docs/superpowers/plans/2026-10-20-supabase-schema-catch-up.md`), which records every decision and change made during the build.
+
+1. **Staff writes run with the staff member's own session, not the admin client** (changes decision 5).
+   - Every staff action is a `public` function that checks `private.is_staff(area)` in the same transaction as its write and its one audit row. So a role removed by an admin stops working at once, even for an action already under way, and the audit row can't be skipped.
+   - Staff reads go through `is_staff` read policies and three `security_invoker` views (`staff_hub_posts`, `staff_reports`, `staff_seller_profiles`).
+   - The admin client stays for jobs, account deletion and photo files. It's also used for two reads no API role may make: the admin's raw weekly counts (`admin_weekly_counts`, so raw small numbers never reach a caller before `protectCounts`) and the featured draws.
+2. **"Every campus" is null** on `hub_posts`, `featured_pins`, `featured_draws` and `saved_searches`, so `campus_slug` stays a real foreign key to `campuses`. Phase C maps the app's `'all'` to null and back.
+3. **Hub covers are photos with no owner** (`use` `hub-draft`, then `post:<id>`, stored at `hub/<id>`), so deleting the staff member who added a cover doesn't remove it from the post.
+4. **Section 4.2's tables for stages G to J** are built:
+   - the stage G to J tables: `audit_log`, `featured_pins`, `featured_draws`, `mentor_notes`, `hub_posts`, `hub_rsvps`, `hub_bookings`, `requests`, `follows`, `saved_searches`;
+   - `shop_previous_slugs`, so a shop's old links stay reserved;
+   - the new columns on phase A's tables.
+   An offer is a conversation marked `is_offer`, a mark that never changes, so a deleted request's offers never turn into enquiries.
+5. **A shop the Hub paused has no storefront** (`private.shop_is_public` matches the app's `hasStorefront`). Section 4.3's "read if approved or paused" now reads "approved, or paused by its seller".
+6. **When a mentor deletes their account,** their name is blanked from the audit entries that name them (Lama, 2026-10-20, POPIA's minimum), in the app and in `forget_account`.

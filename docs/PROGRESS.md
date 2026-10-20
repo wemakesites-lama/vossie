@@ -701,6 +701,85 @@ Review notes that were deliberately not acted on:
 9. **Four e2e failures that predate stage K,** in the header and tab bar's area, fail identically on `16dab6a`: `responsive.spec.ts:26` (Sign in reachable by keyboard, at 360 and 390), `listing.spec.ts:34` (the dock's room under the footer, at 390) and `a11y.spec.ts:343` (the composer at 360, a real overlap: the hidden header's box sat over the error summary's link). The header session has them and is fixing them; stage K didn't touch those specs.
 - **Docs still uncommitted, waiting for Lama:** the other sessions' lines in this file and the decisions log. This section and decision row 79 were written from snippet files for the same reason.
 
+## 2026-10-20: Supabase phases B and C planned, and phase A merged into main
+- **Lama's decisions:**
+  1. Merge phase A into main, rather than main into the branch.
+  2. The schema catch-up and phase C go first. Phase B (sign-in) starts after stage K lands, because K rewrites the same `lib/auth` files.
+  3. Email (spec open decision 1) is deferred: phase B is tested locally with Mailpit.
+- **Phase A merged:** `84f61a1`, in a quiet window from main's build session.
+  - No conflicts.
+  - Main's untracked copies of the Supabase spec and plan were moved to the session scratchpad, not deleted. The branch's copies replace them: the spec was identical and the plan older.
+  - The privacy test's file walk now skips `app/sw.js`, a route folder that looks like a file.
+  - Lint and types are clean, and 2,468 unit tests pass.
+  - **Local stack:** all 8 migrations are applied and `supabase test db` passes 803 tests.
+  - **Staging is unchecked:** the CLI's login is refused (403).
+- **Found:** phase A's schema covers stages D to F only. Stages G to J were built without migrations, and the spec's "phase D" never happened. What's missing:
+  - 10 tables: audit log, featured pins and draws, mentor notes, Hub posts, RSVPs and bookings, requests, follows, saved searches;
+  - staff columns on seller profiles, listings and reports;
+  - 7 of the app's 11 notification kinds;
+  - an `offered` status for conversations, and two indexes that would block offers;
+  - five groups of steps in `forget_account`;
+  - the seed's requests, Hub posts, notes and booking.
+- **Plans:**
+  - programme: `docs/superpowers/plans/2026-10-20-supabase-phases-b-c.md`, with stage K's file list, which phase C avoids until K lands;
+  - step 2, the schema catch-up: `docs/superpowers/plans/2026-10-20-supabase-schema-catch-up.md` (13 tasks).
+- **Step 2's nine plan decisions, confirmed by Lama as recommended (2026-10-20):**
+  1. Staff writes are `public` functions called with the staff member's own session. Each re-checks the role in the same transaction as its one audit row. This changes spec decision 5, which had put staff tools under the admin client.
+  2. "Every campus" is stored as null, so `campus_slug` stays a real foreign key.
+  3. A saved search's identity is the app's `search_key`.
+  4. Matching new listings against saved searches stays in TypeScript, through `listingMatches`. The database applies only the once-per-account and once-a-day rules, and tells followers inside `save_listing`.
+  5. Featured draws are written by the server only.
+  6. Hub covers are photos with no owner, stored at `hub/<id>`.
+  7. A shop's old links live in `shop_previous_slugs`.
+  8. Reports about a deleted request keep `target_gone = false`, as sample mode does.
+  9. The message limits (40 new conversations a day, 120 messages an hour) have no sample-account exemption on Supabase.
+- **For Lama:**
+  - log the CLI in to "Vossie Market" from your own terminal with a new scoped token (the phase A token expires 2026-10-22);
+  - the old `../Vossie-supabase` worktree and its branch are merged and can be removed when you say.
+
+## 2026-10-20: Supabase schema catch-up for stages G to J built (step 2)
+- **Where:** branch `backend/phases-b-c` (worktree `../Vossie-backend`), merged into main. Each task was committed after the controller's own check, with Lama's go-ahead. Nothing was pushed.
+- **12 migrations after phase A's 8**, each written test first. All are applied locally:
+  - the tables widened for stages G to J (phase A's own tables);
+  - the staff tables and staff reads;
+  - requests, follows and saved searches, with offers marked `is_offer`;
+  - staff actions on shops, reports and hiding;
+  - staff tools: pickup points, featured pins, the Hub, mentors and roles;
+  - community actions: requests, offers, follows, saved searches and first-publish alerts;
+  - a Hub-paused shop is no longer public;
+  - stage K's message limits;
+  - the admin's raw weekly counts, server only;
+  - complete account deletion;
+  - the final review's fixes;
+  - a deleted mentor's name leaving the audit log.
+- **Rules held in the database, as in the app:**
+  - every staff action re-checks the role in the same transaction as its one audit row;
+  - notification wording is built in SQL;
+  - every limit is counted under a lock;
+  - the asker, followers, mentor notes, hidden content, drafts and raw small counts stay private (each with a refusal test).
+- **The seed** matches the sample store: the 16 requests, 18 Hub posts, mentor notes, the open booking, pickup points, and seller profiles' staff fields.
+- **Reviews:** a plan review, a review of Tasks 1–3, and a final review (opus). They fixed:
+  - offers turning into enquiries;
+  - a one-time token that could be freed;
+  - a Hub-paused shop staying public;
+  - hidden listings being reportable;
+  - raw small counts reaching admins;
+  - an admin being able to name a hidden request's asker through the audit log.
+- **Lama's choices:**
+  - the plan's nine decisions as recommended;
+  - hiding needs an open report;
+  - the numbers are server only;
+  - a deleted mentor's name is blanked from the audit log, in the app as well. The privacy settings' staff line and the stage J spec now say so.
+- **Checks:**
+  - pgTAP: 1,976 tests pass, up from 803;
+  - unit: 2,476 on the branch;
+  - lint and types are clean;
+  - local advisors: info-level items only, each explained in the plan.
+- **Details:** every decision and change is in `docs/superpowers/plans/2026-10-20-supabase-schema-catch-up.md`; the spec gained section 12.
+- **Next:**
+  - Task 12: staging. Lama logs the CLI in, then sees the dry run of the 12 migrations before any push.
+  - Phase C, then phase B. Stage K's sign-in, hashing and deletion route are in, so phase B builds on them.
+
 ## Next
 - Lama reviews the screenshots in `docs/progress/community-actions/` (22, at 390 and 1440px), and the staff ones in `docs/progress/staff/`, the selling ones in `docs/progress/selling/` and the messaging ones in `docs/progress/messaging/` if not yet seen. To retake the community actions ones, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "community actions review screenshots"`; the staff ones use `-g "staff tools review screenshots"`, the selling ones `-g "selling review screenshots"` and the messaging ones `-g "messaging review screenshots"`.
 - Stage K is built (hardening: sign-in, sign-out and account deletion as full page loads, message limits, keyed hashes, the info pages), so every planned stage (A to K) is done in sample mode. What's left waits on Lama and Eduvos (below), on the Supabase phases B and C (their own session and worktree), on the header session's fixes for the four e2e tests that predate stage K, and on Lama's review of the positioning and editorial spec.

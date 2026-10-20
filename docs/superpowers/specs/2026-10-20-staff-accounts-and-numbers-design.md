@@ -107,7 +107,7 @@ All of it is plain server-rendered forms, links and tables, with no new client c
      - `role-removed`: "Role removed. They've been told."
      - A repeat, or a removal that finds the role already gone, says G's "Nothing changed. It was already done." and writes nothing.
 8. **Deleting a staff account says what happens to their work** (G's open point "Deleting a staff account says nothing about their own work").
-   - Privacy settings' delete step gains a line, shown only to accounts with a role: "You're Hub staff. Your Hub posts stay with no author, your notes and check-ins stay as "Deleted account", the shops you mentor lose their mentor, and the audit log keeps your entries without your name."
+   - Privacy settings' delete step gains a line, shown only to accounts with a role: "You're Hub staff. Your Hub posts stay with no author, your notes and check-ins stay as "Deleted account", the shops you mentor lose their mentor, and the audit log keeps your entries, and those naming you as a mentor, without your name." (Amended 2026-10-20: entries that assigned the person as a mentor lose their name too; Lama's POPIA choice, recorded in the Supabase spec's section 12.)
    - If the account is the only admin, it adds: "You're Vossie's only admin. Give someone else the admin role first, or no one can use the admin console."
    - The warning doesn't block deletion, because deleting your account is your right under POPIA. Sample mode gets its admin back on restart, or through the sample admin's sign-in button. The real backend needs a way to give the first admin role outside the app (a go-live item).
 
