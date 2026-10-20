@@ -19,3 +19,10 @@ describe("staff accounts and Show again (stage J spec decisions 7 and 14)", () =
     expect(staffNoticeText("request-shown")).toBe("Showing again. The asker has been told.");
   });
 });
+
+describe("an admin's own shop or request (stage L spec decision 3)", () => {
+  it("says nothing changed and why", () => {
+    expect(staffNoticeText("own-shop")).toBe("Nothing changed. It's your own shop, so another admin must do this.");
+    expect(staffNoticeText("own-request")).toBe("Nothing changed. It's your own request, so another admin must do this.");
+  });
+});

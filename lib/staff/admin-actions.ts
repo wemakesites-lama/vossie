@@ -4,7 +4,7 @@ import { writeFormState } from "@/lib/auth/form-state";
 import { ALL_CAMPUSES, ONLINE_CAMPUS } from "@/lib/campus";
 import { getCampuses, getSeller } from "@/lib/data";
 import { recordAudit } from "@/lib/data/audit";
-import { addPin, removePin } from "@/lib/data/featured";
+import { addPin, getPin, removePin } from "@/lib/data/featured";
 import { notify } from "@/lib/data/notifications";
 import {
   addPickupPoint,
@@ -26,6 +26,9 @@ import {
   approveShop,
   declineShop,
   hideListing,
+  isOwnListing,
+  isOwnRequest,
+  isOwnShop,
   setShopMentor,
   setVerified,
   showListing,
@@ -63,6 +66,7 @@ import {
   shopApprovedText,
   shopDecisionText,
 } from "./notification-text";
+import type { OwnKind } from "./own";
 import {
   ADMIN_FEATURED_PATH,
   ADMIN_HIDDEN_PATH,
@@ -85,6 +89,10 @@ import { checkDismissNote, checkPinDay, checkPointName, checkReason } from "./ru
 // validates on the server, keeps errors and typed text in D's form state, changes the store through lib/data, and
 // writes one audit entry, only when something changed (plan decisions 6 and 23). Then it tells whoever the spec says,
 // expires what buyers' pages read, leaves a notice, and ends with done(): refresh, then a replace redirect.
+//
+// No admin makes a Hub decision about their own shop, a listing of it, or their own Looking For request (stage L spec
+// decisions 1 to 3). Whose it is is read from the store after the role and the ids, before anything is read or
+// written; a refusal changes nothing and says why (refuseOwn).
 
 // --- Shared helpers ---------------------------------------------------------------------------------------------
 
@@ -99,6 +107,16 @@ const staffOf = (account: Account) => ({ id: account.id, firstName: account.firs
 /** A change that didn't happen (plan decision 23): no audit entry, nothing sent, and the page says so. */
 async function nothingChanged(path: string, now: Date): Promise<never> {
   await leaveNotice("nothing", now);
+  done(path);
+}
+
+/**
+ * A Hub decision about the admin's own shop, a listing of it, or their own request (stage L spec decisions 1 to 3):
+ * nothing is written, logged, sent or expired, a typed reason isn't kept, and the page says why. The views hide these
+ * controls, so only a forged post, an old tab or a race reaches here.
+ */
+async function refuseOwn(kind: OwnKind, path: string, now: Date): Promise<never> {
+  await leaveNotice(kind === "request" ? "own-request" : "own-shop", now);
   done(path);
 }
 
@@ -150,6 +168,8 @@ export async function approveSeller(formData: FormData): Promise<void> {
   const path = slug ? adminSellerPath(slug) : ADMIN_SELLERS_PATH;
   const staff = await requireStaff("admin", path);
   const now = new Date();
+  // Whose the shop is now, never the form's owner field (stage L spec decision 2).
+  if (slug && isOwnShop(staff.id, slug)) return refuseOwn("shop", path, now);
   const decision = slug && owner ? await approveShop(slug, owner, now) : null;
   if (!decision) return nothingChanged(path, now);
   await recordAudit({
@@ -181,6 +201,7 @@ export async function declineSeller(formData: FormData): Promise<void> {
   const staff = await requireStaff("admin", slug ? declineSellerPath(slug) : ADMIN_SELLERS_PATH);
   const now = new Date();
   if (!slug) return nothingChanged(ADMIN_SELLERS_PATH, now);
+  if (isOwnShop(staff.id, slug)) return refuseOwn("shop", adminSellerPath(slug), now);
   const reason = checkReason(field(formData, "reason"));
   if (reason.error) return backWithReason(declineForm(slug), reason.error, reason.value, declineSellerPath(slug), now);
   const decision = owner ? await declineShop(slug, owner, reason.value, now) : null;
@@ -205,6 +226,7 @@ export async function verifySeller(formData: FormData): Promise<void> {
   const path = slug ? adminSellerPath(slug) : ADMIN_SELLERS_PATH;
   const staff = await requireStaff("admin", path);
   const now = new Date();
+  if (slug && isOwnShop(staff.id, slug)) return refuseOwn("shop", path, now);
   const verified = field(formData, "verified") === "yes";
   const decision = slug ? await setVerified(slug, verified) : null;
   if (!decision) return nothingChanged(path, now);
@@ -227,6 +249,7 @@ export async function pauseSeller(formData: FormData): Promise<void> {
   const staff = await requireStaff("admin", slug ? pauseSellerPath(slug) : ADMIN_SELLERS_PATH);
   const now = new Date();
   if (!slug) return nothingChanged(ADMIN_SELLERS_PATH, now);
+  if (isOwnShop(staff.id, slug)) return refuseOwn("shop", adminSellerPath(slug), now);
   const reason = checkReason(field(formData, "reason"));
   if (reason.error) return backWithReason(shopPauseForm(slug), reason.error, reason.value, pauseSellerPath(slug), now);
   const decision = await staffPauseShop(slug, reason.value);
@@ -256,6 +279,7 @@ export async function resumeSeller(formData: FormData): Promise<void> {
   const path = slug ? adminSellerPath(slug) : ADMIN_SELLERS_PATH;
   const staff = await requireStaff("admin", path);
   const now = new Date();
+  if (slug && isOwnShop(staff.id, slug)) return refuseOwn("shop", path, now);
   const decision = slug ? await staffResumeShop(slug) : null;
   if (!decision) return nothingChanged(path, now);
   await recordAudit({
@@ -278,6 +302,7 @@ export async function assignMentor(formData: FormData): Promise<void> {
   const path = slug ? adminSellerPath(slug) : ADMIN_SELLERS_PATH;
   const staff = await requireStaff("admin", path);
   const now = new Date();
+  if (slug && isOwnShop(staff.id, slug)) return refuseOwn("shop", path, now);
   const raw = field(formData, "mentor");
   const mentorId = raw === "" ? null : isId(raw) ? raw : undefined;
   const changed = slug && mentorId !== undefined ? await setShopMentor(slug, mentorId) : null;
@@ -304,6 +329,8 @@ export async function dismissReport(formData: FormData): Promise<void> {
   const staff = await requireStaff("admin", id ? adminReportPath(id) : ADMIN_REPORTS_PATH);
   const now = new Date();
   if (!id) return nothingChanged(ADMIN_REPORTS_PATH, now);
+  const own = (await getReport(id, staff.id))?.own ?? null;
+  if (own) return refuseOwn(own, adminReportPath(id), now);
   const note = checkDismissNote(field(formData, "note"));
   if (note.error) {
     await writeFormState(dismissForm(id), { errors: [note.error], values: { note: keepTyped(note.value) }, notice: null }, now);
@@ -333,7 +360,9 @@ export async function hideReportedListing(formData: FormData): Promise<void> {
   const id = idFrom(formData, "report");
   const staff = await requireStaff("admin", id ? hideReportedPath(id) : ADMIN_REPORTS_PATH);
   const now = new Date();
-  const view = id ? await getReport(id) : null;
+  const view = id ? await getReport(id, staff.id) : null;
+  // Before `can`, which is all false for the admin's own (stage L plan decision 6).
+  if (id && view?.own) return refuseOwn(view.own, adminReportPath(id), now);
   if (!id || !view?.can.hide || view.target.kind !== "listing") return nothingChanged(ADMIN_REPORTS_PATH, now);
   const reason = checkReason(field(formData, "reason"));
   if (reason.error) return backWithReason(hideForm(id), reason.error, reason.value, hideReportedPath(id), now);
@@ -374,7 +403,9 @@ export async function hideReportedRequest(formData: FormData): Promise<void> {
   const id = idFrom(formData, "report");
   const staff = await requireStaff("admin", id ? hideReportedPath(id) : ADMIN_REPORTS_PATH);
   const now = new Date();
-  const view = id ? await getReport(id) : null;
+  const view = id ? await getReport(id, staff.id) : null;
+  // Before `can`, which is all false for the admin's own (stage L plan decision 6).
+  if (id && view?.own) return refuseOwn(view.own, adminReportPath(id), now);
   if (!id || !view?.can.hide || view.target.kind !== "request") return nothingChanged(ADMIN_REPORTS_PATH, now);
   const reason = checkReason(field(formData, "reason"));
   if (reason.error) {
@@ -419,7 +450,9 @@ export async function pauseReportedShop(formData: FormData): Promise<void> {
   const id = idFrom(formData, "report");
   const staff = await requireStaff("admin", id ? pauseReportedPath(id) : ADMIN_REPORTS_PATH);
   const now = new Date();
-  const view = id ? await getReport(id) : null;
+  const view = id ? await getReport(id, staff.id) : null;
+  // Before `can`, which is all false for the admin's own (stage L plan decision 6).
+  if (id && view?.own) return refuseOwn(view.own, adminReportPath(id), now);
   if (!id || !view?.can.pause || !view.shop) return nothingChanged(ADMIN_REPORTS_PATH, now);
   const reason = checkReason(field(formData, "reason"));
   if (reason.error) return backWithReason(reportPauseForm(id), reason.error, reason.value, pauseReportedPath(id), now);
@@ -459,6 +492,7 @@ export async function pinSeller(formData: FormData): Promise<void> {
   const staff = await requireStaff("admin", ADMIN_FEATURED_PATH);
   const now = new Date();
   const seller = idFrom(formData, "seller");
+  if (seller && isOwnShop(staff.id, seller)) return refuseOwn("shop", ADMIN_FEATURED_PATH, now);
   const campus = field(formData, "campus");
   const campusName =
     campus === ALL_CAMPUSES ? NO_CAMPUS : (await getCampuses()).find((item) => item.slug === campus)?.name;
@@ -498,6 +532,9 @@ export async function unpinSeller(formData: FormData): Promise<void> {
   const staff = await requireStaff("admin", ADMIN_FEATURED_PATH);
   const now = new Date();
   const id = idFrom(formData, "pin");
+  // Whose shop the pin is for, before it's removed (stage L spec decision 1).
+  const held = id ? await getPin(id) : null;
+  if (held && isOwnShop(staff.id, held.sellerSlug)) return refuseOwn("shop", ADMIN_FEATURED_PATH, now);
   const pin = id ? await removePin(id) : null;
   if (!pin) return nothingChanged(ADMIN_FEATURED_PATH, now);
   const campusName =
@@ -617,6 +654,7 @@ export async function showListingAgain(formData: FormData): Promise<void> {
   const id = idFrom(formData, "listing");
   const staff = await requireStaff("admin", id ? showListingPath(id) : ADMIN_HIDDEN_PATH);
   const now = new Date();
+  if (id && isOwnListing(staff.id, id)) return refuseOwn("listing", ADMIN_HIDDEN_PATH, now);
   const shown = id ? await showListing(id) : null;
   if (!shown) return nothingChanged(ADMIN_HIDDEN_PATH, now);
   await recordAudit({
@@ -649,6 +687,7 @@ export async function showRequestAgain(formData: FormData): Promise<void> {
   const id = idFrom(formData, "request");
   const staff = await requireStaff("admin", id ? showRequestPath(id) : ADMIN_HIDDEN_PATH);
   const now = new Date();
+  if (id && isOwnRequest(staff.id, id)) return refuseOwn("request", ADMIN_HIDDEN_PATH, now);
   const shown = id ? await showRequest(id, now) : null;
   if (!shown) return nothingChanged(ADMIN_HIDDEN_PATH, now);
   await recordAudit({

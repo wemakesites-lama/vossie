@@ -32,6 +32,9 @@ const NOTICES: ReadonlyMap<string, string> = new Map([
   ["role-removed", "Role removed. They've been told."],
   ["listing-shown", "Showing again. Its seller has been told."],
   ["request-shown", "Showing again. The asker has been told."],
+  // Stage L (spec decision 3): a Hub decision about the admin's own shop, a listing of it, or their own request.
+  ["own-shop", "Nothing changed. It's your own shop, so another admin must do this."],
+  ["own-request", "Nothing changed. It's your own request, so another admin must do this."],
   ["nothing", "Nothing changed. It was already done."],
   // A student's own, on a Hub post and its slot request page (plan decision 13).
   ["rsvp", "You're going. See you there."],

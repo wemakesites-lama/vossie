@@ -734,3 +734,233 @@ describe("Show again (stage J spec decision 14)", () => {
     expect(auditRows()[0]).toMatchObject({ action: "request-shown", subjectId: null });
   });
 });
+
+// --- Stage L: an admin's own shop, listing or request -------------------------------------------------------------
+
+/** A Looking For request's fields, for a request the admin who owns Tech corner asks for. */
+const SIPHOS_FIELDS = {
+  title: "Desk lamp for res",
+  categorySlug: "res-living",
+  campusSlug: "midrand",
+  details: "A lamp that clips onto a desk, by the weekend.",
+  budgetZar: 150,
+  swapWelcome: false,
+  neededBy: null,
+};
+
+const siphosRequest = async () => (await createRequest({ askerId: "acc-seller", fields: SIPHOS_FIELDS, now: STAFF_NOW })).id;
+const verifyTechCorner = () => {
+  sampleStore().sellers.get("tech-corner")!.verified = true;
+};
+
+type OwnCase = {
+  /** Who owns the target and is made an admin: Lerato (Crochet corner, waiting) or Sipho (Tech corner, open). */
+  owner: "acc-pending" | "acc-seller";
+  /** The case's setup. Its form's fields. */
+  arrange: () => Promise<Record<string, string>>;
+  notice: "own-shop" | "own-request";
+  /** Where the refusal lands: the page that shows staff notices (plan decision 5). */
+  lands: (fields: Record<string, string>) => string;
+};
+
+const TECH_CORNER_PAGE = () => "/admin/sellers/tech-corner";
+const REPORT_PAGE = (fields: Record<string, string>) => `/admin/reports/${fields.report}`;
+
+// Every action spec decision 1 names, one case each.
+const OWN_CASES: Readonly<Record<string, OwnCase>> = {
+  approveSeller: {
+    owner: "acc-pending",
+    arrange: async () => ({ shop: "crochet-corner", owner: "acc-pending" }),
+    notice: "own-shop",
+    lands: () => "/admin/sellers/crochet-corner",
+  },
+  declineSeller: {
+    owner: "acc-pending",
+    arrange: async () => ({ shop: "crochet-corner", owner: "acc-pending", reason: REASON }),
+    notice: "own-shop",
+    lands: () => "/admin/sellers/crochet-corner",
+  },
+  verifySeller: {
+    owner: "acc-seller",
+    arrange: async () => ({ shop: "tech-corner", verified: "yes" }),
+    notice: "own-shop",
+    lands: TECH_CORNER_PAGE,
+  },
+  pauseSeller: {
+    owner: "acc-seller",
+    arrange: async () => ({ shop: "tech-corner", reason: REASON }),
+    notice: "own-shop",
+    lands: TECH_CORNER_PAGE,
+  },
+  resumeSeller: {
+    owner: "acc-seller",
+    arrange: async () => {
+      Object.assign(sampleStore().sellerProfiles.get("acc-seller")!, { status: "paused", pausedBy: "staff", staffReason: REASON });
+      return { shop: "tech-corner" };
+    },
+    notice: "own-shop",
+    lands: TECH_CORNER_PAGE,
+  },
+  assignMentor: {
+    owner: "acc-seller",
+    arrange: async () => ({ shop: "tech-corner", mentor: "" }),
+    notice: "own-shop",
+    lands: TECH_CORNER_PAGE,
+  },
+  dismissReport: {
+    owner: "acc-seller",
+    arrange: async () => ({
+      report: await report("acc-student", { kind: "listing", id: "l-001" }, "Casio fx-991ZA Plus calculator"),
+      note: "Looked fine.",
+    }),
+    notice: "own-shop",
+    lands: REPORT_PAGE,
+  },
+  hideReportedListing: {
+    owner: "acc-seller",
+    arrange: async () => ({
+      report: await report("acc-student", { kind: "listing", id: "l-001" }, "Casio fx-991ZA Plus calculator"),
+      reason: REASON,
+    }),
+    notice: "own-shop",
+    lands: REPORT_PAGE,
+  },
+  hideReportedRequest: {
+    owner: "acc-seller",
+    arrange: async () => ({
+      report: await report("acc-student", { kind: "request", id: await siphosRequest() }, SIPHOS_FIELDS.title),
+      reason: REASON,
+    }),
+    notice: "own-request",
+    lands: REPORT_PAGE,
+  },
+  pauseReportedShop: {
+    owner: "acc-seller",
+    arrange: async () => ({
+      report: await report("acc-student", { kind: "seller", id: "tech-corner" }, "Tech corner"),
+      reason: REASON,
+    }),
+    notice: "own-shop",
+    lands: REPORT_PAGE,
+  },
+  pinSeller: {
+    owner: "acc-seller",
+    arrange: async () => {
+      verifyTechCorner();
+      return { seller: "tech-corner", campus: "midrand", day: "2026-10-14" };
+    },
+    notice: "own-shop",
+    lands: () => "/admin/featured",
+  },
+  unpinSeller: {
+    owner: "acc-seller",
+    arrange: async () => {
+      verifyTechCorner();
+      const pin = await addPin({
+        sellerSlug: "tech-corner",
+        campusSlug: "midrand",
+        day: "2026-10-14",
+        staffId: "acc-admin",
+        now: STAFF_NOW,
+      });
+      if (typeof pin === "string") throw new Error(`The pin wasn't made: ${pin}`);
+      return { pin: pin.id };
+    },
+    notice: "own-shop",
+    lands: () => "/admin/featured",
+  },
+  showListingAgain: {
+    owner: "acc-seller",
+    arrange: async () => {
+      await hideListing("l-001", REASON, STAFF_NOW);
+      return { listing: "l-001" };
+    },
+    notice: "own-shop",
+    lands: () => "/admin/hidden",
+  },
+  showRequestAgain: {
+    owner: "acc-seller",
+    arrange: async () => {
+      const id = await siphosRequest();
+      await hideRequest(id, REASON, STAFF_NOW);
+      return { request: id };
+    },
+    notice: "own-request",
+    lands: () => "/admin/hidden",
+  },
+};
+
+/** The store as a refusal must leave it: everything but form state, which may hold only the notice. */
+function everythingButFormState() {
+  const copy = structuredClone(sampleStore());
+  copy.formStates.clear();
+  return copy;
+}
+
+describe("no Hub decision about the admin's own shop, its listings or their own request (stage L spec 2.1 to 2.3)", () => {
+  it("has a case for every action spec decision 1 names", () => {
+    expect(Object.keys(OWN_CASES).sort()).toEqual(
+      [
+        "approveSeller",
+        "declineSeller",
+        "verifySeller",
+        "pauseSeller",
+        "resumeSeller",
+        "assignMentor",
+        "dismissReport",
+        "hideReportedListing",
+        "hideReportedRequest",
+        "pauseReportedShop",
+        "pinSeller",
+        "unpinSeller",
+        "showListingAgain",
+        "showRequestAgain",
+      ].sort(),
+    );
+  });
+
+  it.each(Object.keys(OWN_CASES))(
+    "%s refuses the owner: nothing written, logged, sent or expired, and the notice says why",
+    async (name) => {
+      const own = OWN_CASES[name];
+      sampleStore().accounts.get(own.owner)!.roles = ["admin"];
+      const fields = await own.arrange();
+      await signedInAs(request, own.owner);
+      const before = everythingButFormState();
+      const redirect = await redirectSignalOf(() => ADMIN_ACTIONS[name](form(fields)));
+      expect([redirect.url, redirect.type], name).toEqual([own.lands(fields), "replace"]);
+      expect(everythingButFormState(), name).toEqual(before);
+      expect(request.updatedTags, name).toEqual([]);
+      expect(await notice(), name).toBe(own.notice);
+      // Only the notice is kept: no typed reason or note (spec decision 3).
+      expect(
+        [...sampleStore().formStates.keys()].filter((key) => !key.endsWith(`:${STAFF_NOTICE}`)),
+        name,
+      ).toEqual([]);
+    },
+  );
+
+  it.each(Object.keys(OWN_CASES))("%s still works for another admin", async (name) => {
+    const own = OWN_CASES[name];
+    sampleStore().accounts.get(own.owner)!.roles = ["admin"];
+    const fields = await own.arrange();
+    await asAdmin();
+    await redirectOf(() => ADMIN_ACTIONS[name](form(fields)));
+    expect(sampleStore().auditLog.size, name).toBe(1);
+  });
+
+  it("checks the role first: an owner who isn't an admin gets the 404, never a hint (spec section 3, Rules)", async () => {
+    await signedInAs(request, "acc-seller");
+    await expect(verifySeller(form({ shop: "tech-corner", verified: "yes" }))).rejects.toThrow("notFound");
+    expect(await notice()).toBeNull();
+  });
+
+  it("goes by who owns the shop now, never the form's owner field (spec decision 2)", async () => {
+    sampleStore().accounts.get("acc-pending")!.roles = ["admin"];
+    await signedInAs(request, "acc-pending");
+    // A form that names someone else as the owner is still Lerato's own shop.
+    await redirectOf(() => approveSeller(form({ shop: "crochet-corner", owner: "acc-student" })));
+    expect(await notice()).toBe("own-shop");
+    expect(sampleStore().sellerProfiles.get("acc-pending")?.status).toBe("pending");
+  });
+});
