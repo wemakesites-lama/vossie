@@ -143,7 +143,103 @@ Lama can veto any of these at plan review. "Plan decision N" means this list; "s
 
 ## Amendments on review
 
-The controller adds amendments here; they override the tasks below wherever they differ.
+Reviewed 2026-10-20 (opus, read-only); all accepted by the controller. They override the tasks below wherever they differ.
+
+1. **"Before you start", Recheck 1 and the ledger: the merge has landed.** The Supabase phases B and C merge is committed (`8644023`) and this plan is `a0d3b1f`; Recheck 1 expects those two commits, not `UU`. In the ledger, "Unit tests at the start: 2,559 (the merge `8644023`)".
+
+2. **Task 6 (Steps 2 and 8): `tests/helpers/viewer-offers.tsx`.** It renders `<PublicOffers request={request} signedIn={false} />`; once `open` is required, typecheck fails, and at runtime `open` is undefined, so it says "This request is closed" and `components/looking-for/RequestView.test.tsx` ("Offer to help", line 80) fails. Add the file to Task 6's list, with:
+
+   ```tsx
+   ViewerOffers: ({ request }: { request: LookingForRequest }) => (
+     <PublicOffers request={request} signedIn={false} open={request.status === "open"} />
+   ),
+   ```
+
+3. **Task 4: `components/forms/summary-ids.test.tsx`.** It renders `<SellerConfirm …/>` twice (lines 251 and 252) and `<AdminFeatured …/>` (line 256) without the new required props, so Step 8's `pnpm typecheck` fails. Add the file to Task 4's list: `own={false} onlyAdmin={false}` after `review={crochet}` and after `review={tech}`, and `ownLeftOut={false}` after its `choices=…`.
+
+4. **Task 7 Step 4 and plan decision 6: the two request staff actions settle after the own gate.** Settling first lets a refused post close other due requests, notify their askers and expire `requests` (and in `hideReportedRequest`, close the admin's own due request and notify them) before refusing; spec 2.3 says a refusal writes nothing. Place the settle lines:
+   - **`hideReportedRequest`**: right after `if (id && view?.own) return refuseOwn(view.own, adminReportPath(id), now);` (`view.can.hide` doesn't depend on open or closed, so reading `view` first is safe);
+   - **`showRequestAgain`**: right after `if (id && isOwnRequest(staff.id, id)) return refuseOwn("request", ADMIN_HIDDEN_PATH, now);`.
+
+   Decision 6's order becomes: `requireStaff`, `now`, the id checks, the own gate, (the two request actions: settle), then the action. Add to Task 7's describe "the two request actions settle first" in `lib/staff/admin-actions.test.ts`:
+
+   ```ts
+   it("a refused post settles nothing (stage L spec decision 3)", async () => {
+     const due = await dueRequest();
+     sampleStore().accounts.get("acc-seller")!.roles = ["admin"];
+     const id = (await createRequest({ askerId: "acc-seller", fields: SIPHOS_FIELDS, now: STAFF_NOW })).id;
+     const reportId = await report("acc-student", { kind: "request", id }, SIPHOS_FIELDS.title);
+     await signedInAs(request, "acc-seller");
+     await redirectOf(() => hideReportedRequest(form({ report: reportId, reason: REASON })));
+     expect(sampleStore().requests.get(due.id)?.status).toBe("open");
+     expect(request.updatedTags).toEqual([]);
+   });
+   ```
+
+5. **Task 11, test 1: the role grant is safe to retry and always undone.** `giveRole` sits outside the `try`, so a notice timeout after the role was given skips the `finally`; a reused server (`E2E_REUSE_SERVER=1`) left with Sipho as admin by an interrupted run makes `giveRole` fail; and the `plain` and Pieter's contexts close only on the happy path. Replace the opening with:
+
+   ```ts
+   const pieter = await signedInPage(browser, baseURL!, "Admin", "/admin/staff");
+   let plain: BrowserContext | null = null;
+   try {
+     // An interrupted earlier run on the same server may have left Sipho an admin: start clean.
+     await removeSiphosAdminRole(pieter);
+     await giveRole(pieter, "seller@eduvos.com", "Admin");
+     plain = await browser.newContext({ baseURL, serviceWorkers: "block" });
+     // … the rest of the test as written, from plain.route(…) on …
+   ```
+
+   and the end with:
+
+   ```ts
+   } finally {
+     await plain?.close().catch(() => {});
+     await removeSiphosAdminRole(pieter).finally(() => pieter.context().close());
+   }
+   ```
+
+   Drop the in-body `await plain.close();`, and import `type BrowserContext` from `@playwright/test`. The progress snippet adds: "If a run is killed mid-test, restart the e2e server (the store is in memory) before rerunning the device projects."
+
+6. **Task 5 Step 2: year-edge cases.** Add to the describe "when a request closes itself" in `lib/looking-for/rules.test.ts`:
+
+   ```ts
+   it("crosses the year in South African dates", () => {
+     expect(closingDay({ ...ROW, neededBy: "2026-12-30" })).toBe("2027-01-03");
+     expect(closingDay({ ...ROW, updatedAt: "2026-12-15T22:30:00.000Z" })).toBe("2027-01-15");
+     expect(closedAtFor("2027-01-01")).toBe("2026-12-31T22:00:00.000Z");
+   });
+   ```
+
+7. **Task 12 Step 5 (GO-LIVE): the Supabase functions need the same rule.** After the `requests.closed_by` line, add: "`set_request_open` clears a needed_by that has passed and sets `closed_by`; `start_offer` refuses on or after the closing day; `save_request`'s 5-open count leaves out due requests (stage L spec decisions 13 and 14)."
+
+8. **Task 12 Step 7 (`l-progress.md` open points): two more.**
+   - Removing the mentor role from whoever mentors an admin's own shop un-assigns that shop's mentor (`removeStaffRole`), the effect `assignMentor` now refuses. Spec 2.1 leaves roles alone; Lama may want it refused or only noted.
+   - A request whose closing day passed while it was hidden closes at the next look after Show again, with `closedAt` at that old closing day, so "Closed automatically on {date}" can predate the "shown again" notice (cosmetic; spec 2.16).
+
+9. **Task 6: the data download settles first.** `exportAccountData(accountId, now)` (`lib/data/accounts.ts`) doesn't settle, so a due, unsettled request exports as open with `closedAutomatically: false`. Add `lib/data/accounts.ts` and `lib/data/accounts.test.ts` to Task 6's files:
+   - in `lib/data/accounts.ts`, add `settleRequests` to the import from `./requests` (sorted), and right after `const conversations = await exportConversations(accountId, now);` add:
+
+     ```ts
+     // Old requests close themselves first (stage L spec decision 11), so the download says which did, and the asker's
+     // notification about it is in the notifications read next. Before exportRequests.
+     await settleRequests(now);
+     ```
+
+   - in `lib/data/accounts.test.ts`, inside the describe that declares `FIELDS` (the requests and follows export), after the test "exports the account's requests and the names of the shops it follows, with no ids", add:
+
+     ```ts
+     it("settles first: a due request nothing has settled exports as closed automatically (stage L amendment 9)", async () => {
+       await createRequest({
+         askerId: "acc-student",
+         fields: { ...FIELDS, neededBy: "2026-10-09" },
+         now: new Date("2026-10-05T08:00:00.000Z"),
+       });
+       const data = await exportAccountData("acc-student", NOW);
+       expect(data?.requests).toMatchObject([{ state: "closed", closedAutomatically: true }]);
+     });
+     ```
+
+     (Needed by 9 October, so its closing day is the 13th, the day before `NOW`.)
 
 ## The JS ledger
 
