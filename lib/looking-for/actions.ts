@@ -229,7 +229,8 @@ export async function deleteMyRequest(formData: FormData): Promise<void> {
 /**
  * Send offer, from the composer (spec 2.9): only when the composer would show its form (plan decision 12); the message
  * checked with E's rules, then at most 20 a shop in 24 hours and stage K's 120 messages an hour, then E's scam words
- * unless Send anyway was pressed; a listing only if it's one of the shop's listed ones (plan decision 13). The thread then says "Sent." once (E's note).
+ * unless Send anyway was pressed; a listing only if it's one of the shop's listed ones (plan decision 13). The thread
+ * then says "Sent." once (E's note).
  */
 export async function sendOffer(formData: FormData): Promise<void> {
   const id = idFrom(formData, "request");

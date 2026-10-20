@@ -39,7 +39,6 @@ import { makeThread } from "@/tests/helpers/fakes";
 vi.mock("@/lib/auth/actions", () => ({
   cancelSignIn: async () => {},
   completeProfile: async () => {},
-  deleteAccount: async () => {},
   resendCode: async () => {},
   signInAsSample: async () => {},
   signOut: async () => {},

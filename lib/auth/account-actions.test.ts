@@ -1,14 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getAccount } from "@/lib/data/accounts";
 import { createSession } from "@/lib/data/sessions";
-import { resetSampleStore, sampleStore } from "@/lib/data/store";
-import { FLASH_COOKIE } from "@/lib/flash";
+import { resetSampleStore } from "@/lib/data/store";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
-import { deleteAccount, updateDetails } from "./actions";
+import { updateDetails } from "./actions";
 import { SESSION_COOKIE } from "./cookies";
-import { DELETE_FORM, DETAILS_FORM, readFormState } from "./form-state";
+import { DETAILS_FORM, readFormState } from "./form-state";
 import { hashToken } from "./secrets";
-import { getViewer } from "./session";
 
 const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
 
@@ -76,64 +74,6 @@ describe("editing details (accounts spec 3.2)", () => {
     expect(await redirectOf(() => updateDetails(form({ firstName: "Thandi", campus: "midrand" })))).toBe(
       "/login?next=%2Faccount",
     );
-  });
-});
-
-describe("deleting the account (accounts spec 2.13)", () => {
-  it("asks for the box first, deleting nothing", async () => {
-    await signedInAs("acc-pending");
-    const redirect = await redirectSignalOf(() => deleteAccount(form({})));
-    expect([redirect.url, redirect.type]).toEqual(["/account/privacy", "replace"]);
-    expect(await readFormState(DELETE_FORM)).toMatchObject({ errors: ["confirm-missing"] });
-    expect(await getAccount("acc-pending")).not.toBeNull();
-  });
-
-  it("deletes the account and everything with it, signs out, and goes home with a toast", async () => {
-    await signedInAs("acc-pending");
-    expect(await redirectOf(() => deleteAccount(form({ confirm: "yes" })))).toBe("/");
-    expect(await getAccount("acc-pending")).toBeNull();
-    expect(sampleStore().sellerProfiles.has("acc-pending")).toBe(false);
-    expect(sampleStore().sessions.size).toBe(0);
-    expect(request.cookies.has(SESSION_COOKIE)).toBe(false);
-    expect(request.cookies.get(FLASH_COOKIE)).toBe("deleted");
-    expect(await getViewer()).toBeNull();
-  });
-
-  it("sends a signed-out visitor to sign in, deleting nothing", async () => {
-    expect(await redirectOf(() => deleteAccount(form({ confirm: "yes" })))).toBe("/login?next=%2Faccount%2Fprivacy");
-    expect(sampleStore().accounts.size).toBe(5);
-  });
-
-  it("takes a deleted seller's shop and listings out of the catalog at once, by expiring the sellers tag (selling spec 2.13, amendment 9.7)", async () => {
-    await signedInAs("acc-seller");
-    await redirectOf(() => deleteAccount(form({ confirm: "yes" })));
-    expect(sampleStore().sellers.has("tech-corner")).toBe(false);
-    expect(request.updatedTags).toEqual(["sellers", "hub", "requests"]);
-  });
-
-  it("expires only the Hub's and the board's tags for an account with no shop, as buyers see no shop change", async () => {
-    await signedInAs("acc-student");
-    await redirectOf(() => deleteAccount(form({ confirm: "yes" })));
-    expect(request.updatedTags).toEqual(["hub", "requests"]);
-  });
-
-  it("expires the Hub's cached posts, since the account's RSVPs went with it (staff tools plan, Task 8)", async () => {
-    await signedInAs("acc-student");
-    await redirectOf(() => deleteAccount(form({ confirm: "yes" })));
-    expect(request.updatedTags).toContain("hub");
-  });
-
-  it("expires the board, whose requests and offers counts may have changed (community actions plan decision 10)", async () => {
-    await signedInAs("acc-student");
-    await redirectOf(() => deleteAccount(form({ confirm: "yes" })));
-    expect(request.updatedTags).toContain("requests");
-  });
-
-  it("expires nothing when the box wasn't ticked", async () => {
-    await signedInAs("acc-seller");
-    await redirectOf(() => deleteAccount(form({})));
-    expect(sampleStore().sellers.has("tech-corner")).toBe(true);
-    expect(request.updatedTags).toEqual([]);
   });
 });
 

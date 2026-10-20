@@ -53,6 +53,9 @@ const code = (fields: Record<string, string>) => finishCode(form(fields), new Da
 const profile = (fields: Record<string, string>) => finishProfile(form(fields), new Date());
 const sample = (fields: Record<string, string>) => finishSample(form(fields), new Date());
 
+/** Posted `next` values that lead off the site: a step must treat them as no `next` at all (safeNextPath). */
+const OFF_SITE_NEXT = ["//evil.example", "https://evil.example/x"] as const;
+
 describe("where a step goes (stage K spec section 3)", () => {
   it("goes back to sign-in, keeping next", () => {
     expect(signInPath(null)).toBe("/login");
@@ -80,6 +83,19 @@ describe("step 2: the code (accounts spec 3.1)", () => {
     expect(await code({ code: await sentCode() })).toBe("/account");
     await start("student@eduvos.com", "/login?next=%2Fsaved");
     expect(await code({ code: await sentCode(), next: "/login?next=%2Fsaved" })).toBe("/account");
+  });
+
+  it.each(OFF_SITE_NEXT)("never follows a posted next of %s: an existing account goes to the account page", async (next) => {
+    await start("student@eduvos.com");
+    expect(await code({ code: await sentCode(), next })).toBe("/account");
+    expect((await getViewer())?.email).toBe("student@eduvos.com");
+  });
+
+  it.each(OFF_SITE_NEXT)("never carries a posted next of %s on to step 3 or back to step 1", async (next) => {
+    await start("new@eduvos.com");
+    expect(await code({ code: await wrongCode(), next })).toBe("/login");
+    expect(await code({ code: await sentCode(), next })).toBe("/login");
+    expect(attempt()).toMatchObject({ step: "profile" });
   });
 
   it("ignores spaces in the code", async () => {
@@ -197,6 +213,17 @@ describe("step 3: first sign-in (accounts spec 2.6)", () => {
     expect(request.cookies.has(SIGN_IN_COOKIE)).toBe(false);
   });
 
+  it.each(OFF_SITE_NEXT)("never follows a posted next of %s: a new account goes to the account page", async (next) => {
+    await toStep3();
+    expect(await profile({ firstName: "Ayanda", campus: "pretoria", next })).toBe("/account");
+    expect((await findAccountByEmail("new@eduvos.com"))?.firstName).toBe("Ayanda");
+  });
+
+  it.each(OFF_SITE_NEXT)("keeps nothing of a posted next of %s when step 3's answers are wrong", async (next) => {
+    await toStep3();
+    expect(await profile({ firstName: "A", campus: "atlantis", next })).toBe("/login");
+  });
+
   it("keeps step 3's answers and says what's wrong, making nothing", async () => {
     await toStep3();
     expect(await profile({ firstName: "A", campus: "atlantis", next: "/saved" })).toBe("/login?next=%2Fsaved");
@@ -231,6 +258,11 @@ describe("step 3: first sign-in (accounts spec 2.6)", () => {
 describe("the sample accounts' buttons (accounts spec 2.8)", () => {
   it("signs straight in as a sample account and follows next", async () => {
     expect(await sample({ email: "mentor@eduvos.com", next: "/saved" })).toBe("/saved");
+    expect((await getViewer())?.roles).toEqual(["mentor"]);
+  });
+
+  it.each(OFF_SITE_NEXT)("never follows a posted next of %s: it goes to the account page", async (next) => {
+    expect(await sample({ email: "mentor@eduvos.com", next })).toBe("/account");
     expect((await getViewer())?.roles).toEqual(["mentor"]);
   });
 

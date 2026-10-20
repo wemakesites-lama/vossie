@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ErrorSummary } from "@/components/forms/ErrorSummary";
 import { describedBy, FieldError } from "@/components/forms/FieldError";
-import { deleteAccount } from "@/lib/auth/actions";
+import { DELETE_ACCOUNT_PATH } from "@/lib/auth/post-paths";
 import { policyLabel } from "@/lib/auth/config";
 import { DELETE_FIELDS } from "@/lib/auth/form-state";
 import { errorFor, type FormError } from "@/lib/auth/messages";
@@ -125,7 +125,7 @@ export function PrivacySettingsView({ consent, deleteErrors, reports, staff = nu
         )}
         <p>Saved listings stay on this device until you clear them.</p>
         <ErrorSummary id="account-privacy-delete-summary" errors={deleteErrors} />
-        <form action={deleteAccount} noValidate className="form-stack">
+        <form method="post" action={DELETE_ACCOUNT_PATH} noValidate className="form-stack">
           <div className="form-field">
             <FieldError id="delete-confirm-error" message={confirmError} />
             <div className="form-check">

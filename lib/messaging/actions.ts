@@ -72,8 +72,9 @@ function messageTargetFrom(formData: FormData): MessageTarget | null {
 
 /**
  * The composer's Send (spec 3.1). The message and swap offer are checked, then the scam words unless Send anyway was
- * pressed (spec 2.3, plan decision 9). The message limits come between the two (stage K spec decision 9). Then the conversation starts, or the message joins the buyer's existing one
- * (plan decision 5), and the thread says "Sent." once (plan decision 7).
+ * pressed (spec 2.3, plan decision 9). The message limits come between the two (stage K spec decision 9). Then the
+ * conversation starts, or the message joins the buyer's existing one (plan decision 5), and the thread says "Sent."
+ * once (plan decision 7).
  */
 export async function sendFirstMessage(formData: FormData): Promise<void> {
   const target = messageTargetFrom(formData);

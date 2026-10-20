@@ -57,6 +57,11 @@ export function hubChanged(): void {
   updateTag(HUB_TAG);
 }
 
+/** The same as hubChanged(), from a Route Handler, where updateTag throws (see sellersChangedNow). */
+export function hubChangedNow(): void {
+  revalidateTag(HUB_TAG, { expire: 0 });
+}
+
 /** After a pickup point changes. Server Actions only. */
 export function pickupPointsChanged(): void {
   updateTag(PICKUP_POINTS_TAG);
@@ -70,4 +75,9 @@ export function tagRequests(): void {
 /** After a request, or its offers, change. Server Actions only. */
 export function requestsChanged(): void {
   updateTag(REQUESTS_TAG);
+}
+
+/** The same as requestsChanged(), from a Route Handler, where updateTag throws (see sellersChangedNow). */
+export function requestsChangedNow(): void {
+  revalidateTag(REQUESTS_TAG, { expire: 0 });
 }

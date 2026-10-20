@@ -330,6 +330,20 @@ describe("what stages H to K changed in the policy (stage K spec 6)", () => {
     );
   });
 
+  it("says that in this preview the code shows on screen, so it is also kept as written until the attempt ends", () => {
+    render(<PrivacyPage />);
+    expect(screen.getByRole("region", { name: "Your account" })).toHaveTextContent(
+      "In this preview the code shows on screen instead of being emailed, so until the attempt ends it's also kept as written.",
+    );
+  });
+
+  it("names the slot notifications: a mentor's answer to your request, and a request at your office hours", () => {
+    render(<PrivacyPage />);
+    const account = screen.getByRole("region", { name: "Your account" });
+    expect(account).toHaveTextContent(/a mentor answers your slot request/);
+    expect(account).toHaveTextContent(/someone asks for a slot at your office hours/);
+  });
+
   it("lists every kind of notification, and what a staff role keeps", () => {
     render(<PrivacyPage />);
     const account = screen.getByRole("region", { name: "Your account" });

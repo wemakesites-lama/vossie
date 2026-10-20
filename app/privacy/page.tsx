@@ -137,8 +137,9 @@ const SECTIONS: readonly InfoSection[] = [
           <li>
             <strong>Your Eduvos email address.</strong> To check that you are an Eduvos student and to send you sign-in
             codes. A sign-in code is kept only as a fingerprint made with a secret key, and only until you finish
-            signing in or the attempt runs out after 30 minutes. Allowed under POPIA section 11: it is needed to run the
-            account you ask for.
+            signing in or the attempt runs out after 30 minutes. In this preview the code shows on screen instead of
+            being emailed, so until the attempt ends it&apos;s also kept as written. Allowed under POPIA section 11: it
+            is needed to run the account you ask for.
           </li>
           <li>
             <strong>Your first name and campus.</strong> Sellers see your first name in messages, so they know who they
@@ -167,8 +168,9 @@ const SECTIONS: readonly InfoSection[] = [
           <li>
             <strong>Your notifications.</strong> A note when someone messages you, a sale needs confirming, a shop
             offers to help with your request, a shop you follow lists something new, a search you saved has a new
-            match, the Hub acts on your report, your shop, your listing or your request, or your staff role changes.
-            Only you see them. Allowed under POPIA section 11: needed to run your account.
+            match, the Hub acts on your report, your shop, your listing or your request, a mentor answers your slot
+            request, someone asks for a slot at your office hours, or your staff role changes. Only you see them.
+            Allowed under POPIA section 11: needed to run your account.
           </li>
           <li>
             <strong>Your Looking For requests.</strong> What you ask for, shown to everyone as &quot;Asked by a student

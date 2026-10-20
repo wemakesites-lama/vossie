@@ -2,13 +2,11 @@
 
 import { redirect, RedirectType } from "next/navigation";
 import { getCampuses } from "@/lib/data";
-import { deleteAccountData, updateAccountDetails } from "@/lib/data/accounts";
+import { updateAccountDetails } from "@/lib/data/accounts";
 import type { SignInError } from "@/lib/data/rows";
-import { hubChanged, requestsChanged, sellersChanged } from "@/lib/data/tags";
 import { isSampleMode } from "./config";
-import { deleteCookie, SESSION_COOKIE, setFlash } from "./cookies";
 import { checkEmail, normaliseEmail } from "./email";
-import { DELETE_FORM, DETAILS_FORM, writeFormState } from "./form-state";
+import { DETAILS_FORM, writeFormState } from "./form-state";
 import { checkCampus, checkFirstName } from "./profile";
 import { requireAccount } from "./session";
 import { beginAttempt, currentAttempt, endAttempt, nextFrom, saveAfterPost, sendCode, signInPath, text } from "./sign-in-finish";
@@ -16,8 +14,9 @@ import { beginAttempt, currentAttempt, endAttempt, nextFrom, saveAfterPost, send
 // The Server Actions behind the account forms that don't start a session (accounts spec 2 and 3). Each is a plain
 // form's action, so it works before the app's JavaScript arrives (plan decision 2). It checks its own input, takes
 // identity only from the session, keeps errors in the store rather than the URL (plan decision 3), and ends with a
-// redirect. The three posts that start a session, and signing out, are Route Handlers that answer 303 instead, so
-// they end with a full page load (stage K spec decision 2; app/login/*/route.ts and app/logout/route.ts).
+// redirect. The three posts that start a session, signing out and deleting the account are Route Handlers that
+// answer 303 instead, so they end with a full page load (stage K spec decision 2; app/login/*/route.ts,
+// app/logout/route.ts and app/account/privacy/delete/route.ts).
 
 /** The sign-in page again, keeping `next`, replacing the form in history (plan decision 19). */
 function backToSignIn(next: string | null): never {
@@ -95,27 +94,4 @@ export async function updateDetails(formData: FormData): Promise<void> {
     await writeFormState(DETAILS_FORM, { errors: [], values: {}, notice: "saved" }, now);
   }
   redirect("/account", RedirectType.replace);
-}
-
-/**
- * "Delete my account" (spec 2.13 and 3.3), only with the box ticked. Then the account and everything that hangs off it
- * go at once, this browser is signed out, and the homepage says so in a toast.
- */
-export async function deleteAccount(formData: FormData): Promise<void> {
-  const account = await requireAccount("/account/privacy");
-  const now = new Date();
-  if (text(formData, "confirm") !== "yes") {
-    await writeFormState(DELETE_FORM, { errors: ["confirm-missing"], values: {}, notice: null }, now);
-    redirect("/account/privacy", RedirectType.replace);
-  }
-  await deleteAccountData(account.id);
-  // Its shop and listings have left the catalog (selling plan decision 22).
-  if (account.seller) sellersChanged();
-  // Its RSVPs have gone, so events' counts change (staff tools plan, Task 8).
-  hubChanged();
-  // Its requests have gone, and offers counts may have changed (community actions plan decision 10).
-  requestsChanged();
-  await deleteCookie(SESSION_COOKIE);
-  await setFlash("deleted");
-  redirect("/");
 }

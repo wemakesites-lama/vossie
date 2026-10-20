@@ -1,13 +1,17 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { PrivacySettingsView } from "./PrivacySettingsView";
-
-// The form only needs something to post to; the action has its own test.
-vi.mock("@/lib/auth/actions", () => ({ deleteAccount: async () => {} }));
 
 const consent = { version: "2026-10-draft", agreedAt: "2026-10-14T08:42:00.000Z" };
 
 describe("Privacy settings (accounts spec 3.3)", () => {
+  it("posts the delete form to its Route Handler, so deleting ends in a full page load (stage K decision 54)", () => {
+    render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} />);
+    const form = screen.getByRole("button", { name: "Delete my account" }).closest("form");
+    expect(form).toHaveAttribute("method", "post");
+    expect(form).toHaveAttribute("action", "/account/privacy/delete");
+  });
+
   it("says when the privacy policy was agreed to, in South African time", () => {
     render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} />);
     const section = screen.getByRole("region", { name: "Your consent" });
