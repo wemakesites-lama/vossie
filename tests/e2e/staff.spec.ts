@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { button, field, main, newBuyer, onlyAt, signInAsSample, signUp } from "./helpers/messaging";
 import { notFoundHeading, POST_LANDS, uniqueWord } from "./helpers/selling";
 import { applyToSell, newShopName, reviewShop, signedInPage, staffNotice } from "./helpers/staff";
+import { ADMIN_PAGES, HUB_AND_MENTOR_PAGES, STAFF_404_IS_REAL } from "./helpers/staff-accounts";
 
 // Staff tests that write nothing buyers can see (staff tools plan Task 20, decision 21): the 404s, approving and
 // declining a new student's shop, dismissing a report, and a mentor's note with the CSV. What buyers see changes in
@@ -22,6 +23,11 @@ test.describe("staff pages (staff tools spec 2.1, plan decision 1)", () => {
       "/admin/featured",
       "/admin/pickup-points",
       "/admin/audit",
+      "/admin/numbers",
+      "/admin/staff",
+      "/admin/staff/acc-mentor/remove-mentor",
+      "/admin/hidden",
+      "/admin/hidden/listings/l-001",
       "/hub/manage",
       "/hub/new",
       "/hub/h-003/edit",
@@ -31,13 +37,13 @@ test.describe("staff pages (staff tools spec 2.1, plan decision 1)", () => {
       await page.goto(path);
       await expect(notFoundHeading(page), path).toBeVisible();
       await expect(page, path).toHaveTitle("Page not found · Vossie");
-      // Next adds its own noindex to a not-found page that has started streaming, beside the page's: every one says so.
+      // Next adds its own noindex to every 404 page, beside the page's: every one says so.
       await expect(page.locator('meta[name="robots"]').first(), path).toHaveAttribute("content", /noindex/);
       await expect(page.locator('meta[name="robots"]:not([content*="noindex"])'), path).toHaveCount(0);
       // Nothing of the page's own shows: no staff navigation, no staff tables.
       await expect(page.getByRole("navigation", { name: "Staff tools" }), path).toHaveCount(0);
     }
-    // The CSV is a real 404, not a page: a route handler answers before anything streams.
+    // The CSV is a real 404 too: a route handler answers before anything is sent.
     expect((await page.request.get("/mentor/export", { maxRedirects: 0 })).status()).toBe(404);
   });
 
@@ -203,5 +209,40 @@ test.describe("mentoring (staff tools spec 2.6, plan decisions 15 to 17)", () =>
     await expect(staffNotice(page)).toHaveText("Note saved.", POST_LANDS);
     const notes = main(page).getByRole("region", { name: "Notes and check-ins" });
     await expect(notes.getByRole("listitem").filter({ hasText: word })).toContainText("Naledi");
+  });
+});
+
+test.describe("staff pages' status (stage J spec decision 15)", () => {
+  test.skip(!STAFF_404_IS_REAL, "Stage J's spike kept stage G's pattern: the 404 page streams in with status 200");
+
+  test("answer a real 404 to a student on every staff page", async ({ page }) => {
+    onlyAt(...BOTH);
+    await signInAsSample(page, "Student, Midrand", "/account");
+    for (const path of [...ADMIN_PAGES, ...HUB_AND_MENTOR_PAGES]) {
+      expect((await page.request.get(path, { maxRedirects: 0 })).status(), path).toBe(404);
+    }
+  });
+
+  test("answer a real 404 to a mentor on the admin console, and 200 on the Hub's tools and the dashboard", async ({
+    page,
+  }) => {
+    onlyAt(...BOTH);
+    await signInAsSample(page, "Mentor", "/account");
+    for (const path of ADMIN_PAGES) {
+      expect((await page.request.get(path, { maxRedirects: 0 })).status(), path).toBe(404);
+    }
+    for (const path of ["/hub/manage", "/mentor"]) {
+      expect((await page.request.get(path, { maxRedirects: 0 })).status(), path).toBe(200);
+    }
+  });
+
+  test("send a signed-out visitor to sign in with a real 307, coming back to the page afterwards", async ({ request }) => {
+    onlyAt(...BOTH);
+    for (const path of [...ADMIN_PAGES, ...HUB_AND_MENTOR_PAGES]) {
+      const response = await request.get(path, { maxRedirects: 0 });
+      expect(response.status(), path).toBe(307);
+      const location = new URL(response.headers().location ?? "", "http://localhost");
+      expect(`${location.pathname}${location.search}`, path).toBe(`/login?next=${encodeURIComponent(path)}`);
+    }
   });
 });
