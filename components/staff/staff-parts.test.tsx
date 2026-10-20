@@ -14,7 +14,8 @@ describe("the staff frame (staff tools spec section 3)", () => {
         <p>The page</p>
       </StaffFrame>,
     );
-    expect(screen.getByRole("heading", { level: 1, name: "Hub posts" })).toBeInTheDocument();
+    // A title with one long word (a request's or a listing's) wraps instead of pushing the page sideways on a phone.
+    expect(screen.getByRole("heading", { level: 1, name: "Hub posts" })).toHaveClass("wrap-anywhere");
     const nav = screen.getByRole("navigation", { name: "Staff tools" });
     expect(within(nav).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
       ["Hub posts", "/hub/manage"],

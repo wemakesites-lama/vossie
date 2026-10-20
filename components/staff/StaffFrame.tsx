@@ -27,7 +27,7 @@ export function StaffFrame({ account, area, title, current, notice, children }: 
     <div className="page staff-page">
       <header className="staff-head">
         <p className="eyebrow">{area}</p>
-        <h1 className="staff-title">{title}</h1>
+        <h1 className="staff-title wrap-anywhere">{title}</h1>
       </header>
       <nav aria-label="Staff tools" className="staff-nav">
         <ul>
