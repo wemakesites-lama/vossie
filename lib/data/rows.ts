@@ -54,6 +54,11 @@ export type SellerProfileRow = {
   staffReason?: string | null;
   /** The mentor assigned to the shop (staff tools spec 2.6). Absent or null when there's none. */
   mentorId?: string | null;
+  /**
+   * When the Hub first approved the shop (stage J spec section 4), for the admin's numbers. Set once by approveShop and
+   * kept through pauses and resumes. Absent or null until then.
+   */
+  approvedAt?: string | null;
 };
 
 export type ConsentRow = {

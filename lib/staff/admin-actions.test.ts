@@ -169,6 +169,7 @@ describe("sellers (staff tools spec 2.3)", () => {
     const redirect = await redirectSignalOf(() => approveSeller(form({ shop: "crochet-corner", owner: "acc-pending" })));
     expect([redirect.url, redirect.type, request.refreshed]).toEqual(["/admin/sellers/crochet-corner", "replace", true]);
     expect(sampleStore().sellerProfiles.get("acc-pending")).toMatchObject({ status: "approved", sellerSlug: "crochet-corner" });
+    expect(sampleStore().sellerProfiles.get("acc-pending")?.approvedAt).toBe(STAFF_NOW.toISOString());
     expect(await lastAudit()).toMatchObject({
       staffName: "Pieter",
       action: "shop-approved",

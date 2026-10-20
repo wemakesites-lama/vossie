@@ -120,7 +120,7 @@ describe("the Hub's reports queue (staff tools spec 2.3, plan decision 5)", () =
       NOW,
     );
     expect(sampleStore().sellers.get("tech-corner")?.ownerId).toBe("acc-mentor");
-    await approveShop("tech-corner", "acc-mentor");
+    await approveShop("tech-corner", "acc-mentor", new Date("2026-10-14T08:42:00.000Z"));
     for (const id of [aboutShop, aboutListing]) {
       expect((await getReport(id))!, id).toMatchObject({ exists: false, shop: null, can: { hide: false, pause: false } });
     }

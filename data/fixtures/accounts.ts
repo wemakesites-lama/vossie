@@ -41,6 +41,8 @@ export const sampleAccounts: readonly SampleAccount[] = [
       appliedAt: "2026-03-02T09:40:00.000Z",
       // Naledi mentors Sipho's shop, so the mentor dashboard has a shop (staff tools plan, Task 1).
       mentorId: "acc-mentor",
+      // Tech corner's start, as its first approval, for the admin's numbers (stage J plan decision 4).
+      approvedAt: "2026-03-01T08:00:00.000Z",
     },
   },
   {

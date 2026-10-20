@@ -328,6 +328,8 @@ export type ShopExport = {
   link: string;
   previousLinks: string[];
   status: SellerStatus;
+  /** When the Hub first approved it, or null (stage J plan decision 4). */
+  approvedAt: string | null;
   tagline: string;
   category: string;
   campus: string;
@@ -440,6 +442,7 @@ export async function exportShop(accountId: string): Promise<SellingExport> {
       link: shop.slug,
       previousLinks: shop.previousSlugs.map((slug) => `/sellers/${slug}`),
       status,
+      approvedAt: sampleStore().sellerProfiles.get(accountId)?.approvedAt ?? null,
       tagline: shop.tagline,
       category: categoryName(shop.categorySlug),
       campus: shop.campusSlug,

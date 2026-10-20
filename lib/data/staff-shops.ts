@@ -119,9 +119,10 @@ const reviewed = (shop: { row: SellerRow }, ownerId: string) => ownerId !== "" &
 
 /**
  * Approve (spec 2.3): a waiting shop opens, with its storefront at its link (selling plan decision 1). `ownerId` is the
- * owner on the page the Hub reviewed.
+ * owner on the page the Hub reviewed. The first approval's time is kept for the admin's numbers (stage J spec
+ * section 4).
  */
-export async function approveShop(slug: string, ownerId: string): Promise<ShopDecision | null> {
+export async function approveShop(slug: string, ownerId: string, now: Date): Promise<ShopDecision | null> {
   const shop = owned(slug);
   if (!shop || !reviewed(shop, ownerId) || shop.profile.status !== "pending" || shop.profile.declinedAt) return null;
   Object.assign(shop.profile, {
@@ -130,6 +131,7 @@ export async function approveShop(slug: string, ownerId: string): Promise<ShopDe
     declinedAt: null,
     pausedBy: null,
     staffReason: null,
+    approvedAt: shop.profile.approvedAt ?? now.toISOString(),
   });
   return decided(shop.row);
 }

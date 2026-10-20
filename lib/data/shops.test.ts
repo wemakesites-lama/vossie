@@ -339,6 +339,7 @@ describe("the data export (plan decision 22)", () => {
       name: "Tech corner",
       link: "tech-corner",
       status: "approved",
+      approvedAt: "2026-03-01T08:00:00.000Z",
       category: "Tech",
       campus: "midrand",
       photo: "/placeholders/seller/tech-corner.svg",

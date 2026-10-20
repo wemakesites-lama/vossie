@@ -139,7 +139,7 @@ export async function approveSeller(formData: FormData): Promise<void> {
   const path = slug ? adminSellerPath(slug) : ADMIN_SELLERS_PATH;
   const staff = await requireStaff("admin", path);
   const now = new Date();
-  const decision = slug && owner ? await approveShop(slug, owner) : null;
+  const decision = slug && owner ? await approveShop(slug, owner, now) : null;
   if (!decision) return nothingChanged(path, now);
   await recordAudit({
     staff: staffOf(staff),
