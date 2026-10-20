@@ -280,7 +280,8 @@ select is(
   ),
   array[
     'private.can_mentor(uuid)', 'private.conversation_buyer_name(uuid)', 'private.conversation_request_state(uuid)',
-    'private.conversation_side(uuid)', 'private.is_my_request(text)', 'private.is_staff(text)', 'private.mentors_shop(uuid)',
+    'private.conversation_side(uuid)', 'private.is_my_request(text)', 'private.is_shop_contact(uuid)',
+    'private.is_staff(text)', 'private.mentors_shop(uuid)',
     'private.owns_shop(uuid)', 'private.shop_is_public(uuid)', 'private.staff_hub_posts()', 'private.staff_reports()',
     'private.staff_seller_profiles()'
   ],
