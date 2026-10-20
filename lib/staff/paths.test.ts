@@ -40,13 +40,15 @@ describe("the staff pages' addresses (staff tools spec section 3)", () => {
     expect(auditPath({ staff: "acc-admin", kind: "reports" })).toBe("/admin/audit?staff=acc-admin&kind=reports");
   });
 
-  it("lists the frame's sections, the admin console's six first", () => {
+  it("lists the frame's sections, the admin console's eight first", () => {
     expect(STAFF_SECTIONS.map((section) => section.label)).toEqual([
       "Overview",
       "Sellers",
       "Reports",
       "Featured",
       "Pickup points",
+      "Numbers",
+      "Staff",
       "Audit log",
       "Hub posts",
       "Mentoring",

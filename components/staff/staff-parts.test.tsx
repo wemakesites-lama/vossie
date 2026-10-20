@@ -31,7 +31,7 @@ describe("the staff frame (staff tools spec section 3)", () => {
         <p>The page</p>
       </StaffFrame>,
     );
-    expect(within(screen.getByRole("navigation", { name: "Staff tools" })).getAllByRole("link")).toHaveLength(8);
+    expect(within(screen.getByRole("navigation", { name: "Staff tools" })).getAllByRole("link")).toHaveLength(10);
     expect(screen.getByRole("status")).toHaveTextContent("Approved.");
   });
 
@@ -64,6 +64,24 @@ describe("staff tables (staff tools spec 2.9 and 4, plan decision 20)", () => {
     render(<StaffTable caption="Waiting" columns={["Shop"]} rows={[]} empty="Nobody is waiting." />);
     expect(screen.queryByRole("table")).toBeNull();
     expect(screen.getByText("Nobody is waiting.")).toBeInTheDocument();
+  });
+
+  it("can make each row's first cell its header, with scope row and no phone label (stage J spec section 7)", () => {
+    render(
+      <StaffTable
+        caption="All campuses, by week"
+        columns={["Measure", "Last week"]}
+        rows={[{ key: "listings", cells: ["Listings published", "12"] }]}
+        empty=""
+        rowHeader
+      />,
+    );
+    const table = screen.getByRole("table", { name: "All campuses, by week" });
+    const header = within(table).getByRole("rowheader", { name: "Listings published" });
+    expect(header.tagName).toBe("TH");
+    expect(header).toHaveAttribute("scope", "row");
+    expect(header.querySelector(".staff-cell-label")).toBeNull();
+    expect(within(table).getByRole("cell", { name: "12" })).toHaveTextContent("Last week12");
   });
 });
 
@@ -104,5 +122,40 @@ describe("confirm pages (staff tools spec 2.9 and 4, plan decision 18)", () => {
     expect(reason).toHaveAttribute("aria-invalid", "true");
     expect(reason).toHaveValue("x".repeat(501));
     expect(reason).toHaveAccessibleDescription(`The seller sees it. Up to 500 characters. Error: ${message}`);
+  });
+
+  it("has no reason field in its no-reason mode, and still says what's wrong (stage J spec decision 4)", () => {
+    const { rerender } = render(
+      <ConfirmAction
+        id="remove-mentor-acc-mentor"
+        lead="Remove Naledi's mentor role?"
+        consequences={["Naledi mentors no shops."]}
+        action={noop}
+        hidden={{ account: "acc-mentor", role: "mentor" }}
+        reason={false}
+        errors={[]}
+        confirmLabel="Remove Naledi's mentor role"
+        keepHref="/admin/staff"
+      />,
+    );
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.queryByLabelText("Reason")).toBeNull();
+    expect(screen.getByRole("button", { name: "Remove Naledi's mentor role" })).toHaveAttribute("type", "submit");
+    expect(document.querySelector('input[name="role"]')).toHaveValue("mentor");
+    expect(screen.getByRole("link", { name: "Keep it" })).toHaveAttribute("href", "/admin/staff");
+    rerender(
+      <ConfirmAction
+        id="remove-admin-acc-other"
+        lead="Remove Sam's admin role?"
+        consequences={[]}
+        action={noop}
+        hidden={{ account: "acc-other", role: "admin" }}
+        reason={false}
+        errors={[{ message: "Vossie needs at least one admin.", fieldId: null }]}
+        confirmLabel="Remove Sam's admin role"
+        keepHref="/admin/staff"
+      />,
+    );
+    expect(screen.getByRole("alert", { name: "There's a problem" })).toHaveTextContent("Vossie needs at least one admin.");
   });
 });

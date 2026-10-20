@@ -45,7 +45,7 @@ export const AREA_HOME: Readonly<Record<StaffArea, { href: string; label: string
 };
 
 /**
- * The staff frame's row of section links (spec section 3): the admin console's six sections, then the Hub's tools and
+ * The staff frame's row of section links (spec section 3): the admin console's eight sections, then the Hub's tools and
  * the mentor dashboard. The frame shows the ones the account may use.
  */
 export const STAFF_SECTIONS: ReadonlyArray<{ href: string; label: string; area: StaffArea }> = [
@@ -54,6 +54,8 @@ export const STAFF_SECTIONS: ReadonlyArray<{ href: string; label: string; area: 
   { href: ADMIN_REPORTS_PATH, label: "Reports", area: "admin" },
   { href: ADMIN_FEATURED_PATH, label: "Featured", area: "admin" },
   { href: ADMIN_POINTS_PATH, label: "Pickup points", area: "admin" },
+  { href: ADMIN_NUMBERS_PATH, label: "Numbers", area: "admin" },
+  { href: ADMIN_STAFF_PATH, label: "Staff", area: "admin" },
   { href: ADMIN_AUDIT_PATH, label: "Audit log", area: "admin" },
   { href: HUB_MANAGE_PATH, label: "Hub posts", area: "hub" },
   { href: MENTOR_PATH, label: "Mentoring", area: "mentor" },

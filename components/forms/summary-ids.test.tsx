@@ -15,10 +15,12 @@ import { BookSlotView } from "@/components/hub/BookSlot";
 import { AdminFeatured } from "@/components/staff/AdminFeatured";
 import { AdminPickupPoints } from "@/components/staff/AdminPickupPoints";
 import { AdminReport } from "@/components/staff/AdminReport";
+import { AdminStaff } from "@/components/staff/AdminStaff";
 import { MentorShop } from "@/components/staff/MentorShop";
 import { NEW_POST_VALUES, PostEditor, postValues } from "@/components/staff/PostEditor";
 import { ReportConfirm } from "@/components/staff/ReportConfirm";
 import { SellerConfirm } from "@/components/staff/SellerConfirm";
+import { StaffRoleConfirm } from "@/components/staff/StaffRoleConfirm";
 import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
 import { pickupPoints } from "@/data/fixtures/pickup-points";
@@ -72,6 +74,7 @@ vi.mock("@/lib/staff/admin-actions", () => ({
   retirePoint: async () => {},
   restorePoint: async () => {},
 }));
+vi.mock("@/lib/staff/account-actions", () => ({ giveStaffRole: async () => {}, removeStaffRole: async () => {} }));
 vi.mock("@/lib/staff/hub-actions", () => ({ answerSlot: async () => {}, savePost: async () => {} }));
 vi.mock("@/lib/hub-actions", () => ({ cancelRsvp: async () => {}, rsvpToEvent: async () => {}, sendSlotRequest: async () => {} }));
 vi.mock("@/lib/staff/mentor-actions", () => ({ addCheckIn: async () => {}, addMentorNote: async () => {} }));
@@ -318,10 +321,31 @@ describe("error summary ids (accounts spec 6)", () => {
           status={{ kind: "open", askerId: "acc-student", shopSlug: "tech-corner", listings: [] }}
           form={{ body: "", listing: "", errors: oops, warnings: [] }}
         />
+        <AdminStaff
+          people={[]}
+          viewerId="acc-admin"
+          campusNames={new Map()}
+          values={{}}
+          errors={oops}
+          once="5c2e8a1d-3b4f-4e6a-9d71-2f8c0b6e4a19"
+        />
+        <StaffRoleConfirm
+          person={{
+            id: "acc-mentor",
+            firstName: "Naledi",
+            email: "mentor@eduvos.com",
+            campusSlug: "midrand",
+            roles: ["mentor"],
+            mentors: [],
+          }}
+          role="mentor"
+          viewerId="acc-admin"
+          errors={oops}
+        />
       </>,
     );
     const summaries = screen.getAllByRole("alert", { name: "There's a problem" });
-    expect(summaries).toHaveLength(32);
+    expect(summaries).toHaveLength(34);
     const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
     expect(summaries.map((summary) => summary.id)).toEqual([
@@ -358,6 +382,8 @@ describe("error summary ids (accounts spec 6)", () => {
       "request-new-summary",
       "request-r-001-summary",
       "offer-r-001-summary",
+      "give-role-problems",
+      "remove-mentor-acc-mentor-summary",
     ]);
   });
 });
