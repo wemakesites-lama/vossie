@@ -58,6 +58,11 @@ describe("fixed SAST weeks, Monday to Sunday (stage J spec decision 11)", () => 
     expect(weeks.before.label).toBe("5 to 11 Oct");
   });
 
+  it("words a week across a year end with both months", () => {
+    const weeks = sastWeeks(new Date("2027-01-05T08:00:00.000Z"));
+    expect(weeks.last.label).toBe("28 Dec to 3 Jan");
+  });
+
   it("gives the same weeks all through a week, Monday to Sunday", () => {
     const monday = sastWeeks(new Date("2026-10-19T08:00:00.000Z"));
     const sunday = sastWeeks(new Date("2026-10-25T12:00:00.000Z"));

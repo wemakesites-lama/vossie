@@ -134,6 +134,17 @@ describe("taking a role away (stage J spec decisions 5 and 6)", () => {
     expect(sampleStore().sellerProfiles.get("acc-seller")?.mentorId).toBe("acc-mentor");
   });
 
+  it("leaves one admin when two admins remove each other at once, the second getting last-admin", async () => {
+    sampleStore().accounts.get("acc-mentor")!.roles.push("admin");
+    const results = await Promise.all([
+      removeRole("acc-admin", "admin", "acc-mentor"),
+      removeRole("acc-mentor", "admin", "acc-admin"),
+    ]);
+    expect(results.filter((result) => result === "last-admin")).toHaveLength(1);
+    expect(results.filter((result) => typeof result === "object" && result !== null)).toHaveLength(1);
+    expect(await countAdmins()).toBe(1);
+  });
+
   it("changes nothing for a role already gone or an unknown account", async () => {
     expect(await removeRole("acc-student", "mentor", "acc-admin")).toBeNull();
     expect(await removeRole("acc-nobody", "admin", "acc-admin")).toBeNull();

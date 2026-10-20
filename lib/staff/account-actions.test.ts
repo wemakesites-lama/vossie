@@ -39,6 +39,12 @@ async function giveForm(fields: Record<string, string>): Promise<FormData> {
 }
 
 describe("the gate (stage J spec section 5)", () => {
+  it("has a case for every exported action, so a new action can't skip the gate's test", async () => {
+    // The gate test below covers these two; a new export fails here until it's added to both lists.
+    const exported = Object.keys(await import("./account-actions")).sort();
+    expect(exported).toEqual(["giveStaffRole", "removeStaffRole"]);
+  });
+
   it("sends a signed-out visitor to sign in, and gives a mentor or a student the 404, changing nothing", async () => {
     expect(await redirectOf(() => giveStaffRole(form({ email: "zola@eduvos.com", role: "mentor" })))).toBe(
       "/login?next=%2Fadmin%2Fstaff",

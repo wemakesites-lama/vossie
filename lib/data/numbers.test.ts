@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Measure, Period, RawCounts } from "@/lib/staff/numbers";
 import { listedListings, liveSellerRows } from "./catalog";
@@ -189,5 +191,107 @@ describe("open shops now (stage J spec decision 10, plan decision 12)", () => {
     const before = (await counted()).openShops.campuses.midrand ?? 0;
     await staffPauseShop("tech-corner", "Checking it.");
     expect((await counted()).openShops.campuses.midrand ?? 0).toBe(before - 1);
+  });
+});
+
+
+/** A listing on Pretoria first published at `firstPublishedAt`. */
+function listingAt(id: string, firstPublishedAt: string) {
+  const row = structuredClone(sampleStore().listings.get("l-001")!);
+  Object.assign(row, { id, campusSlug: "pretoria", firstPublishedAt });
+  sampleStore().listings.set(id, row);
+  return row;
+}
+
+describe("the edges of the weeks (stage J spec decision 11)", () => {
+  // Last week ends at 2026-10-18T22:00:00Z (Monday 00:00 in South Africa), the week before at 2026-10-11T22:00:00Z
+  // and starts at 2026-10-04T22:00:00Z.
+  it("counts the last second of Sunday in last week, and the first second of Monday not yet", async () => {
+    const before = await counted();
+    listingAt("l-edge-in", "2026-10-18T21:59:59.000Z");
+    const mid = await counted();
+    expect(at(mid, "listings", "last", "pretoria") - at(before, "listings", "last", "pretoria")).toBe(1);
+    expect(at(mid, "listings", "since", "pretoria") - at(before, "listings", "since", "pretoria")).toBe(1);
+    listingAt("l-edge-out", "2026-10-18T22:00:00.000Z");
+    expect(await counted()).toEqual(mid);
+  });
+
+  it("puts the instant last week starts in last week, and the second before it in the week before", async () => {
+    const before = await counted();
+    listingAt("l-edge-start", "2026-10-11T22:00:00.000Z");
+    listingAt("l-edge-prior", "2026-10-11T21:59:59.000Z");
+    const after = await counted();
+    expect(at(after, "listings", "last", "pretoria") - at(before, "listings", "last", "pretoria")).toBe(1);
+    expect(at(after, "listings", "before", "pretoria") - at(before, "listings", "before", "pretoria")).toBe(1);
+  });
+
+  it("counts something older than the week before in Since the start only", async () => {
+    const before = await counted();
+    listingAt("l-edge-old", "2026-10-04T21:59:59.000Z");
+    const after = await counted();
+    expect(at(after, "listings", "since", "pretoria") - at(before, "listings", "since", "pretoria")).toBe(1);
+    expect(at(after, "listings", "before", "pretoria")).toBe(at(before, "listings", "before", "pretoria"));
+    expect(at(after, "listings", "last", "pretoria")).toBe(at(before, "listings", "last", "pretoria"));
+    // The first instant of the week before is in it.
+    listingAt("l-edge-first", "2026-10-04T22:00:00.000Z");
+    const next = await counted();
+    expect(at(next, "listings", "before", "pretoria") - at(before, "listings", "before", "pretoria")).toBe(1);
+  });
+});
+
+describe("what is never counted, and what always is (stage J spec decision 10)", () => {
+  it("never reads saved searches: one dated last week changes nothing, and the file doesn't mention them", async () => {
+    const before = await counted();
+    sampleStore().savedSearches.set("ss-1", {
+      id: "ss-1",
+      accountId: "acc-student",
+      q: "calculator",
+      category: null,
+      campus: "pretoria",
+      price: null,
+      pay: null,
+      deals: null,
+      createdAt: LAST_WEEK.toISOString(),
+      pausedAt: null,
+    });
+    expect(await counted()).toEqual(before);
+    expect(readFileSync(join(process.cwd(), "lib/data/numbers.ts"), "utf8")).not.toContain("savedSearches");
+  });
+
+  it("counts a Looking For request on its campus when it's posted", async () => {
+    const before = await counted();
+    const row = structuredClone([...sampleStore().requests.values()][0]);
+    Object.assign(row, { id: "r-new", campusSlug: "pretoria", createdAt: LAST_WEEK.toISOString() });
+    sampleStore().requests.set(row.id, row);
+    const after = await counted();
+    expect(at(after, "requests", "last", "pretoria") - at(before, "requests", "last", "pretoria")).toBe(1);
+    expect(at(after, "requests", "since", "pretoria") - at(before, "requests", "since", "pretoria")).toBe(1);
+  });
+
+  it("still counts a listing the Hub has hidden", async () => {
+    const before = await counted();
+    Object.assign(listingAt("l-hidden", LAST_WEEK.toISOString()), {
+      hiddenAt: LAST_WEEK.toISOString(),
+      hiddenReason: "Checking it.",
+    });
+    const after = await counted();
+    expect(at(after, "listings", "last", "pretoria") - at(before, "listings", "last", "pretoria")).toBe(1);
+  });
+
+  it("counts a report on a request on the request's campus", async () => {
+    const before = await counted();
+    const row = structuredClone([...sampleStore().requests.values()][0]);
+    Object.assign(row, { id: "r-rep", campusSlug: "pretoria", createdAt: THIS_WEEK.toISOString() });
+    sampleStore().requests.set(row.id, row);
+    await createReport({
+      reporterId: "acc-student",
+      target: { kind: "request", id: "r-rep" },
+      targetTitle: row.title,
+      reason: "scam",
+      detail: "",
+      now: LAST_WEEK,
+    });
+    const after = await counted();
+    expect(at(after, "reports-made", "last", "pretoria") - at(before, "reports-made", "last", "pretoria")).toBe(1);
   });
 });
