@@ -52,3 +52,9 @@ describe("the offer composer's error words (community actions spec 2.9)", () => 
     ]);
   });
 });
+
+it("words the hour's message limit as messaging does (stage K spec 4)", () => {
+  expect(offerErrors(["message-rate"], offerFieldIds("offer-r-001"))).toEqual([
+    { message: "You've sent 120 messages in the last hour. Try again later.", fieldId: null },
+  ]);
+});

@@ -5,6 +5,7 @@ import { hashToken } from "@/lib/auth/secrets";
 import { findConversation, getThread } from "@/lib/data/messages";
 import { createReport } from "@/lib/data/reports";
 import { createSession } from "@/lib/data/sessions";
+import type { ConversationRow } from "@/lib/data/rows";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { confirmTheSale, markAsCompleted, saleDidntHappen, sendFirstMessage, sendReply, sendReport } from "./actions";
@@ -17,9 +18,15 @@ vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-reque
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
 vi.mock("next/cache", async () => (await import("@/tests/helpers/next-request")).nextCache(request));
 
+// The sample accounts are exempt from the message limits in sample mode (stage K spec decision 10), and these tests
+// sign in as them, so the exemption is switched off here unless a test switches it on (plan decision 16).
+const samples = vi.hoisted(() => ({ exempt: false }));
+vi.mock("@/lib/auth/sample-accounts", () => ({ isSampleAccount: () => samples.exempt }));
+
 const NOW = new Date("2026-10-14T08:42:00.000Z");
 
 beforeEach(() => {
+  samples.exempt = false;
   resetSampleStore();
   resetRequest(request);
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -287,5 +294,100 @@ describe("badges after a reply or a confirmed sale (staff tools spec 2.7, plan d
     await redirectOf(() => confirmTheSale(form({ conversation: "conv-s2" })));
     expect(sampleStore().sellers.get("tech-corner")?.badge).toBe("new-seller");
     expect(request.updatedTags).toEqual(["sellers"]);
+  });
+});
+
+/** `count` conversations `buyerId` started as a buyer half an hour ago, each with its first message (plan decision 16). */
+function seedConversations(buyerId: string, count: number) {
+  const at = new Date(NOW.getTime() - 30 * 60_000).toISOString();
+  for (let n = 0; n < count; n += 1) {
+    const id = `conv-seed-${n}`;
+    const row: ConversationRow = {
+      id,
+      listingId: null,
+      listingTitle: null,
+      sellerSlug: `seed-shop-${n}`,
+      buyerId,
+      sellerGone: false,
+      status: "asked",
+      createdAt: at,
+      lastMessageAt: at,
+      firstReplyAt: null,
+      completedAt: null,
+      confirmedAt: null,
+      confirmedBy: null,
+    };
+    sampleStore().conversations.set(id, row);
+    sampleStore().messages.set(`msg-${id}`, { id: `msg-${id}`, conversationId: id, from: "buyer", body: "Hi", swapOffer: null, sentAt: at, readAt: null });
+  }
+}
+
+/** `count` more messages from `from` in `conversationId`, ten minutes ago. */
+function seedMessages(conversationId: string, from: "buyer" | "seller", count: number) {
+  const at = new Date(NOW.getTime() - 10 * 60_000).toISOString();
+  for (let n = 0; n < count; n += 1) {
+    sampleStore().messages.set(`msg-seed-${conversationId}-${n}`, { id: `msg-seed-${conversationId}-${n}`, conversationId, from, body: "More", swapOffer: null, sentAt: at, readAt: null });
+  }
+}
+
+describe("the message limits (stage K spec 4; Lama, 2026-10-20)", () => {
+  it("refuses a 41st new conversation in 24 hours, keeping what was typed and writing nothing", async () => {
+    await signedInAs("acc-mentor");
+    seedConversations("acc-mentor", 40);
+    const conversations = sampleStore().conversations.size;
+    const messages = sampleStore().messages.size;
+    const redirect = await redirectSignalOf(() => sendFirstMessage(form({ listing: "l-001", body: "Is it still available?" })));
+    expect([redirect.url, redirect.type, request.refreshed]).toEqual(["/listings/l-001/message", "replace", false]);
+    expect(await readFormState(composerFormKey({ kind: "listing", listingId: "l-001" }))).toMatchObject({
+      errors: ["conversation-rate"],
+      values: { body: "Is it still available?" },
+      notice: null,
+    });
+    expect([sampleStore().conversations.size, sampleStore().messages.size]).toEqual([conversations, messages]);
+  });
+
+  it("refuses before the scam check: no Check this before you send first", async () => {
+    await signedInAs("acc-mentor");
+    seedConversations("acc-mentor", 40);
+    await redirectOf(() => sendFirstMessage(form({ listing: "l-001", body: "Pay a deposit first and I'll bring it." })));
+    expect(await readFormState(composerFormKey({ kind: "listing", listingId: "l-001" }))).toMatchObject({
+      errors: ["conversation-rate"],
+      notice: null,
+    });
+  });
+
+  it("lets a message into a conversation the buyer has go through at 40 conversations", async () => {
+    await signedInAs("acc-mentor");
+    const first = await redirectOf(() => sendFirstMessage(form({ listing: "l-001", body: "Is it still available?" })));
+    seedConversations("acc-mentor", 39);
+    const again = await redirectOf(() => sendFirstMessage(form({ listing: "l-001", body: "And the case?" })));
+    expect(again).toBe(first);
+  });
+
+  it("refuses the 121st message in an hour on a reply, keeping it", async () => {
+    await signedInAs("acc-mentor");
+    const thread = idOf(await redirectOf(() => sendFirstMessage(form({ listing: "l-001", body: "Is it still available?" }))));
+    seedMessages(thread, "buyer", 119);
+    const messages = sampleStore().messages.size;
+    await redirectOf(() => sendReply(form({ conversation: thread, body: "Hello again" })));
+    expect(await readFormState(replyFormKey(thread))).toMatchObject({ errors: ["message-rate"], values: { body: "Hello again" } });
+    expect(sampleStore().messages.size).toBe(messages);
+  });
+
+  it("refuses the 121st message in an hour on a first message too", async () => {
+    await signedInAs("acc-mentor");
+    const thread = idOf(await redirectOf(() => sendFirstMessage(form({ listing: "l-001", body: "Is it still available?" }))));
+    seedMessages(thread, "buyer", 119);
+    await redirectOf(() => sendFirstMessage(form({ listing: "l-002", body: "And this one?" })));
+    expect(await readFormState(composerFormKey({ kind: "listing", listingId: "l-002" }))).toMatchObject({ errors: ["message-rate"] });
+  });
+
+  it("lets a sample account through in sample mode (spec decision 10)", async () => {
+    samples.exempt = true;
+    await signedInAs("acc-mentor");
+    seedConversations("acc-mentor", 40);
+    expect(await redirectOf(() => sendFirstMessage(form({ listing: "l-001", body: "Is it still available?" })))).toMatch(
+      /^\/messages\/conv-/,
+    );
   });
 });

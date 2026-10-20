@@ -17,6 +17,7 @@ import {
 } from "@/lib/data/requests";
 import { requestsChanged } from "@/lib/data/tags";
 import { clearOwnFormState } from "@/lib/messaging/form-state";
+import { messageLimitErrors } from "@/lib/messaging/limits";
 import { isId, sentNoteKey, threadPath } from "@/lib/messaging/paths";
 import { checkMessage, DAY_MS, keepTyped } from "@/lib/messaging/rules";
 import { scamWarnings } from "@/lib/messaging/scam-check";
@@ -227,8 +228,8 @@ export async function deleteMyRequest(formData: FormData): Promise<void> {
 
 /**
  * Send offer, from the composer (spec 2.9): only when the composer would show its form (plan decision 12); the message
- * checked with E's rules, then E's scam words unless Send anyway was pressed; a listing only if it's one of the shop's
- * listed ones (plan decision 13); at most 20 a shop in 24 hours. The thread then says "Sent." once (E's note).
+ * checked with E's rules, then at most 20 a shop in 24 hours and stage K's 120 messages an hour, then E's scam words
+ * unless Send anyway was pressed; a listing only if it's one of the shop's listed ones (plan decision 13). The thread then says "Sent." once (E's note).
  */
 export async function sendOffer(formData: FormData): Promise<void> {
   const id = idFrom(formData, "request");
@@ -249,13 +250,20 @@ export async function sendOffer(formData: FormData): Promise<void> {
     await writeFormState(form, { errors: [message.error], values, notice: null }, now);
     back(path);
   }
+  if ((await countOffersSince(status.shopSlug, new Date(now.getTime() - DAY_MS))) >= OFFERS_PER_DAY) {
+    await writeFormState(form, { errors: ["offer-rate"], values, notice: null }, now);
+    back(path);
+  }
+  // The hour's messages (stage K spec decision 9): after the shop's daily offers, before the scam words, so a refusal
+  // never follows a "Check this before you send" (plan decision 14).
+  const limits = await messageLimitErrors(account, { newConversation: false }, now);
+  if (limits.length > 0) {
+    await writeFormState(form, { errors: limits, values, notice: null }, now);
+    back(path);
+  }
   const warnings = field(formData, "anyway") === "yes" ? [] : scamWarnings(message.value);
   if (warnings.length > 0) {
     await writeFormState(form, { errors: [], values: { ...values, warnings: warnings.join(",") }, notice: "check" }, now);
-    back(path);
-  }
-  if ((await countOffersSince(status.shopSlug, new Date(now.getTime() - DAY_MS))) >= OFFERS_PER_DAY) {
-    await writeFormState(form, { errors: ["offer-rate"], values, notice: null }, now);
     back(path);
   }
   const conversationId = await startOffer({

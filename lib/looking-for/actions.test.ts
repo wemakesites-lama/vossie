@@ -18,7 +18,13 @@ vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-reque
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
 vi.mock("next/cache", async () => (await import("@/tests/helpers/next-request")).nextCache(request));
 
+// The sample accounts are exempt from the message limits in sample mode (stage K spec decision 10), and these tests
+// sign in as them, so the exemption is switched off here (plan decision 16).
+const samples = vi.hoisted(() => ({ exempt: false }));
+vi.mock("@/lib/auth/sample-accounts", () => ({ isSampleAccount: () => samples.exempt }));
+
 beforeEach(() => {
+  samples.exempt = false;
   resetSampleStore();
   resetRequest(request);
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -372,6 +378,31 @@ describe("Send offer (community actions spec 2.7 to 2.9)", () => {
     await asSeller();
     await redirectOf(() => sendOffer(form({ request: id, body: "I can help." })));
     expect((await readFormState(offerFormKey(id)))?.errors).toEqual(["offer-rate"]);
+  });
+
+  it("refuses the 121st message in an hour on an offer, after the shop's daily limit and before the scam check", async () => {
+    const { id } = await posted();
+    await asSeller();
+    const shopThread = [...sampleStore().conversations.values()].find((row) => row.sellerSlug === "tech-corner")!.id;
+    const at = new Date(STAFF_NOW.getTime() - 10 * 60_000).toISOString();
+    for (let n = 0; n < 120; n += 1) {
+      sampleStore().messages.set(`msg-seed-${n}`, { id: `msg-seed-${n}`, conversationId: shopThread, from: "seller", body: "Yes", swapOffer: null, sentAt: at, readAt: null });
+    }
+    const conversations = sampleStore().conversations.size;
+    await redirectOf(() => sendOffer(form({ request: id, body: "Pay a deposit first and I'll bring it." })));
+    expect(await readFormState(offerFormKey(id))).toMatchObject({ errors: ["message-rate"], notice: null });
+    expect(sampleStore().conversations.size).toBe(conversations);
+  });
+
+  it("names the shop's 20 offers a day before the scam words (plan decision 14)", async () => {
+    const { id } = await posted();
+    for (let n = 0; n < 20; n += 1) {
+      const other = await posted("acc-mentor");
+      await startOffer({ askerId: "acc-mentor", request: { id: other.id, title: other.title }, sellerSlug: "tech-corner", listing: null, body: "I can help.", now: STAFF_NOW });
+    }
+    await asSeller();
+    await redirectOf(() => sendOffer(form({ request: id, body: "Pay a deposit first and I'll bring it." })));
+    expect(await readFormState(offerFormKey(id))).toMatchObject({ errors: ["offer-rate"], notice: null });
   });
 
   it("makes one thread with one message when the same offer is sent twice at once (plan amendment 7)", async () => {

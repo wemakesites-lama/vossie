@@ -5,11 +5,12 @@ import { redirect, RedirectType } from "next/navigation";
 import { writeFormState } from "@/lib/auth/form-state";
 import { requireAccount } from "@/lib/auth/session";
 import { recalculateBadgeFor } from "@/lib/data/badges";
-import { confirmSale, markCompleted, rejectSale, sendMessage, startConversation } from "@/lib/data/messages";
+import { confirmSale, findConversation, markCompleted, rejectSale, sendMessage, startConversation } from "@/lib/data/messages";
 import { countReportsSince, createReport, hasOpenReport } from "@/lib/data/reports";
 import { sellersChanged } from "@/lib/data/tags";
 import type { ReportTarget } from "@/lib/types";
 import { clearOwnFormState } from "./form-state";
+import { messageLimitErrors } from "./limits";
 import {
   composerFormKey,
   composerPath,
@@ -71,7 +72,7 @@ function messageTargetFrom(formData: FormData): MessageTarget | null {
 
 /**
  * The composer's Send (spec 3.1). The message and swap offer are checked, then the scam words unless Send anyway was
- * pressed (spec 2.3, plan decision 9). Then the conversation starts, or the message joins the buyer's existing one
+ * pressed (spec 2.3, plan decision 9). The message limits come between the two (stage K spec decision 9). Then the conversation starts, or the message joins the buyer's existing one
  * (plan decision 5), and the thread says "Sent." once (plan decision 7).
  */
 export async function sendFirstMessage(formData: FormData): Promise<void> {
@@ -91,6 +92,14 @@ export async function sendFirstMessage(formData: FormData): Promise<void> {
   const errors = [message.error, swap.error].filter((error) => error !== null);
   if (errors.length > 0) {
     await writeFormState(form, { errors, values, notice: null }, now);
+    back(path);
+  }
+  // The limits (stage K spec decision 9): after the fields, before the scam words, so a refusal never follows a
+  // "Check this before you send". A message into a conversation the buyer has already starts nothing.
+  const newConversation = (await findConversation(account.id, target)) === null;
+  const limits = await messageLimitErrors(account, { newConversation }, now);
+  if (limits.length > 0) {
+    await writeFormState(form, { errors: limits, values, notice: null }, now);
     back(path);
   }
   const warnings = text(formData, "anyway") === "yes" ? [] : scamWarnings(`${message.value}\n${swap.value}`);
@@ -123,6 +132,12 @@ export async function sendReply(formData: FormData): Promise<void> {
   const body = keepTyped(message.value);
   if (message.error) {
     await writeFormState(form, { errors: [message.error], values: { body }, notice: null }, now);
+    back(path);
+  }
+  // The hour's messages (stage K spec decision 9), before the scam words.
+  const limits = await messageLimitErrors(account, { newConversation: false }, now);
+  if (limits.length > 0) {
+    await writeFormState(form, { errors: limits, values: { body }, notice: null }, now);
     back(path);
   }
   const warnings = text(formData, "anyway") === "yes" ? [] : scamWarnings(message.value);
