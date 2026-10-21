@@ -17,6 +17,12 @@ export const CODE_TTL_MS = 10 * 60 * 1000;
 export const MAX_WRONG_TRIES = 5;
 /** At most 5 codes per email per hour, in sample mode (spec 5). */
 export const CODES_PER_HOUR = 5;
+/**
+ * On Supabase, at most 15 codes an hour from one network (IP address) too, whatever the addresses (phase B review fix
+ * 2), so one visitor can't use up the project's hourly emails. Sample mode sends no email and keeps its per-email limit
+ * only.
+ */
+export const IP_SENDS_PER_HOUR = 15;
 /** A sign-in attempt, all three steps, must finish within 30 minutes of starting. */
 export const ATTEMPT_TTL_MS = 30 * 60 * 1000;
 /**

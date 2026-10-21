@@ -4,6 +4,7 @@ import {
   getSignInAttempt,
   recordWrongTry,
   reserveCodeSend,
+  reserveIpSend,
   saveSignInAttempt,
 } from "@/lib/data/sign-in";
 import { makeSignInAttempt } from "@/tests/helpers/fakes";
@@ -64,5 +65,17 @@ describe("the code count (spec 5)", () => {
     const answers: boolean[] = [];
     for (let i = 0; i < 6; i += 1) answers.push(await reserveCodeSend(EMAIL, now, 5));
     expect(answers).toEqual([true, true, true, true, true, false]);
+  });
+});
+
+describe("the network's count (review fix 2)", () => {
+  // The key stands for an IP address's keyed hash; this run's own, so the hour's earlier runs don't count.
+  it("gives one network 15 codes an hour, then no; another network has its own", async () => {
+    const now = new Date();
+    const key = `phase-b-ip-${Date.now()}`;
+    const answers: boolean[] = [];
+    for (let i = 0; i < 16; i += 1) answers.push(await reserveIpSend(key, now, 15));
+    expect(answers).toEqual([...Array<boolean>(15).fill(true), false]);
+    expect(await reserveIpSend(`${key}-other`, now, 15)).toBe(true);
   });
 });

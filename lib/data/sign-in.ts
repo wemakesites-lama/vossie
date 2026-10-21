@@ -84,6 +84,17 @@ export async function reserveCodeSend(email: string, now: Date, limit: number): 
 }
 
 /**
+ * Asks to send a code from the network whose IP address hashes to `ipKey` (Supabase phase B, review fix 2): true, and
+ * counted, while the network has had fewer than `limit` this UTC hour; false, and nothing counted, once it has. One step
+ * in the database (private.reserve_ip_code_send). Supabase only: sample mode sends no email, keeps its per-email limit
+ * only, and never asks.
+ */
+export async function reserveIpSend(ipKey: string, now: Date, limit: number): Promise<boolean> {
+  if (onSupabase()) return (await import("./supabase/sign-in")).reserveIpSend(ipKey, now, limit);
+  throw new Error("reserveIpSend() runs on Supabase only");
+}
+
+/**
  * How many codes went to `email` in the hour before `now` (spec 5). A read for tests and tools. The sign-in actions
  * don't count and then record: they call reserveCodeSend, which does both in one step.
  */

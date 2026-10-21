@@ -44,7 +44,7 @@ describe("the renewal client (phase B decision 4)", () => {
 
   it("uses the secret key, the request's cookies, the 30-day cookie settings and the student's address", async () => {
     calls.getClaims.mockResolvedValue({ data: { claims: { sub: "user-1" } }, error: null });
-    const client = renewalClient(request(undefined, { "x-real-ip": " 196.25.1.1 " }), () => {});
+    const client = renewalClient(request(undefined, { "x-real-ip": " 196.25.1.1 ", "x-forwarded-proto": "https" }), () => {});
     const [url, key, options] = calls.createServerClient.mock.calls[0];
     expect([url, key]).toEqual(["http://127.0.0.1:55321", "sb_secret_TESTVALUEtestvalue"]);
     expect(options).toMatchObject({
@@ -60,8 +60,17 @@ describe("the renewal client (phase B decision 4)", () => {
   });
 
   it("sends no forwarded address when the request has none, and isn't Secure over http", () => {
-    renewalClient(request("http://localhost:3300/"), () => {});
+    renewalClient(request("http://localhost:3300/", { "x-forwarded-proto": "http" }), () => {});
     expect(calls.createServerClient.mock.calls[0][2]).toMatchObject({ global: { headers: {} }, cookieOptions: { secure: false } });
+  });
+
+  it("decides Secure from x-forwarded-proto, as isHttps() does for every other cookie (review fix 5)", () => {
+    renewalClient(request("http://localhost:3300/", { "x-forwarded-proto": "https, http" }), () => {});
+    renewalClient(request("https://vossie-pi.vercel.app/account"), () => {});
+    expect(calls.createServerClient.mock.calls.map((call) => (call[2] as { cookieOptions: { secure: boolean } }).cookieOptions.secure)).toEqual([
+      true,
+      false,
+    ]);
   });
 
   it("is signed out when Supabase refuses or the claims have no subject", async () => {

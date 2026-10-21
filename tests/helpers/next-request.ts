@@ -19,6 +19,8 @@ export type FakeRequest = {
   sent: Map<string, { value: string; options: Record<string, unknown> }>;
   /** The x-forwarded-proto header. */
   proto: string;
+  /** Other request headers, by lower-case name (such as x-real-ip). */
+  headers?: Record<string, string>;
   /** Set when a Server Action called refresh() from next/cache (messaging plan decision 6). */
   refreshed?: boolean;
   /** The cache tags a Server Action expired with updateTag, in order (selling plan, Task 4). */
@@ -31,6 +33,7 @@ export function resetRequest(request: FakeRequest): void {
   request.cookies.clear();
   request.sent.clear();
   request.proto = "http";
+  request.headers = {};
   request.refreshed = false;
   request.updatedTags = [];
   request.revalidatedTags = [];
@@ -51,7 +54,8 @@ export function nextHeaders(request: FakeRequest) {
       },
     }),
     headers: async () => ({
-      get: (name: string) => (name === "x-forwarded-proto" ? request.proto : null),
+      get: (name: string) =>
+        name.toLowerCase() === "x-forwarded-proto" ? request.proto : (request.headers?.[name.toLowerCase()] ?? null),
     }),
   };
 }

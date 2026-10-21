@@ -9,6 +9,7 @@ import {
   recordCodeSent,
   recordWrongTry,
   reserveCodeSend,
+  reserveIpSend,
   saveSampleEmail,
   saveSignInAttempt,
 } from "./sign-in";
@@ -101,6 +102,18 @@ describe("the code count (spec 5)", () => {
     expect(await reserveCodeSend("thandi@vossie.net", NOW, 5)).toBe(true);
     expect(await reserveCodeSend("thandi@vossie.net", NOW, 5)).toBe(false);
     expect(db.calls[0]).toEqual(["rpc", "reserve_code_send", { p_email: "thandi@vossie.net", p_max_sends: 5 }]);
+  });
+
+  it("reserves one of a network's codes through reserve_ip_code_send, on the database's clock (review fix 2)", async () => {
+    db.answer("rpc:reserve_ip_code_send", { data: true }, { data: false });
+    expect(await reserveIpSend("ip-key", NOW, 15)).toBe(true);
+    expect(await reserveIpSend("ip-key", NOW, 15)).toBe(false);
+    expect(db.calls[0]).toEqual(["rpc", "reserve_ip_code_send", { p_ip_key: "ip-key", p_max_sends: 15 }]);
+  });
+
+  it("throws when the database refuses the network's count, naming only the function", async () => {
+    db.answer("rpc:reserve_ip_code_send", { error: { code: "42501", message: "permission denied" } });
+    await expect(reserveIpSend("ip-key", NOW, 15)).rejects.toThrow("reserve_ip_code_send failed (42501)");
   });
 
   it("keeps the sample store's test helpers to the sample store", async () => {

@@ -2,13 +2,16 @@ import { expect, test, type Page } from "@playwright/test";
 import { seriousIssues } from "../e2e/helpers/axe";
 import {
   authRequests,
+  authSessionCount,
   authUserId,
   expireStoredSession,
   latestCode,
   messagesTo,
+  networkCounts,
   newAddress,
   otherThan,
   removeE2eAccounts,
+  resetNetworkCounts,
   sql,
   storedSession,
 } from "./helpers/local";
@@ -77,6 +80,8 @@ async function signOutFromMenu(page: Page) {
   await page.getByRole("dialog", { name: "Menu" }).getByRole("button", { name: "Sign out" }).click();
 }
 
+// Every test posts from this machine: a fresh per-network count for each, as each has a fresh address (review fix 2).
+test.beforeEach(() => resetNetworkCounts());
 test.afterAll(() => removeE2eAccounts(test.info().project.name));
 
 test.describe("signing in by code on Supabase (phase B, Task 11)", () => {
@@ -84,6 +89,8 @@ test.describe("signing in by code on Supabase (phase B, Task 11)", () => {
     const email = newAddress(project());
     const asked = await askForCode(page, email);
     await expect(field(page, "6-digit code")).toHaveAccessibleDescription(/We sent a code to e•••@vossie\.test\./);
+    // The send was counted against this network too (review fix 2): one network, one code.
+    expect(networkCounts()).toEqual([1]);
     if (project() === "phone-390") expect(await seriousIssues(page)).toEqual([]);
     await enterCode(page, await latestCode(email, asked));
     await expect(field(page, "Your first name")).toBeVisible();
@@ -184,18 +191,50 @@ test.describe("signing in by code on Supabase (phase B, Task 11)", () => {
     expect((await page.context().cookies()).filter((cookie) => cookie.name.startsWith("vossie_"))).toEqual([]);
   });
 
-  test("7. Sign out from the menu: the toast, no vossie_auth cookie, and the account asks to sign in again", async ({ page, baseURL }) => {
-    await signIn(page, newAddress(project()));
+  test("7. Sign out from the menu: the toast, no vossie_auth cookie, the session gone on the server, and the account asks to sign in again", async ({ page, baseURL }) => {
+    const email = newAddress(project());
+    await signIn(page, email);
     await expect(page).toHaveURL(/\/account$/);
+    expect(authSessionCount(email)).toBe(1);
     await signOutFromMenu(page);
     await expect(page).toHaveURL(`${baseURL}/`);
     await expect(page.locator(".toast")).toHaveText("You're signed out");
     expect(await storedSession(page.context())).toBeNull();
+    // Review fix 4: Supabase ended the session itself, not only the cookie.
+    expect(authSessionCount(email)).toBe(0);
     await page.goBack();
     await expect(field(page, "Your Eduvos email address")).toBeVisible();
     // Stage K's check, repeated: another site can't sign anyone out.
     const crossSite = await page.request.post("/logout", { form: {}, headers: { origin: "https://evil.example" }, maxRedirects: 0 });
     expect(crossSite.status()).toBe(403);
+  });
+
+  test("7b. Sign out with an expired access token: the proxy renews and the handler ends the session, in one response (review fix 4)", async ({ page, baseURL }) => {
+    desktopOnly();
+    const email = newAddress(project());
+    await signIn(page, email);
+    await expect(page).toHaveURL(/\/account$/);
+    // Off the site first, so no request from the open page (a prefetch) renews the session before the post does.
+    await page.goto("about:blank");
+    const before = await storedSession(page.context());
+    await expireStoredSession(page);
+    // The menu's form, posted straight away: no page load first, so the post itself carries the expired token.
+    const response = await page.request.post("/logout", { form: {}, headers: { origin: baseURL! }, maxRedirects: 0 });
+    expect(response.status()).toBe(303);
+    expect(response.headers().location).toBe("/");
+    // One response: the proxy's renewal (30 days), then the handler's removal, last.
+    const written = response
+      .headersArray()
+      .filter(({ name, value }) => name.toLowerCase() === "set-cookie" && /^vossie_auth(\.\d+)?=/.test(value))
+      .map(({ value }) => value);
+    expect(written.some((value) => /Max-Age=2592000/.test(value))).toBe(true);
+    expect(written.at(-1)).toMatch(/Max-Age=0|Expires=Thu, 01 Jan 1970/);
+    expect(await storedSession(page.context())).toBeNull();
+    // Signed out with the renewed token, so Supabase ended the session itself: none left on the server.
+    expect(before?.refresh_token).toBeTruthy();
+    expect(authSessionCount(email)).toBe(0);
+    await page.goto("/account");
+    await expect(field(page, "Your Eduvos email address")).toBeVisible();
   });
 
   test("8. the proxy renews an expired session before the page renders, and says no-store; the next page sets nothing", async ({ page }) => {

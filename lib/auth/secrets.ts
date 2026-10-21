@@ -39,8 +39,11 @@ export function authKey(): string {
   return cachedKey;
 }
 
-/** HMAC-SHA-256 of `purpose:value` under the key, in hex. The purpose keeps a token's hash and a code's apart. */
-function keyedHash(purpose: "token" | "code", value: string): string {
+/**
+ * HMAC-SHA-256 of `purpose:value` under the key, in hex. The purpose keeps a token's hash, a code's and an IP address's
+ * apart.
+ */
+function keyedHash(purpose: "token" | "code" | "ip", value: string): string {
   return createHmac("sha256", authKey()).update(`${purpose}:${value}`).digest("hex");
 }
 
@@ -52,6 +55,14 @@ export function newToken(): string {
 /** What the store keeps instead of a token (spec decision 12): its keyed hash. */
 export function hashToken(token: string): string {
   return keyedHash("token", token);
+}
+
+/**
+ * What the per-network send count keeps instead of an IP address (Supabase phase B, review fix 2): its keyed hash, so
+ * the count never holds the address itself. Outer spaces and case are ignored, so one IPv6 address has one hash.
+ */
+export function hashIp(ip: string): string {
+  return keyedHash("ip", ip.trim().toLowerCase());
 }
 
 /** A 6-digit code, leading zeros kept. */

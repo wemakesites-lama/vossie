@@ -28,9 +28,11 @@ export type SupabaseFakes = {
   signOutRejects: boolean;
   /** Whether reserveCodeSend() finds room. */
   reserveAnswer: boolean;
+  /** The sends reserveIpSend() has counted, by network key (the IP's keyed hash). */
+  ipSends: Map<string, number>;
   /** Set to make the attempt vanish (swept, or ended in another tab) just before a try is counted. */
   attemptGoneBeforeCount: boolean;
-  /** Every call, in order: "send:<email>", "verify:<code>", "recordWrongTry", "reserve", "signOutHere", … */
+  /** Every call, in order: "send:<email>", "verify:<code>", "recordWrongTry", "reserveIp", "reserve", "signOutHere", … */
   calls: string[];
   /** The attempts the sign-in twin keeps, by key. */
   attempts: Map<string, SignInAttemptRow>;
@@ -47,6 +49,7 @@ export function resetSupabaseFakes(fakes: SupabaseFakes): void {
     verifyOutcome: "wrong",
     signOutRejects: false,
     reserveAnswer: true,
+    ipSends: new Map(),
     attemptGoneBeforeCount: false,
     calls: [],
     attempts: new Map(),
@@ -122,6 +125,13 @@ export function signInTwin(fakes: SupabaseFakes) {
     reserveCodeSend: async () => {
       fakes.calls.push("reserve");
       return fakes.reserveAnswer;
+    },
+    reserveIpSend: async (ipKey: string, _now: Date, limit: number) => {
+      fakes.calls.push("reserveIp");
+      const sent = fakes.ipSends.get(ipKey) ?? 0;
+      if (sent >= limit) return false;
+      fakes.ipSends.set(ipKey, sent + 1);
+      return true;
     },
     countCodesSent: async () => 0,
     recordCodeSent: async () => {},

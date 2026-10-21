@@ -9,14 +9,14 @@ import {
 } from "./accounts";
 import { clearSessionFormStates, getFormState, saveFormState, takeFormState } from "./form-states";
 import { createSession, listSessions } from "./sessions";
-import { getSignInAttempt, recordWrongTry, reserveCodeSend } from "./sign-in";
+import { getSignInAttempt, recordWrongTry, reserveCodeSend, reserveIpSend } from "./sign-in";
 import { resetSampleStore, sampleStore } from "./store";
 
 // Phase B's four lib/data modules (Task 4; amendments 4 and 10): the new exports' sample versions, and the switch lines
 // that hand each function to its Supabase twin when VOSSIE_BACKEND says so, through import() only.
 
 const twins = vi.hoisted(() => ({
-  signIn: { getSignInAttempt: vi.fn(async () => null), recordWrongTry: vi.fn(async () => 2), reserveCodeSend: vi.fn(async () => true) },
+  signIn: { getSignInAttempt: vi.fn(async () => null), recordWrongTry: vi.fn(async () => 2), reserveCodeSend: vi.fn(async () => true), reserveIpSend: vi.fn(async () => true) },
   sessions: { listSessions: vi.fn(async () => []), createSession: vi.fn(async () => {}) },
   formStates: {
     getFormState: vi.fn(async () => null),
@@ -95,6 +95,14 @@ describe("the switch lines (C0's convention)", () => {
     await reserveCodeSend("a@vossie.net", NOW, 5);
     expect(twins.signIn.getSignInAttempt).toHaveBeenCalledWith("k", NOW);
     expect(twins.signIn.reserveCodeSend).toHaveBeenCalledWith("a@vossie.net", NOW, 5);
+    expect(await reserveIpSend("ip-key", NOW, 15)).toBe(true);
+    expect(twins.signIn.reserveIpSend).toHaveBeenCalledWith("ip-key", NOW, 15);
+  });
+
+  it("refuses the network's count on the sample backend, which never asks for it (review fix 2)", async () => {
+    vi.unstubAllEnvs();
+    await expect(reserveIpSend("ip-key", NOW, 15)).rejects.toThrow("Supabase only");
+    expect(twins.signIn.reserveIpSend).not.toHaveBeenCalled();
   });
 
   it("hands sessions', form states' and accounts' functions to their twins", async () => {

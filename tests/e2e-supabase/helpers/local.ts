@@ -56,6 +56,25 @@ export function authUserId(email: string): string | null {
   return sql(`select id from auth.users where email = :'email'`, { email })[0] ?? null;
 }
 
+/**
+ * Clears this hour's per-network code counts (private.ip_code_sends; phase B review fix 2). Every test's browser posts
+ * from this machine, one network, which would use its 15 codes an hour within a run: each test starts with a fresh
+ * count, as it does with a fresh address.
+ */
+export function resetNetworkCounts(): void {
+  sql("delete from private.ip_code_sends");
+}
+
+/** The per-network code counts this hour, highest first. */
+export function networkCounts(): number[] {
+  return sql("select n from private.ip_code_sends order by n desc").map(Number);
+}
+
+/** How many Auth sessions the address's user has on the server (auth.sessions), read as postgres. */
+export function authSessionCount(email: string): number {
+  return Number(sql(`select count(*) from auth.sessions where user_id = (select id from auth.users where email = :'email')`, { email })[0]);
+}
+
 /** The newest 6-digit code emailed to `address` after `after`, from Mailpit (polled every 250 ms for up to 10 s). */
 export async function latestCode(address: string, after: Date): Promise<string> {
   const mailpit = localStack().MAILPIT_URL;

@@ -194,13 +194,25 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     expect(container.textContent).not.toMatch(/still to be (decided|chosen)|once it is chosen/);
   });
 
-  it("says Supabase Auth keeps security records of sign-ins, with the address and browser, for a limited time (amendment 17)", () => {
+  it("says Supabase Auth keeps security records of sign-ins for 30 days, gone within a day of a deletion (amendment 17, review fix 1)", () => {
     render(<PrivacyPage />);
-    expect(screen.getByRole("region", { name: "Your account" })).toHaveTextContent(
-      "Supabase Auth keeps security records of your sign-ins (the IP address and browser) for a limited time.",
+    const account = screen.getByRole("region", { name: "Your account" });
+    expect(account).toHaveTextContent(
+      "Supabase Auth keeps security records of your sign-ins (the IP address and browser) for 30 days, and they go within a day of your account being deleted.",
+    );
+    expect(account).not.toHaveTextContent(/security records[^.]*limited time/);
+    expect(screen.getByRole("region", { name: "How long we keep it" })).toHaveTextContent(
+      "Supabase's records of sign-ins in Vossie's database are kept for 30 days, and go within a day of an account's deletion.",
     );
     expect(screen.getByRole("region", { name: "Who it is shared with" })).toHaveTextContent(
       "Supabase (the database and sign-in), Vercel (hosting) and Resend (sign-in emails)",
+    );
+  });
+
+  it("says one network's sign-in codes are counted under a fingerprint of its IP address, for about an hour (review fix 2)", () => {
+    render(<PrivacyPage />);
+    expect(screen.getByRole("region", { name: "Your account" })).toHaveTextContent(
+      "To stop one network sending too many sign-in emails, the live site counts the codes sent from each IP address for about an hour, keeping only a fingerprint of the address made with a secret key.",
     );
   });
 

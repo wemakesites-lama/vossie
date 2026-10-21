@@ -142,4 +142,13 @@ describe("tokens and codes (accounts spec 4 and 5)", () => {
   it("never matches a broken stored hash", () => {
     expect(codeMatches("key-a", "042137", "not-hex")).toBe(false);
   });
+
+  it("hashes an IP address under the key with its own ip: purpose, case and outer spaces ignored (phase B review fix 2)", async () => {
+    const { hashIp, hashToken } = await fresh({ key: KEY });
+    expect(hashIp("196.25.1.1")).toBe(createHmac("sha256", KEY).update("ip:196.25.1.1").digest("hex"));
+    expect(hashIp(" 2001:DB8::1 ")).toBe(hashIp("2001:db8::1"));
+    expect(hashIp("196.25.1.1")).not.toBe(hashIp("196.25.1.2"));
+    // The purpose keeps an address's hash apart from a token's, even for the same text.
+    expect(hashIp("196.25.1.1")).not.toBe(hashToken("196.25.1.1"));
+  });
 });

@@ -1130,6 +1130,9 @@ isOneToOne: false
 "reserve_code_send":
 { Args: { "p_email": string,"p_max_sends"?: number }; Returns: boolean
                            },
+"reserve_ip_code_send":
+{ Args: { "p_ip_key": string,"p_max_sends"?: number }; Returns: boolean
+                           },
 "restore_pickup_point":
 { Args: { "p_point": string }; Returns: string
                            },

@@ -71,6 +71,13 @@ export const reserveCodeSend: typeof Sample.reserveCodeSend = async (email, _now
   return data === true;
 };
 
+/** One of the hour's codes for a network (review fix 2), counted per UTC hour on the database's clock. */
+export const reserveIpSend: typeof Sample.reserveIpSend = async (ipKey, _now, limit) => {
+  const { data, error } = await forServer().rpc("reserve_ip_code_send", { p_ip_key: ipKey, p_max_sends: limit });
+  if (error) failed("reserve_ip_code_send", error);
+  return data === true;
+};
+
 export const countCodesSent: typeof Sample.countCodesSent = async () => {
   throw new Error("countCodesSent() is test-only on the sample store");
 };

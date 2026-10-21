@@ -15,16 +15,27 @@ import {
   getSignInAttempt,
   recordWrongTry,
   reserveCodeSend,
+  reserveIpSend,
   saveSampleEmail,
   saveSignInAttempt,
 } from "@/lib/data/sign-in";
 import { sellersChangedNow } from "@/lib/data/tags";
 import { safeNextPath, signInHref } from "@/lib/next-path";
-import { ATTEMPT_TTL_MS, CODE_TTL_MS, CODES_PER_HOUR, isSampleMode, MAX_WRONG_TRIES, POLICY_VERSION, signInMode } from "./config";
+import { clientIp } from "./client-ip";
+import {
+  ATTEMPT_TTL_MS,
+  CODE_TTL_MS,
+  CODES_PER_HOUR,
+  IP_SENDS_PER_HOUR,
+  isSampleMode,
+  MAX_WRONG_TRIES,
+  POLICY_VERSION,
+  signInMode,
+} from "./config";
 import { deleteCookie, readCookieValue, setPrivateCookie, SIGN_IN_COOKIE } from "./cookies";
 import { normaliseEmail } from "./email";
 import { checkCampus, checkFirstName } from "./profile";
-import { codeMatches, hashCode, hashToken, newCode, newToken } from "./secrets";
+import { codeMatches, hashCode, hashIp, hashToken, newCode, newToken } from "./secrets";
 import { startSession } from "./session";
 
 // Signing in's steps (accounts spec 2 and 3), shared by the Server Actions in actions.ts (step 1, a new code, a
@@ -125,17 +136,29 @@ function sentWithinMinute(attempt: SignInAttemptRow, now: Date): boolean {
 }
 
 /**
+ * Whether this visitor's network may have another code this hour (review fix 2): one of its 15 is counted, under the IP
+ * address's keyed hash. A request with no IP address isn't blocked.
+ */
+async function networkHasRoom(now: Date): Promise<boolean> {
+  const ip = await clientIp();
+  return ip === null || reserveIpSend(hashIp(ip), now, IP_SENDS_PER_HOUR);
+}
+
+/**
  * Sends a code (spec 2.2, 2.3 and 5): one of the email's 5 an hour first, then the code. A new code gives 5 fresh tries
  * (plan decision 6). The error to show, or null when it went: "email-rate" when this email has had its 5 codes this
  * hour, and nothing sent.
  *
  * Sample mode makes the code, keeps only its hash on the attempt and "sends" it to its outbox. On Supabase, Supabase
  * Auth makes and emails it (Supabase phase B decision 6): a code asked for within a minute of the last is refused before
- * one of the hour's is used (amendment 6), and a refusal from Supabase keeps the hour's code it reserved.
+ * one of the hour's is used (amendment 6), and a refusal from Supabase keeps the hour's code it reserved. The network's
+ * 15 an hour come before the email's 5 (review fix 2), so a visitor sending to many addresses uses up nobody's codes
+ * once refused: "ip-rate", and Supabase isn't asked.
  */
 export async function sendCode(attempt: SignInAttemptRow, now: Date): Promise<SignInError | null> {
   const mode = signInMode();
   if (mode === "supabase" && sentWithinMinute(attempt, now)) return "code-soon";
+  if (mode === "supabase" && !(await networkHasRoom(now))) return "ip-rate";
   // The place is counted and taken in one step, so posts at once can't each find room and all send (spec 5).
   if (!(await reserveCodeSend(attempt.email, now, CODES_PER_HOUR))) return "email-rate";
   if (mode === "supabase") {

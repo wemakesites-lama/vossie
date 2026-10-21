@@ -163,8 +163,10 @@ const SECTIONS: readonly InfoSection[] = [
           <li>
             <strong>A sign-in cookie and your sign-ins.</strong> The cookie keeps you signed in for 30 days from your
             last visit (up to 30 days on the preview). Supabase Auth keeps security records of your sign-ins (the IP
-            address and browser) for a limited time. Allowed under POPIA section 11: needed to run your account, and
-            our legitimate interest in keeping accounts secure.
+            address and browser) for 30 days, and they go within a day of your account being deleted. To stop one
+            network sending too many sign-in emails, the live site counts the codes sent from each IP address for about
+            an hour, keeping only a fingerprint of the address made with a secret key. Allowed under POPIA section 11:
+            needed to run your account, and our legitimate interest in keeping accounts secure.
           </li>
           <li>
             <strong>Your messages, swap offers and reports.</strong> To pass them to the other person, to work out reply
@@ -260,9 +262,10 @@ const SECTIONS: readonly InfoSection[] = [
           this policy will say so.
         </li>
         <li>
-          Server logs and Supabase&apos;s records of sign-ins are kept for a limited time, set by Vercel and Supabase.
-          Resend keeps its logs of the sign-in emails it sends for its own retention period. Eduvos will confirm these
-          periods before launch, and this policy will say so.
+          Supabase&apos;s records of sign-ins in Vossie&apos;s database are kept for 30 days, and go within a day of an
+          account&apos;s deletion. Server logs, and Vercel&apos;s and Supabase&apos;s own platform logs, are kept for a
+          limited time, set by Vercel and Supabase. Resend keeps its logs of the sign-in emails it sends for its own
+          retention period. Eduvos will confirm these periods before launch, and this policy will say so.
         </li>
       </ul>
     ),

@@ -1,6 +1,7 @@
 import "server-only";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
+import { isHttpsRequest } from "@/lib/auth/cookies";
 import { AUTH_COOKIE, SESSION_MAX_AGE, sessionLifetime } from "./cookies";
 import type { Database } from "./database.types";
 import { secretKey, supabaseUrl } from "./env";
@@ -25,7 +26,8 @@ export function renewalClient(request: NextRequest, onSet: (writes: RenewalWrite
       name: AUTH_COOKIE,
       httpOnly: true,
       sameSite: "lax",
-      secure: request.nextUrl.protocol === "https:",
+      // Secure on HTTPS, decided from x-forwarded-proto as isHttps() decides it for every other cookie (review fix 5).
+      secure: isHttpsRequest(request.headers),
       path: "/",
       maxAge: SESSION_MAX_AGE,
     },

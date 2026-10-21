@@ -2,9 +2,9 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-// supabase/ops/clear-sample-data.sql (Supabase phase B decision 10, Task 10): Lama runs it in the live project's SQL
-// editor, so it's checked here as text. Its effect was checked by running it on the local stack (counts in the plan's
-// "Changes made during the build"); this keeps a table added later from being missed, and keeps the reference data.
+// supabase/ops/clear-sample-data.sql (Supabase phase B decision 10, Task 10; review fix 3): Lama runs it in the live
+// project's SQL editor, so it's checked here as text; clear-sample-data.db.test.ts runs it against the local stack.
+// This keeps a table added later from being missed, and keeps the reference data.
 
 const ROOT = process.cwd();
 const script = readFileSync(join(ROOT, "supabase", "ops", "clear-sample-data.sql"), "utf8");
@@ -34,10 +34,21 @@ function publicTables(): string[] {
 }
 
 describe("clearing the sample data from the live project (phase B decision 10)", () => {
-  it("is one transaction that ends in rollback as written, so pasting it as it is changes nothing", () => {
+  it("is one transaction: the guard first, then one block that is a dry run as written (review fix 3)", () => {
     expect(statements[0]).toBe("begin");
-    expect(statements.at(-1)).toBe("rollback");
-    expect(statements.filter((statement) => /^(begin|commit|rollback)$/.test(statement))).toEqual(["begin", "rollback"]);
+    expect(statements.at(-1)).toBe("commit");
+    expect(statements.filter((statement) => /^(begin|commit|rollback)$/.test(statement))).toEqual(["begin", "commit"]);
+    // Two do blocks: the guard, then the clear-out. The guard comes before any delete.
+    expect(script.match(/^do \$\$$/gm)).toHaveLength(2);
+    expect(script.indexOf("refused:")).toBeLessThan(script.indexOf("delete from"));
+    // The dry run is the one line Lama changes, and it ends in an error that carries the counts, so nothing is kept.
+    expect(script.match(/dry_run boolean := (true|false);/g)).toEqual(["dry_run boolean := true;"]);
+    expect(script).toMatch(/raise exception 'dry run: nothing changed\. %'/);
+  });
+
+  it("refuses unless every profile's account is an @vossie.test address", () => {
+    expect(script).toMatch(/lower\(u\.email\) not like '%@vossie\.test'/);
+    expect(script).toMatch(/raise exception 'refused: %/);
   });
 
   it("empties every content table the migrations make, and keeps the reference data", () => {
@@ -48,7 +59,9 @@ describe("clearing the sample data from the live project (phase B decision 10)",
   });
 
   it("removes every Auth user and sign-in in progress, and every domain but the live two", () => {
-    expect(deleted).toEqual(expect.arrayContaining(["auth.users", "private.sign_in_attempts", "private.code_sends"]));
+    expect(deleted).toEqual(
+      expect.arrayContaining(["auth.users", "private.sign_in_attempts", "private.code_sends", "private.ip_code_sends"]),
+    );
     expect(statements).toContain("delete from private.allowed_email_domains where domain not in ('vossie.net', 'eduvos.com')");
     // Profiles go before their Auth users, and the users last of the accounts' rows.
     expect(deleted.indexOf("public.profiles")).toBeLessThan(deleted.indexOf("auth.users"));

@@ -128,6 +128,14 @@ describe("step 1: the email and the privacy box (accounts spec 3.1)", () => {
     expect((await start("thandi@eduvos.com", "//evil.example")).url).toBe("/login");
   });
 
+  it("keeps no per-network budget in sample mode: 20 sends from one IP address all go (phase B review fix 2)", async () => {
+    request.headers = { "x-real-ip": "196.25.1.1" };
+    for (let n = 1; n <= 20; n += 1) {
+      await start(`student${n}@eduvos.com`);
+      expect(attempt()).toMatchObject({ step: "code", errors: [] });
+    }
+  });
+
   it("does nothing with sample mode off (spec 2.1)", async () => {
     vi.stubEnv("VOSSIE_SAMPLE_MODE", "0");
     expect((await start("thandi@eduvos.com")).url).toBe("/login?next=%2Flistings%2Fl-001");

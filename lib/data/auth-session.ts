@@ -1,4 +1,3 @@
-import { cache } from "react";
 import { onSupabase } from "@/lib/backend";
 
 // Supabase Auth, for lib/auth (Supabase phase B decision 5, amendment 4): who the verified session says this is, the
@@ -23,13 +22,17 @@ function supabaseOnly(name: string): never {
 
 /**
  * Who the verified session says this is, or null: no cookie, a bad signature, an expired access token or an ended
- * session. Never refreshes (amendment 3): proxy.ts renews the session before pages render. Request-time. React's
- * cache() makes it one check per render; a Route Handler that has just changed the session reads readClaims().
+ * session. Never refreshes (amendment 3): proxy.ts renews the session before pages render. Request-time.
+ *
+ * No React cache here (review fix 5): a cache with no argument would answer a Server Action or Route Handler that has
+ * just signed in or out with the session from before. The twin reads the cookie on every call and checks each access
+ * token once per render (React's cache, keyed by the token), so a render still checks once, and a changed session is
+ * read afresh. A Route Handler that has just changed the session reads readClaims(), which never uses the cache.
  */
-export const currentClaims = cache(async (): Promise<SessionClaims | null> => {
+export async function currentClaims(): Promise<SessionClaims | null> {
   if (!onSupabase()) return null;
   return (await supabase()).currentClaims();
-});
+}
 
 /** As currentClaims(), read afresh from the request's cookies each time (amendment 12): after verifyOtp or a sign-out. */
 export async function readClaims(): Promise<SessionClaims | null> {

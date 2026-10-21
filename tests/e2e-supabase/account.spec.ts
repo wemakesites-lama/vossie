@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
-import { authUserId, latestCode, newAddress, removeE2eAccounts, storedSession } from "./helpers/local";
+import { authUserId, latestCode, newAddress, removeE2eAccounts, resetNetworkCounts, storedSession } from "./helpers/local";
 
 // Your account on Supabase, end to end (phase B, Task 11): Edit details, Download your data and Delete my account,
 // against the local stack. Run with `pnpm e2e:supabase`.
@@ -28,6 +28,8 @@ async function signIn(page: Page, email: string, { isNew = true } = {}) {
   await expect(page).toHaveURL(/\/account$/);
 }
 
+// Every test posts from this machine: a fresh per-network count for each, as each has a fresh address (review fix 2).
+test.beforeEach(() => resetNetworkCounts());
 test.afterAll(() => removeE2eAccounts(test.info().project.name));
 
 test.describe("your account on Supabase (phase B, Task 11)", () => {

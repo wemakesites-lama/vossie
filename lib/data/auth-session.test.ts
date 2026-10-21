@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   clearAuthCookies,
@@ -62,5 +64,22 @@ describe("the auth session façade (phase B decision 5, amendment 4)", () => {
     expect(twin.verifySignInCode).toHaveBeenCalledWith("a@vossie.net", "123456");
     expect(twin.signOutHere).toHaveBeenCalledTimes(1);
     expect(twin.clearAuthCookies).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("where the session's check is cached (review fix 5)", () => {
+  it("the façade keeps no cache: the twin checks once per token per render, so a session changed mid-request is read afresh", () => {
+    const facade = readFileSync(join(process.cwd(), "lib/data/auth-session.ts"), "utf8");
+    expect(facade).not.toMatch(/\bcache\(/);
+    expect(facade).not.toMatch(/from "react"/);
+    const twin = readFileSync(join(process.cwd(), "lib/data/supabase/auth-session.ts"), "utf8");
+    expect(twin).toMatch(/const verifyOnce = cache\(verify\);/);
+  });
+
+  it("asks the twin on every call", async () => {
+    vi.stubEnv("VOSSIE_BACKEND", "supabase");
+    await currentClaims();
+    await currentClaims();
+    expect(twin.currentClaims).toHaveBeenCalledTimes(2);
   });
 });

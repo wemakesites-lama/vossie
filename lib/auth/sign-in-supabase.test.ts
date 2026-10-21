@@ -6,7 +6,7 @@ import { form } from "@/tests/helpers/staff";
 import { resendCode, startSignIn } from "./actions";
 import { CODE_TTL_MS, POLICY_VERSION } from "./config";
 import { SIGN_IN_COOKIE } from "./cookies";
-import { hashToken } from "./secrets";
+import { hashIp, hashToken } from "./secrets";
 import { finishCode, finishProfile, finishSample } from "./sign-in-finish";
 import { getSignInView } from "./sign-in-view";
 
@@ -279,6 +279,49 @@ describe("Send a new code on Supabase (amendment 6)", () => {
     supabase.reserveAnswer = false;
     await resend();
     expect(attempt()).toMatchObject({ step: "code", errors: ["code-rate"], resent: false });
+  });
+});
+
+describe("one network's codes on Supabase (review fix 2)", () => {
+  const IP = "196.25.1.1";
+  const address = (n: number) => `eduv${String(1_000_000 + n)}@vossie.net`;
+
+  it("counts the network's send, under the IP's keyed hash, before the email's, then sends", async () => {
+    request.headers = { "x-real-ip": IP };
+    await start();
+    expect(without(supabase.calls, "save")).toEqual(["reserveIp", "reserve", `send:${EMAIL}`]);
+    expect([...supabase.ipSends]).toEqual([[hashIp(IP), 1]]);
+  });
+
+  it("refuses the 16th send from one network in the hour with ip-rate, asking Supabase nothing; another network still sends", async () => {
+    request.headers = { "x-real-ip": IP };
+    for (let n = 1; n <= 15; n += 1) {
+      await start(address(n));
+      expect(attempt()).toMatchObject({ step: "code", errors: [] });
+    }
+    supabase.calls = [];
+    await start(address(16));
+    expect(attempt()).toMatchObject({ step: "email", email: address(16), errors: ["ip-rate"], codeExpiresAt: null });
+    expect(without(supabase.calls, "save", "deleteAttempt")).toEqual(["reserveIp"]);
+    request.headers = { "x-forwarded-for": "196.25.9.9, 10.0.0.1" };
+    await start(address(16));
+    expect(attempt()).toMatchObject({ step: "code", errors: [] });
+  });
+
+  it("counts nothing per network when the request has no IP address, and still sends", async () => {
+    await start();
+    expect(without(supabase.calls, "save")).toEqual(["reserve", `send:${EMAIL}`]);
+    expect(supabase.ipSends.size).toBe(0);
+  });
+
+  it("says ip-rate on step 2 when Send a new code finds the network at its limit", async () => {
+    await onStep2();
+    request.headers = { "x-real-ip": IP };
+    supabase.ipSends.set(hashIp(IP), 15);
+    vi.setSystemTime(new Date(NOW.getTime() + 61_000));
+    await resend();
+    expect(attempt()).toMatchObject({ step: "code", errors: ["ip-rate"], resent: false });
+    expect(supabase.calls.some((call) => call === "reserve" || call.startsWith("send:"))).toBe(false);
   });
 });
 
