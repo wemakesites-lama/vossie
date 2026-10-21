@@ -92,4 +92,31 @@ describe("the asker's panel (community actions spec 2.13, plan decision 19)", ()
     expect(screen.getByRole("button", { name: "Reopen Desk lamp for res" })).toBeInTheDocument();
     expect(screen.queryByText(/Found it\?/)).toBeNull();
   });
+
+  it("tells the asker when the request will close, or that it closed itself and why (stage L spec section 4)", () => {
+    const open = own("open");
+    const { unmount } = render(
+      <AskerOffers own={{ ...open, request: { ...open.request, closesOn: "2026-11-13" } }} offers={[]} notice={null} />,
+    );
+    expect(screen.getByText(/^Closes automatically on/)).toHaveTextContent("Closes automatically on 13 Nov.");
+    unmount();
+    render(
+      <AskerOffers
+        own={{
+          ...own("closed"),
+          closedAt: "2026-11-11T22:00:00.000Z",
+          closedAutomatically: true,
+          closeReason: "idle",
+          neededByPassed: false,
+        }}
+        offers={[]}
+        notice={null}
+      />,
+    );
+    expect(screen.getByText("This request is closed")).toBeInTheDocument();
+    expect(screen.getByText(/^Closed automatically on/)).toHaveTextContent(
+      "Closed automatically on 12 Nov, after 30 days with no changes.",
+    );
+    expect(screen.getByRole("button", { name: "Reopen Desk lamp for res" })).not.toHaveAccessibleDescription();
+  });
 });

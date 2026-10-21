@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { closeMyRequest, reopenMyRequest } from "@/lib/looking-for/actions";
 import { deleteRequestPath, editRequestPath } from "@/lib/looking-for/paths";
+import { REOPEN_CLEARS_DATE_HINT } from "@/lib/looking-for/words";
 import type { OwnRequest } from "@/lib/types";
 
 /**
  * What the asker can do with a request (community actions spec 2.6, plan decision 6): Edit while it's open, Close or
  * Reopen (a form button each, posting where it came from), and Delete, through its confirm page. A hidden request can
- * only be deleted. Each names its request in visually hidden text (spec section 4).
+ * only be deleted. Each names its request in visually hidden text (spec section 4). When reopening would take off a
+ * needed-by date that has passed, a hint says so, tied to Reopen (stage L spec decision 13).
  */
 export function RequestActions({ own, from }: { own: OwnRequest; from: "page" | "list" }) {
   const { request, state } = own;
+  const reopenHint = state === "closed" && own.neededByPassed ? `reopen-hint-${from}-${request.id}` : undefined;
   const fields = (
     <>
       <input type="hidden" name="request" value={request.id} />
@@ -17,31 +20,38 @@ export function RequestActions({ own, from }: { own: OwnRequest; from: "page" | 
     </>
   );
   return (
-    <div className="requests-actions">
-      {state === "open" && (
-        <Link href={editRequestPath(request.id)} prefetch={false} className="btn btn-outline text-navy">
-          Edit <span className="sr-only">{request.title}</span>
+    <>
+      <div className="requests-actions">
+        {state === "open" && (
+          <Link href={editRequestPath(request.id)} prefetch={false} className="btn btn-outline text-navy">
+            Edit <span className="sr-only">{request.title}</span>
+          </Link>
+        )}
+        {state === "open" && (
+          <form action={closeMyRequest}>
+            {fields}
+            <button type="submit" className="btn btn-outline text-navy">
+              Close <span className="sr-only">{request.title}</span>
+            </button>
+          </form>
+        )}
+        {state === "closed" && (
+          <form action={reopenMyRequest}>
+            {fields}
+            <button type="submit" className="btn btn-outline text-navy" aria-describedby={reopenHint}>
+              Reopen <span className="sr-only">{request.title}</span>
+            </button>
+          </form>
+        )}
+        <Link href={deleteRequestPath(request.id)} prefetch={false} className="btn btn-outline text-danger">
+          Delete <span className="sr-only">{request.title}</span>
         </Link>
+      </div>
+      {reopenHint && (
+        <p id={reopenHint} className="form-hint">
+          {REOPEN_CLEARS_DATE_HINT}
+        </p>
       )}
-      {state === "open" && (
-        <form action={closeMyRequest}>
-          {fields}
-          <button type="submit" className="btn btn-outline text-navy">
-            Close <span className="sr-only">{request.title}</span>
-          </button>
-        </form>
-      )}
-      {state === "closed" && (
-        <form action={reopenMyRequest}>
-          {fields}
-          <button type="submit" className="btn btn-outline text-navy">
-            Reopen <span className="sr-only">{request.title}</span>
-          </button>
-        </form>
-      )}
-      <Link href={deleteRequestPath(request.id)} prefetch={false} className="btn btn-outline text-danger">
-        Delete <span className="sr-only">{request.title}</span>
-      </Link>
-    </div>
+    </>
   );
 }

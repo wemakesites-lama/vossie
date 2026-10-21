@@ -24,7 +24,14 @@ export async function RequestForm({ requestId }: { requestId: string | null }) {
   const own = requestId ? await getOwnRequest(account.id, requestId, now) : null;
   if (requestId && !own) notFound();
   if (own && own.state !== "open") {
-    return <RequestLocked requestId={own.request.id} title={own.request.title} state={own.state} />;
+    return (
+      <RequestLocked
+        requestId={own.request.id}
+        title={own.request.title}
+        state={own.state}
+        reopenClearsDate={own.neededByPassed}
+      />
+    );
   }
   const today = sastDate(now);
   const [state, campuses, categories, once] = await Promise.all([

@@ -9,6 +9,7 @@ import { reopenMyRequest, saveMyRequest } from "@/lib/looking-for/actions";
 import { requestErrors, requestFieldIds } from "@/lib/looking-for/errors";
 import { requestFieldPrefix, requestPath, YOUR_REQUESTS_PATH } from "@/lib/looking-for/paths";
 import { addDays, DETAILS_MAX, DETAILS_MIN, NEEDED_BY_DAYS, TITLE_MAX, TITLE_MIN } from "@/lib/looking-for/rules";
+import { CLOSES_BY_ITSELF_HINT, REOPEN_CLEARS_DATE_HINT } from "@/lib/looking-for/words";
 import type { Campus, Category, LookingForRequest } from "@/lib/types";
 
 /** What the request form shows in its fields (community actions spec 2.3). */
@@ -217,7 +218,7 @@ export function RequestFormView({ requestId, once, form, campuses, categories, t
             Needed by (optional)
           </label>
           <p id={hint(ids.neededBy)} className="form-hint">
-            {`Today or within ${NEEDED_BY_DAYS} days, as year, month and day, like ${addDays(today, 7)}.`}
+            {`Today or within ${NEEDED_BY_DAYS} days, as year, month and day, like ${addDays(today, 7)}. ${CLOSES_BY_ITSELF_HINT}`}
           </p>
           <FieldError id={errorId(ids.neededBy)} message={problem(ids.neededBy)} />
           <input
@@ -240,14 +241,21 @@ export function RequestFormView({ requestId, once, form, campuses, categories, t
   );
 }
 
-type RequestLockedProps = { requestId: string; title: string; state: "closed" | "hidden" };
+type RequestLockedProps = {
+  requestId: string;
+  title: string;
+  state: "closed" | "hidden";
+  /** Reopening takes off a needed-by date that has passed: a hint says so, tied to Reopen (plan decision 18). */
+  reopenClearsDate?: boolean;
+};
 
 /** A closed or hidden request's edit page: why it can't be changed, and what can be done (plan decision 6). */
-export function RequestLocked({ requestId, title, state }: RequestLockedProps) {
+export function RequestLocked({ requestId, title, state, reopenClearsDate = false }: RequestLockedProps) {
   const back =
     state === "closed"
       ? { href: requestPath(requestId), label: "Back to the request" }
       : { href: YOUR_REQUESTS_PATH, label: "Back to Your requests" };
+  const hintId = reopenClearsDate ? `reopen-hint-locked-${requestId}` : undefined;
   return (
     <div className="request-form-column">
       <Link href={back.href} prefetch={false} className="msg-crumb">
@@ -260,10 +268,15 @@ export function RequestLocked({ requestId, title, state }: RequestLockedProps) {
           <p className="form-notice">This request is closed. Reopen it to change it.</p>
           <form action={reopenMyRequest}>
             <input type="hidden" name="request" value={requestId} />
-            <button type="submit" className="btn btn-outline text-navy">
+            <button type="submit" className="btn btn-outline text-navy" aria-describedby={hintId}>
               Reopen <span className="sr-only">{title}</span>
             </button>
           </form>
+          {hintId && (
+            <p id={hintId} className="form-hint">
+              {REOPEN_CLEARS_DATE_HINT}
+            </p>
+          )}
         </div>
       ) : (
         <p className="form-notice">

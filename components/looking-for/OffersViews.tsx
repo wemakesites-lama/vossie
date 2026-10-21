@@ -5,6 +5,7 @@ import { threadPath } from "@/lib/messaging/paths";
 import { signInHref } from "@/lib/next-path";
 import { sastDateTime } from "@/lib/time";
 import type { LookingForRequest, OfferSummary, OwnRequest } from "@/lib/types";
+import { AutoCloseLine } from "./AutoCloseLine";
 import { RequestActions } from "./RequestActions";
 
 // The two versions of the request page's offers panel (community actions plan, Task 15). Pure views with no session:
@@ -62,6 +63,7 @@ export function AskerOffers({ own, offers, notice }: AskerOffersProps) {
       )}
       <p className="request-offers-count">{offersLabel(request.offers)}</p>
       {state === "closed" && <p className="request-offers-state">This request is closed</p>}
+      <AutoCloseLine own={own} className="request-offers-state" />
       {offers.length > 0 && (
         <ul className="request-offers-list">
           {offers.map((offer) => (

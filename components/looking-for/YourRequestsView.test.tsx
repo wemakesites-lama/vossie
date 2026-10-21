@@ -91,3 +91,44 @@ describe("the title link's target (community actions plan amendment 19.10)", () 
     expect(body).toMatch(/min-height:\s*44px/);
   });
 });
+
+describe("requests that close themselves (stage L spec section 4)", () => {
+  const open = own("r-e", "Clip-on lamp", "open");
+  const OPEN_UNTIL = { ...open, request: { ...open.request, closesOn: "2026-11-13" } };
+  const AUTO = {
+    ...own("r-d", "Kettle for res", "closed"),
+    closedAt: "2026-10-19T22:00:00.000Z",
+    closedAutomatically: true,
+    closeReason: "needed-by" as const,
+    neededByPassed: true,
+  };
+  const IDLE = {
+    ...own("r-f", "Desk chair", "closed"),
+    closedAt: "2026-11-11T22:00:00.000Z",
+    closedAutomatically: true,
+    closeReason: "idle" as const,
+  };
+
+  it("says when an open request will close, and when and why a closed one closed itself, with dates in <time>", () => {
+    render(<YourRequestsView items={[OPEN_UNTIL, AUTO, IDLE]} notice={null} />);
+    const [first, second, third] = screen.getAllByRole("listitem");
+    expect(first).toHaveTextContent("Closes automatically on 13 Nov.");
+    expect(first.querySelector('time[datetime="2026-11-13"]')).not.toBeNull();
+    expect(second).toHaveTextContent("Closed automatically on 20 Oct, 3 days after the date you needed it by.");
+    expect(second.querySelector('time[datetime="2026-10-19T22:00:00.000Z"]')).not.toBeNull();
+    expect(third).toHaveTextContent("Closed automatically on 12 Nov, after 30 days with no changes.");
+  });
+
+  it("ties a hint to Reopen when reopening takes off a passed needed-by date, and only then", () => {
+    render(<YourRequestsView items={[AUTO, IDLE]} notice={null} />);
+    expect(screen.getByRole("button", { name: "Reopen Kettle for res" })).toHaveAccessibleDescription(
+      "Reopening removes the needed-by date, which has passed.",
+    );
+    expect(screen.getByRole("button", { name: "Reopen Desk chair" })).not.toHaveAccessibleDescription();
+  });
+
+  it("says nothing of closing for a request its asker closed", () => {
+    render(<YourRequestsView items={[own("r-b", "Kettle for res", "closed")]} notice={null} />);
+    expect(screen.queryByText(/automatically/)).toBeNull();
+  });
+});

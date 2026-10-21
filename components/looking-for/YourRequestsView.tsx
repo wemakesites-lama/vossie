@@ -5,6 +5,7 @@ import { NEW_REQUEST_PATH, requestPath } from "@/lib/looking-for/paths";
 import { requestStateLabel } from "@/lib/looking-for/words";
 import { shortSastDate } from "@/lib/time";
 import type { OwnRequest } from "@/lib/types";
+import { AutoCloseLine } from "./AutoCloseLine";
 import { RequestActions } from "./RequestActions";
 
 type YourRequestsViewProps = {
@@ -64,6 +65,7 @@ export function YourRequestsView({ items, notice }: YourRequestsViewProps) {
                     {` · ${offersLabel(request.offers)} · Posted `}
                     <time dateTime={request.createdAt}>{shortSastDate(request.createdAt)}</time>
                   </p>
+                  <AutoCloseLine own={own} className="requests-item-meta" />
                   {state === "hidden" && (
                     <p className="requests-reason">The Hub&apos;s reason: {own.hiddenReason ?? "none given"}</p>
                   )}

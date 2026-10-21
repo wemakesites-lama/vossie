@@ -209,4 +209,30 @@ describe("the request form (community actions spec 2.3 and section 4)", () => {
     expect(screen.getByRole("link", { name: "Your requests" })).toHaveAttribute("href", "/account/requests");
     expect(screen.queryByRole("button")).toBeNull();
   });
+
+  it("says under Needed by how a request closes itself (stage L spec section 4)", () => {
+    render(
+      <RequestFormView
+        requestId={null}
+        once={TOKEN}
+        form={{ values: EMPTY, errors: [] }}
+        campuses={campuses}
+        categories={categories}
+        today={TODAY}
+      />,
+    );
+    expect(screen.getByLabelText("Needed by (optional)")).toHaveAccessibleDescription(
+      "Today or within 90 days, as year, month and day, like 2026-10-21. Your request closes automatically 3 days after this date. Without one, it closes after 30 days with no changes.",
+    );
+  });
+
+  it("warns on a closed request's edit page that reopening takes off a passed needed-by date (plan decision 18)", () => {
+    const { unmount } = render(<RequestLocked requestId="r-abc" title="Kettle for res" state="closed" reopenClearsDate />);
+    expect(screen.getByRole("button", { name: "Reopen Kettle for res" })).toHaveAccessibleDescription(
+      "Reopening removes the needed-by date, which has passed.",
+    );
+    unmount();
+    render(<RequestLocked requestId="r-abc" title="Kettle for res" state="closed" />);
+    expect(screen.getByRole("button", { name: "Reopen Kettle for res" })).not.toHaveAccessibleDescription();
+  });
 });
