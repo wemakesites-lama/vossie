@@ -124,7 +124,7 @@ const SECTIONS: readonly InfoSection[] = [
           </li>
           <li>
             A seller who has been featured sits out for a week when there are enough other Verified sellers to fill the
-            row.
+            row. When there aren&apos;t, the sellers featured longest ago come back first.
           </li>
           <li>
             Hub staff can pin a Verified seller to a campus for a day. A pinned seller takes one of the places before the
@@ -141,7 +141,7 @@ export default function TrustPage() {
     <InfoPage
       title="How trust works"
       lede="No star ratings. Trust here comes from checks by the Hub and from what sellers actually do."
-      updated="2026-10-20"
+      updated="2026-10-21"
       sections={SECTIONS}
     />
   );

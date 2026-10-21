@@ -113,14 +113,14 @@ describe("How trust works (info and system spec 2.3, 2.4 and 3)", () => {
     expect(featured).not.toHaveTextContent("Once accounts are live");
   });
 
-  it("says the week's break is a preference, kept only while there are enough other Verified sellers (amendment 3)", () => {
+  it("says the week's break is a preference, and who comes back first when it gives (amendment 3, stage M spec decision 12)", () => {
     render(<TrustPage />);
     const featured = screen.getByRole("region", { name: "How Featured today is picked" });
     const items = within(featured)
       .getAllByRole("listitem")
       .map((item) => item.textContent);
     expect(items[3]).toBe(
-      "A seller who has been featured sits out for a week when there are enough other Verified sellers to fill the row.",
+      "A seller who has been featured sits out for a week when there are enough other Verified sellers to fill the row. When there aren't, the sellers featured longest ago come back first.",
     );
   });
 

@@ -123,3 +123,40 @@ describe("an admin's own shop on Featured (stage L spec decision 1)", () => {
     expect(await getPin("pin-nope")).toBeNull();
   });
 });
+
+describe("the resting sellers who waited longest come back first (stage M spec decisions 9 to 11)", () => {
+  /** A recorded row for "all", as featuredFor stores one. */
+  const record = (day: string, sellerSlugs: string[]) =>
+    sampleStore().featuredDraws.set(`all:${day}`, { key: `all:${day}`, campusSlug: "all", day, sellerSlugs });
+  /** The nine sellers who may be featured, in the order drawFeatured sorts them. */
+  const everyone = async () =>
+    (await featuredChoices()).map((seller) => seller.slug).sort((a, b) => a.localeCompare(b));
+
+  it("rests a seller with the latest day it was shown: shown five days ago and yesterday, it waited one day", async () => {
+    const e = await everyone();
+    expect(e).toHaveLength(9);
+    record("2026-10-09", [e[0], e[1], e[2], e[3]]);
+    record("2026-10-11", [e[4], e[5], e[6], e[7]]);
+    record("2026-10-13", [e[8], e[0], e[1], e[2]]);
+    // Everyone is resting. e[3] was shown on the 9th only, so it comes back first; then the 11th's, in the day's
+    // rotation (on 14 October it starts at place 4 of 9). e[0] to e[2] count from the 13th, not the 9th.
+    expect((await featuredFor("all", DAY)).map((seller) => seller.slug)).toEqual([e[3], e[4], e[5], e[6]]);
+  });
+
+  it("fills a nine-seller walk's resting places from the oldest row", async () => {
+    const day1 = (await featuredFor("all", "2026-10-14")).map((seller) => seller.slug);
+    const day2 = (await featuredFor("all", "2026-10-15")).map((seller) => seller.slug);
+    const day3 = (await featuredFor("all", "2026-10-16")).map((seller) => seller.slug);
+    expect(day2.some((slug) => day1.includes(slug))).toBe(false);
+    // Day 3: the one seller shown on neither day, then three of day 1's, never day 2's.
+    expect(day3).toHaveLength(4);
+    expect(day3.slice(1).every((slug) => day1.includes(slug))).toBe(true);
+  });
+
+  it("counts a pinned day as a featured day: pins are in the recorded row (passes at HEAD)", async () => {
+    const e = await everyone();
+    await pin(e[0], "all", "2026-10-13");
+    expect((await featuredFor("all", "2026-10-13"))[0].slug).toBe(e[0]);
+    expect((await featuredFor("all", DAY)).map((seller) => seller.slug)).not.toContain(e[0]);
+  });
+});

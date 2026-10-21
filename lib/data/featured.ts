@@ -13,7 +13,8 @@ import { sampleStore } from "./store";
 // campus's row is recorded the first time it's drawn that day (by `${campus}:${day}`, "all" for visitors who haven't
 // chosen one), so it stays the same all day and a seller shown there sits out that campus's next six days. The break
 // is a preference (plan amendment 3): resting sellers come after everyone else rather than being left out, so a row
-// is only short when there aren't enough eligible sellers at all. Adding or removing a pin for a day forgets that
+// is only short when there aren't enough eligible sellers at all. When resting sellers are needed, the campus's own
+// come first, then whoever was featured longest ago (stage M). Adding or removing a pin for a day forgets that
 // campus's row for the day, so the next view draws again.
 
 /** The homepage's four places (homepage spec 7.10). */
@@ -67,9 +68,14 @@ export async function featuredFor(campus: CampusChoice, day: string): Promise<Se
   const key = drawKey(campus, day);
   let row = store.featuredDraws.get(key);
   if (!row) {
-    const resting = new Set<string>();
+    // The week's break, with the latest day each resting seller was in this campus's row: walking back from
+    // yesterday, the first day met is the latest (stage M spec decision 11). A pinned day counts: pins are in the row.
+    const resting = new Map<string, string>();
     for (let back = 1; back <= REST_DAYS; back += 1) {
-      for (const slug of store.featuredDraws.get(drawKey(campus, addDays(day, -back)))?.sellerSlugs ?? []) resting.add(slug);
+      const shown = addDays(day, -back);
+      for (const slug of store.featuredDraws.get(drawKey(campus, shown))?.sellerSlugs ?? []) {
+        if (!resting.has(slug)) resting.set(slug, shown);
+      }
     }
     const pinned = pinsFor(campus, day).map((pin) => pin.sellerSlug);
     const drawn = drawFeatured(eligible, campus, day, FEATURED_PLACES, { pinned, resting });
