@@ -1,8 +1,8 @@
 import { inject } from "vitest";
-import type { SignIn } from "@/tests/contract/actions";
+import type { ActAs, SignIn } from "@/tests/contract/actions";
 import { WORLD_ACCOUNTS } from "@/tests/contract/world";
 import { testAdminClient } from "./accounts";
-import { setViewer } from "./viewer";
+import { setViewer, withViewer } from "./viewer";
 
 // The database side of the action contracts (C4/C5 plan Task 3, decision 13). A db test file that runs Server Actions
 // mocks Next with tests/helpers/next-request.ts over its own FakeRequest, as the unit tests do, and the two seams, so
@@ -47,4 +47,7 @@ export async function tidyFormStates(): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-export const dbActions = { signIn: signInDb, tidy: tidyFormStates };
+/** On Supabase, acting as someone for one call is that call's own viewer (amendment 7): every seam reads it. */
+export const asDb: ActAs = (_world, name, run) => withViewer(name, run);
+
+export const dbActions = { signIn: signInDb, tidy: tidyFormStates, as: asDb };

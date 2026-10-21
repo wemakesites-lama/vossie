@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 import { sampleAccounts } from "@/data/fixtures/accounts";
-import { samplePickupPointRows } from "@/data/fixtures/staff";
+import { sampleHubBookings, sampleMentorNotes, samplePickupPointRows } from "@/data/fixtures/staff";
 import { resetSampleStore } from "@/lib/data/store";
 import { seedUuid } from "@/scripts/seed-sql";
 
@@ -30,6 +30,12 @@ const POINT_IDS = new Map(samplePickupPointRows.map((row) => [row.id, seedUuid("
 /** The sample store's account ids, to the uuids the seed gives them (C4/C5 plan decision 15). */
 const ACCOUNT_IDS = new Map(sampleAccounts.map(({ account }) => [account.id, seedUuid("account", account.id)]));
 
+/** The sample's slot requests and mentors' notes, to the seed's uuids (C4/C5 plan Tasks 18 and 19). */
+const STAFF_TOOL_IDS = new Map([
+  ...sampleHubBookings.map((row) => [row.id, seedUuid("hub-booking", row.id)] as const),
+  ...sampleMentorNotes.map((row) => [row.id, seedUuid("mentor-note", row.id)] as const),
+]);
+
 /** The contract accounts' ids in both worlds: the sample world's acc-contract-<name>, and any uuid not in the seed. */
 const isContractAccount = (id: string) =>
   id.startsWith("acc-contract-") || (/^[0-9a-f-]{36}$/.test(id) && ![...ACCOUNT_IDS.values()].includes(id));
@@ -46,15 +52,15 @@ export function dropContractAccounts<T>(list: readonly T[], idOf: (item: T) => s
 const TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
 
 function normaliseString(value: string): string {
-  const point = POINT_IDS.get(value) ?? ACCOUNT_IDS.get(value);
+  const point = POINT_IDS.get(value) ?? ACCOUNT_IDS.get(value) ?? STAFF_TOOL_IDS.get(value);
   if (point) return point;
   return TIME.test(value) ? new Date(value).toISOString() : value;
 }
 
 /**
  * A reader's answer with the differences that aren't differences taken out, for either backend: the sample's pickup
- * point and account ids become their uuids, and every time is written as toISOString() writes it. Dates (YYYY-MM-DD) and
- * everything else stay as they are. Arrays, Maps, Sets and plain objects are walked (object keys too).
+ * point, account, slot request and mentor's note ids become their uuids, and every time is written as toISOString()
+ * writes it. Dates (YYYY-MM-DD) and everything else stay as they are. Arrays, Maps, Sets and plain objects are walked (object keys too).
  */
 export function normalise<T>(value: T): T {
   return walk(value) as T;

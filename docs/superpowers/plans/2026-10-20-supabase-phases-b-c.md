@@ -126,3 +126,9 @@ The full e2e suite against the local stack with `VOSSIE_BACKEND=supabase`, then 
 - Still sample until their stage: `recalculateBadgeFor` (a reply's or a sale's badge; on Supabase the badges move only when an admin opens `/admin`), and everything C4 and C5 own.
 - Checks: pgTAP 2,489; unit 3,055; db 168; the JS budget unchanged. Detail in that plan's ledger and "Changes made during the build".
 
+**Step 3, C4 and C5 (built 2026-10-21; `2026-10-21-supabase-phase-c4-c5-community-staff.md`, Tasks 0 to 22 and the C4 review fixes; Task 23 is step 5):**
+- C4: Looking For requests' writes and the asker's reads (settling first, once per render), offers' request side, follows, saved searches (by the account's id as well as the policy) and alert matching through browse's `listingMatches`, recorded by `record_search_matches`; the once-a-day notifications are SQL's. A nightly `/api/cron/badges`.
+- C5: the audit log, staff shops, the reports queue and Show again, Featured pins and pickup point writes (`update_shop` keeps a listing on a retired point, as the sample does), the Hub (posts and covers in Storage, RSVPs, slot requests), mentors' notes and check-ins, staff accounts (exact email only; the last-admin lock), the admin's numbers (`admin_weekly_counts`, then `protectCounts`) and the staff tools' part of the download. Every staff action starts with `requireStaffAction`; on Supabase the staff function writes its audit entry, closes its reports and sends its notifications in one transaction, and each gate's refusal is proven on both backends by an action contract.
+- Still sample until step 5: nothing in C4 or C5. Every write action expires the same tags on both backends (`tags.test.ts`).
+- Checks: pgTAP 2,541; unit 3,308; db 338; the JS budget unchanged; the staff e2e specs pass in sample mode except one short-phone CLS check on a Show again page (0.0892), for the controller. Detail in that plan's ledger and "Changes made during the build".
+

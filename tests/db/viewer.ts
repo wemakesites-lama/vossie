@@ -109,3 +109,19 @@ export function withSessionSeam<AuthSession extends object>(authSession: AuthSes
     liveUserId: async () => currentViewerClaims()?.userId ?? null,
   };
 }
+
+/**
+ * lib/data/auth-session.ts (lib/auth's way to Supabase Auth) answering from the viewer's session directly, as
+ * withSessionSeam does one layer down. For a db test that runs two Server Actions at once (the last-admin race, C4/C5
+ * plan Task 20): the wrapper reaches the twin through import() on every call, and the test runner can hand a second
+ * import() of a mocked module, made while another is under way, the unmocked module. lib/auth imports the wrapper
+ * statically, so mocking it here leaves no import() between the actions and the seam.
+ */
+export function withAuthSessionWrapperSeam<AuthSession extends object>(authSession: AuthSession) {
+  return {
+    ...authSession,
+    currentClaims: async () => currentViewerClaims(),
+    readClaims: async () => currentViewerClaims(),
+    liveUserId: async () => currentViewerClaims()?.userId ?? null,
+  };
+}

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { onSupabase } from "@/lib/backend";
 import { MENTOR_WINDOW_DAYS, mentorFlags } from "@/lib/staff/mentor";
 import { isAdmin } from "@/lib/staff/roles";
 import type { Account, MentoredShop } from "@/lib/types";
@@ -10,11 +11,17 @@ import { sampleStore } from "./store";
 // them; an admin sees every assigned shop. Each has its last 14 days' numbers and its flags: numbers, never messages
 // (FUNCTION-MAP K1). Notes and check-ins are about the shop's owner, shared with every mentor and admin who can open
 // the shop's page, and never shown to the seller. Times come from the caller.
+//
+// On Supabase (C4/C5 plan Task 19) mentoredShops, listNotes and addNote are lib/data/supabase/mentors.ts's, picked by
+// their first line through import(); getMentoredShop goes through mentoredShops.
+
+const supabase = () => import("./supabase/mentors");
 
 const DELETED = "Deleted account";
 
 /** The shops `viewer` may follow (plan decision 15): theirs, or for an admin every assigned shop. By name. */
 export async function mentoredShops(viewer: Pick<Account, "id" | "roles">, now: Date): Promise<MentoredShop[]> {
+  if (onSupabase()) return (await supabase()).mentoredShops(viewer, now);
   const { sellerProfiles, sellers, accounts } = sampleStore();
   const rows: MentoredShop[] = [];
   for (const profile of sellerProfiles.values()) {
@@ -59,28 +66,31 @@ export type MentorNoteView = Pick<MentorNoteRow, "id" | "kind" | "checkInOn" | "
 
 /** What's been written about a shop's owner, newest first. */
 export async function listNotes(ownerId: string): Promise<MentorNoteView[]> {
+  if (onSupabase()) return (await supabase()).listNotes(ownerId);
   return [...sampleStore().mentorNotes.values()]
     .filter((row) => row.ownerId === ownerId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map(({ id, kind, checkInOn, text, authorName, createdAt }) => ({ id, kind, checkInOn, text, authorName, createdAt }));
 }
 
-/** A new note or check-in about a shop's owner. Its id. Server Actions only: it makes ids. */
-export async function addNote({
-  ownerId,
-  kind,
-  checkInOn,
-  text,
-  author,
-  now,
-}: {
-  ownerId: string;
-  kind: MentorNoteRow["kind"];
-  checkInOn: string | null;
-  text: string;
-  author: { id: string; firstName: string };
-  now: Date;
-}): Promise<string> {
+/**
+ * A new note or check-in about a shop's owner. Its id. Server Actions only: it makes ids. `onceToken` is the form's
+ * one-time token (C4/C5 plan decision 6): on Supabase add_mentor_note and add_check_in take it in the same transaction
+ * as the note. The sample ignores it: its action takes the token itself (takeOnceToken).
+ */
+export async function addNote(
+  note: {
+    ownerId: string;
+    kind: MentorNoteRow["kind"];
+    checkInOn: string | null;
+    text: string;
+    author: { id: string; firstName: string };
+    now: Date;
+  },
+  onceToken?: string,
+): Promise<string> {
+  if (onSupabase()) return (await supabase()).addNote(note, onceToken);
+  const { ownerId, kind, checkInOn, text, author, now } = note;
   const id = `mn-${randomUUID()}`;
   sampleStore().mentorNotes.set(id, {
     id,

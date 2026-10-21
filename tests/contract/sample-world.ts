@@ -514,6 +514,44 @@ export function sampleWorld(): World {
       }
       for (const [id, pin] of store.featuredPins) if (pin.sellerSlug === slug) store.featuredPins.delete(id);
     },
+    async tidyStaffTools() {
+      // Nothing to tidy: the next test's world starts from a fresh store.
+    },
+    async photoStored(src) {
+      return sampleStore().photos.has(photoIdOf(src) ?? "");
+    },
+    async onlyAdmins(names) {
+      const keep = new Set(await Promise.all(names.map((name) => this.signedIn(name))));
+      for (const row of sampleStore().accounts.values()) {
+        const others = row.roles.filter((role) => role !== "admin");
+        row.roles = keep.has(row.id) ? [...others, "admin"] : others;
+      }
+    },
+    async addPastActivity(slug, at, closedAt) {
+      const store = sampleStore();
+      const [askerId, sellerId, staffId] = await Promise.all([this.signedIn("asker"), this.signedIn("seller"), this.signedIn("staff")]);
+      const id = await this.addRequest({ asker: "asker", title: "A contract request from last week", neededBy: null });
+      Object.assign(store.requests.get(id)!, { createdAt: at.toISOString(), updatedAt: at.toISOString() });
+      const followId = `follow-contract-past-${store.follows.size + 1}`;
+      store.follows.set(followId, { id: followId, accountId: askerId, sellerSlug: slug, createdAt: at.toISOString() });
+      const reportId = `report-contract-past-${store.reports.size + 1}`;
+      store.reports.set(reportId, {
+        id: reportId,
+        reporterId: sellerId,
+        targetKind: "request",
+        targetId: id,
+        targetTitle: "A contract request from last week",
+        reason: "spam",
+        detail: "",
+        status: "closed",
+        createdAt: at.toISOString(),
+        outcome: "dismissed",
+        note: "Nothing wrong.",
+        closedAt: closedAt.toISOString(),
+        closedBy: staffId,
+        targetOwnerId: askerId,
+      });
+    },
     async cleanup() {
       // Nothing to undo: the next test's world starts from a fresh store.
     },

@@ -1,9 +1,12 @@
+import { onSupabase } from "@/lib/backend";
 import type { BookingStatus } from "@/lib/types";
 import { sampleStore } from "./store";
 
 // What deleting an account does to the staff tools' tables, and what the account's data export holds of them (POPIA;
-// staff tools plan decisions 6, 11, 13 and 16). lib/data/accounts.ts calls both. This module imports only the store,
-// so nothing that imports accounts.ts is imported here, and there's no cycle.
+// staff tools plan decisions 6, 11, 13 and 16). lib/data/accounts.ts calls both. This module imports only the store
+// and lib/backend (a plain module), so nothing that imports accounts.ts is imported here, and there's no cycle. On
+// Supabase (C4/C5 plan Task 21) both are lib/data/supabase/staff-privacy.ts's, picked by their first line through
+// import().
 
 const DELETED = "Deleted account";
 
@@ -17,6 +20,7 @@ const DELETED = "Deleted account";
  * - its posts stay for the Hub (plan decision 11), and the answers, pins and closed reports it left stay, unsigned.
  */
 export async function forgetAccountInStaffTools(accountId: string): Promise<void> {
+  if (onSupabase()) return (await import("./supabase/staff-privacy")).forgetAccountInStaffTools(accountId);
   const store = sampleStore();
   for (const row of store.auditLog.values()) {
     if (row.staffId === accountId) Object.assign(row, { staffId: null, staffName: DELETED });
@@ -65,6 +69,7 @@ export type StaffToolsExport = {
 };
 
 export async function exportStaffToolsData(accountId: string): Promise<StaffToolsExport> {
+  if (onSupabase()) return (await import("./supabase/staff-privacy")).exportStaffToolsData(accountId);
   const { hubRsvps, hubBookings, hubPosts } = sampleStore();
   const title = (postId: string) => hubPosts.get(postId)?.title ?? "A removed post";
   return {

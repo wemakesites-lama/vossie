@@ -127,6 +127,17 @@ describe("where Supabase may be reached from (2b plan Task 12)", () => {
     expect(found).toEqual([]);
   });
 
+  it("client code never imports lib/data/refused.ts or lib/staff/follow-ups.ts (C4/C5 plan Task 22)", () => {
+    const serverOnly = [join(DATA, "refused"), join(ROOT, "lib", "staff", "follow-ups")];
+    const clients = ["app", "components", "hooks", "lib"].flatMap((folder) => filesUnder(folder)).filter((path) => CLIENT.test(read(path)));
+    const found = clients.flatMap((path) =>
+      importsIn(read(path))
+        .filter(({ specifier }) => serverOnly.some((dir) => within(target(specifier, path), dir)))
+        .map(({ specifier }) => `${shown(path)}: ${specifier}`),
+    );
+    expect(found).toEqual([]);
+  });
+
   it("a lib/data module reaches Supabase only through import() of its twin, never a static import", () => {
     const modules = filesUnder("lib/data").filter((path) => !within(path, DATA_SUPABASE));
     expect(modules.length).toBeGreaterThan(20);

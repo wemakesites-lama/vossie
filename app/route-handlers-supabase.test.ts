@@ -57,6 +57,8 @@ vi.mock("@/lib/data/supabase/form-states", async () => ({
 vi.mock("@/lib/data/supabase/requests", () => ({ settleRequests: async () => 0, exportRequests: async () => [] }));
 vi.mock("@/lib/data/supabase/follows", () => ({ exportFollowing: async () => [] }));
 vi.mock("@/lib/data/supabase/saved-searches", () => ({ exportSavedSearches: async () => [] }));
+// The staff tools' export reads the account's RSVPs and slot requests on Supabase (C4/C5 plan Task 21's twin); none here.
+vi.mock("@/lib/data/supabase/staff-privacy", () => ({ exportStaffToolsData: async () => ({ hubRsvps: [], slotRequests: [] }) }));
 // Selling's export reads the owner's shop on Supabase (C2/C3 plan Task 8's twin); here there is none.
 vi.mock("@/lib/data/supabase/shops", () => ({ exportShop: async () => ({ shop: null, listings: [], onboardingDraft: null }) }));
 // Messaging's export reads the account's conversations, reports and notifications on Supabase (C2/C3 plan Tasks 12 to

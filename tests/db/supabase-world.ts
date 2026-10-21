@@ -1052,6 +1052,124 @@ export function supabaseWorld(): SupabaseWorld {
       }
       check(await admin.from("shops").delete().eq("id", shop.id), "Deleting the shop");
     },
+    async tidyStaffTools() {
+      const accounts = WORLD_ACCOUNTS.map((name) => inject("dbSessions")[name].id);
+      // The world's accounts' roles too, which a staff action may change (give_role, remove_role).
+      const roles = check(await admin.from("profiles").select("id, roles").in("id", accounts), "Reading the roles").data!;
+      const rows = async () => {
+        const [posts, rsvps, bookings, notes] = await Promise.all([
+          admin.from("hub_posts").select("id"),
+          admin.from("hub_rsvps").select("post_id, account_id").in("account_id", accounts),
+          admin.from("hub_bookings").select("id").in("account_id", accounts),
+          admin.from("mentor_notes").select("id"),
+        ]);
+        for (const result of [posts, rsvps, bookings, notes]) check(result, "Reading the staff tools' rows");
+        return {
+          posts: posts.data!.map((row) => row.id),
+          rsvps: rsvps.data!.map((row) => `${row.post_id} ${row.account_id}`),
+          bookings: bookings.data!.map((row) => row.id),
+          notes: notes.data!.map((row) => row.id),
+        };
+      };
+      const before = await rows();
+      undos.push(async () => {
+        const after = await rows();
+        const made = (now: string[], then: string[]) => now.filter((id) => !then.includes(id));
+        const bookings = made(after.bookings, before.bookings);
+        if (bookings.length > 0) {
+          // The authors told about them (request_slot's "booking" notifications), whoever they are.
+          check(await admin.from("notifications").delete().eq("kind", "booking").in("subject_id", bookings), "The bookings' notes");
+          check(await admin.from("hub_bookings").delete().in("id", bookings), "Taking the slot requests away");
+        }
+        for (const key of made(after.rsvps, before.rsvps)) {
+          const [postId, accountId] = key.split(" ");
+          check(await admin.from("hub_rsvps").delete().eq("post_id", postId).eq("account_id", accountId), "Taking an RSVP away");
+        }
+        const notes = made(after.notes, before.notes);
+        if (notes.length > 0) check(await admin.from("mentor_notes").delete().in("id", notes), "Taking the notes away");
+        const posts = made(after.posts, before.posts);
+        if (posts.length > 0) check(await admin.from("hub_posts").delete().in("id", posts), "Taking the posts away");
+        for (const row of roles) {
+          check(await admin.from("profiles").update({ roles: row.roles }).eq("id", row.id), "Putting the roles back");
+        }
+      });
+    },
+    async photoStored(src) {
+      const id = photoIdIn(src);
+      const row = check(await admin.from("photos").select("path").eq("id", id).maybeSingle(), "Reading the photo");
+      return row.data !== null && (await this.fileExists(row.data.path));
+    },
+    async onlyAdmins(names) {
+      const keep = new Set(await Promise.all(names.map((name) => this.signedIn(name))));
+      const admins = check(await admin.from("profiles").select("id, roles").contains("roles", ["admin"]), "Reading the admins");
+      const named = check(await admin.from("profiles").select("id, roles").in("id", [...keep]), "Reading the named");
+      const before = new Map([...admins.data!, ...named.data!].map((row) => [row.id, row.roles]));
+      for (const [id, roles] of before) {
+        const others = roles.filter((role) => role !== "admin");
+        const wanted = keep.has(id) ? [...others, "admin"] : others;
+        check(await admin.from("profiles").update({ roles: wanted }).eq("id", id), "Setting the admins");
+      }
+      undos.push(async () => {
+        for (const [id, roles] of before) {
+          check(await admin.from("profiles").update({ roles }).eq("id", id), "Putting the admins back");
+        }
+      });
+    },
+    async addPastActivity(slug, at, closedAt) {
+      const [askerId, sellerId, staffId] = await Promise.all([this.signedIn("asker"), this.signedIn("seller"), this.signedIn("staff")]);
+      const title = "A contract request from last week";
+      const request = check(
+        await admin
+          .from("requests")
+          .insert({
+            asker_id: askerId,
+            title,
+            details: "A request the contract tests post and the world takes away again.",
+            category_slug: "tech",
+            campus_slug: "pretoria",
+            created_at: at.toISOString(),
+            updated_at: at.toISOString(),
+          })
+          .select("id")
+          .single(),
+        "The past request",
+      ).data!.id;
+      const follow = check(
+        await admin
+          .from("follows")
+          .insert({ account_id: askerId, shop_id: await shopId(slug), created_at: at.toISOString() })
+          .select("id")
+          .single(),
+        "The past follow",
+      ).data!.id;
+      const report = check(
+        await admin
+          .from("reports")
+          .insert({
+            reporter_id: sellerId,
+            target_kind: "request",
+            target_id: request,
+            target_title: title,
+            reason: "spam",
+            target_owner_id: askerId,
+            status: "closed",
+            outcome: "dismissed",
+            note: "Nothing wrong.",
+            created_at: at.toISOString(),
+            closed_at: closedAt.toISOString(),
+            closed_by: staffId,
+          })
+          .select("id")
+          .single(),
+        "The past report",
+      ).data!.id;
+      undos.push(async () => {
+        check(await admin.from("reports").delete().eq("id", report), "Taking the past report away");
+        check(await admin.from("follows").delete().eq("id", follow), "Taking the past follow away");
+        check(await admin.from("notifications").delete().eq("subject_id", request), "The past request's notes");
+        check(await admin.from("requests").delete().eq("id", request), "Taking the past request away");
+      });
+    },
     async cleanup() {
       const pending = undos.reverse();
       undos = [];

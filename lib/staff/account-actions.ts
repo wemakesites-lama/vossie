@@ -2,18 +2,18 @@
 
 import { normaliseEmail } from "@/lib/auth/email";
 import { writeFormState } from "@/lib/auth/form-state";
-import { findAccountByEmail } from "@/lib/data/accounts";
 import { recordAudit } from "@/lib/data/audit";
 import { notify } from "@/lib/data/notifications";
-import { giveRole, removeRole } from "@/lib/data/staff-accounts";
+import { isRefused } from "@/lib/data/refused";
+import { findStaffCandidate, giveRole, removeRole } from "@/lib/data/staff-accounts";
 import { isId } from "@/lib/messaging/paths";
 import { keepTyped } from "@/lib/messaging/rules";
 import { done, field } from "@/lib/selling/action-helpers";
-import { requireStaffAction } from "./access";
+import { orNotFound, requireStaffAction } from "./access";
 import { sampleFollowUps } from "./follow-ups";
 import { clearStaffForm, GIVE_ROLE_FORM, leaveNotice, removeRoleForm } from "./form-state";
 import { staffRoleText } from "./notification-text";
-import { leaveOnceToken, type OnceSent, sentOnceToken, takeOnceToken } from "./once";
+import { leaveOnceToken, type OnceSent, sentOnceToken, takeOnceToken, tokenTakenInSql } from "./once";
 import { ADMIN_STAFF_PATH, removeRolePath } from "./paths";
 import { parseStaffRole, roleLabel } from "./roles";
 
@@ -21,7 +21,9 @@ import { parseStaffRole, roleLabel } from "./roles";
 // taking one away. G's order (staff tools spec 2.2): the admin's role first, so a forged post gets the 404; the
 // checks; the write; one audit entry, only when something changed; the person told, with the "staff-role" kind; a
 // notice; done(). Nothing cached reads roles (getViewer() reads the store per request), so no tag is expired (plan
-// decision 8). The person's next page load shows or hides their tools; their sessions aren't touched.
+// decision 8). The person's next page load shows or hides their tools; their sessions aren't touched. On Supabase
+// give_role takes the form's one-time token itself, and give_role and remove_role write the entry and tell the person
+// in the same transaction (C4/C5 plan decisions 3 and 6); a role of the acting admin's gone since the check is the 404.
 
 /** Where a role notification leads: the account page lists each staff area by role (staff tools plan decision 19). */
 const ACCOUNT_PAGE = "/account";
@@ -59,19 +61,33 @@ export async function giveStaffRole(formData: FormData): Promise<void> {
   const role = parseStaffRole(field(formData, "role"));
   const values = { email: keepTyped(typed), role: role ?? "" };
   const errors: string[] = [];
-  const target = email === "" ? null : await findAccountByEmail(email);
+  const target = email === "" ? null : await findStaffCandidate(email);
   if (email === "") errors.push("staff-email-missing");
   else if (!target) errors.push("staff-email-unknown");
   if (!role) errors.push("staff-role-missing");
   else if (target?.roles.includes(role)) errors.push("staff-role-held");
   if (errors.length > 0 || !role) return backToForm(errors, values, now);
-  const token = await takeOnceToken(once, now);
-  if (token.kind === "none") return backToForm(["once-expired"], values, now);
-  if (token.kind === "again") {
-    if (token.sent) await sentAgain(token.sent, now);
-    done(ADMIN_STAFF_PATH);
+  if (!tokenTakenInSql()) {
+    const token = await takeOnceToken(once, now);
+    if (token.kind === "none") return backToForm(["once-expired"], values, now);
+    if (token.kind === "again") {
+      if (token.sent) await sentAgain(token.sent, now);
+      done(ADMIN_STAFF_PATH);
+    }
   }
-  const given = await giveRole(email, role);
+  let given: Awaited<ReturnType<typeof giveRole>>;
+  try {
+    given = await orNotFound(giveRole(email, role, once));
+  } catch (error) {
+    // give_role took the token on Supabase (C4/C5 plan decision 6): its "none" and "again", as takeOnceToken's.
+    if (isRefused(error, "once-expired")) return backToForm(["once-expired"], values, now);
+    if (isRefused(error, "once-taken")) {
+      const sent = await sentOnceToken(once, now);
+      if (sent) await sentAgain(sent, now);
+      done(ADMIN_STAFF_PATH);
+    }
+    throw error;
+  }
   if (given === "no-account") return backToForm(["staff-email-unknown"], values, now);
   if (given === "held") return backToForm(["staff-role-held"], values, now);
   // On Supabase give_role wrote the entry and told the person (decision 3).
@@ -113,7 +129,7 @@ export async function removeStaffRole(formData: FormData): Promise<void> {
   const staff = await requireStaffAction("admin", path);
   const now = new Date();
   if (!accountId || !role) return nothingChanged(now);
-  const removed = await removeRole(accountId, role, staff.id);
+  const removed = await orNotFound(removeRole(accountId, role, staff.id));
   if (removed === "own-shop-mentor") {
     // Another admin's decision (stage M spec decisions 2 and 5): the notice is the only write, on the page that shows
     // staff notices. The confirm page's form state is left as it was.

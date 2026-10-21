@@ -234,6 +234,26 @@ export interface World {
    * nothing from then on, and its Featured pins go (C4/C5 plan Task 15). The test's own shop only.
    */
   closeShop(slug: string): Promise<void>;
+  /**
+   * In cleanup, removes what the test made in the staff tools, however it was made (the data layer, a staff function or
+   * a verb): new Hub posts (their RSVPs and slot requests with them), the world's accounts' RSVPs and slot requests on
+   * other posts, and mentors' notes and check-ins (C4/C5 plan Tasks 18 and 19); and the world's accounts' roles go back
+   * to what they were (Task 20). The audit log keeps its entries: it has no delete. Tests edit only posts they made.
+   * Call it first in a test, so it runs last.
+   */
+  tidyStaffTools(): Promise<void>;
+  /** Whether a stored photo is still kept: its row, and on Supabase its file too (C4/C5 plan Task 18). */
+  photoStored(src: string): Promise<boolean>;
+  /**
+   * The admin role for these accounts only: every other account loses it, and these get it (C4/C5 plan Task 20, the
+   * last admin). Put back in cleanup.
+   */
+  onlyAdmins(names: readonly WorldAccountName[]): Promise<void>;
+  /**
+   * What happened at `at`, for the admin's numbers (C4/C5 plan Task 21): a request by "asker" on Pretoria, "asker"
+   * following the shop, and a report by "seller" on that request, closed at `closedAt`. Undone in cleanup.
+   */
+  addPastActivity(slug: string, at: Date, closedAt: Date): Promise<void>;
   /** Undoes what the test's verbs wrote, newest first. Runs after each test. */
   cleanup(): Promise<void>;
 }

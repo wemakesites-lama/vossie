@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { onSupabase } from "@/lib/backend";
 import { hasPassed } from "@/lib/hub";
 import { isAdmin } from "@/lib/staff/roles";
 import type { PostFields } from "@/lib/staff/post-rules";
@@ -10,6 +11,11 @@ import { sampleStore } from "./store";
 // write them: public pages read published posts only, as part B's HubPost, with an event's RSVPs added to its count;
 // staff list, write and edit them, drafts included. RSVPs and slot requests live here too (spec 2.5). Only Server
 // Actions write; pages read. Times and "today" come from the caller.
+//
+// On Supabase (C4/C5 plan Task 18) each staff read and write, RSVP and slot request is lib/data/supabase/hub-posts.ts's,
+// picked by its first line through import(), so sample mode never loads Supabase code.
+
+const supabase = () => import("./supabase/hub-posts");
 
 /** A post with no cover shows the Hub's banner art (plan decision 11). */
 export const HUB_BANNER_IMAGE: ImageRef = { src: "/placeholders/hub/banner.svg", alt: "" };
@@ -81,6 +87,7 @@ export type StaffPostSummary = {
 
 /** Every post, drafts included, most recently changed first (spec 3, /hub/manage). */
 export async function listPostsForStaff(): Promise<StaffPostSummary[]> {
+  if (onSupabase()) return (await supabase()).listPostsForStaff();
   const { hubPosts, accounts } = sampleStore();
   return [...hubPosts.values()]
     .reverse()
@@ -101,6 +108,7 @@ export async function listPostsForStaff(): Promise<StaffPostSummary[]> {
 
 /** A post's row, drafts included, for the editor. A copy. */
 export async function getPostRow(id: string): Promise<HubPostRow | null> {
+  if (onSupabase()) return (await supabase()).getPostRow(id);
   const row = sampleStore().hubPosts.get(id);
   return row ? structuredClone(row) : null;
 }
@@ -119,6 +127,11 @@ export type PostSave = {
   /** Who's saving: a new post's author. An edit keeps the post's author. */
   authorId: string;
   now: Date;
+  /**
+   * A new post's one-time token (C4/C5 plan decision 6): on Supabase save_hub_post takes it in the same transaction as
+   * the insert. The sample ignores it: its action takes the token itself (takeOnceToken).
+   */
+  onceToken?: string;
 };
 
 /**
@@ -152,6 +165,7 @@ function unchanged(row: HubPostRow, fields: PostFields, cover: ImageRef | null):
 export async function saveHubPost(
   save: PostSave,
 ): Promise<{ row: HubPostRow; created: boolean; publishedNow: boolean; changed: boolean } | null> {
+  if (onSupabase()) return (await supabase()).saveHubPost(save);
   const { hubPosts } = sampleStore();
   const existing = save.id ? hubPosts.get(save.id) : undefined;
   if (save.id && !existing) return null;
@@ -183,6 +197,7 @@ export type RsvpResult = "going" | "already" | "full" | "closed";
 
 /** RSVP: a published event that hasn't passed (`today` is the SAST date), with a place left. */
 export async function addRsvp(postId: string, accountId: string, today: string, now: Date): Promise<RsvpResult> {
+  if (onSupabase()) return (await supabase()).addRsvp(postId, accountId, today, now);
   const { hubPosts, hubRsvps } = sampleStore();
   const row = hubPosts.get(postId);
   if (!row?.published || row.kind !== "event" || hasPassed(row, today)) return "closed";
@@ -195,10 +210,12 @@ export async function addRsvp(postId: string, accountId: string, today: string, 
 
 /** Cancel my RSVP. False when there was none. */
 export async function removeRsvp(postId: string, accountId: string): Promise<boolean> {
+  if (onSupabase()) return (await supabase()).removeRsvp(postId, accountId);
   return sampleStore().hubRsvps.delete(rsvpKey(postId, accountId));
 }
 
 export async function hasRsvp(postId: string, accountId: string): Promise<boolean> {
+  if (onSupabase()) return (await supabase()).hasRsvp(postId, accountId);
   return sampleStore().hubRsvps.has(rsvpKey(postId, accountId));
 }
 
@@ -239,6 +256,7 @@ export async function requestSlot({
   today: string;
   now: Date;
 }): Promise<{ booking: HubBookingRow; authorId: string | null; postTitle: string } | "open-already" | "closed"> {
+  if (onSupabase()) return (await supabase()).requestSlot({ postId, accountId, help, time, today, now });
   const { hubPosts, hubBookings } = sampleStore();
   const post = hubPosts.get(postId);
   if (!post?.published || post.kind !== "office-hours" || hasPassed(post, today)) return "closed";
@@ -262,6 +280,7 @@ export async function requestSlot({
 
 /** The student's newest request for these office hours, for its page; null when they haven't asked. */
 export async function latestBooking(postId: string, accountId: string): Promise<HubBooking | null> {
+  if (onSupabase()) return (await supabase()).latestBooking(postId, accountId);
   const rows = [...sampleStore().hubBookings.values()]
     .filter((row) => row.postId === postId && row.accountId === accountId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -270,6 +289,7 @@ export async function latestBooking(postId: string, accountId: string): Promise<
 
 /** The office-hours queue (plan decision 14): open requests, newest first, then the 30 most recently answered. */
 export async function listBookings(): Promise<HubBooking[]> {
+  if (onSupabase()) return (await supabase()).listBookings();
   const rows = [...sampleStore().hubBookings.values()];
   const open = rows.filter((row) => row.status === "open").sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const answered = rows
@@ -281,6 +301,7 @@ export async function listBookings(): Promise<HubBooking[]> {
 
 /** How many requests wait for an answer, for Overview and the Hub's list. */
 export async function openBookingCount(): Promise<number> {
+  if (onSupabase()) return (await supabase()).openBookingCount();
   return [...sampleStore().hubBookings.values()].filter((row) => row.status === "open").length;
 }
 
@@ -294,6 +315,7 @@ export async function answerBooking(
   staffId: string,
   now: Date,
 ): Promise<{ accountId: string; postId: string; postTitle: string; studentName: string } | null> {
+  if (onSupabase()) return (await supabase()).answerBooking(id, answer, staffId, now);
   const row = sampleStore().hubBookings.get(id);
   if (!row || row.status !== "open") return null;
   Object.assign(row, { status: answer, answeredAt: now.toISOString(), answeredBy: staffId });

@@ -137,6 +137,14 @@ export function alertsContract(makeWorld: () => World): void {
     expect((await as(() => exportSavedSearches(asker))).map((row) => row.words)).toEqual(["kettle"]);
   });
 
+  it("never lists another account's search, or calls it saved (the C5 batch's extra item)", async () => {
+    await world.saveSearch("shopper", { q: "toaster" });
+    expect(await as(() => listSavedSearches(asker))).toEqual([]);
+    expect(await as(() => getSaveSearchState(asker, query({ q: "toaster" })))).toBe("new");
+    await world.saveSearch("asker", { q: "kettle" });
+    expect((await as(() => listSavedSearches(asker))).map((item) => item.label)).toEqual([expect.stringContaining("kettle")]);
+  });
+
   // --- Alerts ------------------------------------------------------------------------------------------------------
 
   const matches = async (name: WorldAccountName) =>

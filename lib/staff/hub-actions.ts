@@ -6,17 +6,18 @@ import { getCampuses } from "@/lib/data";
 import { recordAudit } from "@/lib/data/audit";
 import { answerBooking, canEditPost, getPostRow, saveHubPost } from "@/lib/data/hub-posts";
 import { notify } from "@/lib/data/notifications";
+import { isRefused } from "@/lib/data/refused";
 import { attachPhotos, deletePhotosUsedBy, photoSrcsOf, storePhotos } from "@/lib/data/photos";
 import { hubChanged } from "@/lib/data/tags";
 import { isId } from "@/lib/messaging/paths";
 import { keepTyped } from "@/lib/messaging/rules";
 import { done, field, fileList } from "@/lib/selling/action-helpers";
 import { readUploads } from "@/lib/selling/uploads";
-import { requireStaffAction } from "./access";
+import { orNotFound, requireStaffAction } from "./access";
 import { sampleFollowUps } from "./follow-ups";
 import { clearStaffForm, leaveNotice, postForm, postPrefix } from "./form-state";
 import { slotAnswerText } from "./notification-text";
-import { leaveOnceToken, type OnceSent, sentOnceToken, takeOnceToken } from "./once";
+import { leaveOnceToken, type OnceSent, sentOnceToken, takeOnceToken, tokenTakenInSql } from "./once";
 import { bookSlotPath, editPostPath, HUB_MANAGE_PATH, HUB_NEW_PATH } from "./paths";
 import { checkPost, POST_KEEP_MAX, sastToUtc } from "./post-rules";
 
@@ -145,8 +146,9 @@ export async function savePost(formData: FormData): Promise<void> {
   }
 
   // Only now, with a post about to be made, is the token taken. Taking it is one step, so of two posts sent together
-  // only one makes the post; the other goes to the list, or where the first says it went.
-  if (id === null) {
+  // only one makes the post; the other goes to the list, or where the first says it went. On Supabase save_hub_post
+  // takes it itself, in the same transaction as the insert (C4/C5 plan decision 6).
+  if (id === null && !tokenTakenInSql()) {
     const token = await takeOnceToken(once, now);
     if (token.kind === "none") {
       await writeFormState(form, { errors: ["once-expired"], values, notice: null }, now);
@@ -157,13 +159,41 @@ export async function savePost(formData: FormData): Promise<void> {
       done(HUB_MANAGE_PATH);
     }
   }
-  const saved = await saveHubPost({
-    id,
-    fields: check.value,
-    cover: cover ? { src: cover, alt: "" } : null,
-    authorId: account.id,
-    now,
-  });
+  let saved: Awaited<ReturnType<typeof saveHubPost>>;
+  try {
+    saved = await orNotFound(
+      saveHubPost({
+        id,
+        fields: check.value,
+        cover: cover ? { src: cover, alt: "" } : null,
+        authorId: account.id,
+        now,
+        onceToken: id === null ? once : undefined,
+      }),
+    );
+  } catch (error) {
+    // save_hub_post's answers on Supabase (C4/C5 plan decisions 2 and 6): the token's "none" and "again", as
+    // takeOnceToken's; a start that passed between the check and the save; and a cover that ran out in that moment,
+    // which shows the "out of date" words with the cover cleared and everything typed kept (open question 3).
+    if (isRefused(error, "once-expired")) {
+      await writeFormState(form, { errors: ["once-expired"], values, notice: null }, now);
+      done(path);
+    }
+    if (isRefused(error, "cover-invalid")) {
+      await writeFormState(form, { errors: ["once-expired"], values: { ...values, cover: "" }, notice: null }, now);
+      done(path);
+    }
+    if (isRefused(error, "once-taken")) {
+      const sent = await sentOnceToken(once, now);
+      if (sent) await sentAgain(sent, now);
+      done(HUB_MANAGE_PATH);
+    }
+    if (isRefused(error, "date-past")) {
+      await writeFormState(form, { errors: [...withPastDate([]), ...read.errors], values, notice: null }, now);
+      done(path);
+    }
+    throw error;
+  }
   if (!saved) notFound();
   // Saved with every field and the cover as they were: nothing to write, log or tell (plan decision 23).
   if (!saved.changed) {
@@ -206,7 +236,7 @@ export async function answerSlot(formData: FormData): Promise<void> {
   const id = field(formData, "booking");
   const answer = field(formData, "answer");
   if (!isId(id) || (answer !== "accepted" && answer !== "declined")) return nothingChanged(now);
-  const answered = await answerBooking(id, answer, staff.id, now);
+  const answered = await orNotFound(answerBooking(id, answer, staff.id, now));
   if (!answered) return nothingChanged(now);
   // On Supabase answer_booking wrote the entry and told the student (decision 3).
   await sampleFollowUps(async () => {

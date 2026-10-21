@@ -1,3 +1,5 @@
+import { AsyncLocalStorage } from "node:async_hooks";
+
 /**
  * Stand-ins for next/headers, next/navigation and next/server in unit tests of server code (accounts plan, Task 4).
  * The request is a plain object made with vi.hoisted, so the vi.mock factories can reach it:
@@ -39,20 +41,34 @@ export function resetRequest(request: FakeRequest): void {
   request.revalidatedTags = [];
 }
 
+/** A browser of its own for the length of one call (withCookies), whatever else runs at the same time. */
+const jars = new AsyncLocalStorage<Map<string, string>>();
+
+/**
+ * Runs `run` as a browser that sends these cookies instead of the request's, so two Server Actions can run at once as
+ * two people (the C4/C5 plan's last-admin race, Task 20). Writes go to these cookies too.
+ */
+export function withCookies<T>(cookies: Map<string, string>, run: () => Promise<T>): Promise<T> {
+  return jars.run(cookies, run);
+}
+
 export function nextHeaders(request: FakeRequest) {
   return {
-    cookies: async () => ({
-      get: (name: string) => (request.cookies.has(name) ? { name, value: request.cookies.get(name)! } : undefined),
-      set: (name: string, value: string, options: Record<string, unknown> = {}) => {
-        request.sent.set(name, { value, options });
-        if (options.maxAge === 0) request.cookies.delete(name);
-        else request.cookies.set(name, value);
-      },
-      delete: (name: string) => {
-        request.sent.set(name, { value: "", options: { maxAge: 0 } });
-        request.cookies.delete(name);
-      },
-    }),
+    cookies: async () => {
+      const jar = jars.getStore() ?? request.cookies;
+      return {
+        get: (name: string) => (jar.has(name) ? { name, value: jar.get(name)! } : undefined),
+        set: (name: string, value: string, options: Record<string, unknown> = {}) => {
+          request.sent.set(name, { value, options });
+          if (options.maxAge === 0) jar.delete(name);
+          else jar.set(name, value);
+        },
+        delete: (name: string) => {
+          request.sent.set(name, { value: "", options: { maxAge: 0 } });
+          jar.delete(name);
+        },
+      };
+    },
     headers: async () => ({
       get: (name: string) =>
         name.toLowerCase() === "x-forwarded-proto" ? request.proto : (request.headers?.[name.toLowerCase()] ?? null),

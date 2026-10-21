@@ -53,11 +53,15 @@ function rowFrom(record: SearchRecord): SavedSearchRow {
   };
 }
 
-/** The account's saved searches, newest first. */
-async function searchesOf(client: DbClient): Promise<SavedSearchRow[]> {
+/**
+ * The account's saved searches, newest first: by its id as well as the policy (defence in depth, as follows.ts' myFollows
+ * does), so another account's search never comes back.
+ */
+async function searchesOf(client: DbClient, accountId: string): Promise<SavedSearchRow[]> {
   const { data, error } = await client
     .from("saved_searches")
     .select(COLUMNS)
+    .eq("account_id", accountId)
     .order("created_at", { ascending: false })
     .order("id", { ascending: false });
   if (error) failed("saved_searches", error);
@@ -87,14 +91,14 @@ export const addSavedSearch: typeof Sample.addSavedSearch = async (accountId, se
 };
 
 export const getSaveSearchState: typeof Sample.getSaveSearchState = async (accountId, search) => {
-  const mine = await searchesOf(await forViewerAs(accountId));
+  const mine = await searchesOf(await forViewerAs(accountId), accountId);
   const key = searchKey(search);
   if (mine.some((row) => searchKey(queryOf(row)) === key)) return "saved";
   return mine.length >= SAVED_SEARCH_LIMIT ? "limit" : "new";
 };
 
 export const listSavedSearches: typeof Sample.listSavedSearches = async (accountId) =>
-  (await searchesOf(await forViewerAs(accountId))).map(toItem);
+  (await searchesOf(await forViewerAs(accountId), accountId)).map(toItem);
 
 /** Pause or Resume alerts: a second pause keeps the first time (set_search_paused). Null when it isn't theirs. */
 export const setSavedSearchPaused: typeof Sample.setSavedSearchPaused = async (accountId, id, paused) => {
@@ -187,4 +191,4 @@ export const forgetSavedSearchesOf: typeof Sample.forgetSavedSearchesOf = async 
 
 /** The account's saved searches for the download, by name, newest first, with no ids. */
 export const exportSavedSearches: typeof Sample.exportSavedSearches = async (accountId) =>
-  (await searchesOf(await forViewerAs(accountId))).map(searchExport);
+  (await searchesOf(await forViewerAs(accountId), accountId)).map(searchExport);

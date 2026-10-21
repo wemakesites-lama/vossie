@@ -1,4 +1,5 @@
 import { campuses } from "@/data/fixtures/campuses";
+import { onSupabase } from "@/lib/backend";
 import {
   MEASURES,
   sastWeeks,
@@ -16,7 +17,8 @@ import { sampleStore } from "./store";
 // page renders: fine for sample mode's few hundred rows. Each thing counts at its moment and on its campus. Things
 // deleted since aren't in the store, so they aren't counted; something whose campus has gone (an enquiry to a deleted
 // shop, a report on something deleted) is kept under `gone`, which only totals use. Saved searches are never read
-// (spec decision 10: their promise). The real backend reads a SQL view, then a weekly roll-up (spec section 8).
+// (spec decision 10: their promise). On Supabase (C4/C5 plan Task 21) the counts are public.admin_weekly_counts', through
+// lib/data/supabase/numbers.ts, picked by the first line through import(); a weekly roll-up can follow (spec section 8).
 
 /** The fixtures' 13 campuses (plan decision 13). Any other slug is a campus that has gone. */
 const KNOWN = new Set(campuses.map((campus) => campus.slug));
@@ -68,6 +70,7 @@ function reportCampus(row: ReportRow): string | null {
  * from the caller, which reads the clock only after `await connection()`.
  */
 export async function countByWeek(now: Date): Promise<{ weeks: SastWeeks; raw: RawCounts }> {
+  if (onSupabase()) return (await import("./supabase/numbers")).countByWeek(now);
   const weeks = sastWeeks(now);
   const store = sampleStore();
   const counter = Object.fromEntries(

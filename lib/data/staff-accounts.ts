@@ -1,5 +1,6 @@
 import { normaliseEmail } from "@/lib/auth/email";
 import { onSupabase } from "@/lib/backend";
+import { findAccountByEmail } from "./accounts";
 import type { StaffRole } from "@/lib/types";
 import type { AccountRow } from "./rows";
 import { sampleStore } from "./store";
@@ -8,8 +9,13 @@ import { sampleStore } from "./store";
 // taking one away. Roles live on the account row, which getViewer() reads on every request, so a change shows on the
 // person's next page; their sessions aren't touched. Students without a role are never listed, searched or suggested
 // (POPIA section 10). Only Server Actions call the writes. Nothing here awaits between a check and its write, so in
-// sample mode two admins removing each other can't both pass the last-admin check; the real backend needs a
-// transaction or a trigger (a go-live item).
+// sample mode two admins removing each other can't both pass the last-admin check; on Supabase remove_role takes a
+// lock and checks the remover's role again under it (C4/C5 plan decision 19).
+//
+// On Supabase (C4/C5 plan Task 20) each function is lib/data/supabase/staff-accounts.ts's, picked by its first line
+// through import(), so sample mode never loads Supabase code. ownShopMentorId stays the sample's internal.
+
+const supabase = () => import("./supabase/staff-accounts");
 
 /** Someone with a role, as /admin/staff lists them (spec decision 2). */
 export type StaffAccount = {
@@ -72,12 +78,13 @@ export function ownShopMentorId(ownerId: string): string | null {
  * rows, so the remove link for that mentor shows the line instead. Pages ask this, never ownShopMentorId.
  */
 export async function ownShopMentor(ownerId: string): Promise<string | null> {
-  if (onSupabase()) return (await import("./supabase/staff-accounts")).ownShopMentor(ownerId);
+  if (onSupabase()) return (await supabase()).ownShopMentor(ownerId);
   return ownShopMentorId(ownerId);
 }
 
 /** Everyone with a role, and no one else, by first name, then email (spec decision 2). */
 export async function listStaffAccounts(): Promise<StaffAccount[]> {
+  if (onSupabase()) return (await supabase()).listStaffAccounts();
   return [...sampleStore().accounts.values()]
     .filter((row) => row.roles.length > 0)
     .map(toStaff)
@@ -86,12 +93,14 @@ export async function listStaffAccounts(): Promise<StaffAccount[]> {
 
 /** One person with a role, for a confirm page (plan decision 5). Null for an unknown account or one with no role. */
 export async function getStaffAccount(id: string): Promise<StaffAccount | null> {
+  if (onSupabase()) return (await supabase()).getStaffAccount(id);
   const row = sampleStore().accounts.get(id);
   return row && row.roles.length > 0 ? toStaff(row) : null;
 }
 
 /** How many accounts hold the admin role, for privacy settings' "only admin" line (spec decision 8). */
 export async function countAdmins(): Promise<number> {
+  if (onSupabase()) return (await supabase()).countAdmins();
   return adminRows().length;
 }
 
@@ -103,15 +112,37 @@ export async function removeMentorView(
   viewerId: string,
   personId: string,
 ): Promise<{ mentorsOwnShop: boolean; onlyAdmin: boolean }> {
+  if (onSupabase()) return (await supabase()).removeMentorView(viewerId, personId);
   return { mentorsOwnShop: ownShopMentorId(viewerId) === personId, onlyAdmin: (await countAdmins()) === 1 };
+}
+
+/** Who Give a staff role would give it to (stage J spec decision 3): their id, first name and roles. */
+export type StaffCandidate = { id: string; firstName: string; roles: StaffRole[] };
+
+/**
+ * The account with exactly this email, trimmed and lower case, the lookup sign-in uses, never a search (C4/C5 plan
+ * Task 20): Give a staff role's check before it takes the form's token. Null when there's none.
+ */
+export async function findStaffCandidate(email: string): Promise<StaffCandidate | null> {
+  if (onSupabase()) return (await supabase()).findStaffCandidate(email);
+  const wanted = normaliseEmail(email);
+  const account = wanted === "" ? null : await findAccountByEmail(wanted);
+  if (!account) return null;
+  return { id: account.id, firstName: account.firstName, roles: ROLE_ORDER.filter((role) => account.roles.includes(role)) };
 }
 
 /**
  * Gives `role` to the account with exactly this email (spec decision 3): trimmed and lower case, the lookup sign-in
  * uses, never a search. "no-account" when none has it (giving a role never makes an account), "held" when it has the
- * role already.
+ * role already. `onceToken` is the form's one-time token (C4/C5 plan decision 6): on Supabase give_role takes it in the
+ * same transaction; the sample ignores it (its action takes the token itself).
  */
-export async function giveRole(email: string, role: StaffRole): Promise<GivenRole | "no-account" | "held"> {
+export async function giveRole(
+  email: string,
+  role: StaffRole,
+  onceToken?: string,
+): Promise<GivenRole | "no-account" | "held"> {
+  if (onSupabase()) return (await supabase()).giveRole(email, role, onceToken);
   const wanted = normaliseEmail(email);
   const row = wanted === "" ? undefined : [...sampleStore().accounts.values()].find((item) => item.email === wanted);
   if (!row) return "no-account";
@@ -132,6 +163,7 @@ export async function removeRole(
   role: StaffRole,
   byId: string,
 ): Promise<RemovedRole | "own-admin" | "last-admin" | "own-shop-mentor" | null> {
+  if (onSupabase()) return (await supabase()).removeRole(accountId, role, byId);
   const store = sampleStore();
   const row = store.accounts.get(accountId);
   if (!row || !row.roles.includes(role)) return null;
