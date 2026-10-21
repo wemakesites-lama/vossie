@@ -12,6 +12,7 @@ export default defineConfig({
     globalSetup: ["./vitest.global-setup.ts"],
     setupFiles: ["./vitest.setup.ts"],
     include: ["**/*.test.{ts,tsx}"],
-    exclude: [...configDefaults.exclude, ".next/**", "tests/e2e/**", "docs/**", "vossie-audit/**"],
+    // The *.db.test.ts files run against the local Supabase stack, in `pnpm test:db` (vitest.db.config.mts).
+    exclude: [...configDefaults.exclude, ".next/**", "tests/e2e/**", "docs/**", "vossie-audit/**", "**/*.db.test.ts"],
   },
 });

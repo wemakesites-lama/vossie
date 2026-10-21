@@ -1,24 +1,20 @@
 import "server-only";
 
+/**
+ * Which store lib/data uses (spec decision 10). It lives in lib/backend.ts, a plain module, so lib/data's sample path
+ * and lib/auth can read it without this server-only one (2b plan decision 16); re-exported here for its callers.
+ */
+export { backend, type Backend } from "@/lib/backend";
+
 // The backend's settings (backend spec section 8), read when a client is made, never kept at module scope. A missing
 // or malformed value throws with the variable's name and never its value, so a key can't end up in a log. Only the
 // server reads these: none is NEXT_PUBLIC_, and the browser never talks to Supabase (spec decision 5).
 
 type Env = Readonly<Record<string, string | undefined>>;
 
-/** Which store lib/data uses: the in-memory sample store (the default until launch) or Supabase (spec decision 10). */
-export type Backend = "sample" | "supabase";
-
 function required(env: Env, name: string): string {
   const value = env[name]?.trim();
   if (!value) throw new Error(`${name} is not set`);
-  return value;
-}
-
-/** VOSSIE_BACKEND: "sample" (also when unset) or "supabase". */
-export function backend(env: Env = process.env): Backend {
-  const value = env.VOSSIE_BACKEND?.trim() || "sample";
-  if (value !== "sample" && value !== "supabase") throw new Error('VOSSIE_BACKEND must be "sample" or "supabase"');
   return value;
 }
 

@@ -9,10 +9,11 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   // Supabase stays behind lib/data: nothing else imports its clients or its packages, so no page or component can reach
-  // the database, or a secret key, directly.
+  // the database, or a secret key, directly. tests/db is `pnpm test:db`'s harness (its accounts, sessions and world),
+  // which lib/data/boundaries.test.ts also allows (2b plan Task 13).
   {
     files: ["**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
-    ignores: ["lib/data/**", "lib/supabase/**"],
+    ignores: ["lib/data/**", "lib/supabase/**", "tests/db/**"],
     rules: {
       "no-restricted-imports": [
         "error",

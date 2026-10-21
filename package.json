@@ -10,6 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:db": "vitest run --config vitest.db.config.mts",
     "e2e": "playwright test",
     "db:seed": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/make-seed.ts",
     "db:types": "supabase gen types typescript --local > lib/supabase/database.types.ts"

@@ -273,15 +273,30 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
 
   it("lets a cookie go unnamed only while no page or action can set it (Supabase plan, phase A)", () => {
     // vossie_auth is Supabase's session cookie (lib/supabase/cookies.ts). Until phase B wires lib/supabase into sign-in,
-    // nothing imports it, so no visitor can get the cookie. Phase B names it on this page and empties NOT_YET_SET.
+    // nothing outside lib/supabase reaches the modules that can set it, so no visitor can get the cookie. Phase B names
+    // it on this page and empties NOT_YET_SET.
     // Since the sign-in client sends codes without cookies (lib/supabase/auth.ts), Supabase sets no other cookie, so
     // vossie_auth-…-code-verifier needs no entry here.
+    // Narrowed in phase C's C0 (2b plan amendment 9, confirmed by the controller): lib/data/supabase reaches the public
+    // and admin clients, which hold no cookies, so until then only the four ways of setting the cookie are banned.
     const importers: string[] = [];
     for (const file of appSourceFiles()) {
       if (file.startsWith(SUPABASE_DIR)) continue;
-      if (supabaseImports(readFileSync(file, "utf8"), file).length > 0) importers.push(file.slice(process.cwd().length + 1));
+      if (cookieSetterImports(readFileSync(file, "utf8"), file).length > 0) importers.push(file.slice(process.cwd().length + 1));
     }
     if (NOT_YET_SET.size > 0) expect(importers).toEqual([]);
+  });
+
+  it("knows the four ways of setting vossie_auth, and that the cookieless clients aren't among them (2b plan amendment 9)", () => {
+    const from = join(process.cwd(), "lib", "data", "supabase", "clients.ts");
+    expect(cookieSetterImports(`import { viewerClient } from "@/lib/supabase/viewer";`, from)).toHaveLength(1);
+    expect(cookieSetterImports(`import { requestCookies } from "../../supabase/cookies";`, from)).toHaveLength(1);
+    expect(cookieSetterImports(`const { authClient } = await import("@/lib/supabase/auth.ts");`, from)).toHaveLength(1);
+    expect(cookieSetterImports(`import { createServerClient } from "@supabase/ssr";`, from)).toHaveLength(1);
+    expect(cookieSetterImports(`import { publicClient } from "@/lib/supabase/public";`, from)).toEqual([]);
+    expect(cookieSetterImports(`import { adminClient } from "@/lib/supabase/admin";`, from)).toEqual([]);
+    expect(cookieSetterImports(`import { createClient } from "@supabase/supabase-js";`, from)).toEqual([]);
+    expect(cookieSetterImports(`import { x } from "@/lib/supabase/viewer-notes";`, from)).toEqual([]);
   });
 
   it("finds every way of reaching lib/supabase or Supabase's packages, relative paths included", () => {
@@ -405,5 +420,17 @@ function supabaseImports(source: string, file: string): string[] {
         ? resolve(dirname(file), specifier)
         : null;
     return target !== null && (target === SUPABASE_DIR || target.startsWith(`${SUPABASE_DIR}/`));
+  });
+}
+
+/** The modules that can set vossie_auth: the viewer and sign-in clients, the cookie helpers, and @supabase/ssr. */
+const COOKIE_SETTERS = ["viewer", "cookies", "auth"].map((name) => join(SUPABASE_DIR, name));
+
+/** The module paths in `source` (written at `file`) that reach a module able to set vossie_auth (2b plan amendment 9). */
+function cookieSetterImports(source: string, file: string): string[] {
+  return supabaseImports(source, file).filter((specifier) => {
+    if (specifier.startsWith("@supabase/")) return specifier === "@supabase/ssr" || specifier.startsWith("@supabase/ssr/");
+    const target = specifier.startsWith("@/") ? join(process.cwd(), specifier.slice(2)) : resolve(dirname(file), specifier);
+    return COOKIE_SETTERS.includes(target.replace(/\.(tsx?|mts|cts|jsx?|mjs|cjs)$/, ""));
   });
 }
