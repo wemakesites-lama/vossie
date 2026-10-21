@@ -14,10 +14,13 @@ describe("Eduvos emails (accounts spec 2.4)", () => {
     expect(checkEmail("", ["eduvos.com"])).toBe("missing");
   });
 
-  it("accepts an address at a listed domain or a subdomain of one", () => {
+  it("accepts only an address at a listed domain", () => {
     expect(checkEmail("thandi@eduvos.com", ["eduvos.com"])).toBe("ok");
-    expect(checkEmail("thandi@student.eduvos.com", ["eduvos.com"])).toBe("ok");
+    expect(checkEmail("eduv1234567@vossie.net", ["eduvos.com", "vossie.net"])).toBe("ok");
     expect(checkEmail("thandi@eduvos.ac.za", ["eduvos.com", "eduvos.ac.za"])).toBe("ok");
+    // Exact domains only (Lama, 2026-10-21): a subdomain of a listed domain is refused, as private.email_allowed does.
+    expect(checkEmail("thandi@student.eduvos.com", ["eduvos.com"])).toBe("domain");
+    expect(checkEmail("a@mail.vossie.net", ["eduvos.com", "vossie.net"])).toBe("domain");
   });
 
   it("refuses other domains, look-alikes and things that aren't addresses", () => {
@@ -76,7 +79,7 @@ describe("Eduvos emails (accounts spec 2.4)", () => {
 
   it("passes an address as the form gives it, once it's normalised", () => {
     expect(checkEmail(normaliseEmail("Student@EDUVOS.COM "), ["eduvos.com"])).toBe("ok");
-    expect(checkEmail(normaliseEmail("  Thandi.M@Student.Eduvos.com"), ["eduvos.com"])).toBe("ok");
+    expect(checkEmail(normaliseEmail("  Thandi.M@Eduvos.com"), ["eduvos.com"])).toBe("ok");
   });
 
   it("reads VOSSIE_EMAIL_DOMAINS when no list is given", () => {

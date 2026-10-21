@@ -1,6 +1,6 @@
 -- Task 8: sign-in state, form states and the email-domain hook (supabase foundation plan; backend spec section 5).
 begin;
-select plan(76);
+select plan(77);
 
 -- Signed in as an account, in one Auth session (the JWT's session_id), as PostgREST sets it.
 create function pg_temp.sign_in(account uuid, session uuid default '5e550000-0000-4000-8000-000000000001') returns void
@@ -53,7 +53,7 @@ select ok(
   'anon and authenticated have no privilege on the private tables'
 );
 
--- The domain hook: refuses by default, allows the listed domains and their subdomains.
+-- The domain hook: refuses by default, allows exactly the listed domains, never a subdomain (step 2b amendment 2).
 delete from private.allowed_email_domains;
 select is(
   pg_temp.hook('a@eduvos.com'),
@@ -62,7 +62,7 @@ select is(
 );
 insert into private.allowed_email_domains (domain) values ('eduvos.com');
 select is(pg_temp.hook('a@eduvos.com'), '{}'::jsonb, 'a@eduvos.com is allowed');
-select is(pg_temp.hook('a@students.eduvos.com'), '{}'::jsonb, 'a subdomain is allowed');
+select is(pg_temp.hook('a@students.eduvos.com') ? 'error', true, 'a subdomain is refused (exact domains only)');
 select is(pg_temp.hook('  Thandi.M+test@EDUVOS.com '), '{}'::jsonb, 'case and outer spaces don''t matter');
 select is(pg_temp.hook('a@eduvos.com.evil.io')->'error'->>'message', 'Use your Eduvos email address.', 'a@eduvos.com.evil.io is refused');
 select is(pg_temp.hook('a@gmail.com')->'error'->>'http_code', '403', 'a@gmail.com is refused with a 403');
@@ -101,7 +101,8 @@ select is(
       'session_id', '5e550000-0000-4000-8000-0000000000a1', 'is_anonymous', false)),
   'with its claims unchanged, the required ones included'
 );
-select is(pg_temp.token('token_refresh', array['otp'], 'a@students.eduvos.com') ? 'claims', true, 'and so does its refresh');
+select is(pg_temp.token('token_refresh', array['otp'], 'a@eduvos.com') ? 'claims', true, 'and so does its refresh');
+select is(pg_temp.token('token_refresh', array['otp'], 'a@students.eduvos.com') ? 'error', true, 'but not on a subdomain, which is refused as at sign-up');
 select is(
   pg_temp.token('password', array['password'], 'a@eduvos.com'),
   '{"error": {"http_code": 403, "message": "Sign in with the code we email you."}}'::jsonb,
@@ -124,8 +125,8 @@ select is(pg_temp.token('otp', array['otp'], 'a@eduvos.com.evil.io') ? 'error', 
 select is(
   (select array_agg(private.email_allowed(a) order by n)
    from unnest(array['a@eduvos.com', 'a@x.eduvos.com', ' A@EDUVOS.COM ', 'a@gmail.com', E'a@eduv\u043es.com', null]) with ordinality u(a, n)),
-  array[true, true, true, false, false, false],
-  'both hooks use one rule (private.email_allowed)'
+  array[true, false, true, false, false, false],
+  'both hooks use one rule (private.email_allowed): exact domains only'
 );
 select ok(has_function_privilege('supabase_auth_admin', 'private.custom_access_token(jsonb)', 'execute'), 'Auth can run the token hook');
 select ok(

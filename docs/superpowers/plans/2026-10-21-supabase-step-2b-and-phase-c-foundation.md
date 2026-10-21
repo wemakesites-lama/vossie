@@ -1036,11 +1036,11 @@ The db file also checks:
 
 | Task | Status | Commit |
 |---|---|---|
-| 0 Baseline | | |
-| 1 Reference rows, domains | | |
-| 2 Closing schema | | |
-| 3 Settle and job | | |
-| 4 Request functions | | |
+| 0 Baseline | done: HEAD `ec436f6`, pgTAP 1,976 (20 migrations), unit 2,701, lint and typecheck clean | |
+| 1 Reference rows, domains | built, uncommitted: pgTAP 1,995 (24: 18; 05: 77), unit +6 | |
+| 2 Closing schema | built, uncommitted: pgTAP 2,040 (25: 45) | |
+| 3 Settle and job | built, uncommitted: pgTAP 2,088 (26: 48), unit +2 | |
+| 4 Request functions | built, uncommitted: pgTAP 2,126 (27: 38); unit 2,709, lint and typecheck clean | |
 | 5 Report target owner | | |
 | 6 Own-target gate | | |
 | 7 Own shop's mentor | | |
@@ -1060,7 +1060,14 @@ The db file also checks:
 
 ## Changes made during the build
 
-(None yet.)
+- Task 1: `SeedFixtures` loses `campuses` and `categories` (the seed no longer inserts them), so `scripts/make-seed.ts` drops their two imports. It keeps `pickupPoints`, now only to refuse a shop or listing on an unknown point (a new seed-sql test), since the rows come from the reference migration.
+- Task 1: the old seed test "keeps phase A's 24 pickup points" moves to `scripts/reference-sql.test.ts` (same assertion, on the migration's SQL).
+- Task 1: `24_reference_data.test.sql` calls `private.email_allowed` as the test role, as test 05 does, and checks that `supabase_auth_admin` may execute it: the test role can't `set role supabase_auth_admin` (permission denied). Its idempotence case re-runs the migration's own statements from `supabase_migrations.schema_migrations` (the CLI's record), after checking the four inserts are there.
+- Task 1: `05_sign_in.test.sql` keeps a refresh case on the exact domain (`a@eduvos.com`, allowed) beside the flipped subdomain one, so it has 77 tests, not 76.
+- Task 1: `.env.example`'s `VOSSIE_EMAIL_DOMAINS` comment named the default and the subdomain rule; it now says exact domains, `eduvos.com` and `vossie.net`.
+- Task 2: `private.request_closing_day` writes the SAST day inline (`(updated at time zone 'Africa/Johannesburg')::date`, `sast_day`'s own body) instead of calling `private.sast_day`: the service role has no usage on the `private` schema, so a call by name inside the body failed when it wrote a request (amendment 4's case). The execute grant to `service_role` stays (the column refers to the function by oid).
+- Task 3: `11_storage_and_jobs.test.sql`'s "each once" counted every `settle-%`/`sweep-%` job (4); `settle-requests` is a fifth, so it now counts the four by name. Not in Task 3's file list; one assertion.
+- Task 4: found while testing, no change needed: between Task 2 and Task 4 the old `set_request_open` can't reopen a request the backfill gave `closed_by = 'asker'` (the one-way check refuses an open row with `closed_by`). Tasks 2 to 4 ship together, so production never runs that pair; staging's push (Task 11) applies them in one go.
 
 ## Amendments on review (2026-10-21)
 

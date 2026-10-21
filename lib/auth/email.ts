@@ -17,14 +17,15 @@ export function normaliseEmail(raw: string): string {
 export type EmailCheck = "ok" | "missing" | "domain";
 
 /**
- * Whether a normalised email can sign in (spec 2.4): an ASCII address at one of the domains, or at a subdomain of one.
- * Anything that isn't an address gets the same answer as a wrong domain: "Use your Eduvos email address."
+ * Whether a normalised email can sign in (spec 2.4): an ASCII address at exactly one of the domains, never a subdomain
+ * of one (Lama, 2026-10-21; private.email_allowed has the same rule). Anything that isn't an address gets the same
+ * answer as a wrong domain: "Use your Eduvos email address."
  */
 export function checkEmail(email: string, domains: readonly string[] = emailDomains()): EmailCheck {
   if (email === "") return "missing";
   if (email.length > MAX_EMAIL_LENGTH || !EMAIL_SHAPE.test(email)) return "domain";
   const domain = email.slice(email.lastIndexOf("@") + 1);
-  return domains.some((allowed) => domain === allowed || domain.endsWith(`.${allowed}`)) ? "ok" : "domain";
+  return domains.some((allowed) => domain === allowed) ? "ok" : "domain";
 }
 
 /** "thandi@eduvos.com" → "t•••@eduvos.com", for "We sent a code to …" (spec 3.1). */

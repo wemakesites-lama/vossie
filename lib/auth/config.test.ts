@@ -4,6 +4,7 @@ import {
   ATTEMPT_TTL_MS,
   CODE_TTL_MS,
   CODES_PER_HOUR,
+  DEFAULT_EMAIL_DOMAINS,
   emailDomains,
   isSampleMode,
   MAX_WRONG_TRIES,
@@ -20,13 +21,14 @@ describe("sign-in settings (accounts spec 2.1, 2.4 and 2.7)", () => {
     expect(isSampleMode({ VOSSIE_SAMPLE_MODE: "0" })).toBe(false);
   });
 
-  it("lets eduvos.com sign in unless VOSSIE_EMAIL_DOMAINS lists others", () => {
-    expect(emailDomains({})).toEqual(["eduvos.com"]);
+  it("lets eduvos.com and vossie.net sign in unless VOSSIE_EMAIL_DOMAINS lists others", () => {
+    expect(DEFAULT_EMAIL_DOMAINS).toEqual(["eduvos.com", "vossie.net"]);
+    expect(emailDomains({})).toEqual(["eduvos.com", "vossie.net"]);
     expect(emailDomains({ VOSSIE_EMAIL_DOMAINS: " Student.Eduvos.com, @eduvos.ac.za ,," })).toEqual([
       "student.eduvos.com",
       "eduvos.ac.za",
     ]);
-    expect(emailDomains({ VOSSIE_EMAIL_DOMAINS: " , " })).toEqual(["eduvos.com"]);
+    expect(emailDomains({ VOSSIE_EMAIL_DOMAINS: " , " })).toEqual(["eduvos.com", "vossie.net"]);
   });
 
   // Pinned, so a security limit can't change by accident. Changing one means changing this test on purpose.

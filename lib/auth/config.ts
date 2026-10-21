@@ -36,11 +36,18 @@ export function isSampleMode(env: Env = process.env): boolean {
   return env.VOSSIE_SAMPLE_MODE !== "0";
 }
 
-/** The domains that can sign in (spec 2.4): VOSSIE_EMAIL_DOMAINS, comma-separated, or else eduvos.com. */
+/**
+ * The domains that can sign in when VOSSIE_EMAIL_DOMAINS lists none: students sign in as eduv and 7 digits at
+ * vossie.net, staff at eduvos.com (Lama, 2026-10-21). Exact domains only, no subdomains. Production's database gets the
+ * same list from supabase/migrations/20261021120000_reference_data.sql, which scripts/reference-sql.ts writes from this.
+ */
+export const DEFAULT_EMAIL_DOMAINS = ["eduvos.com", "vossie.net"] as const;
+
+/** The domains that can sign in (spec 2.4): VOSSIE_EMAIL_DOMAINS, comma-separated, or else DEFAULT_EMAIL_DOMAINS. */
 export function emailDomains(env: Env = process.env): string[] {
   const listed = (env.VOSSIE_EMAIL_DOMAINS ?? "")
     .split(",")
     .map((domain) => domain.trim().toLowerCase().replace(/^@/, ""))
     .filter(Boolean);
-  return listed.length > 0 ? listed : ["eduvos.com"];
+  return listed.length > 0 ? listed : [...DEFAULT_EMAIL_DOMAINS];
 }

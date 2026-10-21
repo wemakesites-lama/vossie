@@ -18,11 +18,9 @@ registerHooks({
   },
 });
 
-const [{ makeSeedSql }, { campuses }, { categories }, staff, { sampleRequestRows }, accounts, shops, messages] =
+const [{ makeSeedSql }, staff, { sampleRequestRows }, accounts, shops, messages] =
   await Promise.all([
     import("./seed-sql.ts"),
-    import("../data/fixtures/campuses.ts"),
-    import("../data/fixtures/categories.ts"),
     import("../data/fixtures/staff.ts"),
     import("../data/fixtures/request-rows.ts"),
     import("../data/fixtures/accounts.ts"),
@@ -31,8 +29,6 @@ const [{ makeSeedSql }, { campuses }, { categories }, staff, { sampleRequestRows
   ]);
 
 const fixtures: SeedFixtures = {
-  campuses,
-  categories,
   pickupPoints: staff.samplePickupPointRows,
   accounts: accounts.sampleAccounts,
   consents: accounts.sampleConsents,

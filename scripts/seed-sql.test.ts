@@ -2,18 +2,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { sampleAccounts, sampleConsents } from "@/data/fixtures/accounts";
-import { campuses } from "@/data/fixtures/campuses";
-import { categories } from "@/data/fixtures/categories";
 import { sampleConversations, sampleMessages, sampleNotifications } from "@/data/fixtures/messages";
-import { pickupPoints } from "@/data/fixtures/pickup-points";
 import { sampleRequestRows } from "@/data/fixtures/request-rows";
 import { sampleListingRows, sampleSellerRows, sampleShopOwners } from "@/data/fixtures/shops";
 import { sampleHubBookings, sampleHubPostRows, sampleMentorNotes, samplePickupPointRows } from "@/data/fixtures/staff";
 import { makeSeedSql, seedEmail, seedUuid, type SeedFixtures } from "./seed-sql";
 
 const fixtures: SeedFixtures = {
-  campuses,
-  categories,
   pickupPoints: samplePickupPointRows,
   accounts: sampleAccounts,
   consents: sampleConsents,
@@ -62,7 +57,8 @@ describe("supabase/seed.sql (supabase foundation plan, Task 11; schema catch-up 
     for (const { account } of sampleAccounts) {
       expect(sql).toContain(`'${seedUuid("account", account.id)}', 'authenticated', 'authenticated', '${seedEmail(account.email)}'`);
     }
-    expect(sql).toContain("insert into private.allowed_email_domains (domain) values\n  ('eduvos.com'),\n  ('vossie.test');");
+    // Production's domains (eduvos.com, vossie.net) come from the reference migration; the seed adds only its test domain.
+    expect(sql).toContain("insert into private.allowed_email_domains (domain) values\n  ('vossie.test');");
   });
 
   it("gives the five sample accounts, admin and mentor included, addresses on the reserved test domain", () => {
@@ -100,15 +96,27 @@ describe("supabase/seed.sql (supabase foundation plan, Task 11; schema catch-up 
     expect(sql).toContain("'Hi! Is the headset still available? I''d like to swap for it if you''re open to that.'");
   });
 
-  it("keeps phase A's 24 pickup points, same ids and names, from the store's rows with when each was retired", () => {
+  it("leaves the campuses, categories and pickup points to the reference migration (step 2b plan, Task 1)", () => {
     const sql = makeSeedSql(fixtures);
-    expect(columnsOf(sql, "public.pickup_points")).toEqual(["id", "campus_slug", "name", "retired_at", "created_at"]);
-    expect(rowsOf(sql, "public.pickup_points")).toEqual(
-      pickupPoints.map(
-        (point) =>
-          `(${q(seedUuid("pickup-point", point.id))}, ${q(point.campusSlug)}, ${q(point.name)}, null, '2025-01-15T08:00:00.000Z')`,
-      ),
+    expect(sql).not.toContain("insert into public.campuses");
+    expect(sql).not.toContain("insert into public.categories");
+    expect(sql).not.toContain("insert into public.pickup_points");
+    // The shops' and listings' pickup points are the reference migration's, by the same fixed ids.
+    expect(rowsOf(sql, "public.shop_pickup_points").length).toBeGreaterThan(0);
+    for (const row of rowsOf(sql, "public.shop_pickup_points")) {
+      expect(samplePickupPointRows.map((point) => `'${seedUuid("pickup-point", point.id)}'`)).toContain(row.split(", ")[1].replace(/\)$/, ""));
+    }
+  });
+
+  it("refuses a shop or listing on a pickup point the reference rows don't have", () => {
+    const [shop] = sampleSellerRows;
+    expect(() => makeSeedSql({ ...fixtures, shops: [{ ...shop, pickupPointIds: ["pp-nowhere"] }, ...sampleSellerRows.slice(1)] })).toThrow(
+      /pp-nowhere/,
     );
+    const listing = sampleListingRows.find((row) => row.pickupPointId)!;
+    expect(() =>
+      makeSeedSql({ ...fixtures, listings: sampleListingRows.map((row) => (row === listing ? { ...row, pickupPointId: "pp-nowhere" } : row)) }),
+    ).toThrow(/pp-nowhere/);
   });
 
   it("gives Tech corner's profile its mentor and first approval, and the waiting shop neither", () => {

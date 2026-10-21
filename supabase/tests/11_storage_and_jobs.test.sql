@@ -69,7 +69,12 @@ select is(
   ],
   'the four jobs exist with their schedules: hourly, hourly, 01:00 UTC (03:00 SAST) and daily'
 );
-select is((select count(distinct jobname) from cron.job where jobname like 'settle-%' or jobname like 'sweep-%'), 4::bigint, 'each once');
+-- Each once. Step 2b's settle-requests (test 26) is a fifth job, so the count names these four.
+select is(
+  (select count(*) from cron.job where jobname in ('settle-sales', 'sweep-sign-in', 'sweep-unfinished-users', 'sweep-cron-history')),
+  4::bigint,
+  'each once'
+);
 
 -- settle_auto_confirm: a sale done 7 days ago confirms itself (spec 2.5).
 insert into public.campuses (slug, name, region, sort) values ('test-campus', 'Test campus', 'Gauteng', 99);

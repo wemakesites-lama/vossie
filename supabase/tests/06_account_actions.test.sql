@@ -138,7 +138,8 @@ select is(
     'record_search_matches(text,text[],jsonb)',
     'record_wrong_try(text)',
     'reserve_code_send(text,integer)',
-    'settle_auto_confirm(timestamp with time zone)'
+    'settle_auto_confirm(timestamp with time zone)',
+    'settle_requests(timestamp with time zone)'
   ],
   'the server''s functions run for the service role only'
 );

@@ -82,3 +82,25 @@ describe("the reminder before a request closes itself (stage M spec section 5, W
     );
   });
 });
+
+// The settle's words in SQL (supabase step 2b plan, Task 3): private.request_auto_closed_note_text and
+// private.request_close_reminder_note_text (supabase/tests/26_requests_settle.test.sql) pin these same strings.
+describe("the words the database's settle writes (step 2b plan, Task 3)", () => {
+  it("matches the auto-close notification, by reason", () => {
+    expect(requestAutoClosedText("Calculator", "needed-by")).toBe(
+      "Your request Calculator closed automatically 3 days after the date you needed it by. Reopen it in Your requests if you still need it.",
+    );
+    expect(requestAutoClosedText("Calculator", "idle")).toBe(
+      "Your request Calculator closed automatically after 30 days with no changes. Reopen it in Your requests if you still need it.",
+    );
+  });
+
+  it("matches the reminder, by reason, with a one-digit day unpadded", () => {
+    expect(requestCloseReminderText("Calculator", "2026-10-20", "needed-by")).toBe(
+      "Your request Calculator closes automatically on 20 Oct, 3 days after the date you needed it by. Still need it? Give it a new date in Your requests.",
+    );
+    expect(requestCloseReminderText("Calculator", "2026-11-05", "idle")).toBe(
+      "Your request Calculator closes automatically on 5 Nov, after 30 days with no changes. Still need it? Edit it in Your requests and it stays up for 30 days more.",
+    );
+  });
+});

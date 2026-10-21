@@ -13,11 +13,12 @@ import type {
   RequestRow,
   SellerRow,
 } from "../lib/data/rows.ts";
-import type { Campus, Category } from "../lib/types.ts";
 
-// supabase/seed.sql from the fixtures (supabase foundation plan, Task 11; plan decision 4): the same campuses,
-// categories, pickup points, shops, listings, sample accounts and conversations as the sample store, so local Supabase
-// and staging show what sample mode shows. Stages G to J add what the store seeds for them (supabase schema catch-up
+// supabase/seed.sql from the fixtures (supabase foundation plan, Task 11; plan decision 4): the same shops, listings,
+// sample accounts and conversations as the sample store, so local Supabase and staging show what sample mode shows.
+// Reference rows (campuses, categories, pickup points) and production's domains come from
+// supabase/migrations/20261021120000_reference_data.sql (scripts/reference-sql.ts; step 2b plan, Task 1), so this file is
+// sample content only. Stages G to J add what the store seeds for them (supabase schema catch-up
 // plan, Task 10): the seller profiles' mentor and first approval, the 16 Looking For requests, the Hub's 18 posts,
 // Naledi's two notes and Thandi's open slot request (lib/data/store.ts, seedStore). scripts/make-seed.ts writes the file (pnpm db:seed); seed-sql.test.ts fails
 // when the file is out of date. Pure: the fixtures come in as arguments, so Vitest and plain Node can both run it.
@@ -28,9 +29,10 @@ import type { Campus, Category } from "../lib/types.ts";
 // stay as they are ("l-001", "r-001", "h-001"): their short-id columns take them.
 
 export type SeedFixtures = {
-  campuses: readonly Campus[];
-  categories: readonly Category[];
-  /** The store's rows (data/fixtures/staff.ts), with when each was retired. */
+  /**
+   * The store's rows (data/fixtures/staff.ts). The reference migration inserts them; the seed only checks that every
+   * shop and listing names one of them.
+   */
   pickupPoints: readonly PickupPointRow[];
   accounts: readonly SampleAccount[];
   consents: readonly ConsentRow[];
@@ -50,11 +52,11 @@ export type SeedFixtures = {
 };
 
 /**
- * The domains that may sign in on local Supabase and staging (private.allowed_email_domains): Eduvos's, so the real
- * flows can be tried with an Eduvos mailbox, and the reserved test domain the sample accounts use. Production gets its
- * domains from an ops step, never from this seed, and never allows vossie.test.
+ * The domain the seed adds to private.allowed_email_domains, for local Supabase and staging: the reserved test domain
+ * the sample accounts use. Production's domains (eduvos.com, vossie.net) come from the reference migration, which runs
+ * everywhere; the seed never runs in production, so production never allows vossie.test.
  */
-export const SEED_EMAIL_DOMAINS: readonly string[] = ["eduvos.com", "vossie.test"];
+export const SEED_EMAIL_DOMAINS: readonly string[] = ["vossie.test"];
 
 /** The reserved test domain of the seed's sample accounts (RFC 2606's .test: it can never be a real mailbox). */
 export const SEED_ACCOUNT_DOMAIN = "vossie.test";
@@ -79,10 +81,10 @@ export function seedUuid(kind: string, id: string): string {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
-type Value = string | number | boolean | null | readonly string[] | { json: unknown };
+export type Value = string | number | boolean | null | readonly string[] | { json: unknown };
 
 /** A SQL literal. Text with a line break or a backslash is an E'' string, so each row stays on one line. */
-function literal(value: Value): string {
+export function literal(value: Value): string {
   if (value === null) return "null";
   if (typeof value === "boolean") return value ? "true" : "false";
   if (typeof value === "number") {
@@ -105,14 +107,23 @@ function literal(value: Value): string {
   return value.length === 0 ? "'{}'::text[]" : `array[${value.map(literal).join(", ")}]::text[]`;
 }
 
-/** One INSERT with a row per line. */
-function insert(table: string, columns: readonly string[], rows: readonly (readonly Value[])[]): string {
+/**
+ * One INSERT with a row per line. With `onConflict: "do nothing"` it skips rows that are already there (the reference
+ * migration, which staging and local stacks may already hold from an older seed).
+ */
+export function insert(
+  table: string,
+  columns: readonly string[],
+  rows: readonly (readonly Value[])[],
+  options: { onConflict?: "do nothing" } = {},
+): string {
   if (rows.length === 0) return `-- ${table}: none\n`;
   const lines = rows.map((row) => {
     if (row.length !== columns.length) throw new Error(`${table}: ${row.length} values for ${columns.length} columns`);
     return `  (${row.map(literal).join(", ")})`;
   });
-  return `insert into ${table} (${columns.join(", ")}) values\n${lines.join(",\n")};\n`;
+  const conflict = options.onConflict ? `\non conflict ${options.onConflict}` : "";
+  return `insert into ${table} (${columns.join(", ")}) values\n${lines.join(",\n")}${conflict};\n`;
 }
 
 const PLACEHOLDER = /^\/placeholders\/[a-z0-9/-]+\.svg$/;
@@ -120,7 +131,11 @@ const PLACEHOLDER = /^\/placeholders\/[a-z0-9/-]+\.svg$/;
 export function makeSeedSql(f: SeedFixtures): string {
   const accountId = (id: string) => seedUuid("account", id);
   const shopId = (slug: string) => seedUuid("shop", slug);
-  const pointId = (id: string) => seedUuid("pickup-point", id);
+  /** A reference pickup point's fixed id (the reference migration uses the same). */
+  const pointId = (id: string) => {
+    if (!f.pickupPoints.some((point) => point.id === id)) throw new Error(`Unknown pickup point ${id}`);
+    return seedUuid("pickup-point", id);
+  };
   const conversationId = (id: string) => seedUuid("conversation", id);
   const knownAccount = (id: string) => {
     if (!f.accounts.some(({ account }) => account.id === id)) throw new Error(`Unknown sample account ${id}`);
@@ -155,37 +170,14 @@ export function makeSeedSql(f: SeedFixtures): string {
       "-- fixture; scripts/seed-sql.test.ts fails while this file is out of date.",
       "--",
       "-- The sample accounts sign in as name@vossie.test, a reserved test domain, never a real Eduvos address. This seed",
-      "-- allows vossie.test and eduvos.com, for trying the flows locally and on staging. Production's allowed domains come",
-      "-- from an ops step, never from this file, and vossie.test must never be allowed there.",
+      "-- allows vossie.test, for trying the flows locally and on staging; vossie.test must never be allowed in production.",
+      "-- Reference rows and production's domains come from …_reference_data.sql (step 2b plan, Task 1).",
       "",
     ].join("\n"),
   ];
 
   parts.push("-- Who may sign in.");
   parts.push(insert("private.allowed_email_domains", ["domain"], SEED_EMAIL_DOMAINS.map((domain) => [domain])));
-
-  parts.push("-- Reference data.");
-  parts.push(
-    insert(
-      "public.campuses",
-      ["slug", "name", "region", "sort", "is_online"],
-      f.campuses.map((campus, i) => [campus.slug, campus.name, campus.region, i + 1, campus.slug === "online"]),
-    ),
-  );
-  parts.push(
-    insert(
-      "public.categories",
-      ["slug", "name", "sort"],
-      f.categories.map((category, i) => [category.slug, category.name, i + 1]),
-    ),
-  );
-  parts.push(
-    insert(
-      "public.pickup_points",
-      ["id", "campus_slug", "name", "retired_at", "created_at"],
-      f.pickupPoints.map((point) => [pointId(point.id), point.campusSlug, point.name, point.retiredAt, point.createdAt]),
-    ),
-  );
 
   // The sample accounts as Auth users on the test domain (seedEmail), confirmed, signing in by email code only (no
   // password), with the columns Supabase Auth reads as text set to "" rather than null.
