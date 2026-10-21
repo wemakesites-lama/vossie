@@ -1,7 +1,7 @@
 # Vossie follow-ups: design spec
 
 - **Date:** 2026-10-21
-- **Status:** Draft (2026-10-21), decided by Claude under Lama's standing goal (decision 54); Lama may revisit.
+- **Status:** Built (2026-10-21), in sample mode.
 - **Scope:** stage M. Three small follow-ups from stage L's open points (PROGRESS, "Open points for Lama after the housekeeping build"), each built with the safe default and refined against the code at HEAD `5c5fcef`:
   1. **An admin can't remove the mentor role from whoever mentors the admin's own shop** (open point 8; stage L spec section 11, amendment 8).
   2. **Featured's resting order: least recently featured first** (open point 5; stage L spec decision 20 and question 5).
@@ -347,3 +347,16 @@ The plan checks `pnpm build` and `tests/e2e/performance.spec.ts` after items 2 a
 3. **The reminder's 2 days** (`REMINDER_DAYS_BEFORE`), and whether it should link to the request's edit page instead of Your requests (decision 18).
 4. **"Closes automatically on {date}"** names the first closed day, as stage L's lines do. If askers read it as the last open day, all the lines (Your requests, the asker's panel, the reminder) could say "Open until {the day before}" instead.
 5. **The sample words** in sections 3, 4 and 5.
+
+## 11. Changes on plan review and build
+
+1. `StaffRoleConfirm`'s `mentorsOwnShop` and `onlyAdmin` and `roleConfirmTitle`'s flag are optional, defaulting to false; `AdminStaff`'s `ownShopMentorId` is required, so `components/forms/summary-ids.test.tsx` passes it (plan decision 2).
+2. The refusal is inline in `removeStaffRole`, and the confirm page's form state is neither written nor cleared (plan decision 3). The "confirm page shows no notices" rule is stage L plan decision 5 (decision 5 here cites stage L amendment 4, which is about settling after the gate).
+3. Only the remove-mentor page's heading becomes "{Name}'s mentor role"; the tab title stays "Remove a role" (plan decision 5).
+4. The trust page's existing test, which pins item 4's whole text, takes the new text. `AdminFeatured`'s copy of the old sentence, left alone in the plan (plan decision 7), was changed in review (`488c878`): the admin Featured page now says the sellers featured longest ago come back first, as the trust page does.
+5. The latest-day Featured test seeds the recorded rows (plan decision 8).
+6. The seeds' `remindedFor` is tested in `data/fixtures/request-rows.test.ts`, and no test pins `STORE_VERSION` (plan decision 10); the info pages write "2 days" as a literal, as stage L's sentences do (plan decision 11).
+7. `playwright.config.ts` is unchanged, but `housekeeping-writes.spec.ts` runs its tests one at a time (`mode: "default"`), because `fullyParallel` is on and two of its tests give Sipho the Admin role (plan decision 13).
+8. One build and size check after all three items instead of two (plan decision 15).
+9. Section 10's questions stay open for Lama: the build used the spec's choices.
+10. Review (`488c878`): the remove-mentor page's two inline reads became `removeMentorView(viewerId, personId)`, unit tested with mutation checks on both reads; a test shows a closing day moved away and back to one already reminded for sends nothing the second time (decision 15); the `requests.ts` header comment was re-wrapped.

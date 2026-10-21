@@ -146,14 +146,30 @@ Reviewed 2026-10-21 (opus, read-only); all accepted by the controller. Where an 
 | Point | `/` and most pages | Listing | Browse | Storefront | Saved | Request and collection | New and edit listing forms |
 |---|---|---|---|---|---|---|---|
 | Start (stage K at `16dab6a`, unchanged by stage L) | 150,660 | 151,816 | 151,407 | 151,420 | 151,295 | 151,136 | 152,334 |
-| Task 4, items 1 to 3 built | | | | | | | |
-| **Final (Task 5)** | | | | | | | |
+| Task 4, items 1 to 3 built | 150,660 | 151,816 | 151,407 | 151,420 | 151,295 | 151,136 | 152,334 |
+| **Final (Task 5)** | 150,660 | 151,816 | 151,407 | 151,420 | 151,295 | 151,136 | 152,334 |
 
-The stop line used: 152,305 B (decision 52; the forms' 152,334 B accepted as decision 78). Unit tests at the start: 2,661 (stage L's final count). End to end at the start: stage L's final run (devices 1,251 passed, 1,210 skipped by design, and the 4 failures that predate stage L, with the header session; the seven write projects 65 passed, 1 skipped, on a fresh server). Unit tests at the end: (fill in). End to end at the end: (fill in).
+The stop line used: 152,305 B (decision 52; the forms' 152,334 B accepted as decision 78). Unit tests at the start: 2,661 (stage L's final count). End to end at the start: stage L's final run (devices 1,251 passed, 1,210 skipped by design, and the 4 failures that predate stage L, with the header session; the seven write projects 65 passed, 1 skipped, on a fresh server). Unit tests at the end: 2,701. End to end at the end, on a fresh server: the seven write projects 66 passed, 1 skipped; `housekeeping-writes` again on the same server 4 passed; devices (staff, info, home, community-actions at 390 and 1440) 88 passed; `performance.spec.ts` 45 passed. Every page's JS is the same to the byte as the Start row. The full device suite was not run in this stage; the four phone tests that predate stage L (header session) are unchanged.
 
 ## Changes made during the build
 
-(Fill in during the build and in Task 5. Where an entry differs from the tasks below, the entry wins.)
+(Where an entry differs from the tasks below, the entry wins.)
+
+**Commits** (`git log --oneline bd82ece..HEAD`):
+- Task 1: `b70b170`, the mentor-role guard (`ownShopMentorId`, the `"own-shop-mentor"` refusal in `removeRole`, the notice, the two staff views). Unit: 2,675.
+- Task 2: `58d0338`, Featured's resting order. Unit: 2,682.
+- Task 3: `c6cebed`, the reminder (`reminderDue`, `remindedFor`, `STORE_VERSION` 14). Unit: 2,698.
+- Review fixes: `488c878`. The remove-mentor page's two inline reads became `removeMentorView(viewerId, personId)`, unit tested with mutation checks on both reads; a test shows a closing day moved away and back to one already reminded for sends nothing the second time (spec decision 15); the `requests.ts` header comment was re-wrapped; the admin Featured page now says the sellers featured longest ago come back first, as the trust page does (this closes plan decision 7's open point). Unit: 2,701.
+- Task 4: `81dab39`, the end-to-end test in `housekeeping-writes.spec.ts` (with `test.describe.configure({ mode: "default" })`).
+- Task 5: this documentation commit.
+
+**Where the build differed from the tasks:**
+- `removeMentorView` is a new helper the plan didn't name; it replaces the remove-mentor page's two inline reads (review, `488c878`).
+- `AdminFeatured`'s copy of the break sentence was changed after all (plan decision 7 left it; the review made it match the trust page).
+- The code review found nothing blocking; its low-severity gaps were fixed in `488c878`.
+- The device run was the amendment 2 command (staff, info, home, community-actions at 390 and 1440): 88 passed. No full device run was made.
+- Amendment 3's risk note held: two existing tests now send a reminder and neither counts notifications.
+- No screenshots spec was added (nothing new is drawn but lines in existing styles).
 
 ## Conventions for every task
 
@@ -306,12 +322,12 @@ Spec section 3 and decisions 1 to 7, with plan decisions 1 to 5.
 - Modify: `components/forms/summary-ids.test.tsx`
 - Modify: `app/admin/staff/page.tsx`, `app/admin/staff/[id]/remove-mentor/page.tsx`
 
-- [ ] **Step 1: Check the files are yours to edit**
+- [x] **Step 1: Check the files are yours to edit**
 
 Run: `git --no-optional-locks status --short lib/data/staff-accounts.ts lib/data/staff-accounts.test.ts lib/staff components/staff components/forms/summary-ids.test.tsx app/admin/staff`
 Expected: no output.
 
-- [ ] **Step 2: The data tests**
+- [x] **Step 2: The data tests**
 
 In `lib/data/staff-accounts.test.ts`, change the import from `./staff-accounts` to:
 
@@ -362,7 +378,7 @@ describe("the mentor of the admin's own shop (stage M spec decisions 1 to 5)", (
 });
 ```
 
-- [ ] **Step 3: The action and notice tests**
+- [x] **Step 3: The action and notice tests**
 
 In `lib/staff/account-actions.test.ts`:
 - change `import { readFormState } from "@/lib/auth/form-state";` to `import { readFormState, writeFormState } from "@/lib/auth/form-state";`;
@@ -423,7 +439,7 @@ describe("the mentor of the admin's own shop (stage M spec decision 5)", () => {
 });
 ```
 
-- [ ] **Step 4: The view tests**
+- [x] **Step 4: The view tests**
 
 In `components/staff/AdminStaff.test.tsx`, in the `view` helper's `<AdminStaff … />`, add `ownShopMentorId={null}` after `viewerId="acc-admin"`, and add inside the describe "Staff accounts (stage J spec decision 2)", after the test "says This is you. on the admin's own admin role…":
 
@@ -488,14 +504,14 @@ In `components/staff/StaffRoleConfirm.test.tsx`, add inside the describe, after 
 
 In `components/forms/summary-ids.test.tsx`, in its `<AdminStaff … />` (about line 324), add `ownShopMentorId={null}` after `viewerId="acc-admin"`. (Its `<StaffRoleConfirm … />` needs nothing: the new props are optional, plan decision 2.)
 
-- [ ] **Step 5: Show red in a tests-only scratch copy**
+- [x] **Step 5: Show red in a tests-only scratch copy**
 
 Make `S="<your scratchpad>/vossie-m-task1-red"` as the conventions say, copying in only `lib/data/staff-accounts.test.ts`, `lib/staff/account-actions.test.ts`, `lib/staff/notices.test.ts`, `components/staff/AdminStaff.test.tsx`, `components/staff/StaffRoleConfirm.test.tsx` and `components/forms/summary-ids.test.tsx`. From `$S`:
 
 Run: `pnpm test lib/data/staff-accounts.test.ts lib/staff/account-actions.test.ts lib/staff/notices.test.ts components/staff/AdminStaff.test.tsx components/staff/StaffRoleConfirm.test.tsx`
 Expected: FAIL: `ownShopMentorId` isn't exported, the refusals remove the role (`role-removed`), the notice has no words, "Mentors your shop." and the refusal's line aren't drawn, and `roleConfirmTitle(…, true)` says "Remove Naledi's mentor role". The tests that pin stage J ("still lets another admin…", "leaves removing the admin role alone…", "checks the role first…", "offers every Remove link…") pass.
 
-- [ ] **Step 6: `ownShopMentorId` and the refusal in the data write**
+- [x] **Step 6: `ownShopMentorId` and the refusal in the data write**
 
 In `lib/data/staff-accounts.ts`, after the line `const adminRows = () => [...sampleStore().accounts.values()].filter((row) => row.roles.includes("admin"));`, add:
 
@@ -534,7 +550,7 @@ export async function removeRole(
 
 (The rest of the function stays as it is.) In the file's header comment, nothing changes: its promise ("Nothing here awaits between a check and its write") still holds.
 
-- [ ] **Step 7: The notice and the action**
+- [x] **Step 7: The notice and the action**
 
 In `lib/staff/notices.ts`, after the line `["own-request", "Nothing changed. It's your own request, so another admin must do this."],` add:
 
@@ -566,7 +582,7 @@ In `lib/staff/account-actions.ts`, in `removeStaffRole`:
   }
 ```
 
-- [ ] **Step 8: The views**
+- [x] **Step 8: The views**
 
 In `components/staff/AdminStaff.tsx`:
 - in `AdminStaffProps`, after the `viewerId` field, add:
@@ -687,7 +703,7 @@ export function StaffRoleConfirm({
 
 - add to the doc comment above `StaffRoleConfirm`, after `the action refuses it too.`: ` So does the mentor role of whoever mentors your own shop (stage M).`
 
-- [ ] **Step 9: The pages**
+- [x] **Step 9: The pages**
 
 In `app/admin/staff/page.tsx`:
 - change `import { listStaffAccounts } from "@/lib/data/staff-accounts";` to `import { listStaffAccounts, ownShopMentorId } from "@/lib/data/staff-accounts";`;
@@ -724,12 +740,12 @@ Expected: PASS, every existing test in these files included.
 Run: `pnpm lint lib/data/staff-accounts.ts lib/data/staff-accounts.test.ts lib/staff/account-actions.ts lib/staff/account-actions.test.ts lib/staff/notices.ts lib/staff/notices.test.ts components/staff/AdminStaff.tsx components/staff/AdminStaff.test.tsx components/staff/StaffRoleConfirm.tsx components/staff/StaffRoleConfirm.test.tsx components/forms/summary-ids.test.tsx app/admin/staff`
 Expected: no output.
 
-- [ ] **Step 10: Typecheck, lint and the unit suite in a scratch copy**
+- [x] **Step 10: Typecheck, lint and the unit suite in a scratch copy**
 
 Make `S="<your scratchpad>/vossie-m-task1-check"` with every file this task changed, and run the three commands the conventions give.
 Expected: types and lint clean; every unit test passing (record the count: 2,661 plus this task's 14).
 
-- [ ] **Step 11: Hand over**
+- [x] **Step 11: Hand over**
 
 Files: `lib/data/staff-accounts.ts`, `lib/data/staff-accounts.test.ts`, `lib/staff/account-actions.ts`, `lib/staff/account-actions.test.ts`, `lib/staff/notices.ts`, `lib/staff/notices.test.ts`, `components/staff/AdminStaff.tsx`, `components/staff/AdminStaff.test.tsx`, `components/staff/StaffRoleConfirm.tsx`, `components/staff/StaffRoleConfirm.test.tsx`, `components/forms/summary-ids.test.tsx`, `app/admin/staff/page.tsx`, `app/admin/staff/[id]/remove-mentor/page.tsx`. Message:
 
@@ -748,12 +764,12 @@ Spec section 4 and decisions 8 to 12, with plan decisions 6 to 8.
 - Modify: `lib/data/featured.ts`, `lib/data/featured.test.ts`
 - Modify: `app/trust/page.tsx`, `app/trust/page.test.tsx`
 
-- [ ] **Step 1: Check the files are yours to edit**
+- [x] **Step 1: Check the files are yours to edit**
 
 Run: `git --no-optional-locks status --short lib/featured.ts lib/featured.test.ts lib/data/featured.ts lib/data/featured.test.ts app/trust`
 Expected: no output.
 
-- [ ] **Step 2: The tests**
+- [x] **Step 2: The tests**
 
 In `lib/featured.test.ts`, turn the three `Set`s into maps (the existing tests keep their meaning: every resting seller has the same last day, so the rotation decides, as before):
 - in "draws resting sellers only after everyone else, and a pin ignores the break…", change `{ resting: new Set(["a", "c"]) }` to `{ resting: new Map([["a", "2026-10-11"], ["c", "2026-10-11"]]) }`, and `{ pinned: ["a"], resting: new Set(["a"]) }` to `{ pinned: ["a"], resting: new Map([["a", "2026-10-11"]]) }`;
@@ -868,14 +884,14 @@ In `app/trust/page.test.tsx`, in the test "says the week's break is a preference
 
 and the test's name to `"says the week's break is a preference, and who comes back first when it gives (amendment 3, stage M spec decision 12)"`.
 
-- [ ] **Step 3: Show red in a tests-only scratch copy**
+- [x] **Step 3: Show red in a tests-only scratch copy**
 
 Make `S="<your scratchpad>/vossie-m-task2-red"`, copying in only `lib/featured.test.ts`, `lib/data/featured.test.ts` and `app/trust/page.test.tsx`. From `$S`:
 
 Run: `pnpm test lib/featured.test.ts lib/data/featured.test.ts app/trust/page.test.tsx`
 Expected: FAIL in "brings back the one featured longest ago first" (HEAD gives `["c", "a", "b"]`), "keeps the campus's own first" (HEAD gives `c` before `d`), "rests a seller with the latest day it was shown" (HEAD gives `[e[4], e[5], e[6], e[7]]`) and the trust test. The rotation-tie test, the pin tests and the existing tests pass (vitest doesn't typecheck, and a `Map` has `has`). The nine-seller walk may pass or fail at HEAD, by chance of the rotation.
 
-- [ ] **Step 4: The draw**
+- [x] **Step 4: The draw**
 
 In `lib/featured.ts`, replace the `resting` field of `FeaturedOptions` (its doc comment and line) with:
 
@@ -930,7 +946,7 @@ export function drawFeatured(
 
 (`rotate` returns a new array, so sorting it in place touches nothing else.)
 
-- [ ] **Step 5: The caller**
+- [x] **Step 5: The caller**
 
 In `lib/data/featured.ts`, in `featuredFor`, replace:
 
@@ -957,7 +973,7 @@ with:
 
 In the file's header comment, after the sentence that ends `so a row is only short when there aren't enough eligible sellers at all.`, add ` When resting sellers are needed, the campus's own come first, then whoever was featured longest ago (stage M).` (rewrap the comment at about 120 characters, keeping the words).
 
-- [ ] **Step 6: The trust page**
+- [x] **Step 6: The trust page**
 
 In `app/trust/page.tsx`, replace the list item:
 
@@ -985,12 +1001,12 @@ Expected: PASS, every existing test included (`lib/data/index.test.ts` reads `ge
 Run: `pnpm lint lib/featured.ts lib/featured.test.ts lib/data/featured.ts lib/data/featured.test.ts app/trust`
 Expected: no output.
 
-- [ ] **Step 7: Typecheck, lint and the unit suite in a scratch copy**
+- [x] **Step 7: Typecheck, lint and the unit suite in a scratch copy**
 
 Make `S="<your scratchpad>/vossie-m-task2-check"` with every file this task changed, and run the three commands the conventions give.
 Expected: types and lint clean (TypeScript now checks that every `resting` is a `Map`); every unit test passing (record the count).
 
-- [ ] **Step 8: Hand over**
+- [x] **Step 8: Hand over**
 
 Files: `lib/featured.ts`, `lib/featured.test.ts`, `lib/data/featured.ts`, `lib/data/featured.test.ts`, `app/trust/page.tsx`, `app/trust/page.test.tsx`. Message:
 
@@ -1014,12 +1030,12 @@ Spec section 5 and decisions 13 to 20, with plan decisions 9 to 12.
 - Modify: `app/how-it-works/page.tsx`, `app/how-it-works/page.test.tsx`
 - Modify: `app/privacy/page.tsx`, `app/privacy/page.test.tsx`
 
-- [ ] **Step 1: Check the files are yours to edit**
+- [x] **Step 1: Check the files are yours to edit**
 
 Run: `git --no-optional-locks status --short lib/looking-for lib/data/rows.ts lib/data/store.ts lib/data/requests.ts lib/data/requests.test.ts data/fixtures app/how-it-works app/privacy`
 Expected: no output. Then `grep -n "^export const STORE_VERSION" lib/data/store.ts` prints `export const STORE_VERSION = 13;` (Recheck 2; if it's higher, use the next number in Step 7).
 
-- [ ] **Step 2: The rule's and the words' tests**
+- [x] **Step 2: The rule's and the words' tests**
 
 In `lib/looking-for/rules.test.ts`, add `REMINDER_DAYS_BEFORE`, `reminderDay` and `reminderDue` to the import from `./rules` (keep it sorted: after `parseBudget`, `REMINDER_DAYS_BEFORE`, `reminderDay`, `reminderDue`, then `requestOpenOn`), and add at the end of the file:
 
@@ -1078,7 +1094,7 @@ describe("the reminder before a request closes itself (stage M spec section 5, W
 });
 ```
 
-- [ ] **Step 3: Settling's, the seeds' and the action's tests**
+- [x] **Step 3: Settling's, the seeds' and the action's tests**
 
 In `data/fixtures/request-rows.test.ts`, replace the test "names no asker, and none is closed by anyone or hidden" with:
 
@@ -1235,7 +1251,7 @@ describe("the reminder in a Looking For action (stage M spec decision 14)", () =
 });
 ```
 
-- [ ] **Step 4: The info pages' tests**
+- [x] **Step 4: The info pages' tests**
 
 In `app/how-it-works/page.test.tsx`, change the expected text `"Requests close automatically 3 days after their needed-by date, or after 30 days with no changes. You can reopen one."` to:
 
@@ -1252,14 +1268,14 @@ In `app/privacy/page.test.tsx`, in the test "says requests close themselves, tha
       "An open request closes automatically 3 days after its needed-by date, or after 30 days with no changes; you're reminded 2 days before and told when it does, and you can reopen it.",
 ```
 
-- [ ] **Step 5: Show red in a tests-only scratch copy**
+- [x] **Step 5: Show red in a tests-only scratch copy**
 
 Make `S="<your scratchpad>/vossie-m-task3-red"`, copying in only `lib/looking-for/rules.test.ts`, `lib/looking-for/words.test.ts`, `data/fixtures/request-rows.test.ts`, `lib/data/requests.test.ts`, `lib/looking-for/actions.test.ts`, `app/how-it-works/page.test.tsx` and `app/privacy/page.test.tsx`. From `$S`:
 
 Run: `pnpm test lib/looking-for/rules.test.ts lib/looking-for/words.test.ts data/fixtures/request-rows.test.ts lib/data/requests.test.ts lib/looking-for/actions.test.ts app/how-it-works app/privacy`
 Expected: FAIL: the rule and the words don't exist, the seeds have no `remindedFor` (undefined, not null), nothing is reminded, and the info pages' sentences are stage L's. "Sends only the close…", "never reminds…" and "goes with the request…" may pass at HEAD (nothing reminds there yet); every existing test passes.
 
-- [ ] **Step 6: The rule and the words**
+- [x] **Step 6: The rule and the words**
 
 In `lib/looking-for/rules.ts`, after the function `closedAtFor` (and before `cleanTitle`), add:
 
@@ -1317,7 +1333,7 @@ export function requestCloseReminderText(title: string, closesOn: string, reason
 }
 ```
 
-- [ ] **Step 7: The row, the store and the seeds**
+- [x] **Step 7: The row, the store and the seeds**
 
 In `lib/data/rows.ts`, in `RequestRow`, after the `closedBy` field, add:
 
@@ -1340,7 +1356,7 @@ and change `export const STORE_VERSION = 13;` to `export const STORE_VERSION = 1
 
 In `data/fixtures/request-rows.ts`, add `remindedFor: null,` after `closedBy: null,`, and in its comment change `nothing closed by anyone or hidden, and no closedBy (stage L).` to `nothing closed by anyone or hidden, no closedBy (stage L) and no reminder sent (stage M).` (rewrap at about 120 characters).
 
-- [ ] **Step 8: Settling sends the reminder**
+- [x] **Step 8: Settling sends the reminder**
 
 In `lib/data/requests.ts`:
 - change the import from `@/lib/looking-for/rules` to:
@@ -1419,7 +1435,7 @@ export async function settleRequests(now: Date): Promise<number> {
 
 - in the file's header comment, after `…telling the asker once.`, add ` Two days before, it reminds them once (stage M).` (rewrap at about 120 characters).
 
-- [ ] **Step 9: The info pages**
+- [x] **Step 9: The info pages**
 
 In `app/how-it-works/page.tsx`, replace:
 
@@ -1474,12 +1490,12 @@ Expected: PASS, every existing test included. (Stage L's settle tests still pass
 Run: `pnpm lint lib/looking-for lib/data/rows.ts lib/data/store.ts lib/data/requests.ts lib/data/requests.test.ts data/fixtures app/how-it-works app/privacy`
 Expected: no output.
 
-- [ ] **Step 10: Typecheck, lint and the unit suite in a scratch copy**
+- [x] **Step 10: Typecheck, lint and the unit suite in a scratch copy**
 
 Make `S="<your scratchpad>/vossie-m-task3-check"` with every file this task changed, and run the three commands the conventions give.
 Expected: types and lint clean (every `RequestRow` literal names `remindedFor`: the fixture and `createRequest`; `lib/data/numbers.test.ts` copies a seeded row with `structuredClone`, so it needs nothing); every unit test passing (record the count).
 
-- [ ] **Step 11: Hand over**
+- [x] **Step 11: Hand over**
 
 Files: `lib/looking-for/rules.ts`, `lib/looking-for/rules.test.ts`, `lib/looking-for/words.ts`, `lib/looking-for/words.test.ts`, `lib/data/rows.ts`, `lib/data/store.ts`, `data/fixtures/request-rows.ts`, `data/fixtures/request-rows.test.ts`, `lib/data/requests.ts`, `lib/data/requests.test.ts`, `lib/looking-for/actions.test.ts`, `app/how-it-works/page.tsx`, `app/how-it-works/page.test.tsx`, `app/privacy/page.tsx`, `app/privacy/page.test.tsx`. Message:
 
@@ -1496,12 +1512,12 @@ Spec section 3 "Tests" (end to end) and section 9's build check, with plan decis
 **Files:**
 - Modify: `tests/e2e/housekeeping-writes.spec.ts`
 
-- [ ] **Step 1: Check the file is yours to edit**
+- [x] **Step 1: Check the file is yours to edit**
 
 Run: `git --no-optional-locks status --short playwright.config.ts tests/e2e`
 Expected: only the header session's `tests/e2e/listing.spec.ts` and `tests/e2e/responsive.spec.ts` (and perhaps `a11y.spec.ts`), which this task never touches. If `playwright.config.ts` or `housekeeping-writes.spec.ts` shows, stop and report.
 
-- [ ] **Step 2: The test**
+- [x] **Step 2: The test**
 
 In `tests/e2e/housekeeping-writes.spec.ts`:
 - after the file's opening comment (the one that ends `…here, the dates the asker is shown.`), add:
@@ -1617,7 +1633,7 @@ Expected: no output.
 Run: `grep -rn "newContext(" tests/e2e | grep -v serviceWorkers`
 Expected: no output (CLAUDE.md).
 
-- [ ] **Step 3: Build, e2e and the size check, in a scratch copy**
+- [x] **Step 3: Build, e2e and the size check, in a scratch copy**
 
 Make `S="<your scratchpad>/vossie-m-task4"` at HEAD (Tasks 1 to 3 committed) with this task's file copied in, and the port changed to 3204. From `$S`:
 
@@ -1647,7 +1663,7 @@ E2E_REUSE_SERVER=1 pnpm e2e tests/e2e/staff-accounts-checks.spec.ts tests/e2e/st
 
 Expected: every `scriptBrotli` equal to the ledger's Start row, to the byte (report the figures for the Task 4 row); the device runs pass. Any byte that moved stops the build: report it before going on. If a read-only test fails on a page a write changed, stop your server, start a fresh one and rerun that file before calling it a failure (stage L's ledger). If the forged post's status isn't a redirect, report what it was and what the response body says before changing the test (the notice check is the real proof). Stop your server by its two PIDs.
 
-- [ ] **Step 4: Hand over**
+- [x] **Step 4: Hand over**
 
 Files: `tests/e2e/housekeeping-writes.spec.ts`. Message:
 
@@ -1668,16 +1684,16 @@ The stage's records. **`docs/PROGRESS.md` and `docs/reference/LANDING-DECISIONS.
 - Modify: `docs/superpowers/plans/2026-10-21-follow-ups.md` (this plan)
 - Create (scratchpad, not the project): `m-progress.md`, `m-decision.md`
 
-- [ ] **Step 1: Check the docs are yours to edit**
+- [x] **Step 1: Check the docs are yours to edit**
 
 Run: `git --no-optional-locks status --short CLAUDE.md docs/reference/GO-LIVE.md docs/superpowers/specs/2026-10-21-follow-ups-design.md docs/superpowers/plans/2026-10-21-follow-ups.md`
 Expected: no output (this plan may show as modified by the build's own ledger notes). If any shows as modified by someone else, stop and report.
 
-- [ ] **Step 2: Screenshots: none**
+- [x] **Step 2: Screenshots: none**
 
 Nothing new is drawn but lines of text in existing styles (`staff-muted`, `staff-confirm-lead`). No screenshots spec is added; say so in the progress snippet.
 
-- [ ] **Step 3: CLAUDE.md**
+- [x] **Step 3: CLAUDE.md**
 
 In the line that starts `- Looking For requests close themselves`, after `` `settleRequests(now)` stores the close and tells the asker, `` insert `` and, from 2 days before the closing day, sends one reminder (`reminderDue`, marked by `remindedFor` with the closing day, so a moved closing day allows a new one; it still returns only the count closed, so a reminder expires no tag), `` (keep the rest of the line as it is).
 
@@ -1685,7 +1701,7 @@ In the line that starts `- No admin makes a Hub decision about their own shop`, 
 
 In the line that starts `- Stage L's end-to-end tests`, change `go in \`tests/e2e/housekeeping-writes.spec.ts\`, which runs last,` to `` and stage M's (your own shop's mentor) go in `tests/e2e/housekeeping-writes.spec.ts`, whose tests run in order (`mode: "default"`: two give Sipho the Admin role) and which runs last, ``.
 
-- [ ] **Step 4: The spec's "Changes on plan review and build"**
+- [x] **Step 4: The spec's "Changes on plan review and build"**
 
 At the end of `docs/superpowers/specs/2026-10-21-follow-ups-design.md`, add `## 11. Changes on plan review and build`, a numbered list, one sentence or two each, naming the plan decision:
 1. `StaffRoleConfirm`'s `mentorsOwnShop` and `onlyAdmin` and `roleConfirmTitle`'s flag are optional, defaulting to false; `AdminStaff`'s `ownShopMentorId` is required, so `components/forms/summary-ids.test.tsx` passes it (plan decision 2).
@@ -1699,7 +1715,7 @@ At the end of `docs/superpowers/specs/2026-10-21-follow-ups-design.md`, add `## 
 9. Section 10's questions stay open for Lama: the build used the spec's choices.
 10. Anything in this plan's "Changes made during the build" that changes what the spec says.
 
-- [ ] **Step 5: The go-live checklist**
+- [x] **Step 5: The go-live checklist**
 
 In `docs/reference/GO-LIVE.md`:
 - line 5: change `and after housekeeping (an admin's own shop, requests that close themselves, the sitemap; stage L). Update the status column` to `and after housekeeping (an admin's own shop, requests that close themselves, the sitemap; stage L), and after the follow-ups (your own shop's mentor, Featured's resting order, the request reminder; stage M). Update the status column`;
@@ -1709,11 +1725,11 @@ In `docs/reference/GO-LIVE.md`:
 - **Section 7**: tick `- [ ] **Featured with few Verified sellers.**` (`- [x]`) and append ` Decided in stage M: the break stays a preference; resting sellers come back least recently featured first, the campus's own still first. The draw function on the real backend takes the same map of last days from \`featured_draws\`. Decided by Claude under decision 54; Lama may revisit.`;
 - **Section 8**: after the stage L bullet under item 6, add `   - **Done in sample mode (<day>): follow-ups (stage M).** An admin can't remove the mentor role from whoever mentors their own shop; Featured brings back the sellers featured longest ago first; an asker is reminded once, 2 days before a request closes itself.`; and in item 7's paragraph, after `…and a sitemap of what's current.`, add ` Stage M adds three follow-ups: your own shop's mentor, Featured's resting order and the request reminder.`
 
-- [ ] **Step 6: This plan's ledger and changes**
+- [x] **Step 6: This plan's ledger and changes**
 
 In this plan, fill in the JS ledger's Task 4 row from Task 4's report, the unit counts, and the end-to-end counts (Task 4's runs and the controller's final run); under "Changes made during the build", list each task with its commit (`git --no-optional-locks log --oneline`, one command) and every place the build differed from the tasks.
 
-- [ ] **Step 7: The snippets for the controller**
+- [x] **Step 7: The snippets for the controller**
 
 Write, in the scratchpad named above:
 - `m-progress.md`: a section for `docs/PROGRESS.md` in the shape of stage L's (`## 2026-10-<day>: Follow-ups built, in sample mode (stage M)`): what was built (the mentor-role refusal and its lines, Featured's resting order, the reminder); the spec points the plan corrected (Task 5 Step 4's list); the JS figures; the unit and e2e counts; no screenshots (Step 2); and the open points for Lama: spec section 10's five questions (refuse rather than note; the campus before the longest wait; the 2 days and the link to Your requests; "Closes automatically on" naming the first closed day; the sample words), and `AdminFeatured`'s staff copy of the break sentence, which doesn't yet say who comes back first (plan decision 7);
@@ -1752,4 +1768,4 @@ docs: stage M's records: CLAUDE.md (the reminder in settleRequests, the own-shop
 - **Determinism.** The day numbers the Featured tests rely on were worked out: 12 October 2026 is day 20,738 (even; 20,738 % 3 = 2), the 13th is 20,739 (odd), the 14th is 20,740 (20,740 % 9 = 4, % 4 = 0). The reminder tests' times are fixed instants; none reads the real clock.
 - **Shared files left alone.** `app/globals.css`, `app/layout.tsx`, `components/header/*`, `components/tabbar/*`, `components/messages/NotificationsView.tsx`, `tests/e2e/{listing,responsive,a11y}.spec.ts`, `playwright.config.ts`, `lib/supabase/*`, `docs/PROGRESS.md`, `docs/reference/LANDING-DECISIONS.md` and the other sessions' untracked docs are never edited.
 - **Type consistency.** `"own-shop-mentor"` (the result, the notice code), `ownShopMentorId` (the function and `AdminStaff`'s prop), `mentorsOwnShop` and `onlyAdmin` (`StaffRoleConfirm`'s props, the page's locals, `roleConfirmTitle`'s flag), `FeaturedOptions.resting: ReadonlyMap<string, string>`, `REMINDER_DAYS_BEFORE`, `reminderDay`, `reminderDue`, `requestCloseReminderText`, `RequestRow.remindedFor` and `settleRequests`' unchanged `Promise<number>` are used with the same names in every task.
-- **Risk noted for the reviewer.** A reminder is a new `request-update` notification wherever a test's request has a closing day two days or less after the test's clock. The plan's search found one such existing test (`lib/looking-for/actions.test.ts`, needed by the 12th at `STAFF_NOW`), which counts no notifications; Task 3 Step 9 runs every file that settles and asks the implementer to report, not quietly change, any other.
+- **Risk noted for the reviewer.** A reminder is a new `request-update` notification wherever a test's request has a closing day two days or less after the test's clock. The plan's search found two existing tests where this happens, neither counting notifications: `lib/looking-for/actions.test.ts` (needed by the 12th, at `STAFF_NOW`) and `lib/data/requests.test.ts`'s "closes at the very start of the closing day…" (its 21:59:59Z settle on the 12th falls in the window). No e2e test can: a needed-by date can't be in the past, so a request posted in e2e closes at today+4 at the earliest. Task 3 Step 9 runs every file that settles and asks the implementer to report, not quietly change, any other.
