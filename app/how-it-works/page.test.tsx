@@ -68,6 +68,12 @@ describe("How it works (info and system spec 3)", () => {
     expect(within(questions).getByText(/save a search and hear when a new listing matches it/)).toBeInTheDocument();
     expect(within(questions).getByText(/Notifications show on Vossie only: nothing is emailed yet\./)).toBeInTheDocument();
     expect(within(questions).queryByText(/Messaging and selling need an account/)).toBeNull();
+    // Stage L: requests close themselves, and can be reopened (spec section 4, Words).
+    expect(
+      within(questions).getByText(
+        "Requests close automatically 3 days after their needed-by date, or after 30 days with no changes. You can reopen one.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("is not a draft", () => {

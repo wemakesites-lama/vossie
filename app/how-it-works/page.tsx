@@ -118,6 +118,10 @@ const SECTIONS: readonly InfoSection[] = [
           for an office-hours slot, and set up a shop of your own.
         </p>
         <p>
+          Requests close automatically 3 days after their needed-by date, or after 30 days with no changes. You can
+          reopen one.
+        </p>
+        <p>
           While Vossie is a preview, what you add lives in the server&apos;s memory, so it can disappear when the
           server restarts. Notifications show on Vossie only: nothing is emailed yet.
         </p>
@@ -131,7 +135,7 @@ export default function HowItWorksPage() {
     <InfoPage
       title="How Vossie works"
       lede="Find it, message the seller, meet on campus, then pay or swap."
-      updated="2026-10-20"
+      updated="2026-10-21"
       sections={SECTIONS}
     />
   );
