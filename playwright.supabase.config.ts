@@ -17,6 +17,10 @@ import { localStack } from "./tests/e2e-supabase/helpers/local";
 const PORT = 3303;
 const baseURL = `http://localhost:${PORT}`;
 const local = localStack();
+// A throwaway CRON_SECRET for this run, as the HMAC key is (the MVP spec's flow 12 calls both crons with it). Playwright
+// reads this file again in each worker: the first read keeps it in process.env, which the workers inherit, so the
+// server and the tests hold the same one. It's never printed or written down.
+const cronSecret = (process.env.VOSSIE_E2E_CRON_SECRET ??= randomBytes(32).toString("base64url"));
 
 export default defineConfig({
   testDir: "./tests/e2e-supabase",
@@ -45,6 +49,7 @@ export default defineConfig({
       SUPABASE_SECRET_KEY: local.SECRET_KEY,
       VOSSIE_EMAIL_DOMAINS: "vossie.net,eduvos.com,vossie.test",
       VOSSIE_AUTH_HMAC_KEY: randomBytes(32).toString("base64"),
+      CRON_SECRET: cronSecret,
     },
   },
   projects: [
