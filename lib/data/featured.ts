@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
+import { onSupabase } from "@/lib/backend";
 import { drawFeatured } from "@/lib/featured";
 import { addDays } from "@/lib/staff/rules";
 import type { CampusChoice, Seller } from "@/lib/types";
-import { listedListings, liveSellerRows, toSeller } from "./catalog";
+import { type Catalog, listedListings, liveSellerRows, toSeller } from "./catalog";
 import type { FeaturedPinRow } from "./rows";
 import { isOwnShop } from "./staff-shops";
 import { sampleStore } from "./store";
@@ -22,15 +23,37 @@ export const FEATURED_PLACES = 4;
 /** A seller shown in a campus's row sits out its draws for this many days after (the trust page's week's break). */
 export const REST_DAYS = 6;
 /** Rows older than this are tidied away as new ones are drawn. */
-const KEEP_DAYS = 7;
+export const KEEP_DAYS = 7;
 
 const drawKey = (campus: string, day: string) => `${campus}:${day}`;
 
-function eligibleSellers(): Seller[] {
-  const listed = new Set(listedListings().map((listing) => listing.sellerSlug));
-  return liveSellerRows()
+/** Who may be featured, by the catalog's rules over either backend's rows (2b plan Task 18). */
+export function eligibleIn(shown: Pick<Catalog, "listedListings" | "liveSellerRows">): Seller[] {
+  const listed = new Set(shown.listedListings().map((listing) => listing.sellerSlug));
+  return shown
+    .liveSellerRows()
     .filter((row) => row.verified && listed.has(row.slug))
     .map(toSeller);
+}
+
+function eligibleSellers(): Seller[] {
+  return eligibleIn({ listedListings, liveSellerRows });
+}
+
+/**
+ * The week's break, with the latest day each resting seller was in a campus's row: walking back from the day before
+ * `day`, the first day met is the latest (stage M spec decision 11). A pinned day counts: pins are in the row. `rowOn`
+ * gives the campus's recorded row on a day, if any.
+ */
+export function restingBefore(day: string, rowOn: (shown: string) => readonly string[] | undefined): Map<string, string> {
+  const resting = new Map<string, string>();
+  for (let back = 1; back <= REST_DAYS; back += 1) {
+    const shown = addDays(day, -back);
+    for (const slug of rowOn(shown) ?? []) {
+      if (!resting.has(slug)) resting.set(slug, shown);
+    }
+  }
+  return resting;
 }
 
 /**
@@ -63,20 +86,13 @@ function tidy(day: string): void {
  * seller who has stopped being eligible since drops out, and the place stays empty until tomorrow (plan decision 9).
  */
 export async function featuredFor(campus: CampusChoice, day: string): Promise<Seller[]> {
+  if (onSupabase()) return (await import("./supabase/featured")).featuredFor(campus, day);
   const store = sampleStore();
   const eligible = eligibleSellers();
   const key = drawKey(campus, day);
   let row = store.featuredDraws.get(key);
   if (!row) {
-    // The week's break, with the latest day each resting seller was in this campus's row: walking back from
-    // yesterday, the first day met is the latest (stage M spec decision 11). A pinned day counts: pins are in the row.
-    const resting = new Map<string, string>();
-    for (let back = 1; back <= REST_DAYS; back += 1) {
-      const shown = addDays(day, -back);
-      for (const slug of store.featuredDraws.get(drawKey(campus, shown))?.sellerSlugs ?? []) {
-        if (!resting.has(slug)) resting.set(slug, shown);
-      }
-    }
+    const resting = restingBefore(day, (shown) => store.featuredDraws.get(drawKey(campus, shown))?.sellerSlugs);
     const pinned = pinsFor(campus, day).map((pin) => pin.sellerSlug);
     const drawn = drawFeatured(eligible, campus, day, FEATURED_PLACES, { pinned, resting });
     row = { key, campusSlug: campus, day, sellerSlugs: drawn.map((seller) => seller.slug) };

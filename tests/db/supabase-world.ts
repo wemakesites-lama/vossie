@@ -1,4 +1,5 @@
 import { inject } from "vitest";
+import { campusToDb } from "@/lib/data/supabase/rows";
 import type { World } from "@/tests/contract/world";
 import { testAdminClient, type DbClient } from "./accounts";
 import { setViewer } from "./viewer";
@@ -18,6 +19,12 @@ export type SupabaseWorld = World & {
 export function supabaseWorld(): SupabaseWorld {
   const admin = testAdminClient();
   let undos: (() => Promise<void>)[] = [];
+  /** A shop's id by its slug. */
+  async function shopId(slug: string): Promise<string> {
+    const shop = await admin.from("shops").select("id").eq("slug", slug).single();
+    if (shop.error) throw new Error(`No shop ${slug}: ${shop.error.message}`);
+    return shop.data.id;
+  }
   return {
     name: "supabase",
     admin,
@@ -133,6 +140,66 @@ export function supabaseWorld(): SupabaseWorld {
       undos.push(async () => {
         const undone = await admin.from("pickup_points").update({ retired_at: before.data.retired_at }).eq("id", id);
         if (undone.error) throw new Error(undone.error.message);
+      });
+    },
+    async recordDraw(campus, day, slugs) {
+      const shopIds = await Promise.all(slugs.map(shopId));
+      const added = await admin
+        .from("featured_draws")
+        .insert({ campus_slug: campusToDb(campus), day, shop_ids: shopIds })
+        .select("id")
+        .single();
+      if (added.error) throw new Error(added.error.message);
+      const id = added.data.id;
+      undos.push(async () => {
+        const undone = await admin.from("featured_draws").delete().eq("id", id);
+        if (undone.error) throw new Error(undone.error.message);
+      });
+    },
+    async addPin(campus, day, slug) {
+      const added = await admin
+        .from("featured_pins")
+        .insert({ shop_id: await shopId(slug), campus_slug: campusToDb(campus), day, pinned_by: await this.signedIn("staff") })
+        .select("id")
+        .single();
+      if (added.error) throw new Error(added.error.message);
+      const id = added.data.id;
+      undos.push(async () => {
+        const undone = await admin.from("featured_pins").delete().eq("id", id);
+        if (undone.error) throw new Error(undone.error.message);
+      });
+    },
+    async unverifyShop(slug) {
+      const unverified = await admin.from("shops").update({ verified: false }).eq("slug", slug).eq("verified", true).select("id");
+      if (unverified.error) throw new Error(unverified.error.message);
+      if (unverified.data.length !== 1) throw new Error(`No Verified shop ${slug}`);
+      undos.push(async () => {
+        const undone = await admin.from("shops").update({ verified: true }).eq("slug", slug);
+        if (undone.error) throw new Error(undone.error.message);
+      });
+    },
+    async forgetFeaturedDays(days) {
+      const forget = [...days];
+      undos.push(async () => {
+        const draws = await admin.from("featured_draws").delete().in("day", forget);
+        if (draws.error) throw new Error(draws.error.message);
+        const pins = await admin.from("featured_pins").delete().in("day", forget);
+        if (pins.error) throw new Error(pins.error.message);
+      });
+    },
+    async keepBadges() {
+      const before = await admin.from("shops").select("id, badge");
+      if (before.error) throw new Error(before.error.message);
+      const kept = before.data;
+      undos.push(async () => {
+        const now = await admin.from("shops").select("id, badge");
+        if (now.error) throw new Error(now.error.message);
+        const current = new Map(now.data.map((row) => [row.id, row.badge]));
+        for (const row of kept) {
+          if (current.get(row.id) === row.badge) continue;
+          const undone = await admin.from("shops").update({ badge: row.badge }).eq("id", row.id);
+          if (undone.error) throw new Error(undone.error.message);
+        }
       });
     },
     async cleanup() {

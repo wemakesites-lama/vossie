@@ -1,3 +1,4 @@
+import { onSupabase } from "@/lib/backend";
 import { earnedBadge } from "@/lib/selling/badges";
 import { shopStatus } from "./catalog";
 import { shopStats } from "./shop-stats";
@@ -8,7 +9,9 @@ import { sampleStore } from "./store";
 // out: the 28 sample shops no account owns have no conversations in the store, so they keep their sample badges.
 // There's no scheduler: Overview runs it for every shop, and a reply or a confirmed sale for its shop. The nightly
 // job is a go-live item. Writing the badge doesn't expire the cache: the caller does that, when it can.
-// It reads the same rows as the dashboard, through shopStats (amendment 11), so the two agree.
+// It reads the same rows as the dashboard, through shopStats (amendment 11), so the two agree. On Supabase
+// (2b plan Task 19), recalculateBadges is the twin's; recalculateBadgeFor stays here with messaging's conversations
+// until C3.
 
 async function recalculate(slug: string, now: Date): Promise<boolean> {
   const store = sampleStore();
@@ -23,6 +26,7 @@ async function recalculate(slug: string, now: Date): Promise<boolean> {
 
 /** Every owned shop's badge (Overview). The slugs whose badge changed. */
 export async function recalculateBadges(now: Date): Promise<string[]> {
+  if (onSupabase()) return (await import("./supabase/badges")).recalculateBadges(now);
   const changed: string[] = [];
   for (const slug of [...sampleStore().sellers.keys()]) {
     if (await recalculate(slug, now)) changed.push(slug);

@@ -52,6 +52,7 @@ Step 2b (stages L and M, reference rows, domains, public read views): `2026-10-2
 ### Step 3: Phase C, the data layer
 - **C0, plumbing:** `VOSSIE_BACKEND` read in one place; each `lib/data` module keeps its exported signatures and picks its sample or Supabase version; a shared contract-test suite runs against the sample store (`pnpm test`) and a local Supabase (`pnpm test:db`, needs `supabase start`). Cache tags stay as they are; public reads use the cookieless public client inside `"use cache"`.
 - **C1, public reads:** campuses, categories, pickup points, `catalog.ts` (listings, shops), badges, featured, Hub posts, requests (public view), shop stats.
+- C0 and C1 are built by `2026-10-21-supabase-step-2b-and-phase-c-foundation.md`, Part 2 (Tasks 12 to 20). Campuses and categories stay the code's fixtures in both backends (its decision 14).
 - **C2, selling:** shops, own listings, onboarding drafts, photos (Storage, `/photos/[id]`, and the Vercel Cron sweep for waiting photos and `hub-draft` covers). `/photos/[id]` reads with the admin client, so it must itself refuse a hidden listing's photos, `hub-draft` photos and covers of unpublished Hub posts (step 2 reviews). A taken, unexpired one-time token can't be deleted with the user's session (Task 5 trigger), so clean-ups like sign-out use the admin client or the session cascade. The owner's list of old links needs a function (`shop_previous_slugs` has no API read).
 - **C3, messaging:** conversations, messages, reports, notifications, offers.
 - **C4, community and alerts:** requests (writes), follows, saved searches, alert matching (still through browse's `listingMatches`; a database job later, go-live list).
@@ -105,3 +106,9 @@ The full e2e suite against the local stack with `VOSSIE_BACKEND=supabase`, then 
 - Main's untracked copies of the spec and phase A plan were moved to this session's scratchpad (`main-untracked-backup/`), not deleted; the branch's tracked copies replace them (the spec was identical, the plan older).
 - The privacy test's source walk hit `app/sw.js`, a route folder main gained after phase A forked (EISDIR). It now skips anything that isn't a file.
 - Checks: lint and types clean; 2,468 unit tests pass. Local stack: all 8 migrations applied, `supabase test db` 803 pass. Staging unchecked (CLI login refused).
+
+**Step 3, C0 and C1 (built 2026-10-21; the step 2b and phase C foundation plan, Tasks 12 to 20):**
+- `VOSSIE_BACKEND` is read only by `lib/backend.ts` (`backend()`, `onSupabase()`). Switched to a Supabase twin in `lib/data/supabase/`: pickup points, the catalog (listings and shops, over a cached snapshot tagged `listings` and `sellers`), Hub posts, requests (public reads and the settle), Featured's `featuredFor`, `shopStats`, `recentCounts` and `recalculateBadges`. Still sample until their stage: the pins and `featuredChoices` (C5), `recalculateBadgeFor` (messaging, C3), the asker's request reads and every write (C2 to C5).
+- Contract tests: `lib/data/contract/*.test.ts` on the sample store (`pnpm test`) and `*.db.test.ts` on the local stack (`pnpm test:db`, after `supabase db reset`), with parity checks against the seed.
+- The JS budget is unchanged to the byte (sample build), no chunk names Supabase, and a build with `VOSSIE_BACKEND=supabase` against the local stack builds the same routes with only the URL and publishable key (no secret key at build time).
+- Detail in that plan's "Changes made during the build".

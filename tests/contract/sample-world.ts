@@ -99,6 +99,28 @@ export function sampleWorld(): World {
       if (!row) throw new Error(`No pickup point ${id}`);
       row.retiredAt = "2026-10-01T08:00:00.000Z";
     },
+    async recordDraw(campus, day, slugs) {
+      const key = `${campus}:${day}`;
+      sampleStore().featuredDraws.set(key, { key, campusSlug: campus, day, sellerSlugs: [...slugs] });
+    },
+    async addPin(campus, day, slug) {
+      const pins = sampleStore().featuredPins;
+      const id = `pin-contract-${pins.size + 1}`;
+      // A second apart, so they keep the order they were made in.
+      const createdAt = new Date(Date.UTC(2026, 9, 1, 8, 0, pins.size)).toISOString();
+      pins.set(id, { id, sellerSlug: slug, campusSlug: campus, day, pinnedBy: await this.signedIn("staff"), createdAt });
+    },
+    async unverifyShop(slug) {
+      const row = sampleStore().sellers.get(slug);
+      if (!row) throw new Error(`No shop ${slug}`);
+      row.verified = false;
+    },
+    async forgetFeaturedDays() {
+      // Nothing to forget: the next test's world starts from a fresh store.
+    },
+    async keepBadges() {
+      // Nothing to keep: the next test's world starts from a fresh store.
+    },
     async cleanup() {
       // Nothing to undo: the next test's world starts from a fresh store.
     },

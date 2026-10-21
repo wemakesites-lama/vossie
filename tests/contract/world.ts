@@ -5,7 +5,10 @@
 //
 // It grows per task: each C1 task adds the verbs its scenarios need, on both worlds (hideListing and pauseShop for the
 // catalog, retirePickupPoint, addRequest and notificationsOf for requests, addRsvp for the Hub, recordDraw and addPin
-// for Featured). Every verb on the Supabase side records an undo, so the seed is the same after each test.
+// for Featured, keepBadges for the badges). Every verb on the Supabase side records an undo, so the seed is the same
+// after each test.
+
+import type { CampusChoice } from "@/lib/types";
 
 /** The test accounts every world has. On Supabase, `pnpm test:db`'s global setup makes them (contract-<name>@vossie.test). */
 export const WORLD_ACCOUNTS = ["asker", "shopper", "staff"] as const;
@@ -43,6 +46,16 @@ export interface World {
   notificationsOf(name: WorldAccountName): Promise<WorldNotification[]>;
   /** Retires a pickup point (its id in this backend), as the Hub's Retire does (Task 14). */
   retirePickupPoint(id: string): Promise<void>;
+  /** Records a campus's Featured row for a day, as featuredFor would have, in this order (Task 18). */
+  recordDraw(campus: CampusChoice, day: string, slugs: readonly string[]): Promise<void>;
+  /** Pins a seller to a campus's row for a day, as the "staff" account (Task 18). */
+  addPin(campus: CampusChoice, day: string, slug: string): Promise<void>;
+  /** Takes a shop's Verified tick away, so it can't be featured (Task 18). */
+  unverifyShop(slug: string): Promise<void>;
+  /** Forgets every Featured row and pin on these days in cleanup, the ones featuredFor records itself too (Task 18). */
+  forgetFeaturedDays(days: readonly string[]): Promise<void>;
+  /** Puts every shop's badge back as it is now in cleanup, after a test recalculates them (Task 19). */
+  keepBadges(): Promise<void>;
   /** Undoes what the test's verbs wrote, newest first. Runs after each test. */
   cleanup(): Promise<void>;
 }

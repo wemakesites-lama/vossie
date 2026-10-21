@@ -1,3 +1,4 @@
+import { onSupabase } from "@/lib/backend";
 import { autoConfirmAt, DAY_MS } from "@/lib/messaging/rules";
 import type { EnquiryCounts, ShopStats } from "@/lib/types";
 import type { ConversationRow } from "./rows";
@@ -13,15 +14,29 @@ const REPLY_WINDOW_MS = 2 * DAY_MS;
 const WEEK_MS = 7 * DAY_MS;
 const RECORD_MS = 90 * DAY_MS;
 
+/**
+ * What the counting reads of a conversation (2b plan Task 19: the Supabase twin maps its rows to it). Only whether
+ * `requestId` is set matters: an offer thread.
+ */
+export type CountedConversation = Pick<
+  ConversationRow,
+  "listingId" | "requestId" | "createdAt" | "firstReplyAt" | "status" | "completedAt" | "confirmedAt"
+>;
+
 /** When the sale counts from (E's 7-day rule, applied without writing), or null while it doesn't. */
-function soldAt(row: ConversationRow, now: Date): string | null {
+export function soldAt(row: CountedConversation, now: Date): string | null {
   if (row.status === "confirmed") return row.confirmedAt;
   if (row.status !== "done" || !row.completedAt) return null;
   const due = autoConfirmAt(row.completedAt);
   return Date.parse(due) <= now.getTime() ? due : null;
 }
 
-function counts(rows: readonly ConversationRow[], enquiriesSince: number, salesSince: number, now: Date): EnquiryCounts {
+export function counts(
+  rows: readonly CountedConversation[],
+  enquiriesSince: number,
+  salesSince: number,
+  now: Date,
+): EnquiryCounts {
   // An offer thread isn't an enquiry: the shop wrote first (community actions spec 2.12). Its sale still counts.
   const enquiries = rows.filter(
     (row) => row.listingId !== null && !row.requestId && Date.parse(row.createdAt) >= enquiriesSince,
@@ -39,11 +54,8 @@ function counts(rows: readonly ConversationRow[], enquiriesSince: number, salesS
   return { enquiries: enquiries.length, due: due.length, repliedInTime: inTime.length, salesConfirmed: sales.length };
 }
 
-/** A shop's last 7 days, and its record for the badges: 90 days of enquiries, and every sale. */
-export async function shopStats(sellerSlug: string, now: Date): Promise<ShopStats> {
-  const rows = [...sampleStore().conversations.values()].filter(
-    (row) => row.sellerSlug === sellerSlug && !row.sellerGone,
-  );
+/** A shop's last 7 days, and its record for the badges, from its conversations (either backend's). */
+export function statsOver(rows: readonly CountedConversation[], now: Date): ShopStats {
   const weekStart = now.getTime() - WEEK_MS;
   return {
     week: counts(rows, weekStart, weekStart, now),
@@ -51,14 +63,29 @@ export async function shopStats(sellerSlug: string, now: Date): Promise<ShopStat
   };
 }
 
+/** A shop's enquiries and sales over the last `days` days, from its conversations (either backend's). */
+export function recentOver(rows: readonly CountedConversation[], days: number, now: Date): EnquiryCounts {
+  const since = now.getTime() - days * DAY_MS;
+  return counts(rows, since, since, now);
+}
+
+/** A shop's last 7 days, and its record for the badges: 90 days of enquiries, and every sale. */
+export async function shopStats(sellerSlug: string, now: Date): Promise<ShopStats> {
+  if (onSupabase()) return (await import("./supabase/shop-stats")).shopStats(sellerSlug, now);
+  const rows = [...sampleStore().conversations.values()].filter(
+    (row) => row.sellerSlug === sellerSlug && !row.sellerGone,
+  );
+  return statsOver(rows, now);
+}
+
 /**
  * A shop's enquiries and sales over the last `days` days: the mentor dashboard's 14 (staff tools plan decision 15).
  * It reads the same rows as shopStats, so a conversation whose owner has gone counts for no shop (amendment 11).
  */
 export async function recentCounts(sellerSlug: string, days: number, now: Date): Promise<EnquiryCounts> {
+  if (onSupabase()) return (await import("./supabase/shop-stats")).recentCounts(sellerSlug, days, now);
   const rows = [...sampleStore().conversations.values()].filter(
     (row) => row.sellerSlug === sellerSlug && !row.sellerGone,
   );
-  const since = now.getTime() - days * DAY_MS;
-  return counts(rows, since, since, now);
+  return recentOver(rows, days, now);
 }
