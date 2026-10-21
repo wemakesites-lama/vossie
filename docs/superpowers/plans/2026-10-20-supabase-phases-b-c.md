@@ -45,6 +45,8 @@ New migrations after phase A's, each test first with pgTAP, each matching the Ty
 
 Also: the seed generator (`scripts/seed-sql.ts`) gains the 18 Hub posts, the 16 sample requests and the staff fixtures; `database.types.ts` is regenerated; advisors report nothing.
 
+Step 2b (stages L and M, reference rows, domains, public read views): `2026-10-21-supabase-step-2b-and-phase-c-foundation.md`, Part 1.
+
 **Check:** `supabase db reset` then `supabase test db` pass locally; the advisors are clean. **Staging checkpoint 1:** `supabase db push --dry-run` shown to Lama, then pushed on their go-ahead; `migration list --linked` shows local and remote equal.
 
 ### Step 3: Phase C, the data layer

@@ -271,8 +271,8 @@ select is(
     where n.nspname = 'private' and has_function_privilege('anon', p.oid, 'execute')
     order by 1
   ),
-  array['private.shop_is_public(uuid)'],
-  'anon runs only the helper its policies need'
+  array['private.shop_is_public(uuid)', 'private.storefront_status(uuid)'],
+  'anon runs only the helpers its policies and views need'
 );
 select is(
   array(
@@ -284,8 +284,9 @@ select is(
     'private.can_mentor(uuid)', 'private.conversation_buyer_name(uuid)', 'private.conversation_request_state(uuid)',
     'private.conversation_side(uuid)', 'private.is_my_request(text)', 'private.is_shop_contact(uuid)',
     'private.is_staff(text)', 'private.mentors_shop(uuid)',
-    'private.owns_shop(uuid)', 'private.shop_is_public(uuid)', 'private.staff_hub_posts()', 'private.staff_reports()',
-    'private.staff_seller_profiles()'
+    'private.owns_shop(uuid)', 'private.report_own_kind(uuid,uuid)', 'private.shop_is_public(uuid)',
+    'private.staff_hub_posts()', 'private.staff_reports()', 'private.staff_seller_profiles()',
+    'private.storefront_status(uuid)'
   ],
   'and authenticated only the ones theirs need'
 );

@@ -114,6 +114,12 @@ isOneToOne: false
       foreignKeyName: "conversations_request_id_fkey"
       columns: ["request_id"]
 isOneToOne: false
+      referencedRelation: "request_cards"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conversations_request_id_fkey"
+      columns: ["request_id"]
+isOneToOne: false
       referencedRelation: "requests"
       referencedColumns: ["id"]
     },{
@@ -122,6 +128,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "shops"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conversations_shop_id_fkey"
+      columns: ["shop_id"]
+isOneToOne: false
+      referencedRelation: "storefronts"
+      referencedColumns: ["shop_id"]
     }
                   ]
                 },"featured_draws": {
@@ -172,6 +184,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "shops"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "featured_pins_shop_id_fkey"
+      columns: ["shop_id"]
+isOneToOne: false
+      referencedRelation: "storefronts"
+      referencedColumns: ["shop_id"]
     }
                   ]
                 },"follows": {
@@ -197,6 +215,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "shops"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "follows_shop_id_fkey"
+      columns: ["shop_id"]
+isOneToOne: false
+      referencedRelation: "storefronts"
+      referencedColumns: ["shop_id"]
     }
                   ]
                 },"form_states": {
@@ -240,6 +264,12 @@ isOneToOne: false
       columns: ["answered_by"]
 isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "hub_bookings_post_id_fkey"
+      columns: ["post_id"]
+isOneToOne: false
+      referencedRelation: "hub_cards"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "hub_bookings_post_id_fkey"
@@ -296,6 +326,12 @@ isOneToOne: false
       columns: ["account_id"]
 isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "hub_rsvps_post_id_fkey"
+      columns: ["post_id"]
+isOneToOne: false
+      referencedRelation: "hub_cards"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "hub_rsvps_post_id_fkey"
@@ -365,6 +401,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "shops"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "listings_shop_id_fkey"
+      columns: ["shop_id"]
+isOneToOne: false
+      referencedRelation: "storefronts"
+      referencedColumns: ["shop_id"]
     }
                   ]
                 },"mentor_notes": {
@@ -532,13 +574,13 @@ isOneToOne: false
                   ]
                 },"reports": {
                   Row: {
-                    "closed_at": string | null,"closed_by": string | null,"created_at": string,"detail": string,"id": string,"note": string | null,"outcome": string | null,"reason": string,"reporter_id": string,"status": string,"target_gone": boolean,"target_id": string,"target_kind": string,"target_title": string
+                    "closed_at": string | null,"closed_by": string | null,"created_at": string,"detail": string,"id": string,"note": string | null,"outcome": string | null,"reason": string,"reporter_id": string,"status": string,"target_gone": boolean,"target_id": string,"target_kind": string,"target_owner_id": string | null,"target_title": string
                   }
                   Insert: {
-                    "closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"detail"?: string,"id"?: string,"note"?: string | null,"outcome"?: string | null,"reason": string,"reporter_id": string,"status"?: string,"target_gone"?: boolean,"target_id": string,"target_kind": string,"target_title": string
+                    "closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"detail"?: string,"id"?: string,"note"?: string | null,"outcome"?: string | null,"reason": string,"reporter_id": string,"status"?: string,"target_gone"?: boolean,"target_id": string,"target_kind": string,"target_owner_id"?: string | null,"target_title": string
                   }
                   Update: {
-                    "closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"detail"?: string,"id"?: string,"note"?: string | null,"outcome"?: string | null,"reason"?: string,"reporter_id"?: string,"status"?: string,"target_gone"?: boolean,"target_id"?: string,"target_kind"?: string,"target_title"?: string
+                    "closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"detail"?: string,"id"?: string,"note"?: string | null,"outcome"?: string | null,"reason"?: string,"reporter_id"?: string,"status"?: string,"target_gone"?: boolean,"target_id"?: string,"target_kind"?: string,"target_owner_id"?: string | null,"target_title"?: string
                   }
                   Relationships: [
                     {
@@ -553,17 +595,23 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "reports_target_owner_id_fkey"
+      columns: ["target_owner_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
     }
                   ]
                 },"requests": {
                   Row: {
-                    "asker_id": string | null,"budget_zar": number | null,"campus_slug": string,"category_slug": string,"closed_at": string | null,"created_at": string,"details": string,"hidden_at": string | null,"hidden_reason": string | null,"id": string,"needed_by": string | null,"seed_offers": number,"status": string,"swap_welcome": boolean,"title": string,"updated_at": string
+                    "asker_id": string | null,"budget_zar": number | null,"campus_slug": string,"category_slug": string,"closed_at": string | null,"closed_by": string | null,"closes_on": string | null,"created_at": string,"details": string,"hidden_at": string | null,"hidden_reason": string | null,"id": string,"needed_by": string | null,"reminded_for": string | null,"seed_offers": number,"status": string,"swap_welcome": boolean,"title": string,"updated_at": string
                   }
                   Insert: {
-                    "asker_id"?: string | null,"budget_zar"?: number | null,"campus_slug": string,"category_slug": string,"closed_at"?: string | null,"created_at"?: string,"details": string,"hidden_at"?: string | null,"hidden_reason"?: string | null,"id"?: string,"needed_by"?: string | null,"seed_offers"?: number,"status"?: string,"swap_welcome"?: boolean,"title": string,"updated_at"?: string
+                    "asker_id"?: string | null,"budget_zar"?: number | null,"campus_slug": string,"category_slug": string,"closed_at"?: string | null,"closed_by"?: string | null,"closes_on"?: never,"created_at"?: string,"details": string,"hidden_at"?: string | null,"hidden_reason"?: string | null,"id"?: string,"needed_by"?: string | null,"reminded_for"?: string | null,"seed_offers"?: number,"status"?: string,"swap_welcome"?: boolean,"title": string,"updated_at"?: string
                   }
                   Update: {
-                    "asker_id"?: string | null,"budget_zar"?: number | null,"campus_slug"?: string,"category_slug"?: string,"closed_at"?: string | null,"created_at"?: string,"details"?: string,"hidden_at"?: string | null,"hidden_reason"?: string | null,"id"?: string,"needed_by"?: string | null,"seed_offers"?: number,"status"?: string,"swap_welcome"?: boolean,"title"?: string,"updated_at"?: string
+                    "asker_id"?: string | null,"budget_zar"?: number | null,"campus_slug"?: string,"category_slug"?: string,"closed_at"?: string | null,"closed_by"?: string | null,"closes_on"?: never,"created_at"?: string,"details"?: string,"hidden_at"?: string | null,"hidden_reason"?: string | null,"id"?: string,"needed_by"?: string | null,"reminded_for"?: string | null,"seed_offers"?: number,"status"?: string,"swap_welcome"?: boolean,"title"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -646,6 +694,12 @@ isOneToOne: false
 isOneToOne: true
       referencedRelation: "shops"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "seller_profiles_shop_id_fkey"
+      columns: ["shop_id"]
+isOneToOne: true
+      referencedRelation: "storefronts"
+      referencedColumns: ["shop_id"]
     }
                   ]
                 },"shop_pickup_points": {
@@ -671,6 +725,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "shops"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "shop_pickup_points_shop_id_fkey"
+      columns: ["shop_id"]
+isOneToOne: false
+      referencedRelation: "storefronts"
+      referencedColumns: ["shop_id"]
     }
                   ]
                 },"shop_previous_slugs": {
@@ -690,6 +750,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "shops"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "shop_previous_slugs_shop_id_fkey"
+      columns: ["shop_id"]
+isOneToOne: false
+      referencedRelation: "storefronts"
+      referencedColumns: ["shop_id"]
     }
                   ]
                 },"shops": {
@@ -732,7 +798,32 @@ isOneToOne: false
                 }
           }
           Views: {
-            "my_conversations": {
+            "hub_cards": {
+                  Row: {
+                    "body": string | null,"campus_slug": string | null,"capacity": number | null,"cover_photo_id": string | null,"created_at": string | null,"going": number | null,"going_now": number | null,"id": string | null,"image_alt": string | null,"image_src": string | null,"kind": string | null,"place": string | null,"published_at": string | null,"starts_at": string | null,"summary": string | null,"title": string | null
+                  }
+                  Insert: {
+                           "body"?: string | null,"campus_slug"?: string | null,"capacity"?: number | null,"cover_photo_id"?: string | null,"created_at"?: string | null,"going"?: number | null,"going_now"?: never,"id"?: string | null,"image_alt"?: string | null,"image_src"?: string | null,"kind"?: string | null,"place"?: string | null,"published_at"?: string | null,"starts_at"?: string | null,"summary"?: string | null,"title"?: string | null
+                         }
+                        Update: {
+                           "body"?: string | null,"campus_slug"?: string | null,"capacity"?: number | null,"cover_photo_id"?: string | null,"created_at"?: string | null,"going"?: number | null,"going_now"?: never,"id"?: string | null,"image_alt"?: string | null,"image_src"?: string | null,"kind"?: string | null,"place"?: string | null,"published_at"?: string | null,"starts_at"?: string | null,"summary"?: string | null,"title"?: string | null
+                         }
+                        Relationships: [
+                    {
+      foreignKeyName: "hub_posts_campus_slug_fkey"
+      columns: ["campus_slug"]
+isOneToOne: false
+      referencedRelation: "campuses"
+      referencedColumns: ["slug"]
+    },{
+      foreignKeyName: "hub_posts_cover_photo_id_fkey"
+      columns: ["cover_photo_id"]
+isOneToOne: false
+      referencedRelation: "photos"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"my_conversations": {
                   Row: {
                     "buyer_gone": boolean | null,"buyer_name": string | null,"completed_at": string | null,"confirmed_at": string | null,"confirmed_by": string | null,"created_at": string | null,"first_reply_at": string | null,"id": string | null,"is_offer": boolean | null,"last_message_at": string | null,"listing_id": string | null,"listing_title": string | null,"request_id": string | null,"request_state": string | null,"request_title": string | null,"seller_gone": boolean | null,"shop_id": string | null,"status": string | null,"viewer_side": string | null
                   }
@@ -759,6 +850,12 @@ isOneToOne: false
       foreignKeyName: "conversations_request_id_fkey"
       columns: ["request_id"]
 isOneToOne: false
+      referencedRelation: "request_cards"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conversations_request_id_fkey"
+      columns: ["request_id"]
+isOneToOne: false
       referencedRelation: "requests"
       referencedColumns: ["id"]
     },{
@@ -767,17 +864,48 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "shops"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conversations_shop_id_fkey"
+      columns: ["shop_id"]
+isOneToOne: false
+      referencedRelation: "storefronts"
+      referencedColumns: ["shop_id"]
     }
                   ]
                 },"my_requests": {
                   Row: {
-                    "budget_zar": number | null,"campus_slug": string | null,"category_slug": string | null,"closed_at": string | null,"created_at": string | null,"details": string | null,"hidden_at": string | null,"hidden_reason": string | null,"id": string | null,"needed_by": string | null,"offers": number | null,"state": string | null,"status": string | null,"swap_welcome": boolean | null,"title": string | null,"updated_at": string | null
+                    "budget_zar": number | null,"campus_slug": string | null,"category_slug": string | null,"closed_at": string | null,"closed_by": string | null,"closes_on": string | null,"created_at": string | null,"details": string | null,"hidden_at": string | null,"hidden_reason": string | null,"id": string | null,"needed_by": string | null,"offers": number | null,"state": string | null,"status": string | null,"swap_welcome": boolean | null,"title": string | null,"updated_at": string | null
                   }
                   Insert: {
-                           "budget_zar"?: number | null,"campus_slug"?: string | null,"category_slug"?: string | null,"closed_at"?: string | null,"created_at"?: string | null,"details"?: string | null,"hidden_at"?: string | null,"hidden_reason"?: string | null,"id"?: string | null,"needed_by"?: string | null,"offers"?: never,"state"?: never,"status"?: string | null,"swap_welcome"?: boolean | null,"title"?: string | null,"updated_at"?: string | null
+                           "budget_zar"?: number | null,"campus_slug"?: string | null,"category_slug"?: string | null,"closed_at"?: string | null,"closed_by"?: string | null,"closes_on"?: string | null,"created_at"?: string | null,"details"?: string | null,"hidden_at"?: string | null,"hidden_reason"?: string | null,"id"?: string | null,"needed_by"?: string | null,"offers"?: never,"state"?: never,"status"?: string | null,"swap_welcome"?: boolean | null,"title"?: string | null,"updated_at"?: string | null
                          }
                         Update: {
-                           "budget_zar"?: number | null,"campus_slug"?: string | null,"category_slug"?: string | null,"closed_at"?: string | null,"created_at"?: string | null,"details"?: string | null,"hidden_at"?: string | null,"hidden_reason"?: string | null,"id"?: string | null,"needed_by"?: string | null,"offers"?: never,"state"?: never,"status"?: string | null,"swap_welcome"?: boolean | null,"title"?: string | null,"updated_at"?: string | null
+                           "budget_zar"?: number | null,"campus_slug"?: string | null,"category_slug"?: string | null,"closed_at"?: string | null,"closed_by"?: string | null,"closes_on"?: string | null,"created_at"?: string | null,"details"?: string | null,"hidden_at"?: string | null,"hidden_reason"?: string | null,"id"?: string | null,"needed_by"?: string | null,"offers"?: never,"state"?: never,"status"?: string | null,"swap_welcome"?: boolean | null,"title"?: string | null,"updated_at"?: string | null
+                         }
+                        Relationships: [
+                    {
+      foreignKeyName: "requests_campus_slug_fkey"
+      columns: ["campus_slug"]
+isOneToOne: false
+      referencedRelation: "campuses"
+      referencedColumns: ["slug"]
+    },{
+      foreignKeyName: "requests_category_slug_fkey"
+      columns: ["category_slug"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["slug"]
+    }
+                  ]
+                },"request_cards": {
+                  Row: {
+                    "budget_zar": number | null,"campus_slug": string | null,"category_slug": string | null,"closed_at": string | null,"closes_on": string | null,"created_at": string | null,"details": string | null,"id": string | null,"needed_by": string | null,"offers": number | null,"status": string | null,"swap_welcome": boolean | null,"title": string | null,"updated_at": string | null
+                  }
+                  Insert: {
+                           "budget_zar"?: number | null,"campus_slug"?: string | null,"category_slug"?: string | null,"closed_at"?: string | null,"closes_on"?: string | null,"created_at"?: string | null,"details"?: string | null,"id"?: string | null,"needed_by"?: string | null,"offers"?: never,"status"?: string | null,"swap_welcome"?: boolean | null,"title"?: string | null,"updated_at"?: string | null
+                         }
+                        Update: {
+                           "budget_zar"?: number | null,"campus_slug"?: string | null,"category_slug"?: string | null,"closed_at"?: string | null,"closes_on"?: string | null,"created_at"?: string | null,"details"?: string | null,"id"?: string | null,"needed_by"?: string | null,"offers"?: never,"status"?: string | null,"swap_welcome"?: boolean | null,"title"?: string | null,"updated_at"?: string | null
                          }
                         Relationships: [
                     {
@@ -803,7 +931,7 @@ isOneToOne: false
                   ]
                 },"staff_reports": {
                   Row: {
-                    "closed_at": string | null,"closed_by": string | null,"created_at": string | null,"detail": string | null,"id": string | null,"note": string | null,"outcome": string | null,"reason": string | null,"reporter_id": string | null,"status": string | null,"target_gone": boolean | null,"target_id": string | null,"target_kind": string | null,"target_title": string | null
+                    "closed_at": string | null,"closed_by": string | null,"created_at": string | null,"detail": string | null,"id": string | null,"note": string | null,"outcome": string | null,"own": string | null,"reason": string | null,"reporter_id": string | null,"status": string | null,"target_gone": boolean | null,"target_id": string | null,"target_kind": string | null,"target_title": string | null
                   }
                   Relationships: [
                     
@@ -813,6 +941,19 @@ isOneToOne: false
                     "account_id": string | null,"applied_at": string | null,"approved_at": string | null,"declined_at": string | null,"mentor_id": string | null,"paused_by": string | null,"seller_paused_too": boolean | null,"shop_id": string | null,"staff_reason": string | null,"status": string | null
                   }
                   Relationships: [
+                    
+                  ]
+                },"storefronts": {
+                  Row: {
+                    "shop_id": string | null,"slug": string | null,"status": string | null
+                  }
+                  Insert: {
+                           "shop_id"?: string | null,"slug"?: string | null,"status"?: never
+                         }
+                        Update: {
+                           "shop_id"?: string | null,"slug"?: string | null,"status"?: never
+                         }
+                        Relationships: [
                     
                   ]
                 }
@@ -991,6 +1132,9 @@ isOneToOne: false
 { Args: { "p_shop": string,"p_verified": boolean }; Returns: string
                            },
 "settle_auto_confirm":
+{ Args: { "p_now"?: string }; Returns: number
+                           },
+"settle_requests":
 { Args: { "p_now"?: string }; Returns: number
                            },
 "settle_sales":

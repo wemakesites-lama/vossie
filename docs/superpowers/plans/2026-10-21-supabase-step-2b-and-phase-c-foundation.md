@@ -1041,11 +1041,11 @@ The db file also checks:
 | 2 Closing schema | built, uncommitted: pgTAP 2,040 (25: 45) | |
 | 3 Settle and job | built, uncommitted: pgTAP 2,088 (26: 48), unit +2 | |
 | 4 Request functions | built, uncommitted: pgTAP 2,126 (27: 38); unit 2,709, lint and typecheck clean | |
-| 5 Report target owner | | |
-| 6 Own-target gate | | |
-| 7 Own shop's mentor | | |
-| 8 Public read views | | |
-| 9 Seed, types, advisors | | |
+| 5 Report target owner | built, uncommitted: pgTAP 2,157 (28: 31; 06's authenticated list +1) | |
+| 6 Own-target gate | built, uncommitted: pgTAP 2,233 (29: 76); no earlier test changed | |
+| 7 Own shop's mentor | built, uncommitted: pgTAP 2,250 (30: 17) | |
+| 8 Public read views | built, uncommitted: pgTAP 2,277 (31: 27; 06 and 21 allowlists +1) | |
+| 9 Seed, types, advisors | built, uncommitted: seed unchanged, types regenerated; pgTAP 2,277 (34 files, 24 migrations); advisors: no warning or error, info items all from earlier migrations; unit 2,709, lint and typecheck clean | |
 | 10 Review of 2b | | |
 | 11 Staging checkpoint 1b | waits on Lama | |
 | 12 C0 plumbing | | |
@@ -1068,6 +1068,11 @@ The db file also checks:
 - Task 2: `private.request_closing_day` writes the SAST day inline (`(updated at time zone 'Africa/Johannesburg')::date`, `sast_day`'s own body) instead of calling `private.sast_day`: the service role has no usage on the `private` schema, so a call by name inside the body failed when it wrote a request (amendment 4's case). The execute grant to `service_role` stays (the column refers to the function by oid).
 - Task 3: `11_storage_and_jobs.test.sql`'s "each once" counted every `settle-%`/`sweep-%` job (4); `settle-requests` is a fifth, so it now counts the four by name. Not in Task 3's file list; one assertion.
 - Task 4: found while testing, no change needed: between Task 2 and Task 4 the old `set_request_open` can't reopen a request the backfill gave `closed_by = 'asker'` (the one-way check refuses an open row with `closed_by`). Tasks 2 to 4 ship together, so production never runs that pair; staging's push (Task 11) applies them in one go.
+- Task 5: `create_report` reads the owner after its `not-found` check, so only for a target that exists. `supabase db lint`'s one warning (`create_report`'s unused `p_target_title`) is inherited unchanged from the base definition, which never used it either.
+- Task 6: no earlier test had an admin acting on a shop they own (16, 17, 18b and 22 checked), so none changed. `set_shop_verified`'s gate comes before its null-argument raise, as the table says (right after the role check) and as `verifySeller` checks ownership first; only `pin_shop`'s comes after its argument raises (amendment 7). Busi's calls and the setup for Adam's resume and show-again cases each run inside a savepoint that is rolled back; pgTAP keeps numbering through the rollback and pg_prove counts a `not ok` printed there (checked with a deliberate failure on a scratch copy), as `00_foundation` already relies on.
+- Task 7: row locks aren't listed in `pg_locks` (they live in the row), so the lock cases read them with `pgrowlocks`, created inside the test's transaction and rolled back with it: the mentor's profile is held `For Update` and the admin's seller profile `For Share`. The order itself can't be observed in one session; it is the code's, for the review. The "waiting again" case sets the status to `pending` and keeps `approved_at` (its trigger keeps it once set).
+- Task 8: `31_public_reads` also checks that an asker finds their own hidden request nowhere in `request_cards`, and a Hub-paused shop's owner finds no storefront, though the tables' policies let them read those rows: the views' own `where` clauses decide.
+- Task 9: `pnpm db:seed` wrote an identical `seed.sql` (the generator never names `closed_by`; its default is null), so `seed-sql.ts` and its test are unchanged. Advisors on the local stack (`supabase db advisors --local --type all`): nothing at warn or error. At info, 23 items, none from this plan's migrations: 17 `unused_index` on an idle stack, 5 `rls_enabled_no_policy` (`private.code_sends`, `policy_versions`, `sign_in_attempts`, `public.featured_draws`, `shop_previous_slugs`) and 1 `unindexed_foreign_keys` (`consents_version_fkey`). The programme plan's step 2 gains the step 2b line.
 
 ## Amendments on review (2026-10-21)
 

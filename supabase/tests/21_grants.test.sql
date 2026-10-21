@@ -51,7 +51,7 @@ select is(
       and has_function_privilege('anon', p.oid, 'execute')
     order by 1
   ),
-  array['hub_going', 'request_offer_count', 'shop_is_public'],
+  array['hub_going', 'request_offer_count', 'shop_is_public', 'storefront_status'],
   'anon runs only the read-only helpers'
 );
 
