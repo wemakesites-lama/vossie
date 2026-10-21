@@ -125,8 +125,63 @@ describe("form states on Supabase", () => {
     ]);
   });
 
-  it("leaves taking a one-time state to SQL (decision 15)", async () => {
-    await expect(takeFormState("s", "f", NOW)).rejects.toThrow("takeFormState runs in SQL on Supabase (phase C)");
+  // C4/C5 plan Task 2 (decision 6, and the controller's answer: C2/C3's take_form_state): the token is checked and
+  // marked under its row's lock by the database, then the row is read back for where the first post went.
+  const TOKEN = "staff-once:0b6f1c1e-7c1a-4e55-9c5e-2f2b7d0f9a11";
+  const ROW = {
+    session_id: "session-1",
+    form: TOKEN,
+    errors: [],
+    values: { path: "/saved" },
+    notice: "search-saved",
+    expires_at: "2026-10-21T11:00:00+00:00",
+    taken: true,
+  };
+
+  it("takes a one-time state through take_form_state, first", async () => {
+    db.answer("rpc:take_form_state", { data: "first" });
+    db.answer("from:form_states", { data: { ...ROW, values: {}, notice: null } });
+    const taken = await takeFormState("session-1", TOKEN, NOW);
+    expect(taken).toEqual({
+      first: true,
+      state: {
+        key: `session-1:${TOKEN}`,
+        sessionKey: "session-1",
+        form: TOKEN,
+        errors: [],
+        values: {},
+        notice: null,
+        expiresAt: "2026-10-21T11:00:00.000Z",
+        taken: true,
+      },
+    });
+    expect(db.chainOf("rpc", "take_form_state")).toEqual([["rpc", "take_form_state", { p_key: TOKEN }]]);
+  });
+
+  it("again, with the row as the first post left it", async () => {
+    db.answer("rpc:take_form_state", { data: "again" });
+    db.answer("from:form_states", { data: ROW });
+    const taken = await takeFormState("session-1", TOKEN, NOW);
+    expect(taken?.first).toBe(false);
+    expect(taken?.state).toMatchObject({ values: { path: "/saved" }, notice: "search-saved", taken: true });
+  });
+
+  it("is null when there's none, and reads nothing", async () => {
+    db.answer("rpc:take_form_state", { data: "none" });
+    expect(await takeFormState("session-1", TOKEN, NOW)).toBeNull();
+    expect(db.calls.filter((call) => call[0] === "from")).toEqual([]);
+  });
+
+  it("throws for a session key that isn't the signed-in session's, or signed out, and calls nothing", async () => {
+    await expect(takeFormState("session-2", TOKEN, NOW)).rejects.toThrow("not the signed-in session");
+    seam.claims = null;
+    await expect(takeFormState("session-1", TOKEN, NOW)).rejects.toThrow("not the signed-in session");
+    expect(db.calls).toEqual([]);
+  });
+
+  it("throws when the database refuses", async () => {
+    db.answer("rpc:take_form_state", { error: { code: "42501", message: "denied" } });
+    await expect(takeFormState("session-1", TOKEN, NOW)).rejects.toThrow("form_states failed (42501)");
   });
 
   it("throws when the database refuses", async () => {

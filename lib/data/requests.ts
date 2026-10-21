@@ -50,18 +50,22 @@ function toRequest(row: RequestRow): LookingForRequest {
 
 const notHidden = (row: RequestRow) => row.hiddenAt === null;
 
-function stateOf(row: RequestRow): RequestState {
+function stateOf(row: Pick<RequestRow, "hiddenAt" | "status">): RequestState {
   return row.hiddenAt !== null ? "hidden" : row.status;
 }
 
+/** What the asker's own view reads of a row besides the request itself. */
+export type OwnParts = Pick<RequestRow, "hiddenAt" | "hiddenReason" | "status" | "closedAt" | "closedBy" | "neededBy">;
+
 /**
- * The asker's own view of a row on `today`, a SAST date: where it stands, and (stage L) when and how it closed, and
- * whether reopening it would take off a needed-by date that has passed (plan decision 13).
+ * The asker's own view of a request on `today`, a SAST date: where it stands, and (stage L) when and how it closed, and
+ * whether reopening it would take off a needed-by date that has passed (plan decision 13). Shared with the Supabase
+ * twin, which reads the parts from my_requests (C4/C5 plan Task 4).
  */
-function toOwn(row: RequestRow, today: string): OwnRequest {
+export function ownView(request: LookingForRequest, row: OwnParts, today: string): OwnRequest {
   const auto = row.closedBy === "auto";
   return {
-    request: toRequest(row),
+    request,
     state: stateOf(row),
     hiddenReason: row.hiddenReason,
     closedAt: row.closedAt,
@@ -69,6 +73,10 @@ function toOwn(row: RequestRow, today: string): OwnRequest {
     closeReason: auto ? closeReasonOf(row) : null,
     neededByPassed: row.neededBy !== null && row.neededBy < today,
   };
+}
+
+function toOwn(row: RequestRow, today: string): OwnRequest {
+  return ownView(toRequest(row), row, today);
 }
 
 /**
@@ -162,6 +170,7 @@ export async function settleRequests(now: Date): Promise<number> {
  * first, so a request whose closing day has come reads as closed (stage L spec decision 11).
  */
 export async function getOwnRequest(askerId: string, id: string, now: Date): Promise<OwnRequest | null> {
+  if (onSupabase()) return (await import("./supabase/requests")).getOwnRequest(askerId, id, now);
   await settleRequests(now);
   const row = sampleStore().requests.get(id);
   return row && row.askerId === askerId ? toOwn(row, sastDate(now)) : null;
@@ -169,13 +178,16 @@ export async function getOwnRequest(askerId: string, id: string, now: Date): Pro
 
 /** Who asked, for an offer's thread (spec 2.7): null for a sample request, which can't take offers, or one that's gone. */
 export async function requestAskerId(id: string): Promise<string | null> {
+  if (onSupabase()) return (await import("./supabase/requests")).requestAskerId(id);
   return sampleStore().requests.get(id)?.askerId ?? null;
 }
 
-const ORDER: Readonly<Record<RequestState, number>> = { open: 0, closed: 1, hidden: 2 };
+/** Your requests' order: open, then closed, then hidden (the twin sorts by it too). */
+export const ORDER: Readonly<Record<RequestState, number>> = { open: 0, closed: 1, hidden: 2 };
 
 /** Your requests (spec 2.13, plan decision 18): open, then closed, then hidden, each newest first. Settled first. */
 export async function listOwnRequests(askerId: string, now: Date): Promise<OwnRequest[]> {
+  if (onSupabase()) return (await import("./supabase/requests")).listOwnRequests(askerId, now);
   await settleRequests(now);
   const today = sastDate(now);
   return [...sampleStore().requests.values()]
@@ -186,6 +198,7 @@ export async function listOwnRequests(askerId: string, now: Date): Promise<OwnRe
 
 /** How many of the account's requests are open (not hidden), for the limit of 5 (spec 2.5). Settled first (stage L). */
 export async function countOpenRequests(askerId: string, now: Date): Promise<number> {
+  if (onSupabase()) return (await import("./supabase/requests")).countOpenRequests(askerId, now);
   await settleRequests(now);
   return [...sampleStore().requests.values()].filter((row) => row.askerId === askerId && stateOf(row) === "open")
     .length;
@@ -193,21 +206,25 @@ export async function countOpenRequests(askerId: string, now: Date): Promise<num
 
 /** How many of the account's requests made since `since` are still in the store (plan decision 4). */
 export async function countRequestsSince(askerId: string, since: Date): Promise<number> {
+  if (onSupabase()) return (await import("./supabase/requests")).countRequestsSince(askerId, since);
   return [...sampleStore().requests.values()].filter(
     (row) => row.askerId === askerId && Date.parse(row.createdAt) > since.getTime(),
   ).length;
 }
 
-/** A new, open request (spec 2.3). Server Actions only: it makes ids. */
-export async function createRequest({
-  askerId,
-  fields,
-  now,
-}: {
+/**
+ * A new, open request (spec 2.3). Server Actions only: it makes ids. `onceToken` is the form's one-time token: on
+ * Supabase save_request takes it in the same transaction (C4/C5 plan decision 6) and a repeat or a made-up one throws
+ * Refused; the sample store ignores it, since the action takes it first on this backend (takeOnceToken).
+ */
+export async function createRequest(request: {
   askerId: string;
   fields: RequestFields;
   now: Date;
+  onceToken?: string;
 }): Promise<LookingForRequest> {
+  if (onSupabase()) return (await import("./supabase/requests")).createRequest(request);
+  const { askerId, fields, now } = request;
   const at = now.toISOString();
   const row: RequestRow = {
     id: `r-${randomUUID()}`,
@@ -240,6 +257,7 @@ export async function updateRequest(
   fields: RequestFields,
   now: Date,
 ): Promise<LookingForRequest | null> {
+  if (onSupabase()) return (await import("./supabase/requests")).updateRequest(askerId, id, fields, now);
   const row = ownRow(askerId, id, "open");
   if (!row) return null;
   Object.assign(row, fields, { updatedAt: now.toISOString() });
@@ -257,6 +275,7 @@ export async function setRequestOpen(
   open: boolean,
   now: Date,
 ): Promise<(LookingForRequest & { neededByCleared: boolean }) | null> {
+  if (onSupabase()) return (await import("./supabase/requests")).setRequestOpen(askerId, id, open, now);
   const row = ownRow(askerId, id, open ? "closed" : "open");
   if (!row) return null;
   const at = now.toISOString();
@@ -274,6 +293,7 @@ export async function setRequestOpen(
  * Its offer threads stay, with its title (requestTitle) and "This request was removed." False when it isn't the asker's.
  */
 export async function deleteRequest(askerId: string, id: string): Promise<boolean> {
+  if (onSupabase()) return (await import("./supabase/requests")).deleteRequest(askerId, id);
   const { requests } = sampleStore();
   const row = requests.get(id);
   if (!row || row.askerId !== askerId) return false;
@@ -287,6 +307,7 @@ export type HiddenRequest = { id: string; title: string; askerId: string | null 
 
 /** The Hub's Hide the request (spec 2.14): it leaves every list and its page 404s. Null when it's gone or hidden already. */
 export async function hideRequest(id: string, reason: string, now: Date): Promise<HiddenRequest | null> {
+  if (onSupabase()) return (await import("./supabase/requests")).hideRequest(id, reason, now);
   const row = sampleStore().requests.get(id);
   if (!row || row.hiddenAt !== null) return null;
   row.hiddenAt = now.toISOString();
@@ -300,6 +321,7 @@ export async function hideRequest(id: string, reason: string, now: Date): Promis
  * closed stays as its asker left it (stage J plan decision 16). Null when it's gone or isn't hidden.
  */
 export async function showRequest(id: string, now: Date): Promise<HiddenRequest | null> {
+  if (onSupabase()) return (await import("./supabase/requests")).showRequest(id, now);
   const row = sampleStore().requests.get(id);
   if (!row || row.hiddenAt === null) return null;
   row.hiddenAt = null;
@@ -310,6 +332,7 @@ export async function showRequest(id: string, now: Date): Promise<HiddenRequest 
 
 /** Deleting an account (spec 2.23): its requests go. Their offer threads follow messaging's rules. */
 export async function forgetRequestsOf(accountId: string): Promise<void> {
+  if (onSupabase()) return (await import("./supabase/requests")).forgetRequestsOf(accountId);
   const { requests } = sampleStore();
   for (const [id, row] of requests) {
     if (row.askerId === accountId) requests.delete(id);
@@ -338,24 +361,33 @@ export type RequestExport = {
 const categoryName = (slug: string) => categories.find((category) => category.slug === slug)?.name ?? slug;
 const campusName = (slug: string) => campuses.find((campus) => campus.slug === slug)?.name ?? slug;
 
+/** What the download says about one request, from its row's fields and its offers (shared with the Supabase twin). */
+export function requestExport(
+  row: Omit<RequestRow, "id" | "askerId" | "updatedAt" | "remindedFor" | "seedOffers">,
+  offers: number,
+): RequestExport {
+  return {
+    title: row.title,
+    category: categoryName(row.categorySlug),
+    campus: campusName(row.campusSlug),
+    details: row.details,
+    budgetZar: row.budgetZar,
+    swapWelcome: row.swapWelcome,
+    neededBy: row.neededBy,
+    state: stateOf(row),
+    hubReason: row.hiddenReason,
+    postedAt: row.createdAt,
+    closedAt: row.closedAt,
+    closedAutomatically: row.closedBy === "auto",
+    offers,
+  };
+}
+
 /** The account's requests for its data export, newest first. */
 export async function exportRequests(accountId: string): Promise<RequestExport[]> {
+  if (onSupabase()) return (await import("./supabase/requests")).exportRequests(accountId);
   return [...sampleStore().requests.values()]
     .filter((row) => row.askerId === accountId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .map((row) => ({
-      title: row.title,
-      category: categoryName(row.categorySlug),
-      campus: campusName(row.campusSlug),
-      details: row.details,
-      budgetZar: row.budgetZar,
-      swapWelcome: row.swapWelcome,
-      neededBy: row.neededBy,
-      state: stateOf(row),
-      hubReason: row.hiddenReason,
-      postedAt: row.createdAt,
-      closedAt: row.closedAt,
-      closedAutomatically: row.closedBy === "auto",
-      offers: row.seedOffers + offerThreadCount(row.id),
-    }));
+    .map((row) => requestExport(row, row.seedOffers + offerThreadCount(row.id)));
 }

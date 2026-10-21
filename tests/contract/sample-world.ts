@@ -1,13 +1,18 @@
 import { randomUUID } from "node:crypto";
+import { deleteAccountData, getAccount } from "@/lib/data/accounts";
+import { notifyFollowers } from "@/lib/data/follows";
+import { startOffer } from "@/lib/data/messages";
+import { saveOwnListing } from "@/lib/data/own-listings";
 import { photoIdOf } from "@/lib/data/photos";
-import type { AccountRow, ConversationRow } from "@/lib/data/rows";
+import type { AccountRow, ConversationRow, SellerRow } from "@/lib/data/rows";
 import { saleNoteText } from "@/lib/messaging/notification-text";
 import { threadPath } from "@/lib/messaging/paths";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { SLUG_MAX, slugify } from "@/lib/selling/rules";
 import { sastDate } from "@/lib/time";
 import type { NotificationKind } from "@/lib/types";
-import type { World, WorldAccountName } from "./world";
+import { ALL_CAMPUSES } from "@/lib/campus";
+import { listingFields, type World, type WorldAccountName } from "./world";
 
 // The sample store's world (2b plan Task 13): a fresh store for each test (resetSampleStore, as the unit tests do), and
 // verbs that write it as the unit tests do. It never reaches Supabase (lib/data/boundaries.test.ts).
@@ -33,6 +38,28 @@ function freeSlug(name: string): string {
     const slug = `${slugify(name).slice(0, SLUG_MAX - suffix.length).replace(/-+$/, "")}${suffix}`;
     if (!taken(slug)) return slug;
   }
+}
+
+/** A shop row for the store, as openShop makes one: no owner when `ownerId` is null (a sample shop). */
+function shopRow(slug: string, name: string, ownerId: string | null, campus: string, at: string, pointIds: string[]): SellerRow {
+  return {
+    slug,
+    ownerId,
+    name,
+    tagline: "A shop the contract tests open.",
+    categorySlug: "tech",
+    campusSlug: campus,
+    verified: false,
+    badge: "new-seller",
+    about: "A shop the contract tests open and close again.",
+    since: at.slice(0, 7),
+    image: null,
+    pickupPointIds: pointIds,
+    slugChanged: false,
+    previousSlugs: [],
+    createdAt: at,
+    updatedAt: at,
+  };
 }
 
 /** The sample session key a world account's forms are kept under. */
@@ -160,22 +187,8 @@ export function sampleWorld(): World {
       const at = now.toISOString();
       const point = [...store.pickupPoints.values()].find((row) => row.campusSlug === campus && !row.retiredAt);
       store.sellers.set(slug, {
-        slug,
-        ownerId,
-        name: title,
-        tagline: "A shop the contract tests open.",
-        categorySlug: "tech",
-        campusSlug: campus,
-        verified: false,
-        badge: "new-seller",
-        about: "A shop the contract tests open and close again.",
+        ...shopRow(slug, title, ownerId, campus, at, status === "pending" || !point ? [] : [point.id]),
         since: sastDate(now).slice(0, 7),
-        image: null,
-        pickupPointIds: status === "pending" || !point ? [] : [point.id],
-        slugChanged: false,
-        previousSlugs: [],
-        createdAt: at,
-        updatedAt: at,
       });
       store.sellerProfiles.set(ownerId, {
         accountId: ownerId,
@@ -328,6 +341,155 @@ export function sampleWorld(): World {
         ...(taken ? { taken: true as const } : {}),
       });
       return sessionKey;
+    },
+    async setRoles(name, roles) {
+      const id = await this.signedIn(name);
+      sampleStore().accounts.get(id)!.roles = [...roles];
+    },
+    async viewerAccount(name) {
+      const account = await getAccount(await this.signedIn(name));
+      if (!account) throw new Error(`No account ${name}`);
+      return account;
+    },
+    async addListing(slug, listing) {
+      const store = sampleStore();
+      const shop = store.sellers.get(slug);
+      if (!shop) throw new Error(`No shop ${slug}`);
+      const id = `l-contract-${store.listings.size + 1}`;
+      const at = new Date().toISOString();
+      store.listings.set(id, {
+        id,
+        sellerSlug: slug,
+        state: "available",
+        ...listingFields(listing, shop.categorySlug),
+        campusSlug: shop.campusSlug,
+        photos: [],
+        createdAt: at,
+        firstPublishedAt: at,
+        updatedAt: at,
+      });
+      return id;
+    },
+    async publishListing(owner, slug, listing) {
+      const ownerId = await this.signedIn(owner);
+      const store = sampleStore();
+      const shop = store.sellers.get(slug);
+      if (!shop || shop.ownerId !== ownerId) throw new Error(`${owner} doesn't own ${slug}`);
+      const now = new Date();
+      const saved = await saveOwnListing({
+        sellerSlug: slug,
+        ownerId,
+        id: null,
+        fields: listingFields(listing, shop.categorySlug),
+        photos: [],
+        intent: "publish",
+        now,
+      });
+      if (!saved) throw new Error(`Couldn't publish in ${slug}`);
+      // As saveListingForm does: a first publish by an approved shop of a listing the Hub hasn't hidden.
+      if (saved.state === "available" && store.sellerProfiles.get(ownerId)?.status === "approved") {
+        await notifyFollowers({ sellerSlug: slug, shopName: shop.name, listing: { id: saved.id, title: saved.title }, now });
+      }
+      return saved.id;
+    },
+    async addReport(reporter, { kind, id }) {
+      const store = sampleStore();
+      const reporterId = await this.signedIn(reporter);
+      const listing = kind === "listing" ? store.listings.get(id) : undefined;
+      const shop = kind === "seller" ? store.sellers.get(id) : listing ? store.sellers.get(listing.sellerSlug) : undefined;
+      const request = kind === "request" ? store.requests.get(id) : undefined;
+      const title = listing?.title ?? request?.title ?? shop?.name;
+      if (!title) throw new Error(`Nothing to report: ${kind} ${id}`);
+      const reportId = `report-contract-${store.reports.size + 1}`;
+      store.reports.set(reportId, {
+        id: reportId,
+        reporterId,
+        targetKind: kind,
+        targetId: id,
+        targetTitle: title,
+        reason: "spam",
+        detail: "",
+        status: "open",
+        createdAt: new Date().toISOString(),
+        targetOwnerId: kind === "request" ? (request?.askerId ?? null) : (shop?.ownerId ?? null),
+      });
+      return reportId;
+    },
+    async saveSearch(name, search, { paused = false, at } = {}) {
+      const accountId = await this.signedIn(name);
+      const store = sampleStore();
+      const id = `ss-contract-${store.savedSearches.size + 1}`;
+      const made = (at ?? new Date(Date.now() + store.savedSearches.size)).toISOString();
+      store.savedSearches.set(id, {
+        id,
+        accountId,
+        q: null,
+        category: null,
+        campus: ALL_CAMPUSES,
+        price: null,
+        pay: null,
+        deals: null,
+        ...search,
+        createdAt: made,
+        pausedAt: paused ? made : null,
+      });
+      return id;
+    },
+    async fillFollows(follower, count) {
+      const accountId = await this.signedIn(follower);
+      const store = sampleStore();
+      const at = new Date().toISOString();
+      for (let n = 1; n <= count; n += 1) {
+        const slug = `contract-fill-${store.sellers.size + 1}`;
+        store.sellers.set(slug, shopRow(slug, `Contract fill ${n}`, null, "pretoria", at, []));
+        const id = `follow-contract-fill-${n}`;
+        store.follows.set(id, { id, accountId, sellerSlug: slug, createdAt: at });
+      }
+    },
+    async setMentor(slug, mentor) {
+      const store = sampleStore();
+      const ownerId = store.sellers.get(slug)?.ownerId;
+      const profile = ownerId ? store.sellerProfiles.get(ownerId) : undefined;
+      if (!profile) throw new Error(`No owned shop ${slug}`);
+      profile.mentorId = mentor ? await this.signedIn(mentor) : null;
+    },
+    async auditCount() {
+      return sampleStore().auditLog.size;
+    },
+    async addOffer(slug, requestId, body) {
+      const request = sampleStore().requests.get(requestId);
+      if (!request?.askerId) throw new Error(`No asker's request ${requestId}`);
+      return startOffer({
+        askerId: request.askerId,
+        request: { id: request.id, title: request.title },
+        sellerSlug: slug,
+        listing: null,
+        body,
+        now: new Date(),
+      });
+    },
+    async offerFromGoneShop(requestId, body) {
+      const store = sampleStore();
+      const id = `acc-contract-gone-${randomUUID()}`;
+      const at = new Date().toISOString();
+      store.accounts.set(id, {
+        id,
+        email: `contract-gone-${id.slice(-12)}@vossie.test`,
+        firstName: "Gone",
+        campusSlug: "pretoria",
+        roles: [],
+        createdAt: at,
+      });
+      const slug = freeSlug("Contract gone shop");
+      store.sellers.set(slug, shopRow(slug, "Contract gone shop", id, "pretoria", at, []));
+      store.sellerProfiles.set(id, { accountId: id, status: "approved", sellerSlug: slug, appliedAt: at, approvedAt: at });
+      const conversation = await this.addOffer(slug, requestId, body);
+      await this.addMessages(conversation, "buyer", 1, new Date());
+      await deleteAccountData(id);
+      return conversation;
+    },
+    async tidyCommunity() {
+      // Nothing to tidy: the next test's world starts from a fresh store.
     },
     async cleanup() {
       // Nothing to undo: the next test's world starts from a fresh store.

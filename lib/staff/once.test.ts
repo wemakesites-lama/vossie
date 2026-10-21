@@ -6,7 +6,7 @@ import { hashToken } from "@/lib/auth/secrets";
 import { createSession } from "@/lib/data/sessions";
 import { resetSampleStore } from "@/lib/data/store";
 import { resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
-import { issueOnceToken, leaveOnceToken, ONCE_TTL_MS, sentOnceToken, takeOnceToken } from "./once";
+import { issueOnceToken, leaveOnceToken, ONCE_TTL_MS, sentOnceToken, takeOnceToken, tokenTakenInSql } from "./once";
 
 const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
 /** Each time the page waited for the request (connection()). */
@@ -120,5 +120,17 @@ describe("a staff form's one-time token (staff tools plan amendment 15.7)", () =
     await leaveOnceToken(token, SENT, NOW);
     request.cookies.set(SESSION_COOKIE, "token-1");
     expect(await sentOnceToken(token, NOW)).toBeNull();
+  });
+});
+
+// On Supabase, five functions take the token in the same transaction as their write (save_request, save_hub_post,
+// add_mentor_note, add_check_in, give_role), so their actions don't take it first (C4/C5 plan decision 6).
+describe("tokenTakenInSql (C4/C5 plan decision 6)", () => {
+  it("is false on the sample store and true on Supabase", () => {
+    vi.stubEnv("VOSSIE_BACKEND", "");
+    expect(tokenTakenInSql()).toBe(false);
+    vi.stubEnv("VOSSIE_BACKEND", "supabase");
+    expect(tokenTakenInSql()).toBe(true);
+    vi.unstubAllEnvs();
   });
 });

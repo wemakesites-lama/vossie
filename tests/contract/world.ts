@@ -8,7 +8,7 @@
 // for Featured, keepBadges for the badges). Every verb on the Supabase side records an undo, so the seed is the same
 // after each test.
 
-import type { CampusChoice } from "@/lib/types";
+import type { Account, CampusChoice, MatchQuery, StaffRole } from "@/lib/types";
 
 /**
  * The test accounts every world has. On Supabase, `pnpm test:db`'s global setup makes them (contract-<name>@vossie.test),
@@ -58,6 +58,35 @@ export type WorldConversation = {
   status?: "offered" | "asked" | "replied";
   messages: readonly WorldMessage[];
 };
+
+/**
+ * A listing a scenario lists (C4/C5 plan Task 3): an item in the shop's category for R100, collected on campus, unless
+ * said. `addListing` puts it in place published and available; `publishListing` publishes it through the real path.
+ */
+export type WorldListing = { title: string; categorySlug?: string; priceZar?: number; description?: string };
+
+/** A WorldListing's fields, as saveOwnListing and save_listing take them, in a shop of `categorySlug`. */
+export function listingFields(listing: WorldListing, categorySlug: string) {
+  return {
+    kind: "item" as const,
+    title: listing.title,
+    categorySlug: listing.categorySlug ?? categorySlug,
+    condition: "good" as const,
+    priceZar: listing.priceZar ?? 100,
+    priceIsFrom: false,
+    payMode: "cash" as const,
+    swapFor: null,
+    description: listing.description ?? "A listing the contract tests list and take away again.",
+    handover: "on-campus" as const,
+    pickupPointId: null,
+  };
+}
+
+/** A search a scenario saves (C4/C5 plan Task 3): browse's query; anything not given is none, the campus every campus. */
+export type WorldSearch = Partial<MatchQuery>;
+
+/** What a scenario reports (C4/C5 plan Task 3): a listing, a shop by its link, or a request. */
+export type WorldReportTarget = { kind: "listing" | "seller" | "request"; id: string };
 
 export interface World {
   readonly name: "sample" | "supabase";
@@ -143,6 +172,49 @@ export interface World {
    * the session the test files were given (C2/C3 plan Task 9; C4/C5 use it as their issueOnceToken). The session key.
    */
   onceRow(name: WorldAccountName, form: string, once?: WorldOnce): Promise<string>;
+  /** Gives the account these staff roles, in this order (C4/C5 plan Task 3). Put back as they were in cleanup. */
+  setRoles(name: WorldAccountName, roles: readonly StaffRole[]): Promise<void>;
+  /** The account as getViewer() gives it: profile, roles and shop (C4/C5 plan Task 3). */
+  viewerAccount(name: WorldAccountName): Promise<Account>;
+  /** Lists a listing in the shop, published and available now, as buyers see it; its id (C4/C5 plan Task 3). */
+  addListing(slug: string, listing: WorldListing): Promise<string>;
+  /**
+   * Publishes a new listing in the owner's shop for the first time through the real path (C4/C5 plan Task 3): on
+   * Supabase save_listing with the owner's session, which tells the followers; in the sample store saveOwnListing, then
+   * notifyFollowers, as saveListingForm does. Its id. The listing goes in cleanup (tidySelling, or the store's reset).
+   */
+  publishListing(owner: WorldAccountName, slug: string, listing: WorldListing): Promise<string>;
+  /** An open report by the account about a listing, a shop or a request; its id (C4/C5 plan Task 3). */
+  addReport(reporter: WorldAccountName, target: WorldReportTarget): Promise<string>;
+  /**
+   * Saves a search for the account, made at `at` (now, a millisecond after the last one, unless given), paused or not;
+   * its id (C4/C5 plan Task 3).
+   */
+  saveSearch(name: WorldAccountName, search: WorldSearch, options?: { paused?: boolean; at?: Date }): Promise<string>;
+  /** The account follows `count` more shops, each one with no owner made for it (the follow limit, C4/C5 plan Task 7). */
+  fillFollows(follower: WorldAccountName, count: number): Promise<void>;
+  /** Assigns the shop a mentor, or none (C4/C5 plan Task 3). Put back in cleanup. */
+  setMentor(slug: string, mentor: WorldAccountName | null): Promise<void>;
+  /** How many entries the audit log has (C4/C5 plan Task 3). */
+  auditCount(): Promise<number>;
+  /**
+   * The shop's owner offers on the request, as Send offer does with no listing (C4/C5 plan Task 5): on Supabase
+   * start_offer with the owner's session, in the sample store startOffer. The thread's id.
+   */
+  addOffer(slug: string, requestId: string, body: string): Promise<string>;
+  /**
+   * A shop that has gone made an offer on the request (C4/C5 plan Task 5, amendment 8): an account made for the test,
+   * never a world one, opens a shop, offers, the asker answers (so the thread outlives the seller, as deletion keeps a
+   * conversation only while the other side has written in it), and the account is deleted through the backend's own
+   * deletion (forget_account, or the sample's deleteAccountData). The thread's id.
+   */
+  offerFromGoneShop(requestId: string, body: string): Promise<string>;
+  /**
+   * In cleanup, removes the requests, follows and saved searches the world's accounts made during the test, however
+   * they were made (the data layer, a database function or a verb), with the notifications about them (C4/C5 plan
+   * Tasks 4 to 8). Call it first in a test, so it runs after the other undos.
+   */
+  tidyCommunity(): Promise<void>;
   /** Undoes what the test's verbs wrote, newest first. Runs after each test. */
   cleanup(): Promise<void>;
 }

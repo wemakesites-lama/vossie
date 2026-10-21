@@ -1,4 +1,5 @@
 import { vi } from "vitest";
+import { sampleAccounts } from "@/data/fixtures/accounts";
 import { samplePickupPointRows } from "@/data/fixtures/staff";
 import { resetSampleStore } from "@/lib/data/store";
 import { seedUuid } from "@/scripts/seed-sql";
@@ -26,18 +27,33 @@ export async function parity<T>(read: () => Promise<T>): Promise<{ sample: T; su
 /** The sample store's pickup point ids, to the uuids the seed and the reference migration give them. */
 const POINT_IDS = new Map(samplePickupPointRows.map((row) => [row.id, seedUuid("pickup-point", row.id)]));
 
+/** The sample store's account ids, to the uuids the seed gives them (C4/C5 plan decision 15). */
+const ACCOUNT_IDS = new Map(sampleAccounts.map(({ account }) => [account.id, seedUuid("account", account.id)]));
+
+/** The contract accounts' ids in both worlds: the sample world's acc-contract-<name>, and any uuid not in the seed. */
+const isContractAccount = (id: string) =>
+  id.startsWith("acc-contract-") || (/^[0-9a-f-]{36}$/.test(id) && ![...ACCOUNT_IDS.values()].includes(id));
+
+/**
+ * A staff list's answer without the contract tests' own accounts (C4/C5 plan decision 15): the world's accounts exist in
+ * one backend and not the other. `idOf` gives each item's account id.
+ */
+export function dropContractAccounts<T>(list: readonly T[], idOf: (item: T) => string): T[] {
+  return list.filter((item) => !isContractAccount(idOf(item)));
+}
+
 /** An ISO-8601 time with a zone: the fixtures write "…:00Z", the app and iso() "….000Z" (amendment 11). */
 const TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
 
 function normaliseString(value: string): string {
-  const point = POINT_IDS.get(value);
+  const point = POINT_IDS.get(value) ?? ACCOUNT_IDS.get(value);
   if (point) return point;
   return TIME.test(value) ? new Date(value).toISOString() : value;
 }
 
 /**
  * A reader's answer with the differences that aren't differences taken out, for either backend: the sample's pickup
- * point ids become their uuids, and every time is written as toISOString() writes it. Dates (YYYY-MM-DD) and
+ * point and account ids become their uuids, and every time is written as toISOString() writes it. Dates (YYYY-MM-DD) and
  * everything else stay as they are. Arrays, Maps, Sets and plain objects are walked (object keys too).
  */
 export function normalise<T>(value: T): T {

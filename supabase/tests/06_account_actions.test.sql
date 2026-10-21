@@ -120,6 +120,7 @@ select is(
     'shop_slug_taken(text)',
     'show_listing(text)',
     'show_request(text)',
+    'staff_find_account(text)',
     'staff_pause_shop(uuid,text)',
     'staff_resume_shop(uuid)',
     'start_conversation(text,text,text,text)',
@@ -300,7 +301,8 @@ select is(
     'private.conversation_side(uuid)', 'private.is_my_request(text)', 'private.is_shop_contact(uuid)',
     'private.is_staff(text)', 'private.mentors_shop(uuid)',
     'private.owns_shop(uuid)', 'private.report_own_kind(uuid)', 'private.shop_is_public(uuid)',
-    'private.staff_hub_posts()', 'private.staff_reports()', 'private.staff_seller_profiles()',
+    'private.staff_accounts()', 'private.staff_hub_posts()', 'private.staff_reports()',
+    'private.staff_seller_profiles()',
     'private.storefront_status(uuid)'
   ],
   'and authenticated only the ones theirs need'

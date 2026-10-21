@@ -5,6 +5,7 @@ import { writeFormState } from "@/lib/auth/form-state";
 import { requireAccount } from "@/lib/auth/session";
 import { getCampuses, getCategories } from "@/lib/data";
 import { startOffer } from "@/lib/data/messages";
+import { isRefused } from "@/lib/data/refused";
 import { countOffersSince } from "@/lib/data/offers";
 import {
   countOpenRequests,
@@ -23,7 +24,7 @@ import { isId, sentNoteKey, threadPath } from "@/lib/messaging/paths";
 import { checkMessage, DAY_MS, keepTyped } from "@/lib/messaging/rules";
 import { scamWarnings } from "@/lib/messaging/scam-check";
 import { done, field } from "@/lib/selling/action-helpers";
-import { leaveOnceToken, sentOnceToken, takeOnceToken } from "@/lib/staff/once";
+import { leaveOnceToken, sentOnceToken, takeOnceToken, tokenTakenInSql } from "@/lib/staff/once";
 import { sastDate } from "@/lib/time";
 import {
   deleteRequestPath,
@@ -162,24 +163,35 @@ export async function saveMyRequest(formData: FormData): Promise<void> {
       errors.push("daily-limit");
     }
   }
-  if (errors.length > 0 || !check.value) {
-    await writeFormState(form, { errors, values: typedValues(input, choices), notice: null }, now);
+  /** Back to the form with these errors and what was typed. */
+  const backWith = async (errors: readonly string[]): Promise<never> => {
+    await writeFormState(form, { errors: [...errors], values: typedValues(input, choices), notice: null }, now);
     back(path);
-  }
+  };
+  if (errors.length > 0 || !check.value) return backWith(errors);
+  const fields = check.value;
   // Only now, with a request about to be made, is the token taken. Taking it is one step, so of two posts sent together
   // only one makes the request; the other goes to the first's page, or to Your requests while the first is still saving.
-  if (!editing) {
+  // On Supabase save_request takes it itself, in the same transaction as the insert (C4/C5 plan decision 6).
+  if (!editing && !tokenTakenInSql()) {
     const token = await takeOnceToken(once, now);
-    if (token.kind === "none") {
-      const values = typedValues(input, choices);
-      await writeFormState(form, { errors: ["form-expired"], values, notice: null }, now);
-      back(path);
-    }
+    if (token.kind === "none") return backWith(["form-expired"]);
     if (token.kind === "again") done(token.sent?.path ?? YOUR_REQUESTS_PATH);
   }
-  const saved = editing
-    ? await updateRequest(account.id, editing, check.value, now)
-    : await createRequest({ askerId: account.id, fields: check.value, now });
+  let saved: Awaited<ReturnType<typeof updateRequest>>;
+  try {
+    saved = editing
+      ? await updateRequest(account.id, editing, fields, now)
+      : await createRequest({ askerId: account.id, fields, now, onceToken: once });
+  } catch (error) {
+    // Supabase took the token, or counted the limits, in the same transaction as the insert (C4/C5 plan decisions 6
+    // and 7): its answers are takeOnceToken's "none" and "again", and the limits' own errors (a race past this
+    // action's counts). Anything else is rethrown.
+    if (isRefused(error, "once-expired")) return backWith(["form-expired"]);
+    if (isRefused(error, "once-taken")) done((await sentOnceToken(once, now))?.path ?? YOUR_REQUESTS_PATH);
+    if (isRefused(error, "open-limit", "daily-limit")) return backWith([error.code]);
+    throw error;
+  }
   if (!saved) redirect(YOUR_REQUESTS_PATH);
   await clearOwnFormState(form);
   await leaveNote(requestNoteKey(saved.id), editing ? "saved" : "posted", now);
@@ -209,7 +221,16 @@ async function changeOpen(formData: FormData, open: boolean): Promise<void> {
       done(landing);
     }
   }
-  const changed = await setRequestOpen(account.id, id, open, now);
+  let changed: Awaited<ReturnType<typeof setRequestOpen>>;
+  try {
+    changed = await setRequestOpen(account.id, id, open, now);
+  } catch (error) {
+    // On Supabase the 5 open are counted again under the asker's lock (C4/C5 plan decision 7): a race past the check
+    // above gets the same note.
+    if (!isRefused(error, "reopen-limit")) throw error;
+    await leaveNote(note, "reopen-limit", now);
+    done(landing);
+  }
   if (changed) {
     requestsChanged();
     // Reopening took off a needed-by date that had passed (stage L spec decision 13): the notice says so.
@@ -285,14 +306,23 @@ export async function sendOffer(formData: FormData): Promise<void> {
     await writeFormState(form, { errors: [], values: { ...values, warnings: warnings.join(",") }, notice: "check" }, now);
     back(path);
   }
-  const conversationId = await startOffer({
-    askerId: status.askerId,
-    request: { id, title: subject.request.title },
-    sellerSlug: status.shopSlug,
-    listing: pointed,
-    body: message.value,
-    now,
-  });
+  let conversationId: string;
+  try {
+    conversationId = await startOffer({
+      askerId: status.askerId,
+      request: { id, title: subject.request.title },
+      sellerSlug: status.shopSlug,
+      listing: pointed,
+      body: message.value,
+      now,
+    });
+  } catch (error) {
+    // On Supabase start_offer counts the shop's offers and the hour's messages again under the sender's lock (C2/C3
+    // plan decision 23; C4/C5 amendment 11): a race past the checks above gets the same form error.
+    if (!isRefused(error, "offer-rate", "message-rate")) throw error;
+    await writeFormState(form, { errors: [error.code], values, notice: null }, now);
+    back(path);
+  }
   await clearOwnFormState(form);
   await writeFormState(sentNoteKey(conversationId), { errors: [], values: {}, notice: "sent" }, now);
   requestsChanged();

@@ -1,13 +1,17 @@
+import { randomUUID } from "node:crypto";
 import { inject } from "vitest";
+import { ALL_CAMPUSES } from "@/lib/campus";
 import { campusToDb } from "@/lib/data/supabase/rows";
 import { saleNoteText } from "@/lib/messaging/notification-text";
 import { threadPath } from "@/lib/messaging/paths";
+import { searchKey } from "@/lib/saved-searches/rules";
 import { SLUG_MAX, slugify } from "@/lib/selling/rules";
 import { sastDate } from "@/lib/time";
-import { WORLD_ACCOUNTS, type World, type WorldAccountName } from "@/tests/contract/world";
+import type { Account, SellerStatus } from "@/lib/types";
+import { listingFields, WORLD_ACCOUNTS, type World, type WorldAccountName } from "@/tests/contract/world";
 import { testAdminClient, type DbClient } from "./accounts";
 import { sql } from "./sql";
-import { setViewer } from "./viewer";
+import { sessionClient, withViewer } from "./viewer";
 
 /** The photos bucket (spec section 6). */
 const BUCKET = "photos";
@@ -82,6 +86,22 @@ export function supabaseWorld(): SupabaseWorld {
       if (shops.data.length === 0 && previous.data.length === 0) return slug;
     }
   }
+  /** The world account that owns the shop, for a verb that acts with the owner's session. */
+  async function ownerOf(slug: string): Promise<{ name: WorldAccountName; shopId: string }> {
+    const shop = await admin.from("shops").select("id, owner_id").eq("slug", slug).single();
+    if (shop.error) throw new Error(`No shop ${slug}: ${shop.error.message}`);
+    const sessions = inject("dbSessions");
+    const name = WORLD_ACCOUNTS.find((account) => sessions[account].id === shop.data.owner_id);
+    if (!name) throw new Error(`${slug} isn't a world account's shop`);
+    return { name, shopId: shop.data.id };
+  }
+  /** Fails the verb with the database's error. */
+  function check<T extends { error: { message: string } | null }>(result: T, what: string): T {
+    if (result.error) throw new Error(`${what}: ${result.error.message}`);
+    return result;
+  }
+  /** Saved searches are a millisecond apart, so the oldest is the one made first. */
+  let searchesMade = 0;
   return {
     name: "supabase",
     admin,
@@ -92,12 +112,9 @@ export function supabaseWorld(): SupabaseWorld {
       return inject("dbSessions")[name].id;
     },
     async asViewer(name, read) {
-      setViewer(name);
-      try {
-        return await read(await this.signedIn(name));
-      } finally {
-        setViewer(null);
-      }
+      // Its own viewer for the length of the call, whatever else runs at the same time (C4/C5 plan amendment 7).
+      const accountId = await this.signedIn(name);
+      return withViewer(name, async () => read(accountId));
     },
     async hideListing(id, reason) {
       const hidden = await admin
@@ -663,6 +680,337 @@ export function supabaseWorld(): SupabaseWorld {
       const used = await admin.from("photos").update({ use: `post:${id}` }).eq("id", cover);
       if (used.error) throw new Error(used.error.message);
       return id;
+    },
+    async setRoles(name, roles) {
+      const id = await this.signedIn(name);
+      const before = check(await admin.from("profiles").select("roles").eq("id", id).single(), "Reading roles");
+      check(await admin.from("profiles").update({ roles: [...roles] }).eq("id", id), "Setting roles");
+      undos.push(async () => {
+        check(await admin.from("profiles").update({ roles: before.data!.roles }).eq("id", id), "Putting roles back");
+      });
+    },
+    async viewerAccount(name) {
+      const session = inject("dbSessions")[name];
+      const [profile, seller] = await Promise.all([
+        admin.from("profiles").select("id, first_name, campus_slug, roles, created_at").eq("id", session.id).single(),
+        admin.from("seller_profiles").select("status, shop_id").eq("account_id", session.id).maybeSingle(),
+      ]);
+      check(profile, "Reading the profile");
+      check(seller, "Reading the seller profile");
+      let sellerSlug: string | null = null;
+      if (seller.data && seller.data.status !== "pending" && seller.data.shop_id) {
+        sellerSlug = check(await admin.from("shops").select("slug").eq("id", seller.data.shop_id).single(), "Reading the shop")
+          .data!.slug;
+      }
+      return {
+        id: profile.data!.id,
+        email: `contract-${name}@vossie.test`,
+        firstName: profile.data!.first_name,
+        campusSlug: profile.data!.campus_slug,
+        roles: profile.data!.roles as Account["roles"],
+        seller: seller.data ? { status: seller.data.status as SellerStatus, sellerSlug } : null,
+        createdAt: new Date(profile.data!.created_at).toISOString(),
+      };
+    },
+    async addListing(slug, listing) {
+      const shop = check(await admin.from("shops").select("id, category_slug, campus_slug").eq("slug", slug).single(), `No shop ${slug}`);
+      const f = listingFields(listing, shop.data!.category_slug);
+      const now = new Date().toISOString();
+      const added = check(
+        await admin
+          .from("listings")
+          .insert({
+            shop_id: shop.data!.id,
+            state: "available",
+            kind: f.kind,
+            title: f.title,
+            category_slug: f.categorySlug,
+            condition: f.condition,
+            price_zar: f.priceZar,
+            price_is_from: f.priceIsFrom,
+            pay_mode: f.payMode,
+            description: f.description,
+            handover: f.handover,
+            campus_slug: shop.data!.campus_slug,
+            created_at: now,
+            first_published_at: now,
+          })
+          .select("id")
+          .single(),
+        "Listing",
+      );
+      const id = added.data!.id;
+      undos.push(async () => {
+        check(await admin.from("listings").delete().eq("id", id), "Taking the listing away");
+      });
+      return id;
+    },
+    async publishListing(owner, slug, listing) {
+      const { name, shopId } = await ownerOf(slug);
+      if (name !== owner) throw new Error(`${owner} doesn't own ${slug}`);
+      const shop = check(await admin.from("shops").select("category_slug").eq("id", shopId).single(), "Reading the shop");
+      const f = listingFields(listing, shop.data!.category_slug);
+      const { data, error } = await sessionClient(inject("dbSessions")[owner].accessToken).rpc("save_listing", {
+        p_listing_id: null as unknown as string,
+        p_kind: f.kind,
+        p_title: f.title,
+        p_category_slug: f.categorySlug,
+        p_condition: f.condition,
+        p_price_zar: f.priceZar,
+        p_price_is_from: f.priceIsFrom,
+        p_pay_mode: f.payMode,
+        p_swap_for: null as unknown as string,
+        p_description: f.description,
+        p_handover: f.handover,
+        p_pickup_point_id: null as unknown as string,
+        p_photos: [],
+        p_publish: true,
+      });
+      if (error) throw new Error(`save_listing: ${error.message}`);
+      const answer = data as { result: string; listing_id?: string };
+      if (answer.result !== "saved" || !answer.listing_id) throw new Error(`save_listing answered ${answer.result}`);
+      const id = answer.listing_id;
+      undos.push(async () => {
+        check(await admin.from("listings").delete().eq("id", id), "Taking the listing away");
+      });
+      return id;
+    },
+    async addReport(reporter, { kind, id }) {
+      let title: string;
+      let owner: string | null;
+      if (kind === "request") {
+        const request = check(await admin.from("requests").select("title, asker_id").eq("id", id).single(), `No request ${id}`);
+        title = request.data!.title;
+        owner = request.data!.asker_id;
+      } else {
+        const listing =
+          kind === "listing"
+            ? check(await admin.from("listings").select("title, shop_id").eq("id", id).single(), `No listing ${id}`).data!
+            : null;
+        const shop = check(
+          listing
+            ? await admin.from("shops").select("name, owner_id").eq("id", listing.shop_id).single()
+            : await admin.from("shops").select("name, owner_id").eq("slug", id).single(),
+          `No shop for ${kind} ${id}`,
+        ).data!;
+        title = listing?.title ?? shop.name;
+        owner = shop.owner_id;
+      }
+      const added = check(
+        await admin
+          .from("reports")
+          .insert({
+            reporter_id: await this.signedIn(reporter),
+            target_kind: kind,
+            target_id: id,
+            target_title: title,
+            reason: "spam",
+            target_owner_id: owner,
+          })
+          .select("id")
+          .single(),
+        "Reporting",
+      );
+      const reportId = added.data!.id;
+      undos.push(async () => {
+        check(await admin.from("reports").delete().eq("id", reportId), "Taking the report away");
+      });
+      return reportId;
+    },
+    async saveSearch(name, search, { paused = false, at } = {}) {
+      const query = { q: null, category: null, campus: ALL_CAMPUSES, price: null, pay: null, deals: null, ...search };
+      const made = (at ?? new Date(Date.now() + (searchesMade += 1))).toISOString();
+      const added = check(
+        await admin
+          .from("saved_searches")
+          .insert({
+            account_id: await this.signedIn(name),
+            q: query.q,
+            category: query.category,
+            campus_slug: campusToDb(query.campus),
+            price: query.price,
+            pay: query.pay,
+            deals: query.deals,
+            search_key: searchKey(query),
+            created_at: made,
+            paused_at: paused ? made : null,
+          })
+          .select("id")
+          .single(),
+        "Saving the search",
+      );
+      const id = added.data!.id;
+      undos.push(async () => {
+        check(await admin.from("notifications").delete().eq("kind", "search-match").eq("subject_id", id), "Its alerts");
+        check(await admin.from("saved_searches").delete().eq("id", id), "Taking the search away");
+      });
+      return id;
+    },
+    async fillFollows(follower, count) {
+      const accountId = await this.signedIn(follower);
+      const tag = randomUUID().slice(0, 8);
+      const shops = check(
+        await admin
+          .from("shops")
+          .insert(
+            Array.from({ length: count }, (_, n) => ({
+              slug: `contract-fill-${tag}-${n + 1}`,
+              name: `Contract fill ${tag} ${n + 1}`,
+              tagline: "A shop the contract tests follow.",
+              category_slug: "tech",
+              campus_slug: "pretoria",
+              about: "A shop the contract tests follow and take away again.",
+              since: "2026-10",
+            })),
+          )
+          .select("id"),
+        "Filling shops",
+      );
+      const ids = shops.data!.map((row) => row.id);
+      undos.push(async () => {
+        for (let from = 0; from < ids.length; from += 100) {
+          check(await admin.from("shops").delete().in("id", ids.slice(from, from + 100)), "Taking the shops away");
+        }
+      });
+      check(await admin.from("follows").insert(ids.map((shop_id) => ({ account_id: accountId, shop_id }))), "Following");
+    },
+    async setMentor(slug, mentor) {
+      const shop = check(await admin.from("shops").select("owner_id").eq("slug", slug).single(), `No shop ${slug}`);
+      const owner = shop.data!.owner_id;
+      if (!owner) throw new Error(`No owned shop ${slug}`);
+      const before = check(await admin.from("seller_profiles").select("mentor_id").eq("account_id", owner).single(), "Mentor");
+      const mentorId = mentor ? await this.signedIn(mentor) : null;
+      check(await admin.from("seller_profiles").update({ mentor_id: mentorId }).eq("account_id", owner), "Setting the mentor");
+      undos.push(async () => {
+        check(
+          await admin.from("seller_profiles").update({ mentor_id: before.data!.mentor_id }).eq("account_id", owner),
+          "Putting the mentor back",
+        );
+      });
+    },
+    async auditCount() {
+      const { count, error } = await admin.from("audit_log").select("id", { count: "exact", head: true });
+      if (error) throw new Error(error.message);
+      return count ?? 0;
+    },
+    async addOffer(slug, requestId, body) {
+      const { name } = await ownerOf(slug);
+      const { data, error } = await sessionClient(inject("dbSessions")[name].accessToken).rpc("start_offer", {
+        p_request_id: requestId,
+        p_listing_id: null as unknown as string,
+        p_body: body,
+      });
+      if (error) throw new Error(`start_offer: ${error.message}`);
+      const answer = data as { result: string; conversation_id?: string };
+      if (!answer.conversation_id) throw new Error(`start_offer answered ${answer.result}`);
+      const id = answer.conversation_id;
+      undos.push(async () => {
+        check(await admin.from("notifications").delete().eq("subject_id", id), "The offer's notifications");
+        check(await admin.from("conversations").delete().eq("id", id), "Taking the offer away");
+      });
+      return id;
+    },
+    async offerFromGoneShop(requestId, body) {
+      // An account of the test's own (amendment 8: never a world account, whose session is minted once per run).
+      const email = `contract-gone-${randomUUID().slice(0, 8)}@vossie.test`;
+      const made = await admin.auth.admin.createUser({ email, email_confirm: true });
+      if (made.error || !made.data.user) throw new Error(`Making ${email}: ${made.error?.message}`);
+      const accountId = made.data.user.id;
+      undos.push(async () => {
+        const gone = await admin.auth.admin.deleteUser(accountId);
+        if (gone.error && gone.error.status !== 404) throw new Error(gone.error.message);
+      });
+      check(await admin.from("profiles").insert({ id: accountId, first_name: "Gone", campus_slug: "pretoria" }), "Profile");
+      const slug = await freeSlug("Contract gone shop");
+      const shop = check(
+        await admin
+          .from("shops")
+          .insert({
+            slug,
+            owner_id: accountId,
+            name: "Contract gone shop",
+            tagline: "A shop the contract tests open.",
+            category_slug: "tech",
+            campus_slug: "pretoria",
+            about: "A shop the contract tests open and close again.",
+            since: "2026-10",
+          })
+          .select("id")
+          .single(),
+        "Opening the gone shop",
+      );
+      check(
+        await admin
+          .from("seller_profiles")
+          .insert({ account_id: accountId, status: "approved", shop_id: shop.data!.id, approved_at: new Date().toISOString() }),
+        "Its seller profile",
+      );
+      const request = check(await admin.from("requests").select("title, asker_id").eq("id", requestId).single(), "Request");
+      // The thread as start_offer leaves it: the asker is its buyer, and the shop's first message.
+      const thread = check(
+        await admin
+          .from("conversations")
+          .insert({
+            shop_id: shop.data!.id,
+            buyer_id: request.data!.asker_id,
+            status: "offered",
+            is_offer: true,
+            request_id: requestId,
+            request_title: request.data!.title,
+          })
+          .select("id")
+          .single(),
+        "Offering",
+      );
+      const id = thread.data!.id;
+      undos.push(async () => {
+        check(await admin.from("conversations").delete().eq("id", id), "Taking the offer away");
+      });
+      check(
+        await admin.from("messages").insert([
+          { conversation_id: id, side: "seller", body },
+          { conversation_id: id, side: "buyer", body: "Message 1" },
+        ]),
+        "The offer and the asker's answer",
+      );
+      // Then the seller goes, as deleting their account does.
+      check(await admin.rpc("forget_account", { p_account_id: accountId }), "forget_account");
+      const deleted = await admin.auth.admin.deleteUser(accountId);
+      if (deleted.error) throw new Error(deleted.error.message);
+      return id;
+    },
+    async tidyCommunity() {
+      const accounts = WORLD_ACCOUNTS.map((name) => inject("dbSessions")[name].id);
+      const rows = async () => {
+        const [requests, follows, searches] = await Promise.all([
+          admin.from("requests").select("id").in("asker_id", accounts),
+          admin.from("follows").select("id").in("account_id", accounts),
+          admin.from("saved_searches").select("id").in("account_id", accounts),
+        ]);
+        for (const result of [requests, follows, searches]) check(result, "Reading the community's rows");
+        return {
+          requests: requests.data!.map((row) => row.id),
+          follows: follows.data!.map((row) => row.id),
+          searches: searches.data!.map((row) => row.id),
+        };
+      };
+      const before = await rows();
+      undos.push(async () => {
+        const after = await rows();
+        const made = (now: string[], then: string[]) => now.filter((id) => !then.includes(id));
+        const requests = made(after.requests, before.requests);
+        const searches = made(after.searches, before.searches);
+        const follows = made(after.follows, before.follows);
+        if (requests.length > 0) {
+          check(await admin.from("notifications").delete().in("subject_id", requests), "The requests' notifications");
+          check(await admin.from("requests").delete().in("id", requests), "Taking the requests away");
+        }
+        if (searches.length > 0) {
+          check(await admin.from("notifications").delete().in("subject_id", searches), "The searches' notifications");
+          check(await admin.from("saved_searches").delete().in("id", searches), "Taking the searches away");
+        }
+        if (follows.length > 0) check(await admin.from("follows").delete().in("id", follows), "Taking the follows away");
+      });
     },
     async cleanup() {
       const pending = undos.reverse();

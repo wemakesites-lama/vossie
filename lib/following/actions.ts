@@ -38,14 +38,17 @@ export async function followShop(formData: FormData): Promise<void> {
   done(path);
 }
 
-/** Unfollow (spec 2.16 and 2.17), from the band or Saved's Shops tab. */
+/**
+ * Unfollow (spec 2.16 and 2.17), from the band or Saved's Shops tab. The shop's name is read before the follow goes: on
+ * Supabase a follower reads a shop the Hub has paused only while they follow it (C4/C5 plan Task 7).
+ */
 export async function unfollowShop(formData: FormData): Promise<void> {
   const slug = field(formData, "shop");
   if (!isId(slug)) redirect("/");
   const { path, note } = landingFor(formData, slug);
   const account = await requireAccount(path);
+  const shop = await shopName(slug);
   if (await removeFollow(account.id, slug)) {
-    const shop = await shopName(slug);
     await writeFormState(note, { errors: [], values: { shop }, notice: "unfollowed" }, new Date());
   }
   done(path);

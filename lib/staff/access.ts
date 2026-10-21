@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { getViewer } from "@/lib/auth/session";
+import { getViewer, requireLiveAccount } from "@/lib/auth/session";
+import { isRefused } from "@/lib/data/refused";
 import { signInHref } from "@/lib/next-path";
 import type { Account, StaffArea } from "@/lib/types";
 import { canUse } from "./roles";
@@ -17,6 +18,29 @@ export async function requireStaff(area: StaffArea, nextPath: string): Promise<A
   if (!account) redirect(signInHref(nextPath));
   if (!canUse(account, area)) notFound();
   return account;
+}
+
+/**
+ * The first line of every staff Server Action (C4/C5 plan decision 4): signed in, and on Supabase re-checked with Auth
+ * (phase B's requireLiveAccount, spec 5), then the role, or the 404. Pages and the mentor CSV route keep requireStaff.
+ */
+export async function requireStaffAction(area: StaffArea, nextPath: string): Promise<Account> {
+  const account = await requireLiveAccount(nextPath);
+  if (!canUse(account, area)) notFound();
+  return account;
+}
+
+/**
+ * A staff function's "forbidden" (the role went between requireStaffAction and the write) is the same 404 (C4/C5 plan
+ * decision 4). Anything else is rethrown, Next's redirects included.
+ */
+export async function orNotFound<T>(write: Promise<T>): Promise<T> {
+  try {
+    return await write;
+  } catch (error) {
+    if (isRefused(error, "forbidden")) notFound();
+    throw error;
+  }
 }
 
 /**

@@ -63,9 +63,21 @@ export const clearFormState: typeof Sample.clearFormState = async (sessionKey, f
   if (error) failed(error);
 };
 
-/** Phase C's: its callers take their token inside their own SQL functions (decision 15). */
-export const takeFormState: typeof Sample.takeFormState = async () => {
-  throw new Error("takeFormState runs in SQL on Supabase (phase C)");
+/**
+ * Takes one of this session's one-time tokens (C4/C5 plan Task 2, decision 6): take_form_state (C2/C3's,
+ * 20261022120000_c2_selling.sql) checks and marks the row of the JWT's session under its lock, in one call, for a
+ * new listing's "listing-once:" token and save this search's "staff-once:" one; the five functions that take their own
+ * token never come here. The row is then read back, so a later post finds where the first one went. The key must be
+ * the signed-in session's (2b decision 20: the session, not an argument, says whose).
+ */
+export const takeFormState: typeof Sample.takeFormState = async (sessionKey, form, now) => {
+  const claims = await currentClaims();
+  if (!claims || claims.sessionId !== sessionKey) throw new Error("takeFormState: not the signed-in session");
+  const { data, error } = await (await forViewer()).rpc("take_form_state", { p_key: form });
+  if (error) failed(error);
+  if (data !== "first" && data !== "again") return null;
+  const state = await getFormState(sessionKey, form, now);
+  return state ? { first: data === "first", state } : null;
 };
 
 /**

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { onSupabase } from "@/lib/backend";
 import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
 import { DEALS_LABEL, PAY_LABELS, PRICE_LABELS } from "@/lib/browse/filters";
@@ -19,9 +20,11 @@ import { sampleStore } from "./store";
 
 // Saved searches in the sample store (search alerts spec 2.1, 2.4, 2.7 to 2.11 and 2.15; plan decisions 2, 3, 11,
 // 13 and 15). Only their owner ever sees them. Server Actions call the writes and pass `now`; only they make ids.
-// Labels look up category and campus names each time they're shown.
+// Labels look up category and campus names each time they're shown. On Supabase each is
+// lib/data/supabase/saved-searches.ts's (C4/C5 plan Task 8), over the same mappers (queryOf, toItem, searchExport).
 
-const NAMES: SearchNames = {
+/** Category and campus names, for labels and matching. Shared with the Supabase twin. */
+export const NAMES: SearchNames = {
   categories: new Map(categories.map((category) => [category.slug, category.name])),
   campuses: new Map(campuses.map((campus) => [campus.slug, campus.name])),
 };
@@ -36,11 +39,12 @@ function searchesOf(accountId: string): SavedSearchRow[] {
 }
 
 /** What a saved search matches, as browse's query does (plan decision 2). */
-function queryOf({ q, category, campus, price, pay, deals }: SavedSearchRow): MatchQuery {
+export function queryOf({ q, category, campus, price, pay, deals }: SavedSearchRow): MatchQuery {
   return { q, category, campus, price, pay, deals };
 }
 
-function toItem(row: SavedSearchRow): SavedSearchItem {
+/** A saved search as Saved's Searches tab shows it. */
+export function toItem(row: SavedSearchRow): SavedSearchItem {
   const search = queryOf(row);
   return {
     id: row.id,
@@ -58,6 +62,7 @@ const sameAs = (search: MatchQuery) => {
 
 /** Save this search (spec 2.4): refused when the account has the same search already, or 20 of them. */
 export async function addSavedSearch(accountId: string, search: MatchQuery, now: Date): Promise<AddResult> {
+  if (onSupabase()) return (await import("./supabase/saved-searches")).addSavedSearch(accountId, search, now);
   const mine = searchesOf(accountId);
   if (mine.some(sameAs(search))) return "already";
   if (mine.length >= SAVED_SEARCH_LIMIT) return "limit";
@@ -80,6 +85,7 @@ export async function addSavedSearch(accountId: string, search: MatchQuery, now:
 
 /** The browse row's state (spec 2.6): this search saved already, the account at 20, or new. */
 export async function getSaveSearchState(accountId: string, search: MatchQuery): Promise<SaveSearchState> {
+  if (onSupabase()) return (await import("./supabase/saved-searches")).getSaveSearchState(accountId, search);
   const mine = searchesOf(accountId);
   if (mine.some(sameAs(search))) return "saved";
   return mine.length >= SAVED_SEARCH_LIMIT ? "limit" : "new";
@@ -87,6 +93,7 @@ export async function getSaveSearchState(accountId: string, search: MatchQuery):
 
 /** Saved's Searches tab (spec 2.7): the account's saved searches, newest first, with their labels and links. */
 export async function listSavedSearches(accountId: string): Promise<SavedSearchItem[]> {
+  if (onSupabase()) return (await import("./supabase/saved-searches")).listSavedSearches(accountId);
   return searchesOf(accountId).map(toItem);
 }
 
@@ -100,6 +107,7 @@ export async function setSavedSearchPaused(
   paused: boolean,
   now: Date,
 ): Promise<SavedSearchItem | null> {
+  if (onSupabase()) return (await import("./supabase/saved-searches")).setSavedSearchPaused(accountId, id, paused, now);
   const row = sampleStore().savedSearches.get(id);
   if (!row || row.accountId !== accountId) return null;
   row.pausedAt = paused ? (row.pausedAt ?? now.toISOString()) : null;
@@ -108,6 +116,7 @@ export async function setSavedSearchPaused(
 
 /** Delete (spec 2.8): the search and its notifications go. What it was, for the status line; null when not theirs. */
 export async function deleteSavedSearch(accountId: string, id: string): Promise<SavedSearchItem | null> {
+  if (onSupabase()) return (await import("./supabase/saved-searches")).deleteSavedSearch(accountId, id);
   const { savedSearches } = sampleStore();
   const row = savedSearches.get(id);
   if (!row || row.accountId !== accountId) return null;
@@ -124,6 +133,7 @@ export async function deleteSavedSearch(accountId: string, id: string): Promise<
  * shop's) tells no one. How many accounts it told.
  */
 export async function notifySavedSearches({ listingId, now }: { listingId: string; now: Date }): Promise<number> {
+  if (onSupabase()) return (await import("./supabase/saved-searches")).notifySavedSearches({ listingId, now });
   const { listings, sellers, savedSearches } = sampleStore();
   const row = listings.get(listingId);
   const shop = row ? sellers.get(row.sellerSlug) : undefined;
@@ -151,6 +161,7 @@ export async function notifySavedSearches({ listingId, now }: { listingId: strin
 
 /** Deleting an account (spec 2.15, plan decision 15): its saved searches and their notifications. */
 export async function forgetSavedSearchesOf(accountId: string): Promise<void> {
+  if (onSupabase()) return (await import("./supabase/saved-searches")).forgetSavedSearchesOf(accountId);
   const { savedSearches } = sampleStore();
   const ids = new Set<string>();
   for (const [id, row] of savedSearches) {
@@ -176,8 +187,9 @@ export type SavedSearchExport = {
   savedAt: string;
 };
 
-export async function exportSavedSearches(accountId: string): Promise<SavedSearchExport[]> {
-  return searchesOf(accountId).map((row) => ({
+/** A saved search in the download, by name (shared with the Supabase twin). */
+export function searchExport(row: SavedSearchRow): SavedSearchExport {
+  return {
     label: savedSearchLabel(queryOf(row), NAMES),
     words: row.q,
     category: row.category ? (NAMES.categories.get(row.category) ?? row.category) : null,
@@ -187,5 +199,10 @@ export async function exportSavedSearches(accountId: string): Promise<SavedSearc
     deals: row.deals ? DEALS_LABEL : null,
     alerts: row.pausedAt === null ? "on" : "paused",
     savedAt: row.createdAt,
-  }));
+  };
+}
+
+export async function exportSavedSearches(accountId: string): Promise<SavedSearchExport[]> {
+  if (onSupabase()) return (await import("./supabase/saved-searches")).exportSavedSearches(accountId);
+  return searchesOf(accountId).map(searchExport);
 }

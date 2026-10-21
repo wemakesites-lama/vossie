@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { onSupabase } from "@/lib/backend";
 import { FOLLOW_LIMIT } from "@/lib/following/rules";
 import type { FollowedShop } from "@/lib/types";
 import { listedListings, shopStatus, storefrontRow, toSeller } from "./catalog";
@@ -8,7 +9,8 @@ import { sampleStore } from "./store";
 
 // Following shops (community actions spec 2.15 to 2.19 and 2.23; plan decisions 15, 17 and 21). A follow is the
 // account, the shop's slug and when; F's moveShop keeps the slug up to date. A shop only ever sees how many follow it.
-// Times come from the caller; only Server Actions call addFollow, which makes ids.
+// Times come from the caller; only Server Actions call addFollow, which makes ids. On Supabase each is
+// lib/data/supabase/follows.ts's (C4/C5 plan Task 7).
 
 export type FollowResult = "followed" | "already" | "own" | "limit" | "not-found";
 
@@ -25,6 +27,7 @@ function followsOf(sellerSlug: string): FollowRow[] {
 
 /** Follow (spec 2.15): a shop with a storefront, never the account's own, at most 200. */
 export async function addFollow(accountId: string, sellerSlug: string, now: Date): Promise<FollowResult> {
+  if (onSupabase()) return (await import("./supabase/follows")).addFollow(accountId, sellerSlug, now);
   const shop = storefrontRow(sellerSlug);
   if (!shop) return "not-found";
   if (shop.ownerId === accountId) return "own";
@@ -38,6 +41,7 @@ export async function addFollow(accountId: string, sellerSlug: string, now: Date
 
 /** Unfollow: true when there was a follow to remove. */
 export async function removeFollow(accountId: string, sellerSlug: string): Promise<boolean> {
+  if (onSupabase()) return (await import("./supabase/follows")).removeFollow(accountId, sellerSlug);
   const { follows } = sampleStore();
   for (const [id, row] of follows) {
     if (row.accountId === accountId && row.sellerSlug === sellerSlug) {
@@ -49,6 +53,7 @@ export async function removeFollow(accountId: string, sellerSlug: string): Promi
 }
 
 export async function isFollowing(accountId: string, sellerSlug: string): Promise<boolean> {
+  if (onSupabase()) return (await import("./supabase/follows")).isFollowing(accountId, sellerSlug);
   return followsBy(accountId).some((row) => row.sellerSlug === sellerSlug);
 }
 
@@ -60,6 +65,7 @@ export async function isFollowing(accountId: string, sellerSlug: string): Promis
  * follow, so it isn't.
  */
 export async function listFollowedShops(accountId: string): Promise<FollowedShop[]> {
+  if (onSupabase()) return (await import("./supabase/follows")).listFollowedShops(accountId);
   const listed = new Map<string, number>();
   for (const listing of listedListings()) listed.set(listing.sellerSlug, (listed.get(listing.sellerSlug) ?? 0) + 1);
   const { sellers } = sampleStore();
@@ -84,11 +90,13 @@ export async function listFollowedShops(accountId: string): Promise<FollowedShop
 
 /** A shop's name for a status line, whether or not its storefront is up (a shop the Hub paused still has a name). */
 export async function shopNameOf(sellerSlug: string): Promise<string | null> {
+  if (onSupabase()) return (await import("./supabase/follows")).shopNameOf(sellerSlug);
   return sampleStore().sellers.get(sellerSlug)?.name ?? null;
 }
 
 /** How many follow the shop: its dashboard's number (spec 2.18). Never who. */
 export async function countFollowers(sellerSlug: string): Promise<number> {
+  if (onSupabase()) return (await import("./supabase/follows")).countFollowers(sellerSlug);
   return followsOf(sellerSlug).length;
 }
 
@@ -107,6 +115,7 @@ export async function notifyFollowers({
   listing: { id: string; title: string };
   now: Date;
 }): Promise<number> {
+  if (onSupabase()) return (await import("./supabase/follows")).notifyFollowers({ sellerSlug, shopName, listing, now });
   const followers = followsOf(sellerSlug);
   for (const follow of followers) {
     await notifyNewListing({ accountId: follow.accountId, sellerSlug, shopName, listing, now });
@@ -119,6 +128,7 @@ export async function notifyFollowers({
  * followers' new-listing notifications. Call it before F's forgetShopOf, while the shops still name their owner.
  */
 export async function forgetFollowsOf(accountId: string): Promise<void> {
+  if (onSupabase()) return (await import("./supabase/follows")).forgetFollowsOf(accountId);
   const store = sampleStore();
   const shops = new Set([...store.sellers.values()].filter((row) => row.ownerId === accountId).map((row) => row.slug));
   for (const [id, row] of store.follows) {
@@ -129,6 +139,7 @@ export async function forgetFollowsOf(accountId: string): Promise<void> {
 
 /** The shops the account follows, by name, newest first, for its data export (plan decision 21). No ids. */
 export async function exportFollowing(accountId: string): Promise<string[]> {
+  if (onSupabase()) return (await import("./supabase/follows")).exportFollowing(accountId);
   const { sellers } = sampleStore();
   return followsBy(accountId).flatMap((row) => {
     const name = sellers.get(row.sellerSlug)?.name;

@@ -1,16 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resetSampleStore } from "@/lib/data/store";
-import { redirectOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
+import { Refused } from "@/lib/data/refused";
+import type { Account } from "@/lib/types";
+import { redirectOf, RedirectSignal, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { signedInAs, STAFF_NOW } from "@/tests/helpers/staff";
-import { requireStaff, staffMetadata } from "./access";
+import { orNotFound, requireStaff, requireStaffAction, staffMetadata } from "./access";
 
 const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
 
 vi.mock("next/headers", async () => (await import("@/tests/helpers/next-request")).nextHeaders(request));
 vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
+// The live re-check (phase B's requireLiveAccount) is the real one, unless a test stands in for Supabase's answer.
+const live = vi.hoisted(() => ({ check: null as null | ((nextPath: string) => Promise<Account>) }));
+vi.mock("@/lib/auth/session", async (original) => {
+  const session = await original<typeof import("@/lib/auth/session")>();
+  return {
+    ...session,
+    requireLiveAccount: (nextPath: string) => (live.check ? live.check(nextPath) : session.requireLiveAccount(nextPath)),
+  };
+});
 
 beforeEach(() => {
+  live.check = null;
   resetSampleStore();
   resetRequest(request);
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -43,5 +55,46 @@ describe("the staff gate (staff tools spec 2.1, plan decision 1)", () => {
     expect(await staffMetadata("admin", "Reports")).toEqual({ title: "Page not found", robots });
     await signedInAs(request, "acc-admin");
     expect(await staffMetadata("admin", "Reports")).toEqual({ title: "Reports", robots });
+  });
+});
+
+describe("a staff action's first line (C4/C5 plan decision 4)", () => {
+  it("sends a signed-out visitor to sign in", async () => {
+    expect(await redirectOf(() => requireStaffAction("admin", "/admin/reports"))).toBe("/login?next=%2Fadmin%2Freports");
+  });
+
+  it("gives a student the 404", async () => {
+    await signedInAs(request, "acc-student");
+    await expect(requireStaffAction("admin", "/admin")).rejects.toThrow("notFound");
+  });
+
+  it("gives an admin their account", async () => {
+    await signedInAs(request, "acc-admin");
+    expect((await requireStaffAction("admin", "/admin")).id).toBe("acc-admin");
+  });
+
+  it("re-checks the session first: a session Supabase has ended goes to sign in before any role is looked at", async () => {
+    await signedInAs(request, "acc-student");
+    live.check = async (nextPath) => {
+      throw new RedirectSignal(`/login?next=${encodeURIComponent(nextPath)}`, undefined);
+    };
+    expect(await redirectOf(() => requireStaffAction("admin", "/admin"))).toBe("/login?next=%2Fadmin");
+  });
+});
+
+describe("orNotFound (C4/C5 plan decision 4)", () => {
+  it("passes a staff function's answer through", async () => {
+    expect(await orNotFound(Promise.resolve("changed"))).toBe("changed");
+  });
+
+  it("turns the database's forbidden (the role went after the check) into the 404", async () => {
+    await expect(orNotFound(Promise.reject(new Refused("forbidden")))).rejects.toThrow("notFound");
+  });
+
+  it("and rethrows anything else, another refusal and a redirect included", async () => {
+    const own = new Refused("own-shop");
+    await expect(orNotFound(Promise.reject(own))).rejects.toBe(own);
+    const redirect = new RedirectSignal("/", "replace");
+    await expect(orNotFound(Promise.reject(redirect))).rejects.toBe(redirect);
   });
 });

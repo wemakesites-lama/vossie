@@ -935,6 +935,13 @@ isOneToOne: false
       referencedColumns: ["slug"]
     }
                   ]
+                },"staff_accounts": {
+                  Row: {
+                    "campus_slug": string | null,"email": string | null,"first_name": string | null,"id": string | null,"roles": (string)[] | null
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"staff_hub_posts": {
                   Row: {
                     "author_id": string | null,"body": string | null,"campus_slug": string | null,"capacity": number | null,"cover_photo_id": string | null,"created_at": string | null,"going": number | null,"id": string | null,"image_alt": string | null,"image_src": string | null,"kind": string | null,"place": string | null,"published": boolean | null,"published_at": string | null,"starts_at": string | null,"summary": string | null,"title": string | null,"updated_at": string | null
@@ -1201,6 +1208,11 @@ isOneToOne: false
                            },
 "show_request":
 { Args: { "p_request": string }; Returns: string
+                           },
+"staff_find_account":
+{ Args: { "p_email": string }; Returns: {
+              "first_name": string,"id": string,"roles": (string)[]
+            }[]
                            },
 "staff_pause_shop":
 { Args: { "p_reason": string,"p_shop": string }; Returns: string

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { connection } from "next/server";
 import { getSessionKey } from "@/lib/auth/session";
+import { onSupabase } from "@/lib/backend";
 import { getFormState, saveFormState, takeFormState } from "@/lib/data/form-states";
 import type { FormStateRow } from "@/lib/data/rows";
 
@@ -52,6 +53,15 @@ export async function sentOnceToken(token: string, now: Date): Promise<OnceSent 
   const state = await getFormState(sessionKey, onceForm(token), now);
   return state ? sentFrom(state) : null;
 }
+
+/**
+ * Whether the action's database function takes the token itself, in the same transaction as its write (C4/C5 plan
+ * decision 6): on Supabase, save_request, save_hub_post, add_mentor_note, add_check_in and give_role do, so their
+ * actions pass the token instead of calling takeOnceToken, and read the function's once-taken or once-expired refusal
+ * as takeOnceToken's "again" or "none". Every other token (save this search, a new listing) is taken through
+ * takeOnceToken on both backends: on Supabase its takeFormState is take_form_state.
+ */
+export const tokenTakenInSql = (): boolean => onSupabase();
 
 export type Once =
   /** Yours: make the thing, then say where it went with `leaveOnceToken`. */
