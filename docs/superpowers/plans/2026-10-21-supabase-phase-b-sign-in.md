@@ -167,7 +167,7 @@ export function isSampleMode(env: Env = process.env): boolean {
 
 ## Task 2: Migration `…_sign_in_phase_b.sql`
 
-**Files:** `supabase/migrations/<timestamp after 2b's last, 20261021120700_public_reads.sql>_sign_in_phase_b.sql`, `supabase/tests/32_sign_in_phase_b.test.sql` (2b's plan takes 24 to 31; recheck at Task 0), `lib/supabase/database.types.ts` (regenerated).
+**Files:** `supabase/migrations/<timestamp after 2b's last, 20261021120700_public_reads.sql>_sign_in_phase_b.sql`, `supabase/tests/36_sign_in_phase_b.test.sql` (2b's plan takes 24 to 31; recheck at Task 0), `lib/supabase/database.types.ts` (regenerated).
 
 **pgTAP first**, then the migration. Run `supabase test db` and see the new file fail.
 
@@ -965,7 +965,7 @@ Checked against the worktree at `04aa943` (`@supabase/ssr` 0.12.7, `@supabase/au
 
 13. **Task 6 test helper (fixed in the text):** `unstable_doesMiddlewareMatch` from `next/experimental/testing/server`. The docs' `unstable_doesProxyMatch` isn't in the installed build.
 
-14. **File numbers and the backend reader (fixed in the text):** the migration goes after `20261021120700_public_reads.sql`, the pgTAP file is `32_sign_in_phase_b.test.sql`, and `lib/auth/config.ts` reads `backend()` from C0's `lib/backend.ts`.
+14. **File numbers and the backend reader (fixed in the text):** the migration goes after `20261021120700_public_reads.sql`, the pgTAP file is `36_sign_in_phase_b.test.sql`, and `lib/auth/config.ts` reads `backend()` from C0's `lib/backend.ts`.
 
 15. **The default domains.** The sibling plan (its decision 12) changes `emailDomains()`'s default to `["eduvos.com", "vossie.net"]` (`DEFAULT_EMAIL_DOMAINS`). Task 10's `.env.example` line "keeps `eduvos.com` as the code default" follows that instead. `VOSSIE_EMAIL_DOMAINS` in Vercel becomes optional. Keep setting it to the same value, as a belt-and-braces measure.
 
@@ -996,3 +996,8 @@ Checked against the worktree at `04aa943` (`@supabase/ssr` 0.12.7, `@supabase/au
    - **Template (A5):** unchanged. The From name is "Vossie"; the body says the code came from Vossie and that you can ignore it if you didn't ask, so a `wemakesites.co.za` address isn't mistaken for phishing.
    - **Tests:** unchanged; local runs use Mailpit. No code depends on the provider.
    - **Risks:** a new domain's first sends may land in Junk until it builds a reputation (the DMARC record helps); the free plan's daily cap; the sender being a domain unrelated to Eduvos, which the template's wording addresses.
+
+### The controller's notes (2026-10-21, after the C4/C5 review)
+- **Numbering across the plans (C4/C5 amendment 2):** phase B's migration is `20261021130000_sign_in_phase_b.sql` and its pgTAP files are 36 to 39 (`36_sign_in_phase_b.test.sql`, renamed in the text above). Step 2b/C1 owns `20261021120900`–`…129900` and pgTAP 33–35; C2/C3 `20261022…` and 40–49; C4/C5 `20261023…` and 50–59; step 5 `20261024…` and 60+.
+- **Shared helpers:** C2/C3's plan adds `viewerId()` in `lib/data/supabase/clients.ts`, `forViewerAs()` in `lib/data/supabase/viewer.ts` and a `Refused` error class (`refused.ts`). Phase B lands first, so it creates `forViewer()` with those shapes in mind and records what it built under "Changes made during the build", for C2–C5 to reuse.
+- **Programme order:** C1 Tasks 18–20 → phase B → C2/C3 → C4/C5 → step 5.
