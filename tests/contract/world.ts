@@ -97,7 +97,8 @@ export interface World {
   /**
    * In cleanup, removes what this account's selling made during the test, through the data layer or the verbs: a shop
    * it didn't have before (its listings, pickup points and seller profile with it), its wizard draft, and the photos it
-   * stored, rows and files. "hub": the Hub's photos (C2/C3 plan Task 5).
+   * stored, rows and files. "hub": the Hub's photos the test stored, rows and files, and never another session's file
+   * (C2/C3 plan Task 5; fix 4 of the review after C2 and C3).
    */
   tidySelling(owner: WorldAccountName | "hub"): Promise<void>;
   /** Makes a stored photo, by its address, `hours` old (C2/C3 plan Task 5). */
@@ -128,6 +129,11 @@ export interface World {
   markDone(conversationId: string, completedAt: Date): Promise<void>;
   /** The conversation's seller has deleted their account (C2/C3 plan Task 14): nobody answers for the shop there. */
   sellerGone(conversationId: string): Promise<void>;
+  /**
+   * The shop's owner has deleted their account and the shop has gone with it: the conversation is the seller's no
+   * more, and its shop row is gone (fix 7 of the review after C2 and C3).
+   */
+  shopGone(conversationId: string): Promise<void>;
   /** The conversation's buyer has deleted their account (C2/C3 plan Task 14). */
   buyerGone(conversationId: string): Promise<void>;
   /** Hides a request, as the Hub's Hide does (C2/C3 plan Task 14). */

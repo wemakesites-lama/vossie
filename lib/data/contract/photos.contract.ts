@@ -31,7 +31,8 @@ export function photosContract(makeWorld: () => World): void {
     expect(srcs).toHaveLength(1);
     expect(srcs[0]).toMatch(/^\/photos\//);
     expect(await world.asViewer("seller", (seller) => photoSrcsOf(seller, null, now))).toEqual(new Set(srcs));
-    expect(await photoFor(idOf(srcs[0]), nobody, now)).toEqual({ type: "image/jpeg", bytes: jpegBytes() });
+    // Everyone's, so /photos/[id] lets a shared cache keep it for an hour (fix 2 of the review after C2 and C3).
+    expect(await photoFor(idOf(srcs[0]), nobody, now)).toEqual({ type: "image/jpeg", bytes: jpegBytes(), forEveryone: true });
   });
 
   it("keeps an account's newest 12 waiting photos", async () => {
@@ -55,7 +56,8 @@ export function photosContract(makeWorld: () => World): void {
     const [src] = await world.asViewer("staff", () => storePhotos("hub", [png()], now));
     expect(await world.asViewer("staff", () => photoSrcsOf("hub", null, now))).toEqual(new Set([src]));
     const staff = await world.signedIn("staff");
-    expect(await photoFor(idOf(src), async () => ({ id: staff, hubStaff: true }), now)).toEqual({
+    // Whether it's everyone's differs: the Hub-staff rule is Supabase's only (photos.db.test.ts).
+    expect(await photoFor(idOf(src), async () => ({ id: staff, hubStaff: true }), now)).toMatchObject({
       type: "image/png",
       bytes: pngBytes(),
     });
@@ -90,13 +92,15 @@ export function photosContract(makeWorld: () => World): void {
     ))!;
     const id = idOf(src);
     const asked = async () => ({ id: await world.signedIn("shopper"), hubStaff: false });
-    expect(await photoFor(id, asked, now)).not.toBeNull();
+    expect(await photoFor(id, asked, now)).toMatchObject({ forEveryone: true });
     await world.hideListing(listing.id, "Not allowed.");
     expect(await photoFor(id, nobody, now)).toBeNull();
     expect(await photoFor(id, asked, now)).toBeNull();
+    // Its owner's only, so no shared cache may keep it (fix 2).
     expect(await photoFor(id, async () => ({ id: seller, hubStaff: false }), now)).toEqual({
       type: "image/jpeg",
       bytes: jpegBytes(),
+      forEveryone: false,
     });
   });
 }

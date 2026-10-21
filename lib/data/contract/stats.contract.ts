@@ -1,9 +1,11 @@
+import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { getSeller, getSellerSlugs } from "@/lib/data";
-import { recalculateBadges } from "@/lib/data/badges";
+import { recalculateBadgeFor, recalculateBadges } from "@/lib/data/badges";
+import { saveOwnListing } from "@/lib/data/own-listings";
 import { recentCounts, shopStats } from "@/lib/data/shop-stats";
 import type { TrustBadge } from "@/lib/types";
-import type { World } from "@/tests/contract/world";
+import type { World, WorldAccountName } from "@/tests/contract/world";
 
 // A shop's numbers and the trust badges in both backends (2b plan Task 19; staff tools spec 2.7, selling spec 2.8):
 // counted from the shop's conversations by the trust page's rules, and a badge worked out only for a shop an account
@@ -53,5 +55,62 @@ export function statsContract(makeWorld: () => World): void {
     expect(after.get("tech-corner")).toBe("new-seller");
     for (const [slug, badge] of before) if (slug !== "tech-corner") expect(after.get(slug), slug).toBe(badge);
     expect(await recalculateBadges(now)).toEqual([]);
+  });
+
+  it("works out the badge of the shop a conversation is with, as after a reply or a sale (fix 8)", async () => {
+    await world.tidySelling("seller");
+    await world.tidyMessaging();
+    const seller = await world.signedIn("seller");
+    const slug = await world.openShop("seller", { name: "Contract badge shop" });
+    const listing = await world.asViewer("seller", () =>
+      saveOwnListing({
+        sellerSlug: slug,
+        ownerId: seller,
+        id: null,
+        fields: {
+          kind: "service",
+          title: "Contract tutoring",
+          categorySlug: "tutoring",
+          condition: null,
+          priceZar: 100,
+          priceIsFrom: true,
+          payMode: "cash",
+          swapFor: null,
+          description: "Tutoring the contract tests list.",
+          handover: "online",
+          pickupPointId: null,
+        },
+        photos: [],
+        intent: "publish",
+        now: new Date(),
+      }),
+    );
+    const hour = 60 * 60 * 1000;
+    /** An enquiry `daysAgo` days ago, answered within the hour. */
+    const answered = (buyer: WorldAccountName, daysAgo: number) => {
+      const asked = new Date(Date.now() - daysAgo * 24 * hour);
+      return world.addConversation({
+        buyer,
+        slug,
+        listingId: listing!.id,
+        messages: [
+          { side: "buyer", body: "Is it still on offer?", sentAt: asked, readAt: asked },
+          { side: "seller", body: "It is.", sentAt: new Date(asked.getTime() + hour) },
+        ],
+      });
+    };
+    const now = new Date();
+    const first = await answered("shopper", 5);
+    // One enquiry isn't enough for Responsive (the trust page's rules), so nothing changes.
+    expect(await recalculateBadgeFor(first, now)).toBe(false);
+    await answered("asker", 4);
+    const third = await answered("staff", 3);
+    expect(await recalculateBadgeFor(third, now)).toBe(true);
+    expect((await getSeller(slug))?.badge).toBe("responsive");
+    expect(await recalculateBadgeFor(third, now)).toBe(false);
+    expect(await recalculateBadgeFor(randomUUID(), now)).toBe(false);
+    // A conversation whose shop has gone is no shop's to work out.
+    await world.shopGone(first);
+    expect(await recalculateBadgeFor(first, now)).toBe(false);
   });
 }

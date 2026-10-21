@@ -4,11 +4,13 @@ import { isPhotoId, photoFor } from "@/lib/data/photos";
 import { canUse } from "@/lib/staff/roles";
 
 /**
- * A stored photo (selling spec 2.4): its stripped bytes with their real type. A photo never changes once stored and
- * its id is random, so the device that asked may keep it for a year; pages show it resized through next/image (plan
- * decision 12). The cache header says `private`, so no shared cache or CDN keeps a photo after its listing or account
- * is deleted (amendment 9.4). On Supabase the route stays and Storage holds the files (spec section 6): photoFor asks
- * the database who may see each photo (C2/C3 plan decision 11).
+ * A stored photo (selling spec 2.4): its stripped bytes with their real type. Pages show it resized through next/image
+ * (plan decision 12), whose optimizer fetches it without cookies and keeps the resized copy for the larger of this
+ * max-age and next.config.ts's minimumCacheTTL. So a photo that's everyone's may be kept an hour by any cache, and a
+ * photo resized before its listing was hidden or deleted stops being served within about an hour (fix 2 of the review
+ * after C2 and C3; amendment 9.4). A photo only its owner or Hub staff may see is never kept by a shared cache. On
+ * Supabase the route stays and Storage holds the files (spec section 6): photoFor asks the database who may see each
+ * photo (C2/C3 plan decision 11).
  */
 export async function GET(_request: Request, { params }: RouteContext<"/photos/[id]">): Promise<Response> {
   // Per request, always: the store changes, so nothing here may be prerendered. The clock is read after it, because
@@ -27,7 +29,7 @@ export async function GET(_request: Request, { params }: RouteContext<"/photos/[
     headers: {
       "Content-Type": photo.type,
       "Content-Length": String(photo.bytes.byteLength),
-      "Cache-Control": "private, max-age=31536000, immutable",
+      "Cache-Control": photo.forEveryone ? "public, max-age=3600" : "private, no-store",
     },
   });
 }

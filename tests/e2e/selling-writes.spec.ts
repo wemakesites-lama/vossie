@@ -22,12 +22,15 @@ const photoAddresses = (page: Page) =>
     .locator('main input[name="photo"]')
     .evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value));
 
-/** What /photos/… sends (amendments 8.10, 9.4 and 9.8): its real type, no sniffing, a cache only the device keeps. */
+/**
+ * What /photos/… sends (amendments 8.10, 9.4 and 9.8): its real type, no sniffing, and an hour in any cache (fix 2 of
+ * the review after C2 and C3).
+ */
 function expectServedPhoto(photo: APIResponse, type: string) {
   expect(photo.status()).toBe(200);
   expect(photo.headers()["content-type"]).toBe(type);
   expect(photo.headers()["x-content-type-options"]).toBe("nosniff");
-  expect(photo.headers()["cache-control"]).toBe("private, max-age=31536000, immutable");
+  expect(photo.headers()["cache-control"]).toBe("public, max-age=3600");
 }
 
 test("a new listing with a photo shows in browse, on its page and on the storefront straight away", async ({

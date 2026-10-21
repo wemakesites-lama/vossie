@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as clients from "@/lib/data/supabase/clients";
 import { photoFor, photoIdOf, storePhotos, type PhotoViewer, type Upload } from "@/lib/data/photos";
@@ -104,16 +105,30 @@ describe("photos in Storage (C2/C3 plan decisions 11 to 14)", () => {
       storePhotos("hub", [png(), png(), png()], new Date()),
     );
     for (const viewer of [nobody, student]) expect(await photoFor(idOf(waiting), viewer, new Date())).toBeNull();
-    expect(await photoFor(idOf(waiting), hubStaff, new Date())).not.toBeNull();
+    // Hub staff's only, so no shared cache may keep it (fix 2 of the review after C2 and C3).
+    expect(await photoFor(idOf(waiting), hubStaff, new Date())).toMatchObject({ forEveryone: false });
 
     await world.addHubPost({ published: false, coverSrc: draftCover });
     for (const viewer of [nobody, student]) expect(await photoFor(idOf(draftCover), viewer, new Date())).toBeNull();
-    expect(await photoFor(idOf(draftCover), hubStaff, new Date())).not.toBeNull();
+    expect(await photoFor(idOf(draftCover), hubStaff, new Date())).toMatchObject({ forEveryone: false });
 
     await world.addHubPost({ published: true, coverSrc: liveCover });
     const asked = vi.fn(nobody);
-    expect(await photoFor(idOf(liveCover), asked, new Date())).not.toBeNull();
+    expect(await photoFor(idOf(liveCover), asked, new Date())).toMatchObject({ forEveryone: true });
     expect(asked).not.toHaveBeenCalled();
+  });
+
+  it("tidies away only the Hub files of the photos a test made, never another session's (fix 4)", async () => {
+    // A file under hub/ that no row names yet: another session's upload in flight, as far as this test can tell.
+    const stray = `hub/${randomUUID()}`;
+    await world.orphanFile(stray, 0);
+    const inner = supabaseWorld();
+    await inner.tidySelling("hub");
+    const [cover] = await inner.asViewer("staff", () => storePhotos("hub", [png()], new Date()));
+    await inner.cleanup();
+    expect(await world.fileExists(`hub/${idOf(cover)}`)).toBe(false);
+    expect((await world.admin.from("photos").select("id").eq("id", idOf(cover))).data).toEqual([]);
+    expect(await world.fileExists(stray)).toBe(true);
   });
 
   it("removes no files for no paths, and logs a Storage failure with its status and count only", async () => {

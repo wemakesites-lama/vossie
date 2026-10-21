@@ -105,7 +105,7 @@ describe("a photo for /photos/[id] (C2/C3 plan decision 11)", () => {
   it("is anyone's, without asking who is looking, unless it's a hidden listing's", async () => {
     const [src] = await storePhotos("acc-seller", [upload()], NOW);
     const viewer = vi.fn(nobody);
-    expect(await photoFor(photoIdOf(src)!, viewer, NOW)).toEqual({ type: "image/png", bytes: pngBytes() });
+    expect(await photoFor(photoIdOf(src)!, viewer, NOW)).toEqual({ type: "image/png", bytes: pngBytes(), forEveryone: true });
     expect(viewer).not.toHaveBeenCalled();
   });
 
@@ -120,7 +120,11 @@ describe("a photo for /photos/[id] (C2/C3 plan decision 11)", () => {
     const id = photoIdOf(src)!;
     expect(await photoFor(id, nobody, NOW)).toBeNull();
     expect(await photoFor(id, async () => ({ id: "acc-student", hubStaff: true }), NOW)).toBeNull();
-    expect(await photoFor(id, async () => ({ id: "acc-seller", hubStaff: false }), NOW)).not.toBeNull();
+    expect(await photoFor(id, async () => ({ id: "acc-seller", hubStaff: false }), NOW)).toEqual({
+      type: "image/png",
+      bytes: pngBytes(),
+      forEveryone: false,
+    });
   });
 
   it("is null for a waiting photo a day old, an unknown id and a bare uuid the sample never made", async () => {

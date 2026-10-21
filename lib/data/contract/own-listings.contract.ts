@@ -88,7 +88,11 @@ export function ownListingsContract(makeWorld: () => World): void {
     expect(saved.createdAt).toBe(saved.firstPublishedAt);
     expect(saved).not.toHaveProperty("hiddenAt");
     expect(await as("seller", () => photoSrcsOf(seller, null, new Date()))).toEqual(new Set());
-    expect(await photoFor(photoIdOf(photo)!, nobody, new Date())).toEqual({ type: "image/jpeg", bytes: jpegBytes() });
+    expect(await photoFor(photoIdOf(photo)!, nobody, new Date())).toEqual({
+      type: "image/jpeg",
+      bytes: jpegBytes(),
+      forEveryone: true,
+    });
   });
 
   it("moves a draft's created time to its first publish, and keeps that time when it's published again", async () => {

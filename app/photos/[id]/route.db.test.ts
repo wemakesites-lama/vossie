@@ -8,7 +8,8 @@ import { supabaseWorld, type SupabaseWorld } from "@/tests/db/supabase-world";
 import { GET } from "./route";
 
 // /photos/[id] on the local stack (C2/C3 plan Task 6, decision 11): the file from Storage with its real type, length
-// and a year's private cache, or a 404 nothing keeps for a photo that isn't there, has run out, or isn't the viewer's.
+// and an hour in any cache for a photo that's everyone's, or none in a shared cache for one that isn't (fix 2 of the
+// review after C2 and C3), or a 404 nothing keeps for a photo that isn't there, has run out, or isn't the viewer's.
 vi.mock("@/lib/data/supabase/clients", async (original) => (await import("@/tests/db/viewer")).withViewerSeam(await original()));
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
 vi.mock("@/lib/auth/session", () => ({ getViewer: vi.fn(async () => null) }));
@@ -69,14 +70,14 @@ describe("/photos/[id] on the local stack (C2/C3 plan Task 6)", () => {
     return saved!.id;
   }
 
-  it("serves a stored listing photo's bytes with their type and length, for the device to keep a year", async () => {
+  it("serves a stored listing photo's bytes with their type and length, for any cache to keep an hour (fix 2)", async () => {
     const [src] = await world.asViewer("seller", () => storePhotos(seller, [jpeg()], new Date()));
     await listingWith(src);
     const response = await get(photoIdOf(src)!);
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("image/jpeg");
     expect(response.headers.get("Content-Length")).toBe(String(jpegBytes().byteLength));
-    expect(response.headers.get("Cache-Control")).toBe("private, max-age=31536000, immutable");
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=3600");
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(jpegBytes());
     expect(getViewer).not.toHaveBeenCalled();
   });
@@ -89,7 +90,7 @@ describe("/photos/[id] on the local stack (C2/C3 plan Task 6)", () => {
     await expectGone(photoIdOf(src)!);
   });
 
-  it("serves a hidden listing's photo to its owner only, still private", async () => {
+  it("serves a hidden listing's photo to its owner only, for no shared cache to keep (fix 2)", async () => {
     const [src] = await world.asViewer("seller", () => storePhotos(seller, [jpeg()], new Date()));
     await world.hideListing(await listingWith(src), "Not allowed.");
     await expectGone(photoIdOf(src)!);
@@ -98,15 +99,17 @@ describe("/photos/[id] on the local stack (C2/C3 plan Task 6)", () => {
     vi.mocked(getViewer).mockResolvedValue(account(seller));
     const owner = await get(photoIdOf(src)!);
     expect(owner.status).toBe(200);
-    expect(owner.headers.get("Cache-Control")).toBe("private, max-age=31536000, immutable");
+    expect(owner.headers.get("Cache-Control")).toBe("private, no-store");
   });
 
-  it("keeps the Hub's waiting cover for Hub staff", async () => {
+  it("keeps the Hub's waiting cover for Hub staff, for no shared cache to keep (fix 2)", async () => {
     const [cover] = await world.asViewer("staff", () => storePhotos("hub", [png()], new Date()));
     await expectGone(photoIdOf(cover)!);
     vi.mocked(getViewer).mockResolvedValue(account(seller));
     await expectGone(photoIdOf(cover)!);
     vi.mocked(getViewer).mockResolvedValue(account(await world.signedIn("staff"), ["mentor"]));
-    expect((await get(photoIdOf(cover)!)).status).toBe(200);
+    const staff = await get(photoIdOf(cover)!);
+    expect(staff.status).toBe(200);
+    expect(staff.headers.get("Cache-Control")).toBe("private, no-store");
   });
 });

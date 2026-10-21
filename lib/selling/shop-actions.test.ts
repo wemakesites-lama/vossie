@@ -5,7 +5,15 @@ import { hashToken } from "@/lib/auth/secrets";
 import { getPhoto, photoIdOf } from "@/lib/data/photos";
 import { createSession } from "@/lib/data/sessions";
 import { Refused } from "@/lib/data/refused";
-import { createShop, emptyDraft, getOnboardingDraft, getShopOf, saveOnboardingDraft, updateShop } from "@/lib/data/shops";
+import {
+  changeShopSlug,
+  createShop,
+  emptyDraft,
+  getOnboardingDraft,
+  getShopOf,
+  saveOnboardingDraft,
+  updateShop,
+} from "@/lib/data/shops";
 import { declineShop } from "@/lib/data/staff-shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { KEEP_MAX } from "@/lib/messaging/rules";
@@ -27,10 +35,11 @@ vi.mock("next/headers", async () => (await import("@/tests/helpers/next-request"
 vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
 vi.mock("next/cache", async () => (await import("@/tests/helpers/next-request")).nextCache(request));
-// updateShop as it is, so a test can make it meet a race refusal, as the Supabase twin may (C2/C3 plan amendment 9).
+// updateShop and changeShopSlug as they are, so a test can make them meet a race, as the Supabase twins may (C2/C3 plan
+// amendment 9, and fix 1 of the review after C2 and C3).
 vi.mock("@/lib/data/shops", async (original) => {
   const shops = await original<typeof import("@/lib/data/shops")>();
-  return { ...shops, updateShop: vi.fn(shops.updateShop) };
+  return { ...shops, updateShop: vi.fn(shops.updateShop), changeShopSlug: vi.fn(shops.changeShopSlug) };
 });
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
@@ -363,6 +372,37 @@ describe("a race the database refuses (C2/C3 plan amendment 9)", () => {
     await signedInAs("acc-seller");
     vi.mocked(updateShop).mockRejectedValueOnce(new Error("down"));
     await expect(saveShopProfile(profile())).rejects.toThrow("down");
+  });
+
+  it("says the link is taken when it went between the check and the change, keeping the details it saved (fix 1)", async () => {
+    for (const answer of ["taken", "used"] as const) {
+      resetSampleStore();
+      resetRequest(request);
+      await signedInAs("acc-seller");
+      vi.mocked(changeShopSlug).mockResolvedValueOnce(answer);
+      const redirect = await redirectSignalOf(() => saveShopProfile(profile({ tagline: "Raced.", slug: "gadgets" })));
+      expect([redirect.url, redirect.type, request.refreshed], answer).toEqual(["/sell/profile", "replace", true]);
+      expect(await readFormState(PROFILE_FORM), answer).toMatchObject({
+        errors: ["slug-taken"],
+        values: { name: "Tech corner", tagline: "Raced.", slug: "gadgets", campus: "midrand" },
+        notice: null,
+      });
+      // The rest of the profile was saved before the link was tried, so buyers' cached shop pages refresh.
+      expect((await getShopOf("acc-seller"))?.shop, answer).toMatchObject({ tagline: "Raced.", slug: "tech-corner" });
+      expect(request.updatedTags, answer).toEqual(["sellers"]);
+    }
+  });
+
+  it("says the shop was saved when the link changed, or was the same", async () => {
+    for (const answer of ["changed", "same"] as const) {
+      resetSampleStore();
+      resetRequest(request);
+      await signedInAs("acc-seller");
+      vi.mocked(changeShopSlug).mockResolvedValueOnce(answer);
+      await redirectOf(() => saveShopProfile(profile({ slug: "gadgets" })));
+      expect((await readFormState(PROFILE_FORM))?.notice, answer).toBe("shop-saved");
+      expect(request.updatedTags, answer).toEqual(["sellers"]);
+    }
   });
 });
 

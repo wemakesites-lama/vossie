@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
     // or its account must not be served again. Browsers still keep what they're sent. Only uploaded photos are
     // resized; the SVG placeholders never are.
     maximumDiskCacheSize: 0,
+    // A resized photo is kept for the larger of this and the photo's own max-age, which /photos/[id] sets to an hour
+    // for a photo that's everyone's, so a hidden or deleted listing's photo stops being served within about an hour
+    // (fix 2 of the review after C2 and C3). The default is 4 hours.
+    minimumCacheTTL: 3600,
   },
   // The old category and campus pages are now browse views (browse and listing spec 3.1). Temporary (307), so either
   // can get its own page later, such as a campus home. A redirect keeps the request's own query as well.
@@ -52,9 +56,11 @@ const nextConfig: NextConfig = {
     // threshold effect (0 to 5000 merges; 7500 and above, including the default 200000, doesn't), so it can shrink
     // as the code changes: performance.spec.ts is the guard. Don't add firstPageLoadPriority here: it cancels it.
     turbopackChunking: { requestCost: 1000 },
-    // Listing photos reach Server Actions as plain form posts: without the app's JavaScript, up to 6 photos of 5 MB
-    // each, plus the form (selling spec 2.3). The limit counts the multipart overhead too.
-    serverActions: { bodySizeLimit: "32mb" },
+    // Photos reach Server Actions as plain form posts. Vercel refuses a body over 4.5 MB before the action runs, so a
+    // listing's new photos come to 4 MiB at most (lib/photos/rules.ts), and a shop photo or a Hub cover is one photo of
+    // 4 MB at most; with the form's text and the multipart overhead, 5 MB holds every form (fix 3 of the review after
+    // C2 and C3; next.config.test.ts).
+    serverActions: { bodySizeLimit: "5mb" },
   },
 };
 

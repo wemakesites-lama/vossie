@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getPickupPoints } from "@/lib/data";
+import * as clients from "@/lib/data/supabase/clients";
 import { photoIdOf, storePhotos, type Upload } from "@/lib/data/photos";
 import { isRefused } from "@/lib/data/refused";
 import {
@@ -51,6 +52,7 @@ describe("the shop twins on the local stack (C2/C3 plan decisions 2, 6 and 21)",
     };
   });
   afterEach(async () => {
+    vi.restoreAllMocks();
     await world.cleanup();
   });
 
@@ -100,6 +102,23 @@ describe("the shop twins on the local stack (C2/C3 plan decisions 2, 6 and 21)",
     await world.asViewer("seller", () => updateShop(seller, { ...details, image: null }, new Date()));
     expect(await world.fileExists(`${seller}/${photoIdOf(next)}`)).toBe(false);
     expect((await world.asViewer("seller", () => getShopOf(seller)))?.shop.image).toBeNull();
+  });
+
+  it("saves no draft once the account has a shop, and throws on an answer it doesn't know, as updateShop does (fix 5)", async () => {
+    const draft = { ...emptyDraft(seller, "pretoria", new Date()), name: "Contract draft" };
+    await world.openShop("seller", { status: "pending" });
+    await world.asViewer("seller", () => saveOnboardingDraft(draft));
+    expect(await world.asViewer("seller", () => getOnboardingDraft(seller))).toBeNull();
+
+    const real = clients.forViewer;
+    vi.spyOn(clients, "forViewer").mockImplementation(async () => {
+      const db = await real();
+      db.rpc = (async () => ({ data: { result: "something-new" }, error: null })) as unknown as typeof db.rpc;
+      return db;
+    });
+    await expect(world.asViewer("seller", () => saveOnboardingDraft(draft))).rejects.toThrow(
+      "save_onboarding_draft answered something-new",
+    );
   });
 
   it("saves a draft without a waiting photo that has run out, and a forged sample address as no photo (amendment 10)", async () => {

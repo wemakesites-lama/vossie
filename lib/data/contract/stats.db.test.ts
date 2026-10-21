@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { onSupabase } from "@/lib/backend";
 import { recalculateBadges } from "@/lib/data/badges";
 import { recentCounts, shopStats } from "@/lib/data/shop-stats";
@@ -7,6 +7,9 @@ import { testAdminClient } from "@/tests/db/accounts";
 import { parity } from "@/tests/db/parity";
 import { type SupabaseWorld, supabaseWorld } from "@/tests/db/supabase-world";
 import { statsContract } from "./stats.contract";
+
+// The badge scenario saves its shop's listing as the seller (fix 8 of the review after C2 and C3).
+vi.mock("@/lib/data/supabase/clients", async (original) => (await import("@/tests/db/viewer")).withViewerSeam(await original()));
 
 // Shop stats and badges on the local stack (2b plan Task 19): the behaviour contract, the numbers giving the sample
 // store's answers on the seed's conversations, and the badges the database holds after recalculating being the ones

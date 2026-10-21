@@ -31,14 +31,14 @@ beforeEach(() => {
 const photo = { type: "image/png" as const, bytes: pngBytes() };
 
 describe("a stored photo (selling spec 2.4)", () => {
-  it("serves the stripped bytes with their real type, for the device that asked to keep a year", async () => {
+  it("serves the stripped bytes with their real type, for any cache to keep an hour (fix 2 of the review after C2 and C3)", async () => {
     const [src] = await storePhotos("acc-seller", [photo], NOW);
     const response = await get(src.split("/").at(-1)!);
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("image/png");
-    // "private": a phone keeps the bytes, but no shared cache or CDN keeps a photo after its listing is deleted
-    // (amendment 9.4).
-    expect(response.headers.get("Cache-Control")).toBe("private, max-age=31536000, immutable");
+    // An hour, in any cache: Vercel's image optimizer keeps a resized copy no longer than this and next.config.ts's
+    // minimumCacheTTL, so a photo resized before its listing was hidden or deleted stops being served within the hour.
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=3600");
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(pngBytes());
   });
 
@@ -52,7 +52,7 @@ describe("a stored photo (selling spec 2.4)", () => {
     expect((await get(photoIdOf(used)!)).status).toBe(200);
   });
 
-  it("serves a hidden listing's photos to its owner only, still private (amendment 13.5)", async () => {
+  it("serves a hidden listing's photos to its owner only, for no shared cache to keep (amendment 13.5, fix 2)", async () => {
     const [src] = await storePhotos("acc-seller", [photo], NOW);
     await attachPhotos("acc-seller", [src], "listing:l-001");
     const id = photoIdOf(src)!;
@@ -68,7 +68,7 @@ describe("a stored photo (selling spec 2.4)", () => {
     await signedInAs(request, "acc-seller");
     const owner = await get(id);
     expect(owner.status).toBe(200);
-    expect(owner.headers.get("Cache-Control")).toBe("private, max-age=31536000, immutable");
+    expect(owner.headers.get("Cache-Control")).toBe("private, no-store");
   });
 
   it("is a 404 that nothing keeps for an unknown or made-up id", async () => {

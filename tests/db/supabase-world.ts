@@ -52,7 +52,7 @@ export function supabaseWorld(): SupabaseWorld {
     if (shop.error) throw new Error(`No shop ${slug}: ${shop.error.message}`);
     return shop.data.id;
   }
-  /** Every file in the bucket under `folder` (an account's id, or "hub"), as paths. */
+  /** Every file in the bucket under `folder` (an account's id), as paths. */
   async function filesUnder(folder: string): Promise<string[]> {
     const paths: string[] = [];
     for (let offset = 0; ; offset += 1_000) {
@@ -262,7 +262,6 @@ export function supabaseWorld(): SupabaseWorld {
     async tidySelling(owner) {
       const hub = owner === "hub";
       const accountId = hub ? null : await this.signedIn(owner as WorldAccountName);
-      const folder = accountId ?? "hub";
       const photosOf = () => {
         const query = admin.from("photos").select("id, path");
         return accountId ? query.eq("owner_id", accountId) : query.is("owner_id", null);
@@ -299,8 +298,15 @@ export function supabaseWorld(): SupabaseWorld {
           const gone = await admin.from("photos").delete().in("id", made.map((row) => row.id));
           if (gone.error) throw new Error(gone.error.message);
         }
-        const named = new Set(after.data.filter((row) => kept.has(row.id)).map((row) => row.path));
-        await removeFiles((await filesUnder(folder)).filter((path) => !named.has(path)));
+        if (accountId) {
+          // The account's folder is the contract account's own: any file no kept row names is the test's.
+          const named = new Set(after.data.filter((row) => kept.has(row.id)).map((row) => row.path));
+          await removeFiles((await filesUnder(accountId)).filter((path) => !named.has(path)));
+        } else {
+          // hub/ is every session's: only the files of the rows this test made go, never a file another session is
+          // uploading before its row is in (fix 4 of the review after C2 and C3).
+          await removeFiles(made.map((row) => row.path));
+        }
       });
     },
     async ageWaitingPhoto(src, hours) {
@@ -552,6 +558,17 @@ export function supabaseWorld(): SupabaseWorld {
     },
     async sellerGone(conversationId) {
       const gone = await admin.from("conversations").update({ seller_gone: true }).eq("id", conversationId).select("id");
+      if (gone.error) throw new Error(gone.error.message);
+      if (gone.data.length !== 1) throw new Error(`No conversation ${conversationId}`);
+    },
+    async shopGone(conversationId) {
+      // As forget_account leaves it: the shop row's deletion sets shop_id null (on delete set null). The shop itself is
+      // the test's, and tidySelling takes it away.
+      const gone = await admin
+        .from("conversations")
+        .update({ seller_gone: true, shop_id: null })
+        .eq("id", conversationId)
+        .select("id");
       if (gone.error) throw new Error(gone.error.message);
       if (gone.data.length !== 1) throw new Error(`No conversation ${conversationId}`);
     },

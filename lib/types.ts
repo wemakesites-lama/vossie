@@ -347,6 +347,7 @@ export type NotificationKind =
 
 /** The shop a conversation is with, as a thread shows it. `image` and `campusSlug` are null once the shop has gone. */
 export type ConversationShop = {
+  /** "" once the shop has gone ("A closed shop"): nothing links to it (fix 7 of the review after C2 and C3). */
   slug: string;
   name: string;
   image: ImageRef | null;

@@ -92,12 +92,13 @@ function buyerName(row: ConversationRow): string {
 /**
  * The shop a conversation is with. A shop the Hub paused has no storefront, so no seller to read through the cache, but
  * its row is there with its name and photo: it is the same shop in every thread (plan amendment 19.3). Only a shop whose
- * row has gone is "A closed shop".
+ * row has gone is "A closed shop", with no link (slug ""), as on Supabase, whose conversation no longer names it: its old
+ * link would 404, or one day lead to another shop (fix 7 of the review after C2 and C3).
  */
 async function shopOf(sellerSlug: string): Promise<ConversationShop> {
   const row = sampleStore().sellers.get(sellerSlug);
   const seller = (await getSeller(sellerSlug)) ?? (row ? toSeller(row) : null);
-  if (!seller) return { slug: sellerSlug, name: CLOSED_SHOP, image: null, campusSlug: null };
+  if (!seller) return { slug: "", name: CLOSED_SHOP, image: null, campusSlug: null };
   return { slug: seller.slug, name: seller.name, image: seller.image, campusSlug: seller.campusSlug };
 }
 

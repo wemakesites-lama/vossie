@@ -205,6 +205,10 @@ export const saveOnboardingDraft: typeof Sample.saveOnboardingDraft = async (dra
   let answer = await save(photoId);
   // A waiting photo that ran out (a day old) is gone: the draft is saved without it, never with a dead address.
   if (answer.result === "photo-invalid") answer = await save(null);
+  // An account with a shop has no wizard to keep (the action sends it to /sell); anything else is a bug, not a form
+  // error (fix 5 of the review after C2 and C3, as updateShop).
+  if (answer.result === "has-shop") return;
+  if (answer.result !== "saved") throw new Error(`save_onboarding_draft answered ${answer.result}`);
   await removePhotoFiles(answer.removed_paths ?? []);
 };
 

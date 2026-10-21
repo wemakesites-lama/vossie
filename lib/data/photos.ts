@@ -97,6 +97,13 @@ export function isHiddenFrom(id: string, viewerId: string | null): boolean {
 export type PhotoViewer = { id: string; hubStaff: boolean };
 
 /**
+ * A photo /photos/[id] serves: its type and bytes, and whether it's everyone's. One that isn't (a hidden listing's, for
+ * its owner; on Supabase a Hub cover not yet out, for Hub staff) is never kept by a shared cache (fix 2 of the review
+ * after C2 and C3).
+ */
+export type ServedPhoto = Pick<PhotoRow, "type" | "bytes"> & { forEveryone: boolean };
+
+/**
  * A photo for /photos/[id] (C2/C3 plan decision 11), or null: getPhoto's, unless it belongs to a listing the Hub hid
  * and the viewer isn't its owner (staff tools amendment 13.5). `viewer` is asked only when the photo isn't everyone's,
  * so most photos cost no session read. On Supabase the database also keeps the Hub's waiting covers and covers of
@@ -106,12 +113,13 @@ export async function photoFor(
   id: string,
   viewer: () => Promise<PhotoViewer | null>,
   now: Date,
-): Promise<Pick<PhotoRow, "type" | "bytes"> | null> {
+): Promise<ServedPhoto | null> {
   if (onSupabase()) return (await supabase()).photoFor(id, viewer, now);
   const photo = await getPhoto(id, now);
   if (!photo) return null;
-  if (isHiddenFrom(id, null) && isHiddenFrom(id, (await viewer())?.id ?? null)) return null;
-  return photo;
+  if (!isHiddenFrom(id, null)) return { ...photo, forEveryone: true };
+  if (isHiddenFrom(id, (await viewer())?.id ?? null)) return null;
+  return { ...photo, forEveryone: false };
 }
 
 /**

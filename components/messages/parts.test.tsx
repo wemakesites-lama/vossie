@@ -36,6 +36,13 @@ describe("MessageSummary (messaging spec 3.1 and 3.3)", () => {
     expect(screen.getByRole("link", { name: "Tech corner" })).toHaveAttribute("href", "/sellers/tech-corner");
     expect(screen.getByText("A question for the shop · Midrand")).toBeInTheDocument();
   });
+
+  it("names a shop that has gone without a link, so no stale link leads to a missing page (fix 7)", () => {
+    render(<MessageSummary listing={null} listingTitle={null} shop={{ slug: "", name: "A closed shop", image: null }} campusName="Midrand" />);
+    expect(screen.getByText("A closed shop")).not.toHaveAttribute("href");
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.getByText("A question for the shop · Midrand")).toBeInTheDocument();
+  });
 });
 
 describe("SafetyTips (messaging spec 2.3)", () => {

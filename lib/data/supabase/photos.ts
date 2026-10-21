@@ -161,14 +161,15 @@ export const photoFor: typeof Sample.photoFor = async (id, viewer) => {
   const { data, error } = await forServer().rpc("photo_file", { p_photo: id }).maybeSingle();
   if (error) failed("photo_file", error);
   if (!data) return null;
-  if (data.owner_only || data.hub_only) {
+  const forEveryone = !data.owner_only && !data.hub_only;
+  if (!forEveryone) {
     const who = await viewer();
     if (data.owner_only && who?.id !== data.owner_only) return null;
     if (data.hub_only && !who?.hubStaff) return null;
   }
   const file = await forServer().storage.from(BUCKET).download(data.path);
   if (file.error) return null;
-  return { type: data.type as PhotoType, bytes: new Uint8Array(await file.data.arrayBuffer()) };
+  return { type: data.type as PhotoType, bytes: new Uint8Array(await file.data.arrayBuffer()), forEveryone };
 };
 
 export const photoSrcsOf: typeof Sample.photoSrcsOf = async (ownerId, use, now) => {

@@ -9,9 +9,8 @@ import { sampleStore } from "./store";
 // out: the 28 sample shops no account owns have no conversations in the store, so they keep their sample badges.
 // There's no scheduler: Overview runs it for every shop, and a reply or a confirmed sale for its shop. The nightly
 // job is a go-live item. Writing the badge doesn't expire the cache: the caller does that, when it can.
-// It reads the same rows as the dashboard, through shopStats (amendment 11), so the two agree. On Supabase
-// (2b plan Task 19), recalculateBadges is the twin's; recalculateBadgeFor stays here with messaging's conversations
-// until C3.
+// It reads the same rows as the dashboard, through shopStats (amendment 11), so the two agree. On Supabase both are
+// the twin's (2b plan Task 19; fix 8 of the review after C2 and C3), by the same rule, which a contract checks.
 
 async function recalculate(slug: string, now: Date): Promise<boolean> {
   const store = sampleStore();
@@ -36,6 +35,7 @@ export async function recalculateBadges(now: Date): Promise<string[]> {
 
 /** The badge of the shop a conversation is with (after a reply or a confirmed sale). True when it changed. */
 export async function recalculateBadgeFor(conversationId: string, now: Date): Promise<boolean> {
+  if (onSupabase()) return (await import("./supabase/badges")).recalculateBadgeFor(conversationId, now);
   const conversation = sampleStore().conversations.get(conversationId);
   return conversation ? recalculate(conversation.sellerSlug, now) : false;
 }

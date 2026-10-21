@@ -294,6 +294,14 @@ export function sampleWorld(): World {
       if (!row) throw new Error(`No conversation ${conversationId}`);
       row.sellerGone = true;
     },
+    async shopGone(conversationId) {
+      const store = sampleStore();
+      const row = store.conversations.get(conversationId);
+      if (!row) throw new Error(`No conversation ${conversationId}`);
+      row.sellerGone = true;
+      // As forgetShopOf leaves it: the shop's row is gone, and the conversation keeps only its old link.
+      store.sellers.delete(row.sellerSlug);
+    },
     async buyerGone(conversationId) {
       const row = sampleStore().conversations.get(conversationId);
       if (!row) throw new Error(`No conversation ${conversationId}`);

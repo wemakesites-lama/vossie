@@ -11,6 +11,7 @@ import {
 } from "@/lib/data/messages";
 import { getNotifications } from "@/lib/data/notifications";
 import { saveOwnListing } from "@/lib/data/own-listings";
+import { CLOSED_SHOP } from "@/lib/data/offers";
 import { offerAbout, UNNAMED_ASKER } from "@/lib/looking-for/words";
 import { threadPath } from "@/lib/messaging/paths";
 import { autoConfirmAt } from "@/lib/messaging/rules";
@@ -146,6 +147,17 @@ export function messagesReadContract(makeWorld: () => World): void {
     expect(inbox[0]).toMatchObject({ id, otherName: SHOP });
     const thread = await world.asViewer("shopper", (account) => getThread(id, account, new Date()));
     expect(thread).toMatchObject({ otherName: SHOP, shop: { slug, name: SHOP } });
+  });
+
+  it("gives a shop that has gone no link: 'A closed shop' with no photo, in both backends (fix 7)", async () => {
+    const id = await question();
+    await world.shopGone(id);
+    const thread = await world.asViewer("shopper", (account) => getThread(id, account, new Date()));
+    expect(thread).toMatchObject({
+      otherName: "Deleted account",
+      otherPresent: false,
+      shop: { slug: "", name: CLOSED_SHOP, image: null, campusSlug: null },
+    });
   });
 
   it("opens a thread only for its two sides: messages oldest first, with who wrote each", async () => {

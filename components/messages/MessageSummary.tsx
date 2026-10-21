@@ -9,6 +9,7 @@ type MessageSummaryProps = {
   listing: Listing | null;
   /** The listing's title when the conversation started, for one that has gone (selling spec 9). */
   listingTitle: string | null;
+  /** The shop; its slug is "" once it has gone ("A closed shop"), and its name is then shown without a link. */
   shop: { slug: string; name: string; image: ImageRef | null };
   campusName: string;
   /** Anything to show at the end of the card, such as the thread's status pill. */
@@ -42,9 +43,13 @@ export function MessageSummary({ listing, listingTitle, shop, campusName, childr
   } else {
     text = (
       <>
-        <Link href={`/sellers/${shop.slug}`} prefetch={false} className="msg-summary-title">
-          {shop.name}
-        </Link>
+        {shop.slug ? (
+          <Link href={`/sellers/${shop.slug}`} prefetch={false} className="msg-summary-title">
+            {shop.name}
+          </Link>
+        ) : (
+          <p className="msg-summary-title">{shop.name}</p>
+        )}
         <p className="msg-summary-meta">{`A question for the shop · ${campusName}`}</p>
       </>
     );

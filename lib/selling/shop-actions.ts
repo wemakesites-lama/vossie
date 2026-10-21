@@ -286,8 +286,14 @@ export async function saveShopProfile(formData: FormData): Promise<void> {
     await writeFormState(PROFILE_FORM, { errors: [error], values, notice: null }, now);
     done(PROFILE_PATH);
   }
-  if (changeSlug) await changeShopSlug(owner.account.id, slug.value, now);
+  const moved = changeSlug ? await changeShopSlug(owner.account.id, slug.value, now) : null;
   sellersChanged();
+  if (moved === "taken" || moved === "used") {
+    // Another shop took the link, or this one used its change, between the check and here (fix 1 of the review after C2
+    // and C3). The rest is saved already, so buyers' pages refresh; the link's field says so, with what was typed.
+    await writeFormState(PROFILE_FORM, { errors: ["slug-taken"], values, notice: null }, now);
+    done(PROFILE_PATH);
+  }
   await writeFormState(PROFILE_FORM, { errors: [], values: {}, notice: "shop-saved" }, now);
   done(PROFILE_PATH);
 }
