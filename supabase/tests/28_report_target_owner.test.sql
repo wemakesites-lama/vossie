@@ -30,12 +30,25 @@ $f$;
 create function pg_temp.owner(kind text, target text) returns uuid language sql as $f$
   select r.target_owner_id from public.reports r where r.id = pg_temp.rep(kind, target);
 $f$;
+-- What of account n's own the report is about, as account n sees it (the one-argument report_own_kind reads the session:
+-- the 2b review's fix, 20261021120800_review_fixes_2b.sql).
+create function pg_temp.own(n text, report uuid) returns text language plpgsql as $f$
+declare
+  got text;
+begin
+  perform set_config('request.jwt.claims', json_build_object('sub', pg_temp.a(n), 'role', 'authenticated')::text, true);
+  got := private.report_own_kind(report);
+  perform set_config('request.jwt.claims', '', true);
+  return got;
+end;
+$f$;
 grant execute on all functions in schema pg_temp to public;
 
 insert into public.campuses (slug, name, region, sort) values ('to-campus', 'Owner campus', 'Gauteng', 98);
 insert into public.categories (slug, name, sort) values ('to-category', 'Owner category', 99);
 -- d1 Lerato, an admin with an open shop; d2 Zola, an admin who asks; d3 Thandi reports; d4 Adam, an admin who owns
--- nothing; d5 Sipho, whose new shop took the link of a shop that has gone. d0 is a sample shop no account owns.
+-- nothing; d5 Sipho, an admin whose new shop took the link of a shop that has gone (an admin, since report_own_kind
+-- answers only an admin: the 2b review). d0 is a sample shop no account owns.
 insert into auth.users (id, email)
 select pg_temp.a(n), 'to-' || n || '@eduvos.com' from unnest(array['d1', 'd2', 'd3', 'd4', 'd5']) n;
 insert into public.profiles (id, first_name, campus_slug, roles) values
@@ -43,7 +56,7 @@ insert into public.profiles (id, first_name, campus_slug, roles) values
   (pg_temp.a('d2'), 'Zola', 'to-campus', '{admin}'),
   (pg_temp.a('d3'), 'Thandi', 'to-campus', '{}'),
   (pg_temp.a('d4'), 'Adam', 'to-campus', '{admin}'),
-  (pg_temp.a('d5'), 'Sipho', 'to-campus', '{}');
+  (pg_temp.a('d5'), 'Sipho', 'to-campus', '{admin}');
 insert into public.shops (id, slug, owner_id, name, category_slug, campus_slug, since) values
   (pg_temp.s('d1'), 'to-lerato', pg_temp.a('d1'), 'Lerato crafts', 'to-category', 'to-campus', '2026-01'),
   (pg_temp.s('d5'), 'to-old', pg_temp.a('d5'), 'Sipho prints', 'to-category', 'to-campus', '2026-01'),
@@ -120,9 +133,9 @@ select ok(
 );
 select is(
   array[
-    has_function_privilege('anon', 'private.report_own_kind(uuid, uuid)', 'execute'),
-    has_function_privilege('authenticated', 'private.report_own_kind(uuid, uuid)', 'execute'),
-    has_function_privilege('service_role', 'private.report_own_kind(uuid, uuid)', 'execute')
+    has_function_privilege('anon', 'private.report_own_kind(uuid)', 'execute'),
+    has_function_privilege('authenticated', 'private.report_own_kind(uuid)', 'execute'),
+    has_function_privilege('service_role', 'private.report_own_kind(uuid)', 'execute')
   ],
   array[false, true, true],
   'the view''s caller runs report_own_kind (amendment 6); anon never'
@@ -130,25 +143,25 @@ select is(
 
 -- --- report_own_kind: the target exists ----------------------------------------------------------------------------
 
-select is(private.report_own_kind(pg_temp.rep('seller', 'to-lerato'), pg_temp.a('d1')), 'shop', 'Lerato''s own shop is shop');
-select is(private.report_own_kind(pg_temp.rep('listing', 'to-l1'), pg_temp.a('d1')), 'listing', 'a listing of it is listing');
-select is(private.report_own_kind(pg_temp.rep('request', 'to-r1'), pg_temp.a('d2')), 'request', 'Zola''s own request is request');
+select is(pg_temp.own('d1', pg_temp.rep('seller', 'to-lerato')), 'shop', 'Lerato''s own shop is shop');
+select is(pg_temp.own('d1', pg_temp.rep('listing', 'to-l1')), 'listing', 'a listing of it is listing');
+select is(pg_temp.own('d2', pg_temp.rep('request', 'to-r1')), 'request', 'Zola''s own request is request');
 select is(
   array[
-    private.report_own_kind(pg_temp.rep('listing', 'to-l1'), pg_temp.a('d4')),
-    private.report_own_kind(pg_temp.rep('seller', 'to-lerato'), pg_temp.a('d2')),
-    private.report_own_kind(pg_temp.rep('request', 'to-r1'), pg_temp.a('d1'))
+    pg_temp.own('d4', pg_temp.rep('listing', 'to-l1')),
+    pg_temp.own('d2', pg_temp.rep('seller', 'to-lerato')),
+    pg_temp.own('d1', pg_temp.rep('request', 'to-r1'))
   ],
   array[null, null, null]::text[],
   'someone else''s is null'
 );
 update public.listings set hidden_at = now(), hidden_reason = 'Rude.' where id = 'to-l1';
-select is(private.report_own_kind(pg_temp.rep('listing', 'to-l1'), pg_temp.a('d1')), 'listing', 'a hidden listing still exists, and is still hers');
+select is(pg_temp.own('d1', pg_temp.rep('listing', 'to-l1')), 'listing', 'a hidden listing still exists, and is still hers');
 select is(
   array[
-    private.report_own_kind(pg_temp.rep('seller', 'to-sample'), pg_temp.a('d1')),
-    private.report_own_kind(pg_temp.rep('listing', 'to-l3'), pg_temp.a('d1')),
-    private.report_own_kind(pg_temp.rep('request', 'to-r3'), pg_temp.a('d2'))
+    pg_temp.own('d1', pg_temp.rep('seller', 'to-sample')),
+    pg_temp.own('d1', pg_temp.rep('listing', 'to-l3')),
+    pg_temp.own('d2', pg_temp.rep('request', 'to-r3'))
   ],
   array[null, null, null]::text[],
   'a sample target is nobody''s'
@@ -157,7 +170,7 @@ select is(
 insert into public.reports (reporter_id, target_kind, target_id, target_title, reason, target_owner_id)
 values (pg_temp.a('d4'), 'listing', 'to-l3', 'Sample lamp', 'spam', pg_temp.a('d1'));
 select is(
-  private.report_own_kind((select r.id from public.reports r where r.reporter_id = pg_temp.a('d4')), pg_temp.a('d1')),
+  pg_temp.own('d1', (select r.id from public.reports r where r.reporter_id = pg_temp.a('d4'))),
   null,
   'while the target exists, its owner now decides, never the recorded one'
 );
@@ -165,18 +178,18 @@ select is(
 -- --- report_own_kind: the target has gone ----------------------------------------------------------------------------
 
 delete from public.listings where id = 'to-l2';
-select is(private.report_own_kind(pg_temp.rep('listing', 'to-l2'), pg_temp.a('d1')), 'listing', 'a deleted listing stays its owner''s');
+select is(pg_temp.own('d1', pg_temp.rep('listing', 'to-l2')), 'listing', 'a deleted listing stays its owner''s');
 delete from public.requests where id = 'to-r2';
-select is(private.report_own_kind(pg_temp.rep('request', 'to-r2'), pg_temp.a('d2')), 'request', 'a deleted request stays its asker''s');
+select is(pg_temp.own('d2', pg_temp.rep('request', 'to-r2')), 'request', 'a deleted request stays its asker''s');
 insert into public.reports (reporter_id, target_kind, target_id, target_title, reason, target_gone, target_owner_id)
 values (pg_temp.a('d3'), 'seller', 'to-old', 'An older shop', 'spam', true, pg_temp.a('d1'));
 select is(
-  private.report_own_kind((select r.id from public.reports r where r.target_id = 'to-old'), pg_temp.a('d1')),
+  pg_temp.own('d1', (select r.id from public.reports r where r.target_id = 'to-old')),
   'shop',
   'a report about a shop that has gone is its old owner''s shop'
 );
 select is(
-  private.report_own_kind((select r.id from public.reports r where r.target_id = 'to-old'), pg_temp.a('d5')),
+  pg_temp.own('d5', (select r.id from public.reports r where r.target_id = 'to-old')),
   null,
   'even when a new shop has taken the link: not the new owner''s'
 );
