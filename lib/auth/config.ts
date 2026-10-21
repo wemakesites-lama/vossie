@@ -1,3 +1,5 @@
+import { onSupabase } from "@/lib/backend";
+
 // Sign-in settings (accounts spec 2.1 to 2.7 and section 5). Plain values and functions: safe anywhere on the server.
 
 /** The privacy policy version a student agrees to at sign-in (spec 2.7). Change it when the policy changes. */
@@ -22,7 +24,7 @@ export const ATTEMPT_TTL_MS = 30 * 60 * 1000;
  * that post; the attempt itself lasts 30 minutes, and a later visit starts clean.
  */
 export const SIGN_IN_ERRORS_SHOW_MS = 60 * 1000;
-/** A session lasts 30 days (spec 2.5). */
+/** A session lasts 30 days (spec 2.5). On Supabase, the cookie's lifetime and the idle job's window (phase B decision 3). */
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 /** A signed-in form's errors or notice last 10 minutes (plan decision 3). */
 export const FORM_STATE_TTL_MS = 10 * 60 * 1000;
@@ -31,9 +33,18 @@ export const FLASH_TTL_SECONDS = 60;
 
 type Env = Readonly<Record<string, string | undefined>>;
 
-/** Sample mode (spec 2.1): on unless VOSSIE_SAMPLE_MODE is "0". */
+/** How this server signs people in: the sample store, Supabase Auth, or not at all (Supabase phase B decision 1). */
+export type SignInMode = "sample" | "supabase" | "off";
+
+/** Supabase whenever VOSSIE_BACKEND says so (lib/backend.ts), whatever VOSSIE_SAMPLE_MODE says; else sample unless it's "0". */
+export function signInMode(env: Env = process.env): SignInMode {
+  if (onSupabase(env)) return "supabase";
+  return env.VOSSIE_SAMPLE_MODE !== "0" ? "sample" : "off";
+}
+
+/** Sample mode (spec 2.1): the sample backend with VOSSIE_SAMPLE_MODE not "0". Never on Supabase (stage K amendment 7). */
 export function isSampleMode(env: Env = process.env): boolean {
-  return env.VOSSIE_SAMPLE_MODE !== "0";
+  return signInMode(env) === "sample";
 }
 
 /**

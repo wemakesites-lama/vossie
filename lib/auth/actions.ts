@@ -4,7 +4,7 @@ import { redirect, RedirectType } from "next/navigation";
 import { getCampuses } from "@/lib/data";
 import { updateAccountDetails } from "@/lib/data/accounts";
 import type { SignInError } from "@/lib/data/rows";
-import { isSampleMode } from "./config";
+import { signInMode } from "./config";
 import { checkEmail, normaliseEmail } from "./email";
 import { DETAILS_FORM, writeFormState } from "./form-state";
 import { checkCampus, checkFirstName } from "./profile";
@@ -31,7 +31,7 @@ function backToSignIn(next: string | null): never {
  */
 export async function startSignIn(formData: FormData): Promise<void> {
   const next = nextFrom(formData);
-  if (!isSampleMode()) backToSignIn(next);
+  if (signInMode() === "off") backToSignIn(next);
   const now = new Date();
   const email = normaliseEmail(text(formData, "email"));
   const consented = text(formData, "consent") === "yes";
@@ -46,8 +46,11 @@ export async function startSignIn(formData: FormData): Promise<void> {
     consentedAt: consented ? now.toISOString() : null,
   });
   if (errors.length === 0) {
-    if (await sendCode(attempt, now)) attempt.step = "code";
-    else attempt.errors = ["email-rate"];
+    // On Supabase a refusal (a code less than a minute ago, the network's limit, the domain hook, a failed send) stays
+    // on step 1 with its words, so the visitor can try again (Supabase phase B decision 6).
+    const error = await sendCode(attempt, now);
+    if (error === null) attempt.step = "code";
+    else attempt.errors = [error];
   }
   await saveAfterPost(attempt, now);
   backToSignIn(next);
@@ -57,11 +60,12 @@ export async function startSignIn(formData: FormData): Promise<void> {
 export async function resendCode(formData: FormData): Promise<void> {
   const next = nextFrom(formData);
   const now = new Date();
-  const attempt = isSampleMode() ? await currentAttempt(now) : null;
+  const attempt = await currentAttempt(now);
   if (!attempt || attempt.step !== "code") backToSignIn(next);
-  const sent = await sendCode(attempt, now);
-  attempt.resent = sent;
-  attempt.errors = sent ? [] : ["code-rate"];
+  const error = await sendCode(attempt, now);
+  attempt.resent = error === null;
+  // The hour's codes used up is code-rate on step 2, as before; Supabase's refusals keep their own words.
+  attempt.errors = error === null ? [] : [error === "email-rate" ? "code-rate" : error];
   await saveAfterPost(attempt, now);
   backToSignIn(next);
 }

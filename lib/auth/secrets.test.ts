@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -16,10 +17,11 @@ afterEach(() => {
 });
 
 /** A fresh copy of the module, so authKey() reads the environment as this test sets it (plan decision 18). */
-async function fresh(env: { key?: string; sampleMode?: "0" }) {
+async function fresh(env: { key?: string; sampleMode?: "0"; backend?: "supabase" }) {
   vi.resetModules();
   vi.stubEnv("VOSSIE_AUTH_HMAC_KEY", env.key);
   if (env.sampleMode) vi.stubEnv("VOSSIE_SAMPLE_MODE", env.sampleMode);
+  if (env.backend) vi.stubEnv("VOSSIE_BACKEND", env.backend);
   return import("./secrets");
 }
 
@@ -68,6 +70,23 @@ describe("keyed hashes (stage K spec 5)", () => {
   it("refuses to hash with no key when sample mode is off", async () => {
     const { hashToken } = await fresh({ key: undefined, sampleMode: "0" });
     expect(() => hashToken("abc")).toThrow("VOSSIE_AUTH_HMAC_KEY must be set when sample mode is off.");
+  });
+
+  it("refuses the development key on Supabase, whatever VOSSIE_SAMPLE_MODE says, and logs nothing (stage K amendment 7)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { hashToken } = await fresh({ key: undefined, backend: "supabase" });
+    expect(() => hashToken("abc")).toThrow("VOSSIE_AUTH_HMAC_KEY must be set when sample mode is off.");
+    vi.stubEnv("VOSSIE_SAMPLE_MODE", "1");
+    expect(() => hashToken("abc")).toThrow("VOSSIE_AUTH_HMAC_KEY must be set when sample mode is off.");
+    expect(warn).not.toHaveBeenCalled();
+    expect(error).not.toHaveBeenCalled();
+  });
+
+  it("hashes with a 44-character key on Supabase, the token: prefix unchanged", async () => {
+    const key = "q".repeat(43) + "=";
+    const { hashToken } = await fresh({ key, backend: "supabase" });
+    expect(hashToken("t")).toBe(createHmac("sha256", key).update("token:t").digest("hex"));
   });
 
   it("reads nothing when imported, so a build without the key can't fail (spec decision 14)", async () => {

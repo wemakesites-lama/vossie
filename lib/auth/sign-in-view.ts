@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import { ALL_CAMPUSES, CAMPUS_COOKIE, parseCampusChoice } from "@/lib/campus";
 import { getCampuses } from "@/lib/data";
 import { getSampleEmail, getSignInAttempt } from "@/lib/data/sign-in";
-import { isSampleMode, SIGN_IN_ERRORS_SHOW_MS } from "./config";
+import { SIGN_IN_ERRORS_SHOW_MS, signInMode } from "./config";
 import { readCookieValue, SIGN_IN_COOKIE } from "./cookies";
 import { maskEmail } from "./email";
 import { formErrors, SIGN_IN_FIELDS, type FormError } from "./messages";
@@ -23,7 +23,9 @@ export type SignInView =
  * decision 3). Request-time: call it inside <Suspense>.
  */
 export async function getSignInView(): Promise<SignInView> {
-  if (!isSampleMode()) return { step: "unavailable" };
+  const mode = signInMode();
+  if (mode === "off") return { step: "unavailable" };
+  // Signed in means an account: on Supabase, a session whose profile isn't made yet is on step 3 (amendment 11).
   const viewer = await getViewer();
   if (viewer) return { step: "signed-in", email: viewer.email };
   const token = await readCookieValue(SIGN_IN_COOKIE);
@@ -35,9 +37,11 @@ export async function getSignInView(): Promise<SignInView> {
   // The errors and "We sent a new code." belong to the post that set them. The attempt lasts 30 minutes, so on a later
   // visit they would come back, and the summary would take focus. What was typed stays.
   const fresh = isFresh(attempt.postedAt, now);
-  const errors = fresh ? formErrors(attempt.errors, SIGN_IN_FIELDS, attempt.wrongTries) : [];
+  // Each step links an error only to a field it shows; the rest are listed unlinked (Supabase's refusals on step 2).
+  const errors = fresh ? formErrors(attempt.errors, STEP_FIELDS[attempt.step], attempt.wrongTries) : [];
   if (attempt.step === "code") {
-    const sent = await getSampleEmail(attempt.key);
+    // Supabase emails the code: there's no sample outbox to show it from.
+    const sent = mode === "sample" ? await getSampleEmail(attempt.key) : null;
     return {
       step: "code",
       maskedEmail: maskEmail(attempt.email),
@@ -51,6 +55,13 @@ export async function getSignInView(): Promise<SignInView> {
   }
   return { step: "email", email: attempt.email, consented: attempt.consentedAt !== null, errors };
 }
+
+/** The fields each step shows, so its errors link only to those. */
+const STEP_FIELDS = {
+  email: { email: SIGN_IN_FIELDS.email, consent: SIGN_IN_FIELDS.consent },
+  code: { code: SIGN_IN_FIELDS.code },
+  profile: { firstName: SIGN_IN_FIELDS.firstName, campus: SIGN_IN_FIELDS.campus },
+} as const;
 
 /** True when the post at `postedAt` was within SIGN_IN_ERRORS_SHOW_MS before `now`. An attempt never stamped is not. */
 function isFresh(postedAt: string | null, now: Date): boolean {

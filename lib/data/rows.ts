@@ -91,7 +91,12 @@ export type SignInError =
   | "locked"
   | "first-name-missing"
   | "first-name-length"
-  | "campus-missing";
+  | "campus-missing"
+  // Supabase's refusals (Supabase phase B decision 6, amendment 18).
+  | "code-soon"
+  | "send-failed"
+  | "ip-rate"
+  | "code-check-failed";
 
 /** A sign-in in progress, keyed by the SHA-256 of the `vossie_signin` cookie's token (accounts spec 2.2). */
 export type SignInAttemptRow = {

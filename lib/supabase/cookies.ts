@@ -1,17 +1,55 @@
 import "server-only";
-import type { CookieMethodsServer, CookieOptionsWithName } from "@supabase/ssr";
+import { combineChunks, stringFromBase64URL, type CookieMethodsServer, type CookieOptions, type CookieOptionsWithName } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { SESSION_TTL_MS } from "@/lib/auth/config";
+import { AUTH_COOKIE } from "@/lib/auth/cookie-names";
 import { isHttps } from "@/lib/auth/cookies";
 
 // The session cookies the viewer and auth clients share (backend spec section 5). Request-time: call inside <Suspense>
 // or a Server Action.
 
-/** Supabase's session cookie, renamed so every cookie is vossie_… (the privacy page's test). Chunked as .0, .1 when long. */
-export const AUTH_COOKIE = "vossie_auth";
+export { AUTH_COOKIE, isAuthCookie } from "@/lib/auth/cookie-names";
 
-/** httpOnly (the browser's JavaScript never reads it), Lax, the whole site, and Secure on HTTPS (as lib/auth/cookies.ts). */
+/** The cookie's lifetime in seconds: 30 days from its last renewal (Supabase phase B decision 3). */
+export const SESSION_MAX_AGE = SESSION_TTL_MS / 1000;
+
+/**
+ * httpOnly (the browser's JavaScript never reads it), Lax, the whole site, and Secure on HTTPS (as lib/auth/cookies.ts).
+ * The maxAge is here for the record only: @supabase/ssr 0.12.7 ignores cookieOptions.maxAge and writes its own 400 days
+ * (cookies.js:228-231 and :466-471), so the setAll callbacks apply the 30 days with sessionLifetime() (amendment 1).
+ */
 export async function authCookieOptions(): Promise<CookieOptionsWithName> {
-  return { name: AUTH_COOKIE, httpOnly: true, sameSite: "lax", secure: await isHttps(), path: "/" };
+  return { name: AUTH_COOKIE, httpOnly: true, sameSite: "lax", secure: await isHttps(), path: "/", maxAge: SESSION_MAX_AGE };
+}
+
+/**
+ * The options a session cookie is written with: Supabase's own, with 30 days in place of its 400 (amendment 1). A
+ * removal (maxAge 0) stays a removal. Every setAll that writes vossie_auth goes through this.
+ */
+export function sessionLifetime<Options extends CookieOptions>(options: Options): Options {
+  return { ...options, maxAge: options.maxAge === 0 ? 0 : SESSION_MAX_AGE };
+}
+
+/** What @supabase/ssr puts before a base64url cookie value (cookieEncoding "base64url", its default). */
+const BASE64_PREFIX = "base64-";
+
+/**
+ * The access token in the stored session, read as @supabase/ssr stores it (its chunks joined, then the base64url
+ * decoded), or null. It only reads: nothing here checks the token or refreshes it (amendment 3). Whoever uses the token
+ * checks it first (getClaims with the token, which verifies the signature and the expiry without refreshing).
+ */
+export async function accessTokenFrom(read: (name: string) => string | null | undefined): Promise<string | null> {
+  const raw = await combineChunks(AUTH_COOKIE, read);
+  if (!raw) return null;
+  try {
+    const json = raw.startsWith(BASE64_PREFIX) ? stringFromBase64URL(raw.slice(BASE64_PREFIX.length)) : raw;
+    const session: unknown = JSON.parse(json);
+    if (session === null || typeof session !== "object") return null;
+    const token = (session as { access_token?: unknown }).access_token;
+    return typeof token === "string" && token !== "" ? token : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -29,7 +67,7 @@ export async function requestCookies(): Promise<CookieMethodsServer> {
     getAll: () => store.getAll().map(({ name, value }) => ({ name, value })),
     setAll(toSet) {
       try {
-        for (const { name, value, options } of toSet) store.set(name, value, options);
+        for (const { name, value, options } of toSet) store.set(name, value, sessionLifetime(options));
       } catch {
         // A Server Component: see above.
       }

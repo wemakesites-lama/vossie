@@ -36,6 +36,22 @@ describe("SignIn (accounts spec 3.1)", () => {
     expect(screen.queryByRole("region", { name: "Sign in as a sample account" })).toBeNull();
   });
 
+  it("leaves the sample accounts out on Supabase, whatever VOSSIE_SAMPLE_MODE says (Supabase phase B, decision 1)", async () => {
+    vi.stubEnv("VOSSIE_BACKEND", "supabase");
+    vi.stubEnv("VOSSIE_SAMPLE_MODE", "1");
+    view.current = STEP_1;
+    render(await SignIn({ next: null }));
+    expect(screen.getByLabelText("Your Eduvos email address")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Sign in as a sample account" })).toBeNull();
+  });
+
+  it("shows step 2 with no sample line when the view has no sample code (Supabase)", async () => {
+    view.current = { step: "code", maskedEmail: "t•••@vossie.net", errors: [], resent: false, sampleCode: null };
+    render(await SignIn({ next: null }));
+    expect(screen.getByLabelText("6-digit code")).toBeInTheDocument();
+    expect(screen.queryByText(/Sample mode/)).toBeNull();
+  });
+
   it("shows the step the attempt is on", async () => {
     view.current = { step: "code", maskedEmail: "t•••@eduvos.com", errors: [], resent: false, sampleCode: "042137" };
     const { unmount } = render(await SignIn({ next: null }));

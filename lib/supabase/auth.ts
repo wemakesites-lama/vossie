@@ -1,13 +1,20 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { createClient, type AuthError } from "@supabase/supabase-js";
-import { headers } from "next/headers";
-import { authCookieOptions, requestCookies } from "./cookies";
+import { cookies, headers } from "next/headers";
+import { authCookieOptions, isAuthCookie, requestCookies } from "./cookies";
 import type { Database } from "./database.types";
 import { secretKey, supabaseUrl } from "./env";
 
-/** Why Supabase Auth refused, without its message: Auth's error code (such as "otp_expired") and HTTP status. */
-export type AuthRefusal = { ok: false; code: string; status: number };
+/**
+ * Why Supabase Auth refused, without its message: Auth's error code (such as "otp_expired") and HTTP status.
+ * `tooSoon` marks the one refusal whose code says too little: over_email_send_rate_limit is both the per-address minute
+ * between codes and the project's hourly email cap, and only the first is "wait a minute" (phase B amendment 5).
+ */
+export type AuthRefusal = { ok: false; code: string; status: number; tooSoon?: true };
+
+/** Auth's words for the per-address minute (validateSentWithinFrequencyLimit), read only to tell the two apart. */
+const PER_ADDRESS_MINUTE = /^For security purposes/;
 
 export type SendResult = { ok: true } | AuthRefusal;
 export type VerifyResult = { ok: true; userId: string } | AuthRefusal;
@@ -28,7 +35,13 @@ export type AuthClient = {
 };
 
 function refusal(error: AuthError): AuthRefusal {
-  return { ok: false, code: error.code ?? "unknown", status: error.status ?? 500 };
+  const code = error.code ?? "unknown";
+  const status = error.status ?? 500;
+  // The message is read to classify, never passed on or logged.
+  if (code === "over_email_send_rate_limit" && PER_ADDRESS_MINUTE.test(error.message ?? "")) {
+    return { ok: false, code, status, tooSoon: true };
+  }
+  return { ok: false, code, status };
 }
 
 /** The student's address, from Vercel's x-real-ip (a visitor can't set it), for Supabase's per-address limits. */
@@ -77,4 +90,16 @@ export async function authClient(): Promise<AuthClient> {
       return error ? refusal(error) : { ok: true };
     },
   };
+}
+
+/**
+ * Deletes this browser's session cookie, every chunk of it, without asking Supabase (sign-out's last step, whatever
+ * Supabase answered, and account deletion's). Only vossie_auth and vossie_auth.N: nothing else. Server Actions and
+ * Route Handlers only.
+ */
+export async function clearHere(): Promise<void> {
+  const store = await cookies();
+  for (const { name } of store.getAll()) {
+    if (isAuthCookie(name)) store.delete(name);
+  }
 }

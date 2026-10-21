@@ -30,6 +30,12 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
   ["first-name-length", { message: "Your first name must be 2 to 40 characters.", field: "firstName" }],
   ["campus-missing", { message: "Choose your campus.", field: "campus" }],
   ["confirm-missing", { message: "Tick the box to confirm you understand.", field: "confirm" }],
+  // Supabase's refusals (Supabase phase B decision 6, amendment 18). Step 1's email field; step 2 has none, so there
+  // they're listed in the summary without a link.
+  ["code-soon", { message: "We sent you a code less than a minute ago. Wait a minute, then ask again.", field: "email" }],
+  ["ip-rate", { message: "Too many sign-ins from your network just now. Try again in a few minutes.", field: "email" }],
+  ["send-failed", { message: "We couldn't send the code just now. Try again in a few minutes.", field: "email" }],
+  ["code-check-failed", { message: "We couldn't check the code just now. Try again in a minute.", field: "email" }],
 ]);
 
 function wrongCode(wrongTries: number): string {

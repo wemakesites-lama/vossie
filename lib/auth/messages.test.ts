@@ -52,4 +52,20 @@ describe("error messages (accounts spec 3.1, plan decision 7)", () => {
     expect(errorFor(errors, "signin-consent")).toBe("Tick the box to agree to the privacy policy.");
     expect(errorFor(errors, "signin-code")).toBeUndefined();
   });
+
+  it("words Supabase's refusals (Supabase phase B decision 6, amendment 18), on step 1's email field", () => {
+    expect(formErrors(["code-soon", "ip-rate", "send-failed", "code-check-failed"], SIGN_IN_FIELDS)).toEqual([
+      { message: "We sent you a code less than a minute ago. Wait a minute, then ask again.", fieldId: "signin-email" },
+      { message: "Too many sign-ins from your network just now. Try again in a few minutes.", fieldId: "signin-email" },
+      { message: "We couldn't send the code just now. Try again in a few minutes.", fieldId: "signin-email" },
+      { message: "We couldn't check the code just now. Try again in a minute.", fieldId: "signin-email" },
+    ]);
+  });
+
+  it("lists them unlinked on step 2, which has no email field", () => {
+    expect(formErrors(["code-soon", "code-check-failed"], { code: SIGN_IN_FIELDS.code })).toEqual([
+      { message: "We sent you a code less than a minute ago. Wait a minute, then ask again.", fieldId: null },
+      { message: "We couldn't check the code just now. Try again in a minute.", fieldId: null },
+    ]);
+  });
 });

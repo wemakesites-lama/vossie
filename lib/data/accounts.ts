@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { sampleAccounts, sampleConsents } from "@/data/fixtures/accounts";
+import { onSupabase } from "@/lib/backend";
 import type { Account, Consent, SellerStatus, StaffRole, ViewerActivity } from "@/lib/types";
+import type { SessionClaims } from "./auth-session";
 import { exportFollowing, forgetFollowsOf } from "./follows";
 import type { AccountRow } from "./rows";
 import { exportSavedSearches, forgetSavedSearchesOf, type SavedSearchExport } from "./saved-searches";
@@ -15,7 +17,10 @@ import { sampleStore } from "./store";
 
 // Accounts, their shops and their consent (accounts spec section 4), shaped like the Supabase calls that will replace
 // them: async, by id or by email, handing out copies. Times come from the caller, so nothing here reads the clock.
-// Only Server Actions create, change or delete; pages only read.
+// Only Server Actions create, change or delete; pages only read. On Supabase (phase B, Task 4) each function hands over
+// to lib/data/supabase/accounts.ts, loaded with import().
+
+const supabase = () => import("./supabase/accounts");
 
 function toAccount(row: AccountRow): Account {
   const shop = sampleStore().sellerProfiles.get(row.id);
@@ -31,6 +36,7 @@ function toAccount(row: AccountRow): Account {
 }
 
 export async function getAccount(id: string): Promise<Account | null> {
+  if (onSupabase()) return (await supabase()).getAccount(id);
   const row = sampleStore().accounts.get(id);
   return row ? toAccount(row) : null;
 }
@@ -44,6 +50,7 @@ function rowByEmail(email: string): AccountRow | null {
 
 /** The account with this (normalised) email, if there is one. */
 export async function findAccountByEmail(email: string): Promise<Account | null> {
+  if (onSupabase()) return (await supabase()).findAccountByEmail(email);
   const row = rowByEmail(email);
   return row ? toAccount(row) : null;
 }
@@ -62,6 +69,7 @@ export async function createAccount(details: {
   campusSlug: string;
   now: Date;
 }): Promise<Account> {
+  if (onSupabase()) return (await supabase()).createAccount(details);
   const existing = rowByEmail(details.email);
   if (existing) return toAccount(existing);
   const row: AccountRow = {
@@ -76,11 +84,46 @@ export async function createAccount(details: {
   return toAccount(row);
 }
 
+/**
+ * The signed-in account a verified session names (phase B decision 7), or null when it has no profile yet (a student
+ * between steps 2 and 3 is signed out). On Supabase the profile, its roles and its shop are read on every request.
+ */
+export async function getViewerAccount(claims: SessionClaims): Promise<Account | null> {
+  if (onSupabase()) return (await supabase()).getViewerAccount(claims);
+  return getAccount(claims.userId);
+}
+
+/** Whether the account has finished signing in (a profile), after its code was right (phase B, Task 5). */
+export async function hasProfile(userId: string): Promise<boolean> {
+  if (onSupabase()) return (await supabase()).hasProfile(userId);
+  return sampleStore().accounts.has(userId);
+}
+
+/**
+ * Step 3 of a first sign-in (spec 2.6): the account made, with consent to `policyVersion` recorded. True when this
+ * call made it, false when the address had one already (which is left as it is). On Supabase, identity comes from the
+ * session and the database stamps consent's time (complete_profile; phase B decision 9).
+ */
+export async function completeProfile(details: {
+  email: string;
+  firstName: string;
+  campusSlug: string;
+  policyVersion: string;
+  now: Date;
+}): Promise<boolean> {
+  if (onSupabase()) return (await supabase()).completeProfile(details);
+  if (rowByEmail(details.email)) return false;
+  const account = await createAccount(details);
+  await recordConsent(account.id, details.policyVersion, details.now);
+  return true;
+}
+
 /** "Edit details" (spec 3.2). Null when the account has gone. */
 export async function updateAccountDetails(
   id: string,
   details: { firstName: string; campusSlug: string },
 ): Promise<Account | null> {
+  if (onSupabase()) return (await supabase()).updateAccountDetails(id, details);
   const row = sampleStore().accounts.get(id);
   if (!row) return null;
   row.firstName = details.firstName;
@@ -90,6 +133,7 @@ export async function updateAccountDetails(
 
 /** Records that the account agreed to `version` at `at` (spec 2.7). Once per version: a repeat changes nothing. */
 export async function recordConsent(accountId: string, version: string, at: Date): Promise<void> {
+  if (onSupabase()) return (await supabase()).recordConsent(accountId, version, at);
   const { consents } = sampleStore();
   for (const row of consents.values()) {
     if (row.accountId === accountId && row.version === version) return;
@@ -100,6 +144,7 @@ export async function recordConsent(accountId: string, version: string, at: Date
 
 /** The newest consent, for the privacy settings page (spec 3.3). */
 export async function getLatestConsent(accountId: string): Promise<Consent | null> {
+  if (onSupabase()) return (await supabase()).getLatestConsent(accountId);
   let latest: Consent | null = null;
   for (const row of sampleStore().consents.values()) {
     if (row.accountId !== accountId) continue;
@@ -132,6 +177,7 @@ export async function getSampleSignIns(): Promise<{ email: string; label: string
  * address that isn't a sample account's.
  */
 export async function restoreSampleAccount(email: string): Promise<Account | null> {
+  if (onSupabase()) return (await supabase()).restoreSampleAccount(email);
   const sample = sampleAccounts.find(({ account }) => account.email === email);
   if (!sample) return null;
   const existing = await findAccountByEmail(email);
@@ -186,12 +232,25 @@ export type AccountExport = {
 
 /** The account's data, as the export gives it. Null when the account has gone. */
 export async function exportAccountData(accountId: string, now: Date): Promise<AccountExport | null> {
+  if (onSupabase()) return (await supabase()).exportAccountData(accountId, now);
   const account = await getAccount(accountId);
   if (!account) return null;
   const consents = [...sampleStore().consents.values()]
     .filter((row) => row.accountId === accountId)
     .sort((a, b) => Date.parse(a.agreedAt) - Date.parse(b.agreedAt))
     .map((row) => ({ policy: row.version, agreedAt: row.agreedAt }));
+  return assembleExport({ account, consents }, now);
+}
+
+/**
+ * The export, from the account and its consents (each backend reads its own) and the other modules' sections, in the
+ * one key order both backends give (phase B, Task 4). The sessions come from lib/data/sessions.ts, on either backend.
+ */
+export async function assembleExport(
+  { account, consents }: { account: Account; consents: AccountExport["consents"] },
+  now: Date,
+): Promise<AccountExport> {
+  const accountId = account.id;
   const sessions = (await listSessions(accountId)).map((row) => ({ signedInAt: row.createdAt, expiresAt: row.expiresAt }));
   // Conversations first: exporting them settles any sale that has confirmed itself (messaging plan amendment 3), which
   // reads that sale's notification, and the notifications must be read after that.
@@ -238,6 +297,7 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
  * plan decision 22). Nothing of anyone else's is touched.
  */
 export async function deleteAccountData(accountId: string): Promise<void> {
+  if (onSupabase()) return (await supabase()).deleteAccountData(accountId);
   const store = sampleStore();
   const account = store.accounts.get(accountId);
   if (!account) return;

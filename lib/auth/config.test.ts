@@ -12,6 +12,7 @@ import {
   POLICY_VERSION,
   SESSION_TTL_MS,
   SIGN_IN_ERRORS_SHOW_MS,
+  signInMode,
 } from "./config";
 
 describe("sign-in settings (accounts spec 2.1, 2.4 and 2.7)", () => {
@@ -46,5 +47,22 @@ describe("sign-in settings (accounts spec 2.1, 2.4 and 2.7)", () => {
     expect(policyLabel(POLICY_VERSION)).toBe("draft of October 2026");
     expect(policyLabel("2027-01")).toBe("2027-01");
     for (const consent of sampleConsents) expect(consent.version).toBe(POLICY_VERSION);
+  });
+});
+
+describe("the sign-in mode (Supabase phase B, decision 1)", () => {
+  it("is sample by default, off with VOSSIE_SAMPLE_MODE=0, and supabase whenever VOSSIE_BACKEND says so", () => {
+    expect(signInMode({})).toBe("sample");
+    expect(signInMode({ VOSSIE_SAMPLE_MODE: "0" })).toBe("off");
+    expect(signInMode({ VOSSIE_BACKEND: "supabase" })).toBe("supabase");
+    expect(signInMode({ VOSSIE_BACKEND: "supabase", VOSSIE_SAMPLE_MODE: "1" })).toBe("supabase");
+    expect(signInMode({ VOSSIE_BACKEND: "supabase", VOSSIE_SAMPLE_MODE: "0" })).toBe("supabase");
+    expect(signInMode({ VOSSIE_BACKEND: "sample", VOSSIE_SAMPLE_MODE: "0" })).toBe("off");
+  });
+
+  it("never counts as sample mode on Supabase, whatever VOSSIE_SAMPLE_MODE says", () => {
+    expect(isSampleMode({ VOSSIE_BACKEND: "supabase" })).toBe(false);
+    expect(isSampleMode({ VOSSIE_BACKEND: "supabase", VOSSIE_SAMPLE_MODE: "1" })).toBe(false);
+    expect(isSampleMode({})).toBe(true);
   });
 });

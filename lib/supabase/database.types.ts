@@ -959,7 +959,12 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "add_check_in":
+            "account_sessions":
+{ Args: { "p_account": string }; Returns: {
+              "expires_at": string,"signed_in_at": string
+            }[]
+                           },
+"add_check_in":
 { Args: { "p_day": string,"p_once_token": string,"p_owner": string,"p_text": string }; Returns: string
                            },
 "add_hub_photo":
@@ -1015,6 +1020,9 @@ isOneToOne: false
 "delete_search":
 { Args: { "p_id": string }; Returns: string
                            },
+"delete_sign_in_attempt":
+{ Args: { "p_key": string }; Returns: undefined
+                           },
 "dismiss_report":
 { Args: { "p_note": string,"p_report": string }; Returns: string
                            },
@@ -1026,6 +1034,9 @@ isOneToOne: false
                            },
 "forget_account":
 { Args: { "p_account_id": string }; Returns: (string)[]
+                           },
+"get_sign_in_attempt":
+{ Args: { "p_key": string }; Returns: Json
                            },
 "give_role":
 { Args: { "p_email": string,"p_once_token": string,"p_role": string }; Returns: string
@@ -1109,6 +1120,9 @@ isOneToOne: false
                            },
 "save_search":
 { Args: { "p_campus_slug": string,"p_category": string,"p_deals": string,"p_pay": string,"p_price": string,"p_q": string,"p_search_key": string }; Returns: string
+                           },
+"save_sign_in_attempt":
+{ Args: { "p_attempt": Json }; Returns: undefined
                            },
 "send_message":
 { Args: { "p_body": string,"p_conversation_id": string }; Returns: string

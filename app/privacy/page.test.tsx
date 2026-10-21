@@ -279,9 +279,13 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     // vossie_auth-…-code-verifier needs no entry here.
     // Narrowed in phase C's C0 (2b plan amendment 9, confirmed by the controller): lib/data/supabase reaches the public
     // and admin clients, which hold no cookies, so until then only the four ways of setting the cookie are banned.
+    // Narrowed again in phase B's Tasks 4 and 5: lib/data/supabase's auth session and forViewer() now reach the sign-in
+    // client and the cookie helpers. lib/data/supabase loads only through import() with VOSSIE_BACKEND=supabase
+    // (lib/data/boundaries.test.ts, rule 2), which no deployment sets before phase B's Task 9 names the cookie here
+    // (the runbook's Part B needs it merged). Task 9 empties NOT_YET_SET, and this test then checks nothing.
     const importers: string[] = [];
     for (const file of appSourceFiles()) {
-      if (file.startsWith(SUPABASE_DIR)) continue;
+      if (file.startsWith(SUPABASE_DIR) || file.startsWith(`${DATA_SUPABASE_DIR}/`)) continue;
       if (cookieSetterImports(readFileSync(file, "utf8"), file).length > 0) importers.push(file.slice(process.cwd().length + 1));
     }
     if (NOT_YET_SET.size > 0) expect(importers).toEqual([]);
@@ -384,6 +388,8 @@ describe("what stages H to K changed in the policy (stage K spec 6)", () => {
 const NOT_YET_SET = new Set(["vossie_auth"]);
 
 const SUPABASE_DIR = join(process.cwd(), "lib", "supabase");
+/** Supabase's twins of lib/data, loaded only through import() on Supabase (phase B narrows the guard to skip them). */
+const DATA_SUPABASE_DIR = join(process.cwd(), "lib", "data", "supabase");
 
 /** The app's own source files: app, components, hooks and lib, and the files at the root (proxy.ts). Not tests. */
 function appSourceFiles(): string[] {

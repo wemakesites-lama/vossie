@@ -1,5 +1,13 @@
 import { getCampuses } from "@/lib/data";
-import { createAccount, findAccountByEmail, recordConsent, restoreSampleAccount } from "@/lib/data/accounts";
+import {
+  completeProfile,
+  createAccount,
+  findAccountByEmail,
+  hasProfile,
+  recordConsent,
+  restoreSampleAccount,
+} from "@/lib/data/accounts";
+import { readClaims, sendSignInCode, signOutHere, type SendOutcome, verifySignInCode } from "@/lib/data/auth-session";
 import type { SignInAttemptRow, SignInError } from "@/lib/data/rows";
 import { restoreSampleShop } from "@/lib/data/shops";
 import {
@@ -12,7 +20,7 @@ import {
 } from "@/lib/data/sign-in";
 import { sellersChangedNow } from "@/lib/data/tags";
 import { safeNextPath, signInHref } from "@/lib/next-path";
-import { ATTEMPT_TTL_MS, CODE_TTL_MS, CODES_PER_HOUR, isSampleMode, MAX_WRONG_TRIES, POLICY_VERSION } from "./config";
+import { ATTEMPT_TTL_MS, CODE_TTL_MS, CODES_PER_HOUR, isSampleMode, MAX_WRONG_TRIES, POLICY_VERSION, signInMode } from "./config";
 import { deleteCookie, readCookieValue, setPrivateCookie, SIGN_IN_COOKIE } from "./cookies";
 import { normaliseEmail } from "./email";
 import { checkCampus, checkFirstName } from "./profile";
@@ -49,8 +57,8 @@ export function afterSignInPath(next: string | null): string {
 
 /** This browser's sign-in attempt, while it hasn't run out. */
 export async function currentAttempt(now: Date): Promise<SignInAttemptRow | null> {
-  // With sample mode off nothing is hashed, so a missing key can't break a sign-in post (stage K plan amendment 3).
-  if (!isSampleMode()) return null;
+  // With sign-in off nothing is hashed, so a missing key can't break a sign-in post (stage K plan amendment 3).
+  if (signInMode() === "off") return null;
   const token = await readCookieValue(SIGN_IN_COOKIE);
   return token ? getSignInAttempt(hashToken(token), now) : null;
 }
@@ -99,13 +107,45 @@ export async function saveAfterPost(attempt: SignInAttemptRow, now: Date): Promi
   await saveSignInAttempt(attempt, now);
 }
 
+/** Supabase's refusals to send, as the sign-in page words them (Supabase phase B decision 6). */
+const SEND_ERRORS: Readonly<Record<Exclude<SendOutcome, "sent">, SignInError>> = {
+  "too-soon": "code-soon",
+  "ip-rate": "ip-rate",
+  refused: "email-domain",
+  failed: "send-failed",
+};
+
+/** Supabase sends a code to an address at most once a minute (its own limit). */
+const CODE_EVERY_MS = 60 * 1000;
+
+/** Whether the attempt's code went less than a minute before `now` (its expiry less the code's 10 minutes). */
+function sentWithinMinute(attempt: SignInAttemptRow, now: Date): boolean {
+  if (!attempt.codeExpiresAt) return false;
+  return now.getTime() - (Date.parse(attempt.codeExpiresAt) - CODE_TTL_MS) < CODE_EVERY_MS;
+}
+
 /**
- * Makes a code, keeps only its hash on the attempt, and "sends" it (spec 2.2, 2.3 and 5). A new code gives 5 fresh
- * tries (plan decision 6). False, and nothing sent, when this email has had its 5 codes this hour.
+ * Sends a code (spec 2.2, 2.3 and 5): one of the email's 5 an hour first, then the code. A new code gives 5 fresh tries
+ * (plan decision 6). The error to show, or null when it went: "email-rate" when this email has had its 5 codes this
+ * hour, and nothing sent.
+ *
+ * Sample mode makes the code, keeps only its hash on the attempt and "sends" it to its outbox. On Supabase, Supabase
+ * Auth makes and emails it (Supabase phase B decision 6): a code asked for within a minute of the last is refused before
+ * one of the hour's is used (amendment 6), and a refusal from Supabase keeps the hour's code it reserved.
  */
-export async function sendCode(attempt: SignInAttemptRow, now: Date): Promise<boolean> {
+export async function sendCode(attempt: SignInAttemptRow, now: Date): Promise<SignInError | null> {
+  const mode = signInMode();
+  if (mode === "supabase" && sentWithinMinute(attempt, now)) return "code-soon";
   // The place is counted and taken in one step, so posts at once can't each find room and all send (spec 5).
-  if (!(await reserveCodeSend(attempt.email, now, CODES_PER_HOUR))) return false;
+  if (!(await reserveCodeSend(attempt.email, now, CODES_PER_HOUR))) return "email-rate";
+  if (mode === "supabase") {
+    const sent = await sendSignInCode(attempt.email);
+    if (sent !== "sent") return SEND_ERRORS[sent];
+    attempt.codeHash = null;
+    attempt.codeExpiresAt = new Date(now.getTime() + CODE_TTL_MS).toISOString();
+    attempt.wrongTries = 0;
+    return null;
+  }
   const code = newCode();
   attempt.codeHash = hashCode(attempt.key, code);
   attempt.codeExpiresAt = new Date(now.getTime() + CODE_TTL_MS).toISOString();
@@ -113,7 +153,7 @@ export async function sendCode(attempt: SignInAttemptRow, now: Date): Promise<bo
   // Sample mode has no email service: its outbox stands in for one, and the sign-in page shows the code from it
   // (plan decision 5). The real email service replaces this call.
   await saveSampleEmail({ attemptKey: attempt.key, to: attempt.email, code, sentAt: now.toISOString() });
-  return true;
+  return null;
 }
 
 /** Finishes signing in: consent recorded, the attempt gone, a new session (spec 2.5 and 2.7). */
@@ -133,15 +173,21 @@ async function finishSignIn(accountId: string, attempt: SignInAttemptRow, now: D
  */
 export async function finishCode(formData: FormData, now: Date): Promise<string> {
   const next = nextFrom(formData);
-  const attempt = isSampleMode() ? await currentAttempt(now) : null;
-  if (!attempt || attempt.step !== "code" || !attempt.codeHash || !attempt.codeExpiresAt) return signInPath(next);
+  const mode = signInMode();
+  const attempt = await currentAttempt(now);
+  // On Supabase the attempt holds no code hash: Supabase Auth keeps the code.
+  if (!attempt || attempt.step !== "code" || !attempt.codeExpiresAt || (mode === "sample" && !attempt.codeHash)) {
+    return signInPath(next);
+  }
   const code = text(formData, "code").replace(/\s/g, "");
   attempt.resent = false;
   if (Date.parse(attempt.codeExpiresAt) <= now.getTime()) {
     attempt.errors = ["code-expired"];
   } else if (!/^\d{6}$/.test(code)) {
     attempt.errors = ["code-missing"];
-  } else if (codeMatches(attempt.key, code, attempt.codeHash)) {
+  } else if (mode === "supabase") {
+    return finishCodeOnSupabase(attempt, code, next, now);
+  } else if (attempt.codeHash && codeMatches(attempt.key, code, attempt.codeHash)) {
     const account = await findAccountByEmail(attempt.email);
     if (account) {
       await finishSignIn(account.id, attempt, now);
@@ -158,12 +204,56 @@ export async function finishCode(formData: FormData, now: Date): Promise<string>
     if (attempt.wrongTries < MAX_WRONG_TRIES) {
       attempt.errors = ["code-wrong"];
     } else {
-      // The fifth wrong try ends the attempt (spec 2.2): back to step 1, the email kept, the code gone.
-      attempt.step = "email";
-      attempt.codeHash = null;
-      attempt.codeExpiresAt = null;
-      attempt.errors = ["locked"];
+      lockOut(attempt);
     }
+  }
+  await saveAfterPost(attempt, now);
+  return signInPath(next);
+}
+
+/** The fifth wrong try ends the attempt (spec 2.2): back to step 1, the email kept, the code gone. The caller saves it. */
+function lockOut(attempt: SignInAttemptRow): void {
+  attempt.step = "email";
+  attempt.codeHash = null;
+  attempt.codeExpiresAt = null;
+  attempt.errors = ["locked"];
+}
+
+/**
+ * Step 2 on Supabase (Supabase phase B decision 2). Supabase can't compare a code without using it, so every try is
+ * counted, in one statement, before Supabase sees the code: the 5th wrong one ends the attempt, and a 6th post is
+ * refused without reaching Supabase. A count of 0 means the attempt went (swept, or ended in another tab) between the
+ * read and the count: back to sign-in, nothing sent (amendment 2).
+ */
+async function finishCodeOnSupabase(attempt: SignInAttemptRow, code: string, next: string | null, now: Date): Promise<string> {
+  const tries = await recordWrongTry(attempt.key);
+  if (tries < 1) return signInPath(next);
+  attempt.wrongTries = tries;
+  if (tries > MAX_WRONG_TRIES) {
+    lockOut(attempt);
+    await saveAfterPost(attempt, now);
+    return signInPath(next);
+  }
+  // A session id is never reused (spec 2.5): a browser already signed in is signed out here first. Read afresh, not
+  // from React's cache (amendment 12).
+  if ((await readClaims()) !== null) await signOutHere();
+  const verified = await verifySignInCode(attempt.email, code);
+  if (verified === "ip-rate" || verified === "failed") {
+    // The try still counts. Words for a check that failed, not a send (amendment 18).
+    attempt.errors = [verified === "ip-rate" ? "ip-rate" : "code-check-failed"];
+  } else if (verified === "wrong") {
+    if (tries < MAX_WRONG_TRIES) attempt.errors = ["code-wrong"];
+    else lockOut(attempt);
+  } else if (await hasProfile(verified.userId)) {
+    // verifyOtp has set vossie_auth, and cookies() reads it back in this same request, so these run as the new session.
+    await recordConsent(verified.userId, POLICY_VERSION, now);
+    await endAttempt(now);
+    return afterSignInPath(next);
+  } else {
+    // A first sign-in: on to step 3. The session exists, but without a profile it's no account yet (decision 7).
+    attempt.step = "profile";
+    attempt.codeExpiresAt = null;
+    attempt.errors = [];
   }
   await saveAfterPost(attempt, now);
   return signInPath(next);
@@ -175,7 +265,7 @@ export async function finishCode(formData: FormData, now: Date): Promise<string>
  */
 export async function finishProfile(formData: FormData, now: Date): Promise<string> {
   const next = nextFrom(formData);
-  const attempt = isSampleMode() ? await currentAttempt(now) : null;
+  const attempt = await currentAttempt(now);
   if (!attempt || attempt.step !== "profile") return signInPath(next);
   const name = checkFirstName(text(formData, "firstName"));
   const campuses = await getCampuses();
@@ -189,6 +279,19 @@ export async function finishProfile(formData: FormData, now: Date): Promise<stri
     attempt.campusSlug = campusSlug ?? "";
     await saveAfterPost(attempt, now);
     return signInPath(next);
+  }
+  if (signInMode() === "supabase") {
+    // The session verifyOtp made at step 2, read afresh (amendment 12). Gone, or another address's (amendment 11): the
+    // attempt ends, back to step 1. complete_profile takes the account from the session and stamps consent itself
+    // (phase B decision 9); another tab that finished first leaves its account as it is.
+    const claims = await readClaims();
+    if (!claims || claims.email !== attempt.email) {
+      await endAttempt(now);
+      return signInPath(next);
+    }
+    await completeProfile({ email: attempt.email, firstName: name.value, campusSlug, policyVersion: POLICY_VERSION, now });
+    await endAttempt(now);
+    return afterSignInPath(next);
   }
   // Another tab may have finished first: then this signs in to that account rather than making a second one.
   const account =

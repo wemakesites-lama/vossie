@@ -1,3 +1,4 @@
+import { onSupabase } from "@/lib/backend";
 import type { SampleEmailRow, SignInAttemptRow } from "./rows";
 import { type SampleStore, sampleStore } from "./store";
 
@@ -7,12 +8,14 @@ const HOUR_MS = 60 * 60 * 1000;
 
 /** The attempt with this key, while it hasn't run out. A copy: change it, then save it. */
 export async function getSignInAttempt(key: string, now: Date): Promise<SignInAttemptRow | null> {
+  if (onSupabase()) return (await import("./supabase/sign-in")).getSignInAttempt(key, now);
   const row = sampleStore().signInAttempts.get(key);
   return row && Date.parse(row.expiresAt) > now.getTime() ? structuredClone(row) : null;
 }
 
 /** Saves an attempt, new or changed, and tidies away ones that have run out, with their sample emails. */
 export async function saveSignInAttempt(attempt: SignInAttemptRow, now: Date): Promise<void> {
+  if (onSupabase()) return (await import("./supabase/sign-in")).saveSignInAttempt(attempt, now);
   const store = sampleStore();
   for (const [key, row] of store.signInAttempts) {
     if (Date.parse(row.expiresAt) > now.getTime()) continue;
@@ -24,6 +27,7 @@ export async function saveSignInAttempt(attempt: SignInAttemptRow, now: Date): P
 
 /** Ends an attempt: it and its sample email go. */
 export async function deleteSignInAttempt(key: string): Promise<void> {
+  if (onSupabase()) return (await import("./supabase/sign-in")).deleteSignInAttempt(key);
   const store = sampleStore();
   store.signInAttempts.delete(key);
   store.sampleEmails.delete(key);
@@ -38,6 +42,7 @@ export async function deleteSignInAttempt(key: string): Promise<void> {
  * `UPDATE sign_in_attempts SET wrong_tries = wrong_tries + 1 WHERE key = $1 RETURNING wrong_tries`.
  */
 export async function recordWrongTry(attemptKey: string): Promise<number> {
+  if (onSupabase()) return (await import("./supabase/sign-in")).recordWrongTry(attemptKey);
   const row = sampleStore().signInAttempts.get(attemptKey);
   if (!row) return 0;
   row.wrongTries += 1;
@@ -71,6 +76,7 @@ function noteSend(store: SampleStore, email: string, now: Date): void {
  * or a transaction that holds a per-email lock while it counts and inserts.
  */
 export async function reserveCodeSend(email: string, now: Date, limit: number): Promise<boolean> {
+  if (onSupabase()) return (await import("./supabase/sign-in")).reserveCodeSend(email, now, limit);
   const store = sampleStore();
   if (sendsInLastHour(store, email, now).length >= limit) return false;
   noteSend(store, email, now);
@@ -82,6 +88,7 @@ export async function reserveCodeSend(email: string, now: Date, limit: number): 
  * don't count and then record: they call reserveCodeSend, which does both in one step.
  */
 export async function countCodesSent(email: string, now: Date): Promise<number> {
+  if (onSupabase()) return (await import("./supabase/sign-in")).countCodesSent(email, now);
   return sendsInLastHour(sampleStore(), email, now).length;
 }
 
@@ -90,15 +97,18 @@ export async function countCodesSent(email: string, now: Date): Promise<number> 
  * sign-in actions call reserveCodeSend, which does. Kept for tests that need sends already on record.
  */
 export async function recordCodeSent(email: string, now: Date): Promise<void> {
+  if (onSupabase()) return (await import("./supabase/sign-in")).recordCodeSent(email, now);
   noteSend(sampleStore(), email, now);
 }
 
 /** Sample mode's outbox (spec 2.3, plan decision 5): keeps the last code "sent" for an attempt. */
 export async function saveSampleEmail(email: SampleEmailRow): Promise<void> {
+  if (onSupabase()) return (await import("./supabase/sign-in")).saveSampleEmail(email);
   sampleStore().sampleEmails.set(email.attemptKey, { ...email });
 }
 
 export async function getSampleEmail(attemptKey: string): Promise<SampleEmailRow | null> {
+  if (onSupabase()) return (await import("./supabase/sign-in")).getSampleEmail(attemptKey);
   const row = sampleStore().sampleEmails.get(attemptKey);
   return row ? { ...row } : null;
 }
