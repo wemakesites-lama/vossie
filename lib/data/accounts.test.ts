@@ -402,6 +402,16 @@ describe("community actions in the export and in deletion (community actions spe
     expect(JSON.stringify(data)).not.toContain(posted.id);
   });
 
+  it("settles first: a due request nothing has settled exports as closed automatically (stage L amendment 9)", async () => {
+    await createRequest({
+      askerId: "acc-student",
+      fields: { ...FIELDS, neededBy: "2026-10-09" },
+      now: new Date("2026-10-05T08:00:00.000Z"),
+    });
+    const data = await exportAccountData("acc-student", NOW);
+    expect(data?.requests).toMatchObject([{ state: "closed", closedAutomatically: true }]);
+  });
+
   it("deletes the account's requests and follows, and the follows of its shop", async () => {
     const posted = await createRequest({ askerId: "acc-seller", fields: FIELDS, now: NOW });
     await addFollow("acc-seller", "code-coach", NOW);

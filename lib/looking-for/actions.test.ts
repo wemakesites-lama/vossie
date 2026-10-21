@@ -69,7 +69,7 @@ describe("Post request (community actions spec 2.3 to 2.5)", () => {
     expect(redirect.url).toMatch(/^\/looking-for\/r-[0-9a-f-]{36}$/);
     expect([redirect.type, request.refreshed, request.updatedTags]).toEqual(["replace", true, ["requests"]]);
     const id = redirect.url.split("/").at(-1)!;
-    expect(await getOwnRequest("acc-student", id)).toMatchObject({
+    expect(await getOwnRequest("acc-student", id, STAFF_NOW)).toMatchObject({
       state: "open",
       request: { title: "Desk lamp for res", budgetZar: 150, swapWelcome: true, neededBy: "2026-10-20" },
     });
@@ -218,7 +218,7 @@ describe("a new request is made once, however many times its form is sent (plan 
       saveMyRequest(form({ ...FORM, request: id, title: "Clip-on desk lamp", once: FORGED })),
     );
     expect(redirect.url).toBe(`/looking-for/${id}`);
-    expect((await getOwnRequest("acc-student", id))?.request.title).toBe("Clip-on desk lamp");
+    expect((await getOwnRequest("acc-student", id, STAFF_NOW))?.request.title).toBe("Clip-on desk lamp");
   });
 });
 
@@ -229,32 +229,34 @@ describe("Save changes (spec 2.6, plan decision 6)", () => {
     expect(await redirectOf(() => saveMyRequest(form({ ...FORM, request: id, title: "Clip-on desk lamp" })))).toBe(
       `/looking-for/${id}`,
     );
-    expect((await getOwnRequest("acc-student", id))?.request.title).toBe("Clip-on desk lamp");
+    expect((await getOwnRequest("acc-student", id, STAFF_NOW))?.request.title).toBe("Clip-on desk lamp");
     expect(await readFormState(requestNoteKey(id))).toMatchObject({ notice: "saved" });
   });
 
   // Review of Tasks 6 to 15 (plan amendment 19.6): a request can be edited after its needed-by date has gone by.
   it("saves an edit that leaves a passed needed-by date as it is, and refuses a changed date that has passed", async () => {
+    // Needed by the 12th, so it's passed by STAFF_NOW (the 14th) but within its 3 days' grace: still open (stage L plan
+    // decision 20; on the 10th its closing day would be the 14th, and the edit would find it closed).
     await asStudent();
     const { id } = await createRequest({
       askerId: "acc-student",
-      fields: { ...FIELDS, neededBy: "2026-10-10" },
+      fields: { ...FIELDS, neededBy: "2026-10-12" },
       now: STAFF_NOW,
     });
     expect(
       await redirectOf(() =>
-        saveMyRequest(form({ ...FORM, request: id, title: "Clip-on desk lamp", neededBy: "2026-10-10" })),
+        saveMyRequest(form({ ...FORM, request: id, title: "Clip-on desk lamp", neededBy: "2026-10-12" })),
       ),
     ).toBe(`/looking-for/${id}`);
-    expect((await getOwnRequest("acc-student", id))?.request).toMatchObject({
+    expect((await getOwnRequest("acc-student", id, STAFF_NOW))?.request).toMatchObject({
       title: "Clip-on desk lamp",
-      neededBy: "2026-10-10",
+      neededBy: "2026-10-12",
     });
     expect(await redirectOf(() => saveMyRequest(form({ ...FORM, request: id, neededBy: "2026-10-11" })))).toBe(
       `/looking-for/${id}/edit`,
     );
     expect((await readFormState(requestFormKey(id)))?.errors).toEqual(["needed-past"]);
-    expect((await getOwnRequest("acc-student", id))?.request.neededBy).toBe("2026-10-10");
+    expect((await getOwnRequest("acc-student", id, STAFF_NOW))?.request.neededBy).toBe("2026-10-12");
   });
 
   it("never edits someone else's request, a sample, or a closed one", async () => {
@@ -269,8 +271,8 @@ describe("Save changes (spec 2.6, plan decision 6)", () => {
     expect(await redirectOf(() => saveMyRequest(form({ ...FORM, request: mine.id, title: "Changed" })))).toBe(
       `/looking-for/${mine.id}/edit`,
     );
-    expect((await getOwnRequest("acc-mentor", theirs.id))?.request.title).toBe("Desk lamp for res");
-    expect((await getOwnRequest("acc-student", mine.id))?.request.title).toBe("Desk lamp for res");
+    expect((await getOwnRequest("acc-mentor", theirs.id, STAFF_NOW))?.request.title).toBe("Desk lamp for res");
+    expect((await getOwnRequest("acc-student", mine.id, STAFF_NOW))?.request.title).toBe("Desk lamp for res");
   });
 });
 
@@ -279,11 +281,11 @@ describe("Close, Reopen and Delete (spec 2.6, plan decisions 6 and 7)", () => {
     await asStudent();
     const { id } = await posted();
     expect(await redirectOf(() => closeMyRequest(form({ request: id })))).toBe(`/looking-for/${id}`);
-    expect((await getOwnRequest("acc-student", id))?.state).toBe("closed");
+    expect((await getOwnRequest("acc-student", id, STAFF_NOW))?.state).toBe("closed");
     expect(await readFormState(requestNoteKey(id))).toMatchObject({ notice: "closed" });
     expect(request.updatedTags).toEqual(["requests"]);
     expect(await redirectOf(() => reopenMyRequest(form({ request: id, from: "list" })))).toBe("/account/requests");
-    expect((await getOwnRequest("acc-student", id))?.state).toBe("open");
+    expect((await getOwnRequest("acc-student", id, STAFF_NOW))?.state).toBe("open");
     expect(await readFormState(YOUR_REQUESTS_FORM)).toMatchObject({ notice: "reopened" });
   });
 
@@ -293,7 +295,7 @@ describe("Close, Reopen and Delete (spec 2.6, plan decisions 6 and 7)", () => {
     sampleStore().requests.get(closed.id)!.status = "closed";
     for (let n = 0; n < 5; n += 1) await posted();
     await redirectOf(() => reopenMyRequest(form({ request: closed.id })));
-    expect((await getOwnRequest("acc-student", closed.id))?.state).toBe("closed");
+    expect((await getOwnRequest("acc-student", closed.id, STAFF_NOW))?.state).toBe("closed");
     expect(await readFormState(requestNoteKey(closed.id))).toMatchObject({ notice: "reopen-limit" });
   });
 
@@ -301,7 +303,7 @@ describe("Close, Reopen and Delete (spec 2.6, plan decisions 6 and 7)", () => {
     await asStudent();
     const theirs = await posted("acc-mentor");
     await redirectOf(() => closeMyRequest(form({ request: theirs.id })));
-    expect((await getOwnRequest("acc-mentor", theirs.id))?.state).toBe("open");
+    expect((await getOwnRequest("acc-mentor", theirs.id, STAFF_NOW))?.state).toBe("open");
     expect(await readFormState(requestNoteKey(theirs.id))).toBeNull();
     expect(request.updatedTags).toEqual([]);
   });
@@ -339,7 +341,7 @@ describe("Send offer (community actions spec 2.7 to 2.9)", () => {
     });
     expect(await readFormState(sentNoteKey(conversationId))).toMatchObject({ notice: "sent" });
     expect(await readFormState(offerFormKey(id))).toBeNull();
-    expect((await getOwnRequest("acc-student", id))?.request.offers).toBe(1);
+    expect((await getOwnRequest("acc-student", id, STAFF_NOW))?.request.offers).toBe(1);
   });
 
   it("ignores a listing that isn't one of the shop's listed ones (plan decision 13)", async () => {
@@ -414,7 +416,7 @@ describe("Send offer (community actions spec 2.7 to 2.9)", () => {
     expect(threads).toHaveLength(1);
     const said = [...sampleStore().messages.values()].filter((message) => message.conversationId === threads[0].id);
     expect(said).toHaveLength(1);
-    expect((await getOwnRequest("acc-student", id))?.request.offers).toBe(1);
+    expect((await getOwnRequest("acc-student", id, STAFF_NOW))?.request.offers).toBe(1);
   });
 
   it("sends anyone who can't offer back to the composer, which says why, storing nothing", async () => {

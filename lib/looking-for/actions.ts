@@ -126,7 +126,7 @@ export async function saveMyRequest(formData: FormData): Promise<void> {
   // The date an edited request holds already may have passed; only a changed date must be today or later (amendment 19.6).
   let keptNeededBy: string | null = null;
   if (editing) {
-    const own = await getOwnRequest(account.id, editing);
+    const own = await getOwnRequest(account.id, editing, now);
     if (!own) redirect(YOUR_REQUESTS_PATH);
     // The edit page says why a closed or hidden request can't be changed.
     if (own.state !== "open") back(path);
@@ -146,7 +146,7 @@ export async function saveMyRequest(formData: FormData): Promise<void> {
   const check = checkRequest(input, { ...choices, today: sastDate(now), keptNeededBy });
   const errors: RequestError[] = [...check.errors];
   if (!editing && errors.length === 0) {
-    if ((await countOpenRequests(account.id)) >= OPEN_REQUESTS_MAX) errors.push("open-limit");
+    if ((await countOpenRequests(account.id, now)) >= OPEN_REQUESTS_MAX) errors.push("open-limit");
     else if ((await countRequestsSince(account.id, new Date(now.getTime() - DAY_MS))) >= REQUESTS_PER_DAY) {
       errors.push("daily-limit");
     }
@@ -191,8 +191,8 @@ async function changeOpen(formData: FormData, open: boolean): Promise<void> {
   if (!id) done(YOUR_REQUESTS_PATH);
   const now = new Date();
   const note = landing === YOUR_REQUESTS_PATH ? YOUR_REQUESTS_FORM : requestNoteKey(id);
-  if (open && (await getOwnRequest(account.id, id))?.state === "closed") {
-    if ((await countOpenRequests(account.id)) >= OPEN_REQUESTS_MAX) {
+  if (open && (await getOwnRequest(account.id, id, now))?.state === "closed") {
+    if ((await countOpenRequests(account.id, now)) >= OPEN_REQUESTS_MAX) {
       await leaveNote(note, "reopen-limit", now);
       done(landing);
     }
@@ -237,12 +237,12 @@ export async function sendOffer(formData: FormData): Promise<void> {
   if (!id) redirect("/looking-for");
   const path = offerPath(id);
   const account = await requireAccount(path);
+  const now = new Date();
   const subject = await offerSubject(id);
   if (!subject) redirect("/looking-for");
-  const status = await offerStatus(subject, account);
+  const status = await offerStatus(subject, account, sastDate(now));
   // The composer says why anyone else can't offer; a post that arrives anyway just goes back to it.
   if (status.kind !== "open") back(path);
-  const now = new Date();
   const form = offerFormKey(id);
   const message = checkMessage(field(formData, "body"));
   const pointed = status.listings.find((listing) => listing.id === field(formData, "listing")) ?? null;

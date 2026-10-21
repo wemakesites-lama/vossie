@@ -17,6 +17,7 @@ import {
   getHubPostIds,
   getHubPosts,
   getJustListed,
+  getListedRequestIds,
   getListingDetail,
   getListingIds,
   getListingsByIds,
@@ -37,6 +38,9 @@ import {
 import { createRequest, hideRequest } from "./requests";
 import { resetSampleStore, sampleStore } from "./store";
 import type { SearchQuery } from "@/lib/types";
+
+/** The SAST date the request readers are asked about (stage L spec decision 10). No sample request closes itself. */
+const TODAY = "2026-10-14";
 
 // The data layer reads the sample store, seeded from the fixtures (selling plan decision 7). A fresh one for each test.
 beforeEach(() => {
@@ -152,7 +156,7 @@ describe("homepage data", () => {
   });
 
   it("puts a campus's own requests and free and swap items first, then tops up", async () => {
-    expect((await getRequests({ campus: "pretoria", limit: 3 })).map((r) => r.campusSlug)).toEqual([
+    expect((await getRequests({ campus: "pretoria", limit: 3, today: TODAY })).map((r) => r.campusSlug)).toEqual([
       "pretoria",
       "pretoria",
       "midrand",
@@ -162,7 +166,7 @@ describe("homepage data", () => {
       "midrand",
       "midrand",
     ]);
-    expect(await getRequests({ campus: "all", limit: 2 })).toHaveLength(2);
+    expect(await getRequests({ campus: "all", limit: 2, today: TODAY })).toHaveLength(2);
   });
 
   it("lists a campus's events with the every-campus ones, soonest first", async () => {
@@ -348,20 +352,20 @@ describe("Looking For data (community spec 4.3)", () => {
   const ids = (items: readonly { id: string }[]) => items.map((item) => item.id);
 
   it("keeps the homepage's requests as they were, and never shows a closed one there", async () => {
-    expect(ids(await getRequests({ campus: "all", limit: 3 }))).toEqual(["r-001", "r-002", "r-003"]);
-    expect(ids(await getRequests({ campus: "midrand", limit: 3 }))).toEqual(["r-001", "r-003", "r-002"]);
-    expect(ids(await getRequests({ campus: "mbombela", limit: 3 }))).toEqual(["r-001", "r-002", "r-003"]);
-    const everything = ids(await getRequests({ campus: "all", limit: 100 }));
+    expect(ids(await getRequests({ campus: "all", limit: 3, today: TODAY }))).toEqual(["r-001", "r-002", "r-003"]);
+    expect(ids(await getRequests({ campus: "midrand", limit: 3, today: TODAY }))).toEqual(["r-001", "r-003", "r-002"]);
+    expect(ids(await getRequests({ campus: "mbombela", limit: 3, today: TODAY }))).toEqual(["r-001", "r-002", "r-003"]);
+    const everything = ids(await getRequests({ campus: "all", limit: 100, today: TODAY }));
     expect(everything).toHaveLength(14);
     expect(everything).not.toContain("r-015");
   });
 
   it("leads with a campus's own new request where it has one (plan decision 1)", async () => {
-    expect(ids(await getRequests({ campus: "bloemfontein", limit: 3 }))).toEqual(["r-008", "r-001", "r-002"]);
+    expect(ids(await getRequests({ campus: "bloemfontein", limit: 3, today: TODAY }))).toEqual(["r-008", "r-001", "r-002"]);
   });
 
   it("lists every open request for the board, newest first", async () => {
-    expect(ids(await getOpenRequests({ category: null }))).toEqual([
+    expect(ids(await getOpenRequests({ category: null, today: TODAY }))).toEqual([
       "r-001",
       "r-002",
       "r-003",
@@ -380,9 +384,9 @@ describe("Looking For data (community spec 4.3)", () => {
   });
 
   it("narrows the board to one category", async () => {
-    expect(ids(await getOpenRequests({ category: "tech" }))).toEqual(["r-002", "r-013"]);
-    expect(ids(await getOpenRequests({ category: "tutoring" }))).toEqual(["r-001", "r-014"]);
-    expect(await getOpenRequests({ category: "tickets-events" })).toEqual([]);
+    expect(ids(await getOpenRequests({ category: "tech", today: TODAY }))).toEqual(["r-002", "r-013"]);
+    expect(ids(await getOpenRequests({ category: "tutoring", today: TODAY }))).toEqual(["r-001", "r-014"]);
+    expect(await getOpenRequests({ category: "tickets-events", today: TODAY })).toEqual([]);
   });
 
   it("finds any request by id, closed ones too, and lists every id for the pages", async () => {
@@ -437,12 +441,40 @@ describe("Looking For data (community spec 4.3)", () => {
       neededBy: null,
     };
     const posted = await createRequest({ askerId: "acc-student", fields, now: new Date("2026-10-14T08:42:00.000Z") });
-    expect(ids(await getRequests({ campus: "mbombela", limit: 3 }))).toEqual([posted.id, "r-001", "r-002"]);
-    expect(ids(await getOpenRequests({ category: "res-living" }))).toContain(posted.id);
+    expect(ids(await getRequests({ campus: "mbombela", limit: 3, today: TODAY }))).toEqual([posted.id, "r-001", "r-002"]);
+    expect(ids(await getOpenRequests({ category: "res-living", today: TODAY }))).toContain(posted.id);
     expect((await getRequest(posted.id))?.title).toBe("Desk lamp for res");
     await hideRequest("r-001", "Not allowed.", new Date("2026-10-14T09:00:00.000Z"));
     expect(await getRequest("r-001")).toBeNull();
     expect(await getRequestIds()).not.toContain("r-001");
+  });
+
+  it("leaves a request out from its closing day, settled or not, keyed on today (stage L spec decision 10)", async () => {
+    const posted = await createRequest({
+      askerId: "acc-student",
+      fields: {
+        title: "Desk lamp for res",
+        categorySlug: "res-living",
+        campusSlug: "mbombela",
+        details: "A lamp that clips onto a desk, by the weekend.",
+        budgetZar: null,
+        swapWelcome: false,
+        neededBy: "2026-10-16",
+      },
+      now: new Date("2026-10-14T08:42:00.000Z"),
+    });
+    expect(ids(await getOpenRequests({ category: "res-living", today: "2026-10-19" }))).toContain(posted.id);
+    expect(ids(await getOpenRequests({ category: "res-living", today: "2026-10-20" }))).not.toContain(posted.id);
+    expect(ids(await getRequests({ campus: "mbombela", limit: 3, today: "2026-10-19" }))[0]).toBe(posted.id);
+    expect(ids(await getRequests({ campus: "mbombela", limit: 3, today: "2026-10-20" }))).not.toContain(posted.id);
+    const listed = await getListedRequestIds({ today: "2026-10-20" });
+    expect(listed).not.toContain(posted.id);
+    // The samples never close themselves, and the two seeded as closed stay out.
+    expect(listed).toContain("r-001");
+    expect(listed).not.toContain("r-015");
+    // Its page stays: getRequest and getRequestIds are date-free.
+    expect((await getRequest(posted.id))?.closesOn).toBe("2026-10-20");
+    expect(await getRequestIds()).toContain(posted.id);
   });
 });
 
@@ -666,10 +698,11 @@ describe("the cache tags (selling spec 2.1, plan decision 6, amendment 8.13)", (
 
   it("tags the four request readers with requests only (community actions plan decision 1)", async () => {
     const requestReaders = [
-      () => getRequests({ campus: "all", limit: 3 }),
-      () => getOpenRequests({ category: null }),
+      () => getRequests({ campus: "all", limit: 3, today: TODAY }),
+      () => getOpenRequests({ category: null, today: TODAY }),
       () => getRequest("r-001"),
       () => getRequestIds(),
+      () => getListedRequestIds({ today: TODAY }),
     ];
     for (const read of requestReaders) expect(await tagsOf(read)).toEqual([["requests"]]);
   });

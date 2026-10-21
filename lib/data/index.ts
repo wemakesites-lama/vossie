@@ -139,18 +139,35 @@ export async function getFeatured({ campus, day }: { campus: CampusChoice; day: 
   return featuredFor(campus, day);
 }
 
-/** The homepage's open requests (spec 7.11): newest first, the visitor's campus first (community spec 4.3). */
-export async function getRequests({ campus, limit }: CampusQuery): Promise<readonly LookingForRequest[]> {
+/**
+ * The homepage's open requests (spec 7.11): newest first, the visitor's campus first (community spec 4.3). `today` is
+ * the SAST date: a request leaves on its closing day, settled or not (stage L spec decision 10). The cache keys on
+ * it, so the entry turns over at SAST midnight.
+ */
+export async function getRequests({
+  campus,
+  limit,
+  today,
+}: CampusQuery & { today: string }): Promise<readonly LookingForRequest[]> {
   "use cache";
   tagRequests();
-  return campusFirst(listedRequests().sort(newestFirst), campus, limit);
+  return campusFirst(listedRequests(today).sort(newestFirst), campus, limit);
 }
 
-/** The Looking For board (community spec 4.1): open requests, newest first, in one category or in all of them. */
-export async function getOpenRequests({ category }: { category: string | null }): Promise<readonly LookingForRequest[]> {
+/**
+ * The Looking For board (community spec 4.1): requests open on `today`, newest first, in one category or in all of
+ * them (stage L spec decision 10).
+ */
+export async function getOpenRequests({
+  category,
+  today,
+}: {
+  category: string | null;
+  today: string;
+}): Promise<readonly LookingForRequest[]> {
   "use cache";
   tagRequests();
-  return listedRequests()
+  return listedRequests(today)
     .filter((request) => category === null || request.categorySlug === category)
     .sort(newestFirst);
 }
@@ -167,6 +184,16 @@ export async function getRequestIds(): Promise<readonly string[]> {
   "use cache";
   tagRequests();
   return publicRequestIds();
+}
+
+/**
+ * The requests the sitemap offers crawlers: open on `today` (stage L spec decision 19). Their pages stay up and
+ * prerendered either way (getRequestIds).
+ */
+export async function getListedRequestIds({ today }: { today: string }): Promise<readonly string[]> {
+  "use cache";
+  tagRequests();
+  return listedRequests(today).map((request) => request.id);
 }
 
 /**

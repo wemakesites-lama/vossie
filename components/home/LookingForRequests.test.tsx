@@ -22,6 +22,9 @@ vi.mock("@/lib/data", async (importOriginal) => {
 });
 
 // Requests come from the sample store (community actions plan decision 1). A fresh one for each test.
+// It reads the clock after connection() (stage L): a stand-in here, and a fixed day in the tests that post requests.
+vi.mock("next/server", () => ({ connection: async () => undefined }));
+
 beforeEach(() => {
   resetSampleStore();
 });

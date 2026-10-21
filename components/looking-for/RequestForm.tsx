@@ -17,14 +17,16 @@ import { RequestFormView, RequestLocked, requestForm, startValues } from "./Requ
  */
 export async function RequestForm({ requestId }: { requestId: string | null }) {
   const account = await requireAccount(requestId ? editRequestPath(requestId) : NEW_REQUEST_PATH);
-  const own = requestId ? await getOwnRequest(account.id, requestId) : null;
+  // The date's first and last days, the token and whether the request has closed itself all read the clock (decision
+  // 26; stage L spec decision 11), so connection() comes before the request is read.
+  await connection();
+  const now = new Date();
+  const own = requestId ? await getOwnRequest(account.id, requestId, now) : null;
   if (requestId && !own) notFound();
   if (own && own.state !== "open") {
     return <RequestLocked requestId={own.request.id} title={own.request.title} state={own.state} />;
   }
-  // The date's first and last days read the clock (decision 26), and so does the token.
-  await connection();
-  const today = sastDate(new Date());
+  const today = sastDate(now);
   const [state, campuses, categories, once] = await Promise.all([
     readFormState(requestFormKey(requestId)),
     getCampuses(),

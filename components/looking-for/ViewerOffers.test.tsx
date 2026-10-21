@@ -16,11 +16,17 @@ vi.mock("@/lib/looking-for/actions", () => ({ closeMyRequest: async () => {}, re
 
 const NOW = new Date("2026-10-14T08:00:00.000Z");
 
+// It reads the clock after connection() (stage L): a stand-in here, and a fixed day in the tests that post requests.
+vi.mock("next/server", () => ({ connection: async () => undefined }));
+
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-14T08:42:00.000Z"));
   resetSampleStore();
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   viewer.account = null;
   note.notice = null;
 });
@@ -79,5 +85,28 @@ describe("the offers panel, once the session is read (community actions spec 2.1
       "href",
       `/login?next=${encodeURIComponent(`/looking-for/${request.id}/offer`)}`,
     );
+  });
+
+  it("works out from today whether it takes offers, and stores a due request's close (stage L spec decisions 11 and 15)", async () => {
+    const { id } = await createRequest({
+      askerId: "acc-student",
+      fields: {
+        title: "Kettle for res",
+        categorySlug: "res-living",
+        campusSlug: "midrand",
+        details: "A working kettle for my res room, please.",
+        budgetZar: null,
+        swapWelcome: false,
+        neededBy: "2026-10-09",
+      },
+      now: new Date("2026-10-05T08:00:00.000Z"),
+    });
+    // The page's cached copy still says open: nothing has settled it yet.
+    const request = publicRequest(id)!;
+    expect(request.status).toBe("open");
+    render(await ViewerOffers({ request }));
+    expect(screen.getByText("This request is closed")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Offer to help" })).toBeNull();
+    expect(publicRequest(id)?.status).toBe("closed");
   });
 });

@@ -24,6 +24,10 @@ const own = (id: string, title: string, state: OwnRequest["state"], hiddenReason
   },
   state,
   hiddenReason,
+  closedAt: null,
+  closedAutomatically: false,
+  closeReason: null,
+  neededByPassed: false,
 });
 
 const ITEMS = [

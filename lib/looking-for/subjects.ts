@@ -2,6 +2,7 @@ import { getCampuses, getRequest, getSellerListings } from "@/lib/data";
 import { findOffer } from "@/lib/data/offers";
 import { requestAskerId } from "@/lib/data/requests";
 import type { Account, LookingForRequest } from "@/lib/types";
+import { requestOpenOn } from "./rules";
 
 // What an offer is about and whether the visitor can make it (community actions spec 2.8, 2.9 and 2.11; plan
 // decisions 12 and 13), looked up once for the composer page and again by sendOffer, which never trusts the form.
@@ -30,9 +31,14 @@ export type OfferStatus =
  * Only shops offer (spec 2.8): an approved shop with a storefront, not paused. One offer per shop per request, so an
  * offer already made is "offered" (spec 2.9), checked before the shop's own standing: a shop that offered and was
  * paused since can still open its offer (plan amendment 19.7). Then a closed request, and a sample one, which has no
- * one to answer.
+ * one to answer. `today` is the SAST date: a request on its closing day takes no offers, settled or not (stage L spec
+ * decision 14).
  */
-export async function offerStatus(subject: OfferSubject, account: Pick<Account, "id" | "seller">): Promise<OfferStatus> {
+export async function offerStatus(
+  subject: OfferSubject,
+  account: Pick<Account, "id" | "seller">,
+  today: string,
+): Promise<OfferStatus> {
   const { request } = subject;
   const askerId = await requestAskerId(request.id);
   if (askerId === account.id) return { kind: "own" };
@@ -43,7 +49,7 @@ export async function offerStatus(subject: OfferSubject, account: Pick<Account, 
   if (existing) return { kind: "offered", conversationId: existing };
   if (seller.status === "pending" || !seller.sellerSlug) return { kind: "pending" };
   if (seller.status === "paused") return { kind: "paused" };
-  if (request.status !== "open") return { kind: "closed" };
+  if (!requestOpenOn(request, today)) return { kind: "closed" };
   if (!askerId) return { kind: "sample" };
   const listings = await getSellerListings(seller.sellerSlug);
   return {

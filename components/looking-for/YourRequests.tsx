@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { requireAccount } from "@/lib/auth/session";
 import { listOwnRequests } from "@/lib/data/requests";
 import { takeNote } from "@/lib/looking-for/form-state";
@@ -8,7 +9,9 @@ import { YourRequestsView } from "./YourRequestsView";
 /** Your requests for this request's visitor (community actions spec 2.13). Request-time: inside <Suspense>. */
 export async function YourRequests() {
   const account = await requireAccount(YOUR_REQUESTS_PATH);
-  const [items, note] = await Promise.all([listOwnRequests(account.id), takeNote(YOUR_REQUESTS_FORM)]);
+  // The list settles first, so a request whose closing day has come shows as closed (stage L spec decision 11).
+  await connection();
+  const [items, note] = await Promise.all([listOwnRequests(account.id, new Date()), takeNote(YOUR_REQUESTS_FORM)]);
   return <YourRequestsView items={items} notice={requestNoticeText(note?.notice)} />;
 }
 

@@ -10,5 +10,7 @@ import type { LookingForRequest } from "@/lib/types";
  *   vi.mock("@/components/looking-for/ViewerOffers", async () => (await import("@/tests/helpers/viewer-offers")).signedOutViewerOffers);
  */
 export const signedOutViewerOffers = {
-  ViewerOffers: ({ request }: { request: LookingForRequest }) => <PublicOffers request={request} signedIn={false} />,
+  ViewerOffers: ({ request }: { request: LookingForRequest }) => (
+    <PublicOffers request={request} signedIn={false} open={request.status === "open"} />
+  ),
 };

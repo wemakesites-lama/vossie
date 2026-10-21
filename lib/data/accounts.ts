@@ -8,7 +8,7 @@ import { listSessions } from "./sessions";
 import { exportConversations, forgetAccountInMessaging, unreadCounts, type ConversationExport } from "./messages";
 import { exportNotifications, type NotificationExport } from "./notifications";
 import { deleteReportsBy, exportReports, type ReportExport } from "./reports";
-import { exportRequests, forgetRequestsOf, type RequestExport } from "./requests";
+import { exportRequests, forgetRequestsOf, type RequestExport, settleRequests } from "./requests";
 import { exportShop, forgetShopOf, type ListingExport, type OnboardingDraftExport, type ShopExport } from "./shops";
 import { exportStaffToolsData, forgetAccountInStaffTools, type StaffToolsExport } from "./staff-privacy";
 import { sampleStore } from "./store";
@@ -196,6 +196,9 @@ export async function exportAccountData(accountId: string, now: Date): Promise<A
   // Conversations first: exporting them settles any sale that has confirmed itself (messaging plan amendment 3), which
   // reads that sale's notification, and the notifications must be read after that.
   const conversations = await exportConversations(accountId, now);
+  // Old requests close themselves first (stage L spec decision 11), so the download says which did, and the asker's
+  // notification about it is in the notifications read next. Before exportRequests.
+  await settleRequests(now);
   const [reports, notifications] = await Promise.all([exportReports(accountId), exportNotifications(accountId)]);
   const selling = await exportShop(accountId);
   const hub = await exportStaffToolsData(accountId);

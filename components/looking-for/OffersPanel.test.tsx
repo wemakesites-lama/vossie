@@ -21,6 +21,10 @@ const own = (state: OwnRequest["state"]): OwnRequest => ({
   request: { ...OPEN, id: "r-abc", title: "Desk lamp for res", offers: 1, status: state === "closed" ? "closed" : "open" },
   state,
   hiddenReason: null,
+  closedAt: null,
+  closedAutomatically: false,
+  closeReason: null,
+  neededByPassed: false,
 });
 
 describe("the public offers panel (community spec 4.2, community actions spec section 3)", () => {
@@ -37,11 +41,17 @@ describe("the public offers panel (community spec 4.2, community actions spec se
   });
 
   it("goes straight to the composer when signed in, and says when the request is closed", () => {
-    const { unmount } = render(<PublicOffers request={OPEN} signedIn />);
+    const { unmount } = render(<PublicOffers request={OPEN} signedIn open />);
     expect(screen.getByRole("link", { name: "Offer to help" })).toHaveAttribute("href", "/looking-for/r-001/offer");
     unmount();
-    render(<PublicOffers request={CLOSED} signedIn />);
+    render(<PublicOffers request={CLOSED} signedIn open={false} />);
     expect(screen.getByText("This request is closed")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Offer to help" })).toBeNull();
+  });
+
+  it("says closed when today has closed it, though the cached request still says open (stage L spec decision 15)", () => {
+    render(<PublicOffers request={OPEN} signedIn open={false} />);
+    expect(screen.getByText("This request is closed")).toHaveClass("request-offers-count");
     expect(screen.queryByRole("link", { name: "Offer to help" })).toBeNull();
   });
 });

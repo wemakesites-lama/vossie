@@ -1,14 +1,23 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { ArrowRightIcon } from "@/components/icons";
 import { getCampuses, getRequests } from "@/lib/data";
+import { settleRequests } from "@/lib/data/requests";
 import { getViewerContext } from "@/lib/data/viewer";
 import { offersLabel } from "@/lib/format";
+import { sastDate } from "@/lib/time";
 import { SectionError } from "./SectionError";
 
 /** Three open requests, the visitor's campus first. Phones show two (spec 7.11). */
 export async function LookingForRequests() {
   const { campus } = await getViewerContext();
-  const data = await Promise.all([getRequests({ campus, limit: 3 }), getCampuses()]).catch(() => null);
+  // The board's rule (stage L spec decisions 10 and 11). The section renders per request already: it reads the campus
+  // cookie, so connection() moves nothing out of the homepage's static shell.
+  await connection();
+  const now = new Date();
+  const data = await settleRequests(now)
+    .then(() => Promise.all([getRequests({ campus, limit: 3, today: sastDate(now) }), getCampuses()]))
+    .catch(() => null);
   if (!data) return <SectionError id="looking-for" title="Open requests" />;
 
   const [requests, campuses] = data;

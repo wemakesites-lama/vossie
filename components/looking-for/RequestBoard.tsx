@@ -1,9 +1,12 @@
+import { connection } from "next/server";
 import type { ReactNode } from "react";
 import { LinkTabs } from "@/components/ui/LinkTabs";
 import { getCampuses, getCategories, getOpenRequests } from "@/lib/data";
 import { isOnlineCampus } from "@/lib/campus";
+import { settleRequests } from "@/lib/data/requests";
 import { getViewerContext } from "@/lib/data/viewer";
 import { boardHref, readRequestCategory, splitByCampus } from "@/lib/requests";
+import { sastDate } from "@/lib/time";
 import type { CampusChoice, LookingForRequest } from "@/lib/types";
 import { PostRequestLink } from "./PostRequestLink";
 import { RequestRow } from "./RequestRow";
@@ -25,7 +28,13 @@ export async function RequestBoard({ searchParams }: RequestBoardProps) {
     getCategories(),
   ]);
   const category = readRequestCategory(params.cat, categories);
-  const requests = await getOpenRequests({ category }).catch(() => null);
+  // A request leaves the board on its closing day, and the first look after it stores the close and tells its asker
+  // (stage L spec decisions 10 and 11). Both read the clock; this part renders per request already.
+  await connection();
+  const now = new Date();
+  const requests = await settleRequests(now)
+    .then(() => getOpenRequests({ category, today: sastDate(now) }))
+    .catch(() => null);
   const names: Names = {
     campuses: new Map(campuses.map((campus) => [campus.slug, campus.name])),
     categories: new Map(categories.map((item) => [item.slug, item.name])),

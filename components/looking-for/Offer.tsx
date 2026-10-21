@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { readFormState } from "@/lib/auth/form-state";
 import { requireAccount } from "@/lib/auth/session";
+import { settleRequests } from "@/lib/data/requests";
 import { offerFieldPrefix, offerFormKey, offerPath } from "@/lib/looking-for/paths";
 import { offerStatus, offerSubject } from "@/lib/looking-for/subjects";
+import { sastDate } from "@/lib/time";
 import { OfferView, offerForm } from "./OfferView";
 
 /**
@@ -10,10 +13,18 @@ import { OfferView, offerForm } from "./OfferView";
  * <Suspense>. A hidden or unknown request is the 404, signed in or not; a signed-out visitor goes to sign-in and back.
  */
 export async function Offer({ requestId }: { requestId: string }) {
+  // Whether the request still takes offers reads the clock, and a due request's close is stored (stage L spec
+  // decisions 11 and 14).
+  await connection();
+  const now = new Date();
+  await settleRequests(now);
   const subject = await offerSubject(requestId);
   if (!subject) notFound();
   const account = await requireAccount(offerPath(requestId));
-  const [status, state] = await Promise.all([offerStatus(subject, account), readFormState(offerFormKey(requestId))]);
+  const [status, state] = await Promise.all([
+    offerStatus(subject, account, sastDate(now)),
+    readFormState(offerFormKey(requestId)),
+  ]);
   return <OfferView subject={subject} status={status} form={offerForm(state, offerFieldPrefix(requestId))} />;
 }
 

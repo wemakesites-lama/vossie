@@ -600,6 +600,14 @@ export type OwnRequest = {
   state: RequestState;
   /** The Hub's reason, once it has hidden it. */
   hiddenReason: string | null;
+  /** When it closed (stage L): the asker's Close, or the start of its closing day when it closed by itself. */
+  closedAt: string | null;
+  /** It closed by itself rather than by its asker (stage L spec decision 11). */
+  closedAutomatically: boolean;
+  /** Why it closed by itself: its needed-by date, or 30 days with no changes. Null otherwise. */
+  closeReason: "needed-by" | "idle" | null;
+  /** Its needed-by date is before the asker's today, so reopening takes it off (stage L spec decision 13). */
+  neededByPassed: boolean;
 };
 
 /** One offer on a request, as its asker sees it (community actions spec 2.13). */

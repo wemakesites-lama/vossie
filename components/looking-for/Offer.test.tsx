@@ -37,11 +37,17 @@ const post = () =>
     now: NOW,
   });
 
+// It reads the clock after connection() (stage L): a stand-in here, and a fixed day in the tests that post requests.
+vi.mock("next/server", () => ({ connection: async () => undefined }));
+
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-14T08:42:00.000Z"));
   resetSampleStore();
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   viewer.account = null;
 });
 

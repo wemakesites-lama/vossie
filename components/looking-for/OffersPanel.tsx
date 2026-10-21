@@ -10,7 +10,7 @@ import { ViewerOffers } from "./ViewerOffers";
  */
 export function OffersPanel({ request }: { request: LookingForRequest }) {
   return (
-    <Suspense fallback={<PublicOffers request={request} signedIn={false} />}>
+    <Suspense fallback={<PublicOffers request={request} signedIn={false} open={request.status === "open"} />}>
       <ViewerOffers request={request} />
     </Suspense>
   );

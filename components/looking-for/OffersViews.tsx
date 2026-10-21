@@ -13,10 +13,20 @@ import { RequestActions } from "./RequestActions";
 /**
  * Everyone's view of the offers (community spec 4.2): the count and Offer to help, which opens the composer, through
  * sign-in when signed out (community actions spec section 3); or "This request is closed". The static shell has the
- * signed-out version, so the session's version has the same size and nothing moves.
+ * signed-out version, so the session's version has the same size and nothing moves. `open`: whether it takes offers
+ * today. The static shell passes the cached status; the session's part works it out by date, so on a closing day Offer
+ * to help gives way to "This request is closed" as the page finishes (stage L spec decision 15).
  */
-export function PublicOffers({ request, signedIn }: { request: LookingForRequest; signedIn: boolean }) {
-  if (request.status !== "open") return <p className="request-offers-count">This request is closed</p>;
+export function PublicOffers({
+  request,
+  signedIn,
+  open,
+}: {
+  request: LookingForRequest;
+  signedIn: boolean;
+  open: boolean;
+}) {
+  if (!open) return <p className="request-offers-count">This request is closed</p>;
   const composer = offerPath(request.id);
   return (
     <>

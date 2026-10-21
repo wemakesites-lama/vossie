@@ -7,6 +7,7 @@ import type { RequestFields } from "./rules";
 import { offerStatus, offerSubject } from "./subjects";
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
+const TODAY = "2026-10-14";
 
 const FIELDS: RequestFields = {
   title: "Desk lamp for res",
@@ -34,19 +35,26 @@ describe("who can offer (community actions spec 2.8, plan decisions 12 and 13)",
   it("lets an approved shop offer on someone's open request, with its listed listings to point to", async () => {
     const subject = await postedSubject();
     expect(subject.campusName).toBe("Midrand");
-    const status = await offerStatus(subject, TECH_CORNER);
+    const status = await offerStatus(subject, TECH_CORNER, TODAY);
     expect(status).toMatchObject({ kind: "open", askerId: "acc-student", shopSlug: "tech-corner" });
     expect(status.kind === "open" ? status.listings.map((listing) => listing.id).sort() : []).toEqual(["l-001", "l-007"]);
   });
 
+  it("takes no offers on a request's closing day, settled or not (stage L spec decision 14)", async () => {
+    const posted = await createRequest({ askerId: "acc-student", fields: { ...FIELDS, neededBy: "2026-10-16" }, now: NOW });
+    const subject = (await offerSubject(posted.id))!;
+    expect((await offerStatus(subject, TECH_CORNER, "2026-10-19")).kind).toBe("open");
+    expect(await offerStatus(subject, TECH_CORNER, "2026-10-20")).toEqual({ kind: "closed" });
+  });
+
   it("says why anyone else can't: the asker, no shop, a shop waiting for approval, a paused shop", async () => {
     const subject = await postedSubject();
-    expect(await offerStatus(subject, viewer("acc-student", null))).toEqual({ kind: "own" });
-    expect(await offerStatus(subject, viewer("acc-mentor", null))).toEqual({ kind: "no-shop" });
-    expect(await offerStatus(subject, viewer("acc-pending", { status: "pending", sellerSlug: null }))).toEqual({
+    expect(await offerStatus(subject, viewer("acc-student", null), TODAY)).toEqual({ kind: "own" });
+    expect(await offerStatus(subject, viewer("acc-mentor", null), TODAY)).toEqual({ kind: "no-shop" });
+    expect(await offerStatus(subject, viewer("acc-pending", { status: "pending", sellerSlug: null }), TODAY)).toEqual({
       kind: "pending",
     });
-    expect(await offerStatus(subject, viewer("acc-seller", { status: "paused", sellerSlug: "tech-corner" }))).toEqual({
+    expect(await offerStatus(subject, viewer("acc-seller", { status: "paused", sellerSlug: "tech-corner" }), TODAY)).toEqual({
       kind: "paused",
     });
   });
@@ -61,16 +69,16 @@ describe("who can offer (community actions spec 2.8, plan decisions 12 and 13)",
       body: "I can help.",
       now: NOW,
     });
-    expect(await offerStatus(subject, TECH_CORNER)).toEqual({ kind: "offered", conversationId });
-    expect(await offerStatus((await offerSubject("r-015"))!, TECH_CORNER)).toEqual({ kind: "closed" });
-    expect(await offerStatus((await offerSubject("r-002"))!, TECH_CORNER)).toEqual({ kind: "sample" });
+    expect(await offerStatus(subject, TECH_CORNER, TODAY)).toEqual({ kind: "offered", conversationId });
+    expect(await offerStatus((await offerSubject("r-015"))!, TECH_CORNER, TODAY)).toEqual({ kind: "closed" });
+    expect(await offerStatus((await offerSubject("r-002"))!, TECH_CORNER, TODAY)).toEqual({ kind: "sample" });
   });
 
   // Review of Tasks 6 to 15 (plan amendment 19.7): the offer a shop made stays reachable whatever has happened to the shop.
   it("shows a paused shop the offer it already made, and only otherwise that it is paused", async () => {
     const subject = await postedSubject();
     const paused = viewer("acc-seller", { status: "paused", sellerSlug: "tech-corner" });
-    expect(await offerStatus(subject, paused)).toEqual({ kind: "paused" });
+    expect(await offerStatus(subject, paused, TODAY)).toEqual({ kind: "paused" });
     const conversationId = await startOffer({
       askerId: "acc-student",
       request: { id: subject.request.id, title: subject.request.title },
@@ -79,9 +87,9 @@ describe("who can offer (community actions spec 2.8, plan decisions 12 and 13)",
       body: "I can help.",
       now: NOW,
     });
-    expect(await offerStatus(subject, paused)).toEqual({ kind: "offered", conversationId });
+    expect(await offerStatus(subject, paused, TODAY)).toEqual({ kind: "offered", conversationId });
     // A shop waiting for approval has no link yet, so it can have made no offer.
-    expect(await offerStatus(subject, viewer("acc-pending", { status: "pending", sellerSlug: null }))).toEqual({
+    expect(await offerStatus(subject, viewer("acc-pending", { status: "pending", sellerSlug: null }), TODAY)).toEqual({
       kind: "pending",
     });
   });

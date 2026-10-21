@@ -597,7 +597,7 @@ describe("the data export (plan decision 15)", () => {
 describe("offers on Looking For requests (community actions spec 2.7 to 2.12)", () => {
   /** A posted request's fields as the edit form would send them back, for a change of one of them. */
   const requestFields = async (id: string) => {
-    const request = (await getOwnRequest("acc-student", id))!.request;
+    const request = (await getOwnRequest("acc-student", id, NOW))!.request;
     return {
       title: request.title,
       categorySlug: request.categorySlug,
