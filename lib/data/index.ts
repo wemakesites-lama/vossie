@@ -8,7 +8,7 @@ import { trendingSearches } from "@/data/fixtures/trending";
 import { findListings } from "@/lib/browse/results";
 import { ALL_CAMPUSES } from "@/lib/campus";
 import { matchesRule } from "@/lib/collections";
-import { orderHubPosts, toHubEvent } from "@/lib/hub";
+import { hasPassed, orderHubPosts, toHubEvent } from "@/lib/hub";
 import type {
   Announcement,
   Campus,
@@ -285,6 +285,18 @@ export async function getHubPostIds(): Promise<readonly string[]> {
   "use cache";
   tagHub();
   return publishedPosts().map((post) => post.id);
+}
+
+/**
+ * The posts the sitemap offers crawlers (stage L spec decision 19): tips, which don't date, and events and office hours
+ * from `today` (a SAST date) on, as the feed shows them. A past post's page stays up and prerendered (getHubPostIds).
+ */
+export async function getListedHubPostIds({ today }: { today: string }): Promise<readonly string[]> {
+  "use cache";
+  tagHub();
+  return publishedPosts()
+    .filter((post) => !hasPassed(post, today))
+    .map((post) => post.id);
 }
 
 /** The Hub's Verified sellers (community spec 5.1), A to Z by name so no one is favoured (plan decision 11). */

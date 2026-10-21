@@ -17,6 +17,7 @@ import {
   getHubPostIds,
   getHubPosts,
   getJustListed,
+  getListedHubPostIds,
   getListedRequestIds,
   getListingDetail,
   getListingIds,
@@ -547,6 +548,16 @@ describe("Hub data (community spec 5.3)", () => {
     expect(await getHubPostIds()).toHaveLength(18);
   });
 
+  it("lists the posts worth crawling on a day: tips, and events and office hours from that day on (stage L spec 2.19)", async () => {
+    const onThe20th = await getListedHubPostIds({ today: "2026-10-20" });
+    expect(onThe20th).toContain("h-003"); // Market day, 20 October: today still counts
+    expect(onThe20th).toContain("h-005"); // Hub mixer, 28 October
+    expect(onThe20th).toContain("h-013"); // a tip, which doesn't date
+    expect(onThe20th).not.toContain("h-002"); // office hours on 15 October
+    expect(onThe20th).not.toContain("h-011"); // the open day of 16 September
+    expect(await getListedHubPostIds({ today: "2026-10-12" })).toContain("h-002");
+  });
+
   it("lists the Hub's Verified sellers A to Z (plan decision 11)", async () => {
     expect((await getVerifiedSellers()).map((seller) => seller.name)).toEqual([
       "Code coach",
@@ -705,6 +716,10 @@ describe("the cache tags (selling spec 2.1, plan decision 6, amendment 8.13)", (
       () => getListedRequestIds({ today: TODAY }),
     ];
     for (const read of requestReaders) expect(await tagsOf(read)).toEqual([["requests"]]);
+  });
+
+  it("tags the sitemap's Hub reader with hub (stage L spec section 5)", async () => {
+    expect(await tagsOf(() => getListedHubPostIds({ today: TODAY }))).toEqual([["hub"]]);
   });
 
   it("tags a listing's page with listings, sellers and pickup points (staff tools plan decision 10)", async () => {
