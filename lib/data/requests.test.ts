@@ -336,3 +336,119 @@ describe("old requests close themselves (stage L spec decisions 8 to 16)", () =>
     expect((await exportRequests("acc-student")).map((row) => row.closedAutomatically)).toEqual([true]);
   });
 });
+
+describe("one reminder before a request closes itself (stage M spec decisions 13 to 20)", () => {
+  // Needed by 16 October: closed from the 20th, reminded from the 18th (00:00 in South Africa is 22:00 UTC the day before).
+  const DATED: RequestFields = { ...FIELDS, neededBy: "2026-10-16" };
+  const ON_THE_18TH = new Date("2026-10-18T08:00:00.000Z");
+  const notes = async () =>
+    (await getNotifications("acc-student", 20)).filter((item) => item.kind === "request-update");
+
+  it("reminds the asker once from the reminder day, linking to Your requests, and closes nothing", async () => {
+    const { id } = await post("acc-student", NOW, DATED);
+    expect(await settleRequests(ON_THE_18TH)).toBe(0);
+    expect(sampleStore().requests.get(id)).toMatchObject({ status: "open", closedAt: null, remindedFor: "2026-10-20" });
+    expect(await notes()).toEqual([
+      expect.objectContaining({
+        text: "Your request Desk lamp for res closes automatically on 20 Oct, 3 days after the date you needed it by. Still need it? Give it a new date in Your requests.",
+        href: "/account/requests",
+      }),
+    ]);
+    expect(await settleRequests(new Date("2026-10-19T08:00:00.000Z"))).toBe(0);
+    expect(await notes()).toHaveLength(1);
+  });
+
+  it("words the 30 days' reminder for a request with no needed-by date", async () => {
+    // Posted 14 October: closed from 13 November, reminded from the 11th.
+    await post("acc-student", NOW);
+    await settleRequests(new Date("2026-11-11T08:00:00.000Z"));
+    expect((await notes()).map((item) => item.text)).toEqual([
+      "Your request Desk lamp for res closes automatically on 13 Nov, after 30 days with no changes. Still need it? Edit it in Your requests and it stays up for 30 days more.",
+    ]);
+  });
+
+  it("starts at the very start of the reminder day in South Africa, not a second before", async () => {
+    const { id } = await post("acc-student", NOW, DATED);
+    await settleRequests(new Date("2026-10-17T21:59:59.000Z"));
+    expect(await notes()).toEqual([]);
+    expect(sampleStore().requests.get(id)?.remindedFor).toBeNull();
+    await settleRequests(new Date("2026-10-17T22:00:00.000Z"));
+    expect(await notes()).toHaveLength(1);
+  });
+
+  it("reminds again when an edit moves the closing day, and not when it keeps it", async () => {
+    const { id } = await post("acc-student", NOW, DATED);
+    await settleRequests(ON_THE_18TH);
+    // A new title, the same date: the same closing day, so no second reminder.
+    await updateRequest("acc-student", id, { ...DATED, title: "Clip-on desk lamp" }, ON_THE_18TH);
+    await settleRequests(new Date("2026-10-19T08:00:00.000Z"));
+    expect(await notes()).toHaveLength(1);
+    // Needed by the 25th now: closed from the 29th, reminded from the 27th.
+    // DATED's own title again, so the new reminder names "Desk lamp for res".
+    await updateRequest("acc-student", id, { ...DATED, neededBy: "2026-10-25" }, new Date("2026-10-19T09:00:00.000Z"));
+    await settleRequests(new Date("2026-10-26T08:00:00.000Z"));
+    expect(await notes()).toHaveLength(1);
+    await settleRequests(new Date("2026-10-27T08:00:00.000Z"));
+    // Newest first; the old reminder stays, naming the day it was sent for (decision 19).
+    expect((await notes()).map((item) => item.text)).toEqual([
+      expect.stringMatching(/^Your request Desk lamp for res closes automatically on 29 Oct,/),
+      expect.stringMatching(/closes automatically on 20 Oct,/),
+    ]);
+    expect(sampleStore().requests.get(id)?.remindedFor).toBe("2026-10-29");
+  });
+
+  it("reminds again after a reopen gives the request a new closing day", async () => {
+    // Posted 14 September: closed from 14 October, reminded from the 12th.
+    const { id } = await post("acc-student", new Date("2026-09-14T08:00:00.000Z"));
+    await settleRequests(new Date("2026-10-12T08:00:00.000Z"));
+    expect(await settleRequests(NOW)).toBe(1);
+    await setRequestOpen("acc-student", id, true, NOW);
+    // Reopened 14 October: closed from 13 November, reminded from the 11th.
+    await settleRequests(new Date("2026-11-11T08:00:00.000Z"));
+    expect((await notes()).map((item) => item.text)).toEqual([
+      expect.stringMatching(/closes automatically on 13 Nov,/),
+      expect.stringMatching(/closed automatically after 30 days/),
+      expect.stringMatching(/closes automatically on 14 Oct,/),
+    ]);
+    expect(sampleStore().requests.get(id)?.remindedFor).toBe("2026-11-13");
+  });
+
+  it("sends only the close when nothing looked during the two days", async () => {
+    await post("acc-student", NOW, DATED);
+    expect(await settleRequests(new Date("2026-10-20T08:00:00.000Z"))).toBe(1);
+    expect((await notes()).map((item) => item.text)).toEqual([
+      expect.stringMatching(/closed automatically 3 days after the date you needed it by/),
+    ]);
+  });
+
+  it("never reminds about a sample, a hidden request or a closed one", async () => {
+    const hidden = await post("acc-student", NOW, DATED);
+    await hideRequest(hidden.id, "Checking it.", NOW);
+    const closed = await post("acc-student", NOW, DATED);
+    await setRequestOpen("acc-student", closed.id, false, NOW);
+    // r-001 was needed by 16 October too, but a sample has no asker and no closing day.
+    await settleRequests(ON_THE_18TH);
+    expect(await notes()).toEqual([]);
+    expect([...sampleStore().requests.values()].every((row) => row.remindedFor === null)).toBe(true);
+  });
+
+  it("reminds once when two looks come at once", async () => {
+    await post("acc-student", NOW, DATED);
+    await Promise.all([settleRequests(ON_THE_18TH), settleRequests(ON_THE_18TH)]);
+    expect(await notes()).toHaveLength(1);
+  });
+
+  it("goes with the request when it's deleted", async () => {
+    const { id } = await post("acc-student", NOW, DATED);
+    await settleRequests(ON_THE_18TH);
+    expect(await deleteRequest("acc-student", id)).toBe(true);
+    expect(await notes()).toEqual([]);
+  });
+
+  it("starts every new request unreminded, and leaves the field out of the data download (decision 20)", async () => {
+    const { id } = await post("acc-student", NOW, DATED);
+    expect(sampleStore().requests.get(id)?.remindedFor).toBeNull();
+    await settleRequests(ON_THE_18TH);
+    expect(Object.keys((await exportRequests("acc-student"))[0])).not.toContain("remindedFor");
+  });
+});

@@ -355,12 +355,12 @@ describe("what stages H to K changed in the policy (stage K spec 6)", () => {
     );
   });
 
-  it("says requests close themselves, that you're told, and that you can reopen one (stage L spec section 4)", () => {
+  it("says requests close themselves, that you're reminded and told, and that you can reopen one (stages L and M)", () => {
     render(<PrivacyPage />);
     const account = screen.getByRole("region", { name: "Your account" });
-    expect(account).toHaveTextContent(/the Hub acts on your report, your shop, your listing or your request, your request closes automatically, a mentor answers/);
+    expect(account).toHaveTextContent(/the Hub acts on your report, your shop, your listing or your request, your request is about to close automatically, or does, a mentor answers/);
     expect(account).toHaveTextContent(
-      "An open request closes automatically 3 days after its needed-by date, or after 30 days with no changes; you're told, and you can reopen it.",
+      "An open request closes automatically 3 days after its needed-by date, or after 30 days with no changes; you're reminded 2 days before and told when it does, and you can reopen it.",
     );
   });
 });

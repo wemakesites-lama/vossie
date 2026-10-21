@@ -118,8 +118,8 @@ const SECTIONS: readonly InfoSection[] = [
           for an office-hours slot, and set up a shop of your own.
         </p>
         <p>
-          Requests close automatically 3 days after their needed-by date, or after 30 days with no changes. You can
-          reopen one.
+          Requests close automatically 3 days after their needed-by date, or after 30 days with no changes. You&apos;re
+          reminded 2 days before, and you can reopen one.
         </p>
         <p>
           While Vossie is a preview, what you add lives in the server&apos;s memory, so it can disappear when the

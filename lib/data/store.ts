@@ -105,8 +105,9 @@ export type SampleStore = {
  * 11: audit rows gain relatedId, so a deleted mentor's name leaves the entries that assigned them.
  * 12: a Looking For request says who closed it, its asker or the rule (`closedBy`, stage L spec decision 11).
  * 13: a report remembers who owned its target (`targetOwnerId`), so deleting the target doesn't free its owner to dismiss it.
+ * 14: a Looking For request remembers the closing day its reminder was sent for (`remindedFor`, stage M spec decision 15).
  */
-export const STORE_VERSION = 13;
+export const STORE_VERSION = 14;
 
 type StoreHolder = { __vossieSampleStore?: SampleStore };
 

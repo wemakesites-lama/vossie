@@ -490,6 +490,12 @@ export type RequestRow = {
   closedAt: string | null;
   /** Who closed it (stage L spec decision 11): its asker, or "auto" when it closed by itself. Null while it's open, and on the samples. */
   closedBy: "asker" | "auto" | null;
+  /**
+   * The closing day (SAST date) the asker was reminded about, 2 days before it (stage M spec decision 15). A new
+   * closing day, after an edit or a reopen, allows a new reminder; nothing clears it. Null until one is sent, and on
+   * the samples.
+   */
+  remindedFor: string | null;
   /** The fixture's offers number, kept only on the samples, which have no offer threads (spec 2.11). 0 otherwise. */
   seedOffers: number;
   /** When and why the Hub hid it (spec 2.14), as G's hidden listings. Null while it isn't hidden. */

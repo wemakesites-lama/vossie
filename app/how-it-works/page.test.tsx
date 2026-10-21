@@ -71,7 +71,7 @@ describe("How it works (info and system spec 3)", () => {
     // Stage L: requests close themselves, and can be reopened (spec section 4, Words).
     expect(
       within(questions).getByText(
-        "Requests close automatically 3 days after their needed-by date, or after 30 days with no changes. You can reopen one.",
+        "Requests close automatically 3 days after their needed-by date, or after 30 days with no changes. You're reminded 2 days before, and you can reopen one.",
       ),
     ).toBeInTheDocument();
   });

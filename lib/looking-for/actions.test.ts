@@ -487,3 +487,22 @@ describe("old requests close themselves in every Looking For action (stage L spe
     expect(closedItself(old.id)).toBe(true);
   });
 });
+
+describe("the reminder in a Looking For action (stage M spec decision 14)", () => {
+  it("reminds the asker without expiring the board: only a close does", async () => {
+    await asStudent();
+    // Needed by the 12th: closed from the 16th, reminded from the 14th, STAFF_NOW's day.
+    const { id } = await createRequest({
+      askerId: "acc-student",
+      fields: { ...FIELDS, neededBy: "2026-10-12" },
+      now: STAFF_NOW,
+    });
+    const theirs = await posted("acc-mentor");
+    // A press that changes nothing itself (Close on someone else's request), so only the settle could expire a tag.
+    await redirectOf(() => closeMyRequest(form({ request: theirs.id })));
+    expect(sampleStore().requests.get(id)).toMatchObject({ status: "open", remindedFor: "2026-10-16" });
+    expect(request.updatedTags).toEqual([]);
+    const told = (await getNotifications("acc-student", 20)).filter((item) => item.kind === "request-update");
+    expect(told).toHaveLength(1);
+  });
+});

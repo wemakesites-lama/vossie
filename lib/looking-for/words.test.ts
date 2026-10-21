@@ -6,6 +6,7 @@ import {
   offerNoteText,
   REOPEN_CLEARS_DATE_HINT,
   requestAutoClosedText,
+  requestCloseReminderText,
   requestHiddenText,
   requestNoticeText,
   requestStateLabel,
@@ -67,6 +68,17 @@ describe("requests that close themselves (stage L spec section 4, Words)", () =>
     );
     expect(CLOSES_BY_ITSELF_HINT).toBe(
       "Your request closes automatically 3 days after this date. Without one, it closes after 30 days with no changes.",
+    );
+  });
+});
+
+describe("the reminder before a request closes itself (stage M spec section 5, Words)", () => {
+  it("names the closing day and why, and what keeps the request up", () => {
+    expect(requestCloseReminderText("Kettle for res", "2026-10-20", "needed-by")).toBe(
+      "Your request Kettle for res closes automatically on 20 Oct, 3 days after the date you needed it by. Still need it? Give it a new date in Your requests.",
+    );
+    expect(requestCloseReminderText("Kettle for res", "2026-11-12", "idle")).toBe(
+      "Your request Kettle for res closes automatically on 12 Nov, after 30 days with no changes. Still need it? Edit it in Your requests and it stays up for 30 days more.",
     );
   });
 });

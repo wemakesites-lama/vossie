@@ -23,15 +23,12 @@ describe("the sample requests as the store's rows (community actions plan decisi
     }
   });
 
-  it("names no asker, and none is closed by anyone or hidden", () => {
+  it("names no asker, and none is closed by anyone, hidden or reminded (stage M spec decision 15)", () => {
     for (const row of sampleRequestRows) {
-      expect([row.askerId, row.closedAt, row.closedBy, row.hiddenAt, row.hiddenReason], row.id).toEqual([
-        null,
-        null,
-        null,
-        null,
-        null,
-      ]);
+      expect(
+        [row.askerId, row.closedAt, row.closedBy, row.hiddenAt, row.hiddenReason, row.remindedFor],
+        row.id,
+      ).toEqual([null, null, null, null, null, null]);
     }
   });
 

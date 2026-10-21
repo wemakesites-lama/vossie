@@ -10,6 +10,9 @@ import {
   IDLE_CLOSE_DAYS,
   NEEDED_BY_GRACE_DAYS,
   parseBudget,
+  REMINDER_DAYS_BEFORE,
+  reminderDay,
+  reminderDue,
   requestOpenOn,
   type RequestInput,
 } from "./rules";
@@ -291,5 +294,43 @@ describe("when a request closes itself (stage L spec decisions 8 to 10)", () => 
     expect(closingDay({ ...ROW, neededBy: "2026-12-30" })).toBe("2027-01-03");
     expect(closingDay({ ...ROW, updatedAt: "2026-12-15T22:30:00.000Z" })).toBe("2027-01-15");
     expect(closedAtFor("2027-01-01")).toBe("2026-12-31T22:00:00.000Z");
+  });
+});
+
+describe("the reminder before a request closes itself (stage M spec decisions 13 to 16)", () => {
+  // Needed by Friday 16 October: closed from Tuesday 20, reminded from Sunday 18.
+  const ROW = {
+    askerId: "acc-student",
+    neededBy: "2026-10-16",
+    updatedAt: "2026-10-13T09:30:00.000Z",
+    status: "open" as const,
+    hiddenAt: null,
+    remindedFor: null,
+  };
+
+  it("is due from two days before the closing day, in South African dates", () => {
+    expect(REMINDER_DAYS_BEFORE).toBe(2);
+    expect(reminderDay("2026-10-20")).toBe("2026-10-18");
+    // Posted 13 October with no date: closed from 12 November, reminded from the 10th.
+    expect(reminderDay("2026-11-12")).toBe("2026-11-10");
+    expect(reminderDay("2027-01-01")).toBe("2026-12-30");
+  });
+
+  it("is due on the two days before the closing day, and not the day before them or on the closing day", () => {
+    expect(reminderDue(ROW, "2026-10-17")).toBe(false);
+    expect(reminderDue(ROW, "2026-10-18")).toBe(true);
+    expect(reminderDue(ROW, "2026-10-19")).toBe(true);
+    expect(reminderDue(ROW, "2026-10-20")).toBe(false);
+  });
+
+  it("is sent once per closing day: not again for the same day, again for a new one", () => {
+    expect(reminderDue({ ...ROW, remindedFor: "2026-10-20" }, "2026-10-18")).toBe(false);
+    expect(reminderDue({ ...ROW, remindedFor: "2026-10-15" }, "2026-10-18")).toBe(true);
+  });
+
+  it("is never due for a sample, a hidden request or a closed one", () => {
+    expect(reminderDue({ ...ROW, askerId: null }, "2026-10-18")).toBe(false);
+    expect(reminderDue({ ...ROW, hiddenAt: "2026-10-15T08:00:00.000Z" }, "2026-10-18")).toBe(false);
+    expect(reminderDue({ ...ROW, status: "closed" }, "2026-10-18")).toBe(false);
   });
 });

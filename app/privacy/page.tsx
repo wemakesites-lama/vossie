@@ -168,17 +168,17 @@ const SECTIONS: readonly InfoSection[] = [
           <li>
             <strong>Your notifications.</strong> A note when someone messages you, a sale needs confirming, a shop
             offers to help with your request, a shop you follow lists something new, a search you saved has a new
-            match, the Hub acts on your report, your shop, your listing or your request, your request closes
-            automatically, a mentor answers your slot request, someone asks for a slot at your office hours, or your
-            staff role changes. Only you see them.
+            match, the Hub acts on your report, your shop, your listing or your request, your request is about to
+            close automatically, or does, a mentor answers your slot request, someone asks for a slot at your office
+            hours, or your staff role changes. Only you see them.
             Allowed under POPIA section 11: needed to run your account.
           </li>
           <li>
             <strong>Your Looking For requests.</strong> What you ask for, shown to everyone as &quot;Asked by a student
             at&quot; your campus, never with your name. Vossie keeps which account asked, so only you can change or
             delete it. Allowed under POPIA section 11: needed to run the service you ask for. An open request closes
-            automatically 3 days after its needed-by date, or after 30 days with no changes; you&apos;re told, and you
-            can reopen it.
+            automatically 3 days after its needed-by date, or after 30 days with no changes; you&apos;re reminded 2
+            days before and told when it does, and you can reopen it.
           </li>
           <li>
             <strong>The shops you follow.</strong> So Saved can list them and tell you when they list something new; a

@@ -1,3 +1,4 @@
+import { dayMonth } from "@/lib/format";
 import type { RequestState } from "@/lib/types";
 import { type CloseReason, IDLE_CLOSE_DAYS, NEEDED_BY_GRACE_DAYS, OPEN_REQUESTS_MAX } from "./rules";
 
@@ -53,6 +54,20 @@ export const AUTO_CLOSE_WHY: Readonly<Record<CloseReason, string>> = {
 /** The asker's notification when their request closes by itself (stage L spec decision 12), "request-update" kind. */
 export function requestAutoClosedText(title: string, reason: CloseReason): string {
   return `Your request ${title} closed automatically ${AUTO_CLOSE_WHY[reason]}. Reopen it in Your requests if you still need it.`;
+}
+
+/** What keeps the request up, by why it would close (stage M spec section 5, Words). */
+const REMINDER_NEXT: Readonly<Record<CloseReason, string>> = {
+  "needed-by": "Give it a new date in Your requests.",
+  idle: `Edit it in Your requests and it stays up for ${IDLE_CLOSE_DAYS} days more.`,
+};
+
+/**
+ * The asker's one reminder, 2 days before their request closes itself (stage M spec decisions 13 and 17), with the
+ * "request-update" kind. `closesOn` is the closing day, written as Your requests writes it.
+ */
+export function requestCloseReminderText(title: string, closesOn: string, reason: CloseReason): string {
+  return `Your request ${title} closes automatically on ${dayMonth(closesOn)}, ${AUTO_CLOSE_WHY[reason]}. Still need it? ${REMINDER_NEXT[reason]}`;
 }
 
 /** Under Reopen when the request's needed-by date has passed (stage L spec decision 13). */

@@ -2,8 +2,16 @@ import { randomUUID } from "node:crypto";
 import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
 import { YOUR_REQUESTS_PATH } from "@/lib/looking-for/paths";
-import { closedAtFor, closeReasonOf, closingDay, requestOpenOn, type RequestFields } from "@/lib/looking-for/rules";
-import { requestAutoClosedText } from "@/lib/looking-for/words";
+import {
+  closedAtFor,
+  closeReasonOf,
+  closingDay,
+  type CloseReason,
+  reminderDue,
+  requestOpenOn,
+  type RequestFields,
+} from "@/lib/looking-for/rules";
+import { requestAutoClosedText, requestCloseReminderText } from "@/lib/looking-for/words";
 import { sastDate } from "@/lib/time";
 import type { LookingForRequest, OwnRequest, RequestState } from "@/lib/types";
 import { deleteNotificationsAbout, notify } from "./notifications";
@@ -18,7 +26,7 @@ import { sampleStore } from "./store";
 //
 // Old requests close themselves (stage L spec decisions 8 to 16). Every reader that lists requests applies the rule by
 // `today`, so it's right whether or not the close has been stored, and settleRequests(now) stores it the first time
-// something request-time looks, telling the asker once. Nothing here that's called from "use cache" writes.
+// something request-time looks, telling the asker once. Two days before, it reminds them once (stage M). Nothing here that's called from "use cache" writes.
 
 /** A row as part B's LookingForRequest. The offers count is the offer threads plus the sample's number (spec 2.11). */
 function toRequest(row: RequestRow): LookingForRequest {
@@ -95,22 +103,32 @@ export function publicRequestIds(): string[] {
 /**
  * Stores the close of every open, unhidden request whose closing day has come (stage L spec decisions 11, 12 and 16),
  * and tells each asker once, in the app: `status` "closed", `closedAt` the start of the closing day in SAST, `closedBy`
- * "auto", `updatedAt` as it was. Every due row is marked in one pass before anything is awaited, so two renders at once
- * can't close a request twice or tell its asker twice, and a closed row is never settled again. A hidden request
- * waits until it's shown again; a sample one never closes. It writes, so request-time code only: never inside
- * "use cache". How many it closed, so a Server Action knows to call requestsChanged().
+ * "auto", `updatedAt` as it was. From 2 days before the closing day it reminds the asker once instead, marking
+ * `remindedFor` with that closing day (stage M spec decisions 13 to 15); a request that reaches its closing day
+ * unreminded gets only the close. Every due row is marked in one pass before anything is awaited, so two renders at
+ * once can't close a request twice, or tell or remind its asker twice, and a closed row is never settled again. A
+ * hidden request waits until it's shown again; a sample one never closes. It writes, so request-time code only: never
+ * inside "use cache". How many it closed, so a Server Action knows to call requestsChanged(): a reminder changes
+ * nothing a cached page shows.
  */
 export async function settleRequests(now: Date): Promise<number> {
   const today = sastDate(now);
   const closed: RequestRow[] = [];
+  // Copied when marked, so the words are the ones that were due (stage M plan decision 9).
+  const reminders: { askerId: string; id: string; title: string; closesOn: string; reason: CloseReason }[] = [];
   for (const row of sampleStore().requests.values()) {
     if (row.status !== "open" || row.hiddenAt !== null) continue;
     const day = closingDay(row);
-    if (day === null || today < day) continue;
-    row.status = "closed";
-    row.closedAt = closedAtFor(day);
-    row.closedBy = "auto";
-    closed.push(row);
+    if (day === null) continue;
+    if (today >= day) {
+      row.status = "closed";
+      row.closedAt = closedAtFor(day);
+      row.closedBy = "auto";
+      closed.push(row);
+    } else if (row.askerId !== null && reminderDue(row, today)) {
+      row.remindedFor = day;
+      reminders.push({ askerId: row.askerId, id: row.id, title: row.title, closesOn: day, reason: closeReasonOf(row) });
+    }
   }
   for (const row of closed) {
     if (row.askerId === null) continue;
@@ -119,6 +137,16 @@ export async function settleRequests(now: Date): Promise<number> {
       kind: "request-update",
       subjectId: row.id,
       text: requestAutoClosedText(row.title, closeReasonOf(row)),
+      href: YOUR_REQUESTS_PATH,
+      now,
+    });
+  }
+  for (const reminder of reminders) {
+    await notify({
+      accountId: reminder.askerId,
+      kind: "request-update",
+      subjectId: reminder.id,
+      text: requestCloseReminderText(reminder.title, reminder.closesOn, reminder.reason),
       href: YOUR_REQUESTS_PATH,
       now,
     });
@@ -187,6 +215,7 @@ export async function createRequest({
     updatedAt: at,
     closedAt: null,
     closedBy: null,
+    remindedFor: null,
     seedOffers: 0,
     hiddenAt: null,
     hiddenReason: null,

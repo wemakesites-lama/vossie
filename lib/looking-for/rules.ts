@@ -218,6 +218,38 @@ export function closedAtFor(day: string): string {
   return new Date(`${day}T00:00:00+02:00`).toISOString();
 }
 
+// --- The reminder (stage M spec decisions 13 to 16) ---------------------------------------------------------------
+
+/** Days before the closing day the asker is reminded, once: two whole open days to act (stage M spec decision 13). */
+export const REMINDER_DAYS_BEFORE = 2;
+
+/** The SAST date (YYYY-MM-DD) the reminder is due from, for a request that closes on `closesOn`. */
+export function reminderDay(closesOn: string): string {
+  return addDays(closesOn, -REMINDER_DAYS_BEFORE);
+}
+
+/**
+ * Whether the asker is due their one reminder on `today`, a SAST date (stage M spec decisions 13, 15 and 16): the
+ * request is open, not hidden and has an asker (so a closing day); today is from its reminder day to the day before its
+ * closing day; and no reminder has been sent for that closing day. An edit or a reopen that moves the closing day
+ * allows a new one. A function of the row and the date alone: it reads no clock.
+ */
+export function reminderDue(
+  row: {
+    askerId: string | null;
+    neededBy: string | null;
+    updatedAt: string;
+    status: RequestStatus;
+    hiddenAt: string | null;
+    remindedFor: string | null;
+  },
+  today: string,
+): boolean {
+  if (row.status !== "open" || row.hiddenAt !== null) return false;
+  const closesOn = closingDay(row);
+  return closesOn !== null && reminderDay(closesOn) <= today && today < closesOn && row.remindedFor !== closesOn;
+}
+
 /** A title on one line: E's cleanText, then every run of white space as one space. */
 function cleanTitle(raw: string): string {
   return cleanText(raw).replace(/\s+/g, " ");
