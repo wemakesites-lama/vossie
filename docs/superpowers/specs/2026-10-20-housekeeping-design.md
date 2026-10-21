@@ -1,7 +1,7 @@
 # Vossie housekeeping: design spec
 
 - **Date:** 2026-10-20
-- **Status:** Draft (2026-10-20), decided by Claude under Lama's standing goal (decision 54); Lama may revisit.
+- **Status:** Built (2026-10-21), in sample mode. Decided by Claude under Lama's standing goal (decision 54); Lama may revisit.
 - **Scope:** stage L. The go-live checklist's (`docs/reference/GO-LIVE.md`) items that sample mode can build, refined against the code:
   1. **An admin can't act on their own shop** (section 7, "Should an admin be able to act on their own shop?"; stage J spec section 10; PROGRESS's stage J open point 1).
   2. **Old Looking For requests close themselves** (section 6, Backend, the scheduled jobs line; PROGRESS's stage H open point "Nothing closes a request on its own").
@@ -477,3 +477,39 @@ The plan checks `pnpm build` and `tests/e2e/performance.spec.ts` after items 2 a
 5. **Featured's resting order** (decision 20): order resting sellers least recently featured first? A few lines, no change on the page.
 6. **A reminder before a request closes** (section 7): wanted?
 7. **The sample words** in sections 3 and 4.
+
+## 11. Changes on plan review and build
+
+- **Review fix (`1f55ee5`).** The code review found that an admin could dismiss reports about their own listing or request once they had deleted it, because `own` was worked out only while the target existed. A report now records who owned its target when it is made (`targetOwnerId`, `STORE_VERSION` 13), and `own` falls back to it when the target has gone; deleting an account clears its id from every report (POPIA), and the reports stay for the Hub. The review's test gaps were closed too: a refused Show again settles nothing (mutation-checked), the closing day's last second and first second, a visible-only locator, and Sipho's context closed in the finally. Unit: 2,661.
+
+From the plan (`docs/superpowers/plans/2026-10-20-housekeeping.md`), its amendments on review and its "Changes made during the build". Where one differs from the text above, this section wins.
+
+1. **The mentors' notes leak in decision 5 and section 3 was already closed** by staff tools amendment 15.3 (`5af3548`): `mentoredShops` leaves out the viewer's own shop for every role, so `/mentor/{own}` is the 404, notes and check-ins about yourself reach `notFound()`, and the CSV leaves the row out. Stage L pinned it with two tests (Sipho made an admin while Naledi mentors Tech corner; the CSV) and built the two parts still open: the mentor dropdown leaves out the owner and `assignMentor` refuses your own shop (plan decision 1).
+2. **The ownership reads are synchronous**; `ownsTarget` returns the kind (`shop`, `listing` or `request`) or null (plan decision 2).
+3. **The viewer arguments are optional** (null means nobody's own) and `listReports` doesn't take one; `featuredChoices` keeps returning `Seller[]`, and the page works out `ownLeftOut` (plan decisions 3 and 4).
+4. **Where a refusal lands:** the page that shows staff notices, since the confirm pages show none (plan decision 5). The gate runs before the reason is read and, for the report actions, before `can.hide` or `can.pause`.
+5. **The only-admin link is a 44px pill named "Staff"** on its own line, after the spec's sentence (plan decision 7).
+6. **`RequestForm` and `DeleteRequest` read the clock too;** `OwnRequest` gains `neededByPassed`; `setRequestOpen` returns `neededByCleared`; `offerStatus` takes `today`; there is no `listedRequestIds` in `requests.ts` (plan decisions 12 to 15 and 17).
+7. **The closed request's edit page gets the reopen hint** (plan decision 18).
+8. **The seeds' fixtures set `closesOn` and `closedBy` to null** (plan decision 21); one existing test's date moved from 10 to 12 October (plan decision 20). `STORE_VERSION` went from 11 to 12, because the Supabase merge took 11 first (plan decision 22).
+9. **How it works' sentence went into "What can I do on Vossie today?"** (plan decision 23).
+10. **The sitemap's old unit test** (closed requests and past events included) was replaced by this spec's. **The sitemap is now dynamic** (`ƒ /sitemap.xml`): it calls `connection()` before reading the SAST date, so it renders per fetch rather than being cached (plan decision 25).
+11. **Section 10's questions stay open for Lama:** the build used this spec's choices.
+
+Amendments on plan review (all accepted, numbered as in the plan):
+
+1. The Supabase phases B and C merge had landed (`8644023`), so the stage starts at 2,559 unit tests.
+2. `tests/helpers/viewer-offers.tsx` was a file Task 6 missed.
+3. `components/forms/summary-ids.test.tsx` was a file Task 4 missed.
+4. A refused request action settles nothing: `hideReportedRequest` and `showRequestAgain` settle after the own gate, not before it, so decision 3 (a refusal writes nothing) holds.
+5. The role-grant end-to-end test is always undone and safe to rerun: it removes Sipho's role first and closes its contexts in a `finally`. If a run is killed mid-test, restart the e2e server (the store is in memory) before rerunning the device projects.
+6. Year-edge tests for `closingDay` and `closedAtFor`.
+7. The Supabase functions need the same matching rules (for GO-LIVE): `set_request_open` clears a passed needed-by date and sets `closed_by`; `start_offer` refuses on or after the closing day; `save_request`'s 5-open count leaves out due requests (decisions 13 and 14).
+8. Two more open points: removing the mentor role from whoever mentors an admin's own shop un-assigns that shop's mentor, and a request that closed while hidden closes at the next look after Show again, with its old closing day.
+9. The data download settles due requests first (`exportAccountData`).
+
+Corrections found while building:
+
+- The full-suite unit counts varied under heavy load, because worker start-up failures dropped files. The quiet 2-worker counts were 2,622 (Task 6), 2,651 (Task 9) and 2,654 (Task 10); every load failure passed alone.
+- Task 11's `removeSiphosAdminRole` waits for the streamed staff table and asserts that Sipho's link is gone.
+- No page's first-visit JavaScript moved from stage K (`16dab6a`).

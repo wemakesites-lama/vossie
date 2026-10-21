@@ -253,15 +253,46 @@ Reviewed 2026-10-20 (opus, read-only); all accepted by the controller. They over
 | Point | `/` and most pages | Listing | Browse | Storefront | Saved | Request and collection | New and edit listing forms |
 |---|---|---|---|---|---|---|---|
 | Start (stage K at `16dab6a`) | 150,660 | 151,816 | 151,407 | 151,420 | 151,295 | 151,136 | 152,334 |
-| Task 9, item 2 built | | | | | | | |
-| Task 10, the sitemap | | | | | | | |
-| **Final (Task 12)** | | | | | | | |
+| Task 9, item 2 built | 150,660 | 151,816 | 151,407 | 151,420 | 151,295 | 151,136 | 152,334 |
+| Task 10, the sitemap | 150,660 | 151,816 | 151,407 | 151,420 | 151,295 | 151,136 | 152,334 |
+| **Final (Task 12)** | 150,660 | 151,816 | 151,407 | 151,420 | 151,295 | 151,136 | 152,334 (the controller confirms with `performance.spec.ts` in the final run) |
 
-The stop line used: 152,305 B (decision 52; the forms' 152,334 B accepted as decision 78). Unit tests at the start: 2,551 (stage K, `5aae6b0`). End to end at the start: stage K's final run (devices 1,248 passed; write projects 62 passed). Unit tests at the end: `UNIT_COUNT`. End to end at the end: `E2E_RESULT`.
+The stop line used: 152,305 B (decision 52; the forms' 152,334 B accepted as decision 78). Unit tests at the start: 2,559 (the merge `8644023`). End to end at the start: stage K's final run (devices 1,248 passed; write projects 62 passed). Unit tests at the end: 2,654 (the quiet 2-worker count at `a1da11c`; Task 11 and these docs add none). End to end at the end: the device projects at 2 workers on `83a5458`: 1,251 passed, 1,210 skipped by design, and the same 4 failures that predate stage L (the header and tab bar's `a11y.spec.ts:343` at 360, `responsive.spec.ts:26` at 360 and 390, `listing.spec.ts:34` at 390; the header session has them). The seven write projects with `--no-deps` on a fresh server at `1f55ee5`: 65 passed, 1 skipped. Run on the same server straight after the 17-minute device run, five write tests saw stale pages after a write (a resumed listing missing from browse, a deleted request's page still served, a new office-hours link missing); they all pass on a fresh server.
 
 ## Changes made during the build
 
+- **Review fix (`1f55ee5`).** The code review found that an admin could dismiss reports about their own listing or request once they had deleted it, because `own` was worked out only while the target existed. A report now records who owned its target when it is made (`targetOwnerId`, `STORE_VERSION` 13), and `own` falls back to it when the target has gone; deleting an account clears its id from every report (POPIA), and the reports stay for the Hub. The review's test gaps were closed too: a refused Show again settles nothing (mutation-checked), the closing day's last second and first second, a visible-only locator, and Sipho's context closed in the finally. Unit: 2,661.
+
 Written in Task 12 from `git log` and the code. Where an entry differs from the tasks below, the entry wins.
+
+**Commits** (`git log --oneline a0d3b1f..HEAD`; the controller committed each task):
+
+| Task | Commit | What |
+|---|---|---|
+| Amendments | `63517cd` | Amendments 1 to 9 on review |
+| 1 | `999e385` | `isOwnShop`, `isOwnListing`, `isOwnRequest`, `ownsTarget`, `listMentors(exceptOwnerId)`; two tests pinning the mentors' notes |
+| 2 | `ac100b1` | The staff views' data say whose it is (`own`, `getPin`, `featuredChoices(viewerId)`) |
+| 3 | `726b973` | The gate in the admin actions |
+| 4 | `d5c1032` | The staff pages say why in place of the controls |
+| 5 | `e6dd279` | The closing rule, the row (`closedBy`, `STORE_VERSION` 12) and the words |
+| 6 | `a39f170` | Settling, the dated readers and their callers |
+| 7 | `7182a7c` | The Looking For and request staff actions settle, refuse and reopen |
+| 8 | `7bc9d20` | The asker's lines, the reopen hint and the form's hint |
+| 9 | `46389d4` | The info pages, then the build and size check |
+| 10 | `a1da11c` | The sitemap lists only what's worth crawling today |
+| 11 | `83a5458` | End to end: an admin's own shop, the closing dates, the sitemap |
+| 12 | (this commit) | Docs |
+
+**Where the build differed from the plan:**
+
+1. **The spec's mentors'-notes leak claim was wrong.** `5af3548` (staff tools amendment 15.3) had already closed it; Task 1 pins it with two tests and builds the dropdown and `assignMentor` parts (plan decision 1).
+2. **The full-suite unit counts varied under heavy load.** Worker start-up failures dropped whole files from the count. The quiet 2-worker counts were 2,622 (Task 6), 2,651 (Task 9) and 2,654 (Task 10). Every test that failed under load passed alone.
+3. **Task 11's `removeSiphosAdminRole` waits for the streamed staff table** before it looks for Sipho's row, and asserts the link is gone afterwards, so a retry after an interrupted run starts clean (amendment 5, tightened in the build).
+4. **The sitemap is dynamic** (`ƒ /sitemap.xml`): it calls `connection()`, then `sastToday()`, so it renders per fetch (plan decision 25).
+5. **JS:** every public page is unchanged from stage K at `16dab6a` (the ledger's rows). No client component, CSS or cookie changed.
+6. **Amendments 2, 3, 4, 6 and 9 were built as written** (the two missed files, the settle after the own gate, the year-edge tests, the data download settling first). Amendment 8's two open points are in the progress snippet.
+7. **End to end:** the device projects at 2 workers on `83a5458`: 1,251 passed, 1,210 skipped by design, and the same 4 failures that predate stage L (the header and tab bar's `a11y.spec.ts:343` at 360, `responsive.spec.ts:26` at 360 and 390, `listing.spec.ts:34` at 390; the header session has them). The seven write projects with `--no-deps` on a fresh server at `1f55ee5`: 65 passed, 1 skipped. Run on the same server straight after the 17-minute device run, five write tests saw stale pages after a write (a resumed listing missing from browse, a deleted request's page still served, a new office-hours link missing); they all pass on a fresh server. Task 11's own run was 3 passed, and again twice on the same server; `hardening-writes` and `staff-accounts-writes` 31 passed.
+8. **Checkboxes** for Tasks 1 to 11 are ticked from the commits above, not from a re-run of each step; Task 12's Steps 8 and 9 are the controller's.
 
 ## Conventions for every task
 
@@ -414,12 +445,12 @@ Spec 2.2 and 2.5 with plan decisions 1 and 2. Data only: no action or view chang
 - Create: `lib/staff/own.ts`, `lib/staff/own.test.ts`
 - Modify: `lib/data/mentors.test.ts`, `app/mentor/export/route.test.ts`
 
-- [ ] **Step 1: Check the files are yours to edit**
+- [x] **Step 1: Check the files are yours to edit**
 
 Run: `git --no-optional-locks status --short lib/data/staff-shops.ts lib/data/staff-shops.test.ts lib/data/mentors.test.ts app/mentor/export/route.test.ts lib/staff`
 Expected: no output.
 
-- [ ] **Step 2: The tests**
+- [x] **Step 2: The tests**
 
 In `lib/data/staff-shops.test.ts`, add `isOwnListing`, `isOwnRequest` and `isOwnShop` to the import from `./staff-shops` (keep it sorted), add `import { createRequest } from "./requests";` after the `./catalog` import, and add at the end of the file:
 
@@ -543,7 +574,7 @@ In `app/mentor/export/route.test.ts`, change `import { resetSampleStore } from "
 Run: `pnpm test lib/data/staff-shops.test.ts lib/staff/own.test.ts lib/data/mentors.test.ts app/mentor/export/route.test.ts`
 Expected: FAIL in `staff-shops.test.ts` (the three `isOwn…` functions don't exist; `listMentors("acc-seller")` still lists Sipho) and `own.test.ts` (no `./own`). The mentors and CSV tests pass.
 
-- [ ] **Step 3: The three reads, and the mentor choice**
+- [x] **Step 3: The three reads, and the mentor choice**
 
 In `lib/data/staff-shops.ts`, replace the `listMentors` function and its comment with:
 
@@ -588,7 +619,7 @@ export function isOwnRequest(accountId: string, requestId: string): boolean {
 }
 ```
 
-- [ ] **Step 4: `ownsTarget`**
+- [x] **Step 4: `ownsTarget`**
 
 Create `lib/staff/own.ts`:
 
@@ -621,7 +652,7 @@ Expected: PASS.
 Run: `pnpm lint lib/data/staff-shops.ts lib/data/staff-shops.test.ts lib/staff/own.ts lib/staff/own.test.ts lib/data/mentors.test.ts app/mentor/export/route.test.ts`
 Expected: no output.
 
-- [ ] **Step 5: Hand over**
+- [x] **Step 5: Hand over**
 
 Files: `lib/data/staff-shops.ts`, `lib/data/staff-shops.test.ts`, `lib/staff/own.ts`, `lib/staff/own.test.ts`, `lib/data/mentors.test.ts`, `app/mentor/export/route.test.ts`. Message:
 
@@ -639,12 +670,12 @@ Spec 3 "Data and code" with plan decisions 3 and 4.
 - Modify: `lib/data/staff-reports.ts`, `lib/data/staff-reports.test.ts`
 - Modify: `lib/data/featured.ts`, `lib/data/featured.test.ts`
 
-- [ ] **Step 1: Check the files are yours to edit**
+- [x] **Step 1: Check the files are yours to edit**
 
 Run: `git --no-optional-locks status --short lib/data/staff-reports.ts lib/data/staff-reports.test.ts lib/data/featured.ts lib/data/featured.test.ts`
 Expected: no output.
 
-- [ ] **Step 2: The tests**
+- [x] **Step 2: The tests**
 
 In `lib/data/staff-reports.test.ts`:
 - change `import { hideRequest } from "./requests";` to `import { createRequest, hideRequest } from "./requests";`;
@@ -737,7 +768,7 @@ describe("an admin's own shop on Featured (stage L spec decision 1)", () => {
 Run: `pnpm test lib/data/staff-reports.test.ts lib/data/featured.test.ts`
 Expected: FAIL (`own` is missing from the views; `getPin` doesn't exist; `featuredChoices("acc-seller")` still has Tech corner).
 
-- [ ] **Step 3: Reports and hidden items**
+- [x] **Step 3: Reports and hidden items**
 
 In `lib/data/staff-reports.ts`:
 - add, after `import type { ReportRow } from "./rows";`:
@@ -829,7 +860,7 @@ export async function countHidden(): Promise<{ listings: number; requests: numbe
 }
 ```
 
-- [ ] **Step 4: Featured**
+- [x] **Step 4: Featured**
 
 In `lib/data/featured.ts`:
 - add `import { isOwnShop } from "./staff-shops";` after `import type { FeaturedPinRow } from "./rows";`;
@@ -886,12 +917,12 @@ Two component tests build a `HiddenItem` by hand, and `own` is now required: add
 Run: `pnpm lint lib/data/staff-reports.ts lib/data/staff-reports.test.ts lib/data/featured.ts lib/data/featured.test.ts`
 Expected: no output.
 
-- [ ] **Step 5: Typecheck in a scratch copy**
+- [x] **Step 5: Typecheck in a scratch copy**
 
 Make the scratch copy `S="<your scratchpad>/vossie-l-task2"` with Tasks 1 and 2's files (if Task 1 isn't committed yet). From `$S`: `pnpm typecheck`.
 Expected: no errors.
 
-- [ ] **Step 6: Hand over**
+- [x] **Step 6: Hand over**
 
 Files: `lib/data/staff-reports.ts`, `lib/data/staff-reports.test.ts`, `lib/data/featured.ts`, `lib/data/featured.test.ts`, `components/staff/AdminHidden.test.tsx`, `components/staff/ShowAgainConfirm.test.tsx`. Message:
 
@@ -909,12 +940,12 @@ Spec 2.1, 2.3, 2.5 (`assignMentor`), 2.7 and section 3 "Rules", with plan decisi
 - Modify: `lib/staff/admin-actions.ts`, `lib/staff/admin-actions.test.ts`
 - Modify: `lib/staff/notices.ts`, `lib/staff/notices.test.ts`
 
-- [ ] **Step 1: Check the files are yours to edit**
+- [x] **Step 1: Check the files are yours to edit**
 
 Run: `git --no-optional-locks status --short lib/staff`
 Expected: no output (or only this stage's uncommitted `lib/staff/own*.ts`).
 
-- [ ] **Step 2: The tests**
+- [x] **Step 2: The tests**
 
 In `lib/staff/notices.test.ts`, add at the end:
 
@@ -1166,7 +1197,7 @@ describe("no Hub decision about the admin's own shop, its listings or their own 
 Run: `pnpm test lib/staff/notices.test.ts lib/staff/admin-actions.test.ts`
 Expected: FAIL: the two notices have no words, and every "refuses the owner" case acts (one audit entry, a changed store) instead of refusing. "still works for another admin" passes.
 
-- [ ] **Step 3: The notices**
+- [x] **Step 3: The notices**
 
 In `lib/staff/notices.ts`, before `["nothing", "Nothing changed. It was already done."],` add:
 
@@ -1176,7 +1207,7 @@ In `lib/staff/notices.ts`, before `["nothing", "Nothing changed. It was already 
   ["own-request", "Nothing changed. It's your own request, so another admin must do this."],
 ```
 
-- [ ] **Step 4: The gate**
+- [x] **Step 4: The gate**
 
 In `lib/staff/admin-actions.ts`:
 - change `import { addPin, removePin } from "@/lib/data/featured";` to `import { addPin, getPin, removePin } from "@/lib/data/featured";`;
@@ -1279,7 +1310,7 @@ Expected: PASS, the amendment 14.8 gate tests included (no export was added).
 Run: `pnpm lint lib/staff/admin-actions.ts lib/staff/admin-actions.test.ts lib/staff/notices.ts lib/staff/notices.test.ts`
 Expected: no output.
 
-- [ ] **Step 5: Hand over**
+- [x] **Step 5: Hand over**
 
 Files: `lib/staff/admin-actions.ts`, `lib/staff/admin-actions.test.ts`, `lib/staff/notices.ts`, `lib/staff/notices.test.ts`. Message:
 
@@ -1307,12 +1338,12 @@ Spec 2.4, 2.6 and section 3 "Behaviour", "Words" and "Accessibility", with plan 
 - Modify: `app/admin/hidden/page.tsx`, `app/admin/hidden/listings/[id]/page.tsx`, `app/admin/hidden/requests/[id]/page.tsx`
 - Modify: `app/admin/featured/page.tsx`
 
-- [ ] **Step 1: Check the files are yours to edit**
+- [x] **Step 1: Check the files are yours to edit**
 
 Run: `git --no-optional-locks status --short components/staff app/admin`
 Expected: no output (or only Task 2's two test files, if uncommitted).
 
-- [ ] **Step 2: The tests**
+- [x] **Step 2: The tests**
 
 In `components/staff/AdminSeller.test.tsx`, replace the `show` helper with:
 
@@ -1488,7 +1519,7 @@ describe("the admin's own shop on Featured (stage L spec section 3)", () => {
 Run: `pnpm test components/staff`
 Expected: FAIL (the new props and words don't exist).
 
-- [ ] **Step 3: The shop line**
+- [x] **Step 3: The shop line**
 
 Create `components/staff/OwnShopLine.tsx`:
 
@@ -1523,7 +1554,7 @@ export function OwnShopLine({ onlyAdmin }: { onlyAdmin: boolean }) {
 }
 ```
 
-- [ ] **Step 4: The review page and its confirm pages**
+- [x] **Step 4: The review page and its confirm pages**
 
 In `components/staff/AdminSeller.tsx`:
 - add `import { OwnShopLine } from "./OwnShopLine";` after the `@/lib/time` import;
@@ -1703,7 +1734,7 @@ In `app/admin/sellers/[slug]/decline/page.tsx` and `app/admin/sellers/[slug]/pau
   (in the pause page, `shopPauseForm(slug)`);
 - add `own={own}` and `onlyAdmin={own && admins === 1}` to `<SellerConfirm …/>` after `review={review}`.
 
-- [ ] **Step 5: The report page and its confirm pages**
+- [x] **Step 5: The report page and its confirm pages**
 
 In `components/staff/AdminReport.tsx`:
 - add `import type { OwnKind } from "@/lib/staff/own";` after the `@/lib/staff/admin-actions` import;
@@ -1796,7 +1827,7 @@ In `components/staff/ReportConfirm.tsx`:
 
 In `app/admin/reports/[id]/page.tsx`, `app/admin/reports/[id]/hide/page.tsx` and `app/admin/reports/[id]/pause/page.tsx`, change `const report = isId(id) ? await getReport(id) : null;` to `const report = isId(id) ? await getReport(id, account.id) : null;`.
 
-- [ ] **Step 6: Hidden, and Show again**
+- [x] **Step 6: Hidden, and Show again**
 
 In `components/staff/AdminHidden.tsx`:
 - add to the component's comment: ` The admin's own listing or request says "Yours" where Show again was (stage L).`;
@@ -1822,7 +1853,7 @@ In `components/staff/ShowAgainConfirm.tsx`:
 
 In `app/admin/hidden/page.tsx`, change `listHidden()` to `listHidden(account.id)`. In `app/admin/hidden/listings/[id]/page.tsx` and `app/admin/hidden/requests/[id]/page.tsx`, change `getHidden("listing", id)` (or `getHidden("request", id)`) to `getHidden("listing", id, account.id)` (or `getHidden("request", id, account.id)`).
 
-- [ ] **Step 7: Featured**
+- [x] **Step 7: Featured**
 
 In `components/staff/AdminFeatured.tsx`:
 - in `AdminFeaturedProps`, after `choices`, add:
@@ -1884,12 +1915,12 @@ Expected: PASS.
 Run: `pnpm lint components/staff app/admin`
 Expected: no output.
 
-- [ ] **Step 8: Typecheck and the staff e2e in a scratch copy**
+- [x] **Step 8: Typecheck and the staff e2e in a scratch copy**
 
 Make the scratch copy `S="<your scratchpad>/vossie-l-task4"` with every uncommitted file of Tasks 1 to 4. From `$S`: `pnpm typecheck` (no errors), then run e2e as the conventions say, with `tests/e2e/staff.spec.ts tests/e2e/staff-checks.spec.ts tests/e2e/staff-accounts-checks.spec.ts --project=desktop-1440 --project=phone-390`.
 Expected: no errors; the e2e pass (no sample admin owns a shop, so nothing they check changes). Stop your server by its PID.
 
-- [ ] **Step 9: Hand over**
+- [x] **Step 9: Hand over**
 
 Files: `components/staff/OwnShopLine.tsx`, `components/staff/AdminSeller.tsx`, `components/staff/AdminSeller.test.tsx`, `components/staff/SellerConfirm.tsx`, `components/staff/SellerConfirm.test.tsx`, `components/staff/AdminReport.tsx`, `components/staff/AdminReport.test.tsx`, `components/staff/ReportConfirm.tsx`, `components/staff/ReportConfirm.test.tsx`, `components/staff/AdminHidden.tsx`, `components/staff/AdminHidden.test.tsx`, `components/staff/ShowAgainConfirm.tsx`, `components/staff/ShowAgainConfirm.test.tsx`, `components/staff/AdminFeatured.tsx`, `components/staff/AdminFeatured.test.tsx`, `app/admin/sellers/[slug]/page.tsx`, `app/admin/sellers/[slug]/decline/page.tsx`, `app/admin/sellers/[slug]/pause/page.tsx`, `app/admin/reports/[id]/page.tsx`, `app/admin/reports/[id]/hide/page.tsx`, `app/admin/reports/[id]/pause/page.tsx`, `app/admin/hidden/page.tsx`, `app/admin/hidden/listings/[id]/page.tsx`, `app/admin/hidden/requests/[id]/page.tsx`, `app/admin/featured/page.tsx`. Message:
 
@@ -1910,12 +1941,12 @@ Spec 2.8 to 2.10 and section 4 "Data and code" and "Words", with plan decisions 
 - Modify: `data/fixtures/requests.ts`, `data/fixtures/request-rows.ts`, `data/fixtures/request-rows.test.ts`
 - Modify: `components/looking-for/YourRequestsView.test.tsx`, `components/looking-for/RequestFormView.test.tsx`
 
-- [ ] **Step 1: Check the files are yours to edit**
+- [x] **Step 1: Check the files are yours to edit**
 
 Run: `git --no-optional-locks status --short lib/looking-for lib/types.ts lib/data/rows.ts lib/data/store.ts lib/data/requests.ts data/fixtures components/looking-for`
 Expected: no output.
 
-- [ ] **Step 2: The tests**
+- [x] **Step 2: The tests**
 
 In `lib/looking-for/rules.test.ts`, change the import from `./rules` to:
 
@@ -2040,7 +2071,7 @@ and add after it:
 Run: `pnpm test lib/looking-for/rules.test.ts lib/looking-for/words.test.ts data/fixtures/request-rows.test.ts`
 Expected: FAIL (the new names and fields don't exist).
 
-- [ ] **Step 3: The rule**
+- [x] **Step 3: The rule**
 
 In `lib/looking-for/rules.ts`:
 - after `import { parsePrice } from "@/lib/selling/rules";`, add:
@@ -2098,7 +2129,7 @@ export function closedAtFor(day: string): string {
 }
 ```
 
-- [ ] **Step 4: The words**
+- [x] **Step 4: The words**
 
 In `lib/looking-for/words.ts`:
 - change `import { OPEN_REQUESTS_MAX } from "./rules";` to `import { type CloseReason, IDLE_CLOSE_DAYS, NEEDED_BY_GRACE_DAYS, OPEN_REQUESTS_MAX } from "./rules";`;
@@ -2130,7 +2161,7 @@ export const REOPEN_CLEARS_DATE_HINT = "Reopening removes the needed-by date, wh
 export const CLOSES_BY_ITSELF_HINT = `Your request closes automatically ${NEEDED_BY_GRACE_DAYS} days after this date. Without one, it closes after ${IDLE_CLOSE_DAYS} days with no changes.`;
 ```
 
-- [ ] **Step 5: The type, the row, the store and the seeds**
+- [x] **Step 5: The type, the row, the store and the seeds**
 
 In `lib/types.ts`, in `LookingForRequest`, after `status: RequestStatus;`, add:
 
@@ -2203,12 +2234,12 @@ Expected: PASS.
 Run: `pnpm lint lib/looking-for lib/types.ts lib/data/rows.ts lib/data/store.ts lib/data/requests.ts data/fixtures components/looking-for/YourRequestsView.test.tsx components/looking-for/RequestFormView.test.tsx`
 Expected: no output.
 
-- [ ] **Step 6: Typecheck in a scratch copy**
+- [x] **Step 6: Typecheck in a scratch copy**
 
 Make the scratch copy `S="<your scratchpad>/vossie-l-task5"` with this stage's uncommitted files. From `$S`: `pnpm typecheck`.
 Expected: no errors. If it names another literal typed `LookingForRequest` (a test building one by hand), add `closesOn: null,` after its `status` and list the file in the hand-over.
 
-- [ ] **Step 7: Hand over**
+- [x] **Step 7: Hand over**
 
 Files: `lib/looking-for/rules.ts`, `lib/looking-for/rules.test.ts`, `lib/looking-for/words.ts`, `lib/looking-for/words.test.ts`, `lib/types.ts`, `lib/data/rows.ts`, `lib/data/store.ts`, `lib/data/requests.ts`, `data/fixtures/requests.ts`, `data/fixtures/request-rows.ts`, `data/fixtures/request-rows.test.ts`, `components/looking-for/YourRequestsView.test.tsx`, `components/looking-for/RequestFormView.test.tsx`. Message:
 
@@ -2239,14 +2270,14 @@ Spec 2.10 to 2.16 and section 4 "Data and code", with plan decisions 11 to 15, 1
 - Modify: `components/looking-for/DeleteRequest.tsx`, `components/looking-for/DeleteRequest.test.tsx`
 - Modify: `components/looking-for/YourRequestsView.test.tsx`
 
-- [ ] **Step 1: Check the files are yours to edit, and read the docs**
+- [x] **Step 1: Check the files are yours to edit, and read the docs**
 
 Run: `git --no-optional-locks status --short lib components/looking-for components/home`
 Expected: only this stage's uncommitted files, if any.
 
 Read `node_modules/next/dist/docs/01-app/03-api-reference/04-functions/connection.md` and `03-api-reference/01-directives/use-cache.md` (arguments are part of the cache key: `today` turns each reader's entry over at SAST midnight).
 
-- [ ] **Step 2: The existing tests' new arguments (mechanical; plan decision 19)**
+- [x] **Step 2: The existing tests' new arguments (mechanical; plan decision 19)**
 
 Run each command, then the `grep` after it, from the repo root:
 
@@ -2320,7 +2351,7 @@ and in the four that post requests (`ViewerOffers`, `Offer`, `YourRequests`, `De
 
 (`RequestForm.test.tsx` already mocks `next/server` and fixes the clock.)
 
-- [ ] **Step 3: The new tests**
+- [x] **Step 3: The new tests**
 
 In `lib/data/requests.test.ts`, add `settleRequests` to the import from `./requests` (sorted), and add at the end of the file:
 
@@ -2509,7 +2540,7 @@ In `components/looking-for/ViewerOffers.test.tsx`, add inside the describe:
 Run: `pnpm test lib/data/requests.test.ts lib/data/index.test.ts lib/looking-for components/looking-for components/home lib/data/messages.test.ts`
 Expected: FAIL (typecheck-level failures show as failing imports: `settleRequests`, `getListedRequestIds`; the new arguments are ignored by the old code, so the new tests fail on their expectations).
 
-- [ ] **Step 4: `lib/data/requests.ts`**
+- [x] **Step 4: `lib/data/requests.ts`**
 
 Replace the whole of `lib/data/requests.ts` with:
 
@@ -2847,7 +2878,7 @@ export async function exportRequests(accountId: string): Promise<RequestExport[]
 
 Before replacing it, compare the current file with the copy above apart from stage L's lines (`git --no-optional-locks diff lib/data/requests.ts` shows only Task 5's lines): if anything else differs, another session changed it; stop and report.
 
-- [ ] **Step 5: `OwnRequest`**
+- [x] **Step 5: `OwnRequest`**
 
 In `lib/types.ts`, in `OwnRequest`, after `hiddenReason: string | null;`, add:
 
@@ -2862,7 +2893,7 @@ In `lib/types.ts`, in `OwnRequest`, after `hiddenReason: string | null;`, add:
   neededByPassed: boolean;
 ```
 
-- [ ] **Step 6: The dated readers**
+- [x] **Step 6: The dated readers**
 
 In `lib/data/index.ts`, replace `getRequests` and `getOpenRequests` with:
 
@@ -2915,7 +2946,7 @@ export async function getListedRequestIds({ today }: { today: string }): Promise
 }
 ```
 
-- [ ] **Step 7: Offers**
+- [x] **Step 7: Offers**
 
 In `lib/looking-for/subjects.ts`:
 - after `import type { Account, LookingForRequest } from "@/lib/types";`, add `import { requestOpenOn } from "./rules";`;
@@ -2937,7 +2968,7 @@ In `lib/looking-for/actions.ts` (passing the clock only; Task 7 adds the settlin
 - in `changeOpen`, change `(await getOwnRequest(account.id, id))?.state` to `(await getOwnRequest(account.id, id, now))?.state` and `(await countOpenRequests(account.id))` to `(await countOpenRequests(account.id, now))`;
 - in `sendOffer`, move `const now = new Date();` up to just after `const account = await requireAccount(path);`, and change `const status = await offerStatus(subject, account);` to `const status = await offerStatus(subject, account, sastDate(now));` (`sastDate` is already imported).
 
-- [ ] **Step 8: The callers**
+- [x] **Step 8: The callers**
 
 `components/looking-for/RequestBoard.tsx`:
 - add `import { connection } from "next/server";` after `import type { ReactNode } from "react";`, `import { settleRequests } from "@/lib/data/requests";` after the `@/lib/data` import, and `import { sastDate } from "@/lib/time";` after the `@/lib/requests` import;
@@ -3073,12 +3104,12 @@ Expected: PASS. (`app/sitemap.test.ts` still reads `getRequestIds` and `getHubPo
 Run: `pnpm lint lib/data lib/looking-for lib/types.ts components/looking-for components/home`
 Expected: no output.
 
-- [ ] **Step 9: The whole unit suite, typecheck and lint in a scratch copy**
+- [x] **Step 9: The whole unit suite, typecheck and lint in a scratch copy**
 
 Make the scratch copy `S="<your scratchpad>/vossie-l-task6"` with every uncommitted file of this stage. From `$S`: `pnpm typecheck`, `pnpm lint`, `pnpm test`.
 Expected: no errors; every unit test passing (rerun alone any that timed out under load). If `pnpm typecheck` names another caller of a changed signature, update it the same way and list it in the hand-over.
 
-- [ ] **Step 10: Hand over**
+- [x] **Step 10: Hand over**
 
 Files: every file in this task's list. Message:
 
@@ -3096,12 +3127,12 @@ Spec 2.11, 2.13 to 2.16 and section 4 "Tests" (the actions), with plan decision 
 - Modify: `lib/looking-for/actions.ts`, `lib/looking-for/actions.test.ts`
 - Modify: `lib/staff/admin-actions.ts`, `lib/staff/admin-actions.test.ts`
 
-- [ ] **Step 1: Check the files are yours to edit**
+- [x] **Step 1: Check the files are yours to edit**
 
 Run: `git --no-optional-locks status --short lib/looking-for/actions.ts lib/looking-for/actions.test.ts lib/staff/admin-actions.ts lib/staff/admin-actions.test.ts`
 Expected: only this stage's uncommitted changes, if any.
 
-- [ ] **Step 2: The tests**
+- [x] **Step 2: The tests**
 
 In `lib/looking-for/actions.test.ts`, add `import { getNotifications } from "@/lib/data/notifications";` after the `@/lib/data/messages` import, and add at the end:
 
@@ -3202,7 +3233,7 @@ describe("the two request actions settle first (stage L spec decision 11)", () =
 Run: `pnpm test lib/looking-for/actions.test.ts lib/staff/admin-actions.test.ts`
 Expected: FAIL. Without the actions settling: the press that changes nothing expires no tag and stores no close; the offer is refused (Task 6's `offerStatus`) but nothing is stored; Reopen leaves "reopened", not "reopened-date-cleared"; the staff actions store nothing. ("lets a post through" passes already: `countOpenRequests` settles since Task 6.)
 
-- [ ] **Step 3: The Looking For actions**
+- [x] **Step 3: The Looking For actions**
 
 In `lib/looking-for/actions.ts`:
 - add `settleRequests` to the import from `@/lib/data/requests` (sorted: after `setRequestOpen`);
@@ -3258,7 +3289,7 @@ async function settle(now: Date): Promise<void> {
 - **`sendOffer`**: after `const now = new Date();` (moved up in Task 6), add `await settle(now);`, so it comes before `offerSubject`;
 - add to `sendOffer`'s comment: ` A request on its closing day takes no offers, settled or not (stage L spec decision 14).`.
 
-- [ ] **Step 4: The two staff request actions**
+- [x] **Step 4: The two staff request actions**
 
 In `lib/staff/admin-actions.ts`:
 - change `import { hideRequest, showRequest } from "@/lib/data/requests";` to `import { hideRequest, settleRequests, showRequest } from "@/lib/data/requests";`;
@@ -3275,7 +3306,7 @@ Expected: PASS, the own-shop cases included (their fresh requests aren't due, so
 Run: `pnpm lint lib/looking-for/actions.ts lib/looking-for/actions.test.ts lib/staff/admin-actions.ts lib/staff/admin-actions.test.ts`
 Expected: no output.
 
-- [ ] **Step 5: Hand over**
+- [x] **Step 5: Hand over**
 
 Files: `lib/looking-for/actions.ts`, `lib/looking-for/actions.test.ts`, `lib/staff/admin-actions.ts`, `lib/staff/admin-actions.test.ts`. Message:
 
@@ -3297,12 +3328,12 @@ Spec section 4 "Behaviour", "Words" and "Accessibility", with plan decision 18. 
 - Modify: `components/looking-for/RequestFormView.tsx`, `components/looking-for/RequestFormView.test.tsx`
 - Modify: `components/looking-for/RequestForm.tsx`
 
-- [ ] **Step 1: Check the files are yours to edit**
+- [x] **Step 1: Check the files are yours to edit**
 
 Run: `git --no-optional-locks status --short components/looking-for`
 Expected: only this stage's uncommitted changes, if any.
 
-- [ ] **Step 2: The tests**
+- [x] **Step 2: The tests**
 
 In `components/looking-for/YourRequestsView.test.tsx`, add at the end:
 
@@ -3413,7 +3444,7 @@ In `components/looking-for/RequestFormView.test.tsx`, add inside the first descr
 Run: `pnpm test components/looking-for`
 Expected: FAIL (no lines, hints or `reopenClearsDate`).
 
-- [ ] **Step 3: The line**
+- [x] **Step 3: The line**
 
 Create `components/looking-for/AutoCloseLine.tsx`:
 
@@ -3449,7 +3480,7 @@ export function AutoCloseLine({ own, className }: { own: OwnRequest; className: 
 }
 ```
 
-- [ ] **Step 4: Your requests, the asker's panel, and Reopen's hint**
+- [x] **Step 4: Your requests, the asker's panel, and Reopen's hint**
 
 In `components/looking-for/YourRequestsView.tsx`:
 - add `import { AutoCloseLine } from "./AutoCloseLine";` before `import { RequestActions } from "./RequestActions";`;
@@ -3487,7 +3518,7 @@ In `components/looking-for/RequestActions.tsx`:
       )}
 ```
 
-- [ ] **Step 5: The request form and the closed request's edit page**
+- [x] **Step 5: The request form and the closed request's edit page**
 
 In `components/looking-for/RequestFormView.tsx`:
 - add `import { CLOSES_BY_ITSELF_HINT, REOPEN_CLEARS_DATE_HINT } from "@/lib/looking-for/words";` after the `@/lib/looking-for/rules` import;
@@ -3544,7 +3575,7 @@ Expected: PASS.
 Run: `pnpm lint components/looking-for`
 Expected: no output.
 
-- [ ] **Step 6: Hand over**
+- [x] **Step 6: Hand over**
 
 Files: `components/looking-for/AutoCloseLine.tsx`, `components/looking-for/YourRequestsView.tsx`, `components/looking-for/YourRequestsView.test.tsx`, `components/looking-for/OffersViews.tsx`, `components/looking-for/OffersPanel.test.tsx`, `components/looking-for/RequestActions.tsx`, `components/looking-for/RequestFormView.tsx`, `components/looking-for/RequestFormView.test.tsx`, `components/looking-for/RequestForm.tsx`. Message:
 
@@ -3562,12 +3593,12 @@ Spec section 4 "Words" (How it works, the privacy policy) with plan decisions 23
 - Modify: `app/how-it-works/page.tsx`, `app/how-it-works/page.test.tsx`
 - Modify: `app/privacy/page.tsx`, `app/privacy/page.test.tsx`
 
-- [ ] **Step 1: Check the files are yours to edit**
+- [x] **Step 1: Check the files are yours to edit**
 
 Run: `git --no-optional-locks status --short app/how-it-works app/privacy`
 Expected: no output. (`app/privacy/page.test.tsx` collects cookie names; nothing here adds one.)
 
-- [ ] **Step 2: The tests**
+- [x] **Step 2: The tests**
 
 In `app/how-it-works/page.test.tsx`, in the test "answers six short questions, including what works today", add before its closing `});`:
 
@@ -3596,7 +3627,7 @@ In `app/privacy/page.test.tsx`, add inside the last describe that has the "lists
 Run: `pnpm test app/how-it-works app/privacy`
 Expected: FAIL (the sentences aren't there).
 
-- [ ] **Step 3: The words**
+- [x] **Step 3: The words**
 
 In `app/how-it-works/page.tsx`, after the paragraph that ends `…and set up a shop of your own.` (the first answer to "What can I do on Vossie today?"), add:
 
@@ -3619,7 +3650,7 @@ Expected: PASS, every existing test in both files included.
 Run: `pnpm lint app/how-it-works app/privacy`
 Expected: no output.
 
-- [ ] **Step 4: Build and size check (items 1 and 2), in a scratch copy**
+- [x] **Step 4: Build and size check (items 1 and 2), in a scratch copy**
 
 Make the scratch copy `S="<your scratchpad>/vossie-l-task9"` with every uncommitted file of this stage. From `$S`:
 
@@ -3647,7 +3678,7 @@ E2E_REUSE_SERVER=1 pnpm e2e tests/e2e/community.spec.ts tests/e2e/community-acti
 
 Expected: every `scriptBrotli` equal to the ledger's Start row, to the byte (fill in the Task 9 row in your report); the device runs pass. Any byte that moved stops the build: report it before going on. Stop your server by its PID.
 
-- [ ] **Step 5: Hand over**
+- [x] **Step 5: Hand over**
 
 Files: `app/how-it-works/page.tsx`, `app/how-it-works/page.test.tsx`, `app/privacy/page.tsx`, `app/privacy/page.test.tsx`. Message:
 
@@ -3665,14 +3696,14 @@ Spec 2.19 and section 5, with plan decision 25.
 - Modify: `lib/data/index.ts`, `lib/data/index.test.ts`
 - Modify: `app/sitemap.ts`, `app/sitemap.test.ts`
 
-- [ ] **Step 1: Check the files are yours to edit, and read the docs**
+- [x] **Step 1: Check the files are yours to edit, and read the docs**
 
 Run: `git --no-optional-locks status --short lib/data/index.ts lib/data/index.test.ts app/sitemap.ts app/sitemap.test.ts`
 Expected: only Task 6's uncommitted changes to the two `lib/data` files, if any.
 
 Read `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/01-metadata/sitemap.md` (a sitemap that uses a Request-time API is generated per request) and `03-api-reference/04-functions/connection.md`.
 
-- [ ] **Step 2: The tests**
+- [x] **Step 2: The tests**
 
 In `lib/data/index.test.ts`, add `getListedHubPostIds` to the import from `./index` (sorted), and add inside the describe "Hub data (community spec 5.3)":
 
@@ -3774,7 +3805,7 @@ describe("only what's worth crawling today (stage L spec 2.19 and section 5)", (
 Run: `pnpm test lib/data/index.test.ts app/sitemap.test.ts`
 Expected: FAIL (`getListedHubPostIds` doesn't exist; the sitemap still lists every request and post).
 
-- [ ] **Step 3: The Hub reader**
+- [x] **Step 3: The Hub reader**
 
 In `lib/data/index.ts`:
 - change `import { orderHubPosts, toHubEvent } from "@/lib/hub";` to `import { hasPassed, orderHubPosts, toHubEvent } from "@/lib/hub";`;
@@ -3794,7 +3825,7 @@ export async function getListedHubPostIds({ today }: { today: string }): Promise
 }
 ```
 
-- [ ] **Step 4: The sitemap**
+- [x] **Step 4: The sitemap**
 
 Replace the whole of `app/sitemap.ts` with:
 
@@ -3840,7 +3871,7 @@ Expected: PASS.
 Run: `pnpm lint lib/data/index.ts lib/data/index.test.ts app/sitemap.ts app/sitemap.test.ts`
 Expected: no output.
 
-- [ ] **Step 5: Build and size check, in a scratch copy**
+- [x] **Step 5: Build and size check, in a scratch copy**
 
 Make the scratch copy `S="<your scratchpad>/vossie-l-task10"` with every uncommitted file of this stage. From `$S`:
 
@@ -3863,7 +3894,7 @@ E2E_REUSE_SERVER=1 pnpm e2e tests/e2e/performance.spec.ts --project=phone-390 --
 
 Expected: a count of `<loc>` lines; `0` for the passed event and the closed seeds; `system.spec.ts` passes; every `scriptBrotli` equal to the Start row (fill in the Task 10 row). Stop your server by its PID.
 
-- [ ] **Step 6: Hand over**
+- [x] **Step 6: Hand over**
 
 Files: `lib/data/index.ts`, `lib/data/index.test.ts`, `app/sitemap.ts`, `app/sitemap.test.ts`. Message:
 
@@ -3881,12 +3912,12 @@ Spec 3, 4 and 5 "Tests" (end to end), with plan decisions 26 and 27.
 - Modify: `playwright.config.ts`
 - Create: `tests/e2e/housekeeping-writes.spec.ts`
 
-- [ ] **Step 1: Check the files are yours to edit**
+- [x] **Step 1: Check the files are yours to edit**
 
 Run: `git --no-optional-locks status --short playwright.config.ts tests/e2e`
 Expected: only the header session's `tests/e2e/listing.spec.ts` and `tests/e2e/responsive.spec.ts` (and perhaps `a11y.spec.ts`), which this task never touches. If `playwright.config.ts` is modified by someone else, stop and report.
 
-- [ ] **Step 2: The project**
+- [x] **Step 2: The project**
 
 In `playwright.config.ts`, after the `HARDENING_WRITES` line add:
 
@@ -3916,7 +3947,7 @@ In each of the five device projects, add `HOUSEKEEPING_WRITES` to the end of `te
     },
 ```
 
-- [ ] **Step 3: The tests**
+- [x] **Step 3: The tests**
 
 Create `tests/e2e/housekeeping-writes.spec.ts`:
 
@@ -4086,7 +4117,7 @@ Expected: no output.
 Run: `grep -rn "newContext(" tests/e2e | grep -v serviceWorkers`
 Expected: no output (CLAUDE.md).
 
-- [ ] **Step 4: Run it and the write projects, in a scratch copy**
+- [x] **Step 4: Run it and the write projects, in a scratch copy**
 
 Make the scratch copy `S="<your scratchpad>/vossie-l-task11"` with every uncommitted file of this stage. Run e2e as the conventions say, with:
 
@@ -4097,7 +4128,7 @@ E2E_REUSE_SERVER=1 pnpm e2e --project=staff-writes --project=community-writes --
 
 Expected: 3 passed; the three write projects pass as at stage K. If the forged post's status isn't a redirect, report what it was and what the response body says before changing the test (the notice check is the real proof). Stop your server by its PID.
 
-- [ ] **Step 5: Hand over**
+- [x] **Step 5: Hand over**
 
 Files: `playwright.config.ts`, `tests/e2e/housekeeping-writes.spec.ts`. Message:
 
@@ -4118,16 +4149,16 @@ The stage's records. **`docs/PROGRESS.md` and `docs/reference/LANDING-DECISIONS.
 - Modify: `docs/superpowers/plans/2026-10-20-housekeeping.md` (this plan)
 - Create (scratchpad, not the project): `l-progress.md`, `l-decision.md`
 
-- [ ] **Step 1: Check the docs are yours to edit**
+- [x] **Step 1: Check the docs are yours to edit**
 
 Run: `git --no-optional-locks status --short CLAUDE.md docs/reference/GO-LIVE.md docs/superpowers/specs/2026-10-20-housekeeping-design.md docs/superpowers/plans/2026-10-20-housekeeping.md`
 Expected: no output (this plan may show as modified by the build's own ledger notes). If any shows as modified by someone else, stop and report.
 
-- [ ] **Step 2: Screenshots: none**
+- [x] **Step 2: Screenshots: none**
 
 Nothing new is drawn but lines of text in existing styles, and one link in the existing pill style. No screenshots spec is added; say so in the progress snippet.
 
-- [ ] **Step 3: CLAUDE.md**
+- [x] **Step 3: CLAUDE.md**
 
 After the line that starts `- Looking For requests live in the sample store`, add:
 
@@ -4149,7 +4180,7 @@ After the line that starts `- End-to-end tests that write messages at volume (th
 
 In the line that starts `- Mentors' notes are about a shop's owner`, change `seen by mentors and admins only, never by the seller,` to `seen by mentors and admins only, never by the seller (an admin who sells included: \`mentoredShops\` leaves out the viewer's own shop),`.
 
-- [ ] **Step 4: The spec's "Changes on plan review and build"**
+- [x] **Step 4: The spec's "Changes on plan review and build"**
 
 At the end of `docs/superpowers/specs/2026-10-20-housekeeping-design.md`, add `## 11. Changes on plan review and build`, a numbered list, one sentence or two each, naming the plan decision:
 1. The mentors' notes leak in spec 2.5 and section 3 was already closed by staff tools amendment 15.3 (`5af3548`): `mentoredShops` leaves out the viewer's own shop for every role. Stage L pinned it with two tests and built the two parts still open, the dropdown and `assignMentor` (plan decision 1).
@@ -4165,7 +4196,7 @@ At the end of `docs/superpowers/specs/2026-10-20-housekeeping-design.md`, add `#
 11. Section 10's questions stay open for Lama: the build used the spec's choices.
 12. Anything in this plan's "Changes made during the build" that changes what the spec says.
 
-- [ ] **Step 5: The go-live checklist**
+- [x] **Step 5: The go-live checklist**
 
 In `docs/reference/GO-LIVE.md`:
 - line 5: change `info pages; stage K). Update the status column` to `info pages; stage K), and after housekeeping (an admin's own shop, requests that close themselves, the sitemap; stage L). Update the status column`;
@@ -4178,11 +4209,11 @@ In `docs/reference/GO-LIVE.md`:
   - in `- [ ] **Featured with few Verified sellers.**`, append ` Assessed in stage L: a strict break would leave rows short three days in seven; a least-recently-featured order for resting sellers is offered (stage L spec decision 20).`;
 - **Section 8**: after the stage K bullet under item 6, add `   - **Done in sample mode (<day>): housekeeping (stage L).** No admin decides about their own shop, its listings or their own request; old Looking For requests close themselves and their askers are told; the sitemap lists only open requests and Hub posts that haven't passed.`; and in item 7's paragraph, after `…and brought-up-to-date info pages.`, add ` Stage L adds housekeeping: the own-shop guard, requests that close themselves, and a sitemap of what's current.`
 
-- [ ] **Step 6: This plan's ledger and changes**
+- [x] **Step 6: This plan's ledger and changes**
 
-In this plan, fill in the JS ledger's rows from Tasks 9 and 10's reports, `UNIT_COUNT` and `E2E_RESULT`; under "Changes made during the build", list each task with its commit (`git --no-optional-locks log --oneline`, one command) and every place the build differed from the tasks.
+In this plan, fill in the JS ledger's rows from Tasks 9 and 10's reports, `UNIT_COUNT` and the device projects at 2 workers on `83a5458`: 1,251 passed, 1,210 skipped by design, and the same 4 failures that predate stage L (the header and tab bar's `a11y.spec.ts:343` at 360, `responsive.spec.ts:26` at 360 and 390, `listing.spec.ts:34` at 390; the header session has them). The seven write projects with `--no-deps` on a fresh server at `1f55ee5`: 65 passed, 1 skipped. Run on the same server straight after the 17-minute device run, five write tests saw stale pages after a write (a resumed listing missing from browse, a deleted request's page still served, a new office-hours link missing); they all pass on a fresh server; under "Changes made during the build", list each task with its commit (`git --no-optional-locks log --oneline`, one command) and every place the build differed from the tasks.
 
-- [ ] **Step 7: The snippets for the controller**
+- [x] **Step 7: The snippets for the controller**
 
 Write, in the scratchpad named above:
 - `l-progress.md`: a section for `docs/PROGRESS.md` in the shape of stage K's (`## 2026-10-<day>: Housekeeping built, in sample mode (stage L)`): what was built (the own-shop gate and lines, the mentors' notes pinned, requests that close themselves, the sitemap); the spec points the code had already settled (plan decision 1); the JS figures; the unit and e2e counts; no screenshots (Step 2); and the open points for Lama: spec section 10's seven questions (the numbers 3 and 30 and whether an edit restarts the 30; reopening removing a passed date; reports an admin made about someone else; the only admin who sells; Featured's resting order; a reminder before a request closes; the sample words), and the one lag of spec 2.15 (a request page's shell can say "open" for up to 15 minutes on its closing day);
