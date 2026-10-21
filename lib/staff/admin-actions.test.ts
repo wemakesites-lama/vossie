@@ -6,7 +6,8 @@ import { addPin } from "@/lib/data/featured";
 import { getNotifications } from "@/lib/data/notifications";
 import { createReport } from "@/lib/data/reports";
 import { isHiddenFrom } from "@/lib/data/photos";
-import { createRequest, hideRequest } from "@/lib/data/requests";
+import { deleteOwnListing } from "@/lib/data/own-listings";
+import { createRequest, deleteRequest, hideRequest } from "@/lib/data/requests";
 import { createShop } from "@/lib/data/shops";
 import { closeReportsOn } from "@/lib/data/staff-reports";
 import { hideListing } from "@/lib/data/staff-shops";
@@ -965,6 +966,44 @@ describe("no Hub decision about the admin's own shop, its listings or their own 
   });
 });
 
+describe("a report about the admin's own thing stays theirs after they delete it (stage L review)", () => {
+  it("refuses Dismiss on a report about their own listing once it is deleted", async () => {
+    sampleStore().accounts.get("acc-seller")!.roles = ["admin"];
+    const reportId = await report("acc-student", { kind: "listing", id: "l-001" }, "Listing");
+    expect(await deleteOwnListing("tech-corner", "acc-seller", "l-001")).toBe(true);
+    await signedInAs(request, "acc-seller");
+    const before = everythingButFormState();
+    await redirectOf(() => dismissReport(form({ report: reportId, note: "Fine" })));
+    expect(await notice()).toBe("own-shop");
+    expect(everythingButFormState()).toEqual(before);
+    expect(sampleStore().reports.get(reportId)?.status).toBe("open");
+    expect(request.updatedTags).toEqual([]);
+  });
+
+  it("refuses Dismiss on a report about their own request once it is deleted", async () => {
+    sampleStore().accounts.get("acc-seller")!.roles = ["admin"];
+    const id = await siphosRequest();
+    const reportId = await report("acc-student", { kind: "request", id }, SIPHOS_FIELDS.title);
+    expect(await deleteRequest("acc-seller", id)).toBe(true);
+    await signedInAs(request, "acc-seller");
+    const before = everythingButFormState();
+    await redirectOf(() => dismissReport(form({ report: reportId, note: "Fine" })));
+    expect(await notice()).toBe("own-request");
+    expect(everythingButFormState()).toEqual(before);
+    expect(sampleStore().reports.get(reportId)?.status).toBe("open");
+    expect(request.updatedTags).toEqual([]);
+  });
+
+  it("still lets another admin dismiss it", async () => {
+    sampleStore().accounts.get("acc-seller")!.roles = ["admin"];
+    const reportId = await report("acc-student", { kind: "listing", id: "l-001" }, "Listing");
+    await deleteOwnListing("tech-corner", "acc-seller", "l-001");
+    await asAdmin();
+    await redirectOf(() => dismissReport(form({ report: reportId, note: "Fine" })));
+    expect(sampleStore().reports.get(reportId)?.status).toBe("closed");
+  });
+});
+
 describe("the two request actions settle first (stage L spec decision 11)", () => {
   const dueRequest = () =>
     createRequest({
@@ -1000,6 +1039,18 @@ describe("the two request actions settle first (stage L spec decision 11)", () =
     const reportId = await report("acc-student", { kind: "request", id }, SIPHOS_FIELDS.title);
     await signedInAs(request, "acc-seller");
     await redirectOf(() => hideReportedRequest(form({ report: reportId, reason: REASON })));
+    expect(sampleStore().requests.get(due.id)?.status).toBe("open");
+    expect(request.updatedTags).toEqual([]);
+  });
+
+  it("a refused Show again settles nothing (stage L spec decision 3)", async () => {
+    const due = await dueRequest();
+    sampleStore().accounts.get("acc-seller")!.roles = ["admin"];
+    const id = (await createRequest({ askerId: "acc-seller", fields: SIPHOS_FIELDS, now: STAFF_NOW })).id;
+    await hideRequest(id, REASON, STAFF_NOW);
+    await signedInAs(request, "acc-seller");
+    await redirectOf(() => showRequestAgain(form({ request: id })));
+    expect(await notice()).toBe("own-request");
     expect(sampleStore().requests.get(due.id)?.status).toBe("open");
     expect(request.updatedTags).toEqual([]);
   });

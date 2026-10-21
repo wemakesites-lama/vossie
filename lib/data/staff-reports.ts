@@ -91,8 +91,18 @@ function toView(row: ReportRow, viewerId: string | null): ReportView {
       canHide = open && Boolean(requestRow) && !requestRow?.hiddenAt;
       break;
   }
-  // Whose it is (stage L spec decision 2): read now, from the store. Something that has gone is nobody's.
-  const own = viewerId !== null && exists ? ownsTarget(viewerId, { kind: row.targetKind, id: row.targetId }) : null;
+  // Whose it is (stage L spec decision 2): read now, from the store; for something that has gone, from the owner the report recorded.
+  // A target that was deleted stays its reported owner's: they can't dismiss the reports about it either.
+  const own: OwnKind | null =
+    viewerId === null
+      ? null
+      : exists
+        ? ownsTarget(viewerId, { kind: row.targetKind, id: row.targetId })
+        : row.targetOwnerId === viewerId
+          ? row.targetKind === "seller"
+            ? "shop"
+            : row.targetKind
+          : null;
   return {
     id: row.id,
     reporterId: row.reporterId,

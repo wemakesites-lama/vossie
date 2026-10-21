@@ -38,6 +38,7 @@ test("an admin who owns a shop sees why in place of its controls, and a forged p
   test.setTimeout(240_000);
   const pieter = await signedInPage(browser, baseURL!, "Admin", "/admin/staff");
   let plain: BrowserContext | null = null;
+  let siphoContext: BrowserContext | null = null;
   try {
     // An interrupted earlier run on the same server may have left Sipho an admin: start clean.
     await removeSiphosAdminRole(pieter);
@@ -60,6 +61,7 @@ test("an admin who owns a shop sees why in place of its controls, and a forged p
 
     // Sipho, now an admin, on his own shop's review page.
     const sipho = await signedInPage(browser, baseURL!, "Seller, Tech corner", "/admin/sellers/tech-corner");
+    siphoContext = sipho.context();
     await expect(main(sipho).getByRole("region", { name: "What you can do" })).toContainText(OWN_SHOP_LINE);
     await expect(main(sipho).getByRole("button", { name: VERIFY })).toHaveCount(0);
     await expect(main(sipho).getByRole("link", { name: "Pause Tech corner" })).toHaveCount(0);
@@ -92,7 +94,6 @@ test("an admin who owns a shop sees why in place of its controls, and a forged p
     // Nobody reads the mentors' notes about themselves: the shop's mentor page is the 404 for Sipho (spec 2.5).
     await sipho.goto("/mentor/tech-corner");
     await expect(notFoundHeading(sipho)).toBeVisible();
-    await sipho.context().close();
 
     // Pieter, who doesn't own it, still has every control.
     await pieter.goto("/admin/sellers/tech-corner");
@@ -101,6 +102,7 @@ test("an admin who owns a shop sees why in place of its controls, and a forged p
     await expect(main(pieter).getByRole("region", { name: "Mentor" }).getByRole("combobox")).toBeVisible();
   } finally {
     await plain?.close().catch(() => {});
+    await siphoContext?.close().catch(() => {});
     await removeSiphosAdminRole(pieter).finally(() => pieter.context().close());
   }
 });
@@ -143,7 +145,7 @@ test("Your requests says when each request will close itself: 3 days after its n
 
   // The sample requests never close themselves: the board still shows the first, needed by 16 October 2026.
   await page.goto("/looking-for");
-  await expect(main(page).getByText("Accounting 1 tutor this week", { exact: true }).first()).toBeVisible();
+  await expect(main(page).getByText("Accounting 1 tutor this week", { exact: true }).filter({ visible: true }).first()).toBeVisible();
 });
 
 test("the sitemap offers only open requests, tips, and events from today on, and the rest keep their pages (spec section 5)", async ({

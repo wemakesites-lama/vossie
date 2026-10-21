@@ -104,8 +104,9 @@ export type SampleStore = {
  * sessions, sign-in attempts and codes are hashed with a key (stage K spec decision 15), so no old row is ever matched.
  * 11: audit rows gain relatedId, so a deleted mentor's name leaves the entries that assigned them.
  * 12: a Looking For request says who closed it, its asker or the rule (`closedBy`, stage L spec decision 11).
+ * 13: a report remembers who owned its target (`targetOwnerId`), so deleting the target doesn't free its owner to dismiss it.
  */
-export const STORE_VERSION = 12;
+export const STORE_VERSION = 13;
 
 type StoreHolder = { __vossieSampleStore?: SampleStore };
 

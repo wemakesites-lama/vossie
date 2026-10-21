@@ -7,7 +7,7 @@ import { exportSavedSearches, forgetSavedSearchesOf, type SavedSearchExport } fr
 import { listSessions } from "./sessions";
 import { exportConversations, forgetAccountInMessaging, unreadCounts, type ConversationExport } from "./messages";
 import { exportNotifications, type NotificationExport } from "./notifications";
-import { deleteReportsBy, exportReports, type ReportExport } from "./reports";
+import { deleteReportsBy, exportReports, forgetReportOwner, type ReportExport } from "./reports";
 import { exportRequests, forgetRequestsOf, type RequestExport, settleRequests } from "./requests";
 import { exportShop, forgetShopOf, type ListingExport, type OnboardingDraftExport, type ShopExport } from "./shops";
 import { exportStaffToolsData, forgetAccountInStaffTools, type StaffToolsExport } from "./staff-privacy";
@@ -245,6 +245,7 @@ export async function deleteAccountData(accountId: string): Promise<void> {
   // the other side keeps its own side of each conversation (messaging plan decision 14).
   await forgetAccountInMessaging(accountId, store.sellerProfiles.get(accountId)?.sellerSlug ?? null);
   await deleteReportsBy(accountId);
+  await forgetReportOwner(accountId);
   // Then its requests and follows, and its shop's followers, while the shop still names its owner (community actions
   // plan decision 21). Its offer threads have just followed messaging's rules.
   await forgetRequestsOf(accountId);

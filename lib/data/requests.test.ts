@@ -265,6 +265,14 @@ describe("old requests close themselves (stage L spec decisions 8 to 16)", () =>
     expect(await autoNotes()).toHaveLength(1);
   });
 
+  it("closes at the very start of the closing day in South Africa, not a second before", async () => {
+    const { id } = await post("acc-student", EARLY, DUE);
+    expect(await settleRequests(new Date("2026-10-12T21:59:59.000Z"))).toBe(0);
+    expect(sampleStore().requests.get(id)?.status).toBe("open");
+    expect(await settleRequests(new Date("2026-10-12T22:00:00.000Z"))).toBe(1);
+    expect(sampleStore().requests.get(id)).toMatchObject({ status: "closed", closedAt: "2026-10-12T22:00:00.000Z" });
+  });
+
   it("closes a request with no needed-by date 30 days after it last changed, and says so", async () => {
     // Posted 14 September at 10:00 in South Africa: closed from 14 October.
     const { id } = await post("acc-student", new Date("2026-09-14T08:00:00.000Z"));

@@ -7,6 +7,8 @@ import {
   hasOpenReport,
   listReportsBy,
 } from "./reports";
+import type { ReportTarget } from "@/lib/types";
+import { createRequest } from "./requests";
 import { resetSampleStore, sampleStore } from "./store";
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
@@ -42,7 +44,30 @@ describe("reports (messaging spec 2.8 and 3.4)", () => {
       detail: "Asked for a deposit.",
       status: "open",
       createdAt: NOW.toISOString(),
+      targetOwnerId: "acc-seller",
     });
+  });
+
+  it("records who owned the target: the shop's owner, or the asker of a request, or nobody for a sample", async () => {
+    const store = sampleStore();
+    const about = (target: ReportTarget) =>
+      createReport({ reporterId: "acc-student", target, targetTitle: "T", reason: "scam", detail: "", now: NOW });
+    expect(store.reports.get(await about(SELLER))?.targetOwnerId).toBe("acc-seller");
+    const own = await createRequest({
+      askerId: "acc-seller",
+      fields: {
+        title: "Desk lamp",
+        categorySlug: "res-living",
+        campusSlug: "midrand",
+        details: "Clip-on.",
+        budgetZar: 150,
+        swapWelcome: false,
+        neededBy: null,
+      },
+      now: NOW,
+    });
+    expect(store.reports.get(await about({ kind: "request", id: own.id }))?.targetOwnerId).toBe("acc-seller");
+    expect(store.reports.get(await about({ kind: "request", id: "r-001" }))?.targetOwnerId).toBeNull();
   });
 
   it("knows when the account has an open report on the same target (plan decision 17)", async () => {

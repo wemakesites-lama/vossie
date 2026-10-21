@@ -24,7 +24,13 @@ export async function createReport({
   now: Date;
 }): Promise<string> {
   const id = `rep-${randomUUID()}`;
-  sampleStore().reports.set(id, {
+  const store = sampleStore();
+  const shopSlug = target.kind === "listing" ? store.listings.get(target.id)?.sellerSlug : target.id;
+  const targetOwnerId =
+    target.kind === "request"
+      ? (store.requests.get(target.id)?.askerId ?? null)
+      : ((shopSlug ? store.sellers.get(shopSlug)?.ownerId : null) ?? null);
+  store.reports.set(id, {
     id,
     reporterId,
     targetKind: target.kind,
@@ -34,6 +40,7 @@ export async function createReport({
     detail,
     status: "open",
     createdAt: now.toISOString(),
+    targetOwnerId,
   });
   return id;
 }
@@ -76,6 +83,13 @@ export async function deleteReportsBy(reporterId: string): Promise<void> {
   const { reports } = sampleStore();
   for (const [id, row] of reports) {
     if (row.reporterId === reporterId) reports.delete(id);
+  }
+}
+
+/** Deleting an account takes its id off the reports about its things; the reports stay for the Hub (stage L review). */
+export async function forgetReportOwner(accountId: string): Promise<void> {
+  for (const row of sampleStore().reports.values()) {
+    if (row.targetOwnerId === accountId) row.targetOwnerId = null;
   }
 }
 

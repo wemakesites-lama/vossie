@@ -335,6 +335,20 @@ describe("deleting an account (accounts spec 2.13)", () => {
     expect(store.notifications.size).toBe(0);
   });
 
+  it("clears the deleted account's id from reports about its shop, listings and requests, and keeps the reports", async () => {
+    const id = await createReport({
+      reporterId: "acc-student",
+      target: { kind: "seller", id: "tech-corner" },
+      targetTitle: "Tech corner",
+      reason: "scam",
+      detail: "",
+      now: NOW,
+    });
+    expect(sampleStore().reports.get(id)?.targetOwnerId).toBe("acc-seller");
+    await deleteAccountData("acc-seller");
+    expect(sampleStore().reports.get(id)).toMatchObject({ status: "open", targetOwnerId: null });
+  });
+
   it("removes the account's shop, its listings and its photos (selling plan decision 22)", async () => {
     await storePhotos("acc-seller", [{ type: "image/png", bytes: pngBytes() }], NOW);
     await deleteAccountData("acc-seller");

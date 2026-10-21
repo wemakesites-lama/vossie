@@ -184,6 +184,7 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
       detail: "",
       status: "open",
       createdAt: NOW.toISOString(),
+      targetOwnerId: "acc-seller",
     });
     expect(await changeShopSlug("acc-seller", "gadgets", NOW)).toBe("changed");
     const store = sampleStore();

@@ -217,6 +217,12 @@ export type ReportRow = {
   closedBy?: string | null;
   /** The shop it was about has been deleted: it can only be dismissed, even if a new shop takes the link (amendment 13.1). */
   targetGone?: boolean;
+  /**
+   * Who owned the target when it was reported: the shop's owner for a shop or a listing, the asker for a request; null
+   * when nobody did (a sample). It outlives the target, so an admin who deletes their own listing or request still
+   * can't dismiss the reports about it (stage L review).
+   */
+  targetOwnerId: string | null;
 };
 
 /** A notification (messaging spec 2.9 and 3.5; plan decisions 12 and 13). */
