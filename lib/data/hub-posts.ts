@@ -24,8 +24,14 @@ function rsvpCount(postId: string): number {
   return [...sampleStore().hubRsvps.values()].filter((row) => row.postId === postId).length;
 }
 
-/** A published row as part B's HubPost: `going` is the count before Vossie's RSVPs, plus them (plan decision 13). */
-function toHubPost(row: HubPostRow): HubPost {
+/** What toHubPost reads of a row: everything buyers see, and when it was made. */
+export type HubPostCard = Omit<HubPostRow, "published" | "authorId" | "updatedAt" | "going">;
+
+/**
+ * A published row as part B's HubPost, with `going` given: the count before Vossie's RSVPs, plus them (plan decision
+ * 13), or null for office hours and tips. Pure, so the Supabase twin (lib/data/supabase/hub-posts.ts) shares it.
+ */
+export function toHubPost(row: HubPostCard, going: number | null): HubPost {
   return {
     id: row.id,
     kind: row.kind,
@@ -35,22 +41,27 @@ function toHubPost(row: HubPostRow): HubPost {
     startsAt: row.startsAt,
     place: row.place,
     capacity: row.capacity,
-    going: row.going === null ? null : row.going + rsvpCount(row.id),
+    going,
     summary: row.summary,
     body: row.body,
     image: { ...row.image },
   };
 }
 
+/** A store row as buyers see it, its RSVPs counted. */
+function sampleHubPost(row: HubPostRow): HubPost {
+  return toHubPost(row, row.going === null ? null : row.going + rsvpCount(row.id));
+}
+
 /** The published posts, for the feed, the homepage's What's on and post pages. A draft is staff's only (spec 2.4). */
 export function publishedPosts(): HubPost[] {
-  return [...sampleStore().hubPosts.values()].filter((row) => row.published).map(toHubPost);
+  return [...sampleStore().hubPosts.values()].filter((row) => row.published).map(sampleHubPost);
 }
 
 /** A published post's page; null for a draft or an unknown id, which answer 404. */
 export function publishedPost(id: string): HubPost | null {
   const row = sampleStore().hubPosts.get(id);
-  return row?.published ? toHubPost(row) : null;
+  return row?.published ? sampleHubPost(row) : null;
 }
 
 /** A post in the Hub's list (/hub/manage). */

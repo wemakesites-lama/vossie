@@ -65,3 +65,10 @@ export async function selectAll<Row>(query: () => PagedQuery<Row>, order: readon
     if (got.length < SELECT_PAGE) return rows;
   }
 }
+
+/**
+ * A twin of a sample function that the sample store answers synchronously: the same arguments and the same answer, as
+ * a promise, since the database is a round trip away. Twins of async sample functions are typed `typeof` the sample
+ * function itself (2b plan decision 15).
+ */
+export type AsyncTwin<F extends (...args: never[]) => unknown> = (...args: Parameters<F>) => Promise<Awaited<ReturnType<F>>>;

@@ -6,6 +6,7 @@ import { RecordRecentlyViewed } from "@/components/listings/RecordRecentlyViewed
 import { PageFallback } from "@/components/ui/PageFallback";
 import { getCampuses, getListingDetail, getListingIds } from "@/lib/data";
 import { priceLabel, shortDescription } from "@/lib/format";
+import { atLeastOne, PLACEHOLDER_PARAMS } from "@/lib/static-params";
 
 /** The tab title is the listing; link previews get "{title} · {price}" and the start of the description (spec 5.8). */
 export async function generateMetadata({ params }: PageProps<"/listings/[id]">): Promise<Metadata> {
@@ -21,8 +22,12 @@ export async function generateMetadata({ params }: PageProps<"/listings/[id]">):
   };
 }
 
+/** Every listing's page; on an empty database, a placeholder whose page is the 404 (2b plan Task 17b). */
 export async function generateStaticParams() {
-  return (await getListingIds()).map((id) => ({ id }));
+  return atLeastOne(
+    (await getListingIds()).map((id) => ({ id })),
+    PLACEHOLDER_PARAMS.listing,
+  );
 }
 
 export default function ListingPage({ params }: PageProps<"/listings/[id]">) {

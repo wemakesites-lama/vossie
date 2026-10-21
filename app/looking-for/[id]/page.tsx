@@ -5,6 +5,7 @@ import { RequestView } from "@/components/looking-for/RequestView";
 import { PageFallback } from "@/components/ui/PageFallback";
 import { getCampuses, getCategories, getRequest, getRequestIds } from "@/lib/data";
 import { shortDescription } from "@/lib/format";
+import { atLeastOne, PLACEHOLDER_PARAMS } from "@/lib/static-params";
 
 /**
  * The tab title is the request's ("Accounting 1 tutor this week · Vossie"; the layout adds the suffix) and the
@@ -18,8 +19,12 @@ export async function generateMetadata({ params }: PageProps<"/looking-for/[id]"
   return { title: request.title, description: shortDescription(request.details) };
 }
 
+/** Every request's page; on an empty database, a placeholder whose page is the 404 (2b plan Task 17b). */
 export async function generateStaticParams() {
-  return (await getRequestIds()).map((id) => ({ id }));
+  return atLeastOne(
+    (await getRequestIds()).map((id) => ({ id })),
+    PLACEHOLDER_PARAMS.request,
+  );
 }
 
 export default function RequestPage({ params }: PageProps<"/looking-for/[id]">) {

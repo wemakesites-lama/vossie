@@ -10,7 +10,8 @@ import { sampleStore } from "./store";
 // and its page says "(no longer used)". Retiring is undone by Use it again. Names are unique on their campus,
 // compared like shop names (selling's nameKey). Eduvos Online has none. Times come from the caller.
 
-function toPoint(row: PickupPointRow): PickupPoint {
+/** A row as forms and listing pages see it: `retired` only once it is (also the Supabase twin's, lib/data/supabase). */
+export function toPoint(row: PickupPointRow): PickupPoint {
   const point = { id: row.id, campusSlug: row.campusSlug, name: row.name };
   return row.retiredAt ? { ...point, retired: true } : point;
 }

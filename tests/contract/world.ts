@@ -12,6 +12,12 @@ export const WORLD_ACCOUNTS = ["asker", "shopper", "staff"] as const;
 
 export type WorldAccountName = (typeof WORLD_ACCOUNTS)[number];
 
+/** A request a scenario posts (Task 17): the rest is filled in, and it was last changed now. */
+export type WorldRequest = { asker: WorldAccountName; title: string; neededBy: string | null };
+
+/** A notification as a scenario checks it. */
+export type WorldNotification = { kind: string; subjectId: string; text: string; href: string };
+
 export interface World {
   readonly name: "sample" | "supabase";
   /** The account's id, signed in (a profile on Pretoria; "staff" holds the Admin role). */
@@ -21,6 +27,22 @@ export interface World {
    * is that account's session for the length of the call; in the sample store, the data layer takes the id itself.
    */
   asViewer<T>(name: WorldAccountName, read: (accountId: string) => Promise<T> | T): Promise<T>;
+  /** Hides a listing, as the Hub's Hide does (Task 15). */
+  hideListing(id: string, reason: string): Promise<void>;
+  /** Pauses an owned shop, by its seller or by the Hub (Task 15). */
+  pauseShop(slug: string, by: "seller" | "staff"): Promise<void>;
+  /** Saves a listing back as a draft (Task 15). */
+  draftListing(id: string): Promise<void>;
+  /** That account says it's going to the event (Task 16). */
+  addRsvp(postId: string, name: WorldAccountName): Promise<void>;
+  /** Takes a post back to a draft (Task 16). */
+  unpublishPost(id: string): Promise<void>;
+  /** Posts a Looking For request as that account, changed now; its id (Task 17). */
+  addRequest(request: WorldRequest): Promise<string>;
+  /** That account's notifications, oldest first (Task 17). */
+  notificationsOf(name: WorldAccountName): Promise<WorldNotification[]>;
+  /** Retires a pickup point (its id in this backend), as the Hub's Retire does (Task 14). */
+  retirePickupPoint(id: string): Promise<void>;
   /** Undoes what the test's verbs wrote, newest first. Runs after each test. */
   cleanup(): Promise<void>;
 }

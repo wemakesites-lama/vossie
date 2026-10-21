@@ -5,6 +5,7 @@ import { collections } from "@/data/fixtures/collections";
 import { heroSlides } from "@/data/fixtures/hero";
 import { hubBanner } from "@/data/fixtures/hub";
 import { trendingSearches } from "@/data/fixtures/trending";
+import { onSupabase } from "@/lib/backend";
 import { findListings } from "@/lib/browse/results";
 import { ALL_CAMPUSES } from "@/lib/campus";
 import { matchesRule } from "@/lib/collections";
@@ -31,15 +32,7 @@ import type {
   Seller,
   TrendingSearches,
 } from "@/lib/types";
-import {
-  listedListings,
-  liveSellerRows,
-  publicListing,
-  publicListingIds,
-  sellerFor,
-  storefrontRow,
-  toSeller,
-} from "./catalog";
+import { type Catalog, catalogOver, sampleCatalog, toSeller } from "./catalog";
 import { featuredFor } from "./featured";
 import { publishedPost, publishedPosts } from "./hub-posts";
 import { pickupPointById, pointsInUse } from "./pickup-points";
@@ -51,6 +44,38 @@ import { tagHub, tagListings, tagPickupPoints, tagRequests, tagSellers } from ".
 // lib/data/requests.ts, tagged `requests` (community actions plan decision 1); the rest is still read from the
 // fixtures. Switching to Supabase changes only this file and the catalog: keep the signatures, query the tables, keep
 // the tags.
+//
+// On Supabase (VOSSIE_BACKEND=supabase, lib/backend.ts), each reader keeps its tags first and then reads the twin in
+// lib/data/supabase, loaded with import() so the sample path never loads Supabase code (2b plan decision 15). Campuses
+// and categories stay the code's fixtures in both backends (decision 14).
+
+/**
+ * The catalog's rules over the backend in use (2b plan decision 17): the sample store, or a cached snapshot of
+ * Supabase's public tables (tagged `listings` and `sellers`). Readers call it after their tags.
+ */
+async function catalog(): Promise<Catalog> {
+  if (!onSupabase()) return sampleCatalog();
+  const { catalogSnapshot, catalogSourceFrom } = await import("./supabase/catalog");
+  return catalogOver(catalogSourceFrom(await catalogSnapshot()));
+}
+
+/** Looking For requests' public reads, from the backend in use (2b plan Task 17). */
+async function requestReads() {
+  if (onSupabase()) return import("./supabase/requests");
+  return { listedRequests, publicRequest, publicRequestIds };
+}
+
+/** The published Hub posts, from the backend in use (2b plan Task 16). */
+async function hubPosts(): Promise<HubPost[]> {
+  if (onSupabase()) return (await import("./supabase/hub-posts")).publishedPosts();
+  return publishedPosts();
+}
+
+/** A pickup point by id, retired or not, from the backend in use (2b plan Task 14). */
+async function pointById(id: string | null) {
+  if (onSupabase()) return (await import("./supabase/pickup-points")).pickupPointById(id);
+  return pickupPointById(id);
+}
 
 export async function getCampuses(): Promise<readonly Campus[]> {
   "use cache";
@@ -114,7 +139,7 @@ export async function getCollectionListings(slug: string): Promise<readonly List
   tagListings();
   const collection = collections.find((item) => item.slug === slug);
   if (!collection) return [];
-  return listedListings()
+  return (await catalog()).listedListings()
     .filter((listing) => matchesRule(listing, collection.rule))
     .sort(newestFirst)
     .slice(0, COLLECTION_LIMIT);
@@ -124,7 +149,7 @@ export async function getCollectionListings(slug: string): Promise<readonly List
 export async function getJustListed({ campus, limit }: CampusQuery): Promise<readonly Listing[]> {
   "use cache";
   tagListings();
-  return listedListings()
+  return (await catalog()).listedListings()
     .filter((listing) => campus === ALL_CAMPUSES || listing.campusSlug === campus)
     .sort(newestFirst)
     .slice(0, limit);
@@ -151,7 +176,7 @@ export async function getRequests({
 }: CampusQuery & { today: string }): Promise<readonly LookingForRequest[]> {
   "use cache";
   tagRequests();
-  return campusFirst(listedRequests(today).sort(newestFirst), campus, limit);
+  return campusFirst((await (await requestReads()).listedRequests(today)).sort(newestFirst), campus, limit);
 }
 
 /**
@@ -167,7 +192,7 @@ export async function getOpenRequests({
 }): Promise<readonly LookingForRequest[]> {
   "use cache";
   tagRequests();
-  return listedRequests(today)
+  return (await (await requestReads()).listedRequests(today))
     .filter((request) => category === null || request.categorySlug === category)
     .sort(newestFirst);
 }
@@ -176,14 +201,14 @@ export async function getOpenRequests({
 export async function getRequest(id: string): Promise<LookingForRequest | null> {
   "use cache";
   tagRequests();
-  return publicRequest(id);
+  return (await requestReads()).publicRequest(id);
 }
 
 /** Every request with a page, so each is prerendered (community spec 3); a new one renders on its first request. */
 export async function getRequestIds(): Promise<readonly string[]> {
   "use cache";
   tagRequests();
-  return publicRequestIds();
+  return (await requestReads()).publicRequestIds();
 }
 
 /**
@@ -193,7 +218,7 @@ export async function getRequestIds(): Promise<readonly string[]> {
 export async function getListedRequestIds({ today }: { today: string }): Promise<readonly string[]> {
   "use cache";
   tagRequests();
-  return listedRequests(today).map((request) => request.id);
+  return (await (await requestReads()).listedRequests(today)).map((request) => request.id);
 }
 
 /**
@@ -211,7 +236,7 @@ export async function getRelatedListings({
 }): Promise<readonly Listing[]> {
   "use cache";
   tagListings();
-  const sameCategory = listedListings()
+  const sameCategory = (await catalog()).listedListings()
     .filter((listing) => listing.categorySlug === categorySlug)
     .sort(newestFirst);
   return campusFirst(sameCategory, campusSlug, limit);
@@ -221,7 +246,7 @@ export async function getRelatedListings({
 export async function getFreeAndSwaps({ campus, limit }: CampusQuery): Promise<readonly FreeSwapItem[]> {
   "use cache";
   tagListings();
-  const items = listedListings()
+  const items = (await catalog()).listedListings()
     .filter((listing) => listing.priceZar === 0 || listing.payMode === "swap")
     .sort(newestFirst)
     .map(
@@ -245,7 +270,7 @@ export async function getHubEvents({ campus, limit, from }: CampusQuery & { from
   tagHub();
   // `from` is today's SAST date (YYYY-MM-DD). It keeps past events out, and the cache keys on it, so it turns over each day.
   return orderHubPosts(
-    publishedPosts().filter((post) => post.kind !== "tip"),
+    (await hubPosts()).filter((post) => post.kind !== "tip"),
     from,
   )
     .filter((post) => campus === ALL_CAMPUSES || post.campusSlug === ALL_CAMPUSES || post.campusSlug === campus)
@@ -267,7 +292,7 @@ export async function getHubPosts({
   "use cache";
   tagHub();
   return orderHubPosts(
-    publishedPosts().filter((post) => kinds.includes(post.kind)),
+    (await hubPosts()).filter((post) => kinds.includes(post.kind)),
     from,
   );
 }
@@ -277,6 +302,7 @@ export async function getHubPost(id: string): Promise<HubPost | null> {
   "use cache";
   tagHub();
   // A draft or an unknown id has no page (staff tools plan decision 11).
+  if (onSupabase()) return (await import("./supabase/hub-posts")).publishedPost(id);
   return publishedPost(id);
 }
 
@@ -284,7 +310,7 @@ export async function getHubPost(id: string): Promise<HubPost | null> {
 export async function getHubPostIds(): Promise<readonly string[]> {
   "use cache";
   tagHub();
-  return publishedPosts().map((post) => post.id);
+  return (await hubPosts()).map((post) => post.id);
 }
 
 /**
@@ -294,7 +320,7 @@ export async function getHubPostIds(): Promise<readonly string[]> {
 export async function getListedHubPostIds({ today }: { today: string }): Promise<readonly string[]> {
   "use cache";
   tagHub();
-  return publishedPosts()
+  return (await hubPosts())
     .filter((post) => !hasPassed(post, today))
     .map((post) => post.id);
 }
@@ -303,7 +329,7 @@ export async function getListedHubPostIds({ today }: { today: string }): Promise
 export async function getVerifiedSellers(): Promise<readonly Seller[]> {
   "use cache";
   tagSellers();
-  return liveSellerRows()
+  return (await catalog()).liveSellerRows()
     .filter((row) => row.verified)
     .map(toSeller)
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -319,14 +345,15 @@ export async function getListingDetail(id: string): Promise<ListingDetail | null
   "use cache";
   tagListings();
   tagPickupPoints();
-  const listing = publicListing(id);
+  const shown = await catalog();
+  const listing = shown.publicListing(id);
   if (!listing) return null;
-  const seller = sellerFor(listing.sellerSlug);
+  const seller = shown.sellerFor(listing.sellerSlug);
   const category = categories.find((item) => item.slug === listing.categorySlug);
   const campus = campuses.find((item) => item.slug === listing.campusSlug);
   if (!seller || !category || !campus) return null;
   // Retired or not: a listing keeps its point, marked "no longer used" (staff tools plan decision 10).
-  const pickupPoint = pickupPointById(listing.pickupPointId);
+  const pickupPoint = await pointById(listing.pickupPointId);
   return { listing, seller, category, campus, pickupPoint };
 }
 
@@ -341,7 +368,7 @@ export async function getMoreFrom(
 ): Promise<MoreFrom> {
   "use cache";
   tagListings();
-  const others = listedListings()
+  const others = (await catalog()).listedListings()
     .filter((item) => item.id !== listing.id)
     .sort(newestFirst);
   const fromSeller = others.filter((item) => item.sellerSlug === listing.sellerSlug);
@@ -356,6 +383,7 @@ export async function getMoreFrom(
 export async function getPickupPoints(): Promise<readonly PickupPoint[]> {
   "use cache";
   tagPickupPoints();
+  if (onSupabase()) return (await import("./supabase/pickup-points")).pointsInUse();
   return pointsInUse();
 }
 
@@ -366,8 +394,9 @@ export async function getPickupPoints(): Promise<readonly PickupPoint[]> {
 export async function searchListings(query: SearchQuery): Promise<SearchResult> {
   "use cache";
   tagListings();
-  return findListings(listedListings(), query, {
-    sellers: new Map(liveSellerRows().map((row) => [row.slug, row.name])),
+  const shown = await catalog();
+  return findListings(shown.listedListings(), query, {
+    sellers: new Map(shown.liveSellerRows().map((row) => [row.slug, row.name])),
     categories: new Map(categories.map((category) => [category.slug, category.name])),
   });
 }
@@ -379,14 +408,14 @@ export async function searchListings(query: SearchQuery): Promise<SearchResult> 
 export async function getListingIds(): Promise<readonly string[]> {
   "use cache";
   tagListings();
-  return publicListingIds();
+  return (await catalog()).publicListingIds();
 }
 
 /** A storefront's seller: an approved or paused shop (plan decision 2). */
 export async function getSeller(slug: string): Promise<Seller | null> {
   "use cache";
   tagSellers();
-  const row = storefrontRow(slug);
+  const row = (await catalog()).storefrontRow(slug);
   return row ? toSeller(row) : null;
 }
 
@@ -394,14 +423,14 @@ export async function getSeller(slug: string): Promise<Seller | null> {
 export async function getSellerSlugs(): Promise<readonly string[]> {
   "use cache";
   tagSellers();
-  return liveSellerRows().map((row) => row.slug);
+  return (await catalog()).liveSellerRows().map((row) => row.slug);
 }
 
 /** A storefront's listings (shopping spec 4.1): the seller's available listings, newest first. */
 export async function getSellerListings(slug: string): Promise<readonly Listing[]> {
   "use cache";
   tagListings();
-  return listedListings()
+  return (await catalog()).listedListings()
     .filter((listing) => listing.sellerSlug === slug)
     .sort(newestFirst);
 }
@@ -414,5 +443,6 @@ export async function getSellerListings(slug: string): Promise<readonly Listing[
 export async function getListingsByIds(ids: readonly string[]): Promise<readonly Listing[]> {
   "use cache";
   tagListings();
-  return ids.flatMap((id) => publicListing(id) ?? []);
+  const shown = await catalog();
+  return ids.flatMap((id) => shown.publicListing(id) ?? []);
 }

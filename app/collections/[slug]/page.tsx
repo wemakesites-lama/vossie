@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { CollectionView } from "@/components/collection/CollectionView";
 import { PageFallback } from "@/components/ui/PageFallback";
 import { getCampuses, getCategories, getCollection, getCollectionListings, getCollections } from "@/lib/data";
+import { atLeastOne, PLACEHOLDER_PARAMS } from "@/lib/static-params";
 
 /**
  * The tab title is the collection's ("Res setup under R500 · Vossie"; the layout adds the suffix) and the description
@@ -16,8 +17,12 @@ export async function generateMetadata({ params }: PageProps<"/collections/[slug
   return { title: collection.title, description: collection.intro };
 }
 
+/** Every collection's page; were there none, a placeholder whose page is the 404 (2b plan Task 17b). */
 export async function generateStaticParams() {
-  return (await getCollections()).map((collection) => ({ slug: collection.slug }));
+  return atLeastOne(
+    (await getCollections()).map((collection) => ({ slug: collection.slug })),
+    PLACEHOLDER_PARAMS.collection,
+  );
 }
 
 export default function CollectionPage({ params }: PageProps<"/collections/[slug]">) {

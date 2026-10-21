@@ -6,6 +6,7 @@ import { PageFallback } from "@/components/ui/PageFallback";
 import { getCampuses, getHubPost, getHubPostIds } from "@/lib/data";
 import { shortDescription } from "@/lib/format";
 import { markdownText } from "@/lib/markdown";
+import { atLeastOne, PLACEHOLDER_PARAMS } from "@/lib/static-params";
 
 /**
  * The tab title is the post's ("Pitch night · Vossie"; the layout adds the suffix) and the description the start of
@@ -23,8 +24,12 @@ export async function generateMetadata({ params }: PageProps<"/hub/[id]">): Prom
   };
 }
 
+/** Every published post's page; on an empty database, a placeholder whose page is the 404 (2b plan Task 17b). */
 export async function generateStaticParams() {
-  return (await getHubPostIds()).map((id) => ({ id }));
+  return atLeastOne(
+    (await getHubPostIds()).map((id) => ({ id })),
+    PLACEHOLDER_PARAMS.hubPost,
+  );
 }
 
 export default function HubPostPage({ params }: PageProps<"/hub/[id]">) {

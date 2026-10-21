@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
+import { onSupabase } from "@/lib/backend";
 import { YOUR_REQUESTS_PATH } from "@/lib/looking-for/paths";
 import {
   closedAtFor,
@@ -113,6 +114,7 @@ export function publicRequestIds(): string[] {
  * nothing a cached page shows.
  */
 export async function settleRequests(now: Date): Promise<number> {
+  if (onSupabase()) return (await import("./supabase/requests")).settleRequests(now);
   const today = sastDate(now);
   const closed: RequestRow[] = [];
   // Copied when marked, so the words are the ones that were due (stage M plan decision 9).

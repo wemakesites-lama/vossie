@@ -31,6 +31,74 @@ export function sampleWorld(): World {
     async asViewer(name, read) {
       return read(await this.signedIn(name));
     },
+    async hideListing(id, reason) {
+      const row = sampleStore().listings.get(id);
+      if (!row) throw new Error(`No listing ${id}`);
+      row.hiddenAt = "2026-10-01T08:00:00.000Z";
+      row.hiddenReason = reason;
+    },
+    async pauseShop(slug, by) {
+      const store = sampleStore();
+      const ownerId = store.sellers.get(slug)?.ownerId;
+      const profile = ownerId ? store.sellerProfiles.get(ownerId) : undefined;
+      if (!profile) throw new Error(`No owned shop ${slug}`);
+      profile.status = "paused";
+      profile.pausedBy = by;
+    },
+    async draftListing(id) {
+      const row = sampleStore().listings.get(id);
+      if (!row) throw new Error(`No listing ${id}`);
+      row.state = "draft";
+    },
+    async addRsvp(postId, name) {
+      const accountId = await this.signedIn(name);
+      const key = `${postId}:${accountId}`;
+      sampleStore().hubRsvps.set(key, { key, postId, accountId, createdAt: "2026-10-01T08:00:00.000Z" });
+    },
+    async unpublishPost(id) {
+      const row = sampleStore().hubPosts.get(id);
+      if (!row) throw new Error(`No Hub post ${id}`);
+      row.published = false;
+    },
+    async addRequest({ asker, title, neededBy }) {
+      const askerId = await this.signedIn(asker);
+      const requests = sampleStore().requests;
+      const id = `contract-${requests.size + 1}`;
+      const now = new Date().toISOString();
+      requests.set(id, {
+        id,
+        askerId,
+        title,
+        categorySlug: "tech",
+        campusSlug: "pretoria",
+        details: "A request the contract tests post and the world takes away again.",
+        budgetZar: null,
+        swapWelcome: false,
+        neededBy,
+        status: "open",
+        createdAt: now,
+        updatedAt: now,
+        closedAt: null,
+        closedBy: null,
+        remindedFor: null,
+        seedOffers: 0,
+        hiddenAt: null,
+        hiddenReason: null,
+      });
+      return id;
+    },
+    async notificationsOf(name) {
+      const accountId = await this.signedIn(name);
+      return [...sampleStore().notifications.values()]
+        .filter((row) => row.accountId === accountId)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        .map(({ kind, subjectId, text, href }) => ({ kind, subjectId, text, href }));
+    },
+    async retirePickupPoint(id) {
+      const row = sampleStore().pickupPoints.get(id);
+      if (!row) throw new Error(`No pickup point ${id}`);
+      row.retiredAt = "2026-10-01T08:00:00.000Z";
+    },
     async cleanup() {
       // Nothing to undo: the next test's world starts from a fresh store.
     },

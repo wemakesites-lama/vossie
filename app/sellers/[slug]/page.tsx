@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { SellerView } from "@/components/seller/SellerView";
 import { PageFallback } from "@/components/ui/PageFallback";
 import { getCampuses, getSeller, getSellerSlugs } from "@/lib/data";
+import { atLeastOne, PLACEHOLDER_PARAMS } from "@/lib/static-params";
 
 /**
  * The tab title is the seller's name ("Tech corner · Vossie"; the layout adds the suffix) and the description their
@@ -21,8 +22,12 @@ export async function generateMetadata({ params }: PageProps<"/sellers/[slug]">)
   };
 }
 
+/** Every open shop's storefront; on an empty database, a placeholder whose page is the 404 (2b plan Task 17b). */
 export async function generateStaticParams() {
-  return (await getSellerSlugs()).map((slug) => ({ slug }));
+  return atLeastOne(
+    (await getSellerSlugs()).map((slug) => ({ slug })),
+    PLACEHOLDER_PARAMS.seller,
+  );
 }
 
 export default function SellerPage({ params }: PageProps<"/sellers/[slug]">) {
