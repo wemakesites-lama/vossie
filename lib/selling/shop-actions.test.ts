@@ -4,7 +4,8 @@ import { readFormState } from "@/lib/auth/form-state";
 import { hashToken } from "@/lib/auth/secrets";
 import { getPhoto, photoIdOf } from "@/lib/data/photos";
 import { createSession } from "@/lib/data/sessions";
-import { createShop, emptyDraft, getOnboardingDraft, getShopOf, saveOnboardingDraft } from "@/lib/data/shops";
+import { Refused } from "@/lib/data/refused";
+import { createShop, emptyDraft, getOnboardingDraft, getShopOf, saveOnboardingDraft, updateShop } from "@/lib/data/shops";
 import { declineShop } from "@/lib/data/staff-shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { KEEP_MAX } from "@/lib/messaging/rules";
@@ -26,6 +27,11 @@ vi.mock("next/headers", async () => (await import("@/tests/helpers/next-request"
 vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
 vi.mock("next/cache", async () => (await import("@/tests/helpers/next-request")).nextCache(request));
+// updateShop as it is, so a test can make it meet a race refusal, as the Supabase twin may (C2/C3 plan amendment 9).
+vi.mock("@/lib/data/shops", async (original) => {
+  const shops = await original<typeof import("@/lib/data/shops")>();
+  return { ...shops, updateShop: vi.fn(shops.updateShop) };
+});
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
 const IN_30_DAYS = new Date("2026-11-13T08:42:00.000Z");
@@ -327,6 +333,36 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     await signedInAs("acc-student");
     expect(await redirectOf(() => saveShopProfile(profile({ name: "Hijacked" })))).toBe("/sell");
     expect((await getShopOf("acc-seller"))?.shop.name).toBe("Tech corner");
+  });
+});
+
+describe("a race the database refuses (C2/C3 plan amendment 9)", () => {
+  it("shows the field's own error, keeps what was typed, and changes nothing", async () => {
+    for (const [code, error] of [
+      ["name-taken", "name-taken"],
+      ["slug-taken", "slug-taken"],
+      ["points-invalid", "points-missing"],
+      ["photo-invalid", "photo-again"],
+    ] as const) {
+      resetRequest(request);
+      await signedInAs("acc-seller");
+      vi.mocked(updateShop).mockRejectedValueOnce(new Refused(code));
+      const redirect = await redirectSignalOf(() => saveShopProfile(profile({ tagline: "Raced." })));
+      expect([redirect.url, redirect.type], code).toEqual(["/sell/profile", "replace"]);
+      expect(await readFormState(PROFILE_FORM), code).toMatchObject({
+        errors: [error],
+        values: { name: "Tech corner", tagline: "Raced.", campus: "midrand" },
+        notice: null,
+      });
+      expect(request.updatedTags, code).toEqual([]);
+      expect((await getShopOf("acc-seller"))?.shop.tagline, code).not.toBe("Raced.");
+    }
+  });
+
+  it("lets anything else through", async () => {
+    await signedInAs("acc-seller");
+    vi.mocked(updateShop).mockRejectedValueOnce(new Error("down"));
+    await expect(saveShopProfile(profile())).rejects.toThrow("down");
   });
 });
 

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { onSupabase } from "@/lib/backend";
 import { nextState, type ListingFields } from "@/lib/selling/rules";
 import type { ImageRef, ListingState } from "@/lib/types";
 import { attachPhotos, deletePhotosUsedBy, listingPhotoUse } from "./photos";
@@ -8,6 +9,11 @@ import { sampleStore } from "./store";
 // A shop's own listings (selling spec 2.9 and 2.10, plan decision 3), drafts included. Every function takes the
 // shop's slug and only ever finds or changes that shop's listings, so a listing id from a form can't reach anyone
 // else's. Times come from the caller.
+//
+// On Supabase (C2/C3 plan Task 9) each function's twin is lib/data/supabase/own-listings.ts, picked on its first line
+// through import(): the database's save_listing, set_listing_state and delete_listing, through the owner's own client.
+
+const supabase = () => import("./supabase/own-listings");
 
 const copy = (row: ListingRow): ListingRow => structuredClone(row);
 
@@ -23,6 +29,7 @@ export function isFirstPublish(before: Pick<ListingRow, "firstPublishedAt"> | nu
 
 /** The shop's listings, most recently changed first. */
 export async function listOwnListings(sellerSlug: string): Promise<ListingRow[]> {
+  if (onSupabase()) return (await supabase()).listOwnListings(sellerSlug);
   return [...sampleStore().listings.values()]
     .filter((row) => row.sellerSlug === sellerSlug)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
@@ -30,6 +37,7 @@ export async function listOwnListings(sellerSlug: string): Promise<ListingRow[]>
 }
 
 export async function getOwnListing(sellerSlug: string, id: string): Promise<ListingRow | null> {
+  if (onSupabase()) return (await supabase()).getOwnListing(sellerSlug, id);
   const row = sampleStore().listings.get(id);
   return row && row.sellerSlug === sellerSlug ? copy(row) : null;
 }
@@ -51,15 +59,18 @@ export type ListingSave = {
  * Saves a new or changed listing (plan decision 3) on its shop's campus. The photos it uses become its own, and the
  * ones it no longer uses are deleted. A draft's `createdAt` moves to when it's first published, and that moment is
  * kept in `firstPublishedAt` for good: publishing again after a save back to draft changes neither (amendment 9.2).
- * Null when `id` isn't one of the shop's listings, or the shop has gone.
+ * A shop waiting for approval saves drafts only (plan decision 4), as save_listing does: the action asks for a draft
+ * anyway. Null when `id` isn't one of the shop's listings, or the shop has gone.
  */
 export async function saveOwnListing(save: ListingSave): Promise<ListingRow | null> {
-  const { listings, sellers } = sampleStore();
+  if (onSupabase()) return (await supabase()).saveOwnListing(save);
+  const { listings, sellers, sellerProfiles } = sampleStore();
   const shop = sellers.get(save.sellerSlug);
   const existing = save.id ? listings.get(save.id) : undefined;
   if (!shop || (save.id && existing?.sellerSlug !== save.sellerSlug)) return null;
   const at = save.now.toISOString();
-  const state = nextState(existing?.state ?? null, save.intent);
+  const waiting = sellerProfiles.get(save.ownerId)?.status === "pending";
+  const state = nextState(existing?.state ?? null, waiting ? "draft" : save.intent);
   const firstPublish = isFirstPublish(existing ?? null, state);
   const row: ListingRow = {
     id: existing?.id ?? `l-${randomUUID()}`,
@@ -95,6 +106,7 @@ export async function setOwnListingState(
   to: "available" | "paused" | "sold",
   now: Date,
 ): Promise<ListingRow | null> {
+  if (onSupabase()) return (await supabase()).setOwnListingState(sellerSlug, id, to, now);
   const row = sampleStore().listings.get(id);
   if (!row || row.sellerSlug !== sellerSlug || !MOVES_TO[to].includes(row.state)) return null;
   row.state = to;
@@ -104,6 +116,7 @@ export async function setOwnListingState(
 
 /** Deletes one of the shop's listings and its photos (selling spec 2.9). Conversations keep its title (messaging). */
 export async function deleteOwnListing(sellerSlug: string, ownerId: string, id: string): Promise<boolean> {
+  if (onSupabase()) return (await supabase()).deleteOwnListing(sellerSlug, ownerId, id);
   const { listings } = sampleStore();
   const row = listings.get(id);
   if (!row || row.sellerSlug !== sellerSlug) return false;

@@ -1,14 +1,17 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { pngBytes } from "@/tests/helpers/image-bytes";
 import {
   attachPhotos,
   deletePhotosOf,
   deletePhotosUsedBy,
   getPhoto,
+  isPhotoId,
+  photoFor,
   photoIdOf,
   photoSrc,
   photoSrcsOf,
   storePhotos,
+  sweepPhotos,
   type Upload,
 } from "./photos";
 import { resetSampleStore, sampleStore } from "./store";
@@ -82,5 +85,62 @@ describe("stored photos (selling spec 2.4, plan decision 11)", () => {
     expect(await getPhoto(photoIdOf(old)!, NOW)).toBeNull();
     const many = await storePhotos("acc-student", Array.from({ length: 14 }, upload), NOW);
     expect(await photoSrcsOf("acc-student", null, NOW)).toEqual(new Set(many.slice(2)));
+  });
+
+  it("takes a sample id or a bare uuid as a photo's id, and nothing else (C2/C3 plan decision 13)", () => {
+    const uuid = "0b9e4c1a-5f2d-4e8b-9a7c-3d1e2f4a5b6c";
+    expect(isPhotoId(`ph-${uuid}`)).toBe(true);
+    expect(isPhotoId(uuid)).toBe(true);
+    for (const id of ["ph-x", uuid.toUpperCase(), `ph-${uuid.toUpperCase()}`, "../secrets", `${uuid}/x`, `x${uuid}`]) {
+      expect(isPhotoId(id), id).toBe(false);
+    }
+    expect(photoIdOf(`/photos/${uuid}`)).toBe(uuid);
+    expect(photoIdOf(`/photos/ph-${uuid}`)).toBe(`ph-${uuid}`);
+  });
+});
+
+describe("a photo for /photos/[id] (C2/C3 plan decision 11)", () => {
+  const nobody = async () => null;
+
+  it("is anyone's, without asking who is looking, unless it's a hidden listing's", async () => {
+    const [src] = await storePhotos("acc-seller", [upload()], NOW);
+    const viewer = vi.fn(nobody);
+    expect(await photoFor(photoIdOf(src)!, viewer, NOW)).toEqual({ type: "image/png", bytes: pngBytes() });
+    expect(viewer).not.toHaveBeenCalled();
+  });
+
+  it("goes to its owner only once its listing is hidden (staff tools amendment 13.5)", async () => {
+    const [src] = await storePhotos("acc-seller", [upload()], NOW);
+    await attachPhotos("acc-seller", [src], "listing:l-001");
+    Object.assign(sampleStore().listings.get("l-001")!, {
+      photos: [{ src, alt: "" }],
+      hiddenAt: NOW.toISOString(),
+      hiddenReason: "Not allowed.",
+    });
+    const id = photoIdOf(src)!;
+    expect(await photoFor(id, nobody, NOW)).toBeNull();
+    expect(await photoFor(id, async () => ({ id: "acc-student", hubStaff: true }), NOW)).toBeNull();
+    expect(await photoFor(id, async () => ({ id: "acc-seller", hubStaff: false }), NOW)).not.toBeNull();
+  });
+
+  it("is null for a waiting photo a day old, an unknown id and a bare uuid the sample never made", async () => {
+    const [src] = await storePhotos("acc-seller", [upload()], NOW);
+    sampleStore().photos.get(photoIdOf(src)!)!.createdAt = "2026-10-13T07:59:00.000Z";
+    expect(await photoFor(photoIdOf(src)!, nobody, NOW)).toBeNull();
+    expect(await photoFor("ph-00000000-0000-4000-8000-000000000000", nobody, NOW)).toBeNull();
+    expect(await photoFor("00000000-0000-4000-8000-000000000000", nobody, NOW)).toBeNull();
+  });
+});
+
+describe("the daily sweep (C2/C3 plan decision 15)", () => {
+  it("deletes waiting photos a day old, and keeps fresh ones and photos with a use", async () => {
+    const [stale, fresh, used] = await storePhotos("acc-seller", [upload(), upload(), upload()], NOW);
+    for (const src of [stale, used]) sampleStore().photos.get(photoIdOf(src)!)!.createdAt = "2026-10-13T07:59:00.000Z";
+    await attachPhotos("acc-seller", [used], "shop");
+    expect(await sweepPhotos(NOW)).toEqual({ rows: 1, files: 1 });
+    expect(sampleStore().photos.has(photoIdOf(stale)!)).toBe(false);
+    expect(sampleStore().photos.has(photoIdOf(fresh)!)).toBe(true);
+    expect(sampleStore().photos.has(photoIdOf(used)!)).toBe(true);
+    expect(await sweepPhotos(NOW)).toEqual({ rows: 0, files: 0 });
   });
 });

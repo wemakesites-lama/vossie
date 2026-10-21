@@ -1,4 +1,5 @@
 import { categories } from "@/data/fixtures/categories";
+import { onSupabase } from "@/lib/backend";
 import { sampleListingRows, sampleSellerRows, sampleShopOwners } from "@/data/fixtures/shops";
 import { nameKey, RESERVED_SLUGS, SLUG_MAX, slugify } from "@/lib/selling/rules";
 import { sastDate } from "@/lib/time";
@@ -11,22 +12,36 @@ import { sampleStore } from "./store";
 // A seller's own shop (selling spec 2.6 to 2.8 and 2.11): applying, editing, pausing, the one change of link, the
 // wizard's draft, and what deleting an account removes. Status lives on the owner's seller profile (plan decision 1).
 // Only Server Actions change anything; pages only read. Times come from the caller.
+//
+// On Supabase (C2/C3 plan decisions 6 to 8 and 21) each function's twin is lib/data/supabase/shops.ts, picked on its
+// first line through import(), so sample mode never loads Supabase code. Every caller passes the signed-in account,
+// which the twin checks against the session. emptyDraft is pure and shared.
 
-export type OwnShop = { shop: SellerRow; status: SellerStatus };
+const supabase = () => import("./supabase/shops");
+
+/**
+ * The owner's shop, its status, and whether the Hub paused it (C2/C3 plan decision 8): the Hub's pause is the Hub's
+ * to undo, so the seller is told so.
+ */
+export type OwnShop = { shop: SellerRow; status: SellerStatus; pausedByHub: boolean };
 
 /** The account's shop and its status, or null when it has none. */
 export async function getShopOf(accountId: string): Promise<OwnShop | null> {
+  if (onSupabase()) return (await supabase()).getShopOf(accountId);
   const store = sampleStore();
   const profile = store.sellerProfiles.get(accountId);
   if (!profile) return null;
   for (const row of store.sellers.values()) {
-    if (row.ownerId === accountId) return { shop: structuredClone(row), status: profile.status };
+    if (row.ownerId === accountId) {
+      return { shop: structuredClone(row), status: profile.status, pausedByHub: profile.pausedBy === "staff" };
+    }
   }
   return null;
 }
 
 /** Whether another shop on `campusSlug` has this name (plan decision 16). `exceptSlug` is the shop being edited. */
 export async function isShopNameTaken(name: string, campusSlug: string, exceptSlug: string | null): Promise<boolean> {
+  if (onSupabase()) return (await supabase()).isShopNameTaken(name, campusSlug, exceptSlug);
   const key = nameKey(name);
   for (const row of sampleStore().sellers.values()) {
     if (row.slug !== exceptSlug && row.campusSlug === campusSlug && nameKey(row.name) === key) return true;
@@ -46,6 +61,7 @@ function slugInUse(slug: string): boolean {
 }
 
 export async function isSlugTaken(slug: string): Promise<boolean> {
+  if (onSupabase()) return (await supabase()).isSlugTaken(slug);
   return slugInUse(slug);
 }
 
@@ -122,6 +138,7 @@ export type ShopDetails = {
  * Null when the account already has a shop.
  */
 export async function createShop(accountId: string, details: ShopDetails, now: Date): Promise<SellerRow | null> {
+  if (onSupabase()) return (await supabase()).createShop(accountId, details, now);
   const store = sampleStore();
   if (store.sellerProfiles.has(accountId)) return null;
   const at = now.toISOString();
@@ -157,6 +174,7 @@ export async function createShop(accountId: string, details: ShopDetails, now: D
  * has none (plan decision 17). A replaced or removed photo is deleted. Null when the account has no shop.
  */
 export async function updateShop(accountId: string, details: ShopDetails, now: Date): Promise<SellerRow | null> {
+  if (onSupabase()) return (await supabase()).updateShop(accountId, details, now);
   const store = sampleStore();
   const own = await getShopOf(accountId);
   if (!own) return null;
@@ -197,6 +215,7 @@ export type SlugChange = "changed" | "same" | "used" | "taken";
  * waiting (its link follows its name, and isn't public yet).
  */
 export async function changeShopSlug(accountId: string, slug: string, now: Date): Promise<SlugChange | null> {
+  if (onSupabase()) return (await supabase()).changeShopSlug(accountId, slug, now);
   const own = await getShopOf(accountId);
   if (!own || own.status === "pending") return null;
   if (own.shop.slug === slug) return "same";
@@ -216,6 +235,7 @@ export async function changeShopSlug(accountId: string, slug: string, now: Date)
  * status, or null when it can't change.
  */
 export async function setShopPaused(accountId: string, paused: boolean): Promise<SellerStatus | null> {
+  if (onSupabase()) return (await supabase()).setShopPaused(accountId, paused);
   const profile = sampleStore().sellerProfiles.get(accountId);
   if (!profile || profile.status !== (paused ? "approved" : "paused")) return null;
   if (!paused && profile.pausedBy === "staff") return null;
@@ -240,12 +260,14 @@ export function emptyDraft(accountId: string, campusSlug: string, now: Date): On
 }
 
 export async function getOnboardingDraft(accountId: string): Promise<OnboardingDraftRow | null> {
+  if (onSupabase()) return (await supabase()).getOnboardingDraft(accountId);
   const row = sampleStore().onboardingDrafts.get(accountId);
   return row ? structuredClone(row) : null;
 }
 
 /** Saves the wizard's answers (selling spec 2.2). Its photo becomes the draft's, and one it no longer uses goes. */
 export async function saveOnboardingDraft(draft: OnboardingDraftRow): Promise<void> {
+  if (onSupabase()) return (await supabase()).saveOnboardingDraft(draft);
   sampleStore().onboardingDrafts.set(draft.accountId, structuredClone(draft));
   await deletePhotosUsedBy(draft.accountId, "draft", new Set(draft.photoSrc ? [draft.photoSrc] : []));
   if (draft.photoSrc) await attachPhotos(draft.accountId, [draft.photoSrc], "draft");
@@ -257,6 +279,7 @@ export async function saveOnboardingDraft(draft: OnboardingDraftRow): Promise<vo
  * buyers, with each listing's title (messaging plan decision 14).
  */
 export async function forgetShopOf(accountId: string): Promise<boolean> {
+  if (onSupabase()) return (await supabase()).forgetShopOf(accountId);
   const store = sampleStore();
   let hadShop = false;
   for (const [slug, row] of store.sellers) {
@@ -299,6 +322,7 @@ export async function forgetShopOf(accountId: string): Promise<boolean> {
  * claims someone else's shop (amendment 9.3). A waiting shop's profile has no link to follow.
  */
 export async function restoreSampleShop(accountId: string): Promise<boolean> {
+  if (onSupabase()) return (await supabase()).restoreSampleShop(accountId);
   const store = sampleStore();
   if ([...store.sellers.values()].some((row) => row.ownerId === accountId)) return false;
   let restored = false;
@@ -377,11 +401,16 @@ export type OnboardingDraftExport = {
   updatedAt: string;
 };
 
-// Retired points keep their names in the export (staff tools plan decision 10).
-const spotName = (id: string | null) => pickupPointName(id);
-const categoryName = (slug: string) => categories.find((category) => category.slug === slug)?.name ?? slug;
+/** A pickup point's name by its id, retired or not, for the export: the sample's, or Supabase's (C1's pickupPointById). */
+export type SpotName = (id: string | null) => string | null;
 
-function listingExport(row: ListingRow): ListingExport {
+// Retired points keep their names in the export (staff tools plan decision 10).
+const spotName: SpotName = (id) => pickupPointName(id);
+/** A category's name for the export, or its slug when it isn't one. */
+export const categoryName = (slug: string) => categories.find((category) => category.slug === slug)?.name ?? slug;
+
+/** A listing as the export writes it. The Supabase twin passes its own points' names (C2/C3 plan Task 8). */
+export function listingExport(row: ListingRow, spot: SpotName = spotName): ListingExport {
   return {
     title: row.title,
     state: row.state,
@@ -394,7 +423,7 @@ function listingExport(row: ListingRow): ListingExport {
     swapFor: row.swapFor,
     description: row.description,
     handover: row.handover,
-    pickupPoint: spotName(row.pickupPointId),
+    pickupPoint: spot(row.pickupPointId),
     campus: row.campusSlug,
     photos: row.photos.map((photo) => ({ address: photo.src, description: photo.alt })),
     createdAt: row.createdAt,
@@ -410,7 +439,8 @@ export type SellingExport = {
   onboardingDraft: OnboardingDraftExport | null;
 };
 
-function draftExport(draft: OnboardingDraftRow): OnboardingDraftExport {
+/** The wizard's draft as the export writes it. */
+export function draftExport(draft: OnboardingDraftRow, spot: SpotName = spotName): OnboardingDraftExport {
   return {
     name: draft.name,
     tagline: draft.tagline,
@@ -418,7 +448,7 @@ function draftExport(draft: OnboardingDraftRow): OnboardingDraftExport {
     about: draft.about,
     photo: draft.photoSrc,
     campus: draft.campusSlug,
-    pickupPoints: draft.pickupPointIds.flatMap((id) => spotName(id) ?? []),
+    pickupPoints: draft.pickupPointIds.flatMap((id) => spot(id) ?? []),
     updatedAt: draft.updatedAt,
   };
 }
@@ -428,6 +458,7 @@ function draftExport(draft: OnboardingDraftRow): OnboardingDraftExport {
  * export. A draft and a shop don't overlap in practice: sending the application deletes the draft.
  */
 export async function exportShop(accountId: string): Promise<SellingExport> {
+  if (onSupabase()) return (await supabase()).exportShop(accountId);
   const draft = sampleStore().onboardingDrafts.get(accountId);
   const onboardingDraft = draft ? draftExport(draft) : null;
   const own = await getShopOf(accountId);
@@ -452,7 +483,7 @@ export async function exportShop(accountId: string): Promise<SellingExport> {
       since: shop.since,
       createdAt: shop.createdAt,
     },
-    listings: listings.map(listingExport),
+    listings: listings.map((row) => listingExport(row)),
     onboardingDraft,
   };
 }

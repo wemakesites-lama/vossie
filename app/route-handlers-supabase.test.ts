@@ -54,6 +54,8 @@ vi.mock("@/lib/data/supabase/form-states", async () => ({
 }));
 // Requests settle on Supabase before the export reads them (C1's twin); here there are none to settle.
 vi.mock("@/lib/data/supabase/requests", () => ({ settleRequests: async () => 0 }));
+// Selling's export reads the owner's shop on Supabase (C2/C3 plan Task 8's twin); here there is none.
+vi.mock("@/lib/data/supabase/shops", () => ({ exportShop: async () => ({ shop: null, listings: [], onboardingDraft: null }) }));
 vi.mock("@/lib/data/supabase/sessions", () => ({
   listSessions: async () => structuredClone(twin.sessions),
 }));

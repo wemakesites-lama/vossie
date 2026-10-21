@@ -25,6 +25,21 @@ export type WorldRequest = { asker: WorldAccountName; title: string; neededBy: s
 /** A notification as a scenario checks it. */
 export type WorldNotification = { kind: string; subjectId: string; text: string; href: string };
 
+/**
+ * A shop a scenario opens for an account (C2/C3 plan Task 8): its name ("Contract <Name>'s shop" when not given), its
+ * campus (Pretoria), and its standing. An approved or paused shop has its campus's first pickup point in use, and the
+ * Hub approved it now; a waiting one has none.
+ */
+export type WorldShop = {
+  name?: string;
+  campus?: string;
+  status?: "pending" | "approved" | "paused";
+  pausedBy?: "seller" | "staff";
+};
+
+/** A one-time form state for a session (C2/C3 plan Task 9): taken or not, running out in an hour unless said. */
+export type WorldOnce = { taken?: boolean; expiresInMinutes?: number };
+
 export interface World {
   readonly name: "sample" | "supabase";
   /** The account's id, signed in (a profile on Pretoria; "staff" holds the Admin role; "seller" has no shop yet). */
@@ -60,6 +75,25 @@ export interface World {
   forgetFeaturedDays(days: readonly string[]): Promise<void>;
   /** Puts every shop's badge back as it is now in cleanup, after a test recalculates them (Task 19). */
   keepBadges(): Promise<void>;
+  /**
+   * In cleanup, removes what this account's selling made during the test, through the data layer or the verbs: a shop
+   * it didn't have before (its listings, pickup points and seller profile with it), its wizard draft, and the photos it
+   * stored, rows and files. "hub": the Hub's photos (C2/C3 plan Task 5).
+   */
+  tidySelling(owner: WorldAccountName | "hub"): Promise<void>;
+  /** Makes a stored photo, by its address, `hours` old (C2/C3 plan Task 5). */
+  ageWaitingPhoto(src: string, hours: number): Promise<void>;
+  /** Opens a shop for the account, which has none; its link (C2/C3 plan Task 8). Undone in cleanup. */
+  openShop(name: WorldAccountName, shop?: WorldShop): Promise<string>;
+  /** That account follows the shop (C2/C3 plan Task 9; C4's verb of the same name). */
+  follow(follower: WorldAccountName, slug: string): Promise<void>;
+  /** Gives the account a notification, as a database function or a TypeScript writer would have (C2/C3 plan Task 9). */
+  addNotification(name: WorldAccountName, note: WorldNotification): Promise<void>;
+  /**
+   * A one-time form state, such as "listing-once:<uuid>" or "staff-once:<uuid>", in the account's session: on Supabase
+   * the session the test files were given (C2/C3 plan Task 9; C4/C5 use it as their issueOnceToken). The session key.
+   */
+  onceRow(name: WorldAccountName, form: string, once?: WorldOnce): Promise<string>;
   /** Undoes what the test's verbs wrote, newest first. Runs after each test. */
   cleanup(): Promise<void>;
 }

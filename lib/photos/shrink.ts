@@ -3,8 +3,12 @@
 // page's first load carries it. It imports nothing: the sizes and quality come from lib/photos/rules.ts by way of the
 // server (components/sell/PhotoFieldset.tsx), so no module is shared with the page's own code.
 
-/** How to shrink: the longest side in pixels, and the WebP (or JPEG) quality (SHRINK_MAX_SIDE and SHRINK_QUALITY). */
-export type ShrinkTo = { side: number; quality: number };
+/**
+ * How to shrink: the longest side in pixels and the WebP (or JPEG) quality (SHRINK_MAX_SIDE and SHRINK_QUALITY), and,
+ * to keep a post under Vercel's 4.5 MB request body (C2/C3 plan decision 16), the most bytes the photo may take
+ * (SHRINK_PHOTO_BUDGET, its share of POST_PHOTOS_MAX_BYTES) with the qualities to try in turn (SHRINK_QUALITIES).
+ */
+export type ShrinkTo = { side: number; quality: number; budget?: number; qualities?: readonly number[] };
 
 /** A picture's size with its longest side at most `max`: never bigger than it was, and at least 1px each way. */
 export function fitWithin(width: number, height: number, max: number): [number, number] {
@@ -33,20 +37,51 @@ async function reencode(bitmap: ImageBitmap, to: ShrinkTo): Promise<Blob | null>
 }
 
 /**
- * The photo with its longest side at most `to.side` (1,600px), turned the way its Exif says, re-encoded as WebP at
- * `to.quality` (0.8), or JPEG on white where the browser can't encode WebP (Safari), which leaves every bit of hidden
- * data behind. Even a small photo is re-encoded. Anything that doesn't work (a photo the browser can't decode, a
- * browser that refuses the orientation option, no 2D context, no blob) gives the original back, for the server to
- * check and strip (amendment 11.3). The decoded photo is let go as soon as it's drawn, whatever happens.
+ * `files` re-encoded at each of `qualities` in turn (0.8, then 0.7, then 0.6), one photo at a time, until together
+ * they come to `budget` bytes or less (C2/C3 plan decision 16). Each is re-encoded at the first quality, even a small
+ * one; at the last, what it has is given back, over or not.
  */
-export async function shrink(file: File, to: ShrinkTo): Promise<File> {
+export async function shrinkAll(
+  files: readonly File[],
+  budget: number,
+  qualities: readonly number[],
+  encode: (file: File, quality: number) => Promise<File>,
+): Promise<File[]> {
+  let out: File[] = [...files];
+  for (const quality of qualities) {
+    out = [];
+    for (const file of files) out.push(await encode(file, quality));
+    if (out.reduce((sum, file) => sum + file.size, 0) <= budget) break;
+  }
+  return out;
+}
+
+/** The photo drawn at `to.side` and encoded at `quality`, or the original when that doesn't work. */
+async function shrinkOnce(file: File, side: number, quality: number): Promise<File> {
   try {
     const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-    const blob = await reencode(bitmap, to).finally(() => bitmap.close());
+    const blob = await reencode(bitmap, { side, quality }).finally(() => bitmap.close());
     if (!blob) return file;
     const name = `${file.name.replace(/\.[^.]*$/, "") || "photo"}.${blob.type === "image/webp" ? "webp" : "jpg"}`;
     return new File([blob], name, { type: blob.type });
   } catch {
     return file;
   }
+}
+
+/**
+ * The photo with its longest side at most `to.side` (1,600px), turned the way its Exif says, re-encoded as WebP at
+ * `to.quality` (0.8), or JPEG on white where the browser can't encode WebP (Safari), which leaves every bit of hidden
+ * data behind. Even a small photo is re-encoded. While it's over `to.budget`, its share of a post's 4 MiB, it's
+ * re-encoded at the lower `to.qualities` (0.7, then 0.6), so a post's photos fit Vercel's request body (C2/C3 plan
+ * decision 16). Anything that doesn't work (a photo the browser can't decode, a browser that refuses the orientation
+ * option, no 2D context, no blob) gives the original back, for the server to check and strip (amendment 11.3). The
+ * decoded photo is let go as soon as it's drawn, whatever happens.
+ */
+export async function shrink(file: File, to: ShrinkTo): Promise<File> {
+  const qualities = to.budget === undefined ? [to.quality] : (to.qualities ?? [to.quality]);
+  const [small] = await shrinkAll([file], to.budget ?? Infinity, qualities, (each, quality) =>
+    shrinkOnce(each, to.side, quality),
+  );
+  return small;
 }

@@ -1,5 +1,9 @@
+import { photoIdOf } from "@/lib/data/photos";
 import type { AccountRow } from "@/lib/data/rows";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
+import { SLUG_MAX, slugify } from "@/lib/selling/rules";
+import { sastDate } from "@/lib/time";
+import type { NotificationKind } from "@/lib/types";
 import type { World, WorldAccountName } from "./world";
 
 // The sample store's world (2b plan Task 13): a fresh store for each test (resetSampleStore, as the unit tests do), and
@@ -16,6 +20,20 @@ function accountRow(name: WorldAccountName): AccountRow {
     createdAt: "2026-10-01T08:00:00.000Z",
   };
 }
+
+/** A link no shop has or had, from the name, as createShop makes one ("…-2" and so on). */
+function freeSlug(name: string): string {
+  const { sellers } = sampleStore();
+  const taken = (slug: string) => sellers.has(slug) || [...sellers.values()].some((row) => row.previousSlugs.includes(slug));
+  for (let n = 1; ; n += 1) {
+    const suffix = n === 1 ? "" : `-${n}`;
+    const slug = `${slugify(name).slice(0, SLUG_MAX - suffix.length).replace(/-+$/, "")}${suffix}`;
+    if (!taken(slug)) return slug;
+  }
+}
+
+/** The sample session key a world account's forms are kept under. */
+const sessionKeyOf = (name: WorldAccountName) => `session-contract-${name}`;
 
 /** A sample world. Made before each test: it starts from a fresh store. */
 export function sampleWorld(): World {
@@ -120,6 +138,88 @@ export function sampleWorld(): World {
     },
     async keepBadges() {
       // Nothing to keep: the next test's world starts from a fresh store.
+    },
+    async tidySelling() {
+      // Nothing to tidy: the next test's world starts from a fresh store.
+    },
+    async ageWaitingPhoto(src, hours) {
+      const row = sampleStore().photos.get(photoIdOf(src) ?? "");
+      if (!row) throw new Error(`No photo ${src}`);
+      row.createdAt = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+    },
+    async openShop(name, { name: shopName, campus = "pretoria", status = "approved", pausedBy } = {}) {
+      const ownerId = await this.signedIn(name);
+      const store = sampleStore();
+      if (store.sellerProfiles.has(ownerId)) throw new Error(`${name} has a shop already`);
+      const title = shopName ?? `Contract ${name[0].toUpperCase()}${name.slice(1)}'s shop`;
+      const slug = freeSlug(title);
+      const now = new Date();
+      const at = now.toISOString();
+      const point = [...store.pickupPoints.values()].find((row) => row.campusSlug === campus && !row.retiredAt);
+      store.sellers.set(slug, {
+        slug,
+        ownerId,
+        name: title,
+        tagline: "A shop the contract tests open.",
+        categorySlug: "tech",
+        campusSlug: campus,
+        verified: false,
+        badge: "new-seller",
+        about: "A shop the contract tests open and close again.",
+        since: sastDate(now).slice(0, 7),
+        image: null,
+        pickupPointIds: status === "pending" || !point ? [] : [point.id],
+        slugChanged: false,
+        previousSlugs: [],
+        createdAt: at,
+        updatedAt: at,
+      });
+      store.sellerProfiles.set(ownerId, {
+        accountId: ownerId,
+        status,
+        sellerSlug: status === "pending" ? null : slug,
+        appliedAt: at,
+        pausedBy: status === "paused" ? (pausedBy ?? "seller") : null,
+        approvedAt: status === "pending" ? null : at,
+      });
+      return slug;
+    },
+    async follow(follower, slug) {
+      const accountId = await this.signedIn(follower);
+      const follows = sampleStore().follows;
+      const id = `follow-contract-${follows.size + 1}`;
+      follows.set(id, { id, accountId, sellerSlug: slug, createdAt: new Date().toISOString() });
+    },
+    async addNotification(name, note) {
+      const accountId = await this.signedIn(name);
+      const notifications = sampleStore().notifications;
+      const id = `note-contract-${notifications.size + 1}`;
+      notifications.set(id, {
+        id,
+        accountId,
+        kind: note.kind as NotificationKind,
+        subjectId: note.subjectId,
+        text: note.text,
+        href: note.href,
+        createdAt: new Date().toISOString(),
+        readAt: null,
+      });
+    },
+    async onceRow(name, form, { taken = false, expiresInMinutes = 60 } = {}) {
+      await this.signedIn(name);
+      const sessionKey = sessionKeyOf(name);
+      const key = `${sessionKey}:${form}`;
+      sampleStore().formStates.set(key, {
+        key,
+        sessionKey,
+        form,
+        errors: [],
+        values: {},
+        notice: null,
+        expiresAt: new Date(Date.now() + expiresInMinutes * 60 * 1000).toISOString(),
+        ...(taken ? { taken: true as const } : {}),
+      });
+      return sessionKey;
     },
     async cleanup() {
       // Nothing to undo: the next test's world starts from a fresh store.

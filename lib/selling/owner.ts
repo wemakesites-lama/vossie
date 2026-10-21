@@ -5,8 +5,11 @@ import { getShopOf } from "@/lib/data/shops";
 import type { Account, SellerStatus } from "@/lib/types";
 import { SELL_PATH } from "./paths";
 
-/** A signed-in seller and their shop: who may act on it (selling spec section 3). */
-export type ShopOwner = { account: Account; shop: SellerRow; status: SellerStatus };
+/**
+ * A signed-in seller and their shop: who may act on it (selling spec section 3). `pausedByHub`: the Hub paused it, so
+ * the Hub resumes it (C2/C3 plan decision 8).
+ */
+export type ShopOwner = { account: Account; shop: SellerRow; status: SellerStatus; pausedByHub: boolean };
 
 /** The signed-in account and its shop, or null. Request-time: call it inside <Suspense>. */
 export async function getShopOwner(): Promise<ShopOwner | null> {

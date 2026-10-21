@@ -4,17 +4,24 @@ import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { pngBytes } from "@/tests/helpers/image-bytes";
 import { resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { signedInAs } from "@/tests/helpers/staff";
+import { getViewer } from "@/lib/auth/session";
 import { GET } from "./route";
 
 const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
 
 vi.mock("next/headers", async () => (await import("@/tests/helpers/next-request")).nextHeaders(request));
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
+// The session is read only when a photo isn't everyone's (C2/C3 plan decision 11): a spy that still reads it.
+vi.mock("@/lib/auth/session", async (original) => {
+  const session = await original<typeof import("@/lib/auth/session")>();
+  return { ...session, getViewer: vi.fn(session.getViewer) };
+});
 
 const NOW = new Date("2026-10-14T08:00:00.000Z");
 const get = (id: string) => GET(new Request(`http://localhost/photos/${id}`), { params: Promise.resolve({ id }) });
 
 beforeEach(() => {
+  vi.mocked(getViewer).mockClear();
   resetSampleStore();
   resetRequest(request);
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -65,10 +72,17 @@ describe("a stored photo (selling spec 2.4)", () => {
   });
 
   it("is a 404 that nothing keeps for an unknown or made-up id", async () => {
-    for (const id of ["ph-00000000-0000-4000-8000-000000000000", "nope", "..%2Fetc"]) {
+    // A bare uuid is Supabase's kind of id (C2/C3 plan decision 13): the sample has none, so it's a miss too.
+    for (const id of ["ph-00000000-0000-4000-8000-000000000000", "00000000-0000-4000-8000-000000000000", "nope", "..%2Fetc"]) {
       const response = await get(id);
       expect(response.status, id).toBe(404);
       expect(response.headers.get("Cache-Control"), id).toBe("no-store");
     }
+  });
+
+  it("doesn't read the session for a photo that is everyone's (C2/C3 plan decision 11)", async () => {
+    const [src] = await storePhotos("acc-seller", [photo], NOW);
+    expect((await get(photoIdOf(src)!)).status).toBe(200);
+    expect(getViewer).not.toHaveBeenCalled();
   });
 });

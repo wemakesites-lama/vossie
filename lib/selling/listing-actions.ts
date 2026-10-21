@@ -13,7 +13,6 @@ import {
 } from "@/lib/data/own-listings";
 import { photoSrcsOf, storePhotos, type Upload } from "@/lib/data/photos";
 import { notifySavedSearches } from "@/lib/data/saved-searches";
-import { shopStanding } from "@/lib/data/staff-shops";
 import { listingsChanged } from "@/lib/data/tags";
 import { isId } from "@/lib/messaging/paths";
 import { characterCount, keepTyped } from "@/lib/messaging/rules";
@@ -53,11 +52,11 @@ import { readUploads } from "./uploads";
 /**
  * The notice for a listing that was saved, resumed or relisted while the shop is paused, since buyers won't see it yet,
  * or null when the shop isn't paused. When the Hub paused the shop, the Hub resumes it, so the seller isn't told they
- * will (staff tools plan decision 3).
+ * will (staff tools plan decision 3). Read from the owner's own shop (C2/C3 plan decision 8), not the Hub's tools.
  */
-async function pausedShopNotice(owner: ShopOwner): Promise<"saved-shop-paused" | "saved-shop-hub-paused" | null> {
+function pausedShopNotice(owner: ShopOwner): "saved-shop-paused" | "saved-shop-hub-paused" | null {
   if (owner.status !== "paused") return null;
-  return (await shopStanding(owner.account.id))?.pausedByHub ? "saved-shop-hub-paused" : "saved-shop-paused";
+  return owner.pausedByHub ? "saved-shop-hub-paused" : "saved-shop-paused";
 }
 
 function listingInput(formData: FormData): ListingInput {
@@ -254,7 +253,7 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   if (saved.state === "draft") notice = "drafted";
   else if (existing && existing.state !== "draft") notice = "saved";
   // A paused shop's listings are hidden, so a publish isn't seen until the shop resumes (amendment 11.6).
-  else notice = (await pausedShopNotice(owner)) ?? notice;
+  else notice = pausedShopNotice(owner) ?? notice;
   const path = myListingsPath(tabFor(saved.state));
   if (!existing) await leaveListingToken(once, { path, listing: saved.id, notice }, now);
   await writeFormState(MY_LISTINGS_FORM, { errors: [], values: { listing: saved.id }, notice }, now);
@@ -275,7 +274,7 @@ export async function changeListingState(formData: FormData): Promise<void> {
     if (row) {
       listingsChanged();
       // Resume and Relist don't put a paused shop's listing in front of buyers (amendment 11.6).
-      const pausedNotice = to === "available" ? await pausedShopNotice(owner) : null;
+      const pausedNotice = to === "available" ? pausedShopNotice(owner) : null;
       const notice = pausedNotice ?? NOTICE_FOR[to];
       await writeFormState(MY_LISTINGS_FORM, { errors: [], values: { listing: row.id }, notice }, now);
     }

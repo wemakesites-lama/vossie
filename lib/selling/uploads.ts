@@ -6,7 +6,7 @@ import { stripMetadata } from "@/lib/photos/strip-metadata";
 export type UploadError = "photo-type" | "photo-size" | "photo-unreadable" | "photo-count";
 
 /**
- * Posted photo files, checked (selling spec 2.3, plan decision 11): at most `room` good ones, each up to 5 MB, each a
+ * Posted photo files, checked (selling spec 2.3, plan decision 11): at most `room` good ones, each up to 4 MB, each a
  * JPEG, PNG or WebP by its signature, each stripped of its metadata. Good ones come back in order, with null in a
  * refused one's place, so "new:<n>" still points at the right file. Each kind of problem is reported once. Nothing
  * is stored here.

@@ -5,6 +5,7 @@ import { writeFormState } from "@/lib/auth/form-state";
 import { requireAccount } from "@/lib/auth/session";
 import { getCampuses, getCategories, getPickupPoints } from "@/lib/data";
 import { storePhotos, type Upload } from "@/lib/data/photos";
+import { refusalOf, type RefusalCode } from "@/lib/data/refused";
 import type { OnboardingDraftRow } from "@/lib/data/rows";
 import {
   changeShopSlug,
@@ -193,6 +194,18 @@ export async function sendForApproval(formData: FormData): Promise<void> {
 }
 
 /**
+ * The error Edit shop shows when the database refuses a save its own checks passed (C2/C3 plan amendment 9): another
+ * shop took the name or the link in between, a point was retired, or a waiting photo ran out. The same error the
+ * field's own check writes.
+ */
+const RACE_ERRORS: Partial<Record<RefusalCode, string>> = {
+  "name-taken": "name-taken",
+  "slug-taken": "slug-taken",
+  "points-invalid": "points-missing",
+  "photo-invalid": "photo-again",
+};
+
+/**
  * Edit shop (selling spec 2.11, plan decisions 15 to 17): the wizard's fields on one page, and the link, which an
  * approved or paused shop may change once. Nothing is saved until everything is right; then the shop, its listings
  * and, with a new link, everything that names the shop change together.
@@ -227,20 +240,21 @@ export async function saveShopProfile(formData: FormData): Promise<void> {
   if (changeSlug && slug.error) errors.push(slug.error);
   else if (changeSlug && (await isSlugTaken(slug.value))) errors.push("slug-taken");
 
+  // What was typed, kept bounded (amendment 10.2), for a save that goes wrong.
+  const values = {
+    name: keepTyped(name.value),
+    tagline: keepTyped(tagline.value),
+    category: categorySlug,
+    about: keepTyped(about.value),
+    campus: place.campusSlug,
+    points: place.pickupPointIds.join(" "),
+    slug: keepTyped(typedSlug),
+    removePhoto: removePhoto ? "yes" : "",
+  };
   if (errors.length > 0) {
     // A photo chosen with this save isn't kept, so the summary asks for it again, in the photo's place; Remove photo
     // comes back ticked (amendment 13.6).
     if (photo.upload) errors.splice(photoAt, 0, "photo-again");
-    const values = {
-      name: keepTyped(name.value),
-      tagline: keepTyped(tagline.value),
-      category: categorySlug,
-      about: keepTyped(about.value),
-      campus: place.campusSlug,
-      points: place.pickupPointIds.join(" "),
-      slug: keepTyped(typedSlug),
-      removePhoto: removePhoto ? "yes" : "",
-    };
     await writeFormState(PROFILE_FORM, { errors, values, notice: null }, now);
     done(PROFILE_PATH);
   }
@@ -250,19 +264,28 @@ export async function saveShopProfile(formData: FormData): Promise<void> {
     const [src] = await storePhotos(owner.account.id, [photo.upload], now);
     image = { src, alt: "" };
   }
-  await updateShop(
-    owner.account.id,
-    {
-      name: name.value,
-      tagline: tagline.value,
-      categorySlug,
-      about: about.value,
-      image,
-      campusSlug: place.campusSlug,
-      pickupPointIds: place.pickupPointIds,
-    },
-    now,
+  // On Supabase a race the action's checks can't see is the database's refusal: the field's own error, nothing saved.
+  const updated = await refusalOf(
+    updateShop(
+      owner.account.id,
+      {
+        name: name.value,
+        tagline: tagline.value,
+        categorySlug,
+        about: about.value,
+        image,
+        campusSlug: place.campusSlug,
+        pickupPointIds: place.pickupPointIds,
+      },
+      now,
+    ),
   );
+  if ("refused" in updated) {
+    const error = RACE_ERRORS[updated.refused];
+    if (!error) throw new Error(`Edit shop was refused: ${updated.refused}`);
+    await writeFormState(PROFILE_FORM, { errors: [error], values, notice: null }, now);
+    done(PROFILE_PATH);
+  }
   if (changeSlug) await changeShopSlug(owner.account.id, slug.value, now);
   sellersChanged();
   await writeFormState(PROFILE_FORM, { errors: [], values: {}, notice: "shop-saved" }, now);

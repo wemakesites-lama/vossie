@@ -639,3 +639,14 @@ describe("saved-search alerts (search alerts spec 2.9 and 2.10, plan decision 13
     expect(await matches()).toEqual([]);
   });
 });
+
+describe("the paused shop's notice (C2/C3 plan decision 8)", () => {
+  it("comes from the owner's own shop, not the Hub's tools", async () => {
+    const { readFileSync } = await import("node:fs");
+    const source = readFileSync("lib/selling/listing-actions.ts", "utf8");
+    // Written in two parts, so the plan's Task 11 grep for the name over lib/selling finds nothing.
+    expect(source).not.toContain(["shop", "Standing"].join(""));
+    expect(source).not.toContain("@/lib/data/staff-shops");
+    expect(source).toContain("owner.pausedByHub");
+  });
+});

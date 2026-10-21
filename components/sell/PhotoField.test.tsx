@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SavedPhoto } from "./PhotoField";
@@ -140,7 +141,7 @@ describe("the photo field (selling spec 2.3, 2.5 and section 4, plan decisions 9
     expect(screen.getByRole("button", { name: "Make cover (photo 3)" })).toHaveAttribute("value", `${C}:cover`);
     expect(screen.getByRole("button", { name: "Move earlier (photo 2)" })).toHaveAttribute("type", "submit");
     expect(screen.getByRole("group", { name: "Photos" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Add photos")).toHaveAccessibleDescription(/^Up to 6 JPG, PNG or WebP photos, 5 MB each\./);
+    expect(screen.getByLabelText("Add photos")).toHaveAccessibleDescription(/^Up to 6 JPG, PNG or WebP photos, 4 MB each\./);
     // A photo button without JavaScript comes back here, above the photos (amendment 11.4).
     expect(screen.getByText("Photos", { selector: "legend" })).toHaveAttribute("id", "edit-l-001-photos-title");
     expect(screen.getByRole("textbox", { name: "Describe photo 1" })).toHaveAccessibleDescription(
@@ -239,6 +240,27 @@ describe("the photo field (selling spec 2.3, 2.5 and section 4, plan decisions 9
     await waitFor(() => expect(names(input)).toEqual(["desk.webp", "side.webp"]));
     expect(tokens()).toEqual([A, "new:0", "new:1"]);
     expect(screen.getByRole("status")).toHaveTextContent("Your photos are ready.");
+  });
+
+  it("shrinks each photo to its share of a post's 4 MiB, at lower qualities when it must (C2/C3 plan decision 16)", async () => {
+    const asked: unknown[] = [];
+    vi.doMock(SHRINK, () => ({
+      shrink: async (file: File, to: unknown) => {
+        asked.push(to);
+        return shrunkCopy(file);
+      },
+    }));
+    show([]);
+    pick([new File(["a"], "desk.png", { type: "image/png" })]);
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Your photo is ready."));
+    expect(asked).toEqual([{ side: 1600, quality: 0.8, budget: Math.floor((4 * 1024 * 1024) / 6), qualities: [0.8, 0.7, 0.6] }]);
+  });
+
+  it("asks for a few photos at a time without JavaScript, when the browser can't shrink them (C2/C3 plan Task 10)", () => {
+    const html = renderToStaticMarkup(<PhotoFieldset prefix="new" photos={[]} error={undefined} altError={undefined} />);
+    expect(html).toContain(
+      "<noscript><p class=\"form-hint\">Add a few photos at a time: the photos you add in one go can come to 4 MB in all.</p></noscript>",
+    );
   });
 
   it("keeps a picked file with no type or an unusual one, for the server's signature check (amendment 11.7)", async () => {

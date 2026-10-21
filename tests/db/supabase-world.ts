@@ -1,8 +1,24 @@
 import { inject } from "vitest";
 import { campusToDb } from "@/lib/data/supabase/rows";
-import type { World } from "@/tests/contract/world";
+import { SLUG_MAX, slugify } from "@/lib/selling/rules";
+import { sastDate } from "@/lib/time";
+import type { World, WorldAccountName } from "@/tests/contract/world";
 import { testAdminClient, type DbClient } from "./accounts";
+import { sql } from "./sql";
 import { setViewer } from "./viewer";
+
+/** The photos bucket (spec section 6). */
+const BUCKET = "photos";
+
+/** A photo's database id from its address (/photos/<uuid>), or the address itself when it isn't one. */
+const photoIdIn = (src: string) => src.replace(/^\/photos\//, "");
+
+/** The Auth session id in an access token's claims (session_id), read without checking: the test's own token. */
+function sessionIdOf(accessToken: string): string {
+  const payload = JSON.parse(Buffer.from(accessToken.split(".")[1], "base64url").toString("utf8")) as { session_id?: unknown };
+  if (typeof payload.session_id !== "string") throw new Error("The test session's token has no session_id");
+  return payload.session_id;
+}
 
 // The local stack's world (2b plan decision 18, Task 13). Its accounts are the global setup's (tests/db/global-setup.ts).
 // Its verbs write with the admin client, never through a function a test is checking, and each records an undo with
@@ -13,6 +29,15 @@ export type SupabaseWorld = World & {
   readonly admin: DbClient;
   /** Records how to undo a write; cleanup() runs the undos newest first. */
   undoLater(undo: () => Promise<void>): void;
+  /** Whether the photos bucket has a file at this path (C2/C3 plan Task 5). */
+  fileExists(path: string): Promise<boolean>;
+  /**
+   * Uploads a file no photo row names, `ageHours` old (its storage.objects time moved back as postgres), as a removal
+   * that failed would leave (C2/C3 plan Tasks 5 and 7). Removed in cleanup if it's still there.
+   */
+  orphanFile(path: string, ageHours: number): Promise<void>;
+  /** A Hub tip with this stored cover, published or not; its id (C2/C3 plan Task 5). Deleted in cleanup. */
+  addHubPost(post: { published: boolean; coverSrc: string }): Promise<string>;
 };
 
 /** A Supabase world. Made before each test. */
@@ -24,6 +49,36 @@ export function supabaseWorld(): SupabaseWorld {
     const shop = await admin.from("shops").select("id").eq("slug", slug).single();
     if (shop.error) throw new Error(`No shop ${slug}: ${shop.error.message}`);
     return shop.data.id;
+  }
+  /** Every file in the bucket under `folder` (an account's id, or "hub"), as paths. */
+  async function filesUnder(folder: string): Promise<string[]> {
+    const paths: string[] = [];
+    for (let offset = 0; ; offset += 1_000) {
+      const { data, error } = await admin.storage.from(BUCKET).list(folder, { limit: 1_000, offset });
+      if (error) throw new Error(error.message);
+      paths.push(...data.map((file) => `${folder}/${file.name}`));
+      if (data.length < 1_000) return paths;
+    }
+  }
+  /** Removes files from the bucket, 100 at a time. */
+  async function removeFiles(paths: readonly string[]): Promise<void> {
+    for (let from = 0; from < paths.length; from += 100) {
+      const { error } = await admin.storage.from(BUCKET).remove(paths.slice(from, from + 100));
+      if (error) throw new Error(error.message);
+    }
+  }
+  /** A link no shop has or had, from the name, as private.free_shop_slug makes one. */
+  async function freeSlug(name: string): Promise<string> {
+    for (let n = 1; ; n += 1) {
+      const suffix = n === 1 ? "" : `-${n}`;
+      const slug = `${slugify(name).slice(0, SLUG_MAX - suffix.length).replace(/-+$/, "")}${suffix}`;
+      const [shops, previous] = await Promise.all([
+        admin.from("shops").select("id").eq("slug", slug),
+        admin.from("shop_previous_slugs").select("slug").eq("slug", slug),
+      ]);
+      if (shops.error || previous.error) throw new Error((shops.error ?? previous.error)!.message);
+      if (shops.data.length === 0 && previous.data.length === 0) return slug;
+    }
   }
   return {
     name: "supabase",
@@ -201,6 +256,210 @@ export function supabaseWorld(): SupabaseWorld {
           if (undone.error) throw new Error(undone.error.message);
         }
       });
+    },
+    async tidySelling(owner) {
+      const hub = owner === "hub";
+      const accountId = hub ? null : await this.signedIn(owner as WorldAccountName);
+      const folder = accountId ?? "hub";
+      const photosOf = () => {
+        const query = admin.from("photos").select("id, path");
+        return accountId ? query.eq("owner_id", accountId) : query.is("owner_id", null);
+      };
+      const before = await photosOf();
+      if (before.error) throw new Error(before.error.message);
+      const kept = new Set(before.data.map((row) => row.id));
+      let hadShop = true;
+      let hadDraft = true;
+      if (accountId) {
+        const [profile, draft] = await Promise.all([
+          admin.from("seller_profiles").select("account_id").eq("account_id", accountId),
+          admin.from("onboarding_drafts").select("account_id").eq("account_id", accountId),
+        ]);
+        if (profile.error || draft.error) throw new Error((profile.error ?? draft.error)!.message);
+        hadShop = profile.data.length > 0;
+        hadDraft = draft.data.length > 0;
+      }
+      undos.push(async () => {
+        if (accountId && !hadShop) {
+          const shops = await admin.from("shops").delete().eq("owner_id", accountId);
+          if (shops.error) throw new Error(shops.error.message);
+          const profile = await admin.from("seller_profiles").delete().eq("account_id", accountId);
+          if (profile.error) throw new Error(profile.error.message);
+        }
+        if (accountId && !hadDraft) {
+          const draft = await admin.from("onboarding_drafts").delete().eq("account_id", accountId);
+          if (draft.error) throw new Error(draft.error.message);
+        }
+        const after = await photosOf();
+        if (after.error) throw new Error(after.error.message);
+        const made = after.data.filter((row) => !kept.has(row.id));
+        if (made.length > 0) {
+          const gone = await admin.from("photos").delete().in("id", made.map((row) => row.id));
+          if (gone.error) throw new Error(gone.error.message);
+        }
+        const named = new Set(after.data.filter((row) => kept.has(row.id)).map((row) => row.path));
+        await removeFiles((await filesUnder(folder)).filter((path) => !named.has(path)));
+      });
+    },
+    async ageWaitingPhoto(src, hours) {
+      const aged = await admin
+        .from("photos")
+        .update({ created_at: new Date(Date.now() - hours * 60 * 60 * 1000).toISOString() })
+        .eq("id", photoIdIn(src))
+        .select("id");
+      if (aged.error) throw new Error(aged.error.message);
+      if (aged.data.length !== 1) throw new Error(`No photo ${src}`);
+      // The photo is the test's own: tidySelling takes it away.
+    },
+    async openShop(name, { name: shopName, campus = "pretoria", status = "approved", pausedBy } = {}) {
+      const ownerId = await this.signedIn(name);
+      const title = shopName ?? `Contract ${name[0].toUpperCase()}${name.slice(1)}'s shop`;
+      const slug = await freeSlug(title);
+      const now = new Date();
+      const shop = await admin
+        .from("shops")
+        .insert({
+          slug,
+          owner_id: ownerId,
+          name: title,
+          tagline: "A shop the contract tests open.",
+          category_slug: "tech",
+          campus_slug: campus,
+          verified: false,
+          badge: "new-seller",
+          about: "A shop the contract tests open and close again.",
+          since: sastDate(now).slice(0, 7),
+        })
+        .select("id")
+        .single();
+      if (shop.error) throw new Error(shop.error.message);
+      const id = shop.data.id;
+      undos.push(async () => {
+        const profile = await admin.from("seller_profiles").delete().eq("account_id", ownerId);
+        if (profile.error) throw new Error(profile.error.message);
+        const undone = await admin.from("shops").delete().eq("id", id);
+        if (undone.error) throw new Error(undone.error.message);
+      });
+      const profile = await admin.from("seller_profiles").insert({
+        account_id: ownerId,
+        status,
+        shop_id: id,
+        paused_by: status === "paused" ? (pausedBy ?? "seller") : null,
+        approved_at: status === "pending" ? null : now.toISOString(),
+      });
+      if (profile.error) throw new Error(profile.error.message);
+      if (status !== "pending") {
+        const point = await admin
+          .from("pickup_points")
+          .select("id")
+          .eq("campus_slug", campus)
+          .is("retired_at", null)
+          .order("created_at")
+          .order("name")
+          .order("id")
+          .limit(1);
+        if (point.error) throw new Error(point.error.message);
+        if (point.data.length > 0) {
+          const used = await admin.from("shop_pickup_points").insert({ shop_id: id, pickup_point_id: point.data[0].id });
+          if (used.error) throw new Error(used.error.message);
+        }
+      }
+      return slug;
+    },
+    async follow(follower, slug) {
+      const added = await admin
+        .from("follows")
+        .insert({ account_id: await this.signedIn(follower), shop_id: await shopId(slug) })
+        .select("id")
+        .single();
+      if (added.error) throw new Error(added.error.message);
+      const id = added.data.id;
+      undos.push(async () => {
+        const undone = await admin.from("follows").delete().eq("id", id);
+        if (undone.error) throw new Error(undone.error.message);
+      });
+    },
+    async addNotification(name, note) {
+      const added = await admin
+        .from("notifications")
+        .insert({ account_id: await this.signedIn(name), kind: note.kind, subject_id: note.subjectId, text: note.text, href: note.href })
+        .select("id")
+        .single();
+      if (added.error) throw new Error(added.error.message);
+      const id = added.data.id;
+      undos.push(async () => {
+        const undone = await admin.from("notifications").delete().eq("id", id);
+        if (undone.error) throw new Error(undone.error.message);
+      });
+    },
+    async onceRow(name, form, { taken = false, expiresInMinutes = 60 } = {}) {
+      const session = inject("dbSessions")[name];
+      const sessionId = sessionIdOf(session.accessToken);
+      const added = await admin.from("form_states").upsert(
+        {
+          session_id: sessionId,
+          form,
+          account_id: session.id,
+          errors: [],
+          values: {},
+          notice: null,
+          expires_at: new Date(Date.now() + expiresInMinutes * 60 * 1000).toISOString(),
+          taken,
+        },
+        { onConflict: "session_id,form" },
+      );
+      if (added.error) throw new Error(added.error.message);
+      undos.push(async () => {
+        const undone = await admin.from("form_states").delete().eq("session_id", sessionId).eq("form", form);
+        if (undone.error) throw new Error(undone.error.message);
+      });
+      return sessionId;
+    },
+    async fileExists(path) {
+      const slash = path.lastIndexOf("/");
+      const { data, error } = await admin.storage.from(BUCKET).list(path.slice(0, slash), { search: path.slice(slash + 1) });
+      if (error) throw new Error(error.message);
+      return data.some((file) => file.name === path.slice(slash + 1));
+    },
+    async orphanFile(path, ageHours) {
+      const { error } = await admin.storage
+        .from(BUCKET)
+        .upload(path, new Uint8Array([0xff, 0xd8, 0xff, 0xd9]), { contentType: "image/jpeg", upsert: false });
+      if (error) throw new Error(error.message);
+      undos.push(async () => {
+        const undone = await admin.storage.from(BUCKET).remove([path]);
+        if (undone.error) throw new Error(undone.error.message);
+      });
+      sql(
+        `update storage.objects set created_at = now() - make_interval(hours => :'hours'::int)
+         where bucket_id = 'photos' and name = :'path'`,
+        { hours: String(ageHours), path },
+      );
+    },
+    async addHubPost({ published, coverSrc }) {
+      const cover = photoIdIn(coverSrc);
+      const added = await admin
+        .from("hub_posts")
+        .insert({
+          kind: "tip",
+          title: "Contract cover tip",
+          summary: "A tip the contract tests post and take away again.",
+          body: "A tip the contract tests post and take away again.",
+          cover_photo_id: cover,
+          published,
+          published_at: published ? new Date().toISOString() : null,
+        })
+        .select("id")
+        .single();
+      if (added.error) throw new Error(added.error.message);
+      const id = added.data.id;
+      undos.push(async () => {
+        const undone = await admin.from("hub_posts").delete().eq("id", id);
+        if (undone.error) throw new Error(undone.error.message);
+      });
+      const used = await admin.from("photos").update({ use: `post:${id}` }).eq("id", cover);
+      if (used.error) throw new Error(used.error.message);
+      return id;
     },
     async cleanup() {
       const pending = undos.reverse();

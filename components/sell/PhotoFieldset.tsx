@@ -1,5 +1,14 @@
 import { describedBy, FieldError } from "@/components/forms/FieldError";
-import { PHOTO_ACCEPT, PHOTO_MAX_MB, PHOTOS_PER_LISTING, SHRINK_MAX_SIDE, SHRINK_QUALITY } from "@/lib/photos/rules";
+import {
+  PHOTO_ACCEPT,
+  PHOTO_MAX_MB,
+  PHOTOS_PER_LISTING,
+  POST_PHOTOS_MAX_BYTES,
+  SHRINK_MAX_SIDE,
+  SHRINK_PHOTO_BUDGET,
+  SHRINK_QUALITIES,
+  SHRINK_QUALITY,
+} from "@/lib/photos/rules";
 import { ALT_MAX } from "@/lib/selling/rules";
 import { PhotoField, type PhotoButton, type PhotoParts, type PhotoWords, type SavedPhoto } from "./PhotoField";
 
@@ -84,12 +93,25 @@ export function PhotoFieldset({ prefix, photos, error, altError }: PhotoFieldset
         Up to {PHOTOS_PER_LISTING} JPG, PNG or WebP photos, {PHOTO_MAX_MB} MB each. The first is the cover. We make
         them smaller and remove hidden data such as your location. If someone else is in a photo, ask them first.
       </p>
+      {/* Without JavaScript the photos aren't made smaller before they're sent, and a save takes 4 MB of photos at
+          most (Vercel's request body; C2/C3 plan decision 16). With it, each photo is shrunk to its share. */}
+      <noscript>
+        <p className="form-hint">
+          Add a few photos at a time: the photos you add in one go can come to {POST_PHOTOS_MAX_BYTES / (1024 * 1024)} MB
+          in all.
+        </p>
+      </noscript>
       <FieldError id={errorId} message={error} />
       <PhotoField
         prefix={prefix}
         photos={photos}
         max={PHOTOS_PER_LISTING}
-        shrinkTo={{ side: SHRINK_MAX_SIDE, quality: SHRINK_QUALITY }}
+        shrinkTo={{
+          side: SHRINK_MAX_SIDE,
+          quality: SHRINK_QUALITY,
+          budget: SHRINK_PHOTO_BUDGET,
+          qualities: SHRINK_QUALITIES,
+        }}
         buttons={BUTTONS}
         words={WORDS}
         parts={photoParts(prefix, altError)}

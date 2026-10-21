@@ -20,6 +20,7 @@ import {
   updateShop,
   type ShopDetails,
 } from "./shops";
+import { staffPauseShop } from "./staff-shops";
 import { resetSampleStore, sampleStore } from "./store";
 
 const NOW = new Date("2026-10-14T08:00:00.000Z");
@@ -80,7 +81,7 @@ describe("applying to sell (selling spec 2.6 and 2.7, plan decisions 1 and 16)",
       sellerSlug: null,
       appliedAt: NOW.toISOString(),
     });
-    expect(await getShopOf("acc-student")).toEqual({ shop, status: "pending" });
+    expect(await getShopOf("acc-student")).toEqual({ shop, status: "pending", pausedByHub: false });
   });
 
   it("makes every link unique, and never a second shop for one account", async () => {
@@ -427,6 +428,15 @@ describe("a pause the Hub made (staff tools plan decision 3)", () => {
     Object.assign(profile, { status: "paused", pausedBy: "staff", staffReason: "Selling exam answers." });
     expect(await setShopPaused("acc-seller", false)).toBeNull();
     expect(profile.status).toBe("paused");
+  });
+
+  it("tells the owner whose pause it is (C2/C3 plan decision 8)", async () => {
+    expect((await getShopOf("acc-seller"))?.pausedByHub).toBe(false);
+    await setShopPaused("acc-seller", true);
+    expect(await getShopOf("acc-seller")).toMatchObject({ status: "paused", pausedByHub: false });
+    await setShopPaused("acc-seller", false);
+    await staffPauseShop("tech-corner", "Selling exam answers.");
+    expect(await getShopOf("acc-seller")).toMatchObject({ status: "paused", pausedByHub: true });
   });
 });
 

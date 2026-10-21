@@ -8,7 +8,7 @@ describe("selling's error words (plan decisions 24 and 27)", () => {
       // Exactly R100,000 is allowed (amendment 8.8).
       { message: "Keep the price to R100,000 or less.", fieldId: "new-price" },
       { message: "Choose one of your pickup points.", fieldId: "new-pickup" },
-      { message: "Each photo must be 5 MB or less.", fieldId: "new-photos" },
+      { message: "Each photo must be 4 MB or less.", fieldId: "new-photos" },
     ]);
   });
 
@@ -53,7 +53,7 @@ describe("selling's error words (plan decisions 24 and 27)", () => {
     expect(sellingErrors(["alt-length", "photo-size"], listingFieldIds("edit-l-001", 2))).toEqual([
       { message: "Keep each photo's description to 125 characters.", fieldId: "edit-l-001-alt-3" },
       // The other photo errors still go to the file input (plan decision 24).
-      { message: "Each photo must be 5 MB or less.", fieldId: "edit-l-001-photos" },
+      { message: "Each photo must be 4 MB or less.", fieldId: "edit-l-001-photos" },
     ]);
     // With no photo to point at, it goes to the file input, as before.
     expect(listingFieldIds("new").alt).toBe("new-photos");
