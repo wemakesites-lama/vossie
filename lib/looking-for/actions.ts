@@ -13,6 +13,7 @@ import {
   deleteRequest,
   getOwnRequest,
   setRequestOpen,
+  settleRequests,
   updateRequest,
 } from "@/lib/data/requests";
 import { requestsChanged } from "@/lib/data/tags";
@@ -51,7 +52,8 @@ import { offerStatus, offerSubject } from "./subjects";
 // action, so it works before the app's JavaScript arrives. It checks its own input, takes identity only from the
 // session, keeps errors and typed values in D's form state (never the URL), and ends with a redirect that replaces the
 // form in history. A write expires the "requests" tag, leaves a status line for the page it lands on (plan decision
-// 7), and ends with F's done(), whose refresh() makes the browser drop its kept pages.
+// 7), and ends with F's done(), whose refresh() makes the browser drop its kept pages. Every action stores the close of
+// any request whose closing day has come first, and expires "requests" when one closed (stage L spec decision 11).
 
 // --- Shared helpers -------------------------------------------------------------------------------------------------
 
@@ -69,6 +71,14 @@ function back(path: string): never {
 /** A status line for the page the action lands on (plan decision 7). */
 async function leaveNote(form: string, notice: string, now: Date): Promise<void> {
   await writeFormState(form, { errors: [], values: {}, notice }, now);
+}
+
+/**
+ * Stores the close of any request whose closing day has come, first thing after the session (stage L spec decision
+ * 11), and expires the board's and the homepage's cache when one closed.
+ */
+async function settle(now: Date): Promise<void> {
+  if ((await settleRequests(now)) > 0) requestsChanged();
 }
 
 // --- The request form (spec 2.3 to 2.5) -----------------------------------------------------------------------------
@@ -123,6 +133,7 @@ export async function saveMyRequest(formData: FormData): Promise<void> {
   const path = editing ? editRequestPath(editing) : NEW_REQUEST_PATH;
   const account = await requireAccount(path);
   const now = new Date();
+  await settle(now);
   // The date an edited request holds already may have passed; only a changed date must be today or later (amendment 19.6).
   let keptNeededBy: string | null = null;
   if (editing) {
@@ -190,6 +201,7 @@ async function changeOpen(formData: FormData, open: boolean): Promise<void> {
   const account = await requireAccount(landing);
   if (!id) done(YOUR_REQUESTS_PATH);
   const now = new Date();
+  await settle(now);
   const note = landing === YOUR_REQUESTS_PATH ? YOUR_REQUESTS_FORM : requestNoteKey(id);
   if (open && (await getOwnRequest(account.id, id, now))?.state === "closed") {
     if ((await countOpenRequests(account.id, now)) >= OPEN_REQUESTS_MAX) {
@@ -197,9 +209,11 @@ async function changeOpen(formData: FormData, open: boolean): Promise<void> {
       done(landing);
     }
   }
-  if (await setRequestOpen(account.id, id, open, now)) {
+  const changed = await setRequestOpen(account.id, id, open, now);
+  if (changed) {
     requestsChanged();
-    await leaveNote(note, open ? "reopened" : "closed", now);
+    // Reopening took off a needed-by date that had passed (stage L spec decision 13): the notice says so.
+    await leaveNote(note, open ? (changed.neededByCleared ? "reopened-date-cleared" : "reopened") : "closed", now);
   }
   done(landing);
 }
@@ -217,9 +231,11 @@ export async function reopenMyRequest(formData: FormData): Promise<void> {
 export async function deleteMyRequest(formData: FormData): Promise<void> {
   const id = idFrom(formData, "request");
   const account = await requireAccount(id ? deleteRequestPath(id) : YOUR_REQUESTS_PATH);
+  const now = new Date();
+  await settle(now);
   if (id && (await deleteRequest(account.id, id))) {
     requestsChanged();
-    await leaveNote(YOUR_REQUESTS_FORM, "deleted", new Date());
+    await leaveNote(YOUR_REQUESTS_FORM, "deleted", now);
   }
   done(YOUR_REQUESTS_PATH);
 }
@@ -230,7 +246,8 @@ export async function deleteMyRequest(formData: FormData): Promise<void> {
  * Send offer, from the composer (spec 2.9): only when the composer would show its form (plan decision 12); the message
  * checked with E's rules, then at most 20 a shop in 24 hours and stage K's 120 messages an hour, then E's scam words
  * unless Send anyway was pressed; a listing only if it's one of the shop's listed ones (plan decision 13). The thread
- * then says "Sent." once (E's note).
+ * then says "Sent." once (E's note). A request on its closing day takes no offers, settled or not (stage L spec
+ * decision 14).
  */
 export async function sendOffer(formData: FormData): Promise<void> {
   const id = idFrom(formData, "request");
@@ -238,6 +255,7 @@ export async function sendOffer(formData: FormData): Promise<void> {
   const path = offerPath(id);
   const account = await requireAccount(path);
   const now = new Date();
+  await settle(now);
   const subject = await offerSubject(id);
   if (!subject) redirect("/looking-for");
   const status = await offerStatus(subject, account, sastDate(now));

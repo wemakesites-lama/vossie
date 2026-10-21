@@ -14,7 +14,7 @@ import {
   restorePickupPoint,
   retirePickupPoint,
 } from "@/lib/data/pickup-points";
-import { hideRequest, showRequest } from "@/lib/data/requests";
+import { hideRequest, settleRequests, showRequest } from "@/lib/data/requests";
 import {
   closeReport,
   closeReportsAboutShop,
@@ -406,6 +406,9 @@ export async function hideReportedRequest(formData: FormData): Promise<void> {
   const view = id ? await getReport(id, staff.id) : null;
   // Before `can`, which is all false for the admin's own (stage L plan decision 6).
   if (id && view?.own) return refuseOwn(view.own, adminReportPath(id), now);
+  // Old requests close themselves first, so a due one is closed before it's hidden (stage L spec decision 11). After the
+  // own gate: a refusal writes nothing (plan amendment 4).
+  if ((await settleRequests(now)) > 0) requestsChanged();
   if (!id || !view?.can.hide || view.target.kind !== "request") return nothingChanged(ADMIN_REPORTS_PATH, now);
   const reason = checkReason(field(formData, "reason"));
   if (reason.error) {
@@ -688,6 +691,9 @@ export async function showRequestAgain(formData: FormData): Promise<void> {
   const staff = await requireStaff("admin", id ? showRequestPath(id) : ADMIN_HIDDEN_PATH);
   const now = new Date();
   if (id && isOwnRequest(staff.id, id)) return refuseOwn("request", ADMIN_HIDDEN_PATH, now);
+  // Old requests close themselves first, so a due one is closed before it's shown (stage L spec decision 11). After the
+  // own gate: a refusal writes nothing (plan amendment 4).
+  if ((await settleRequests(now)) > 0) requestsChanged();
   const shown = id ? await showRequest(id, now) : null;
   if (!shown) return nothingChanged(ADMIN_HIDDEN_PATH, now);
   await recordAudit({

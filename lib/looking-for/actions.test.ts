@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readFormState } from "@/lib/auth/form-state";
 import type { RequestFields } from "@/lib/looking-for/rules";
 import { startOffer } from "@/lib/data/messages";
+import { getNotifications } from "@/lib/data/notifications";
 import { createRequest, getOwnRequest } from "@/lib/data/requests";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { sentNoteKey } from "@/lib/messaging/paths";
@@ -427,5 +428,62 @@ describe("Send offer (community actions spec 2.7 to 2.9)", () => {
     expect(await redirectOf(() => sendOffer(form({ request: id, body: "Me!" })))).toBe(`/looking-for/${id}/offer`);
     expect(sampleStore().conversations.size).toBe(2);
     expect(await redirectOf(() => sendOffer(form({ request: "Not an id!", body: "x" })))).toBe("/looking-for");
+  });
+});
+
+describe("old requests close themselves in every Looking For action (stage L spec decisions 11 to 15)", () => {
+  // Posted 5 October, needed by the 9th: its closing day is 13 October, the day before STAFF_NOW.
+  const due = () =>
+    createRequest({
+      askerId: "acc-student",
+      fields: { ...FIELDS, title: "Kettle for res", neededBy: "2026-10-09" },
+      now: new Date("2026-10-05T08:00:00.000Z"),
+    });
+  const closedItself = (id: string) => sampleStore().requests.get(id)?.closedBy === "auto";
+
+  it("expires the board when it stored a close, even when the press itself changes nothing", async () => {
+    await asStudent();
+    const old = await due();
+    const theirs = await posted("acc-mentor");
+    await redirectOf(() => closeMyRequest(form({ request: theirs.id })));
+    expect(closedItself(old.id)).toBe(true);
+    expect(request.updatedTags).toEqual(["requests"]);
+    const told = (await getNotifications("acc-student", 20)).filter((item) => item.kind === "request-update");
+    expect(told).toHaveLength(1);
+  });
+
+  it("lets a post through when one of the 5 open requests has just come due", async () => {
+    await asStudent();
+    const old = await due();
+    for (let n = 0; n < 4; n += 1) await posted();
+    expect((await send()).url).toMatch(/^\/looking-for\/r-[0-9a-f-]{36}$/);
+    expect(closedItself(old.id)).toBe(true);
+  });
+
+  it("refuses an offer on a due request, back to the composer that says it's closed, and stores the close", async () => {
+    const old = await due();
+    await signedInAs(request, "acc-seller");
+    expect(await redirectOf(() => sendOffer(form({ request: old.id, body: "I have a kettle, R100." })))).toBe(
+      `/looking-for/${old.id}/offer`,
+    );
+    expect(closedItself(old.id)).toBe(true);
+    expect([...sampleStore().conversations.values()].some((row) => row.requestId === old.id)).toBe(false);
+    expect(request.updatedTags).toEqual(["requests"]);
+  });
+
+  it("reopens without a needed-by date that has passed, and says so", async () => {
+    await asStudent();
+    const old = await due();
+    expect(await redirectOf(() => reopenMyRequest(form({ request: old.id, from: "list" })))).toBe("/account/requests");
+    expect(sampleStore().requests.get(old.id)).toMatchObject({ status: "open", neededBy: null, closedBy: null });
+    expect(await readFormState(YOUR_REQUESTS_FORM)).toMatchObject({ notice: "reopened-date-cleared" });
+  });
+
+  it("settles before deleting, so the asker's other due request is closed and the board expires", async () => {
+    await asStudent();
+    const old = await due();
+    const other = await posted();
+    await redirectOf(() => deleteMyRequest(form({ request: other.id })));
+    expect(closedItself(old.id)).toBe(true);
   });
 });

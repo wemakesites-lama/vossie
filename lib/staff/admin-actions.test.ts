@@ -964,3 +964,43 @@ describe("no Hub decision about the admin's own shop, its listings or their own 
     expect(sampleStore().sellerProfiles.get("acc-pending")?.status).toBe("pending");
   });
 });
+
+describe("the two request actions settle first (stage L spec decision 11)", () => {
+  const dueRequest = () =>
+    createRequest({
+      askerId: "acc-student",
+      fields: { ...SIPHOS_FIELDS, neededBy: "2026-10-09" },
+      now: new Date("2026-10-05T08:00:00.000Z"),
+    });
+
+  it("Show again stores a due request's close, and expires the board", async () => {
+    const due = await dueRequest();
+    Object.assign(sampleStore().requests.get("r-002")!, { hiddenAt: STAFF_NOW.toISOString(), hiddenReason: REASON });
+    await asAdmin();
+    await redirectOf(() => showRequestAgain(form({ request: "r-002" })));
+    expect(sampleStore().requests.get(due.id)).toMatchObject({ status: "closed", closedBy: "auto" });
+    expect(request.updatedTags).toEqual(["requests", "requests"]);
+  });
+
+  it("Hide the request closes a due request before hiding it, so its asker hears both", async () => {
+    const due = await dueRequest();
+    const reportId = await report("acc-mentor", { kind: "request", id: due.id }, due.title);
+    await asAdmin();
+    await redirectOf(() => hideReportedRequest(form({ report: reportId, reason: REASON })));
+    expect(sampleStore().requests.get(due.id)).toMatchObject({ status: "closed", closedBy: "auto" });
+    expect(sampleStore().requests.get(due.id)?.hiddenAt).not.toBeNull();
+    const told = (await getNotifications("acc-student", 20)).filter((item) => item.kind === "request-update");
+    expect(told).toHaveLength(2);
+  });
+
+  it("a refused post settles nothing (stage L spec decision 3)", async () => {
+    const due = await dueRequest();
+    sampleStore().accounts.get("acc-seller")!.roles = ["admin"];
+    const id = (await createRequest({ askerId: "acc-seller", fields: SIPHOS_FIELDS, now: STAFF_NOW })).id;
+    const reportId = await report("acc-student", { kind: "request", id }, SIPHOS_FIELDS.title);
+    await signedInAs(request, "acc-seller");
+    await redirectOf(() => hideReportedRequest(form({ report: reportId, reason: REASON })));
+    expect(sampleStore().requests.get(due.id)?.status).toBe("open");
+    expect(request.updatedTags).toEqual([]);
+  });
+});
