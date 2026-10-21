@@ -464,8 +464,11 @@
     }
   }
 
-  /* Hidden: the header box keeps its size (nothing below moves) but lets clicks through. */
+  /* Hidden: the header box keeps its size (nothing below moves) but lets clicks through, and it is invisible itself,
+     so nothing (assistive tech and axe included) takes its empty box for something covering the page under it. The
+     sheet inside sets its own visibility after the slide (below), and the keyboard's button sets its own too. */
   .site-header[data-mode="hidden"] {
+    visibility: hidden;
     pointer-events: none;
   }
 
@@ -692,12 +695,15 @@
     top: max(8px, env(safe-area-inset-top));
     left: 50%;
     z-index: 3;
-    translate: -50% calc(-100% - max(8px, env(safe-area-inset-top)) - 4px);
+    /* Parked well above the screen, not just above it: a link at the top of the page, half scrolled off, would
+       otherwise sit within 24px of it (WCAG 2.5.8, axe's target-size). */
+    translate: -50% calc(-100% - max(8px, env(safe-area-inset-top)) - 40px);
     padding: 12px 18px;
     border-radius: 999px;
     background: var(--color-navy);
     color: var(--color-white);
     font-weight: 600;
+    visibility: visible;
     pointer-events: auto;
     --focus-ring: var(--color-sky);
     --focus-halo: var(--color-navy);

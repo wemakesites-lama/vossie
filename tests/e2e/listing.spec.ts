@@ -33,12 +33,15 @@ test("docks Message, Save and Share at the bottom on phones, covering nothing", 
 
 test("the dock's room under the footer doesn't follow you to the next page", async ({ page }) => {
   onlyAt("phone-390");
+  // The dock takes the tab bar's place on a listing, and its room (69px) the tab bar's (57px; spec section 6.2).
   await page.goto("/listings/l-001");
-  await expect(page.locator("body")).not.toHaveCSS("padding-bottom", "0px");
+  await expect(page.locator("body")).toHaveCSS("padding-bottom", "69px");
+  await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
   // Next keeps the listing page hidden in the page for Back, with its dock inside it.
   await page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("link", { name: "Browse", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Everything");
-  await expect(page.locator("body")).toHaveCSS("padding-bottom", "0px");
+  await expect(page.locator("body")).toHaveCSS("padding-bottom", "57px");
+  await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
 });
 
 test("a keyboard walk goes breadcrumb, photos, then the actions, in reading order", async ({ page }) => {

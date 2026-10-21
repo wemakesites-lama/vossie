@@ -24,6 +24,8 @@ test("no sideways scrolling at the in-between widths", async ({ page }) => {
 });
 
 test("the main controls are reachable with the keyboard", async ({ page }) => {
+  // Phones reach sign-in through the tab bar's Account tab; the header's icon is there from the tablet step.
+  const phone = (page.viewportSize()?.width ?? 0) < 768;
   await page.goto("/");
   const reached = new Set<string>();
   for (let i = 0; i < 250; i++) {
@@ -39,7 +41,7 @@ test("the main controls are reachable with the keyboard", async ({ page }) => {
     "Skip to content",
     "Menu",
     "Vossie home",
-    "Sign in",
+    phone ? "Account" : "Sign in",
     "Shop your campus",
     "Start selling",
     "Get updates",
