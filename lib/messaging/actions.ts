@@ -6,11 +6,12 @@ import { writeFormState } from "@/lib/auth/form-state";
 import { requireAccount } from "@/lib/auth/session";
 import { recalculateBadgeFor } from "@/lib/data/badges";
 import { confirmSale, findConversation, markCompleted, rejectSale, sendMessage, startConversation } from "@/lib/data/messages";
+import { refusalOf, type RefusalCode } from "@/lib/data/refused";
 import { countReportsSince, createReport, hasOpenReport } from "@/lib/data/reports";
 import { sellersChanged } from "@/lib/data/tags";
 import type { ReportTarget } from "@/lib/types";
 import { clearOwnFormState } from "./form-state";
-import { messageLimitErrors } from "./limits";
+import { messageLimitErrors, type MessageLimitError } from "./limits";
 import {
   composerFormKey,
   composerPath,
@@ -63,6 +64,11 @@ function done(path: string): never {
 
 // --- Messages ---------------------------------------------------------------------------------------------------------
 
+/** A refusal that is one of the message limits, which the forms show as their own check does. */
+function isLimit(code: RefusalCode): code is MessageLimitError {
+  return code === "conversation-rate" || code === "message-rate";
+}
+
 function messageTargetFrom(formData: FormData): MessageTarget | null {
   const listingId = idFrom(formData, "listing");
   if (listingId) return { kind: "listing", listingId };
@@ -108,14 +114,24 @@ export async function sendFirstMessage(formData: FormData): Promise<void> {
     await writeFormState(form, { errors: [], values: { ...values, warnings: warnings.join(",") }, notice: "check" }, now);
     back(path);
   }
-  const { conversationId } = await startConversation({
-    buyerId: account.id,
-    listing: subject.listing ? { id: subject.listing.id, title: subject.listing.title } : null,
-    sellerSlug: subject.seller.slug,
-    body: message.value,
-    swapOffer: swap.value || null,
-    now,
-  });
+  // On Supabase, start_conversation counts the limits again under the buyer's lock and checks the subject once more
+  // (C2/C3 plan decisions 3 and 18): a limit it meets is shown as the check above would show it; anything else it
+  // refuses goes back to the composer, which says why.
+  const started = await refusalOf(
+    startConversation({
+      buyerId: account.id,
+      listing: subject.listing ? { id: subject.listing.id, title: subject.listing.title } : null,
+      sellerSlug: subject.seller.slug,
+      body: message.value,
+      swapOffer: swap.value || null,
+      now,
+    }),
+  );
+  if ("refused" in started) {
+    if (isLimit(started.refused)) await writeFormState(form, { errors: [started.refused], values, notice: null }, now);
+    back(path);
+  }
+  const { conversationId } = started.ok;
   await clearOwnFormState(form);
   await writeFormState(sentNoteKey(conversationId), { errors: [], values: {}, notice: "sent" }, now);
   done(threadPath(conversationId));
@@ -146,7 +162,13 @@ export async function sendReply(formData: FormData): Promise<void> {
     await writeFormState(form, { errors: [], values: { body, warnings: warnings.join(",") }, notice: "check" }, now);
     back(path);
   }
-  const result = await sendMessage({ conversationId: id, accountId: account.id, body: message.value, now });
+  // On Supabase, send_message counts the hour's messages again under the sender's lock (C2/C3 plan decision 18).
+  const sent = await refusalOf(sendMessage({ conversationId: id, accountId: account.id, body: message.value, now }));
+  if ("refused" in sent) {
+    if (isLimit(sent.refused)) await writeFormState(form, { errors: [sent.refused], values: { body }, notice: null }, now);
+    back(path);
+  }
+  const result = sent.ok;
   if (result === "not-found") back("/messages");
   // A seller's reply can change their shop's badge (staff tools spec 2.7, plan decision 8). Nothing else can expire
   // the cached sellers when it does, so this action does.
@@ -218,12 +240,21 @@ export async function sendReport(formData: FormData): Promise<void> {
   if (detail.error) errors.push(detail.error);
   const since = new Date(now.getTime() - DAY_MS);
   if (errors.length === 0 && (await countReportsSince(account.id, since)) >= REPORTS_PER_DAY) errors.push("report-rate");
+  const values = { reason: reason ?? "", detail: keepTyped(detail.value) };
   if (errors.length > 0 || !reason) {
-    const values = { reason: reason ?? "", detail: keepTyped(detail.value) };
     await writeFormState(form, { errors, values, notice: null }, now);
     back(path);
   }
-  await createReport({ reporterId: account.id, target, targetTitle: subject.title, reason, detail: detail.value, now });
+  // On Supabase, create_report counts again under the reporter's lock and checks the target is still there (C2/C3 plan
+  // decision 22): a refusal its own checks would have given is shown as they would show it.
+  const sent = await refusalOf(
+    createReport({ reporterId: account.id, target, targetTitle: subject.title, reason, detail: detail.value, now }),
+  );
+  if ("refused" in sent) {
+    if (sent.refused !== "rate-limited") redirect("/");
+    await writeFormState(form, { errors: ["report-rate"], values, notice: null }, now);
+    back(path);
+  }
   await clearOwnFormState(form);
   done(reportSentPath(target));
 }

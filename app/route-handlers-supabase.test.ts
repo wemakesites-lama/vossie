@@ -56,6 +56,11 @@ vi.mock("@/lib/data/supabase/form-states", async () => ({
 vi.mock("@/lib/data/supabase/requests", () => ({ settleRequests: async () => 0 }));
 // Selling's export reads the owner's shop on Supabase (C2/C3 plan Task 8's twin); here there is none.
 vi.mock("@/lib/data/supabase/shops", () => ({ exportShop: async () => ({ shop: null, listings: [], onboardingDraft: null }) }));
+// Messaging's export reads the account's conversations, reports and notifications on Supabase (C2/C3 plan Tasks 12 to
+// 14's twins); here there are none.
+vi.mock("@/lib/data/supabase/messages", () => ({ exportConversations: async () => [] }));
+vi.mock("@/lib/data/supabase/reports", () => ({ exportReports: async () => [] }));
+vi.mock("@/lib/data/supabase/notifications", () => ({ exportNotifications: async () => [] }));
 vi.mock("@/lib/data/supabase/sessions", () => ({
   listSessions: async () => structuredClone(twin.sessions),
 }));

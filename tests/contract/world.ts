@@ -40,6 +40,25 @@ export type WorldShop = {
 /** A one-time form state for a session (C2/C3 plan Task 9): taken or not, running out in an hour unless said. */
 export type WorldOnce = { taken?: boolean; expiresInMinutes?: number };
 
+/** A message a scenario puts in a conversation (C2/C3 plan Task 14): unread unless `readAt` is given. */
+export type WorldMessage = { side: "buyer" | "seller"; body: string; sentAt: Date; readAt?: Date | null };
+
+/**
+ * A conversation a scenario puts in place, as if its messages had been sent (C2/C3 plan Task 14). About a listing
+ * (`listingId`), a listing that has gone (`listingTitle` alone), a request (`offerOn`, an offer thread), or else a
+ * question to the shop. It started at its first message (or now), and its last activity is its last message. Its
+ * status is "offered" for an offer, "replied" once the seller has written, else "asked", unless `status` says.
+ */
+export type WorldConversation = {
+  buyer: WorldAccountName;
+  slug: string;
+  listingId?: string;
+  listingTitle?: string;
+  offerOn?: string;
+  status?: "offered" | "asked" | "replied";
+  messages: readonly WorldMessage[];
+};
+
 export interface World {
   readonly name: "sample" | "supabase";
   /** The account's id, signed in (a profile on Pretoria; "staff" holds the Admin role; "seller" has no shop yet). */
@@ -87,8 +106,32 @@ export interface World {
   openShop(name: WorldAccountName, shop?: WorldShop): Promise<string>;
   /** That account follows the shop (C2/C3 plan Task 9; C4's verb of the same name). */
   follow(follower: WorldAccountName, slug: string): Promise<void>;
-  /** Gives the account a notification, as a database function or a TypeScript writer would have (C2/C3 plan Task 9). */
-  addNotification(name: WorldAccountName, note: WorldNotification): Promise<void>;
+  /**
+   * Gives the account a notification, as a database function or a TypeScript writer would have (C2/C3 plan Task 9),
+   * made now or at `at` (Task 12).
+   */
+  addNotification(name: WorldAccountName, note: WorldNotification, at?: Date): Promise<void>;
+  /**
+   * In cleanup, removes the conversations (their messages with them), notifications and reports the test made for the
+   * world's accounts, however they were made: through the data layer, the database's own functions or the verbs
+   * (C2/C3 plan Tasks 12 to 16). Call it after tidySelling, so it runs before the shops go.
+   */
+  tidyMessaging(): Promise<void>;
+  /** Puts a conversation in place, with its messages; its id (C2/C3 plan Task 14). */
+  addConversation(conversation: WorldConversation): Promise<string>;
+  /** Adds `count` messages from `side` to a conversation, each sent at `sentAt`, unread (C2/C3 plan Task 15). */
+  addMessages(conversationId: string, side: "buyer" | "seller", count: number, sentAt: Date): Promise<void>;
+  /**
+   * Marks a sale done at `completedAt`, as the seller's Mark as completed would have, the buyer's "sale to confirm"
+   * notification included (C2/C3 plan Task 14).
+   */
+  markDone(conversationId: string, completedAt: Date): Promise<void>;
+  /** The conversation's seller has deleted their account (C2/C3 plan Task 14): nobody answers for the shop there. */
+  sellerGone(conversationId: string): Promise<void>;
+  /** The conversation's buyer has deleted their account (C2/C3 plan Task 14). */
+  buyerGone(conversationId: string): Promise<void>;
+  /** Hides a request, as the Hub's Hide does (C2/C3 plan Task 14). */
+  hideRequest(id: string, reason: string): Promise<void>;
   /**
    * A one-time form state, such as "listing-once:<uuid>" or "staff-once:<uuid>", in the account's session: on Supabase
    * the session the test files were given (C2/C3 plan Task 9; C4/C5 use it as their issueOnceToken). The session key.

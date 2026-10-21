@@ -120,3 +120,9 @@ The full e2e suite against the local stack with `VOSSIE_BACKEND=supabase`, then 
 - `stats.db.test.ts` no longer depends on the hourly `settle-sales` job.
 - Checks: unit 2,933; db 60; pgTAP 2,337; `pnpm e2e:supabase` 23 passed; the sample sign-in, accounts and performance specs at 390 and 1440 pass. Detail in that plan's "Changes made during the build".
 
+**Step 3, C2 and C3 (built 2026-10-21; `2026-10-21-supabase-phase-c2-c3-selling-messaging.md`, Tasks 0 to 17):**
+- C2: the owner's shop and the wizard's draft, own listings, photos in Storage behind `/photos/[id]` (`photo_file` decides who sees each), and a daily Vercel Cron sweep at `/api/cron/photos` behind `CRON_SECRET`. Photos are 4 MB each and 4 MiB a post (Lama's go-ahead).
+- C3: notifications' reads (every notification is written inside a database function; the TypeScript writers throw on Supabase), students' reports, conversations and messages with the 7-day auto-confirm on read and a header count that writes nothing, the message limits counted again by the database under the sender's lock (a race refusal shows the same form error), `startOffer`, and the context strip's numbers (`getAccountActivity`). The rest of offers is C4's.
+- Still sample until their stage: `recalculateBadgeFor` (a reply's or a sale's badge; on Supabase the badges move only when an admin opens `/admin`), and everything C4 and C5 own.
+- Checks: pgTAP 2,489; unit 3,055; db 168; the JS budget unchanged. Detail in that plan's ledger and "Changes made during the build".
+

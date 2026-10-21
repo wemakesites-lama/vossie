@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { onSupabase } from "@/lib/backend";
 import { newListingsText, newListingText } from "@/lib/following/rules";
 import { searchMatchesText, searchMatchText } from "@/lib/saved-searches/words";
 import { sastDate } from "@/lib/time";
@@ -11,6 +12,12 @@ import { sampleStore } from "./store";
 // them and mark them read. Times come from the caller. A busy conversation keeps one unread *message* notification
 // per person (plan decision 12); a sale to confirm is its own notification, read once the sale is settled (messaging
 // plan amendment 3).
+//
+// On Supabase (C2/C3 plan Task 12, decision 17) the reads' twins are lib/data/supabase/notifications.ts, picked on each
+// function's first line through import(). Every notification is written inside a database function there (its comment
+// names which), so the writers below throw on Supabase; their sample bodies are unchanged.
+
+const supabase = () => import("./supabase/notifications");
 
 type NewNotification = {
   accountId: string;
@@ -40,6 +47,7 @@ function add({ accountId, kind, subjectId, text, href, now }: NewNotification): 
  * the Hub's word about a request and a followed shop's new listing in stage H (see NotificationKind).
  */
 export async function notify(notification: NewNotification): Promise<void> {
+  if (onSupabase()) return (await supabase()).notify(notification);
   add(notification);
 }
 
@@ -61,6 +69,7 @@ export async function notifyAboutMessage({
   href: string;
   now: Date;
 }): Promise<void> {
+  if (onSupabase()) return (await supabase()).notifyAboutMessage({ accountId, conversationId, text, href, now });
   for (const row of sampleStore().notifications.values()) {
     if (row.accountId !== accountId || row.kind !== "message" || row.subjectId !== conversationId) continue;
     if (row.readAt !== null) continue;
@@ -79,6 +88,7 @@ function ofAccount(accountId: string): NotificationRow[] {
 
 /** The account's newest `limit` notifications, newest first, saying which were new (spec 3.5). Copies. */
 export async function getNotifications(accountId: string, limit: number): Promise<NotificationItem[]> {
+  if (onSupabase()) return (await supabase()).getNotifications(accountId, limit);
   return ofAccount(accountId)
     .slice(0, limit)
     .map((row) => ({
@@ -93,11 +103,13 @@ export async function getNotifications(accountId: string, limit: number): Promis
 
 /** How many of the account's notifications are new: the header's badge (spec 2.9). */
 export async function countNewNotifications(accountId: string): Promise<number> {
+  if (onSupabase()) return (await supabase()).countNewNotifications(accountId);
   return ofAccount(accountId).filter((row) => row.readAt === null).length;
 }
 
 /** Opening /notifications marks them all read (spec 2.9). */
 export async function markNotificationsRead(accountId: string, now: Date): Promise<void> {
+  if (onSupabase()) return (await supabase()).markNotificationsRead(accountId, now);
   for (const row of sampleStore().notifications.values()) {
     if (row.accountId === accountId && row.readAt === null) row.readAt = now.toISOString();
   }
@@ -109,6 +121,7 @@ export async function markNotificationsRead(accountId: string, now: Date): Promi
  * notifications are left as they are.
  */
 export async function markSaleNotificationsRead(accountId: string, conversationId: string, now: Date): Promise<void> {
+  if (onSupabase()) return (await supabase()).markSaleNotificationsRead(accountId, conversationId, now);
   for (const row of sampleStore().notifications.values()) {
     if (
       row.accountId === accountId &&
@@ -127,6 +140,7 @@ export async function markConversationNotificationsRead(
   conversationId: string,
   now: Date,
 ): Promise<void> {
+  if (onSupabase()) return (await supabase()).markConversationNotificationsRead(accountId, conversationId, now);
   for (const row of sampleStore().notifications.values()) {
     if (row.accountId === accountId && row.subjectId === conversationId && row.readAt === null) {
       row.readAt = now.toISOString();
@@ -145,6 +159,7 @@ export async function deleteNotifications({
   accountId: string;
   subjectIds: ReadonlySet<string>;
 }): Promise<void> {
+  if (onSupabase()) return (await supabase()).deleteNotifications({ accountId, subjectIds });
   const { notifications } = sampleStore();
   for (const [id, row] of notifications) {
     if (row.accountId === accountId || subjectIds.has(row.subjectId)) notifications.delete(id);
@@ -155,6 +170,7 @@ export async function deleteNotifications({
 export type NotificationExport = { text: string; at: string; read: boolean };
 
 export async function exportNotifications(accountId: string): Promise<NotificationExport[]> {
+  if (onSupabase()) return (await supabase()).exportNotifications(accountId);
   return ofAccount(accountId).map((row) => ({ text: row.text, at: row.createdAt, read: row.readAt !== null }));
 }
 
@@ -163,6 +179,7 @@ export async function exportNotifications(accountId: string): Promise<Notificati
  * deleted request's update, or the new listings of a shop that has gone. They would only lead to a page that 404s.
  */
 export async function deleteNotificationsAbout(kind: NotificationKind, subjectIds: ReadonlySet<string>): Promise<void> {
+  if (onSupabase()) return (await supabase()).deleteNotificationsAbout(kind, subjectIds);
   const { notifications } = sampleStore();
   for (const [id, row] of notifications) {
     if (row.kind === kind && subjectIds.has(row.subjectId)) notifications.delete(id);
@@ -240,6 +257,7 @@ export async function notifyNewListing({
   listing: { id: string; title: string };
   now: Date;
 }): Promise<void> {
+  if (onSupabase()) return (await supabase()).notifyNewListing({ accountId, sellerSlug, shopName, listing, now });
   await notifyOncePerDay({
     accountId,
     kind: "new-listing",
@@ -274,6 +292,7 @@ export async function notifySearchMatch({
   listing: { id: string; title: string };
   now: Date;
 }): Promise<boolean> {
+  if (onSupabase()) return (await supabase()).notifySearchMatch({ accountId, savedSearchId, label, resultsHref, listing, now });
   return notifyOncePerDay({
     accountId,
     kind: "search-match",

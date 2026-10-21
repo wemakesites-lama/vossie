@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SESSION_COOKIE } from "@/lib/auth/cookies";
 import { readFormState } from "@/lib/auth/form-state";
 import { hashToken } from "@/lib/auth/secrets";
-import { findConversation, getThread } from "@/lib/data/messages";
+import { findConversation, getThread, sendMessage, startConversation } from "@/lib/data/messages";
+import { Refused } from "@/lib/data/refused";
 import { createReport } from "@/lib/data/reports";
 import { createSession } from "@/lib/data/sessions";
 import type { ConversationRow } from "@/lib/data/rows";
@@ -17,6 +18,21 @@ vi.mock("next/headers", async () => (await import("@/tests/helpers/next-request"
 vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
 vi.mock("next/cache", async () => (await import("@/tests/helpers/next-request")).nextCache(request));
+
+// The data calls a Supabase twin can refuse after the action's own checks passed (C2/C3 plan decision 3), as spies
+// that call through, so a test can make one reject.
+vi.mock("@/lib/data/messages", async (original) => {
+  const messages = await original<typeof import("@/lib/data/messages")>();
+  return {
+    ...messages,
+    startConversation: vi.fn(messages.startConversation),
+    sendMessage: vi.fn(messages.sendMessage),
+  };
+});
+vi.mock("@/lib/data/reports", async (original) => {
+  const reports = await original<typeof import("@/lib/data/reports")>();
+  return { ...reports, createReport: vi.fn(reports.createReport) };
+});
 
 // The sample accounts are exempt from the message limits in sample mode (stage K spec decision 10), and these tests
 // sign in as them, so the exemption is switched off here unless a test switches it on (plan decision 16).
@@ -266,6 +282,27 @@ describe("Send report (messaging spec 2.8 and 3.4)", () => {
     expect(sampleStore().reports.size).toBe(10);
   });
 
+  it("says report-rate when the database counts an 11th report the action's own count missed (C2/C3 plan Task 13)", async () => {
+    await signedInAs("acc-mentor");
+    vi.mocked(createReport).mockRejectedValueOnce(new Refused("rate-limited"));
+    const redirect = await redirectSignalOf(() =>
+      sendReport(form({ kind: "listing", id: "l-001", reason: "misleading", detail: "Not the model." })),
+    );
+    expect([redirect.url, redirect.type, request.refreshed]).toEqual(["/report?listing=l-001", "replace", false]);
+    expect(await readFormState(reportFormKey({ kind: "listing", id: "l-001" }))).toMatchObject({
+      errors: ["report-rate"],
+      values: { reason: "misleading", detail: "Not the model." },
+      notice: null,
+    });
+  });
+
+  it("goes home when the database finds the target gone after the action's check (C2/C3 plan Task 13)", async () => {
+    await signedInAs("acc-mentor");
+    vi.mocked(createReport).mockRejectedValueOnce(new Refused("not-found"));
+    expect(await redirectOf(() => sendReport(form({ kind: "listing", id: "l-001", reason: "spam" })))).toBe("/");
+    expect(await readFormState(reportFormKey({ kind: "listing", id: "l-001" }))).toBeNull();
+  });
+
   it("sends a signed-out visitor to sign in, coming back to the form, and an unknown target home", async () => {
     expect(await redirectOf(() => sendReport(form({ kind: "listing", id: "l-001", reason: "spam" })))).toBe(
       "/login?next=%2Freport%3Flisting%3Dl-001",
@@ -380,6 +417,48 @@ describe("the message limits (stage K spec 4; Lama, 2026-10-20)", () => {
     seedMessages(thread, "buyer", 119);
     await redirectOf(() => sendFirstMessage(form({ listing: "l-002", body: "And this one?" })));
     expect(await readFormState(composerFormKey({ kind: "listing", listingId: "l-002" }))).toMatchObject({ errors: ["message-rate"] });
+  });
+
+  it.each(["conversation-rate", "message-rate"] as const)(
+    "shows the database's %s on a first message as its own check would, keeping what was typed (C2/C3 plan Task 15)",
+    async (code) => {
+      await signedInAs("acc-mentor");
+      vi.mocked(startConversation).mockRejectedValueOnce(new Refused(code));
+      const redirect = await redirectSignalOf(() =>
+        sendFirstMessage(form({ listing: "l-007", body: "Is it still available?", swapOffer: "My old phone" })),
+      );
+      expect([redirect.url, redirect.type, request.refreshed]).toEqual(["/listings/l-007/message", "replace", false]);
+      expect(await readFormState(composerFormKey({ kind: "listing", listingId: "l-007" }))).toMatchObject({
+        errors: [code],
+        values: { body: "Is it still available?", swapOffer: "My old phone" },
+        notice: null,
+      });
+    },
+  );
+
+  it.each(["own-shop", "closed", "not-found"] as const)(
+    "goes back to the composer with nothing written when the database finds it %s (C2/C3 plan Task 15)",
+    async (code) => {
+      await signedInAs("acc-mentor");
+      vi.mocked(startConversation).mockRejectedValueOnce(new Refused(code));
+      expect(await redirectOf(() => sendFirstMessage(form({ listing: "l-001", body: "Is it still available?" })))).toBe(
+        "/listings/l-001/message",
+      );
+      expect(await readFormState(composerFormKey({ kind: "listing", listingId: "l-001" }))).toBeNull();
+      expect(request.refreshed).toBe(false);
+    },
+  );
+
+  it("shows the database's message-rate on a reply, keeping it (C2/C3 plan Task 15)", async () => {
+    await signedInAs("acc-seller");
+    vi.mocked(sendMessage).mockRejectedValueOnce(new Refused("message-rate"));
+    const redirect = await redirectSignalOf(() => sendReply(form({ conversation: "conv-s1", body: "Still yours." })));
+    expect([redirect.url, redirect.type, request.refreshed]).toEqual(["/messages/conv-s1", "replace", false]);
+    expect(await readFormState(replyFormKey("conv-s1"))).toMatchObject({
+      errors: ["message-rate"],
+      values: { body: "Still yours." },
+      notice: null,
+    });
   });
 
   it("lets a sample account through in sample mode (spec decision 10)", async () => {

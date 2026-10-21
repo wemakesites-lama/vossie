@@ -1,8 +1,10 @@
 import { inject } from "vitest";
 import { campusToDb } from "@/lib/data/supabase/rows";
+import { saleNoteText } from "@/lib/messaging/notification-text";
+import { threadPath } from "@/lib/messaging/paths";
 import { SLUG_MAX, slugify } from "@/lib/selling/rules";
 import { sastDate } from "@/lib/time";
-import type { World, WorldAccountName } from "@/tests/contract/world";
+import { WORLD_ACCOUNTS, type World, type WorldAccountName } from "@/tests/contract/world";
 import { testAdminClient, type DbClient } from "./accounts";
 import { sql } from "./sql";
 import { setViewer } from "./viewer";
@@ -379,16 +381,200 @@ export function supabaseWorld(): SupabaseWorld {
         if (undone.error) throw new Error(undone.error.message);
       });
     },
-    async addNotification(name, note) {
+    async addNotification(name, note, at = new Date()) {
       const added = await admin
         .from("notifications")
-        .insert({ account_id: await this.signedIn(name), kind: note.kind, subject_id: note.subjectId, text: note.text, href: note.href })
+        .insert({
+          account_id: await this.signedIn(name),
+          kind: note.kind,
+          subject_id: note.subjectId,
+          text: note.text,
+          href: note.href,
+          created_at: at.toISOString(),
+        })
         .select("id")
         .single();
       if (added.error) throw new Error(added.error.message);
       const id = added.data.id;
       undos.push(async () => {
         const undone = await admin.from("notifications").delete().eq("id", id);
+        if (undone.error) throw new Error(undone.error.message);
+      });
+    },
+    async tidyMessaging() {
+      const accounts = WORLD_ACCOUNTS.map((name) => inject("dbSessions")[name].id);
+      const [conversations, notes, reports] = await Promise.all([
+        admin.from("conversations").select("id"),
+        admin.from("notifications").select("id").in("account_id", accounts),
+        admin.from("reports").select("id").in("reporter_id", accounts),
+      ]);
+      if (conversations.error || notes.error || reports.error) {
+        throw new Error((conversations.error ?? notes.error ?? reports.error)!.message);
+      }
+      const keptConversations = new Set(conversations.data.map((row) => row.id));
+      const keptNotes = new Set(notes.data.map((row) => row.id));
+      const keptReports = new Set(reports.data.map((row) => row.id));
+      undos.push(async () => {
+        // The conversations the test made: a world account's as the buyer or as the shop, or one whose buyer or shop has
+        // gone (a verb's, or a shop the test opened and has closed again). Their messages go with them.
+        const [now, shops] = await Promise.all([
+          admin.from("conversations").select("id, buyer_id, shop_id"),
+          admin.from("shops").select("id").in("owner_id", accounts),
+        ]);
+        if (now.error || shops.error) throw new Error((now.error ?? shops.error)!.message);
+        const theirShops = new Set(shops.data.map((row) => row.id));
+        const made = now.data
+          .filter((row) => !keptConversations.has(row.id))
+          .filter(
+            (row) =>
+              row.buyer_id === null ||
+              accounts.includes(row.buyer_id) ||
+              row.shop_id === null ||
+              theirShops.has(row.shop_id),
+          )
+          .map((row) => row.id);
+        const after = await admin.from("notifications").select("id").in("account_id", accounts);
+        if (after.error) throw new Error(after.error.message);
+        const madeNotes = after.data.filter((row) => !keptNotes.has(row.id)).map((row) => row.id);
+        for (let from = 0; from < madeNotes.length; from += 100) {
+          const gone = await admin.from("notifications").delete().in("id", madeNotes.slice(from, from + 100));
+          if (gone.error) throw new Error(gone.error.message);
+        }
+        for (let from = 0; from < made.length; from += 100) {
+          const gone = await admin.from("conversations").delete().in("id", made.slice(from, from + 100));
+          if (gone.error) throw new Error(gone.error.message);
+        }
+        const reported = await admin.from("reports").select("id").in("reporter_id", accounts);
+        if (reported.error) throw new Error(reported.error.message);
+        const madeReports = reported.data.filter((row) => !keptReports.has(row.id)).map((row) => row.id);
+        if (madeReports.length > 0) {
+          const gone = await admin.from("reports").delete().in("id", madeReports);
+          if (gone.error) throw new Error(gone.error.message);
+        }
+      });
+    },
+    async addConversation({ buyer, slug, listingId, listingTitle, offerOn, status, messages }) {
+      const shop = await shopId(slug);
+      let title = listingTitle ?? null;
+      if (listingId) {
+        const listing = await admin.from("listings").select("title").eq("id", listingId).single();
+        if (listing.error) throw new Error(`No listing ${listingId}: ${listing.error.message}`);
+        title = listing.data.title;
+      }
+      let requestTitle: string | null = null;
+      if (offerOn) {
+        const request = await admin.from("requests").select("title").eq("id", offerOn).single();
+        if (request.error) throw new Error(`No request ${offerOn}: ${request.error.message}`);
+        requestTitle = request.data.title;
+      }
+      const first = messages[0]?.sentAt ?? new Date();
+      const last = messages.at(-1)?.sentAt ?? first;
+      const sellerFirst = messages.find((message) => message.side === "seller");
+      const added = await admin
+        .from("conversations")
+        .insert({
+          listing_id: listingId ?? null,
+          listing_title: title,
+          shop_id: shop,
+          buyer_id: await this.signedIn(buyer),
+          status: status ?? (offerOn ? "offered" : sellerFirst ? "replied" : "asked"),
+          created_at: first.toISOString(),
+          last_message_at: last.toISOString(),
+          first_reply_at: !offerOn && sellerFirst ? sellerFirst.sentAt.toISOString() : null,
+          is_offer: Boolean(offerOn),
+          request_id: offerOn ?? null,
+          request_title: requestTitle,
+        })
+        .select("id")
+        .single();
+      if (added.error) throw new Error(added.error.message);
+      const id = added.data.id;
+      // tidyMessaging takes it away, with its messages.
+      if (messages.length > 0) {
+        const sent = await admin.from("messages").insert(
+          messages.map((message) => ({
+            conversation_id: id,
+            side: message.side,
+            body: message.body,
+            sent_at: message.sentAt.toISOString(),
+            read_at: message.readAt ? message.readAt.toISOString() : null,
+          })),
+        );
+        if (sent.error) throw new Error(sent.error.message);
+      }
+      return id;
+    },
+    async addMessages(conversationId, side, count, sentAt) {
+      const rows = Array.from({ length: count }, (_, n) => ({
+        conversation_id: conversationId,
+        side,
+        body: `Message ${n + 1}`,
+        sent_at: sentAt.toISOString(),
+      }));
+      for (let from = 0; from < rows.length; from += 500) {
+        const sent = await admin.from("messages").insert(rows.slice(from, from + 500));
+        if (sent.error) throw new Error(sent.error.message);
+      }
+      const row = await admin.from("conversations").select("last_message_at").eq("id", conversationId).single();
+      if (row.error) throw new Error(row.error.message);
+      if (Date.parse(row.data.last_message_at) < sentAt.getTime()) {
+        const moved = await admin.from("conversations").update({ last_message_at: sentAt.toISOString() }).eq("id", conversationId);
+        if (moved.error) throw new Error(moved.error.message);
+      }
+    },
+    async markDone(conversationId, completedAt) {
+      const row = await admin
+        .from("conversations")
+        .select("buyer_id, shop_id, listing_title, request_title")
+        .eq("id", conversationId)
+        .single();
+      if (row.error) throw new Error(row.error.message);
+      if (!row.data.buyer_id) throw new Error(`No buyer in ${conversationId}`);
+      const shop = row.data.shop_id ? await admin.from("shops").select("name").eq("id", row.data.shop_id).single() : null;
+      if (shop?.error) throw new Error(shop.error.message);
+      const done = await admin
+        .from("conversations")
+        .update({ status: "done", completed_at: completedAt.toISOString() })
+        .eq("id", conversationId);
+      if (done.error) throw new Error(done.error.message);
+      const told = await admin.from("notifications").insert({
+        account_id: row.data.buyer_id,
+        kind: "sale-to-confirm",
+        subject_id: conversationId,
+        text: saleNoteText({
+          shop: shop?.data.name ?? "A closed shop",
+          listingTitle: row.data.request_title ?? row.data.listing_title,
+        }),
+        href: threadPath(conversationId),
+        created_at: completedAt.toISOString(),
+      });
+      if (told.error) throw new Error(told.error.message);
+    },
+    async sellerGone(conversationId) {
+      const gone = await admin.from("conversations").update({ seller_gone: true }).eq("id", conversationId).select("id");
+      if (gone.error) throw new Error(gone.error.message);
+      if (gone.data.length !== 1) throw new Error(`No conversation ${conversationId}`);
+    },
+    async buyerGone(conversationId) {
+      const gone = await admin
+        .from("conversations")
+        .update({ buyer_id: null })
+        .eq("id", conversationId)
+        .select("id");
+      if (gone.error) throw new Error(gone.error.message);
+      if (gone.data.length !== 1) throw new Error(`No conversation ${conversationId}`);
+    },
+    async hideRequest(id, reason) {
+      const hidden = await admin
+        .from("requests")
+        .update({ hidden_at: new Date().toISOString(), hidden_reason: reason })
+        .eq("id", id)
+        .is("hidden_at", null)
+        .select("id");
+      if (hidden.error) throw new Error(hidden.error.message);
+      if (hidden.data.length !== 1) throw new Error(`No shown request ${id}`);
+      undos.push(async () => {
+        const undone = await admin.from("requests").update({ hidden_at: null, hidden_reason: null }).eq("id", id);
         if (undone.error) throw new Error(undone.error.message);
       });
     },

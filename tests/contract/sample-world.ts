@@ -1,5 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { photoIdOf } from "@/lib/data/photos";
-import type { AccountRow } from "@/lib/data/rows";
+import type { AccountRow, ConversationRow } from "@/lib/data/rows";
+import { saleNoteText } from "@/lib/messaging/notification-text";
+import { threadPath } from "@/lib/messaging/paths";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { SLUG_MAX, slugify } from "@/lib/selling/rules";
 import { sastDate } from "@/lib/time";
@@ -190,7 +193,7 @@ export function sampleWorld(): World {
       const id = `follow-contract-${follows.size + 1}`;
       follows.set(id, { id, accountId, sellerSlug: slug, createdAt: new Date().toISOString() });
     },
-    async addNotification(name, note) {
+    async addNotification(name, note, at = new Date()) {
       const accountId = await this.signedIn(name);
       const notifications = sampleStore().notifications;
       const id = `note-contract-${notifications.size + 1}`;
@@ -201,9 +204,106 @@ export function sampleWorld(): World {
         subjectId: note.subjectId,
         text: note.text,
         href: note.href,
-        createdAt: new Date().toISOString(),
+        createdAt: at.toISOString(),
         readAt: null,
       });
+    },
+    async tidyMessaging() {
+      // Nothing to tidy: the next test's world starts from a fresh store.
+    },
+    async addConversation({ buyer, slug, listingId, listingTitle, offerOn, status, messages }) {
+      const store = sampleStore();
+      const buyerId = await this.signedIn(buyer);
+      if (!store.sellers.has(slug)) throw new Error(`No shop ${slug}`);
+      const title = listingId ? store.listings.get(listingId)?.title : listingTitle;
+      if (listingId && !title) throw new Error(`No listing ${listingId}`);
+      const request = offerOn ? store.requests.get(offerOn) : undefined;
+      if (offerOn && !request) throw new Error(`No request ${offerOn}`);
+      const first = messages[0]?.sentAt ?? new Date();
+      const last = messages.at(-1)?.sentAt ?? first;
+      const sellerFirst = messages.find((message) => message.side === "seller");
+      const row: ConversationRow = {
+        id: `conv-${randomUUID()}`,
+        listingId: listingId ?? null,
+        listingTitle: title ?? null,
+        sellerSlug: slug,
+        buyerId,
+        sellerGone: false,
+        status: status ?? (offerOn ? "offered" : sellerFirst ? "replied" : "asked"),
+        createdAt: first.toISOString(),
+        lastMessageAt: last.toISOString(),
+        firstReplyAt: !offerOn && sellerFirst ? sellerFirst.sentAt.toISOString() : null,
+        completedAt: null,
+        confirmedAt: null,
+        confirmedBy: null,
+        ...(request ? { requestId: request.id, requestTitle: request.title } : {}),
+      };
+      store.conversations.set(row.id, row);
+      for (const message of messages) {
+        const id = `msg-${randomUUID()}`;
+        store.messages.set(id, {
+          id,
+          conversationId: row.id,
+          from: message.side,
+          body: message.body,
+          swapOffer: null,
+          sentAt: message.sentAt.toISOString(),
+          readAt: message.readAt ? message.readAt.toISOString() : null,
+        });
+      }
+      return row.id;
+    },
+    async addMessages(conversationId, side, count, sentAt) {
+      const store = sampleStore();
+      const row = store.conversations.get(conversationId);
+      if (!row) throw new Error(`No conversation ${conversationId}`);
+      for (let n = 0; n < count; n += 1) {
+        const id = `msg-${randomUUID()}`;
+        store.messages.set(id, {
+          id,
+          conversationId,
+          from: side,
+          body: `Message ${n + 1}`,
+          swapOffer: null,
+          sentAt: sentAt.toISOString(),
+          readAt: null,
+        });
+      }
+      if (sentAt.toISOString() > row.lastMessageAt) row.lastMessageAt = sentAt.toISOString();
+    },
+    async markDone(conversationId, completedAt) {
+      const store = sampleStore();
+      const row = store.conversations.get(conversationId);
+      if (!row || !row.buyerId) throw new Error(`No conversation with a buyer ${conversationId}`);
+      row.status = "done";
+      row.completedAt = completedAt.toISOString();
+      const id = `note-contract-${store.notifications.size + 1}`;
+      store.notifications.set(id, {
+        id,
+        accountId: row.buyerId,
+        kind: "sale-to-confirm",
+        subjectId: row.id,
+        text: saleNoteText({ shop: store.sellers.get(row.sellerSlug)?.name ?? "A closed shop", listingTitle: row.requestTitle ?? row.listingTitle }),
+        href: threadPath(row.id),
+        createdAt: completedAt.toISOString(),
+        readAt: null,
+      });
+    },
+    async sellerGone(conversationId) {
+      const row = sampleStore().conversations.get(conversationId);
+      if (!row) throw new Error(`No conversation ${conversationId}`);
+      row.sellerGone = true;
+    },
+    async buyerGone(conversationId) {
+      const row = sampleStore().conversations.get(conversationId);
+      if (!row) throw new Error(`No conversation ${conversationId}`);
+      row.buyerId = null;
+    },
+    async hideRequest(id, reason) {
+      const row = sampleStore().requests.get(id);
+      if (!row) throw new Error(`No request ${id}`);
+      row.hiddenAt = new Date().toISOString();
+      row.hiddenReason = reason;
     },
     async onceRow(name, form, { taken = false, expiresInMinutes = 60 } = {}) {
       await this.signedIn(name);

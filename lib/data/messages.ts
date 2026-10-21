@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { onSupabase } from "@/lib/backend";
 import { offerAbout, offerNoteText, UNNAMED_ASKER } from "@/lib/looking-for/words";
 import { messageNoteText, saleNoteText } from "@/lib/messaging/notification-text";
 import { threadPath, type MessageTarget } from "@/lib/messaging/paths";
@@ -30,6 +31,12 @@ import { sampleStore } from "./store";
 // Conversations and messages (messaging spec section 4), shaped like the Supabase calls that will replace them. A
 // conversation belongs to a shop: whoever owns the shop now answers (plan decision 1). Reads settle the 7-day
 // auto-confirm (spec 2.5). Times come from the caller; only Server Actions call the functions that make ids.
+//
+// On Supabase (C2/C3 plan Tasks 14 to 16) each exported function's twin is lib/data/supabase/messages.ts, picked on
+// its first line through import(): the database's conversations, messages and their functions, through the signed-in
+// account's own client.
+
+const supabase = () => import("./supabase/messages");
 
 type Side = "buyer" | "seller";
 
@@ -165,6 +172,7 @@ function findRow(buyerId: string, target: MessageTarget): ConversationRow | null
 
 /** The buyer's conversation about this listing, or with this shop's questions, if there is one (spec 2.2). */
 export async function findConversation(buyerId: string, target: MessageTarget): Promise<string | null> {
+  if (onSupabase()) return (await supabase()).findConversation(buyerId, target);
   return findRow(buyerId, target)?.id ?? null;
 }
 
@@ -174,6 +182,7 @@ export async function findConversation(buyerId: string, target: MessageTarget): 
  * conversation the buyer has already makes no row, so it isn't counted. A deleted buyer's rows have no buyer.
  */
 export async function countConversationsStartedSince(buyerId: string, since: Date): Promise<number> {
+  if (onSupabase()) return (await supabase()).countConversationsStartedSince(buyerId, since);
   return [...sampleStore().conversations.values()].filter(
     (row) => row.buyerId === buyerId && !row.requestId && Date.parse(row.createdAt) > since.getTime(),
   ).length;
@@ -184,6 +193,7 @@ export async function countConversationsStartedSince(buyerId: string, since: Dat
  * seller in its shop's (`shopSlug`, null for an account with no shop). Offers' first messages count for the shop.
  */
 export async function countMessagesSentSince(accountId: string, shopSlug: string | null, since: Date): Promise<number> {
+  if (onSupabase()) return (await supabase()).countMessagesSentSince(accountId, shopSlug, since);
   const { conversations, messages } = sampleStore();
   let count = 0;
   for (const message of messages.values()) {
@@ -215,6 +225,7 @@ export type NewConversation = {
  * questions), the message joins it instead (plan decision 5). Server Actions only: it makes ids.
  */
 export async function startConversation(input: NewConversation): Promise<{ conversationId: string; created: boolean }> {
+  if (onSupabase()) return (await supabase()).startConversation(input);
   const target: MessageTarget = input.listing
     ? { kind: "listing", listingId: input.listing.id }
     : { kind: "shop", sellerSlug: input.sellerSlug };
@@ -263,6 +274,7 @@ export type NewOffer = {
  * shop has offered already, nothing changes and that thread's id comes back. Server Actions only: it makes ids.
  */
 export async function startOffer(input: NewOffer): Promise<string> {
+  if (onSupabase()) return (await supabase()).startOffer(input);
   const existing = offerRow(input.request.id, input.sellerSlug);
   if (existing) return existing.id;
   const at = input.now.toISOString();
@@ -315,6 +327,7 @@ export async function sendMessage({
   body: string;
   now: Date;
 }): Promise<SendResult> {
+  if (onSupabase()) return (await supabase()).sendMessage({ conversationId, accountId, body, now });
   const row = sampleStore().conversations.get(conversationId);
   const side = row ? sideOf(row, accountId) : null;
   if (!row || !side) return "not-found";
@@ -349,6 +362,7 @@ async function saleRow({ conversationId, accountId, now }: SaleChange, side: Sid
  * buyer has left: nobody could dispute it, so it wouldn't count (messaging plan amendment 3).
  */
 export async function markCompleted(change: SaleChange): Promise<SaleResult> {
+  if (onSupabase()) return (await supabase()).markCompleted(change);
   const row = await saleRow(change, "seller", "replied");
   if (!row || !row.buyerId) return "not-allowed";
   row.status = "done";
@@ -372,6 +386,7 @@ export async function markCompleted(change: SaleChange): Promise<SaleResult> {
  * has left: nobody stands behind the claim, so it wouldn't count (messaging plan amendment 6).
  */
 export async function confirmSale(change: SaleChange): Promise<SaleResult> {
+  if (onSupabase()) return (await supabase()).confirmSale(change);
   const row = await saleRow(change, "buyer", "done");
   if (!row || row.sellerGone) return "not-allowed";
   row.status = "confirmed";
@@ -386,6 +401,7 @@ export async function confirmSale(change: SaleChange): Promise<SaleResult> {
  * when the seller has left, as for Confirm the sale.
  */
 export async function rejectSale(change: SaleChange): Promise<SaleResult> {
+  if (onSupabase()) return (await supabase()).rejectSale(change);
   const row = await saleRow(change, "buyer", "done");
   if (!row || row.sellerGone) return "not-allowed";
   row.status = "replied";
@@ -401,6 +417,7 @@ const unique = (values: readonly string[]) => [...new Set(values)];
  * side's name, what it's about, the last message's first line, the status and whether something is unread.
  */
 export async function getInbox(accountId: string, tab: InboxTab, now: Date): Promise<ConversationSummary[]> {
+  if (onSupabase()) return (await supabase()).getInbox(accountId, tab, now);
   const side: Side = tab === "buying" ? "buyer" : "seller";
   const rows = [...sampleStore().conversations.values()]
     .filter((row) => sideOf(row, accountId) === side)
@@ -440,6 +457,7 @@ export async function getInbox(accountId: string, tab: InboxTab, now: Date): Pro
 
 /** A thread (spec 3.3), or null when it isn't the account's or doesn't exist: the page then answers 404. */
 export async function getThread(id: string, accountId: string, now: Date): Promise<Thread | null> {
+  if (onSupabase()) return (await supabase()).getThread(id, accountId, now);
   const row = sampleStore().conversations.get(id);
   const side = row ? sideOf(row, accountId) : null;
   if (!row || !side) return null;
@@ -484,6 +502,7 @@ export async function getThread(id: string, accountId: string, now: Date): Promi
 
 /** Opening a thread marks the other side's messages and its notifications read (spec 3.3). */
 export async function markThreadRead(id: string, accountId: string, now: Date): Promise<void> {
+  if (onSupabase()) return (await supabase()).markThreadRead(id, accountId, now);
   const row = sampleStore().conversations.get(id);
   const side = row ? sideOf(row, accountId) : null;
   if (!row || !side) return;
@@ -497,6 +516,7 @@ export async function markThreadRead(id: string, accountId: string, now: Date): 
 
 /** What needs the account's attention (spec section 4): the header, the account page and the strip use it. */
 export async function unreadCounts(accountId: string, now: Date): Promise<UnreadCounts> {
+  if (onSupabase()) return (await supabase()).unreadCounts(accountId, now);
   let conversations = 0;
   let messages = 0;
   let salesToConfirm = 0;
@@ -525,6 +545,7 @@ export async function unreadCounts(accountId: string, now: Date): Promise<Unread
  * itself. A sale that is already Confirmed stays.
  */
 export async function forgetAccountInMessaging(accountId: string, shopSlug: string | null): Promise<void> {
+  if (onSupabase()) return (await supabase()).forgetAccountInMessaging(accountId, shopSlug);
   const { conversations, messages } = sampleStore();
   const touched = new Set<string>();
   for (const row of conversations.values()) {
@@ -574,6 +595,7 @@ export type ConversationExport = {
  * so export the notifications after this.
  */
 export async function exportConversations(accountId: string, now: Date): Promise<ConversationExport[]> {
+  if (onSupabase()) return (await supabase()).exportConversations(accountId, now);
   const rows = [...sampleStore().conversations.values()]
     .filter((row) => sideOf(row, accountId) !== null)
     .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));

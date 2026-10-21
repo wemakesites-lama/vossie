@@ -4,6 +4,7 @@ import type * as Sample from "../accounts";
 import { assembleExport } from "../accounts";
 import { currentClaims } from "./auth-session";
 import { forServer, forViewer } from "./clients";
+import { unreadCounts } from "./messages";
 import { iso } from "./rows";
 
 // Accounts on Supabase (phase B, Task 4; decisions 7 to 9; amendments 7 and 10). An account is a Supabase Auth user
@@ -133,6 +134,16 @@ export const getLatestConsent: typeof Sample.getLatestConsent = async (accountId
     .maybeSingle();
   if (error) failed("consents", error);
   return data ? { version: data.version, agreedAt: iso(data.agreed_at) } : null;
+};
+
+/**
+ * The context strip's numbers (spec 2.9 and 3.4; C2/C3 plan amendment 11): the messaging counts' twin, my_unread_counts,
+ * which writes nothing (a sale past its 7 days counts as settled already). Only the signed-in account's, through
+ * forViewerAs; a session always names an account with a profile here, since getViewer() found it.
+ */
+export const getAccountActivity: typeof Sample.getAccountActivity = async (accountId, now) => {
+  const counts = await unreadCounts(accountId, now);
+  return { newMessages: counts.messages, salesToConfirm: counts.salesToConfirm, savedItemsBack: 0 };
 };
 
 /** Sample mode is off on Supabase, so no sample account comes back. */

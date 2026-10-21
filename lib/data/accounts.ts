@@ -161,6 +161,7 @@ export async function getLatestConsent(accountId: string): Promise<Consent | nul
  * none "come back" through the account. `now` settles the 7-day auto-confirm (messaging spec 2.5).
  */
 export async function getAccountActivity(accountId: string, now: Date): Promise<ViewerActivity | null> {
+  if (onSupabase()) return (await supabase()).getAccountActivity(accountId, now);
   if (!sampleStore().accounts.has(accountId)) return null;
   const counts = await unreadCounts(accountId, now);
   return { newMessages: counts.messages, salesToConfirm: counts.salesToConfirm, savedItemsBack: 0 };
