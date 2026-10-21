@@ -884,16 +884,25 @@ Review notes that were deliberately not acted on:
 - **Docs still uncommitted, waiting for Lama:** the other sessions' lines in this file and the decisions log. This section and decision row 81 were written from snippet files for the same reason.
 
 ## Next
-- Phase A's Task 0 is done: the staging project "Vossie Market" (Ireland, empty) and a token scoped to it, which expires on 2026-10-22. Phase A starts in a worktree once Lama and the selling session say go.
-- Lama reviews the screenshots in `docs/progress/community-actions/` (22, at 390 and 1440px), and the staff ones in `docs/progress/staff/`, the selling ones in `docs/progress/selling/` and the messaging ones in `docs/progress/messaging/` if not yet seen. To retake the community actions ones, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "community actions review screenshots"`; the staff ones use `-g "staff tools review screenshots"`, the selling ones `-g "selling review screenshots"` and the messaging ones `-g "messaging review screenshots"`.
-- Stage M is built (follow-ups: no admin removes the mentor role from whoever mentors their own shop; Featured brings back the sellers featured longest ago first; one reminder two days before a request closes itself), so every planned stage (A to M) is done in sample mode. What's left waits on Lama and Eduvos (below), on the Supabase phases B and C (their own session and worktree), on the header session's fixes for the four phone e2e tests, and on Lama's review of the positioning and editorial spec.
-- Lama reviews the positioning and editorial spec. Its phase 1 (the wording) can be built at any time, and phase 2 (stories), which waited for stage G's post editor, can now be planned: the editor is built (`components/staff/PostEditor.tsx`, `lib/staff/post-rules.ts`).
+- **Every planned stage (A to M) is built in sample mode** and merged into `main`. The four phone e2e failures that predated stage L are fixed (`d13321b`). The full device suite last ran before stage M: rerun it once before go-live.
+- **The Supabase backend continues on `backend/phases-b-c`** (worktree `../Vossie-backend`). Done there: step 2b, C0 (the backend switch), C1 (the public reads), phase B (sign-in on Supabase), and C2/C3 Tasks 0 to 4. Next: C2/C3 Tasks 5 to 17 (selling, photos and messaging), then C4/C5 (24 tasks: community, alerts and staff), then step 5 (the full e2e run on local Supabase). Merging the branch into `main` needs Lama's go-ahead.
+- **Going live** (submission: vossie-pi.vercel.app on the "Vossie Market" project):
+  - Lama renews the Supabase CLI token (the current one expires on 2026-10-22);
+  - a dry run of the 35 migrations, then the push;
+  - sign-in codes through Resend from wemakesites.co.za;
+  - the environment settings (`VOSSIE_AUTH_HMAC_KEY`, `NEXT_PUBLIC_SITE_URL`, a stable Server Actions key), the nightly jobs, and unsetting `VOSSIE_NOINDEX`.
+
+  The rest is in `docs/reference/GO-LIVE.md`.
+- **Lama's open points:** those from stages L and M (above).
+- **Lama reviews the positioning and editorial spec.** Its phase 1 (the wording) can be built at any time. Phase 2 (stories) can be planned, since the post editor is built (`components/staff/PostEditor.tsx`, `lib/staff/post-rules.ts`).
+- **Screenshots:** Lama reviews the ones in `docs/progress/` if not yet seen. To retake a set, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "<name> review screenshots"` (for example "community actions", "staff tools", "selling" or "messaging").
+- **Stakeholder report** for the team: `docs/stakeholder/Vossie-stakeholder-report.pdf` (2026-10-21). It's built from an HTML source in the session scratchpad: regenerate it when the picture changes.
 
 ## Waiting on
-- Eduvos font files and licence confirmation.
-- The official crest SVG.
-- Photos. The homepage is built, so each one is now a file drop plus one line in a fixture.
-- The Hub's real posts and office hours, and the real mentor and admin accounts. The 18 posts are samples, and managing staff accounts in the app isn't built.
-- Eduvos's legal review of the privacy policy, terms of use and seller guidelines; the Information Officer's name; a contact address for privacy requests and support; whether POPIA's right of access puts mentors' notes in a seller's data download (today the Information Officer is asked for them); how long the staff log, RSVPs and slot requests are kept; and how long closed requests and follows are kept.
-- A real phone to try the offline worker and its kill switch on before launch (the kill switch reaches a phone through the browser's own update check, which can take up to about a day).
-- Eduvos marketing's sign-off on the brand line, "Your campus, open for business." (decision 71).
+Vossie is an entry in an Eduvos challenge, so nothing here waits on Eduvos. What's left is Lama's to supply or decide:
+- **Real photos and launch content.** Each photo is a file drop plus one line in a fixture. Launch also needs real Hub posts and office hours, the real mentor and admin accounts (given in the app's Staff accounts), and enough real shops before day one.
+- **Contact and retention:**
+  - a contact address for privacy requests and support;
+  - how long messages, reports, notifications, the staff log, RSVPs, slot requests, closed requests and follows are kept;
+  - whether mentors' notes go in a seller's data download.
+- **A real phone** to try the offline worker and its kill switch on before launch. The kill switch reaches a phone through the browser's own update check, which can take up to about a day.
