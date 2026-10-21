@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { forPublic, forServer, forViewer } from "@/lib/data/supabase/clients";
+import { forPublic, forServer, forViewer, viewerId } from "@/lib/data/supabase/clients";
+import { forViewerAs } from "@/lib/data/supabase/viewer";
 import { getCampuses } from "@/lib/data";
 import { normalise, parity } from "@/tests/db/parity";
 import { supabaseWorld, type SupabaseWorld } from "@/tests/db/supabase-world";
@@ -57,6 +58,26 @@ describe("the twins' clients on the local stack (2b plan decisions 19 to 21)", (
 
   it("forViewer() has no viewer outside asViewer", async () => {
     await expect(forViewer()).rejects.toThrow("No viewer");
+  });
+
+  it("forViewerAs(id) is the viewer's client inside asViewer (C2/C3 plan decision 2)", async () => {
+    const asker = await requestBy("asker");
+    const ids = await world.asViewer("asker", async (accountId) => {
+      const { data, error } = await (await forViewerAs(accountId)).from("my_requests").select("id");
+      if (error) throw new Error(error.message);
+      return data.map(({ id }) => id);
+    });
+    expect(ids).toEqual([asker]);
+  });
+
+  it("forViewerAs throws for an account that isn't the signed-in one", async () => {
+    const shopper = await world.signedIn("shopper");
+    await expect(world.asViewer("asker", () => forViewerAs(shopper))).rejects.toThrow("isn't the signed-in one");
+  });
+
+  it("viewerId() has no viewer outside asViewer, and is the account's id inside", async () => {
+    await expect(viewerId()).rejects.toThrow("No viewer");
+    expect(await world.asViewer("seller", () => viewerId())).toBe(await world.signedIn("seller"));
   });
 
   it("forPublic() can't read profiles", async () => {

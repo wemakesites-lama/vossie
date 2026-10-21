@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { forViewer } from "./clients";
+import { forViewer, viewerId } from "./clients";
 
 // forViewer() (phase B, Task 4; amendments 3 and 4): the signed-in person's client, from their verified access token,
 // with nothing kept or refreshed, so a page read never refreshes the session (only the proxy does).
@@ -31,5 +31,17 @@ describe("forViewer (phase B)", () => {
     state.session = { userId: "u", sessionId: "s", email: "e@vossie.net", accessToken: "eyJ.access.token" };
     expect(await forViewer()).toEqual({ token: "eyJ.access.token" });
     expect(state.tokenClient).toHaveBeenCalledWith("eyJ.access.token");
+  });
+});
+
+describe("viewerId (C2/C3 plan decision 2)", () => {
+  it("rejects when nobody is signed in", async () => {
+    await expect(viewerId()).rejects.toThrow("signed-in");
+  });
+
+  it("is the verified session's user", async () => {
+    state.session = { userId: "u-1", sessionId: "s", email: "e@vossie.net", accessToken: "eyJ.access.token" };
+    expect(await viewerId()).toBe("u-1");
+    expect(state.tokenClient).not.toHaveBeenCalled();
   });
 });

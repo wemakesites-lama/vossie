@@ -460,8 +460,9 @@ select lives_ok(
   $$insert into public.photos (id, owner_id, use, type, path) values ('30000000-0000-4000-8000-0000000000da', '00000000-0000-4000-8000-0000000000d4', null, 'image/webp', '00000000-0000-4000-8000-0000000000d4/30000000-0000-4000-8000-0000000000da')$$,
   'a student''s waiting photo is as before'
 );
-select pg_temp.sign_in('00000000-0000-4000-8000-0000000000d5');
-select is((select count(*) from public.photos where owner_id is null), 0::bigint, 'nobody reads Hub photo rows through the API');
+-- C2/C3 plan decision 14 (20261022120100_c2_photos.sql): Hub staff read the Hub's photo rows; a student still doesn't.
+select pg_temp.sign_in('00000000-0000-4000-8000-0000000000d4');
+select is((select count(*) from public.photos where owner_id is null), 0::bigint, 'a student reads no Hub photo rows through the API');
 select pg_temp.sign_out();
 delete from public.profiles where id = '00000000-0000-4000-8000-0000000000d5';
 select is(

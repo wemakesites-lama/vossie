@@ -10,8 +10,12 @@
 
 import type { CampusChoice } from "@/lib/types";
 
-/** The test accounts every world has. On Supabase, `pnpm test:db`'s global setup makes them (contract-<name>@vossie.test). */
-export const WORLD_ACCOUNTS = ["asker", "shopper", "staff"] as const;
+/**
+ * The test accounts every world has. On Supabase, `pnpm test:db`'s global setup makes them (contract-<name>@vossie.test),
+ * one minted session each per run. "seller" (C2/C3 plan Task 4) is a student on Pretoria with no shop: the selling and
+ * messaging scenarios give it one, so an admin never has to be the seller.
+ */
+export const WORLD_ACCOUNTS = ["asker", "shopper", "staff", "seller"] as const;
 
 export type WorldAccountName = (typeof WORLD_ACCOUNTS)[number];
 
@@ -23,7 +27,7 @@ export type WorldNotification = { kind: string; subjectId: string; text: string;
 
 export interface World {
   readonly name: "sample" | "supabase";
-  /** The account's id, signed in (a profile on Pretoria; "staff" holds the Admin role). */
+  /** The account's id, signed in (a profile on Pretoria; "staff" holds the Admin role; "seller" has no shop yet). */
   signedIn(name: WorldAccountName): Promise<string>;
   /**
    * Runs `read` with that account as the viewer, and gives it the account's id. On Supabase, the twins' forViewer()

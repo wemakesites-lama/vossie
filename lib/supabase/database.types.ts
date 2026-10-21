@@ -455,6 +455,12 @@ isOneToOne: false
       foreignKeyName: "messages_conversation_id_fkey"
       columns: ["conversation_id"]
 isOneToOne: false
+      referencedRelation: "my_conversation_tails"
+      referencedColumns: ["conversation_id"]
+    },{
+      foreignKeyName: "messages_conversation_id_fkey"
+      columns: ["conversation_id"]
+isOneToOne: false
       referencedRelation: "my_conversations"
       referencedColumns: ["id"]
     }
@@ -823,6 +829,13 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"my_conversation_tails": {
+                  Row: {
+                    "conversation_id": string | null,"last_body": string | null,"last_sent_at": string | null,"last_side": string | null,"unread": number | null
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"my_conversations": {
                   Row: {
                     "buyer_gone": boolean | null,"buyer_name": string | null,"completed_at": string | null,"confirmed_at": string | null,"confirmed_by": string | null,"created_at": string | null,"first_reply_at": string | null,"id": string | null,"is_offer": boolean | null,"last_message_at": string | null,"listing_id": string | null,"listing_title": string | null,"request_id": string | null,"request_state": string | null,"request_title": string | null,"seller_gone": boolean | null,"shop_id": string | null,"status": string | null,"viewer_side": string | null
@@ -1064,6 +1077,26 @@ isOneToOne: false
               "due": number,"enquiries": number,"replied_in_time": number,"sales_confirmed": number
             }[]
                            },
+"my_conversations_started_since":
+{ Args: { "p_since": string }; Returns: number
+                           },
+"my_messages_sent_since":
+{ Args: { "p_since": string }; Returns: number
+                           },
+"my_previous_shop_slugs":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"my_unread_counts":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"orphan_photo_paths":
+{ Args: { "p_limit"?: number }; Returns: (string)[]
+                           },
+"photo_file":
+{ Args: { "p_photo": string }; Returns: {
+              "hub_only": boolean,"owner_only": string,"path": string,"type": string
+            }[]
+                           },
 "pin_shop":
 { Args: { "p_campus": string,"p_day": string,"p_shop": string }; Returns: string
                            },
@@ -1154,6 +1187,12 @@ isOneToOne: false
 "settle_sales":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
+"shop_name_taken":
+{ Args: { "p_campus_slug": string,"p_except_slug"?: string,"p_name": string }; Returns: boolean
+                           },
+"shop_slug_taken":
+{ Args: { "p_slug": string }; Returns: boolean
+                           },
 "show_listing":
 { Args: { "p_listing": string }; Returns: string
                            },
@@ -1171,6 +1210,12 @@ isOneToOne: false
                            },
 "start_offer":
 { Args: { "p_body": string,"p_listing_id": string,"p_request_id": string }; Returns: Json
+                           },
+"sweep_waiting_photos":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"take_form_state":
+{ Args: { "p_key": string }; Returns: string
                            },
 "unfollow_shop":
 { Args: { "p_shop": string }; Returns: string

@@ -18,6 +18,8 @@ import { tokenClient } from "@/lib/supabase/viewer";
  *   (lib/supabase/viewer.ts's tokenClient), so a read in a Server Component can never refresh the session: only
  *   proxy.ts does (amendment 3). It rejects when nobody is signed in. Request-time only, never inside "use cache". The
  *   database tests replace it with vi.mock (tests/db/viewer.ts).
+ * - viewerId(): that session's account id (C2/C3 plan decision 2). A twin given an account id gets its client through
+ *   forViewerAs() (viewer.ts), which checks the id against it.
  */
 
 /** A Supabase client typed by the database's schema. */
@@ -37,4 +39,17 @@ export async function forViewer(): Promise<DbClient> {
   const session = await viewerSession();
   if (!session) throw new Error("forViewer() needs a signed-in session");
   return tokenClient(session.accessToken);
+}
+
+/**
+ * The signed-in account's id, from the same verified session forViewer() uses, without a round trip (C2/C3 plan
+ * decision 2). It rejects when nobody is signed in. Twins check an account id they're given against it through
+ * forViewerAs() (viewer.ts), never trusting the id over the session (decision 20). The database tests replace it with
+ * forViewer() (tests/db/viewer.ts).
+ */
+export async function viewerId(): Promise<string> {
+  const { viewerSession } = await import("./auth-session");
+  const session = await viewerSession();
+  if (!session) throw new Error("viewerId() needs a signed-in session");
+  return session.userId;
 }

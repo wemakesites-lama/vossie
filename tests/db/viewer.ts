@@ -35,7 +35,18 @@ export function currentViewerClient(): DbClient {
   return sessionClient(inject("dbSessions")[current].accessToken);
 }
 
-/** lib/data/supabase/clients.ts with forViewer() answering the chosen account's session. */
-export function withViewerSeam<Clients extends object>(clients: Clients): Clients & { forViewer: () => Promise<DbClient> } {
-  return { ...clients, forViewer: async () => currentViewerClient() };
+/** The chosen account's id (viewerId(), C2/C3 plan decision 2). */
+export function currentViewerId(): string {
+  if (current === null) throw new Error("No viewer: call setViewer(name) first");
+  return inject("dbSessions")[current].id;
+}
+
+/**
+ * lib/data/supabase/clients.ts with forViewer() answering the chosen account's session, and viewerId() its id. Mocking
+ * the module reaches forViewerAs() (lib/data/supabase/viewer.ts), which imports both from it.
+ */
+export function withViewerSeam<Clients extends object>(
+  clients: Clients,
+): Clients & { forViewer: () => Promise<DbClient>; viewerId: () => Promise<string> } {
+  return { ...clients, forViewer: async () => currentViewerClient(), viewerId: async () => currentViewerId() };
 }

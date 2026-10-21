@@ -1357,11 +1357,11 @@ The header comment drops "Supabase Storage replaces this route": the route stays
 
 | Task | Status | Commit |
 |---|---|---|
-| 0 Baseline | | |
-| 1 Selling SQL | | |
-| 2 Photos SQL | | |
-| 3 Messaging SQL | | |
-| 4 Types, seam, world | | |
+| 0 Baseline | done: `37b0e92`, pgTAP 2,337 (36 files), unit 2,933, db 60 (12 files) | |
+| 1 Selling SQL | done: `40_c2_selling` 50 tests; `take_form_state` (controller's answer), `save_listing` unchanged | |
+| 2 Photos SQL | done: `41_c2_photos` 38 tests; test 13's Hub-photo read case follows decision 14 | |
+| 3 Messaging SQL | done: `42_c3_messaging` 38 tests; pgTAP 2,463 (39 files) | |
+| 4 Types, seam, world | done: unit 2,948, db 64; C1's mappers extracted (amendment 8) | |
 | 5 Photos data | | |
 | 6 `/photos/[id]` | | |
 | 7 Sweep | | |
@@ -1377,6 +1377,12 @@ The header comment drops "Supabase Storage replaces this route": the route stays
 | 17 C3 check, docs | | |
 
 ## Changes made during the build
+
+- Task 0: baseline on `37b0e92` (phase B committed): pgTAP 2,337 in 36 files, unit 2,933, db 60 in 12 files; lint and typecheck clean. Recheck 2: `pickupPointById` is exported; the catalog's row mappers weren't (amendment 8), so Task 4 extracts them. Recheck 4: every latest definition is as listed. Recheck 5: phase B's `getFormState` twin returns `taken`; `takeFormState` throws on Supabase (C4's Task 2 points it at `take_form_state`). Recheck 7: `postgres` may select and delete on `storage.objects`; `settle-sales` is hourly; "Owners read their photos" is the photos table's only policy; `add_photos` and `add_hub_photo` are the only photo functions. Recheck 9: the e2e suite fetches only made-up photo ids (`system.spec.ts:121`) and a stored listing photo signed in (`selling-writes.spec.ts`), so Task 6 changes no e2e test.
+- Task 1, following the controller's answer to amendment 2: `save_listing` is unchanged (one signature, 14 arguments; pgTAP checks it), and no `take_listing_token`. `public.take_form_state(p_key text)` takes `staff-once:<uuid>` through `private.take_once_token` and `listing-once:<uuid>` through a new `private.take_form_once(p_form)`, which holds `take_once_token`'s rule; `take_once_token` is now a wrapper over it (test 17 passes unchanged). Any other key, no session id, another session's or account's row, or a run-out one is `none`. pgTAP covers each prefix, a taken token, an expired one, another session's, another account's, malformed keys and a sessionless token. Decision 7's "db test" comparing `RESERVED_SLUGS` with `private.reserved_shop_slugs()` is a source check in `pnpm test` (`lib/selling/reserved-slugs-sql.test.ts`, reading the function's latest definition in the migrations), since the private schema has no API read. Test 06 gains the four new `public` functions; the two new private helpers are revoked from every API role (checked in test 40, since test 06's private lists name only what roles may run).
+- Task 2: `photo_file`'s `hub_only` is `coalesce(…, false)`, so a waiting student photo answers false, not null. Supabase's new select policy lets Hub staff read the Hub's photo rows, which `13_widen.test.sql`'s "nobody reads Hub photo rows through the API" (signed in as an admin) contradicted: that case now signs in as a student and expects none (decision 14's intent; same count). The orphan tests check membership, not equality, since the shared local stack may hold real orphan files; the 1,000 cap is checked with 1,001 rows inside the rolled-back transaction.
+- Task 3: `my_unread_counts` works out the reader's side inline (`buyer_id`, or the shop from `private.shop_of`, while the seller hasn't gone) rather than calling `private.conversation_side` per row; the same rule. The lock check reads `pg_locks` for `private.lock_sender`'s two-key form (classid, objid 1, objsubid 2), and a last case proves the check sees the lock once `message_limit_error` takes it.
+- Task 4: `viewerId()` is wired at once (phase B has landed): `viewerSession()`'s `userId`, rejecting "viewerId() needs a signed-in session" when signed out. `forViewerAs` is in `lib/data/supabase/viewer.ts`, with a unit test (`viewer.test.ts`) besides the smoke db cases. `lib/data/refused.ts` exports `Refused` (with `code: RefusalCode`), `RefusalCode` (this plan's codes and C4/C5's: `own-request`, `once-expired`, `once-taken`, `open-limit`, `daily-limit`, `reopen-limit`, `day-past`, `day-far`, `date-past`, `cover-invalid`, `check-in-day-future`), `isRefused(error, ...codes)` and `refusalOf(promise)`; it imports nothing (a source check). Amendment 8: `lib/data/supabase/catalog.ts` now exports `SHOP_COLUMNS`, `LISTING_COLUMNS`, the row types `ShopRecord` and `ListingRecord`, `sellerRowFrom(shop, pickupPointIds, { ownerId?, previousSlugs? })` and `listingRowFrom(row, sellerSlug)` (the listing's photos come in the row), and `catalogSourceFrom` uses them; behaviour unchanged (the catalog contract and parity tests pass). The fourth account `seller` is in `WORLD_ACCOUNTS` (both worlds; profile on Pretoria, no roles, no shop); the smoke contract checks it through `getViewerAccount`. No world verbs yet: each task adds its own.
 
 ## Amendments on review (2026-10-21)
 

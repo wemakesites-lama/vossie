@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { getCampuses } from "@/lib/data";
+import { getViewerAccount } from "@/lib/data/accounts";
 import type { World } from "@/tests/contract/world";
 
 // The harness's smoke contract (2b plan Task 13): one read and the world's accounts, the same in both backends.
@@ -23,6 +24,15 @@ export function smokeContract(makeWorld: () => World): void {
     expect(asker).toEqual(expect.any(String));
     expect(await world.signedIn("asker")).toBe(asker);
     expect(await world.signedIn("shopper")).not.toBe(asker);
+  });
+
+  it("has a fourth account, seller, a student on Pretoria with no shop yet (C2/C3 plan Task 4)", async () => {
+    const seller = await world.signedIn("seller");
+    expect(seller).not.toBe(await world.signedIn("shopper"));
+    const account = await world.asViewer("seller", (accountId) =>
+      getViewerAccount({ userId: accountId, sessionId: "contract-session", email: "contract-seller@vossie.test" }),
+    );
+    expect(account).toMatchObject({ id: seller, firstName: "Seller", campusSlug: "pretoria", roles: [], seller: null });
   });
 
   it("runs a read with that account as the viewer", async () => {
