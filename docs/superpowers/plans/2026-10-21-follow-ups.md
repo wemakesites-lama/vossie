@@ -121,7 +121,18 @@ Lama can veto any of these at plan review. "Plan decision N" means this list; "s
 
 ## Amendments on review
 
-(None yet.)
+Reviewed 2026-10-21 (opus, read-only); all accepted by the controller. Where an amendment and a task differ, the amendment wins.
+
+1. **Task 4, Step 2: the heading check passes at HEAD for the wrong reason.** Playwright's `name` string matches substrings, so "Naledi's mentor role" already matches HEAD's heading "Remove Naledi's mentor role". Replace
+   `await expect(main(sipho).getByRole("heading", { level: 1, name: "Naledi's mentor role" })).toBeVisible();`
+   with
+   `await expect(main(sipho).getByRole("heading", { level: 1, name: "Naledi's mentor role", exact: true })).toBeVisible();`
+2. **Task 4, Step 3: a device run that tests nothing.** `tests/e2e/staff-accounts-checks.spec.ts` is in every device project's `testIgnore` (`STAFF_ACCOUNTS`), so `--project=phone-390 --project=desktop-1440` runs none of its tests. It already runs under `--project=staff-accounts-writes --no-deps`, whose `testMatch` covers writes, checks and screenshots. The second device command becomes:
+   `E2E_REUSE_SERVER=1 pnpm e2e tests/e2e/staff.spec.ts tests/e2e/info.spec.ts tests/e2e/home.spec.ts tests/e2e/community-actions.spec.ts --project=phone-390 --project=desktop-1440 --workers=2`
+   and after the `staff-accounts-writes` expectation add: "(this project also runs `staff-accounts-checks.spec.ts` and `staff-accounts-screenshots.spec.ts`)".
+3. **Self-review "Risk noted for the reviewer", and Task 3 Step 9's note: a second existing test now sends a reminder.** `lib/data/requests.test.ts`' "closes at the very start of the closing day in South Africa, not a second before" settles at `2026-10-12T21:59:59Z` (SAST the 12th: closing day the 13th, reminder from the 11th), so it now reminds as well as returning 0; it counts no notifications, so it still passes. The risk bullet's middle sentence becomes: "The plan's search found two existing tests where this happens, neither counting notifications: `lib/looking-for/actions.test.ts` (needed by the 12th, at `STAFF_NOW`) and `lib/data/requests.test.ts`'s 'closes at the very start of the closing day…' (its 21:59:59Z settle on the 12th falls in the window). No e2e test can: a needed-by date can't be in the past, so a request posted in e2e closes at today+4 at the earliest."
+4. **Plan decision 13: wording.** "which runs its tests in order in one worker (retries stay per test; a failure doesn't skip the rest)" becomes "which runs its tests one at a time in file order (after a failure the rest carry on in a fresh worker; retries stay per test, and a failure doesn't skip the rest)". In Task 4's e2e comment, "run this file's tests in order, in one worker" becomes "run this file's tests one at a time, in order".
+5. **Task 3, Step 3, "reminds again when an edit moves the closing day": clarity only.** The second `updateRequest` spreads `DATED`, which puts the title back to "Desk lamp for res" after the first edit changed it; that's why the regex expects that title. Add above that call: `// DATED's own title again, so the new reminder names "Desk lamp for res".`
 
 ## The JS ledger
 
