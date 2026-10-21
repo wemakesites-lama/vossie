@@ -9,7 +9,8 @@ import { keepTyped } from "@/lib/messaging/rules";
 import { done, field } from "@/lib/selling/action-helpers";
 import { sastDate } from "@/lib/time";
 import type { Account, MentoredShop } from "@/lib/types";
-import { requireStaff } from "./access";
+import { requireStaffAction } from "./access";
+import { sampleFollowUps } from "./follow-ups";
 import { checkInForm, clearStaffForm, leaveNotice, noteForm } from "./form-state";
 import { leaveOnceToken, type OnceSent, sentOnceToken, takeOnceToken } from "./once";
 import { MENTOR_PATH, mentorShopPath } from "./paths";
@@ -26,7 +27,7 @@ import { checkCheckInDay, checkMentorNote } from "./rules";
 /** The signed-in staff member and the shop, when they may write about it; the 404 otherwise. */
 async function mentoredFrom(formData: FormData, now: Date): Promise<{ account: Account; shop: MentoredShop }> {
   const slug = field(formData, "shop");
-  const account = await requireStaff("mentor", isId(slug) ? mentorShopPath(slug) : MENTOR_PATH);
+  const account = await requireStaffAction("mentor", isId(slug) ? mentorShopPath(slug) : MENTOR_PATH);
   const shop = isId(slug) ? await getMentoredShop(slug, account, now) : null;
   if (!shop) notFound();
   return { account, shop };
@@ -83,12 +84,15 @@ export async function addMentorNote(formData: FormData): Promise<void> {
     author: { id: account.id, firstName: account.firstName },
     now,
   });
-  await recordAudit({
-    staff: { id: account.id, firstName: account.firstName },
-    action: "note-added",
-    target: { kind: "shop", id: shop.slug, name: shop.name },
-    subjectId: shop.ownerId,
-    now,
+  // On Supabase add_mentor_note wrote the entry with the note (decision 3).
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: { id: account.id, firstName: account.firstName },
+      action: "note-added",
+      target: { kind: "shop", id: shop.slug, name: shop.name },
+      subjectId: shop.ownerId,
+      now,
+    });
   });
   await clearStaffForm(noteForm(shop.slug));
   await leaveOnceToken(once, { path: notes, notice: "note-added" }, now);
@@ -123,13 +127,16 @@ export async function addCheckIn(formData: FormData): Promise<void> {
     author: { id: account.id, firstName: account.firstName },
     now,
   });
-  await recordAudit({
-    staff: { id: account.id, firstName: account.firstName },
-    action: "check-in-added",
-    target: { kind: "shop", id: shop.slug, name: shop.name },
-    detail: day.value,
-    subjectId: shop.ownerId,
-    now,
+  // On Supabase add_check_in wrote the entry with the check-in (decision 3).
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: { id: account.id, firstName: account.firstName },
+      action: "check-in-added",
+      target: { kind: "shop", id: shop.slug, name: shop.name },
+      detail: day.value,
+      subjectId: shop.ownerId,
+      now,
+    });
   });
   await clearStaffForm(checkInForm(shop.slug));
   await leaveOnceToken(once, { path: notes, notice: "check-in-added" }, now);

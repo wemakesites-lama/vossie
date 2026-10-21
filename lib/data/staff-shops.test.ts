@@ -10,6 +10,10 @@ import {
   isOwnRequest,
   isOwnShop,
   listMentors,
+  ownKindOf,
+  ownsListing,
+  ownsRequest,
+  ownsShop,
   listShopsForReview,
   resendForApproval,
   setShopMentor,
@@ -299,6 +303,44 @@ describe("whose it is (stage L spec decision 2)", () => {
     expect(isOwnRequest("acc-admin", id)).toBe(false);
     expect(isOwnRequest("acc-seller", "r-001")).toBe(false);
     expect(isOwnRequest("acc-seller", "r-nope")).toBe(false);
+  });
+});
+
+describe("whose it is, asynchronously, on either backend (C4/C5 plan Task 12, decision 5)", () => {
+  it("agrees with the synchronous sample internals on the fixtures", async () => {
+    const { id } = await createRequest({
+      askerId: "acc-seller",
+      fields: {
+        title: "Desk lamp for res",
+        categorySlug: "res-living",
+        campusSlug: "midrand",
+        details: "A lamp that clips onto a desk, by the weekend.",
+        budgetZar: 150,
+        swapWelcome: false,
+        neededBy: null,
+      },
+      now: NOW,
+    });
+    for (const account of ["acc-seller", "acc-admin", "acc-pending", "acc-student"]) {
+      for (const slug of ["tech-corner", "crochet-corner", "hair-studio", "no-such-shop"]) {
+        expect(await ownsShop(account, slug), `${account} ${slug}`).toBe(isOwnShop(account, slug));
+      }
+      for (const listing of ["l-001", "l-nope"]) {
+        expect(await ownsListing(account, listing), `${account} ${listing}`).toBe(isOwnListing(account, listing));
+      }
+      for (const request of [id, "r-001", "r-nope"]) {
+        expect(await ownsRequest(account, request), `${account} ${request}`).toBe(isOwnRequest(account, request));
+      }
+    }
+    expect(await ownsShop("acc-seller", "tech-corner")).toBe(true);
+    expect(await ownsRequest("acc-seller", id)).toBe(true);
+  });
+
+  it("names the kind of the account's own a report's target is, for the reports queue (amendment 9)", () => {
+    expect(ownKindOf("acc-seller", { kind: "seller", id: "tech-corner" })).toBe("shop");
+    expect(ownKindOf("acc-seller", { kind: "listing", id: "l-001" })).toBe("listing");
+    expect(ownKindOf("acc-admin", { kind: "seller", id: "tech-corner" })).toBeNull();
+    expect(ownKindOf("acc-seller", { kind: "request", id: "r-001" })).toBeNull();
   });
 });
 

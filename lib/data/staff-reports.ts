@@ -1,14 +1,17 @@
-import { ownsTarget, type OwnKind } from "@/lib/staff/own";
-import type { ListingState, ReportOutcome, ReportReason, ReportTarget } from "@/lib/types";
+import { onSupabase } from "@/lib/backend";
+import type { OwnKind } from "@/lib/staff/own";
+import type { ListingState, ReportOutcome, ReportReason, ReportTarget, SellerStatus } from "@/lib/types";
 import type { ReportRow } from "./rows";
-import { isOwnListing, isOwnRequest } from "./staff-shops";
+import { isOwnListing, isOwnRequest, ownKindOf } from "./staff-shops";
 import { sampleStore } from "./store";
 
 // The Hub's reports queue (staff tools spec 2.3, plan decision 5), over E's reports. A report names its reporter by
 // first name only. Dismiss closes one report; hiding the listing closes every open report on that listing, and pausing
 // the shop closes every open report on the shop and on its listings (amendment 14.1). A report about something that
 // has gone can only be dismissed; a request can be hidden too (community actions plan decision 20).
-// Closing writes; the action notifies (Task 10). Times come from the caller.
+// Closing writes; the action notifies (Task 10). Times come from the caller. On Supabase each is
+// lib/data/supabase/staff-reports.ts's (C4/C5 plan Task 15): the view is built by the same rules over the database's
+// rows (reportViewOver), Dismiss is dismiss_report, and the hide and pause functions close the reports themselves.
 
 /** A report as the queue and its page show it (spec 2.3). */
 export type ReportView = {
@@ -46,35 +49,71 @@ export type ReportView = {
   own: OwnKind | null;
 };
 
-const DELETED = "Deleted account";
+export const DELETED = "Deleted account";
 
-const firstName = (accountId: string | null | undefined) =>
-  (accountId ? sampleStore().accounts.get(accountId)?.firstName : undefined) ?? DELETED;
+/**
+ * What a report's view is built from, on either backend (C4/C5 plan decision 11): the listing, shop and request it
+ * names, the shop's owner's seller profile, first names, and whose it is for the viewing admin. The sample's come from
+ * the store; the Supabase twin's from listings, shops, requests, staff_seller_profiles, profiles and staff_reports.own.
+ */
+export type ReportLookups = {
+  listing(id: string): { sellerSlug: string; hiddenAt?: string | null } | undefined;
+  shop(slug: string): { slug: string; name: string } | undefined;
+  request(id: string): { hiddenAt: string | null } | undefined;
+  /** The shop's owner's seller profile; none for a sample shop no account owns. */
+  profileOf(slug: string): { status: SellerStatus; pausedBy?: "seller" | "staff" | null } | undefined;
+  firstName(accountId: string | null | undefined): string;
+  /** What of the viewer's own the report is about, now or (once it has gone) when it was reported. */
+  own(row: ReportRow, exists: boolean, viewerId: string): OwnKind | null;
+};
+
+const sampleLookups = (): ReportLookups => {
+  const store = sampleStore();
+  return {
+    listing: (id) => store.listings.get(id),
+    shop: (slug) => store.sellers.get(slug),
+    request: (id) => store.requests.get(id),
+    profileOf(slug) {
+      const ownerId = store.sellers.get(slug)?.ownerId;
+      return ownerId ? store.sellerProfiles.get(ownerId) : undefined;
+    },
+    firstName: (accountId) => (accountId ? store.accounts.get(accountId)?.firstName : undefined) ?? DELETED,
+    // Whose it is (stage L spec decision 2): read now, from the store; for something that has gone, from the owner the
+    // report recorded. A target that was deleted stays its reported owner's: they can't dismiss the reports about it
+    // either.
+    own: (row, exists, viewerId) =>
+      exists
+        ? ownKindOf(viewerId, { kind: row.targetKind, id: row.targetId })
+        : row.targetOwnerId === viewerId
+          ? row.targetKind === "seller"
+            ? "shop"
+            : row.targetKind
+          : null,
+  };
+};
 
 /** Whether the Hub can pause this shop: it has an owner, and it's open or paused by its seller (plan decision 3). */
-function pausable(slug: string): boolean {
-  const store = sampleStore();
-  const ownerId = store.sellers.get(slug)?.ownerId;
-  const profile = ownerId ? store.sellerProfiles.get(ownerId) : undefined;
+function pausable(lookups: ReportLookups, slug: string): boolean {
+  const profile = lookups.profileOf(slug);
   return Boolean(profile && (profile.status === "approved" || (profile.status === "paused" && profile.pausedBy !== "staff")));
 }
 
-function toView(row: ReportRow, viewerId: string | null): ReportView {
-  const store = sampleStore();
+/** A report as the queue and its page show it, over either backend's lookups. Pure. */
+export const reportViewOver = (lookups: ReportLookups) => (row: ReportRow, viewerId: string | null): ReportView => {
   const open = row.status === "open";
   // A report about a deleted shop never reaches a new one on the same link (amendment 13.1).
   const gone = row.targetGone === true;
-  const listing = row.targetKind === "listing" && !gone ? store.listings.get(row.targetId) : undefined;
+  const listing = row.targetKind === "listing" && !gone ? lookups.listing(row.targetId) : undefined;
   const shopSlug =
     row.targetKind === "listing" ? listing?.sellerSlug : row.targetKind === "seller" ? row.targetId : undefined;
-  const shopRow = shopSlug && !gone ? store.sellers.get(shopSlug) : undefined;
-  const requestRow = row.targetKind === "request" ? store.requests.get(row.targetId) : undefined;
+  const shopRow = shopSlug && !gone ? lookups.shop(shopSlug) : undefined;
+  const requestRow = row.targetKind === "request" ? lookups.request(row.targetId) : undefined;
   const exists =
     row.targetKind === "request" ? Boolean(requestRow) : row.targetKind === "listing" ? Boolean(listing) : Boolean(shopRow);
   let unseen: ReportView["unseen"] = null;
   if (exists && (listing?.hiddenAt || requestRow?.hiddenAt)) unseen = "hidden";
   else if (exists && shopRow) {
-    const profile = shopRow.ownerId ? store.sellerProfiles.get(shopRow.ownerId) : undefined;
+    const profile = lookups.profileOf(shopRow.slug);
     if (profile?.status === "paused" && profile.pausedBy === "staff") unseen = "paused";
   }
   // What Hide can do depends on the kind of target (amendment 7): a listing or a Looking For request that's there and
@@ -91,22 +130,11 @@ function toView(row: ReportRow, viewerId: string | null): ReportView {
       canHide = open && Boolean(requestRow) && !requestRow?.hiddenAt;
       break;
   }
-  // Whose it is (stage L spec decision 2): read now, from the store; for something that has gone, from the owner the report recorded.
-  // A target that was deleted stays its reported owner's: they can't dismiss the reports about it either.
-  const own: OwnKind | null =
-    viewerId === null
-      ? null
-      : exists
-        ? ownsTarget(viewerId, { kind: row.targetKind, id: row.targetId })
-        : row.targetOwnerId === viewerId
-          ? row.targetKind === "seller"
-            ? "shop"
-            : row.targetKind
-          : null;
+  const own: OwnKind | null = viewerId === null ? null : lookups.own(row, exists, viewerId);
   return {
     id: row.id,
     reporterId: row.reporterId,
-    reporterName: firstName(row.reporterId),
+    reporterName: lookups.firstName(row.reporterId),
     target: { kind: row.targetKind, id: row.targetId },
     targetTitle: row.targetTitle,
     reason: row.reason,
@@ -116,23 +144,26 @@ function toView(row: ReportRow, viewerId: string | null): ReportView {
     outcome: row.outcome ?? null,
     note: row.note ?? null,
     closedAt: row.closedAt ?? null,
-    closedByName: row.closedAt ? firstName(row.closedBy) : null,
+    closedByName: row.closedAt ? lookups.firstName(row.closedBy) : null,
     exists,
     unseen,
     shop: shopRow ? { slug: shopRow.slug, name: shopRow.name } : null,
     can: {
       hide: own === null && canHide,
-      pause: own === null && open && shopRow !== undefined && pausable(shopRow.slug),
+      pause: own === null && open && shopRow !== undefined && pausable(lookups, shopRow.slug),
     },
     own,
   };
-}
+};
+
+const toView = (row: ReportRow, viewerId: string | null) => reportViewOver(sampleLookups())(row, viewerId);
 
 /**
  * The queue (spec 2.3): open reports first, oldest first; then the 50 most recently closed. The queue has no controls,
  * so it names no owner (stage L plan decision 3).
  */
 export async function listReports(): Promise<ReportView[]> {
+  if (onSupabase()) return (await import("./supabase/staff-reports")).listReports();
   const rows = [...sampleStore().reports.values()];
   const open = rows.filter((row) => row.status === "open").sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const closed = rows
@@ -144,12 +175,14 @@ export async function listReports(): Promise<ReportView[]> {
 
 /** A report for its page. `viewerId` is the signed-in admin, so the view knows when it's about their own (stage L). */
 export async function getReport(id: string, viewerId: string | null = null): Promise<ReportView | null> {
+  if (onSupabase()) return (await import("./supabase/staff-reports")).getReport(id, viewerId);
   const row = sampleStore().reports.get(id);
   return row ? toView(row, viewerId) : null;
 }
 
 /** How many reports are open, for Overview (spec 2.3). */
 export async function openReportCount(): Promise<number> {
+  if (onSupabase()) return (await import("./supabase/staff-reports")).openReportCount();
   return [...sampleStore().reports.values()].filter((row) => row.status === "open").length;
 }
 
@@ -162,6 +195,7 @@ export type ClosedReport = { id: string; reporterId: string; title: string };
 
 /** Dismiss (spec 2.3): this report closes with its note. Null when it wasn't open. */
 export async function closeReport(id: string, note: string, staffId: string, now: Date): Promise<ClosedReport | null> {
+  if (onSupabase()) return (await import("./supabase/staff-reports")).closeReport(id, note, staffId, now);
   const row = sampleStore().reports.get(id);
   if (!row || row.status !== "open") return null;
   close(row, "dismissed", note, staffId, now);
@@ -181,6 +215,7 @@ export async function closeReportsOn(
   staffId: string,
   now: Date,
 ): Promise<ClosedReport[]> {
+  if (onSupabase()) return (await import("./supabase/staff-reports")).closeReportsOn(target, outcome, note, staffId, now);
   const closed: ClosedReport[] = [];
   for (const row of sampleStore().reports.values()) {
     // A report about something that has gone never reaches a new one on the same link (amendments 13.1 and 14.2).
@@ -203,6 +238,7 @@ export async function closeReportsAboutShop(
   staffId: string,
   now: Date,
 ): Promise<ClosedReport[]> {
+  if (onSupabase()) return (await import("./supabase/staff-reports")).closeReportsAboutShop(slug, note, staffId, now);
   const store = sampleStore();
   const closed: ClosedReport[] = [];
   for (const row of store.reports.values()) {
@@ -294,6 +330,7 @@ const newestHiddenFirst = (a: HiddenItem, b: HiddenItem) => b.hiddenAt.localeCom
 export async function listHidden(
   viewerId: string | null = null,
 ): Promise<{ listings: HiddenItem[]; requests: HiddenItem[] }> {
+  if (onSupabase()) return (await import("./supabase/staff-reports")).listHidden(viewerId);
   return {
     listings: hiddenListings(viewerId).sort(newestHiddenFirst),
     requests: hiddenRequests(viewerId).sort(newestHiddenFirst),
@@ -306,10 +343,12 @@ export async function getHidden(
   id: string,
   viewerId: string | null = null,
 ): Promise<HiddenItem | null> {
+  if (onSupabase()) return (await import("./supabase/staff-reports")).getHidden(kind, id, viewerId);
   return (kind === "listing" ? hiddenListings(viewerId) : hiddenRequests(viewerId)).find((item) => item.id === id) ?? null;
 }
 
 /** How many of each are hidden, for Overview's line (plan decision 17). */
 export async function countHidden(): Promise<{ listings: number; requests: number }> {
+  if (onSupabase()) return (await import("./supabase/staff-reports")).countHidden();
   return { listings: hiddenListings(null).length, requests: hiddenRequests(null).length };
 }

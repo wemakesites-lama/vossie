@@ -1382,12 +1382,12 @@ Then read which persona each test uses.
 | 9 C4 check | done, uncommitted | |
 | 10 C4 review | | |
 | 11 C4 fixes | | |
-| 12 Ownership, follow-up wrap | | |
-| 13 Audit | | |
-| 14 Staff shops | | |
-| 15 Staff reports | | |
-| 16 Admin actions, gates | | |
-| 17 Pins, points | | |
+| 12 Ownership, follow-up wrap | done, uncommitted | |
+| 13 Audit | done, uncommitted | |
+| 14 Staff shops | done, uncommitted | |
+| 15 Staff reports | done, uncommitted | |
+| 16 Admin actions, gates | done, uncommitted | |
+| 17 Pins, points | done, uncommitted | |
 | 18 Hub | | |
 | 19 Mentors | | |
 | 20 Staff accounts | | |
@@ -1409,6 +1409,15 @@ Then read which persona each test uses.
 - Task 8: the sample module exports `NAMES`, `queryOf`, `toItem` and `searchExport` (its own functions use them). `notifySavedSearches` on Supabase builds the listing through `catalogOver(catalogSourceFrom(…))` over one listing, its shop and its `storefronts` row read with the public client, so it is listed exactly when buyers see it. `lib/saved-searches/actions.ts` needed no change; an action contract (`lib/saved-searches/contract/actions.*`, not in the plan's list) proves Save this search's token on both backends through `take_form_state`.
 - Task 9: `lib/data/contract/c4-download.db.test.ts` runs the same story on both backends in one test and compares the three exports' key order and values (times aside) and that no id appears. Phase B's `app/route-handlers-supabase.test.ts` stubs the three new export twins, as C2/C3 did for theirs.
 - Task 9's checks: `supabase db reset`, then pgTAP 2,532 (41 files), `pnpm test` 3,145 (384 files), `pnpm test:db` 237 (33 files, twice: the stack is left clean); lint and typecheck clean. One sample `pnpm build`: no client chunk names Supabase or a key, or registers the worker; only the font warning that predates this. E2E on that build (port 3308, scratch config): `performance.spec.ts` at phone-390, 45 passed, every figure unchanged (homepage 150,661 B brotli, listing 151,817, browse 151,408, storefront 151,421, Saved 151,296, request and collection 151,137, listing forms 152,334); `community*` and `alerts*` device parts at 390 and 1440, 77 passed (3 skipped); `community-writes` and `alerts-writes` with `--no-deps` on a fresh server, 19 passed.
+
+- Task 12: as planned with amendment 9 (`ownKindOf`, sync, in `staff-shops.ts`; `staff-reports.ts` uses it). The async point reader is a new `findPickupPoint` in `pickup-points.ts` (index.ts's `pointById` isn't exported). `ownShopMentor`'s Supabase body is in `lib/data/supabase/staff-accounts.ts` (Task 20's file, only that function: `staff_seller_profiles`' mentor for the viewer's own row). The three source checks read the files with TypeScript's parser (`tests/helpers/action-sources.ts`): follow-ups in `lib/staff/follow-ups.test.ts` (calls inside `tellOwner` and `tellReporter`, themselves follow-ups, are checked where those are called), the sync imports in `own.test.ts`, the first gate in `access.test.ts` (followed through `mentoredFrom` and `setRetired`). Every write in `admin-actions.ts` is wrapped in `orNotFound` here (Task 16 turns it into `decide`). The seller review page also reads its points' names through `listPickupPoints()` (it used the sample's sync `pickupPointName`, empty on Supabase).
+- Task 13: the fixture is the real `verifySeller` (twice) and `addPoint` through the action harness, as planned; the log has no delete on Supabase, so the checks read the newest entries, and `auditStaff()` is exact on the sample store and contains staff on Supabase (other runs' admins may be in it). New world verb `tidyPickupPoints` (removes points the test added).
+- Task 14: `reviewOver`, `inReviewOrder`, `listedCountsOf` and `ReviewSource` are the sample's, exported. On Supabase a review's `shop.previousSlugs` is `[]` (an admin can't read another shop's old links; the review never shows them). `approveShop`/`declineShop` read the named owner's profile for the `reviewed` rule; when nothing is readable (no admin role) they call the function anyway, which answers `forbidden` (so the data-level refusal holds for them too). `approvedAt` isn't in the review, so "approvedAt is set" isn't asserted. Parity (`listShopsForReview`, every seed shop's review, `countWaitingShops`, `listMentors`) holds on the seed.
+- Task 15: `reportViewOver(lookups)`, `ReportLookups` and `DELETED` are exported; the twin's `own` is `staff_reports.own`, read with `forViewerAs(viewerId)`. The seed has no reports and hides nothing, so parity is the empty queue and counts. New world verbs `deleteListing` and `closeShop` (the shop goes as `forget_account` takes it: its reports gone, its listings and pins deleted).
+- Task 16: the Supabase-mode unit cases are a new file, `lib/staff/admin-actions-supabase.test.ts` (as Task 6), not `admin-actions.test.ts`. The contract's reports are by `seller`, so the reporter is never the acting admin; the unpin refusal's pin is the world's `addPin` verb (not a post by asker). The contract passed on both backends with Task 12's shape; the unit cases failed until `decide` and `pinSeller`'s mapping went in.
+- Task 17: `pin_shop` and `unpin_shop` already forget that campus's `featured_draws` row for the day (since `20261020120400`, kept in `20261021120500`), so no SQL there; the contract proves `featuredFor` draws again on both. **`update_shop` keeps a pickup listing on a retired point** (the controller's ruling after C2): `20261023120100_c5_pickup_keep.sql` (copied from `20261020120000_widen.sql`, one condition added), pgTAP `51_c5_pickup_keep.test.sql` (9), and a contract case on both backends; the C2 shops contract's workaround is left as it is. `WorldListing` gains `pickupPointId`. A new point is read back by its campus and exact name.
+- While in this area: `lib/data/supabase/accounts.ts` removes a deleted account's files with `photos.ts`' shared `removePhotoFiles` (batches of 100, its log wording); `accounts.test.ts` follows.
+- Tasks 12 to 17's checks: `supabase db reset`, pgTAP 2,541 (42 files); `pnpm test` 3,207 (390 files); `pnpm test:db` 285 (38 files, twice, the stack left clean); lint and typecheck clean; `supabase db lint` only the inherited `create_report` warning; advisors none; types unchanged. `/api/cron/badges` is left for the next batch.
 
 ## Amendments on review (2026-10-21)
 

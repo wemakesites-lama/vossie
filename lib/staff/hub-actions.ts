@@ -12,7 +12,8 @@ import { isId } from "@/lib/messaging/paths";
 import { keepTyped } from "@/lib/messaging/rules";
 import { done, field, fileList } from "@/lib/selling/action-helpers";
 import { readUploads } from "@/lib/selling/uploads";
-import { requireStaff } from "./access";
+import { requireStaffAction } from "./access";
+import { sampleFollowUps } from "./follow-ups";
 import { clearStaffForm, leaveNotice, postForm, postPrefix } from "./form-state";
 import { slotAnswerText } from "./notification-text";
 import { leaveOnceToken, type OnceSent, sentOnceToken, takeOnceToken } from "./once";
@@ -96,7 +97,7 @@ export async function savePost(formData: FormData): Promise<void> {
   const raw = field(formData, "post");
   const id = raw === "" ? null : isId(raw) ? raw : undefined;
   const path = id ? editPostPath(id) : HUB_NEW_PATH;
-  const account = await requireStaff("hub", path);
+  const account = await requireStaffAction("hub", path);
   if (id === undefined) notFound();
   const existing = id ? await getPostRow(id) : null;
   // A mentor editing someone else's post gets the 404, as for a page they can't open (plan decisions 1 and 11).
@@ -169,17 +170,20 @@ export async function savePost(formData: FormData): Promise<void> {
     await clearStaffForm(form);
     await nothingChanged(now, HUB_MANAGE_PATH);
   }
-  if (cover) {
-    const use = `post:${saved.row.id}`;
-    await attachPhotos(HUB_PHOTOS, [cover], use);
-    await deletePhotosUsedBy(HUB_PHOTOS, use, new Set([cover]));
-  }
-  await recordAudit({
-    staff: { id: account.id, firstName: account.firstName },
-    action: saved.created ? "post-created" : "post-updated",
-    target: { kind: "post", id: saved.row.id, name: saved.row.title },
-    detail: saved.row.published ? "Published" : "Draft",
-    now,
+  // On Supabase save_hub_post made the cover the post's, wrote the entry and gave back the files to remove (decision 18).
+  await sampleFollowUps(async () => {
+    if (cover) {
+      const use = `post:${saved.row.id}`;
+      await attachPhotos(HUB_PHOTOS, [cover], use);
+      await deletePhotosUsedBy(HUB_PHOTOS, use, new Set([cover]));
+    }
+    await recordAudit({
+      staff: { id: account.id, firstName: account.firstName },
+      action: saved.created ? "post-created" : "post-updated",
+      target: { kind: "post", id: saved.row.id, name: saved.row.title },
+      detail: saved.row.published ? "Published" : "Draft",
+      now,
+    });
   });
   hubChanged();
   await clearStaffForm(form);
@@ -197,27 +201,30 @@ async function nothingChanged(now: Date, path = QUEUE): Promise<never> {
 
 /** Accept or Decline a slot request (spec 2.4, plan decision 14): the student is told either way. */
 export async function answerSlot(formData: FormData): Promise<void> {
-  const staff = await requireStaff("hub", HUB_MANAGE_PATH);
+  const staff = await requireStaffAction("hub", HUB_MANAGE_PATH);
   const now = new Date();
   const id = field(formData, "booking");
   const answer = field(formData, "answer");
   if (!isId(id) || (answer !== "accepted" && answer !== "declined")) return nothingChanged(now);
   const answered = await answerBooking(id, answer, staff.id, now);
   if (!answered) return nothingChanged(now);
-  await recordAudit({
-    staff: { id: staff.id, firstName: staff.firstName },
-    action: answer === "accepted" ? "booking-accepted" : "booking-declined",
-    target: { kind: "booking", id, name: `${answered.studentName}: ${answered.postTitle}` },
-    subjectId: answered.accountId,
-    now,
-  });
-  await notify({
-    accountId: answered.accountId,
-    kind: "booking",
-    subjectId: id,
-    text: slotAnswerText(answer, answered.postTitle),
-    href: bookSlotPath(answered.postId),
-    now,
+  // On Supabase answer_booking wrote the entry and told the student (decision 3).
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: { id: staff.id, firstName: staff.firstName },
+      action: answer === "accepted" ? "booking-accepted" : "booking-declined",
+      target: { kind: "booking", id, name: `${answered.studentName}: ${answered.postTitle}` },
+      subjectId: answered.accountId,
+      now,
+    });
+    await notify({
+      accountId: answered.accountId,
+      kind: "booking",
+      subjectId: id,
+      text: slotAnswerText(answer, answered.postTitle),
+      href: bookSlotPath(answered.postId),
+      now,
+    });
   });
   await leaveNotice(answer === "accepted" ? "booking-accepted" : "booking-declined", now);
   done(QUEUE);

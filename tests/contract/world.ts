@@ -63,7 +63,14 @@ export type WorldConversation = {
  * A listing a scenario lists (C4/C5 plan Task 3): an item in the shop's category for R100, collected on campus, unless
  * said. `addListing` puts it in place published and available; `publishListing` publishes it through the real path.
  */
-export type WorldListing = { title: string; categorySlug?: string; priceZar?: number; description?: string };
+export type WorldListing = {
+  title: string;
+  categorySlug?: string;
+  priceZar?: number;
+  description?: string;
+  /** Collected at this pickup point (handover "pickup") instead of on campus (C4/C5 plan Task 17). */
+  pickupPointId?: string;
+};
 
 /** A WorldListing's fields, as saveOwnListing and save_listing take them, in a shop of `categorySlug`. */
 export function listingFields(listing: WorldListing, categorySlug: string) {
@@ -77,8 +84,8 @@ export function listingFields(listing: WorldListing, categorySlug: string) {
     payMode: "cash" as const,
     swapFor: null,
     description: listing.description ?? "A listing the contract tests list and take away again.",
-    handover: "on-campus" as const,
-    pickupPointId: null,
+    handover: listing.pickupPointId ? ("pickup" as const) : ("on-campus" as const),
+    pickupPointId: listing.pickupPointId ?? null,
   };
 }
 
@@ -215,6 +222,18 @@ export interface World {
    * Tasks 4 to 8). Call it first in a test, so it runs after the other undos.
    */
   tidyCommunity(): Promise<void>;
+  /**
+   * In cleanup, removes the pickup points the test added, however they were made (the data layer, a staff function or a
+   * verb), with any listing's use of them (C4/C5 plan Tasks 13 and 17). Call it first in a test, so it runs last.
+   */
+  tidyPickupPoints(): Promise<void>;
+  /** Deletes a listing, as its seller's Delete does (C4/C5 plan Task 15). Reports about it keep their recorded owner. */
+  deleteListing(id: string): Promise<void>;
+  /**
+   * The shop goes, with its listings, as its owner's account deletion takes it: reports about it or its listings point at
+   * nothing from then on, and its Featured pins go (C4/C5 plan Task 15). The test's own shop only.
+   */
+  closeShop(slug: string): Promise<void>;
   /** Undoes what the test's verbs wrote, newest first. Runs after each test. */
   cleanup(): Promise<void>;
 }

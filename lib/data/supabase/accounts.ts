@@ -5,6 +5,7 @@ import { assembleExport } from "../accounts";
 import { currentClaims } from "./auth-session";
 import { forServer, forViewer } from "./clients";
 import { unreadCounts } from "./messages";
+import { removePhotoFiles } from "./photos";
 import { iso } from "./rows";
 
 // Accounts on Supabase (phase B, Task 4; decisions 7 to 9; amendments 7 and 10). An account is a Supabase Auth user
@@ -13,9 +14,8 @@ import { iso } from "./rows";
 // session (2b plan decision 20): another account's id is phase C's (the staff reads), and throws until then. Deleting
 // an account goes through the admin client.
 
-/** Photo files are removed from Storage in batches this size (Storage's limit per call). */
-const REMOVE_BATCH = 1_000;
-const PHOTOS_BUCKET = "photos";
+// A deleted account's photo files go through photos.ts's removePhotoFiles, shared with selling and the Hub (C2), which
+// logs a failure with its status and the count only, never a path (C5, the controller's note after C2).
 
 function failed(what: string, error: { code?: string }): never {
   throw new Error(`${what} failed (${error.code ?? "unknown"})`);
@@ -166,23 +166,6 @@ export const exportAccountData: typeof Sample.exportAccountData = async (account
   const consents = (data ?? []).map((row) => ({ policy: row.version, agreedAt: iso(row.agreed_at) }));
   return assembleExport({ account, consents }, now);
 };
-
-/** A deleted account's photo files, in batches. A failure is logged with its status and the count, never a path. */
-async function removePhotoFiles(paths: readonly string[]): Promise<void> {
-  const storage = forServer().storage.from(PHOTOS_BUCKET);
-  for (let start = 0; start < paths.length; start += REMOVE_BATCH) {
-    const batch = paths.slice(start, start + REMOVE_BATCH);
-    try {
-      const { error } = await storage.remove([...batch]);
-      if (error) {
-        const status = (error as { statusCode?: string; status?: number }).statusCode ?? (error as { status?: number }).status;
-        console.error(`[vossie] Removing ${batch.length} file(s) from photos failed (${status ?? "unknown"}); no photo row names them now.`);
-      }
-    } catch {
-      console.error(`[vossie] Removing ${batch.length} file(s) from photos failed (unreachable); no photo row names them now.`);
-    }
-  }
-}
 
 /**
  * Deletes an account straight away (spec 2.13; decision 8). forget_account removes everything of the account's in one

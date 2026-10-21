@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { onSupabase } from "@/lib/backend";
 import { ONLINE_CAMPUS } from "@/lib/campus";
 import { nameKey } from "@/lib/selling/rules";
 import type { PickupPoint } from "@/lib/types";
@@ -8,7 +9,8 @@ import { sampleStore } from "./store";
 // The approved pickup points (staff tools spec 2.3, plan decision 10), moved from the fixture into the store so the
 // Hub can add, rename and retire them. Forms offer only the points in use; a listing on a retired point keeps it,
 // and its page says "(no longer used)". Retiring is undone by Use it again. Names are unique on their campus,
-// compared like shop names (selling's nameKey). Eduvos Online has none. Times come from the caller.
+// compared like shop names (selling's nameKey). Eduvos Online has none. Times come from the caller. On Supabase the
+// admin's reads and writes are lib/data/supabase/pickup-points.ts's (C1's reads; C4/C5 plan Task 17's writes).
 
 /** A row as forms and listing pages see it: `retired` only once it is (also the Supabase twin's, lib/data/supabase). */
 export function toPoint(row: PickupPointRow): PickupPoint {
@@ -18,6 +20,7 @@ export function toPoint(row: PickupPointRow): PickupPoint {
 
 /** Every point, retired ones included, in the store's order (each campus's together), for the admin page. Copies. */
 export async function listPickupPoints(): Promise<PickupPointRow[]> {
+  if (onSupabase()) return (await import("./supabase/pickup-points")).listPickupPoints();
   return [...sampleStore().pickupPoints.values()].map((row) => ({ ...row }));
 }
 
@@ -32,6 +35,12 @@ export function pickupPointById(id: string | null): PickupPoint | null {
   return row ? toPoint(row) : null;
 }
 
+/** Any point by id, retired or not, on either backend: what Rename reads before it checks the name (C4/C5 plan Task 12). */
+export async function findPickupPoint(id: string | null): Promise<PickupPoint | null> {
+  if (onSupabase()) return (await import("./supabase/pickup-points")).pickupPointById(id);
+  return pickupPointById(id);
+}
+
 /** A point's name, retired or not, for selling's data export. */
 export function pickupPointName(id: string | null): string | null {
   return pickupPointById(id)?.name ?? null;
@@ -39,6 +48,7 @@ export function pickupPointName(id: string | null): string | null {
 
 /** Whether another point on the campus has this name, however it's written. `exceptId` is the point being renamed. */
 export async function isPointNameTaken(campusSlug: string, name: string, exceptId: string | null): Promise<boolean> {
+  if (onSupabase()) return (await import("./supabase/pickup-points")).isPointNameTaken(campusSlug, name, exceptId);
   const key = nameKey(name);
   for (const row of sampleStore().pickupPoints.values()) {
     if (row.id !== exceptId && row.campusSlug === campusSlug && nameKey(row.name) === key) return true;
@@ -51,6 +61,7 @@ export async function isPointNameTaken(campusSlug: string, name: string, exceptI
  * Online has none, and a slug no campus has is refused (the action checks it against the campuses).
  */
 export async function addPickupPoint(campusSlug: string, name: string, now: Date): Promise<PickupPointRow | null> {
+  if (onSupabase()) return (await import("./supabase/pickup-points")).addPickupPoint(campusSlug, name, now);
   const store = sampleStore();
   const known = [...store.pickupPoints.values()].some((row) => row.campusSlug === campusSlug);
   if (campusSlug === ONLINE_CAMPUS || !known || (await isPointNameTaken(campusSlug, name, null))) return null;
@@ -67,6 +78,7 @@ export async function addPickupPoint(campusSlug: string, name: string, now: Date
 
 /** Renames a point, keeping its id, so listings that use it follow. Its old name; null when nothing changed or it's taken. */
 export async function renamePickupPoint(id: string, name: string): Promise<{ before: string } | null> {
+  if (onSupabase()) return (await import("./supabase/pickup-points")).renamePickupPoint(id, name);
   const row = sampleStore().pickupPoints.get(id);
   if (!row || row.name === name || (await isPointNameTaken(row.campusSlug, name, id))) return null;
   const before = row.name;
@@ -76,6 +88,7 @@ export async function renamePickupPoint(id: string, name: string): Promise<{ bef
 
 /** Retire (spec 2.3): forms stop offering it; listings keep it, marked "no longer used". Null when it already was. */
 export async function retirePickupPoint(id: string, now: Date): Promise<PickupPointRow | null> {
+  if (onSupabase()) return (await import("./supabase/pickup-points")).retirePickupPoint(id, now);
   const row = sampleStore().pickupPoints.get(id);
   if (!row || row.retiredAt) return null;
   row.retiredAt = now.toISOString();
@@ -84,6 +97,7 @@ export async function retirePickupPoint(id: string, now: Date): Promise<PickupPo
 
 /** Use it again (plan decision 10): undoes Retire. Null when it's in use already. */
 export async function restorePickupPoint(id: string): Promise<PickupPointRow | null> {
+  if (onSupabase()) return (await import("./supabase/pickup-points")).restorePickupPoint(id);
   const row = sampleStore().pickupPoints.get(id);
   if (!row || !row.retiredAt) return null;
   row.retiredAt = null;

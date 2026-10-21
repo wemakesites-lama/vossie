@@ -1,4 +1,5 @@
-import type { ListingState } from "@/lib/types";
+import { onSupabase } from "@/lib/backend";
+import type { ListingState, ReportTarget } from "@/lib/types";
 import { listedListings, shopStatus } from "./catalog";
 import type { SellerProfileRow, SellerRow } from "./rows";
 import { sampleStore } from "./store";
@@ -7,6 +8,8 @@ import { sampleStore } from "./store";
 // declining, Verified, the Hub's pause, mentors, and hiding a listing. A shop's status stays on its owner's seller
 // profile (selling plan decision 1). Each change checks the state it expects and gives back null when there was
 // nothing to do, so the action writes no audit entry and sends nothing (plan decision 23). Times come from the caller.
+// On Supabase each is lib/data/supabase/staff-shops.ts's (C4/C5 plan Task 14): the reads build the same views over the
+// database's rows (reviewOver), and the writes are the staff functions of the same names.
 
 /** Where a shop stands, as the Sellers list says it. A declined shop is a waiting one with the decline recorded. */
 export type ShopStanding = "waiting" | "declined" | "open" | "paused";
@@ -42,11 +45,25 @@ export type OwnStanding = {
   appliedAt: string;
 };
 
+/** A person as the review names them: their account and first name. */
+type Person = { id: string; firstName: string };
+
+/**
+ * What a review is built from, on either backend (C4/C5 plan decision 11): each shop's owner's seller profile, a
+ * person's first name, and how many listings each shop has listed now. The sample's comes from the store; the Supabase
+ * twin's from shops, staff_seller_profiles, profiles and C1's catalog snapshot.
+ */
+export type ReviewSource = {
+  profileOf(row: SellerRow): SellerProfileRow | null;
+  personOf(accountId: string | null | undefined): Person | null;
+  listed: ReadonlyMap<string, number>;
+};
+
 function profileOf(row: SellerRow): SellerProfileRow | null {
   return row.ownerId ? (sampleStore().sellerProfiles.get(row.ownerId) ?? null) : null;
 }
 
-function personOf(accountId: string | null | undefined): { id: string; firstName: string } | null {
+function personOf(accountId: string | null | undefined): Person | null {
   const row = accountId ? sampleStore().accounts.get(accountId) : undefined;
   return row ? { id: row.id, firstName: row.firstName } : null;
 }
@@ -57,49 +74,59 @@ function standingOf(row: SellerRow, profile: SellerProfileRow | null): ShopStand
   return profile.status === "paused" ? "paused" : "open";
 }
 
-function listedCounts(): Map<string, number> {
+/** How many listings each shop has listed now, by its link. */
+export function listedCountsOf(listings: readonly { sellerSlug: string }[]): Map<string, number> {
   const counts = new Map<string, number>();
-  for (const listing of listedListings()) counts.set(listing.sellerSlug, (counts.get(listing.sellerSlug) ?? 0) + 1);
+  for (const listing of listings) counts.set(listing.sellerSlug, (counts.get(listing.sellerSlug) ?? 0) + 1);
   return counts;
 }
 
-function review(row: SellerRow, counts: ReadonlyMap<string, number>): ShopReview {
-  const profile = profileOf(row);
+/** A shop as the Sellers list and its review page show it, over either backend's source. Pure. */
+export function reviewOver(source: ReviewSource, row: SellerRow): ShopReview {
+  const profile = source.profileOf(row);
   return {
     shop: structuredClone(row),
-    owner: personOf(row.ownerId),
+    owner: source.personOf(row.ownerId),
     standing: standingOf(row, profile),
     appliedAt: profile?.appliedAt ?? null,
     declinedAt: profile?.declinedAt ?? null,
     pausedBy: profile?.pausedBy ?? null,
     staffReason: profile?.staffReason ?? null,
-    mentor: personOf(profile?.mentorId),
-    listedCount: counts.get(row.slug) ?? 0,
+    mentor: source.personOf(profile?.mentorId),
+    listedCount: source.listed.get(row.slug) ?? 0,
   };
 }
 
 const RANK: Readonly<Record<ShopStanding, number>> = { waiting: 0, declined: 1, open: 2, paused: 2 };
 
+/** The Sellers list's order (spec 2.3): waiting first, oldest application first; then declined; then the rest by name. */
+export function inReviewOrder(reviews: ShopReview[]): ShopReview[] {
+  return reviews.sort(
+    (a, b) =>
+      RANK[a.standing] - RANK[b.standing] ||
+      (a.standing === "waiting" ? (a.appliedAt ?? "").localeCompare(b.appliedAt ?? "") : 0) ||
+      a.shop.name.localeCompare(b.shop.name),
+  );
+}
+
+const sampleSource = (): ReviewSource => ({ profileOf, personOf, listed: listedCountsOf(listedListings()) });
+
 /** Every shop (spec 2.3): waiting for approval first, oldest application first; then declined; then the rest by name. */
 export async function listShopsForReview(): Promise<ShopReview[]> {
-  const counts = listedCounts();
-  return [...sampleStore().sellers.values()]
-    .map((row) => review(row, counts))
-    .sort(
-      (a, b) =>
-        RANK[a.standing] - RANK[b.standing] ||
-        (a.standing === "waiting" ? (a.appliedAt ?? "").localeCompare(b.appliedAt ?? "") : 0) ||
-        a.shop.name.localeCompare(b.shop.name),
-    );
+  if (onSupabase()) return (await import("./supabase/staff-shops")).listShopsForReview();
+  const source = sampleSource();
+  return inReviewOrder([...sampleStore().sellers.values()].map((row) => reviewOver(source, row)));
 }
 
 export async function getShopForReview(slug: string): Promise<ShopReview | null> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).getShopForReview(slug);
   const row = sampleStore().sellers.get(slug);
-  return row ? review(row, listedCounts()) : null;
+  return row ? reviewOver(sampleSource(), row) : null;
 }
 
 /** How many shops are waiting for approval (not declined), for Overview. */
 export async function countWaitingShops(): Promise<number> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).countWaitingShops();
   return [...sampleStore().sellers.values()].filter((row) => standingOf(row, profileOf(row)) === "waiting").length;
 }
 
@@ -123,6 +150,7 @@ const reviewed = (shop: { row: SellerRow }, ownerId: string) => ownerId !== "" &
  * section 4).
  */
 export async function approveShop(slug: string, ownerId: string, now: Date): Promise<ShopDecision | null> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).approveShop(slug, ownerId, now);
   const shop = owned(slug);
   if (!shop || !reviewed(shop, ownerId) || shop.profile.status !== "pending" || shop.profile.declinedAt) return null;
   Object.assign(shop.profile, {
@@ -146,6 +174,7 @@ export async function declineShop(
   reason: string,
   now: Date,
 ): Promise<ShopDecision | null> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).declineShop(slug, ownerId, reason, now);
   const shop = owned(slug);
   if (!shop || !reviewed(shop, ownerId) || shop.profile.status !== "pending" || shop.profile.declinedAt) return null;
   shop.profile.declinedAt = now.toISOString();
@@ -155,6 +184,7 @@ export async function declineShop(
 
 /** The seller's Send for approval again (plan decision 2): the decline is forgotten and the shop waits again. */
 export async function resendForApproval(accountId: string, now: Date): Promise<boolean> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).resendForApproval(accountId, now);
   const profile = sampleStore().sellerProfiles.get(accountId);
   if (!profile || profile.status !== "pending" || !profile.declinedAt) return false;
   profile.declinedAt = null;
@@ -165,6 +195,7 @@ export async function resendForApproval(accountId: string, now: Date): Promise<b
 
 /** Verify, or take Verified away (spec 2.3), on any shop with a storefront, sample shops included. */
 export async function setVerified(slug: string, verified: boolean): Promise<ShopDecision | null> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).setVerified(slug, verified);
   const row = sampleStore().sellers.get(slug);
   if (!row || shopStatus(row) === "pending" || row.verified === verified) return null;
   row.verified = verified;
@@ -176,6 +207,7 @@ export async function setVerified(slug: string, verified: boolean): Promise<Shop
  * Hub's to resume. A sample shop no account owns has no profile, so it can't be paused.
  */
 export async function staffPauseShop(slug: string, reason: string): Promise<ShopDecision | null> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).staffPauseShop(slug, reason);
   const shop = owned(slug);
   if (!shop) return null;
   const { status, pausedBy } = shop.profile;
@@ -192,6 +224,7 @@ export async function staffPauseShop(slug: string, reason: string): Promise<Shop
 
 /** The Hub's Resume (spec 2.3): only a pause the Hub made (plan decision 3). */
 export async function staffResumeShop(slug: string): Promise<(ShopDecision & { stillPausedBySeller: boolean }) | null> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).staffResumeShop(slug);
   const shop = owned(slug);
   if (!shop || shop.profile.status !== "paused" || shop.profile.pausedBy !== "staff") return null;
   const sellerPausedToo = shop.profile.sellerPausedToo === true;
@@ -210,6 +243,7 @@ export async function staffResumeShop(slug: string): Promise<(ShopDecision & { s
  * decision 5). Null leaves nobody out.
  */
 export async function listMentors(exceptOwnerId: string | null = null): Promise<{ id: string; firstName: string }[]> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).listMentors(exceptOwnerId);
   return [...sampleStore().accounts.values()]
     .filter((row) => row.roles.includes("mentor") && row.id !== exceptOwnerId)
     .map((row) => ({ id: row.id, firstName: row.firstName }))
@@ -224,6 +258,7 @@ export async function setShopMentor(
   slug: string,
   mentorId: string | null,
 ): Promise<(ShopDecision & { mentorName: string | null }) | null> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).setShopMentor(slug, mentorId);
   const shop = owned(slug);
   if (!shop || shop.profile.status === "pending") return null;
   const mentor = mentorId ? sampleStore().accounts.get(mentorId) : undefined;
@@ -241,6 +276,7 @@ export async function hideListing(
   reason: string,
   now: Date,
 ): Promise<{ id: string; title: string; sellerSlug: string; state: ListingState; ownerId: string | null } | null> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).hideListing(id, reason, now);
   const row = sampleStore().listings.get(id);
   if (!row || row.hiddenAt) return null;
   row.hiddenAt = now.toISOString();
@@ -258,6 +294,7 @@ export type ShownListing = { id: string; title: string; state: ListingState; own
  * by themselves (lib/data/photos.ts hides them only while hiddenAt is set). Null when it has gone or isn't hidden.
  */
 export async function showListing(id: string): Promise<ShownListing | null> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).showListing(id);
   const row = sampleStore().listings.get(id);
   if (!row || !row.hiddenAt) return null;
   row.hiddenAt = null;
@@ -268,6 +305,7 @@ export async function showListing(id: string): Promise<ShownListing | null> {
 
 /** A seller's standing with the Hub (Task 18's /sell): a decline, or the Hub's pause, and its reason. */
 export async function shopStanding(accountId: string): Promise<OwnStanding | null> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).shopStanding(accountId);
   const profile = sampleStore().sellerProfiles.get(accountId);
   if (!profile) return null;
   return {
@@ -300,4 +338,40 @@ export function isOwnListing(accountId: string, listingId: string): boolean {
 export function isOwnRequest(accountId: string, requestId: string): boolean {
   const askerId = sampleStore().requests.get(requestId)?.askerId ?? null;
   return askerId !== null && askerId === accountId;
+}
+
+/** What of `accountId`'s own a report's target is: their shop, a listing of it, or their request (sample internal). */
+export function ownKindOf(accountId: string, target: ReportTarget): "shop" | "listing" | "request" | null {
+  switch (target.kind) {
+    case "seller":
+      return isOwnShop(accountId, target.id) ? "shop" : null;
+    case "listing":
+      return isOwnListing(accountId, target.id) ? "listing" : null;
+    case "request":
+      return isOwnRequest(accountId, target.id) ? "request" : null;
+  }
+}
+
+// --- Whose it is, on either backend (C4/C5 plan decision 5) -------------------------------------------------------
+// Callers outside lib/data ask these, never the synchronous internals above (a source check, lib/staff/own.test.ts).
+// On Supabase a shop is its owner's through seller_profiles.shop_id (phase A's owns_shop), and a request is the asker's
+// when my_requests holds it. The SQL gates stay the authority: these decide what a page shows, and let an action refuse
+// before its call.
+
+/** Whether `accountId` owns the shop on this link now. */
+export async function ownsShop(accountId: string, slug: string): Promise<boolean> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).ownsShop(accountId, slug);
+  return isOwnShop(accountId, slug);
+}
+
+/** Whether the listing is in `accountId`'s own shop now. */
+export async function ownsListing(accountId: string, listingId: string): Promise<boolean> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).ownsListing(accountId, listingId);
+  return isOwnListing(accountId, listingId);
+}
+
+/** Whether `accountId` asked for this Looking For request. */
+export async function ownsRequest(accountId: string, requestId: string): Promise<boolean> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).ownsRequest(accountId, requestId);
+  return isOwnRequest(accountId, requestId);
 }

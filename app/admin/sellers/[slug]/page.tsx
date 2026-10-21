@@ -5,9 +5,9 @@ import { AdminSeller } from "@/components/staff/AdminSeller";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
 import { getCampuses, getCategories } from "@/lib/data";
-import { pickupPointName } from "@/lib/data/pickup-points";
+import { listPickupPoints } from "@/lib/data/pickup-points";
 import { countAdmins } from "@/lib/data/staff-accounts";
-import { getShopForReview, isOwnShop, listMentors } from "@/lib/data/staff-shops";
+import { getShopForReview, listMentors, ownsShop } from "@/lib/data/staff-shops";
 import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { takeNotice } from "@/lib/staff/form-state";
@@ -40,10 +40,12 @@ async function SellerReview({ params }: Pick<PageProps<"/admin/sellers/[slug]">,
   if (!review) notFound();
   // The admin's own shop shows why in place of its controls, and its owner is never offered as its mentor (stage L
   // spec decisions 4 to 6).
-  const own = isOwnShop(account.id, slug);
-  const [campuses, categories, mentors, notice, admins] = await Promise.all([
+  const own = await ownsShop(account.id, slug);
+  const [campuses, categories, points, mentors, notice, admins] = await Promise.all([
     getCampuses(),
     getCategories(),
+    // Every point, retired ones too, on either backend (C4/C5 plan Task 17).
+    listPickupPoints(),
     listMentors(review.shop.ownerId),
     takeNotice(),
     own ? countAdmins() : Promise.resolve(0),
@@ -60,7 +62,7 @@ async function SellerReview({ params }: Pick<PageProps<"/admin/sellers/[slug]">,
         review={review}
         campusName={campuses.find((campus) => campus.slug === review.shop.campusSlug)?.name ?? ""}
         categoryName={categories.find((category) => category.slug === review.shop.categorySlug)?.name ?? ""}
-        pointNames={review.shop.pickupPointIds.flatMap((id) => pickupPointName(id) ?? [])}
+        pointNames={review.shop.pickupPointIds.flatMap((id) => points.find((point) => point.id === id)?.name ?? [])}
         mentors={mentors}
         own={own}
         onlyAdmin={own && admins === 1}

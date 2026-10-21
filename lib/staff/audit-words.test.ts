@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AuditAction } from "@/lib/types";
-import { AUDIT_KINDS, auditKindOf, auditLabel, parseAuditFilter } from "./audit-words";
+import { actionsOf, AUDIT_KINDS, auditKindOf, auditLabel, parseAuditFilter } from "./audit-words";
 
 const EVERY_ACTION: AuditAction[] = [
   "shop-approved",
@@ -79,5 +79,22 @@ describe("staff accounts and Show again (stage J spec decisions 7 and 14)", () =
 
   it("reads kind=staff from the link", () => {
     expect(parseAuditFilter({ kind: "staff" })).toEqual({ staff: null, kind: "staff" });
+  });
+});
+
+describe("actionsOf, the inverse of auditKindOf (C4/C5 plan Task 13)", () => {
+  it("gives every action filed under a kind, and each action under exactly one kind", () => {
+    for (const { kind } of AUDIT_KINDS) {
+      expect(actionsOf(kind).every((action) => auditKindOf(action) === kind), kind).toBe(true);
+    }
+    expect(AUDIT_KINDS.flatMap(({ kind }) => actionsOf(kind)).sort()).toEqual([...EVERY_ACTION].sort());
+    expect(actionsOf("shops")).toEqual([
+      "shop-approved",
+      "shop-declined",
+      "shop-verified",
+      "shop-unverified",
+      "shop-paused",
+      "shop-resumed",
+    ]);
   });
 });

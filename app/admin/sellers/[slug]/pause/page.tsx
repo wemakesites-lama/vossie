@@ -6,7 +6,7 @@ import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
 import { readFormState } from "@/lib/auth/form-state";
 import { countAdmins } from "@/lib/data/staff-accounts";
-import { getShopForReview, isOwnShop } from "@/lib/data/staff-shops";
+import { getShopForReview, ownsShop } from "@/lib/data/staff-shops";
 import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
@@ -35,7 +35,7 @@ async function Pause({ params }: Pick<PageProps<"/admin/sellers/[slug]/pause">, 
   const account = await requireStaff("admin", pauseSellerPath(slug));
   const review = isId(slug) ? await getShopForReview(slug) : null;
   if (!review) notFound();
-  const own = isOwnShop(account.id, slug);
+  const own = await ownsShop(account.id, slug);
   const [state, admins] = await Promise.all([
     readFormState(shopPauseForm(slug)),
     own ? countAdmins() : Promise.resolve(0),

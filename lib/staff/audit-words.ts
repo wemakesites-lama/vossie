@@ -55,6 +55,11 @@ export function auditKindOf(action: AuditAction): AuditKind {
   return ACTIONS[action].kind;
 }
 
+/** Every action filed under a kind, in the log's own order: the inverse of auditKindOf, for a database filter (C5). */
+export function actionsOf(kind: AuditKind): AuditAction[] {
+  return (Object.keys(ACTIONS) as AuditAction[]).filter((action) => ACTIONS[action].kind === kind);
+}
+
 const first = (raw: string | string[] | undefined) => (Array.isArray(raw) ? raw[0] : raw) ?? "";
 
 /** The log's filters from the link (`?staff=…&kind=…`). A staff id that isn't an id, or a kind it doesn't know, is no filter. */

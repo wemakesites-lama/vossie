@@ -9,7 +9,8 @@ import { giveRole, removeRole } from "@/lib/data/staff-accounts";
 import { isId } from "@/lib/messaging/paths";
 import { keepTyped } from "@/lib/messaging/rules";
 import { done, field } from "@/lib/selling/action-helpers";
-import { requireStaff } from "./access";
+import { requireStaffAction } from "./access";
+import { sampleFollowUps } from "./follow-ups";
 import { clearStaffForm, GIVE_ROLE_FORM, leaveNotice, removeRoleForm } from "./form-state";
 import { staffRoleText } from "./notification-text";
 import { leaveOnceToken, type OnceSent, sentOnceToken, takeOnceToken } from "./once";
@@ -48,7 +49,7 @@ async function nothingChanged(now: Date): Promise<never> {
  * before the one-time token is taken, so a mistake keeps it for the next try (plan decision 7).
  */
 export async function giveStaffRole(formData: FormData): Promise<void> {
-  const staff = await requireStaff("admin", ADMIN_STAFF_PATH);
+  const staff = await requireStaffAction("admin", ADMIN_STAFF_PATH);
   const now = new Date();
   const once = field(formData, "once");
   const earlier = await sentOnceToken(once, now);
@@ -73,21 +74,24 @@ export async function giveStaffRole(formData: FormData): Promise<void> {
   const given = await giveRole(email, role);
   if (given === "no-account") return backToForm(["staff-email-unknown"], values, now);
   if (given === "held") return backToForm(["staff-role-held"], values, now);
-  await recordAudit({
-    staff: { id: staff.id, firstName: staff.firstName },
-    action: "role-given",
-    target: { kind: "account", id: given.id, name: given.firstName },
-    detail: roleLabel(role),
-    subjectId: given.id,
-    now,
-  });
-  await notify({
-    accountId: given.id,
-    kind: "staff-role",
-    subjectId: role,
-    text: staffRoleText("given", role),
-    href: ACCOUNT_PAGE,
-    now,
+  // On Supabase give_role wrote the entry and told the person (decision 3).
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: { id: staff.id, firstName: staff.firstName },
+      action: "role-given",
+      target: { kind: "account", id: given.id, name: given.firstName },
+      detail: roleLabel(role),
+      subjectId: given.id,
+      now,
+    });
+    await notify({
+      accountId: given.id,
+      kind: "staff-role",
+      subjectId: role,
+      text: staffRoleText("given", role),
+      href: ACCOUNT_PAGE,
+      now,
+    });
   });
   await clearStaffForm(GIVE_ROLE_FORM);
   await leaveOnceToken(once, { path: ADMIN_STAFF_PATH, notice: "role-given" }, now);
@@ -106,7 +110,7 @@ export async function removeStaffRole(formData: FormData): Promise<void> {
   const accountId = isId(raw) ? raw : null;
   const role = parseStaffRole(field(formData, "role"));
   const path = accountId && role ? removeRolePath(accountId, role) : ADMIN_STAFF_PATH;
-  const staff = await requireStaff("admin", path);
+  const staff = await requireStaffAction("admin", path);
   const now = new Date();
   if (!accountId || !role) return nothingChanged(now);
   const removed = await removeRole(accountId, role, staff.id);
@@ -125,21 +129,24 @@ export async function removeStaffRole(formData: FormData): Promise<void> {
     role === "mentor" && removed.unassigned.length > 0
       ? `Mentor. No mentor now: ${removed.unassigned.join(", ")}`
       : roleLabel(role);
-  await recordAudit({
-    staff: { id: staff.id, firstName: staff.firstName },
-    action: "role-removed",
-    target: { kind: "account", id: removed.id, name: removed.firstName },
-    detail,
-    subjectId: removed.id,
-    now,
-  });
-  await notify({
-    accountId: removed.id,
-    kind: "staff-role",
-    subjectId: role,
-    text: staffRoleText("removed", role),
-    href: ACCOUNT_PAGE,
-    now,
+  // On Supabase remove_role wrote the entry and told the person (decision 3).
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: { id: staff.id, firstName: staff.firstName },
+      action: "role-removed",
+      target: { kind: "account", id: removed.id, name: removed.firstName },
+      detail,
+      subjectId: removed.id,
+      now,
+    });
+    await notify({
+      accountId: removed.id,
+      kind: "staff-role",
+      subjectId: role,
+      text: staffRoleText("removed", role),
+      href: ACCOUNT_PAGE,
+      now,
+    });
   });
   await clearStaffForm(removeRoleForm(accountId, role));
   await leaveNotice("role-removed", now);

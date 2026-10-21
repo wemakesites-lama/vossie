@@ -491,6 +491,29 @@ export function sampleWorld(): World {
     async tidyCommunity() {
       // Nothing to tidy: the next test's world starts from a fresh store.
     },
+    async tidyPickupPoints() {
+      // Nothing to tidy: the next test's world starts from a fresh store.
+    },
+    async deleteListing(id) {
+      if (!sampleStore().listings.delete(id)) throw new Error(`No listing ${id}`);
+    },
+    async closeShop(slug) {
+      const store = sampleStore();
+      if (!store.sellers.delete(slug)) throw new Error(`No shop ${slug}`);
+      const gone = new Set<string>();
+      for (const [id, listing] of store.listings) {
+        if (listing.sellerSlug !== slug) continue;
+        gone.add(id);
+        store.listings.delete(id);
+      }
+      // As forgetShopOf leaves them (amendment 13.1).
+      for (const report of store.reports.values()) {
+        if (report.targetKind === "seller" ? report.targetId === slug : report.targetKind === "listing" && gone.has(report.targetId)) {
+          report.targetGone = true;
+        }
+      }
+      for (const [id, pin] of store.featuredPins) if (pin.sellerSlug === slug) store.featuredPins.delete(id);
+    },
     async cleanup() {
       // Nothing to undo: the next test's world starts from a fresh store.
     },

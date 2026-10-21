@@ -188,11 +188,12 @@ describe("deleting an account (decision 8; amendment 7)", () => {
     ]);
   });
 
-  it("removes files in 1,000s, and none when there are none", async () => {
+  it("removes files through photos.ts's shared removePhotoFiles, in 100s, and none when there are none (C5)", async () => {
     server.answer("rpc:forget_account", { data: Array.from({ length: 2_001 }, (_, i) => `user-1/${i}.webp`) });
     await deleteAccountData("user-1");
     expect(server.calls.filter((call) => call[0] === "storage.remove").map((call) => (call[2] as string[]).length)).toEqual([
-      1_000, 1_000, 1,
+      ...Array.from({ length: 20 }, () => 100),
+      1,
     ]);
     const empty = fakeSupabase();
     seam.server = empty.client;
@@ -226,7 +227,7 @@ describe("deleting an account (decision 8; amendment 7)", () => {
     server.answer("auth.admin.deleteUser", { error: { status: 500, message: "down" } });
     await expect(deleteAccountData("user-1")).resolves.toBeUndefined();
     const logged = log.mock.calls.map((call) => call.join(" ")).join("\n");
-    expect(logged).toContain("1 file");
+    expect(logged).toContain("photo files not removed (503, 1)");
     expect(logged).toContain("500");
     for (const secret of ["user-1", "a.webp", "@"]) expect(logged).not.toContain(secret);
   });

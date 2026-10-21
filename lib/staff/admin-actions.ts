@@ -1,5 +1,6 @@
 "use server";
 
+import { notFound } from "next/navigation";
 import { writeFormState } from "@/lib/auth/form-state";
 import { ALL_CAMPUSES, ONLINE_CAMPUS } from "@/lib/campus";
 import { getCampuses, getSeller } from "@/lib/data";
@@ -8,12 +9,13 @@ import { addPin, getPin, removePin } from "@/lib/data/featured";
 import { notify } from "@/lib/data/notifications";
 import {
   addPickupPoint,
+  findPickupPoint,
   isPointNameTaken,
-  pickupPointById,
   renamePickupPoint,
   restorePickupPoint,
   retirePickupPoint,
 } from "@/lib/data/pickup-points";
+import { isRefused } from "@/lib/data/refused";
 import { hideRequest, settleRequests, showRequest } from "@/lib/data/requests";
 import {
   closeReport,
@@ -26,9 +28,9 @@ import {
   approveShop,
   declineShop,
   hideListing,
-  isOwnListing,
-  isOwnRequest,
-  isOwnShop,
+  ownsListing,
+  ownsRequest,
+  ownsShop,
   setShopMentor,
   setVerified,
   showListing,
@@ -45,7 +47,8 @@ import { done, field } from "@/lib/selling/action-helpers";
 import { myListingsPath, SELL_PATH, tabFor } from "@/lib/selling/paths";
 import { sastDate } from "@/lib/time";
 import type { Account } from "@/lib/types";
-import { requireStaff } from "./access";
+import { requireStaffAction } from "./access";
+import { sampleFollowUps } from "./follow-ups";
 import {
   clearStaffForm,
   declineForm,
@@ -91,8 +94,14 @@ import { checkDismissNote, checkPinDay, checkPointName, checkReason } from "./ru
 // expires what buyers' pages read, leaves a notice, and ends with done(): refresh, then a replace redirect.
 //
 // No admin makes a Hub decision about their own shop, a listing of it, or their own Looking For request (stage L spec
-// decisions 1 to 3). Whose it is is read from the store after the role and the ids, before anything is read or
-// written; a refusal changes nothing and says why (refuseOwn).
+// decisions 1 to 3). Whose it is is read now (ownsShop and the rest, on either backend) after the role and the ids,
+// before anything is read or written; a refusal changes nothing and says why (refuseOwn).
+//
+// On Supabase (C4/C5 plan decisions 2 to 4): each action starts with requireStaffAction (the session re-checked with
+// Auth); each write is the staff function of the same name, which writes the audit entry, closes the reports and sends
+// the notifications in its own transaction, so the sample store's follow-ups run only inside sampleFollowUps; and a
+// "forbidden" from the database (the role went since the check) is the same 404, and its own-shop or own-request the
+// same refusal as the action's own gate (decide).
 
 // --- Shared helpers ---------------------------------------------------------------------------------------------
 
@@ -118,6 +127,23 @@ async function nothingChanged(path: string, now: Date): Promise<never> {
 async function refuseOwn(kind: OwnKind, path: string, now: Date): Promise<never> {
   await leaveNotice(kind === "request" ? "own-request" : "own-shop", now);
   done(path);
+}
+
+/**
+ * A data write, with the database's refusals as the action's own (C4/C5 plan Task 16, decisions 2 and 4): "forbidden"
+ * (the role went since requireStaffAction) is the 404, as orNotFound gives it; "own-shop" and "own-request" (an
+ * ownership the action's own gate missed: a race, or a shop deleted and made again on the same link) are refuseOwn at
+ * `path`. Anything else is rethrown, Next's redirects included. It wraps every data write in this file.
+ */
+async function decide<T>(write: Promise<T>, path: string, now: Date): Promise<T> {
+  try {
+    return await write;
+  } catch (error) {
+    if (isRefused(error, "forbidden")) notFound();
+    if (isRefused(error, "own-shop")) return refuseOwn("shop", path, now);
+    if (isRefused(error, "own-request")) return refuseOwn("request", path, now);
+    throw error;
+  }
 }
 
 /** Tells a shop's owner about the Hub's decision (plan decision 7). A sample shop has no owner to tell. */
@@ -166,29 +192,31 @@ export async function approveSeller(formData: FormData): Promise<void> {
   // The owner of the shop the Hub reviewed: a decision acts only on that shop (amendment 14.6).
   const owner = idFrom(formData, "owner");
   const path = slug ? adminSellerPath(slug) : ADMIN_SELLERS_PATH;
-  const staff = await requireStaff("admin", path);
+  const staff = await requireStaffAction("admin", path);
   const now = new Date();
   // Whose the shop is now, never the form's owner field (stage L spec decision 2).
-  if (slug && isOwnShop(staff.id, slug)) return refuseOwn("shop", path, now);
-  const decision = slug && owner ? await approveShop(slug, owner, now) : null;
+  if (slug && await ownsShop(staff.id, slug)) return refuseOwn("shop", path, now);
+  const decision = slug && owner ? await decide(approveShop(slug, owner, now), path, now) : null;
   if (!decision) return nothingChanged(path, now);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: "shop-approved",
-    target: { kind: "shop", id: decision.slug, name: decision.name },
-    subjectId: decision.ownerId,
-    now,
-  });
-  if (decision.ownerId) {
-    await notify({
-      accountId: decision.ownerId,
-      kind: "shop-approved",
-      subjectId: decision.slug,
-      text: shopApprovedText(decision.name),
-      href: SELL_PATH,
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: staffOf(staff),
+      action: "shop-approved",
+      target: { kind: "shop", id: decision.slug, name: decision.name },
+      subjectId: decision.ownerId,
       now,
     });
-  }
+    if (decision.ownerId) {
+      await notify({
+        accountId: decision.ownerId,
+        kind: "shop-approved",
+        subjectId: decision.slug,
+        text: shopApprovedText(decision.name),
+        href: SELL_PATH,
+        now,
+      });
+    }
+  });
   sellersChanged();
   await leaveNotice("approved", now);
   done(path);
@@ -198,23 +226,25 @@ export async function approveSeller(formData: FormData): Promise<void> {
 export async function declineSeller(formData: FormData): Promise<void> {
   const slug = idFrom(formData, "shop");
   const owner = idFrom(formData, "owner");
-  const staff = await requireStaff("admin", slug ? declineSellerPath(slug) : ADMIN_SELLERS_PATH);
+  const staff = await requireStaffAction("admin", slug ? declineSellerPath(slug) : ADMIN_SELLERS_PATH);
   const now = new Date();
   if (!slug) return nothingChanged(ADMIN_SELLERS_PATH, now);
-  if (isOwnShop(staff.id, slug)) return refuseOwn("shop", adminSellerPath(slug), now);
+  if (await ownsShop(staff.id, slug)) return refuseOwn("shop", adminSellerPath(slug), now);
   const reason = checkReason(field(formData, "reason"));
   if (reason.error) return backWithReason(declineForm(slug), reason.error, reason.value, declineSellerPath(slug), now);
-  const decision = owner ? await declineShop(slug, owner, reason.value, now) : null;
+  const decision = owner ? await decide(declineShop(slug, owner, reason.value, now), adminSellerPath(slug), now) : null;
   if (!decision) return nothingChanged(adminSellerPath(slug), now);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: "shop-declined",
-    target: { kind: "shop", id: decision.slug, name: decision.name },
-    detail: reason.value,
-    subjectId: decision.ownerId,
-    now,
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: staffOf(staff),
+      action: "shop-declined",
+      target: { kind: "shop", id: decision.slug, name: decision.name },
+      detail: reason.value,
+      subjectId: decision.ownerId,
+      now,
+    });
+    await tellOwner(decision, "declined", now);
   });
-  await tellOwner(decision, "declined", now);
   await clearStaffForm(declineForm(slug));
   await leaveNotice("declined", now);
   done(adminSellerPath(slug));
@@ -224,20 +254,22 @@ export async function declineSeller(formData: FormData): Promise<void> {
 export async function verifySeller(formData: FormData): Promise<void> {
   const slug = idFrom(formData, "shop");
   const path = slug ? adminSellerPath(slug) : ADMIN_SELLERS_PATH;
-  const staff = await requireStaff("admin", path);
+  const staff = await requireStaffAction("admin", path);
   const now = new Date();
-  if (slug && isOwnShop(staff.id, slug)) return refuseOwn("shop", path, now);
+  if (slug && await ownsShop(staff.id, slug)) return refuseOwn("shop", path, now);
   const verified = field(formData, "verified") === "yes";
-  const decision = slug ? await setVerified(slug, verified) : null;
+  const decision = slug ? await decide(setVerified(slug, verified), path, now) : null;
   if (!decision) return nothingChanged(path, now);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: verified ? "shop-verified" : "shop-unverified",
-    target: { kind: "shop", id: decision.slug, name: decision.name },
-    subjectId: decision.ownerId,
-    now,
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: staffOf(staff),
+      action: verified ? "shop-verified" : "shop-unverified",
+      target: { kind: "shop", id: decision.slug, name: decision.name },
+      subjectId: decision.ownerId,
+      now,
+    });
+    await tellOwner(decision, verified ? "verified" : "unverified", now);
   });
-  await tellOwner(decision, verified ? "verified" : "unverified", now);
   sellersChanged();
   await leaveNotice(verified ? "verified" : "unverified", now);
   done(path);
@@ -246,27 +278,30 @@ export async function verifySeller(formData: FormData): Promise<void> {
 /** The Hub's Pause shop, from its confirm page (plan decisions 3 and 18). */
 export async function pauseSeller(formData: FormData): Promise<void> {
   const slug = idFrom(formData, "shop");
-  const staff = await requireStaff("admin", slug ? pauseSellerPath(slug) : ADMIN_SELLERS_PATH);
+  const staff = await requireStaffAction("admin", slug ? pauseSellerPath(slug) : ADMIN_SELLERS_PATH);
   const now = new Date();
   if (!slug) return nothingChanged(ADMIN_SELLERS_PATH, now);
-  if (isOwnShop(staff.id, slug)) return refuseOwn("shop", adminSellerPath(slug), now);
+  if (await ownsShop(staff.id, slug)) return refuseOwn("shop", adminSellerPath(slug), now);
   const reason = checkReason(field(formData, "reason"));
   if (reason.error) return backWithReason(shopPauseForm(slug), reason.error, reason.value, pauseSellerPath(slug), now);
-  const decision = await staffPauseShop(slug, reason.value);
+  const decision = await decide(staffPauseShop(slug, reason.value), adminSellerPath(slug), now);
   if (!decision) return nothingChanged(adminSellerPath(slug), now);
-  // Pausing from the shop's page closes the reports about it too, so no reporter is later told the Hub found no
-  // problem with a shop it paused (amendment 14.1).
-  const reports = await closeReportsAboutShop(decision.slug, reason.value, staff.id, now);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: "shop-paused",
-    target: { kind: "shop", id: decision.slug, name: decision.name },
-    detail: reason.value,
-    subjectId: decision.ownerId,
-    now,
+  await sampleFollowUps(async () => {
+    // Pausing from the shop's page closes the reports about it too, so no reporter is later told the Hub found no
+    // problem with a shop it paused (amendment 14.1). On Supabase staff_pause_shop closed them, wrote the entry and
+    // told everyone (decision 3).
+    const reports = await closeReportsAboutShop(decision.slug, reason.value, staff.id, now);
+    await recordAudit({
+      staff: staffOf(staff),
+      action: "shop-paused",
+      target: { kind: "shop", id: decision.slug, name: decision.name },
+      detail: reason.value,
+      subjectId: decision.ownerId,
+      now,
+    });
+    await tellOwner(decision, "paused", now);
+    for (const closed of reports) await tellReporter(closed, "acted", now);
   });
-  await tellOwner(decision, "paused", now);
-  for (const closed of reports) await tellReporter(closed, "acted", now);
   sellersChanged();
   await clearStaffForm(shopPauseForm(slug));
   await leaveNotice("paused", now);
@@ -277,20 +312,22 @@ export async function pauseSeller(formData: FormData): Promise<void> {
 export async function resumeSeller(formData: FormData): Promise<void> {
   const slug = idFrom(formData, "shop");
   const path = slug ? adminSellerPath(slug) : ADMIN_SELLERS_PATH;
-  const staff = await requireStaff("admin", path);
+  const staff = await requireStaffAction("admin", path);
   const now = new Date();
-  if (slug && isOwnShop(staff.id, slug)) return refuseOwn("shop", path, now);
-  const decision = slug ? await staffResumeShop(slug) : null;
+  if (slug && await ownsShop(staff.id, slug)) return refuseOwn("shop", path, now);
+  const decision = slug ? await decide(staffResumeShop(slug), path, now) : null;
   if (!decision) return nothingChanged(path, now);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: "shop-resumed",
-    target: { kind: "shop", id: decision.slug, name: decision.name },
-    subjectId: decision.ownerId,
-    now,
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: staffOf(staff),
+      action: "shop-resumed",
+      target: { kind: "shop", id: decision.slug, name: decision.name },
+      subjectId: decision.ownerId,
+      now,
+    });
+    // The seller's own pause stays under the Hub's, so buyers still can't see the shop.
+    await tellOwner(decision, decision.stillPausedBySeller ? "lifted" : "resumed", now);
   });
-  // The seller's own pause stays under the Hub's, so buyers still can't see the shop.
-  await tellOwner(decision, decision.stillPausedBySeller ? "lifted" : "resumed", now);
   sellersChanged();
   await leaveNotice("resumed", now);
   done(path);
@@ -300,22 +337,24 @@ export async function resumeSeller(formData: FormData): Promise<void> {
 export async function assignMentor(formData: FormData): Promise<void> {
   const slug = idFrom(formData, "shop");
   const path = slug ? adminSellerPath(slug) : ADMIN_SELLERS_PATH;
-  const staff = await requireStaff("admin", path);
+  const staff = await requireStaffAction("admin", path);
   const now = new Date();
-  if (slug && isOwnShop(staff.id, slug)) return refuseOwn("shop", path, now);
+  if (slug && await ownsShop(staff.id, slug)) return refuseOwn("shop", path, now);
   const raw = field(formData, "mentor");
   const mentorId = raw === "" ? null : isId(raw) ? raw : undefined;
-  const changed = slug && mentorId !== undefined ? await setShopMentor(slug, mentorId) : null;
+  const changed = slug && mentorId !== undefined ? await decide(setShopMentor(slug, mentorId), path, now) : null;
   if (!changed) return nothingChanged(path, now);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: changed.mentorName ? "mentor-assigned" : "mentor-removed",
-    target: { kind: "shop", id: changed.slug, name: changed.name },
-    detail: changed.mentorName ?? "",
-    subjectId: changed.ownerId,
-    // The detail names the new mentor (a removal names no one), so deleting their account can forget it.
-    relatedId: changed.mentorName ? mentorId : null,
-    now,
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: staffOf(staff),
+      action: changed.mentorName ? "mentor-assigned" : "mentor-removed",
+      target: { kind: "shop", id: changed.slug, name: changed.name },
+      detail: changed.mentorName ?? "",
+      subjectId: changed.ownerId,
+      // The detail names the new mentor (a removal names no one), so deleting their account can forget it.
+      relatedId: changed.mentorName ? mentorId : null,
+      now,
+    });
   });
   await leaveNotice(changed.mentorName ? "mentor-assigned" : "mentor-removed", now);
   done(path);
@@ -326,7 +365,7 @@ export async function assignMentor(formData: FormData): Promise<void> {
 /** Dismiss (with a note): this report closes, and its reporter hears the Hub didn't find a problem. */
 export async function dismissReport(formData: FormData): Promise<void> {
   const id = idFrom(formData, "report");
-  const staff = await requireStaff("admin", id ? adminReportPath(id) : ADMIN_REPORTS_PATH);
+  const staff = await requireStaffAction("admin", id ? adminReportPath(id) : ADMIN_REPORTS_PATH);
   const now = new Date();
   if (!id) return nothingChanged(ADMIN_REPORTS_PATH, now);
   const own = (await getReport(id, staff.id))?.own ?? null;
@@ -336,17 +375,19 @@ export async function dismissReport(formData: FormData): Promise<void> {
     await writeFormState(dismissForm(id), { errors: [note.error], values: { note: keepTyped(note.value) }, notice: null }, now);
     done(adminReportPath(id));
   }
-  const closed = await closeReport(id, note.value, staff.id, now);
+  const closed = await decide(closeReport(id, note.value, staff.id, now), adminReportPath(id), now);
   if (!closed) return nothingChanged(ADMIN_REPORTS_PATH, now);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: "report-dismissed",
-    target: { kind: "report", id, name: closed.title },
-    detail: note.value,
-    subjectId: closed.reporterId,
-    now,
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: staffOf(staff),
+      action: "report-dismissed",
+      target: { kind: "report", id, name: closed.title },
+      detail: note.value,
+      subjectId: closed.reporterId,
+      now,
+    });
+    await tellReporter(closed, "dismissed", now);
   });
-  await tellReporter(closed, "dismissed", now);
   await clearStaffForm(dismissForm(id));
   await leaveNotice("dismissed", now);
   done(ADMIN_REPORTS_PATH);
@@ -358,7 +399,7 @@ export async function dismissReport(formData: FormData): Promise<void> {
  */
 export async function hideReportedListing(formData: FormData): Promise<void> {
   const id = idFrom(formData, "report");
-  const staff = await requireStaff("admin", id ? hideReportedPath(id) : ADMIN_REPORTS_PATH);
+  const staff = await requireStaffAction("admin", id ? hideReportedPath(id) : ADMIN_REPORTS_PATH);
   const now = new Date();
   const view = id ? await getReport(id, staff.id) : null;
   // Before `can`, which is all false for the admin's own (stage L plan decision 6).
@@ -366,28 +407,31 @@ export async function hideReportedListing(formData: FormData): Promise<void> {
   if (!id || !view?.can.hide || view.target.kind !== "listing") return nothingChanged(ADMIN_REPORTS_PATH, now);
   const reason = checkReason(field(formData, "reason"));
   if (reason.error) return backWithReason(hideForm(id), reason.error, reason.value, hideReportedPath(id), now);
-  const hidden = await hideListing(view.target.id, reason.value, now);
+  const target = view.target;
+  const hidden = await decide(hideListing(target.id, reason.value, now), adminReportPath(id), now);
   if (!hidden) return nothingChanged(ADMIN_REPORTS_PATH, now);
-  const reports = await closeReportsOn(view.target, "hidden", reason.value, staff.id, now);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: "listing-hidden",
-    target: { kind: "listing", id: hidden.id, name: hidden.title },
-    detail: reason.value,
-    subjectId: hidden.ownerId,
-    now,
-  });
-  if (hidden.ownerId) {
-    await notify({
-      accountId: hidden.ownerId,
-      kind: "shop-update",
-      subjectId: hidden.id,
-      text: listingHiddenText(hidden.title),
-      href: myListingsPath(tabFor(hidden.state)),
+  await sampleFollowUps(async () => {
+    const reports = await closeReportsOn(target, "hidden", reason.value, staff.id, now);
+    await recordAudit({
+      staff: staffOf(staff),
+      action: "listing-hidden",
+      target: { kind: "listing", id: hidden.id, name: hidden.title },
+      detail: reason.value,
+      subjectId: hidden.ownerId,
       now,
     });
-  }
-  for (const closed of reports) await tellReporter(closed, "acted", now);
+    if (hidden.ownerId) {
+      await notify({
+        accountId: hidden.ownerId,
+        kind: "shop-update",
+        subjectId: hidden.id,
+        text: listingHiddenText(hidden.title),
+        href: myListingsPath(tabFor(hidden.state)),
+        now,
+      });
+    }
+    for (const closed of reports) await tellReporter(closed, "acted", now);
+  });
   listingsChanged();
   await clearStaffForm(hideForm(id));
   await leaveNotice("hidden", now);
@@ -401,7 +445,7 @@ export async function hideReportedListing(formData: FormData): Promise<void> {
  */
 export async function hideReportedRequest(formData: FormData): Promise<void> {
   const id = idFrom(formData, "report");
-  const staff = await requireStaff("admin", id ? hideReportedPath(id) : ADMIN_REPORTS_PATH);
+  const staff = await requireStaffAction("admin", id ? hideReportedPath(id) : ADMIN_REPORTS_PATH);
   const now = new Date();
   const view = id ? await getReport(id, staff.id) : null;
   // Before `can`, which is all false for the admin's own (stage L plan decision 6).
@@ -416,28 +460,31 @@ export async function hideReportedRequest(formData: FormData): Promise<void> {
     const code = reason.error === "reason-missing" ? "reason-missing-asker" : reason.error;
     return backWithReason(hideForm(id), code, reason.value, hideReportedPath(id), now);
   }
-  const hidden = await hideRequest(view.target.id, reason.value, now);
+  const target = view.target;
+  const hidden = await decide(hideRequest(target.id, reason.value, now), adminReportPath(id), now);
   if (!hidden) return nothingChanged(ADMIN_REPORTS_PATH, now);
-  const reports = await closeReportsOn(view.target, "hidden", reason.value, staff.id, now);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: "request-hidden",
-    target: { kind: "request", id: hidden.id, name: hidden.title },
-    detail: reason.value,
-    subjectId: hidden.askerId,
-    now,
-  });
-  if (hidden.askerId) {
-    await notify({
-      accountId: hidden.askerId,
-      kind: "request-update",
-      subjectId: hidden.id,
-      text: requestHiddenText(hidden.title),
-      href: YOUR_REQUESTS_PATH,
+  await sampleFollowUps(async () => {
+    const reports = await closeReportsOn(target, "hidden", reason.value, staff.id, now);
+    await recordAudit({
+      staff: staffOf(staff),
+      action: "request-hidden",
+      target: { kind: "request", id: hidden.id, name: hidden.title },
+      detail: reason.value,
+      subjectId: hidden.askerId,
       now,
     });
-  }
-  for (const closed of reports) await tellReporter(closed, "acted", now);
+    if (hidden.askerId) {
+      await notify({
+        accountId: hidden.askerId,
+        kind: "request-update",
+        subjectId: hidden.id,
+        text: requestHiddenText(hidden.title),
+        href: YOUR_REQUESTS_PATH,
+        now,
+      });
+    }
+    for (const closed of reports) await tellReporter(closed, "acted", now);
+  });
   requestsChanged();
   await clearStaffForm(hideForm(id));
   await leaveNotice("request-hidden", now);
@@ -451,7 +498,7 @@ export async function hideReportedRequest(formData: FormData): Promise<void> {
  */
 export async function pauseReportedShop(formData: FormData): Promise<void> {
   const id = idFrom(formData, "report");
-  const staff = await requireStaff("admin", id ? pauseReportedPath(id) : ADMIN_REPORTS_PATH);
+  const staff = await requireStaffAction("admin", id ? pauseReportedPath(id) : ADMIN_REPORTS_PATH);
   const now = new Date();
   const view = id ? await getReport(id, staff.id) : null;
   // Before `can`, which is all false for the admin's own (stage L plan decision 6).
@@ -459,20 +506,22 @@ export async function pauseReportedShop(formData: FormData): Promise<void> {
   if (!id || !view?.can.pause || !view.shop) return nothingChanged(ADMIN_REPORTS_PATH, now);
   const reason = checkReason(field(formData, "reason"));
   if (reason.error) return backWithReason(reportPauseForm(id), reason.error, reason.value, pauseReportedPath(id), now);
-  const decision = await staffPauseShop(view.shop.slug, reason.value);
+  const decision = await decide(staffPauseShop(view.shop.slug, reason.value), adminReportPath(id), now);
   if (!decision) return nothingChanged(ADMIN_REPORTS_PATH, now);
-  // Every open report about the shop or its listings closes, not only the ones on this report's own target.
-  const reports = await closeReportsAboutShop(decision.slug, reason.value, staff.id, now);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: "shop-paused",
-    target: { kind: "shop", id: decision.slug, name: decision.name },
-    detail: reason.value,
-    subjectId: decision.ownerId,
-    now,
+  await sampleFollowUps(async () => {
+    // Every open report about the shop or its listings closes, not only the ones on this report's own target.
+    const reports = await closeReportsAboutShop(decision.slug, reason.value, staff.id, now);
+    await recordAudit({
+      staff: staffOf(staff),
+      action: "shop-paused",
+      target: { kind: "shop", id: decision.slug, name: decision.name },
+      detail: reason.value,
+      subjectId: decision.ownerId,
+      now,
+    });
+    await tellOwner(decision, "paused", now);
+    for (const closed of reports) await tellReporter(closed, "acted", now);
   });
-  await tellOwner(decision, "paused", now);
-  for (const closed of reports) await tellReporter(closed, "acted", now);
   sellersChanged();
   await clearStaffForm(reportPauseForm(id));
   await leaveNotice("report-paused", now);
@@ -492,10 +541,10 @@ const PIN_ERRORS: Readonly<Record<"not-eligible" | "taken" | "full", string>> = 
 
 /** Pin a Verified seller to a campus (or visitors with none chosen) for a day, before the draw. */
 export async function pinSeller(formData: FormData): Promise<void> {
-  const staff = await requireStaff("admin", ADMIN_FEATURED_PATH);
+  const staff = await requireStaffAction("admin", ADMIN_FEATURED_PATH);
   const now = new Date();
   const seller = idFrom(formData, "seller");
-  if (seller && isOwnShop(staff.id, seller)) return refuseOwn("shop", ADMIN_FEATURED_PATH, now);
+  if (seller && await ownsShop(staff.id, seller)) return refuseOwn("shop", ADMIN_FEATURED_PATH, now);
   const campus = field(formData, "campus");
   const campusName =
     campus === ALL_CAMPUSES ? NO_CAMPUS : (await getCampuses()).find((item) => item.slug === campus)?.name;
@@ -505,21 +554,31 @@ export async function pinSeller(formData: FormData): Promise<void> {
   if (!campusName) errors.push("campus-missing");
   if (day.error) errors.push(day.error);
   if (seller && campusName && !day.error) {
-    const pin = await addPin({ sellerSlug: seller, campusSlug: campus, day: day.value, staffId: staff.id, now });
-    if (typeof pin !== "string") {
-      const name = (await getSeller(pin.sellerSlug))?.name ?? pin.sellerSlug;
-      await recordAudit({
-        staff: staffOf(staff),
-        action: "featured-pinned",
-        target: { kind: "shop", id: pin.sellerSlug, name },
-        detail: `${campusName} · ${pin.day}`,
-        now,
+    // A day the database refuses (a race past checkPinDay, at midnight) is the form's own day error (Task 16).
+    const pin = await decide(
+      addPin({ sellerSlug: seller, campusSlug: campus, day: day.value, staffId: staff.id, now }).catch((error: unknown) => {
+        if (isRefused(error, "day-past", "day-far")) return error.code as "day-past" | "day-far";
+        throw error;
+      }),
+      ADMIN_FEATURED_PATH,
+      now,
+    );
+    if (pin === "day-past" || pin === "day-far") errors.push(pin);
+    else if (typeof pin !== "string") {
+      await sampleFollowUps(async () => {
+        const name = (await getSeller(pin.sellerSlug))?.name ?? pin.sellerSlug;
+        await recordAudit({
+          staff: staffOf(staff),
+          action: "featured-pinned",
+          target: { kind: "shop", id: pin.sellerSlug, name },
+          detail: `${campusName} · ${pin.day}`,
+          now,
+        });
       });
       await clearStaffForm(PIN_FORM);
       await leaveNotice("pinned", now);
       done(ADMIN_FEATURED_PATH);
-    }
-    errors.push(PIN_ERRORS[pin]);
+    } else errors.push(PIN_ERRORS[pin]);
   }
   const values = {
     seller: keepTyped(field(formData, "seller")),
@@ -532,24 +591,26 @@ export async function pinSeller(formData: FormData): Promise<void> {
 
 /** Remove a pin: that campus's row for the day is drawn again. */
 export async function unpinSeller(formData: FormData): Promise<void> {
-  const staff = await requireStaff("admin", ADMIN_FEATURED_PATH);
+  const staff = await requireStaffAction("admin", ADMIN_FEATURED_PATH);
   const now = new Date();
   const id = idFrom(formData, "pin");
   // Whose shop the pin is for, before it's removed (stage L spec decision 1).
   const held = id ? await getPin(id) : null;
-  if (held && isOwnShop(staff.id, held.sellerSlug)) return refuseOwn("shop", ADMIN_FEATURED_PATH, now);
-  const pin = id ? await removePin(id) : null;
+  if (held && await ownsShop(staff.id, held.sellerSlug)) return refuseOwn("shop", ADMIN_FEATURED_PATH, now);
+  const pin = id ? await decide(removePin(id), ADMIN_FEATURED_PATH, now) : null;
   if (!pin) return nothingChanged(ADMIN_FEATURED_PATH, now);
-  const campusName =
-    pin.campusSlug === ALL_CAMPUSES
-      ? NO_CAMPUS
-      : ((await getCampuses()).find((item) => item.slug === pin.campusSlug)?.name ?? pin.campusSlug);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: "featured-unpinned",
-    target: { kind: "shop", id: pin.sellerSlug, name: (await getSeller(pin.sellerSlug))?.name ?? pin.sellerSlug },
-    detail: `${campusName} · ${pin.day}`,
-    now,
+  await sampleFollowUps(async () => {
+    const campusName =
+      pin.campusSlug === ALL_CAMPUSES
+        ? NO_CAMPUS
+        : ((await getCampuses()).find((item) => item.slug === pin.campusSlug)?.name ?? pin.campusSlug);
+    await recordAudit({
+      staff: staffOf(staff),
+      action: "featured-unpinned",
+      target: { kind: "shop", id: pin.sellerSlug, name: (await getSeller(pin.sellerSlug))?.name ?? pin.sellerSlug },
+      detail: `${campusName} · ${pin.day}`,
+      now,
+    });
   });
   await leaveNotice("unpinned", now);
   done(ADMIN_FEATURED_PATH);
@@ -562,7 +623,7 @@ const pointsPath = (campusSlug: string) => `${ADMIN_POINTS_PATH}#points-${campus
 
 /** Add a point to a physical campus. Eduvos Online has none. */
 export async function addPoint(formData: FormData): Promise<void> {
-  const staff = await requireStaff("admin", ADMIN_POINTS_PATH);
+  const staff = await requireStaffAction("admin", ADMIN_POINTS_PATH);
   const now = new Date();
   const chosen = field(formData, "campus");
   const campus = (await getCampuses()).find((item) => item.slug === chosen && item.slug !== ONLINE_CAMPUS);
@@ -575,14 +636,16 @@ export async function addPoint(formData: FormData): Promise<void> {
     await writeFormState(pointAddForm(campus.slug), { errors: [error], values, notice: null }, now);
     done(path);
   }
-  const row = await addPickupPoint(campus.slug, name.value, now);
+  const row = await decide(addPickupPoint(campus.slug, name.value, now), path, now);
   if (!row) return nothingChanged(path, now);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: "point-added",
-    target: { kind: "pickup-point", id: row.id, name: row.name },
-    detail: campus.name,
-    now,
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: staffOf(staff),
+      action: "point-added",
+      target: { kind: "pickup-point", id: row.id, name: row.name },
+      detail: campus.name,
+      now,
+    });
   });
   pickupPointsChanged();
   await clearStaffForm(pointAddForm(campus.slug));
@@ -592,10 +655,10 @@ export async function addPoint(formData: FormData): Promise<void> {
 
 /** Rename a point: listings that use it follow, as they keep its id. */
 export async function renamePoint(formData: FormData): Promise<void> {
-  const staff = await requireStaff("admin", ADMIN_POINTS_PATH);
+  const staff = await requireStaffAction("admin", ADMIN_POINTS_PATH);
   const now = new Date();
   const id = idFrom(formData, "point");
-  const point = id ? pickupPointById(id) : null;
+  const point = id ? await findPickupPoint(id) : null;
   if (!point) return nothingChanged(ADMIN_POINTS_PATH, now);
   const path = pointsPath(point.campusSlug);
   const name = checkPointName(field(formData, "name"));
@@ -605,14 +668,16 @@ export async function renamePoint(formData: FormData): Promise<void> {
     await writeFormState(pointRenameForm(point.id), { errors: [error], values, notice: null }, now);
     done(path);
   }
-  const renamed = await renamePickupPoint(point.id, name.value);
+  const renamed = await decide(renamePickupPoint(point.id, name.value), path, now);
   if (!renamed) return nothingChanged(path, now);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: "point-renamed",
-    target: { kind: "pickup-point", id: point.id, name: name.value },
-    detail: `Was ${renamed.before}`,
-    now,
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: staffOf(staff),
+      action: "point-renamed",
+      target: { kind: "pickup-point", id: point.id, name: name.value },
+      detail: `Was ${renamed.before}`,
+      now,
+    });
   });
   pickupPointsChanged();
   await clearStaffForm(pointRenameForm(point.id));
@@ -622,16 +687,18 @@ export async function renamePoint(formData: FormData): Promise<void> {
 
 /** Retire, or Use it again (plan decision 10): neither loses anything, so neither has a confirm page. */
 async function setRetired(formData: FormData, retire: boolean): Promise<never> {
-  const staff = await requireStaff("admin", ADMIN_POINTS_PATH);
+  const staff = await requireStaffAction("admin", ADMIN_POINTS_PATH);
   const now = new Date();
   const id = idFrom(formData, "point");
-  const row = id ? await (retire ? retirePickupPoint(id, now) : restorePickupPoint(id)) : null;
+  const row = id ? await decide(retire ? retirePickupPoint(id, now) : restorePickupPoint(id), ADMIN_POINTS_PATH, now) : null;
   if (!row) return nothingChanged(ADMIN_POINTS_PATH, now);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: retire ? "point-retired" : "point-restored",
-    target: { kind: "pickup-point", id: row.id, name: row.name },
-    now,
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: staffOf(staff),
+      action: retire ? "point-retired" : "point-restored",
+      target: { kind: "pickup-point", id: row.id, name: row.name },
+      now,
+    });
   });
   pickupPointsChanged();
   await leaveNotice(retire ? "point-retired" : "point-restored", now);
@@ -655,28 +722,30 @@ export async function restorePoint(formData: FormData): Promise<void> {
  */
 export async function showListingAgain(formData: FormData): Promise<void> {
   const id = idFrom(formData, "listing");
-  const staff = await requireStaff("admin", id ? showListingPath(id) : ADMIN_HIDDEN_PATH);
+  const staff = await requireStaffAction("admin", id ? showListingPath(id) : ADMIN_HIDDEN_PATH);
   const now = new Date();
-  if (id && isOwnListing(staff.id, id)) return refuseOwn("listing", ADMIN_HIDDEN_PATH, now);
-  const shown = id ? await showListing(id) : null;
+  if (id && await ownsListing(staff.id, id)) return refuseOwn("listing", ADMIN_HIDDEN_PATH, now);
+  const shown = id ? await decide(showListing(id), ADMIN_HIDDEN_PATH, now) : null;
   if (!shown) return nothingChanged(ADMIN_HIDDEN_PATH, now);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: "listing-shown",
-    target: { kind: "listing", id: shown.id, name: shown.title },
-    subjectId: shown.ownerId,
-    now,
-  });
-  if (shown.ownerId) {
-    await notify({
-      accountId: shown.ownerId,
-      kind: "shop-update",
-      subjectId: shown.id,
-      text: listingShownText(shown.title),
-      href: myListingsPath(tabFor(shown.state)),
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: staffOf(staff),
+      action: "listing-shown",
+      target: { kind: "listing", id: shown.id, name: shown.title },
+      subjectId: shown.ownerId,
       now,
     });
-  }
+    if (shown.ownerId) {
+      await notify({
+        accountId: shown.ownerId,
+        kind: "shop-update",
+        subjectId: shown.id,
+        text: listingShownText(shown.title),
+        href: myListingsPath(tabFor(shown.state)),
+        now,
+      });
+    }
+  });
   listingsChanged();
   await leaveNotice("listing-shown", now);
   done(ADMIN_HIDDEN_PATH);
@@ -688,31 +757,33 @@ export async function showListingAgain(formData: FormData): Promise<void> {
  */
 export async function showRequestAgain(formData: FormData): Promise<void> {
   const id = idFrom(formData, "request");
-  const staff = await requireStaff("admin", id ? showRequestPath(id) : ADMIN_HIDDEN_PATH);
+  const staff = await requireStaffAction("admin", id ? showRequestPath(id) : ADMIN_HIDDEN_PATH);
   const now = new Date();
-  if (id && isOwnRequest(staff.id, id)) return refuseOwn("request", ADMIN_HIDDEN_PATH, now);
+  if (id && await ownsRequest(staff.id, id)) return refuseOwn("request", ADMIN_HIDDEN_PATH, now);
   // Old requests close themselves first, so a due one is closed before it's shown (stage L spec decision 11). After the
   // own gate: a refusal writes nothing (plan amendment 4).
   if ((await settleRequests(now)) > 0) requestsChanged();
-  const shown = id ? await showRequest(id, now) : null;
+  const shown = id ? await decide(showRequest(id, now), ADMIN_HIDDEN_PATH, now) : null;
   if (!shown) return nothingChanged(ADMIN_HIDDEN_PATH, now);
-  await recordAudit({
-    staff: staffOf(staff),
-    action: "request-shown",
-    target: { kind: "request", id: shown.id, name: shown.title },
-    subjectId: shown.askerId,
-    now,
-  });
-  if (shown.askerId) {
-    await notify({
-      accountId: shown.askerId,
-      kind: "request-update",
-      subjectId: shown.id,
-      text: requestShownText(shown.title),
-      href: YOUR_REQUESTS_PATH,
+  await sampleFollowUps(async () => {
+    await recordAudit({
+      staff: staffOf(staff),
+      action: "request-shown",
+      target: { kind: "request", id: shown.id, name: shown.title },
+      subjectId: shown.askerId,
       now,
     });
-  }
+    if (shown.askerId) {
+      await notify({
+        accountId: shown.askerId,
+        kind: "request-update",
+        subjectId: shown.id,
+        text: requestShownText(shown.title),
+        href: YOUR_REQUESTS_PATH,
+        now,
+      });
+    }
+  });
   requestsChanged();
   await leaveNotice("request-shown", now);
   done(ADMIN_HIDDEN_PATH);

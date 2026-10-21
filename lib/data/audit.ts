@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { onSupabase } from "@/lib/backend";
 import { auditKindOf } from "@/lib/staff/audit-words";
 import type { AuditAction, AuditEntry, AuditKind, AuditTargetKind } from "@/lib/types";
 import type { AuditRow } from "./rows";
@@ -7,7 +8,8 @@ import { sampleStore } from "./store";
 // The audit log (staff tools spec 2.2, plan decision 6): one entry per staff action that changed something, written
 // after the change has gone through. recordAudit is its only writer, and there's no function, page or action that
 // changes or removes an entry. The one exception is POPIA: deleting an account forgets the person in it
-// (lib/data/staff-privacy.ts). Times come from the caller.
+// (lib/data/staff-privacy.ts). Times come from the caller. On Supabase the staff functions write the entry in their own
+// transaction, so recordAudit's twin throws, and the reads are lib/data/supabase/audit.ts's (C4/C5 plan Task 13).
 
 export type NewAuditEntry = {
   /** Who acted: their account and their first name now. */
@@ -25,6 +27,7 @@ export type NewAuditEntry = {
 };
 
 export async function recordAudit(entry: NewAuditEntry): Promise<void> {
+  if (onSupabase()) return (await import("./supabase/audit")).recordAudit(entry);
   const id = `aud-${randomUUID()}`;
   sampleStore().auditLog.set(id, {
     id,
@@ -59,6 +62,7 @@ export async function listAudit(
   filter: { staff: string | null; kind: AuditKind | null },
   limit = 200,
 ): Promise<AuditEntry[]> {
+  if (onSupabase()) return (await import("./supabase/audit")).listAudit(filter, limit);
   // Newest added first, then by time: entries made in the same millisecond keep the order they were made in, reversed.
   return [...sampleStore().auditLog.values()]
     .reverse()
@@ -71,6 +75,7 @@ export async function listAudit(
 
 /** Every staff member in the log, by first name, for its filter links (spec 2.3). Deleted accounts aren't listed. */
 export async function auditStaff(): Promise<{ id: string; name: string }[]> {
+  if (onSupabase()) return (await import("./supabase/audit")).auditStaff();
   const names = new Map<string, string>();
   for (const row of sampleStore().auditLog.values()) {
     if (row.staffId) names.set(row.staffId, row.staffName);

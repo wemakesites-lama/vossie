@@ -9,6 +9,7 @@ import { isId } from "@/lib/messaging/paths";
 import { keepTyped } from "@/lib/messaging/rules";
 import { done, field } from "@/lib/selling/action-helpers";
 import { clearStaffForm, HUB_NOTICE, leaveNotice, slotForm } from "@/lib/staff/form-state";
+import { sampleFollowUps } from "@/lib/staff/follow-ups";
 import { slotRequestedText } from "@/lib/staff/notification-text";
 import { bookSlotPath, HUB_MANAGE_PATH } from "@/lib/staff/paths";
 import { checkHelp, checkTime } from "@/lib/staff/rules";
@@ -81,14 +82,18 @@ export async function sendSlotRequest(formData: FormData): Promise<void> {
   // The post says the office hours have passed; the request page says where an open request stands.
   if (made === "closed") done(postPath(id));
   if (made === "open-already") done(path);
-  if (made.authorId && made.authorId !== account.id) {
-    await notify({
-      accountId: made.authorId,
-      kind: "booking",
-      subjectId: made.booking.id,
-      text: slotRequestedText(account.firstName, made.postTitle),
-      href: `${HUB_MANAGE_PATH}#hub-queue`,
-      now,
+  // On Supabase request_slot told the author (decision 3).
+  const { authorId, booking, postTitle } = made;
+  if (authorId && authorId !== account.id) {
+    await sampleFollowUps(async () => {
+      await notify({
+        accountId: authorId,
+        kind: "booking",
+        subjectId: booking.id,
+        text: slotRequestedText(account.firstName, postTitle),
+        href: `${HUB_MANAGE_PATH}#hub-queue`,
+        now,
+      });
     });
   }
   await clearStaffForm(slotForm(id));

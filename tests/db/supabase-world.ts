@@ -731,6 +731,7 @@ export function supabaseWorld(): SupabaseWorld {
             pay_mode: f.payMode,
             description: f.description,
             handover: f.handover,
+            pickup_point_id: f.pickupPointId,
             campus_slug: shop.data!.campus_slug,
             created_at: now,
             first_published_at: now,
@@ -1011,6 +1012,45 @@ export function supabaseWorld(): SupabaseWorld {
         }
         if (follows.length > 0) check(await admin.from("follows").delete().in("id", follows), "Taking the follows away");
       });
+    },
+    async tidyPickupPoints() {
+      const before = check(await admin.from("pickup_points").select("id"), "Reading the pickup points");
+      const kept = new Set(before.data!.map((row) => row.id));
+      undos.push(async () => {
+        const after = check(await admin.from("pickup_points").select("id"), "Reading the pickup points");
+        const made = after.data!.map((row) => row.id).filter((id) => !kept.has(id));
+        if (made.length === 0) return;
+        check(await admin.from("shop_pickup_points").delete().in("pickup_point_id", made), "The points' shops");
+        check(
+          await admin.from("listings").update({ pickup_point_id: null, handover: "on-campus" }).in("pickup_point_id", made),
+          "The points' listings",
+        );
+        check(await admin.from("pickup_points").delete().in("id", made), "Taking the points away");
+      });
+    },
+    async deleteListing(id) {
+      const gone = check(await admin.from("listings").delete().eq("id", id).select("id"), "Deleting the listing");
+      if (gone.data!.length !== 1) throw new Error(`No listing ${id}`);
+    },
+    async closeShop(slug) {
+      const shop = check(await admin.from("shops").select("id").eq("slug", slug).single(), `No shop ${slug}`).data!;
+      const listings = check(await admin.from("listings").select("id").eq("shop_id", shop.id), "Its listings").data!;
+      // As forget_account leaves them (amendment 13.1): the shop's reports point at nothing; its pins and listings go.
+      check(
+        await admin.from("reports").update({ target_gone: true }).eq("target_kind", "seller").eq("target_id", slug),
+        "Its reports",
+      );
+      if (listings.length > 0) {
+        check(
+          await admin
+            .from("reports")
+            .update({ target_gone: true })
+            .eq("target_kind", "listing")
+            .in("target_id", listings.map((row) => row.id)),
+          "Its listings' reports",
+        );
+      }
+      check(await admin.from("shops").delete().eq("id", shop.id), "Deleting the shop");
     },
     async cleanup() {
       const pending = undos.reverse();

@@ -16,7 +16,8 @@ import { sampleStore } from "./store";
 // is a preference (plan amendment 3): resting sellers come after everyone else rather than being left out, so a row
 // is only short when there aren't enough eligible sellers at all. When resting sellers are needed, the campus's own
 // come first, then whoever was featured longest ago (stage M). Adding or removing a pin for a day forgets that
-// campus's row for the day, so the next view draws again.
+// campus's row for the day, so the next view draws again. On Supabase each is lib/data/supabase/featured.ts's: the
+// pins through pin_shop and unpin_shop with the admin's session (C4/C5 plan Task 17), which forget the row too.
 
 /** The homepage's four places (homepage spec 7.10). */
 export const FEATURED_PLACES = 4;
@@ -61,6 +62,7 @@ export function restingBefore(day: string, rowOn: (shown: string) => readonly st
  * (stage L spec decision 1). Null leaves nobody out.
  */
 export async function featuredChoices(viewerId: string | null = null): Promise<Seller[]> {
+  if (onSupabase()) return (await import("./supabase/featured")).featuredChoices(viewerId);
   return eligibleSellers()
     .filter((seller) => viewerId === null || !isOwnShop(viewerId, seller.slug))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -117,6 +119,7 @@ export async function addPin({
   staffId: string;
   now: Date;
 }): Promise<FeaturedPinRow | "not-eligible" | "taken" | "full"> {
+  if (onSupabase()) return (await import("./supabase/featured")).addPin({ sellerSlug, campusSlug, day, staffId, now });
   if (!eligibleSellers().some((seller) => seller.slug === sellerSlug)) return "not-eligible";
   const pins = pinsFor(campusSlug, day);
   if (pins.some((pin) => pin.sellerSlug === sellerSlug)) return "taken";
@@ -137,6 +140,7 @@ export async function addPin({
 
 /** Removes a pin, and that campus's row for its day, so it's drawn again. The pin, or null when there's none. */
 export async function removePin(id: string): Promise<FeaturedPinRow | null> {
+  if (onSupabase()) return (await import("./supabase/featured")).removePin(id);
   const store = sampleStore();
   const pin = store.featuredPins.get(id);
   if (!pin) return null;
@@ -147,6 +151,7 @@ export async function removePin(id: string): Promise<FeaturedPinRow | null> {
 
 /** One pin, so Remove can check whose shop it is before anything changes (stage L spec decision 1). Null when none. */
 export async function getPin(id: string): Promise<FeaturedPinRow | null> {
+  if (onSupabase()) return (await import("./supabase/featured")).getPin(id);
   const pin = sampleStore().featuredPins.get(id);
   return pin ? { ...pin } : null;
 }
@@ -156,6 +161,7 @@ export type PinView = FeaturedPinRow & { sellerName: string; pinnedByName: strin
 
 /** Pins from `fromDay` on, soonest first, then by campus, then in the order made. `viewerId` marks their own. */
 export async function listPins(fromDay: string, viewerId: string | null = null): Promise<PinView[]> {
+  if (onSupabase()) return (await import("./supabase/featured")).listPins(fromDay, viewerId);
   const store = sampleStore();
   return [...store.featuredPins.values()]
     .filter((pin) => pin.day >= fromDay)

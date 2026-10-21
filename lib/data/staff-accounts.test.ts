@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAccount } from "./accounts";
-import { countAdmins, getStaffAccount, giveRole, listStaffAccounts, ownShopMentorId, removeMentorView, removeRole } from "./staff-accounts";
+import { countAdmins, getStaffAccount, giveRole, listStaffAccounts, ownShopMentor, ownShopMentorId, removeMentorView, removeRole } from "./staff-accounts";
 import { resetSampleStore, sampleStore } from "./store";
 
 const NOW = new Date("2026-10-20T08:00:00.000Z");
@@ -158,6 +158,13 @@ describe("the mentor of the admin's own shop (stage M spec decisions 1 to 5)", (
     expect(ownShopMentorId("acc-student")).toBeNull();
     sampleStore().sellerProfiles.get("acc-seller")!.mentorId = null;
     expect(ownShopMentorId("acc-seller")).toBeNull();
+  });
+
+  it("ownShopMentor, the async reader pages use, agrees with ownShopMentorId (C4/C5 plan Task 12)", async () => {
+    for (const owner of ["acc-seller", "acc-pending", "acc-student", "acc-nobody"]) {
+      expect(await ownShopMentor(owner), owner).toBe(ownShopMentorId(owner));
+    }
+    expect(await ownShopMentor("acc-seller")).toBe("acc-mentor");
   });
 
   it("refuses to remove the mentor role of whoever mentors the asking admin's own shop, changing nothing at all", async () => {

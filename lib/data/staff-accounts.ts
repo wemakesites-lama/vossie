@@ -1,4 +1,5 @@
 import { normaliseEmail } from "@/lib/auth/email";
+import { onSupabase } from "@/lib/backend";
 import type { StaffRole } from "@/lib/types";
 import type { AccountRow } from "./rows";
 import { sampleStore } from "./store";
@@ -64,6 +65,15 @@ const adminRows = () => [...sampleStore().accounts.values()].filter((row) => row
  */
 export function ownShopMentorId(ownerId: string): string | null {
   return sampleStore().sellerProfiles.get(ownerId)?.mentorId ?? null;
+}
+
+/**
+ * Who mentors `ownerId`'s own shop, on either backend (C4/C5 plan Task 12, decision 5): what /admin/staff passes its
+ * rows, so the remove link for that mentor shows the line instead. Pages ask this, never ownShopMentorId.
+ */
+export async function ownShopMentor(ownerId: string): Promise<string | null> {
+  if (onSupabase()) return (await import("./supabase/staff-accounts")).ownShopMentor(ownerId);
+  return ownShopMentorId(ownerId);
 }
 
 /** Everyone with a role, and no one else, by first name, then email (spec decision 2). */

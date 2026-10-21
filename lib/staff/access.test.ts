@@ -4,6 +4,7 @@ import { Refused } from "@/lib/data/refused";
 import type { Account } from "@/lib/types";
 import { redirectOf, RedirectSignal, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { signedInAs, STAFF_NOW } from "@/tests/helpers/staff";
+import { firstGate, functionsIn, isExported, parse, staffActionFiles } from "@/tests/helpers/action-sources";
 import { orNotFound, requireStaff, requireStaffAction, staffMetadata } from "./access";
 
 const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
@@ -97,4 +98,23 @@ describe("orNotFound (C4/C5 plan decision 4)", () => {
     const redirect = new RedirectSignal("/", "replace");
     await expect(orNotFound(Promise.reject(redirect))).rejects.toBe(redirect);
   });
+});
+
+// A source check (C4/C5 plan Task 12, decision 4, amendment 10): every exported staff action's first await is
+// requireStaffAction, directly or through a local helper whose first await it is (mentoredFrom, setRetired); the
+// student's Hub actions keep requireAccount.
+describe("every staff action starts with requireStaffAction (C4/C5 plan Task 12)", () => {
+  for (const path of staffActionFiles()) {
+    it(path, () => {
+      const file = parse(path);
+      const functions = functionsIn(file);
+      const gate = path === "lib/hub-actions.ts" ? "requireAccount" : "requireStaffAction";
+      const exported = [...functions.values()].filter(isExported);
+      expect(exported.length).toBeGreaterThan(0);
+      const wrong = exported
+        .map((declaration) => ({ name: declaration.name!.text, first: firstGate(declaration, functions) }))
+        .filter((action) => action.first !== gate);
+      expect(wrong).toEqual([]);
+    });
+  }
 });
