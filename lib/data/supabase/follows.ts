@@ -19,9 +19,17 @@ function failed(what: string, error: { code?: string }): never {
 
 type Followed = { followedAt: string; shop: ShopRecord };
 
-/** The account's follows, newest first, each with its shop when the follower may read it. */
-async function myFollows(client: DbClient): Promise<Followed[]> {
-  const follows = await client.from("follows").select("shop_id, created_at, id").order("created_at", { ascending: false }).order("id");
+/**
+ * The account's follows, newest first, each with its shop when the follower may read it. Filtered to the account as
+ * well as by the follows policy, so no other account's follow can ever show (C4 review fix 3).
+ */
+async function myFollows(client: DbClient, accountId: string): Promise<Followed[]> {
+  const follows = await client
+    .from("follows")
+    .select("shop_id, created_at, id")
+    .eq("account_id", accountId)
+    .order("created_at", { ascending: false })
+    .order("id");
   if (follows.error) failed("follows", follows.error);
   if (follows.data.length === 0) return [];
   const shops = await client.from("shops").select(SHOP_COLUMNS).in("id", follows.data.map((row) => row.shop_id));
@@ -64,7 +72,7 @@ export const removeFollow: typeof Sample.removeFollow = async (accountId, seller
 };
 
 export const isFollowing: typeof Sample.isFollowing = async (accountId, sellerSlug) =>
-  (await myFollows(await forViewerAs(accountId))).some((row) => row.shop.slug === sellerSlug);
+  (await myFollows(await forViewerAs(accountId), accountId)).some((row) => row.shop.slug === sellerSlug);
 
 /**
  * Saved's Shops tab: newest follow first; an open or seller-paused shop with its storefront, a shop the Hub paused
@@ -74,7 +82,7 @@ export const isFollowing: typeof Sample.isFollowing = async (accountId, sellerSl
  */
 export const listFollowedShops: typeof Sample.listFollowedShops = async (accountId) => {
   const client = await forViewerAs(accountId);
-  const follows = await myFollows(client);
+  const follows = await myFollows(client, accountId);
   if (follows.length === 0) return [];
   const ids = follows.map((row) => row.shop.id);
   const [storefronts, profiles, snapshot] = await Promise.all([
@@ -141,4 +149,4 @@ export const forgetFollowsOf: typeof Sample.forgetFollowsOf = async () => {
 
 /** The shops the account follows, by name, newest first, for the download. No ids. */
 export const exportFollowing: typeof Sample.exportFollowing = async (accountId) =>
-  (await myFollows(await forViewerAs(accountId))).map((row) => row.shop.name);
+  (await myFollows(await forViewerAs(accountId), accountId)).map((row) => row.shop.name);

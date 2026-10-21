@@ -129,6 +129,14 @@ export function alertsContract(makeWorld: () => World): void {
     ]);
   });
 
+  it("never puts another account's search in the download (C4 review fix 3)", async () => {
+    await world.saveSearch("shopper", { q: "toaster" });
+    await world.saveSearch("staff", { category: "tech" });
+    expect(await as(() => exportSavedSearches(asker))).toEqual([]);
+    await world.saveSearch("asker", { q: "kettle" });
+    expect((await as(() => exportSavedSearches(asker))).map((row) => row.words)).toEqual(["kettle"]);
+  });
+
   // --- Alerts ------------------------------------------------------------------------------------------------------
 
   const matches = async (name: WorldAccountName) =>

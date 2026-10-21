@@ -1,6 +1,7 @@
 import "server-only";
+import { cache } from "react";
 import type { RequestFields } from "@/lib/looking-for/rules";
-import { sastDate } from "@/lib/time";
+import { sastClock, sastDate } from "@/lib/time";
 import type { LookingForRequest, RequestStatus } from "@/lib/types";
 import { Refused, type RefusalCode } from "../refused";
 import type * as Sample from "../requests";
@@ -90,15 +91,28 @@ export const publicRequestIds: AsyncTwin<typeof Sample.publicRequestIds> = async
   return rows.flatMap((row) => (row.id ? [row.id] : []));
 };
 
-/**
- * Stores every due close and the one reminder, telling each asker (decision 2): the database's settle_requests, which
- * holds a lock and caps the time at its own now(). The admin client: request-time code only, never inside
- * "use cache" (decision 21). How many it closed.
- */
-export const settleRequests: typeof Sample.settleRequests = async (now) => {
+async function settleNow(now: Date): Promise<number> {
   const { data, error } = await forServer().rpc("settle_requests", { p_now: now.toISOString() });
   if (error) throw new Error(error.message);
   return data;
+}
+
+/**
+ * One settle per render and SAST minute (C4 review fix 4): the first caller's settle, which the render's other callers
+ * share, count included. React's cache() memoises only while React renders, so a Server Action or a Route Handler
+ * settles on every call: an action that writes still settles at its start.
+ */
+const settleIn = cache((sastMinute: string): { sastMinute: string; settled?: Promise<number> } => ({ sastMinute }));
+
+/**
+ * Stores every due close and the one reminder, telling each asker (decision 2): the database's settle_requests, which
+ * holds a lock and caps the time at its own now(). The admin client: request-time code only, never inside
+ * "use cache" (decision 21). How many it closed; within one render, the render's first settle's count.
+ */
+export const settleRequests: typeof Sample.settleRequests = (now) => {
+  const once = settleIn(`${sastDate(now)}T${sastClock(now.toISOString())}`);
+  once.settled ??= settleNow(now);
+  return once.settled;
 };
 
 // --- The asker's side (C4/C5 plan Task 4) ------------------------------------------------------------------------------

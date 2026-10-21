@@ -56,9 +56,11 @@ vi.mock("@/lib/staff/once", async (original) => ({
 vi.mock("@/lib/data/messages", () => ({ startOffer: mocks.startOffer }));
 vi.mock("@/lib/data/offers", () => ({ countOffersSince: async () => 0 }));
 vi.mock("@/lib/messaging/limits", () => ({ messageLimitErrors: async () => [] }));
+const OPEN = { kind: "open", askerId: "asker-1", shopSlug: "lamps", listings: [] as { id: string; title: string }[] };
+const subjects = vi.hoisted(() => ({ status: null as unknown }));
 vi.mock("./subjects", () => ({
   offerSubject: async () => ({ request: { id: "r-1", title: "A desk lamp" }, campusName: "Pretoria" }),
-  offerStatus: async () => ({ kind: "open", askerId: "asker-1", shopSlug: "lamps", listings: [] }),
+  offerStatus: async () => subjects.status,
 }));
 
 const { closeMyRequest, reopenMyRequest, saveMyRequest, sendOffer } = await import("./actions");
@@ -83,6 +85,7 @@ beforeEach(() => {
     fn.mockReset();
   }
   mocks.sentOnceToken.mockResolvedValue(null);
+  subjects.status = OPEN;
 });
 
 describe("Post request on Supabase (C4/C5 plan decision 6)", () => {
@@ -159,8 +162,43 @@ describe("Send offer on Supabase (C4/C5 plan amendment 11)", () => {
     }
   });
 
-  it("rethrows any other refusal", async () => {
+  // C4 review fix 1: the request closed, or the listing went, between the composer's checks and start_offer. The
+  // composer then shows the request's current status, and what was typed is kept for when it can still be sent.
+  it("keeps what was typed and goes back to the composer when the request closed in the meantime", async () => {
     mocks.startOffer.mockRejectedValue(new Refused("closed"));
-    await expect(sendOffer(form({ request: "r-1", body: "I have one, R120." }))).rejects.toThrow("Refused: closed");
+    expect((await redirectSignalOf(() => sendOffer(form({ request: "r-1", body: "I have one, R120." })))).url).toBe(
+      "/looking-for/r-1/offer",
+    );
+    expect(mocks.states).toEqual([
+      { form: "offer:r-1", errors: [], values: { body: "I have one, R120.", listing: "" }, notice: null },
+    ]);
+  });
+
+  it("keeps the text but not the listing when the listing stopped being offerable", async () => {
+    mocks.startOffer.mockRejectedValue(new Refused("listing-invalid"));
+    const listing = { id: "l-1", title: "Clip-on lamp" };
+    subjects.status = { ...OPEN, listings: [listing] };
+    expect(
+      (await redirectSignalOf(() => sendOffer(form({ request: "r-1", body: "I have one, R120.", listing: "l-1" })))).url,
+    ).toBe("/looking-for/r-1/offer");
+    expect(mocks.startOffer).toHaveBeenCalledWith(expect.objectContaining({ listing }));
+    expect(mocks.states).toEqual([
+      { form: "offer:r-1", errors: [], values: { body: "I have one, R120.", listing: "" }, notice: null },
+    ]);
+  });
+
+  it("keeps the listing for any other late refusal", async () => {
+    mocks.startOffer.mockRejectedValue(new Refused("not-found"));
+    subjects.status = { ...OPEN, listings: [{ id: "l-1", title: "Clip-on lamp" }] };
+    await redirectSignalOf(() => sendOffer(form({ request: "r-1", body: "I have one, R120.", listing: "l-1" })));
+    expect(mocks.states).toEqual([
+      { form: "offer:r-1", errors: [], values: { body: "I have one, R120.", listing: "l-1" }, notice: null },
+    ]);
+  });
+
+  it("rethrows a plain Error", async () => {
+    mocks.startOffer.mockRejectedValue(new Error("start_offer failed (500)"));
+    await expect(sendOffer(form({ request: "r-1", body: "I have one, R120." }))).rejects.toThrow("start_offer failed");
+    expect(mocks.states).toEqual([]);
   });
 });

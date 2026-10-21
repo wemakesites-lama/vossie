@@ -5,7 +5,7 @@ import { writeFormState } from "@/lib/auth/form-state";
 import { requireAccount } from "@/lib/auth/session";
 import { getCampuses, getCategories } from "@/lib/data";
 import { startOffer } from "@/lib/data/messages";
-import { isRefused } from "@/lib/data/refused";
+import { isRefused, type RefusalCode } from "@/lib/data/refused";
 import { countOffersSince } from "@/lib/data/offers";
 import {
   countOpenRequests,
@@ -57,6 +57,12 @@ import { offerStatus, offerSubject } from "./subjects";
 // any request whose closing day has come first, and expires "requests" when one closed (stage L spec decision 11).
 
 // --- Shared helpers -------------------------------------------------------------------------------------------------
+
+/**
+ * start_offer's refusals of something that changed after the composer looked (C2/C3 plan decision 23's list, less the
+ * two rate limits, which have their own form errors). Only the Supabase twin throws them (C4 review fix 1).
+ */
+const LATE_OFFER_REFUSALS: RefusalCode[] = ["not-found", "own", "no-shop", "pending", "paused", "closed", "sample", "listing-invalid"];
 
 /** An id from a hidden field, when it's one this site could have made. */
 function idFrom(formData: FormData, name: string): string | null {
@@ -319,8 +325,16 @@ export async function sendOffer(formData: FormData): Promise<void> {
   } catch (error) {
     // On Supabase start_offer counts the shop's offers and the hour's messages again under the sender's lock (C2/C3
     // plan decision 23; C4/C5 amendment 11): a race past the checks above gets the same form error.
-    if (!isRefused(error, "offer-rate", "message-rate")) throw error;
-    await writeFormState(form, { errors: [error.code], values, notice: null }, now);
+    if (isRefused(error, "offer-rate", "message-rate")) {
+      await writeFormState(form, { errors: [error.code], values, notice: null }, now);
+      back(path);
+    }
+    // Anything else start_offer refuses changed after offerStatus looked (the request closed or was hidden, the shop
+    // paused, the listing went: C4 review fix 1). The composer shows the request's status as it is now, with what was
+    // typed kept, less a listing that can't be offered any more. A plain Error is still thrown.
+    if (!isRefused(error, ...LATE_OFFER_REFUSALS)) throw error;
+    const kept = error.code === "listing-invalid" ? { ...values, listing: "" } : values;
+    await writeFormState(form, { errors: [], values: kept, notice: null }, now);
     back(path);
   }
   await clearOwnFormState(form);

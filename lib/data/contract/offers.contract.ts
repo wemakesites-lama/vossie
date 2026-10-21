@@ -53,6 +53,21 @@ export function offersContract(makeWorld: () => World): void {
     ]);
   });
 
+  it("on Supabase, gives anyone but the asker only their own thread on the request (C4 review fix 3)", async () => {
+    // The sample's offersForRequest trusts its caller (only the asker's own request page asks); on Supabase it reads
+    // my_conversations, which holds only the reader's own threads.
+    if (world.name !== "supabase") return;
+    await world.tidySelling("seller");
+    const kettles = await world.openShop("seller", { name: "Contract kettles" });
+    const lamps = await world.addOffer(slug, request, "I have one, R120.");
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const theirs = await world.addOffer(kettles, request, "Mine is R90.");
+    expect((await offers()).map((offer) => offer.conversationId)).toEqual([theirs, lamps]);
+    expect((await world.asViewer("seller", () => offersForRequest(request))).map((offer) => offer.conversationId)).toEqual([theirs]);
+    expect((await world.asViewer("shopper", () => offersForRequest(request))).map((offer) => offer.conversationId)).toEqual([lamps]);
+    expect(await world.asViewer("staff", () => offersForRequest(request))).toEqual([]);
+  });
+
   it("finds the shop's own offer on the request for its owner, and none for another shop", async () => {
     const thread = await world.addOffer(slug, request, "I have one, R120.");
     expect(await world.asViewer("shopper", () => findOffer(request, slug))).toBe(thread);

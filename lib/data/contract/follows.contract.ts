@@ -119,6 +119,21 @@ export function followsContract(makeWorld: () => World): void {
     expect(await as(() => exportFollowing(asker))).toEqual(["Contract lamps", "Contract kettles"]);
   });
 
+  it("never shows another account's follow: not on Saved, not as following, not in the download (C4 review fix 3)", async () => {
+    const lamps = await world.openShop("shopper", { name: "Contract lamps" });
+    const kettles = await world.openShop("seller", { name: "Contract kettles" });
+    await world.follow("staff", lamps);
+    await world.follow("shopper", kettles);
+    expect(await as(() => listFollowedShops(asker))).toEqual([]);
+    expect(await as(() => isFollowing(asker, lamps))).toBe(false);
+    expect(await as(() => isFollowing(asker, kettles))).toBe(false);
+    expect(await as(() => exportFollowing(asker))).toEqual([]);
+    await world.follow("asker", kettles);
+    expect((await as(() => listFollowedShops(asker))).map((shop) => shop.slug)).toEqual([kettles]);
+    expect(await as(() => isFollowing(asker, lamps))).toBe(false);
+    expect(await as(() => exportFollowing(asker))).toEqual(["Contract kettles"]);
+  });
+
   it("names a shop with a storefront that the account doesn't follow", async () => {
     const lamps = await world.openShop("shopper", { name: "Contract lamps" });
     expect(await as(() => shopNameOf(lamps))).toBe("Contract lamps");
