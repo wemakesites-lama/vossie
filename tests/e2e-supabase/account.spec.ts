@@ -47,7 +47,7 @@ test.describe("your account on Supabase (phase B, Task 11)", () => {
       page.waitForEvent("download"),
       main(page).getByRole("link", { name: "Download your data" }).click(),
     ]);
-    expect(download.suggestedFilename()).toBe("vossie-data.json");
+    expect(download.suggestedFilename()).toBe("campuscart-data.json");
     const text = await readFile((await download.path())!, "utf8");
     const data = JSON.parse(text);
     expect(data.account).toMatchObject({ email, firstName: "Lindiwe", campus: "durban-umhlanga" });

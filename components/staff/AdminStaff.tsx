@@ -94,7 +94,7 @@ function GiveRoleForm({ values, errors, once }: Pick<AdminStaffProps, "values" |
             Eduvos email
           </label>
           <p id={emailHint} className="form-hint">
-            The email they sign in with. They need to have signed in to Vossie once.
+            The email they sign in with. They need to have signed in to CampusCart once.
           </p>
           <FieldError id={emailErrorId} message={emailError} />
           <input

@@ -39,7 +39,7 @@ export function shortDescription(text: string, max = 150): string {
 
 /** The share card's alt text (spec 5.8). */
 export function shareCardAlt(title: string, price: string, campusName: string): string {
-  return `${title}, ${price}, at ${campusName} on Vossie`;
+  return `${title}, ${price}, at ${campusName} on CampusCart`;
 }
 
 const BADGE_LABELS: Record<TrustBadge, string> = {
@@ -99,7 +99,7 @@ export function listingsLabel(count: number): string {
 
 /** A seller's share card's alt text (shopping spec 4.3). */
 export function sellerCardAlt(name: string, category: string, campusName: string): string {
-  return `${name}, ${category} at ${campusName} on Vossie`;
+  return `${name}, ${category} at ${campusName} on CampusCart`;
 }
 
 /** "2026-10-24" → "24 Oct". The date is already South African, so there's no timezone maths. */

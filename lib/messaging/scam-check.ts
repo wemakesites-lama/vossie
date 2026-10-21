@@ -14,8 +14,8 @@ export const SAFETY_TIPS: readonly string[] = [
 export const SCAM_TIPS: ReadonlyMap<ScamWarning, string> = new Map([
   ["advance", "Never pay before you've seen the item or had the service. Pay when you meet."],
   ["deposit", "Don't pay a deposit or a booking fee to hold something. A real seller can wait until you meet."],
-  ["bank", "Don't share bank details, card numbers or PINs in messages. Vossie will never ask for them."],
-  ["courier", "Vossie is for meeting on campus. A courier means paying before you've seen it."],
+  ["bank", "Don't share bank details, card numbers or PINs in messages. CampusCart will never ask for them."],
+  ["courier", "CampusCart is for meeting on campus. A courier means paying before you've seen it."],
   ["code", "Never share a code sent to your phone. Anyone who asks for one is trying to get into your accounts."],
 ]);
 

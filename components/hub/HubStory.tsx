@@ -21,7 +21,7 @@ export function HubStory({ image }: { image: ImageRef }) {
           and it runs pitch nights, workshops and office hours through the year.
         </p>
         <p>
-          The Hub also runs Vossie. It checks the sellers who apply and gives the ones it has met and checked the
+          The Hub also runs CampusCart. It checks the sellers who apply and gives the ones it has met and checked the
           Verified badge, so you know who you&apos;re buying from.
         </p>
       </div>

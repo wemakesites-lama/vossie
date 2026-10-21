@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: PageProps<"/sellers/[slug]">)
   return {
     title: seller.name,
     description: seller.tagline,
-    openGraph: { title: `${seller.name} · ${campus} on Vossie`, description: seller.tagline },
+    openGraph: { title: `${seller.name} · ${campus} on CampusCart`, description: seller.tagline },
   };
 }
 

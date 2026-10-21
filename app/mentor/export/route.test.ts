@@ -22,7 +22,7 @@ describe("the mentor dashboard's CSV (staff tools spec 2.6, plan decision 17)", 
     await signedInAs(request, "acc-mentor");
     const response = await GET();
     expect(response.headers.get("content-type")).toBe("text/csv; charset=utf-8");
-    expect(response.headers.get("content-disposition")).toBe('attachment; filename="vossie-mentoring-2026-10-14.csv"');
+    expect(response.headers.get("content-disposition")).toBe('attachment; filename="campuscart-mentoring-2026-10-14.csv"');
     expect(response.headers.get("cache-control")).toBe("no-store");
     // Amendment 12.2: the file starts with a UTF-8 byte-order mark, sent as it is. Response.text() would drop it, so
     // read the bytes and decode them keeping it. Amendment 12.1: every text cell is quoted, numbers are bare.

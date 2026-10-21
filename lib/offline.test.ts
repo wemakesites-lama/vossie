@@ -16,8 +16,8 @@ describe("the offline page (community actions spec 2.20)", () => {
   it("says you're offline, what to check, and Try again, a link to the same address", () => {
     const doc = page();
     expect([...doc.querySelectorAll("h1")].map((heading) => heading.textContent)).toEqual(["You're offline"]);
-    expect(doc.body.textContent).toContain("Vossie needs a connection to show listings and messages. Check your data or Wi-Fi.");
-    expect(doc.querySelector(".brand")?.textContent).toBe("Vossie");
+    expect(doc.body.textContent).toContain("CampusCart needs a connection to show listings and messages. Check your data or Wi-Fi.");
+    expect(doc.querySelector(".brand")?.textContent).toBe("CampusCart");
     const tryAgain = doc.querySelector("a");
     expect(tryAgain?.textContent).toBe("Try again");
     expect(tryAgain?.getAttribute("href")).toBe("");

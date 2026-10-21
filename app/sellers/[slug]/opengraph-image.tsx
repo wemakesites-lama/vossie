@@ -36,7 +36,7 @@ export default async function Image({ params }: Props) {
   const { slug } = await params;
   const found = await lookUp(slug);
   // Capped, so long text can't run past the 630px height.
-  const name = found ? shortDescription(found.seller.name, 40) : "Vossie";
+  const name = found ? shortDescription(found.seller.name, 40) : "CampusCart";
   const tagline = found ? shortDescription(found.seller.tagline, 110) : "";
   const campus = found?.campusName ?? "Every Eduvos campus";
 
@@ -56,7 +56,7 @@ export default async function Image({ params }: Props) {
       >
         <img src={crest} width={181} height={304} alt="" />
         <div style={{ display: "flex", flexDirection: "column", gap: 24, flex: 1 }}>
-          <div style={{ fontSize: 30, letterSpacing: 2, textTransform: "uppercase" }}>{`Vossie · ${campus}`}</div>
+          <div style={{ fontSize: 30, letterSpacing: 2, textTransform: "uppercase" }}>{`CampusCart · ${campus}`}</div>
           <div style={{ fontSize: 88, lineHeight: 1, textTransform: "uppercase" }}>{name}</div>
           {tagline && <div style={{ fontSize: 40, lineHeight: 1.2 }}>{tagline}</div>}
         </div>

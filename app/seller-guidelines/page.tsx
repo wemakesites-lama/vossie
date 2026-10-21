@@ -5,7 +5,7 @@ import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
 export const metadata: Metadata = {
   title: "Seller guidelines",
   description:
-    "How to sell well on Vossie, and what can't be sold: honest listings, fair prices, quick replies and safe handovers. A draft for Eduvos to review.",
+    "How to sell well on CampusCart, and what can't be sold: honest listings, fair prices, quick replies and safe handovers. A draft for Eduvos to review.",
   // A draft stays out of search results until Eduvos signs it off (controller amendment 1, spec decision 8).
   robots: { index: false },
 };
@@ -16,7 +16,7 @@ const SECTIONS: readonly InfoSection[] = [
     title: "Who can sell",
     children: (
       <p>
-        Eduvos students can sell on Vossie once the Incubation Hub has checked their shop. You can sell as yourself or as
+        Eduvos students can sell on CampusCart once the Incubation Hub has checked their shop. You can sell as yourself or as
         your small business. What you list must be yours to sell.
       </p>
     ),
@@ -26,7 +26,7 @@ const SECTIONS: readonly InfoSection[] = [
     title: "What can't be sold",
     children: (
       <>
-        <p>These can never be sold on Vossie, whatever the price:</p>
+        <p>These can never be sold on CampusCart, whatever the price:</p>
         <ul>
           <li>weapons, and anything made to hurt people;</li>
           <li>alcohol or tobacco sold to anyone under 18;</li>
@@ -119,7 +119,7 @@ export default function SellerGuidelinesPage() {
   return (
     <InfoPage
       title="Seller guidelines"
-      lede="How to sell well on Vossie, and what is not allowed."
+      lede="How to sell well on CampusCart, and what is not allowed."
       updated="2026-10-14"
       draft
       sections={SECTIONS}

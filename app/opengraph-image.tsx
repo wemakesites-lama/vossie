@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-export const alt = "Vossie, the student marketplace for every Eduvos campus";
+export const alt = "CampusCart, the student marketplace for every Eduvos campus";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -31,7 +31,7 @@ export default function Image() {
       >
         <img src={crest} width={181} height={304} alt="" />
         <div style={{ display: "flex", flexDirection: "column", gap: 28, flex: 1 }}>
-          <div style={{ fontSize: 120, lineHeight: 1, letterSpacing: 6 }}>VOSSIE</div>
+          <div style={{ fontSize: 120, lineHeight: 1, letterSpacing: 6 }}>CAMPUSCART</div>
           <div style={{ fontSize: 44, lineHeight: 1.2 }}>The student marketplace for every Eduvos campus</div>
         </div>
       </div>

@@ -4,13 +4,13 @@ import HowItWorksPage, { metadata } from "./page";
 
 describe("How it works (info and system spec 3)", () => {
   it("is titled and described for search results and link previews", () => {
-    expect(metadata.title).toBe("How Vossie works");
+    expect(metadata.title).toBe("How CampusCart works");
     expect(metadata.description).toMatch(/find it, message the seller, meet on campus/i);
   });
 
   it("has one h1 and four sections", () => {
     render(<HowItWorksPage />);
-    expect(screen.getByRole("heading", { level: 1, name: "How Vossie works" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "How CampusCart works" })).toBeInTheDocument();
     const names = screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
     expect(names).toEqual(["Buying", "Selling", "Trust, in one paragraph", "Questions and answers"]);
   });
@@ -22,7 +22,7 @@ describe("How it works (info and system spec 3)", () => {
       .getAllByRole("listitem")
       .map((item) => item.querySelector("strong")?.textContent);
     expect(steps).toEqual(["Find it.", "Message the seller.", "Meet at a pickup point.", "See it, then pay or swap."]);
-    expect(within(buying).getByText(/Vossie takes no online payments/)).toBeInTheDocument();
+    expect(within(buying).getByText(/CampusCart takes no online payments/)).toBeInTheDocument();
     expect(within(buying).getByRole("link", { name: "safety guide" })).toHaveAttribute("href", "/safety");
   });
 
@@ -50,12 +50,12 @@ describe("How it works (info and system spec 3)", () => {
     render(<HowItWorksPage />);
     const questions = screen.getByRole("region", { name: "Questions and answers" });
     expect(within(questions).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual([
-      "Who can use Vossie?",
+      "Who can use CampusCart?",
       "Does it cost anything?",
       "How do I pay?",
       "Can I buy from another campus?",
       "How do I become a seller?",
-      "What can I do on Vossie today?",
+      "What can I do on CampusCart today?",
     ]);
     expect(within(questions).getByText(/Browse every campus, save listings on your device and share them/)).toBeInTheDocument();
     // Selling is open now (selling plan, Task 15): the answers say how to start, and that a preview forgets.
@@ -66,7 +66,7 @@ describe("How it works (info and system spec 3)", () => {
     // What stages H to J added (stage K spec 6).
     expect(within(questions).getByText(/Messaging, selling, reporting, posting a request, following a shop, saving a search/)).toBeInTheDocument();
     expect(within(questions).getByText(/save a search and hear when a new listing matches it/)).toBeInTheDocument();
-    expect(within(questions).getByText(/Notifications show on Vossie only: nothing is emailed yet\./)).toBeInTheDocument();
+    expect(within(questions).getByText(/Notifications show on CampusCart only: nothing is emailed yet\./)).toBeInTheDocument();
     expect(within(questions).queryByText(/Messaging and selling need an account/)).toBeNull();
     // Stage L: requests close themselves, and can be reopened (spec section 4, Words).
     expect(

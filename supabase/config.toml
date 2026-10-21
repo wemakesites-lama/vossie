@@ -259,11 +259,11 @@ otp_expiry = 600
 # confirmation template to a new (unconfirmed) one, so both are the same file showing {{ .Token }}. verifyOtp with
 # type "email" accepts either code.
 [auth.email.template.magic_link]
-subject = "Your Vossie sign-in code"
+subject = "Your CampusCart sign-in code"
 content_path = "./supabase/templates/sign-in-code.html"
 
 [auth.email.template.confirmation]
-subject = "Your Vossie sign-in code"
+subject = "Your CampusCart sign-in code"
 content_path = "./supabase/templates/sign-in-code.html"
 
 # Uncomment to customize notification email template

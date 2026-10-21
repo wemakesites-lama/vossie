@@ -332,7 +332,7 @@ test.describe("your account (accounts spec 3.2 and 3.3)", () => {
     await expect(field(page, "Your first name")).toHaveValue("L");
   });
 
-  test("Download your data saves vossie-data.json with your account in it and no ids", async ({ page }) => {
+  test("Download your data saves campuscart-data.json with your account in it and no ids", async ({ page }) => {
     onlyAt("phone-390", "desktop-1440");
     await signInAsSample(page, "Mentor");
     await main(page).getByRole("link", { name: "Privacy settings" }).click();
@@ -342,7 +342,7 @@ test.describe("your account (accounts spec 3.2 and 3.3)", () => {
       page.waitForEvent("download"),
       main(page).getByRole("link", { name: "Download your data" }).click(),
     ]);
-    expect(download.suggestedFilename()).toBe("vossie-data.json");
+    expect(download.suggestedFilename()).toBe("campuscart-data.json");
     const data = JSON.parse(await readFile((await download.path())!, "utf8"));
     expect(data.account).toMatchObject({ email: "mentor@eduvos.com", roles: ["mentor"] });
     expect(data.sessions.length).toBeGreaterThanOrEqual(1);
@@ -408,13 +408,13 @@ test("the account pages and the export send a signed-out visitor to sign in, and
 test("sign-in and account pages stay out of search engines", async ({ page }) => {
   onlyAt("desktop-1440");
   await page.goto("/login");
-  await expect(page).toHaveTitle("Sign in · Vossie");
+  await expect(page).toHaveTitle("Sign in · CampusCart");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
   await signInAsSample(page, "Student, Midrand");
   await expect(page).toHaveURL(/\/account$/);
   for (const [path, title] of [
-    ["/account", "Your account · Vossie"],
-    ["/account/privacy", "Privacy settings · Vossie"],
+    ["/account", "Your account · CampusCart"],
+    ["/account/privacy", "Privacy settings · CampusCart"],
   ]) {
     await page.goto(path);
     await expect(page).toHaveTitle(title);

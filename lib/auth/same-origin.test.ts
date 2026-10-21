@@ -4,7 +4,7 @@ import { isSameOrigin, notFromVossie, seeOther } from "./same-origin";
 /** The parts of a request the check reads. */
 const from = (headers: Record<string, string>) => ({ headers: new Headers(headers) });
 
-describe("posts that start or end a session come from Vossie (stage K spec decision 3)", () => {
+describe("posts that start or end a session come from CampusCart (stage K spec decision 3)", () => {
   it("accepts a post whose Origin's host is the request's host", () => {
     expect(isSameOrigin(from({ origin: "http://localhost:3204", host: "localhost:3204" }))).toBe(true);
     expect(isSameOrigin(from({ origin: "https://vossie-pi.vercel.app", host: "vossie-pi.vercel.app" }))).toBe(true);
@@ -40,7 +40,7 @@ describe("posts that start or end a session come from Vossie (stage K spec decis
     const refused = notFromVossie();
     expect(refused.status).toBe(403);
     expect(refused.headers.get("content-type")).toBe("text/plain; charset=utf-8");
-    expect(await refused.text()).toBe("This form must be sent from Vossie.");
+    expect(await refused.text()).toBe("This form must be sent from CampusCart.");
     const onward = seeOther("/looking-for/new");
     expect([onward.status, onward.headers.get("location"), onward.headers.get("cache-control")]).toEqual([
       303,

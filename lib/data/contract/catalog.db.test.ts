@@ -60,7 +60,7 @@ describe("the catalog's readers give the sample store's answers on the seed (2b 
     for (const collection of collections) await same(() => getCollectionListings(collection.slug));
   });
 
-  it("Free & swaps and Already on Vossie", async () => {
+  it("Free & swaps and Already on CampusCart", async () => {
     await same(() => getFreeAndSwaps({ campus: "all", limit: 8 }));
     await same(() => getFreeAndSwaps({ campus: "midrand", limit: 8 }));
     await same(() => getRelatedListings({ categorySlug: "tech", campusSlug: "pretoria", limit: 4 }));

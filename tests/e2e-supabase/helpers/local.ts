@@ -87,7 +87,7 @@ export async function latestCode(address: string, after: Date): Promise<string> 
       .sort((a, b) => Date.parse(b.Created) - Date.parse(a.Created))[0];
     if (newest) {
       const message = (await (await fetch(`${mailpit}/api/v1/message/${newest.ID}`)).json()) as { Subject: string; Text: string };
-      expect(message.Subject).toBe("Your Vossie sign-in code");
+      expect(message.Subject).toBe("Your CampusCart sign-in code");
       const codes = message.Text.match(/\b\d{6}\b/g) ?? [];
       expect(codes).toHaveLength(1);
       return codes[0]!;

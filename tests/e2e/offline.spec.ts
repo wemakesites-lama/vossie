@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 test.use({ serviceWorkers: "allow" });
 
 test.describe("offline (community actions spec 2.20 to 2.22)", () => {
-  test("the worker installs; an offline page load shows Vossie's offline page; Try again works once back online", async ({
+  test("the worker installs; an offline page load shows CampusCart's offline page; Try again works once back online", async ({
     page,
     context,
   }) => {

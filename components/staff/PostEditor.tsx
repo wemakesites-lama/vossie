@@ -232,7 +232,7 @@ export function PostEditor({ postId, values, errors, preview, campuses, coverSrc
           </label>
           <p id={`${ids.body}-hint`} className="form-hint">
             Up to 4,000 characters. **Bold**, *italic*, ## headings, lists starting with - or 1., and [links](/hub) to
-            pages on Vossie.
+            pages on CampusCart.
           </p>
           <FieldError id={`${ids.body}-error`} message={bodyError} />
           <textarea

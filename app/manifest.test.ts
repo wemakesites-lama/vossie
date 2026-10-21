@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import manifest from "./manifest";
 
 describe("web app manifest", () => {
-  it("describes an installable Vossie app", () => {
+  it("describes an installable CampusCart app", () => {
     const app = manifest();
-    expect(app.short_name).toBe("Vossie");
+    expect(app.short_name).toBe("CampusCart");
     expect(app.start_url).toBe("/");
     expect(app.display).toBe("standalone");
     expect(app.theme_color).toBe("#15305D");

@@ -31,14 +31,14 @@ function BrowseSearch({ query }: { query: BrowseQuery }) {
   return (
     <form action="/browse" role="search" className="browse-search">
       <label htmlFor="browse-q" className="sr-only">
-        Search Vossie
+        Search CampusCart
       </label>
       <input
         id="browse-q"
         type="search"
         name="q"
         defaultValue={query.q ?? ""}
-        placeholder="Search Vossie"
+        placeholder="Search CampusCart"
         autoComplete="off"
         enterKeyHint="search"
         className="browse-search-input"

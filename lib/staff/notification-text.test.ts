@@ -50,13 +50,13 @@ describe("the sentences staff actions send (staff tools spec 2.3 and 2.4, plan d
 describe("staff roles and Show again (stage J spec decisions 7 and 14)", () => {
   it("tells someone given a role where their tools are, and someone who lost one that it has ended", () => {
     expect(staffRoleText("given", "mentor")).toBe(
-      "You're a Vossie mentor now. The Hub's tools and the mentor dashboard are on your account page.",
+      "You're a CampusCart mentor now. The Hub's tools and the mentor dashboard are on your account page.",
     );
-    expect(staffRoleText("given", "admin")).toBe("You're a Vossie admin now. The admin console is on your account page.");
+    expect(staffRoleText("given", "admin")).toBe("You're a CampusCart admin now. The admin console is on your account page.");
     expect(staffRoleText("removed", "mentor")).toBe(
-      "Your mentor role on Vossie has ended. Thank you for helping student sellers.",
+      "Your mentor role on CampusCart has ended. Thank you for helping student sellers.",
     );
-    expect(staffRoleText("removed", "admin")).toBe("Your admin role on Vossie has ended.");
+    expect(staffRoleText("removed", "admin")).toBe("Your admin role on CampusCart has ended.");
   });
 
   it("tells a seller or an asker the Hub is showing their listing or request again", () => {

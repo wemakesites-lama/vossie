@@ -132,7 +132,7 @@ describe("Give a staff role (stage J spec decision 3)", () => {
     expect(email).toHaveAttribute("type", "email");
     expect(email).toHaveAttribute("autocomplete", "off");
     expect(email).toHaveAccessibleDescription(
-      "The email they sign in with. They need to have signed in to Vossie once.",
+      "The email they sign in with. They need to have signed in to CampusCart once.",
     );
     const group = within(section).getByRole("group", { name: "Role" });
     expect(within(group).getByRole("radio", { name: "Mentor" })).toHaveAccessibleDescription(
@@ -150,7 +150,7 @@ describe("Give a staff role (stage J spec decision 3)", () => {
       values: { email: "nobody@eduvos.com", role: "admin" },
       errors: [
         {
-          message: "No Vossie account uses that email. Ask them to sign in once, then try again.",
+          message: "No CampusCart account uses that email. Ask them to sign in once, then try again.",
           fieldId: "give-role-email",
         },
       ],

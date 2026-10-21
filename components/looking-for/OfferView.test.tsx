@@ -43,12 +43,12 @@ describe("the offer composer (community actions spec 2.9)", () => {
 
   it("says why anyone else can't offer, with the way on (plan decision 12)", () => {
     const cases: Array<[OfferStatus, string, string | null]> = [
-      [{ kind: "no-shop" }, "Offers come from shops on Vossie, so the Hub has checked who's offering.", "Start selling"],
+      [{ kind: "no-shop" }, "Offers come from shops on CampusCart, so the Hub has checked who's offering.", "Start selling"],
       [{ kind: "pending" }, "Your shop can make offers once the Hub approves it.", "Go to your shop"],
       [{ kind: "paused" }, "Your shop is paused, so it can't make offers right now.", "Go to your shop"],
       [{ kind: "own" }, "This is your request, so you can't offer on it.", null],
       [{ kind: "closed" }, "This request is closed, so it isn't taking offers.", null],
-      [{ kind: "sample" }, "This is one of Vossie's sample requests, so it can't take offers.", null],
+      [{ kind: "sample" }, "This is one of CampusCart's sample requests, so it can't take offers.", null],
       [{ kind: "offered", conversationId: "conv-abc" }, "You've offered already.", "Open the conversation"],
     ];
     for (const [status, sentence, link] of cases) {

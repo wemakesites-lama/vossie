@@ -122,7 +122,7 @@ export function SiteFooter({ campuses }: { campuses: readonly Campus[] }) {
         </div>
       </div>
       <div className="footer-wordmark" aria-hidden="true">
-        <FitText className="footer-wordmark-text">VOSSIE</FitText>
+        <FitText className="footer-wordmark-text">CAMPUSCART</FitText>
       </div>
     </footer>
   );

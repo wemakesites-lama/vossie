@@ -88,7 +88,7 @@ test.describe("the default share card (info and system spec 2.12)", () => {
     await expect(page.locator('meta[property="og:image:alt"]')).toHaveCount(1);
     await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute(
       "content",
-      "Vossie, the student marketplace for every Eduvos campus",
+      "CampusCart, the student marketplace for every Eduvos campus",
     );
     // The address names the site's own origin (NEXT_PUBLIC_SITE_URL, or localhost:3000 when it isn't set), which isn't
     // the test server's port: fetch its path from the test server.

@@ -15,7 +15,7 @@ export function SellPitch({ startHref, resuming }: SellPitchProps) {
   return (
     <div className="sell-column">
       <header className="sell-head">
-        <p className="eyebrow">Sell on Vossie</p>
+        <p className="eyebrow">Sell on CampusCart</p>
         <h1 className="sell-title">Turn your hustle into a campus-wide business</h1>
         <p className="sell-lede">
           List what you make, sell or know, for students on every Eduvos campus. It&apos;s free.
@@ -35,7 +35,7 @@ export function SellPitch({ startHref, resuming }: SellPitchProps) {
             point you choose.
           </li>
           <li>
-            <strong>Messages stay on Vossie.</strong> Buyers message you here, so your number stays yours.
+            <strong>Messages stay on CampusCart.</strong> Buyers message you here, so your number stays yours.
           </li>
           <li>
             <strong>The Hub has your back.</strong> The Eduvos Incubation Hub checks every shop and helps you grow.
@@ -58,7 +58,7 @@ export function SellPitch({ startHref, resuming }: SellPitchProps) {
         <h2 id="sell-fees-title" className="sell-section-title">
           Fees
         </h2>
-        <p>None. Vossie takes no cut and sells no places. Buyers pay you when you meet.</p>
+        <p>None. CampusCart takes no cut and sells no places. Buyers pay you when you meet.</p>
       </section>
 
       <p className="sell-note">

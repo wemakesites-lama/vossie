@@ -883,17 +883,55 @@ Review notes that were deliberately not acted on:
 6. **Go-live items added:** the nightly job reminds (`requests.reminded_for`, set in the job's transaction), the role-removal function's own-shop mentor check in the database, and Featured's resting order on the real backend (the same map of last days from `featured_draws`).
 - **Docs still uncommitted, waiting for Lama:** the other sessions' lines in this file and the decisions log. This section and decision row 81 were written from snippet files for the same reason.
 
+## 2026-10-21: Renamed from Vossie to CampusCart (decision 83)
+- **The visible name is CampusCart everywhere a person sees it** (Lama, 2026-10-21):
+  - page text, tab titles and share cards;
+  - the footer wordmark ("CAMPUSCART", sized by `FitText`) and the manifest;
+  - the data download (`campuscart-data.json`) and the mentors' CSV (`campuscart-mentoring-…`);
+  - the Hub fixtures, and the seed regenerated from them (`pnpm db:seed`).
+- **The rename's scope:** 350 lines in 110 files under `app`, `components`, `lib`, `data` and `tests`. Comment lines and identifiers were left alone. The offline page's text changed too, so the worker's hash, and with it its version, changes by itself.
+- **Kept as Vossie for a second pass** after `backend/phases-b-c` merges (Lama's choice, since 40 of these files are also changed on that branch):
+  - the `vossie_` cookies and storage keys and the `VOSSIE_` settings;
+  - identifiers, comments and the package name;
+  - the Supabase SQL's visible strings (the staff role notifications, the seed's Hub posts, the code email subject).
+
+  The go-live checklist has the item.
+- **Vossie by design:** `vossie.net`, the folder and repository, "Vossie Market", `vossie-pi.vercel.app`, and the dated docs. CLAUDE.md's new section "The name" lists all of it.
+- **Docs:**
+  - CLAUDE.md, the go-live checklist and decision row 83 (row 82 is the backend branch's) now say CampusCart.
+  - `docs/stakeholder/` has the CampusCart stakeholder report (16 pages, technical) and a 6-page plain-language team brief (`CampusCart-brief.pdf`).
+- **Checks:**
+  - lint and types are clean;
+  - 2,701 unit tests pass;
+  - the production build passes;
+  - end to end: the 19 device specs the rename touched, plus `performance.spec.ts`, at 360, 390 and 1440px, on a fresh server: 729 passed and 315 skipped by design. The page-size budgets passed.
+  - `staff-accounts-writes.spec.ts` (one changed line) was not rerun.
+
 ## Next
-- Phase A's Task 0 is done: the staging project "Vossie Market" (Ireland, empty) and a token scoped to it, which expires on 2026-10-22. Phase A starts in a worktree once Lama and the selling session say go.
-- Lama reviews the screenshots in `docs/progress/community-actions/` (22, at 390 and 1440px), and the staff ones in `docs/progress/staff/`, the selling ones in `docs/progress/selling/` and the messaging ones in `docs/progress/messaging/` if not yet seen. To retake the community actions ones, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "community actions review screenshots"`; the staff ones use `-g "staff tools review screenshots"`, the selling ones `-g "selling review screenshots"` and the messaging ones `-g "messaging review screenshots"`.
-- Stage M is built (follow-ups: no admin removes the mentor role from whoever mentors their own shop; Featured brings back the sellers featured longest ago first; one reminder two days before a request closes itself), so every planned stage (A to M) is done in sample mode. What's left waits on Lama and Eduvos (below), on the Supabase phases B and C (their own session and worktree), on the header session's fixes for the four phone e2e tests, and on Lama's review of the positioning and editorial spec.
-- Lama reviews the positioning and editorial spec. Its phase 1 (the wording) can be built at any time, and phase 2 (stories), which waited for stage G's post editor, can now be planned: the editor is built (`components/staff/PostEditor.tsx`, `lib/staff/post-rules.ts`).
+- **Every planned stage (A to M) is built in sample mode** and merged into `main`. The four phone e2e failures that predated stage L are fixed (`d13321b`). The full device suite last ran before stage M: rerun it once before go-live.
+- **The Supabase backend continues on `backend/phases-b-c`** (worktree `../Vossie-backend`). Done there: step 2b, C0 (the backend switch), C1 (the public reads), phase B (sign-in on Supabase), and C2/C3 Tasks 0 to 4. Next: C2/C3 Tasks 5 to 17 (selling, photos and messaging), then C4/C5 (24 tasks: community, alerts and staff), then step 5 (the full e2e run on local Supabase). Merging the branch into `main` needs Lama's go-ahead.
+- **Going live** (submission: vossie-pi.vercel.app on the "Vossie Market" project):
+  - Lama renews the Supabase CLI token (the current one expires on 2026-10-22);
+  - a dry run of the 35 migrations, then the push;
+  - sign-in codes through Resend from wemakesites.co.za;
+  - the environment settings (`VOSSIE_AUTH_HMAC_KEY`, `NEXT_PUBLIC_SITE_URL`, a stable Server Actions key), the nightly jobs, and unsetting `VOSSIE_NOINDEX`.
+
+  The rest is in `docs/reference/GO-LIVE.md`.
+- **Lama's open points:** those from stages L and M (above).
+- **Lama reviews the positioning and editorial spec.** Its phase 1 (the wording) can be built at any time. Phase 2 (stories) can be planned, since the post editor is built (`components/staff/PostEditor.tsx`, `lib/staff/post-rules.ts`).
+- **Screenshots:** Lama reviews the ones in `docs/progress/` if not yet seen. To retake a set, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "<name> review screenshots"` (for example "community actions", "staff tools", "selling" or "messaging").
+- **For the team:**
+  - `docs/stakeholder/CampusCart-brief.pdf`, a 6-page plain-language brief;
+  - `docs/stakeholder/CampusCart-stakeholder-report.pdf`, the detailed report.
+
+  Regenerate them when the picture changes.
+- **The rename's second pass** (decision 83, after `backend/phases-b-c` merges): the internal names and the SQL's visible strings. Rename the `VOSSIE_` settings in Vercel at the same moment.
 
 ## Waiting on
-- Eduvos font files and licence confirmation.
-- The official crest SVG.
-- Photos. The homepage is built, so each one is now a file drop plus one line in a fixture.
-- The Hub's real posts and office hours, and the real mentor and admin accounts. The 18 posts are samples, and managing staff accounts in the app isn't built.
-- Eduvos's legal review of the privacy policy, terms of use and seller guidelines; the Information Officer's name; a contact address for privacy requests and support; whether POPIA's right of access puts mentors' notes in a seller's data download (today the Information Officer is asked for them); how long the staff log, RSVPs and slot requests are kept; and how long closed requests and follows are kept.
-- A real phone to try the offline worker and its kill switch on before launch (the kill switch reaches a phone through the browser's own update check, which can take up to about a day).
-- Eduvos marketing's sign-off on the brand line, "Your campus, open for business." (decision 71).
+Vossie is an entry in an Eduvos challenge, so nothing here waits on Eduvos. What's left is Lama's to supply or decide:
+- **Real photos and launch content.** Each photo is a file drop plus one line in a fixture. Launch also needs real Hub posts and office hours, the real mentor and admin accounts (given in the app's Staff accounts), and enough real shops before day one.
+- **Contact and retention:**
+  - a contact address for privacy requests and support;
+  - how long messages, reports, notifications, the staff log, RSVPs, slot requests, closed requests and follows are kept;
+  - whether mentors' notes go in a seller's data download.
+- **A real phone** to try the offline worker and its kill switch on before launch. The kill switch reaches a phone through the browser's own update check, which can take up to about a day.

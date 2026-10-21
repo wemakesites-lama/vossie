@@ -180,7 +180,7 @@ select is((select roles from public.profiles where id = '00000000-0000-4000-8000
 select is(
   (select array_agg(row(staff_id, staff_name, action, target_kind, target_id, target_name, detail, subject_id)::text)
    from public.audit_log where subject_id = '00000000-0000-4000-8000-0000000000d1'),
-  array[row(null::uuid, 'Set up outside Vossie', 'role-given', 'account', '00000000-0000-4000-8000-0000000000d1', 'Lama', 'Admin',
+  array[row(null::uuid, 'Set up outside CampusCart', 'role-given', 'account', '00000000-0000-4000-8000-0000000000d1', 'Lama', 'Admin',
             '00000000-0000-4000-8000-0000000000d1'::uuid)::text],
   'and one audit entry'
 );

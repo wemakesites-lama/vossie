@@ -104,7 +104,7 @@ export function SiteHeader({ campuses, account }: SiteHeaderProps) {
           <div className="hdr-pennant-slot">
             {/* The link on top carries the name and the focus ring, sized to cover the pennant's white edge. */}
             <Pennant />
-            <Link href="/" aria-label="Vossie home" onClick={goHome} className="hdr-pennant" />
+            <Link href="/" aria-label="CampusCart home" onClick={goHome} className="hdr-pennant" />
           </div>
 
           <div className="hdr-group hdr-group--end">

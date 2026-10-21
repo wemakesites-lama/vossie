@@ -99,7 +99,7 @@ export function RequestFormView({ requestId, once, form, campuses, categories, t
       <h1 className="request-form-title">{requestId ? "Edit your request" : "Ask for what you need"}</h1>
       {!requestId && (
         <p className="request-form-lede">
-          Shops on Vossie see it and offer to help. It never shows your name, only &quot;Asked by a student at&quot; your
+          Shops on CampusCart see it and offer to help. It never shows your name, only &quot;Asked by a student at&quot; your
           campus.
         </p>
       )}
@@ -169,7 +169,7 @@ export function RequestFormView({ requestId, once, form, campuses, categories, t
             Details
           </label>
           <p id={hint(ids.details)} className="form-hint">
-            {`Say what you need and when. Shops will message you on Vossie. Between ${DETAILS_MIN} and ${DETAILS_MAX} characters.`}
+            {`Say what you need and when. Shops will message you on CampusCart. Between ${DETAILS_MIN} and ${DETAILS_MAX} characters.`}
           </p>
           <FieldError id={errorId(ids.details)} message={problem(ids.details)} />
           <textarea

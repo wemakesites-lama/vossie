@@ -5,7 +5,7 @@ import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
 export const metadata: Metadata = {
   title: "Privacy policy",
   description:
-    "How Vossie handles your personal information under POPIA: what this site stores today, what your account holds, who sees it and your rights. A draft for Eduvos to review.",
+    "How CampusCart handles your personal information under POPIA: what this site stores today, what your account holds, who sees it and your rights. A draft for Eduvos to review.",
   // A draft stays out of search results until Eduvos signs it off (controller amendment 1, spec decision 8).
   robots: { index: false },
 };
@@ -17,8 +17,8 @@ const SECTIONS: readonly InfoSection[] = [
     children: (
       <>
         <p>
-          Vossie is an Eduvos Incubation Hub project. Under the Protection of Personal Information Act 4 of 2013 (POPIA),
-          Eduvos is the responsible party for the personal information collected through Vossie.
+          CampusCart is an Eduvos Incubation Hub project. Under the Protection of Personal Information Act 4 of 2013 (POPIA),
+          Eduvos is the responsible party for the personal information collected through CampusCart.
         </p>
         <ul>
           <li>
@@ -37,7 +37,7 @@ const SECTIONS: readonly InfoSection[] = [
     children: (
       <>
         <p>
-          Vossie runs in two places: a preview, which keeps everything in memory, and the live site. If you sign in on
+          CampusCart runs in two places: a preview, which keeps everything in memory, and the live site. If you sign in on
           the preview, the server keeps your account, your sign-ins, your consent, your staff role if you have one, your
           Looking For requests and the shops you follow, your saved searches, your RSVPs and slot requests, your messages, your
           reports, your notifications and, if you sell, your shop, your
@@ -48,8 +48,8 @@ const SECTIONS: readonly InfoSection[] = [
         </p>
         <h3>Two first-party cookies</h3>
         <p>
-          A cookie is a small file your browser keeps and sends back to Vossie with each page it asks for. These two
-          belong to Vossie and nobody else. Some browsers, such as Safari on an iPhone, clear cookies like these after a
+          A cookie is a small file your browser keeps and sends back to CampusCart with each page it asks for. These two
+          belong to CampusCart and nobody else. Some browsers, such as Safari on an iPhone, clear cookies like these after a
           week.
         </p>
         <ul>
@@ -58,24 +58,24 @@ const SECTIONS: readonly InfoSection[] = [
           </li>
           <li>
             Your saved listings, in a cookie called <code>vossie_saved</code> that lasts up to a year. Your browser sends
-            the listing ids to Vossie with each visit so the Saved page can show them; nothing is stored on a server.
+            the listing ids to CampusCart with each visit so the Saved page can show them; nothing is stored on a server.
           </li>
         </ul>
         <h3>Sign-in cookies</h3>
         <p>
-          These belong to Vossie too. The first three can only be read by Vossie&apos;s server, never by scripts on the
+          These belong to CampusCart too. The first three can only be read by CampusCart&apos;s server, never by scripts on the
           page.
         </p>
         <ul>
           <li>
             <code>vossie_auth</code>: keeps you signed in on the live site. It holds a signed sign-in token from
             Supabase, our database provider, and may be split into parts named <code>vossie_auth.0</code>,{" "}
-            <code>vossie_auth.1</code>. It lasts 30 days from your last visit, so it ends if you don&apos;t use Vossie
+            <code>vossie_auth.1</code>. It lasts 30 days from your last visit, so it ends if you don&apos;t use CampusCart
             for 30 days. Signing out or deleting your account ends it.
           </li>
           <li>
             <code>vossie_session</code>: does the same on the preview: a random code that keeps you signed in, for up
-            to 30 days. Vossie&apos;s server keeps only a fingerprint of it, made with a secret key, so the code
+            to 30 days. CampusCart&apos;s server keeps only a fingerprint of it, made with a secret key, so the code
             can&apos;t be read back from the server&apos;s records. Signing out or deleting your account ends it.
           </li>
           <li>
@@ -86,7 +86,7 @@ const SECTIONS: readonly InfoSection[] = [
           </li>
         </ul>
         <h3>Four things kept only in your browser</h3>
-        <p>These stay in your browser&apos;s own storage. They are never sent to Vossie.</p>
+        <p>These stay in your browser&apos;s own storage. They are never sent to CampusCart.</p>
         <ul>
           <li>
             <code>vossie_recently_viewed</code>: the last few listings you opened, for &quot;Pick up where you left
@@ -99,19 +99,19 @@ const SECTIONS: readonly InfoSection[] = [
             <code>vossie_low_data</code>: whether you turned data saver on.
           </li>
           <li>
-            <code>vossie_offline</code>: a copy of Vossie&apos;s offline page, kept by Vossie&apos;s service worker so
-            an installed Vossie can say you&apos;re offline instead of showing an error. It holds nothing about you and
+            <code>vossie_offline</code>: a copy of CampusCart&apos;s offline page, kept by CampusCart&apos;s service worker so
+            an installed CampusCart can say you&apos;re offline instead of showing an error. It holds nothing about you and
             no page you looked at.
           </li>
         </ul>
         <h3>What else happens</h3>
         <ul>
           <li>
-            When you search, the words you type are sent to Vossie in the page address (for example{" "}
+            When you search, the words you type are sent to CampusCart in the page address (for example{" "}
             <code>/browse?q=calculator</code>), so it can find results.
           </li>
           <li>
-            Vercel, which hosts Vossie, keeps ordinary server logs (page addresses, times and technical details of
+            Vercel, which hosts CampusCart, keeps ordinary server logs (page addresses, times and technical details of
             each request) to keep the site running and secure.
           </li>
           <li>
@@ -123,7 +123,7 @@ const SECTIONS: readonly InfoSection[] = [
             photo is deleted, a copy can stay on a device that already loaded it until that browser clears its cached
             images and files.
           </li>
-          <li>Vossie uses no advertising or tracking cookies, and no analytics.</li>
+          <li>CampusCart uses no advertising or tracking cookies, and no analytics.</li>
         </ul>
         <p>
           Clearing your browser&apos;s cookies, site data, and cached images and files removes everything listed here.
@@ -146,7 +146,7 @@ const SECTIONS: readonly InfoSection[] = [
             <strong>Your Eduvos email address.</strong> To check that you are an Eduvos student and to send you sign-in
             codes. A sign-in code is kept only as a fingerprint made with a secret key, and only until you finish
             signing in or the attempt runs out after 30 minutes. In this preview the code shows on screen instead of
-            being emailed, so until the attempt ends it&apos;s also kept as written. On the live site, Vossie doesn&apos;t
+            being emailed, so until the attempt ends it&apos;s also kept as written. On the live site, CampusCart doesn&apos;t
             keep the code at all: it&apos;s emailed to you, and Supabase keeps only a fingerprint of it, for the 10
             minutes it works. Allowed under POPIA section 11: it
             is needed to run the account you ask for.
@@ -170,7 +170,7 @@ const SECTIONS: readonly InfoSection[] = [
           </li>
           <li>
             <strong>Your messages, swap offers and reports.</strong> To pass them to the other person, to work out reply
-            times for trust badges, and to keep Vossie safe. Allowed under POPIA section 11: needed to run the service,
+            times for trust badges, and to keep CampusCart safe. Allowed under POPIA section 11: needed to run the service,
             and our legitimate interest in keeping students safe.
           </li>
           <li>
@@ -189,7 +189,7 @@ const SECTIONS: readonly InfoSection[] = [
           </li>
           <li>
             <strong>Your Looking For requests.</strong> What you ask for, shown to everyone as &quot;Asked by a student
-            at&quot; your campus, never with your name. Vossie keeps which account asked, so only you can change or
+            at&quot; your campus, never with your name. CampusCart keeps which account asked, so only you can change or
             delete it. Allowed under POPIA section 11: needed to run the service you ask for. An open request closes
             automatically 3 days after its needed-by date, or after 30 days with no changes; you&apos;re reminded 2
             days before and told when it does, and you can reopen it.
@@ -210,7 +210,7 @@ const SECTIONS: readonly InfoSection[] = [
             photo, campus, pickup points and what you list, shown to buyers, and your application while the Hub checks
             it. Your answers while you set up your shop are kept as a draft until you send your application. Your
             browser makes photos smaller when it can, and hidden data such as your location is removed from every photo
-            before Vossie keeps it: only what a photo needs to show properly, such as its colours and which way up it
+            before CampusCart keeps it: only what a photo needs to show properly, such as its colours and which way up it
             is, stays. Allowed under POPIA section 11: needed to run your shop.
           </li>
           <li>
@@ -223,17 +223,17 @@ const SECTIONS: readonly InfoSection[] = [
           <li>
             <strong>A log of what Hub staff do.</strong> Who approved, declined, verified, hid or paused what, when and
             why, and who was given or lost a staff role, so staff actions can be checked. Nobody can edit it. If you delete your account, entries about you
-            lose your name and the reason. Allowed under POPIA section 11: our legitimate interest in running Vossie
+            lose your name and the reason. Allowed under POPIA section 11: our legitimate interest in running CampusCart
             fairly.
           </li>
           <li>
             <strong>If you&apos;re Hub staff: your role.</strong> Whether you&apos;re a mentor or an admin. A Hub admin
             gives the role using your exact Eduvos email, and Hub admins see the first name, email and campus of
             everyone with a role. Nobody can search or list students who don&apos;t have one. Allowed under POPIA
-            section 11: our legitimate interest in running Vossie safely.
+            section 11: our legitimate interest in running CampusCart safely.
           </li>
         </ul>
-        <p>Vossie does not ask for your ID number, your bank details or your home address.</p>
+        <p>CampusCart does not ask for your ID number, your bank details or your home address.</p>
       </>
     ),
   },
@@ -256,13 +256,13 @@ const SECTIONS: readonly InfoSection[] = [
           &quot;Deleted account&quot;. The log of what Hub staff do keeps its entries, without your name.
         </li>
         <li>
-          While Vossie is a preview, Looking For requests, follows, saved searches, messages, reports, notifications, shops, listings
+          While CampusCart is a preview, Looking For requests, follows, saved searches, messages, reports, notifications, shops, listings
           and photos live in the server&apos;s memory and go whenever it restarts. On the live site, they&apos;re kept in
           Supabase&apos;s database until you delete them or Eduvos&apos;s retention periods remove them. Eduvos will set how long they are kept before launch, and
           this policy will say so.
         </li>
         <li>
-          Supabase&apos;s records of sign-ins in Vossie&apos;s database are kept for 30 days, and go within a day of an
+          Supabase&apos;s records of sign-ins in CampusCart&apos;s database are kept for 30 days, and go within a day of an
           account&apos;s deletion. Server logs, and Vercel&apos;s and Supabase&apos;s own platform logs, are kept for a
           limited time, set by Vercel and Supabase. Resend keeps its logs of the sign-in emails it sends for its own
           retention period. Eduvos will confirm these periods before launch, and this policy will say so.
@@ -275,7 +275,7 @@ const SECTIONS: readonly InfoSection[] = [
     title: "Who it is shared with",
     children: (
       <>
-        <p>Vossie does not sell personal information to anyone, and does not share it for advertising.</p>
+        <p>CampusCart does not sell personal information to anyone, and does not share it for advertising.</p>
         <ul>
           <li>
             <strong>Other students</strong> see only what they need. A seller&apos;s shop name, photos and listings are
@@ -284,13 +284,13 @@ const SECTIONS: readonly InfoSection[] = [
           </li>
           <li>
             <strong>Hub staff</strong> can see reports, account details, RSVPs and slot requests when they need to, to
-            approve sellers, run the Hub&apos;s events and keep Vossie safe. A mentor sees your shop&apos;s numbers,
+            approve sellers, run the Hub&apos;s events and keep CampusCart safe. A mentor sees your shop&apos;s numbers,
             never your messages.{" "}
             Hub admins see weekly counts for each campus (listings, shops, requests, enquiries, reports and follows),
             never who; small numbers are hidden so no one can be picked out.
           </li>
           <li>
-            <strong>Service providers</strong> that run Vossie for Eduvos handle information for us and only for that
+            <strong>Service providers</strong> that run CampusCart for Eduvos handle information for us and only for that
             purpose: Supabase (the database and sign-in), Vercel (hosting) and Resend (sign-in emails).
           </li>
           <li>
@@ -305,12 +305,12 @@ const SECTIONS: readonly InfoSection[] = [
     title: "Where it is hosted",
     children: (
       <p>
-        Vossie&apos;s data is stored by Supabase in Ireland (Amazon Web Services, eu-west-1), and its pages are served
+        CampusCart&apos;s data is stored by Supabase in Ireland (Amazon Web Services, eu-west-1), and its pages are served
         by Vercel, whose servers that handle your requests are in Dublin. Sign-in codes are emailed by Resend, in the
         United States, which keeps your email address and the email in its logs for its retention period. Storing or
         sending personal information outside South Africa is allowed under POPIA section 72 where the country, the
         company or a binding agreement gives it protection at least as strong as POPIA; Supabase&apos;s, Vercel&apos;s
-        and Resend&apos;s data processing agreements are the binding agreements Vossie relies on. Eduvos will confirm
+        and Resend&apos;s data processing agreements are the binding agreements CampusCart relies on. Eduvos will confirm
         this before launch.
       </p>
     ),
@@ -322,10 +322,10 @@ const SECTIONS: readonly InfoSection[] = [
       <>
         <p>Under POPIA you can:</p>
         <ul>
-          <li>ask what personal information Vossie holds about you;</li>
+          <li>ask what personal information CampusCart holds about you;</li>
           <li>ask for it to be corrected;</li>
           <li>ask for it to be deleted;</li>
-          <li>object to Vossie using it;</li>
+          <li>object to CampusCart using it;</li>
           <li>take back consent you gave; and</li>
           <li>
             complain to the Information Regulator, at <a href="https://inforegulator.org.za">inforegulator.org.za</a>.
@@ -370,7 +370,7 @@ export default function PrivacyPage() {
   return (
     <InfoPage
       title="Privacy policy"
-      lede="How Vossie handles your personal information, under the Protection of Personal Information Act (POPIA)."
+      lede="How CampusCart handles your personal information, under the Protection of Personal Information Act (POPIA)."
       updated="2026-10-21"
       draft
       sections={SECTIONS}

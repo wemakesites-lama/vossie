@@ -64,7 +64,7 @@ describe("shortDescription", () => {
 describe("shareCardAlt", () => {
   it("says what, how much and where (spec 5.8)", () => {
     expect(shareCardAlt("Casio fx-991ZA Plus calculator", "R250", "Midrand")).toBe(
-      "Casio fx-991ZA Plus calculator, R250, at Midrand on Vossie",
+      "Casio fx-991ZA Plus calculator, R250, at Midrand on CampusCart",
     );
   });
 });
@@ -109,7 +109,7 @@ describe("shopping wording (shopping spec 4 and 7)", () => {
   });
 
   it("says who, what and where on a seller's share card", () => {
-    expect(sellerCardAlt("Tech corner", "Tech", "Midrand")).toBe("Tech corner, Tech at Midrand on Vossie");
+    expect(sellerCardAlt("Tech corner", "Tech", "Midrand")).toBe("Tech corner, Tech at Midrand on CampusCart");
   });
 });
 

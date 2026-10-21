@@ -229,7 +229,7 @@ describe("Verified, the Hub's pause and mentors (staff tools spec 2.3 and 2.6, p
 
 describe("hiding a listing (staff tools spec 2.3, plan decision 4)", () => {
   it("keeps the row with its reason, takes it out of every list and gives it no page", async () => {
-    expect(await hideListing("l-001", "Not allowed on Vossie.", NOW)).toEqual({
+    expect(await hideListing("l-001", "Not allowed on CampusCart.", NOW)).toEqual({
       id: "l-001",
       title: "Casio fx-991ZA Plus calculator",
       sellerSlug: "tech-corner",
@@ -237,7 +237,7 @@ describe("hiding a listing (staff tools spec 2.3, plan decision 4)", () => {
       ownerId: "acc-seller",
     });
     expect(sampleStore().listings.get("l-001")).toMatchObject({
-      hiddenReason: "Not allowed on Vossie.",
+      hiddenReason: "Not allowed on CampusCart.",
       hiddenAt: NOW.toISOString(),
     });
     expect(listedListings().some((listing) => listing.id === "l-001")).toBe(false);

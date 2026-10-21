@@ -5,7 +5,7 @@ import TermsPage, { metadata } from "./page";
 describe("Terms of use (info and system spec 2.1 and 3)", () => {
   it("is titled and described for search results and link previews", () => {
     expect(metadata.title).toBe("Terms of use");
-    expect(metadata.description).toMatch(/rules for using Vossie/);
+    expect(metadata.description).toMatch(/rules for using CampusCart/);
   });
 
   it("is kept out of search results until Eduvos signs it off (controller amendment 1)", () => {
@@ -16,8 +16,8 @@ describe("Terms of use (info and system spec 2.1 and 3)", () => {
     render(<TermsPage />);
     expect(screen.getByRole("heading", { level: 1, name: "Terms of use" })).toBeInTheDocument();
     expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
-      "Who can use Vossie",
-      "Vossie is not part of your deal",
+      "Who can use CampusCart",
+      "CampusCart is not part of your deal",
       "What you can't do",
       "What you post",
       "Moderation and suspension",
@@ -31,10 +31,10 @@ describe("Terms of use (info and system spec 2.1 and 3)", () => {
     expect(screen.getByRole("note")).toHaveTextContent("Draft for Eduvos to review. Not yet in force.");
   });
 
-  it("says Vossie is not a party to a sale and holds no money or goods", () => {
+  it("says CampusCart is not a party to a sale and holds no money or goods", () => {
     render(<TermsPage />);
-    const deal = screen.getByRole("region", { name: "Vossie is not part of your deal" });
-    expect(within(deal).getByText(/Vossie is not the buyer or the seller, does not hold anyone's money or goods/)).toBeInTheDocument();
+    const deal = screen.getByRole("region", { name: "CampusCart is not part of your deal" });
+    expect(within(deal).getByText(/CampusCart is not the buyer or the seller, does not hold anyone's money or goods/)).toBeInTheDocument();
     expect(within(deal).getByRole("link", { name: "safety guide" })).toHaveAttribute("href", "/safety");
   });
 

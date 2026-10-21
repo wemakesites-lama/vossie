@@ -133,13 +133,13 @@ describe("a staff role given or taken away (stage J spec decision 7)", () => {
     const { container } = render(
       <NotificationsView
         now={NOW}
-        items={[item({ kind: "staff-role", text: "You're a Vossie mentor now.", href: "/account" })]}
+        items={[item({ kind: "staff-role", text: "You're a CampusCart mentor now.", href: "/account" })]}
       />,
     );
     const icon = container.querySelector("svg.notes-icon")!;
     const shield = render(<ShieldIcon className="notes-icon" />).container.querySelector("svg")!;
     expect(icon.innerHTML).toBe(shield.innerHTML);
     expect(icon).toHaveAttribute("aria-hidden", "true");
-    expect(screen.getByRole("link", { name: /You're a Vossie mentor now\./ })).toHaveAttribute("href", "/account");
+    expect(screen.getByRole("link", { name: /You're a CampusCart mentor now\./ })).toHaveAttribute("href", "/account");
   });
 });

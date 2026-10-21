@@ -21,7 +21,7 @@ test.describe("selling (selling spec section 3)", () => {
     onlyAt(...BOTH);
     await page.goto("/sell");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Turn your hustle into a campus-wide business");
-    await expect(page).toHaveTitle("Sell on Vossie · Vossie");
+    await expect(page).toHaveTitle("Sell on CampusCart · CampusCart");
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
     await main(page).getByRole("link", { name: "Start selling" }).click();
     await expect(page).toHaveURL(/\/login\?next=%2Fsell%2Fonboarding$/);

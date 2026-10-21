@@ -23,7 +23,7 @@ export function hubContract(makeWorld: () => World): void {
     await world.cleanup();
   });
 
-  it("adds a Vossie RSVP to an event's count, on its page and in the feed", async () => {
+  it("adds a CampusCart RSVP to an event's count, on its page and in the feed", async () => {
     const before = (await getHubPost(EVENT))?.going;
     expect(before).toEqual(expect.any(Number));
     await world.addRsvp(EVENT, "shopper");

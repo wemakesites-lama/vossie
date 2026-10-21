@@ -21,7 +21,7 @@ export async function GET(): Promise<Response> {
   return new Response(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="vossie-mentoring-${sastDate(now)}.csv"`,
+      "Content-Disposition": `attachment; filename="campuscart-mentoring-${sastDate(now)}.csv"`,
       "Cache-Control": "no-store",
     },
   });

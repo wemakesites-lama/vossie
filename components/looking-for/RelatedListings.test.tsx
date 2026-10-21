@@ -40,7 +40,7 @@ async function show(id: string, categoryName: string) {
 describe("RelatedListings (community spec 4.2, decision 4)", () => {
   it("shows up to 4 listings in the request's category, its campus first, 4 across on desktop", async () => {
     await show("r-001", "Tutoring");
-    const region = screen.getByRole("region", { name: "Already on Vossie" });
+    const region = screen.getByRole("region", { name: "Already on CampusCart" });
     const grid = within(region).getByRole("list");
     expect(grid).toHaveAttribute("data-columns", "four");
     expect(within(grid).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([

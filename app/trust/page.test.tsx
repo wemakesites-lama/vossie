@@ -69,7 +69,7 @@ describe("How trust works (info and system spec 2.3, 2.4 and 3)", () => {
     render(<TrustPage />);
     const badges = screen.getByRole("region", { name: "The three badges" });
     expect(
-      within(badges).getByText(/gets its badge worked out by the rules below, from its conversations on Vossie/),
+      within(badges).getByText(/gets its badge worked out by the rules below, from its conversations on CampusCart/),
     ).toBeInTheDocument();
     expect(
       within(badges).getByText(/most shops are samples with no account behind them, and they show sample badges/),
@@ -94,7 +94,7 @@ describe("How trust works (info and system spec 2.3, 2.4 and 3)", () => {
     expect(items[1]).toMatch(/still inside its 48 hours doesn't count against the seller/);
     expect(items[2]).toMatch(/a week after the seller marks it completed/);
     expect(items[2]).toMatch(/says it didn't happen, it doesn't count/);
-    expect(items[3]).toMatch(/outside Vossie, such as on WhatsApp/);
+    expect(items[3]).toMatch(/outside CampusCart, such as on WhatsApp/);
   });
 
   it("explains how Featured today is picked", () => {

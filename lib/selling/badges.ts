@@ -64,7 +64,7 @@ export function badgeProgress(
     needs.push(more(rule.sales - record.salesConfirmed, "confirmed sale", "confirmed sales"));
   }
   const days = Math.floor((now.getTime() - Date.parse(accountCreatedAt)) / DAY_MS);
-  if (days < rule.days) needs.push(more(rule.days - days, "day on Vossie", "days on Vossie"));
+  if (days < rule.days) needs.push(more(rule.days - days, "day on CampusCart", "days on CampusCart"));
   const label = badgeLabel(next);
   if (needs.length === 0) return `You meet the rules for ${label}. Your badge changes when the Hub next updates badges.`;
   const sentence = `${joinWords(needs)} for ${label}.`;

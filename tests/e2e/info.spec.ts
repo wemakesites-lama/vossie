@@ -13,7 +13,7 @@ type InfoCase = { path: string; title: string; draft: boolean; sections: string[
 const PAGES: readonly InfoCase[] = [
   {
     path: "/how-it-works",
-    title: "How Vossie works",
+    title: "How CampusCart works",
     draft: false,
     sections: ["Buying", "Selling", "Trust, in one paragraph", "Questions and answers"],
   },
@@ -50,8 +50,8 @@ const PAGES: readonly InfoCase[] = [
     title: "Terms of use",
     draft: true,
     sections: [
-      "Who can use Vossie",
-      "Vossie is not part of your deal",
+      "Who can use CampusCart",
+      "CampusCart is not part of your deal",
       "What you can't do",
       "What you post",
       "Moderation and suspension",
@@ -82,7 +82,7 @@ test.describe("the info and legal pages (spec 3)", () => {
       const response = await page.goto(path);
       expect(response?.status()).toBe(200);
       await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
-      await expect(page).toHaveTitle(`${title} · Vossie`);
+      await expect(page).toHaveTitle(`${title} · CampusCart`);
       await expect(page.locator("main .info-body h2")).toHaveText(sections);
       await expect(page.getByRole("navigation", { name: "On this page" }).getByRole("link")).toHaveText(sections);
       await expect(page.getByText("Coming in the next stage")).toHaveCount(0);
@@ -186,7 +186,7 @@ test.describe("the homepage's trust links (spec 2.3)", () => {
     onlyAt("phone-390", "desktop-1440");
     await page.goto("/");
     await page
-      .getByRole("region", { name: "Why you can trust Vossie" })
+      .getByRole("region", { name: "Why you can trust CampusCart" })
       .getByRole("link", { name: "How trust works" })
       .click();
     await expect(page).toHaveURL(/\/trust$/);

@@ -29,7 +29,7 @@ describe("the request form (community actions spec 2.3 and section 4)", () => {
     expect(screen.getByLabelText("Category")).toHaveValue("");
     expect(screen.getByLabelText("Campus")).toHaveValue("midrand");
     expect(screen.getByLabelText("Details")).toHaveAccessibleDescription(
-      "Say what you need and when. Shops will message you on Vossie. Between 20 and 600 characters.",
+      "Say what you need and when. Shops will message you on CampusCart. Between 20 and 600 characters.",
     );
     expect(screen.getByLabelText("Budget in rand (optional)")).toHaveAccessibleDescription(
       "Whole rand, like 300. Leave it empty for Open to offers.",

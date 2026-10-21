@@ -60,7 +60,7 @@ export const sampleHubBookings: readonly HubBookingRow[] = [
     id: "bk-s1",
     postId: "h-007",
     accountId: "acc-student",
-    help: "I want to sell my braiding on Vossie and don't know how to write the listing or what to charge.",
+    help: "I want to sell my braiding on CampusCart and don't know how to write the listing or what to charge.",
     time: "Any time after 13:30",
     status: "open",
     createdAt: "2026-10-13T10:15:00.000Z",

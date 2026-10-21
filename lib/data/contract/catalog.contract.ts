@@ -50,7 +50,7 @@ export function catalogContract(makeWorld: () => World): void {
   });
 
   it("leaves a hidden listing out of every list, and gives it no page", async () => {
-    await world.hideListing(ITS_LISTING, "Not allowed on Vossie.");
+    await world.hideListing(ITS_LISTING, "Not allowed on CampusCart.");
     expect(await justListedIds()).not.toContain(ITS_LISTING);
     expect(await searchedIds()).not.toContain(ITS_LISTING);
     expect(await getListingIds()).not.toContain(ITS_LISTING);

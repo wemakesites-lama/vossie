@@ -27,7 +27,7 @@ test("the menu", async ({ page }) => {
 test("search", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Search", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "Search Vossie" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Search CampusCart" })).toBeVisible();
   expect(await seriousIssues(page)).toEqual([]);
 });
 
@@ -191,7 +191,7 @@ test("the Looking For board with nothing in a category", async ({ page }) => {
 
 test("a request", async ({ page }) => {
   await page.goto("/looking-for/r-001");
-  await expect(page.getByRole("region", { name: "Already on Vossie" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Already on CampusCart" })).toBeVisible();
   expect(await seriousIssues(page)).toEqual([]);
 });
 
@@ -644,14 +644,14 @@ test("the request form, after the contact-details refusal (spec 2.4)", async ({ 
 test("the offer composer for a student without a shop (spec 2.8)", async ({ page }) => {
   await signInAsSample(page);
   await page.goto("/looking-for/r-002/offer");
-  await expect(page.getByText("Offers come from shops on Vossie", { exact: false }).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText("Offers come from shops on CampusCart", { exact: false }).filter({ visible: true })).toBeVisible();
   await expectAccessible(page);
 });
 
 test("the offer composer for a shop, on a sample request, which has no one to answer (spec 2.11)", async ({ page }) => {
   await signInAsSample(page, "Seller, Tech corner");
   await page.goto("/looking-for/r-002/offer");
-  await expect(page.getByText("This is one of Vossie's sample requests", { exact: false }).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText("This is one of CampusCart's sample requests", { exact: false }).filter({ visible: true })).toBeVisible();
   await expectAccessible(page);
 });
 

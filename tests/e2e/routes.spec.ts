@@ -10,19 +10,19 @@ test.describe("routes", () => {
     onlyAtPhoneAndDesktop();
     await page.goto("/listings/nope");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
-    await expect(page).toHaveTitle("Page not found · Vossie");
+    await expect(page).toHaveTitle("Page not found · CampusCart");
     await page.goto("/collections/nope");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
-    await expect(page).toHaveTitle("Page not found · Vossie");
+    await expect(page).toHaveTitle("Page not found · CampusCart");
     await page.goto("/sellers/nope");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
-    await expect(page).toHaveTitle("Page not found · Vossie");
+    await expect(page).toHaveTitle("Page not found · CampusCart");
     await page.goto("/looking-for/nope");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
-    await expect(page).toHaveTitle("Page not found · Vossie");
+    await expect(page).toHaveTitle("Page not found · CampusCart");
     await page.goto("/hub/nope");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
-    await expect(page).toHaveTitle("Page not found · Vossie");
+    await expect(page).toHaveTitle("Page not found · CampusCart");
   });
 
   test("old category and campus links open browse (spec 3.1)", async ({ page }) => {
@@ -43,7 +43,7 @@ test.describe("routes", () => {
     const response = await page.goto("/definitely-not-a-page");
     expect(response?.status()).toBe(404);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("We couldn't find that page");
-    await expect(page).toHaveTitle("Page not found · Vossie");
+    await expect(page).toHaveTitle("Page not found · CampusCart");
   });
 
   test("account pages send a signed-out visitor to sign in, coming back afterwards (accounts spec 2.10)", async ({

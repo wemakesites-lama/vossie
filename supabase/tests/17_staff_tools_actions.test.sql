@@ -187,10 +187,10 @@ select is(
 select is(private.slot_answer_note_text(true, 'Pricing clinic'), 'A mentor accepted your slot request for Pricing clinic.', 'slotAnswerText: accepted');
 select is(private.slot_answer_note_text(false, 'Pricing clinic'), 'A mentor couldn''t fit in your slot request for Pricing clinic. You can ask again.', 'declined');
 select is(private.slot_requested_note_text('Thandi', 'Pricing clinic'), 'Thandi asked for a slot at Pricing clinic.', 'slotRequestedText');
-select is(private.staff_role_note_text('given', 'mentor'), 'You''re a Vossie mentor now. The Hub''s tools and the mentor dashboard are on your account page.', 'staffRoleText: mentor given');
-select is(private.staff_role_note_text('given', 'admin'), 'You''re a Vossie admin now. The admin console is on your account page.', 'admin given');
-select is(private.staff_role_note_text('removed', 'mentor'), 'Your mentor role on Vossie has ended. Thank you for helping student sellers.', 'mentor removed');
-select is(private.staff_role_note_text('removed', 'admin'), 'Your admin role on Vossie has ended.', 'admin removed');
+select is(private.staff_role_note_text('given', 'mentor'), 'You''re a CampusCart mentor now. The Hub''s tools and the mentor dashboard are on your account page.', 'staffRoleText: mentor given');
+select is(private.staff_role_note_text('given', 'admin'), 'You''re a CampusCart admin now. The admin console is on your account page.', 'admin given');
+select is(private.staff_role_note_text('removed', 'mentor'), 'Your mentor role on CampusCart has ended. Thank you for helping student sellers.', 'mentor removed');
+select is(private.staff_role_note_text('removed', 'admin'), 'Your admin role on CampusCart has ended.', 'admin removed');
 
 -- --- Only staff (plan decision 1) -----------------------------------------------------------------------------------
 
@@ -819,9 +819,9 @@ select is(
 select is(
   pg_temp.notes(),
   array[
-    'Thandi | staff-role | mentor | You''re a Vossie mentor now. The Hub''s tools and the mentor dashboard are on your account page. | /account',
-    'Zola | staff-role | admin | You''re a Vossie admin now. The admin console is on your account page. | /account',
-    'Zola | staff-role | mentor | You''re a Vossie mentor now. The Hub''s tools and the mentor dashboard are on your account page. | /account'
+    'Thandi | staff-role | mentor | You''re a CampusCart mentor now. The Hub''s tools and the mentor dashboard are on your account page. | /account',
+    'Zola | staff-role | admin | You''re a CampusCart admin now. The admin console is on your account page. | /account',
+    'Zola | staff-role | mentor | You''re a CampusCart mentor now. The Hub''s tools and the mentor dashboard are on your account page. | /account'
   ],
   'and each is told, with a link to their account page'
 );
@@ -852,8 +852,8 @@ select is(
 select is(
   pg_temp.notes(),
   array[
-    'Thandi | staff-role | mentor | Your mentor role on Vossie has ended. Thank you for helping student sellers. | /account',
-    'Zola | staff-role | mentor | Your mentor role on Vossie has ended. Thank you for helping student sellers. | /account'
+    'Thandi | staff-role | mentor | Your mentor role on CampusCart has ended. Thank you for helping student sellers. | /account',
+    'Zola | staff-role | mentor | Your mentor role on CampusCart has ended. Thank you for helping student sellers. | /account'
   ],
   'each is told'
 );
@@ -902,7 +902,7 @@ select is(
 );
 select is(
   pg_temp.notes(),
-  array['Zola | staff-role | admin | Your admin role on Vossie has ended. | /account'],
+  array['Zola | staff-role | admin | Your admin role on CampusCart has ended. | /account'],
   'and Zola is told'
 );
 

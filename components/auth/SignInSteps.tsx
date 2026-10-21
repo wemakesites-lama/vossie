@@ -208,7 +208,7 @@ export function ProfileStep({ next, firstName, campus, campuses, errors }: Profi
   return (
     <div className="signin-card">
       <ErrorSummary id="signin-profile-summary" errors={errors} />
-      <p className="signin-lede">First time on Vossie? Tell us two things and you&apos;re in.</p>
+      <p className="signin-lede">First time on CampusCart? Tell us two things and you&apos;re in.</p>
       <form action={SIGN_IN_POSTS.profile} method="post" noValidate className="form-stack">
         <NextField next={next} />
         <div className="form-field">

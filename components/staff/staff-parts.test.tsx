@@ -152,11 +152,11 @@ describe("confirm pages (staff tools spec 2.9 and 4, plan decision 18)", () => {
         action={noop}
         hidden={{ account: "acc-other", role: "admin" }}
         reason={false}
-        errors={[{ message: "Vossie needs at least one admin.", fieldId: null }]}
+        errors={[{ message: "CampusCart needs at least one admin.", fieldId: null }]}
         confirmLabel="Remove Sam's admin role"
         keepHref="/admin/staff"
       />,
     );
-    expect(screen.getByRole("alert", { name: "There's a problem" })).toHaveTextContent("Vossie needs at least one admin.");
+    expect(screen.getByRole("alert", { name: "There's a problem" })).toHaveTextContent("CampusCart needs at least one admin.");
   });
 });

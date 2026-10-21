@@ -1,8 +1,15 @@
-# Vossie: project notes
+# CampusCart: project notes
 
 @AGENTS.md
 
-Vossie is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/UX designer and developer.
+CampusCart is the student marketplace for every Eduvos campus. Lama Nkuna is the UI/UX designer and developer.
+
+## The name (decision 83)
+- **The product is CampusCart.** It was called Vossie until 2026-10-21. Every name a person sees says CampusCart: page text, titles, the footer wordmark, the manifest, download file names and the fixtures.
+- **Still Vossie until a second pass:** internal names: the `vossie_` cookies and storage keys, the `VOSSIE_` settings, code identifiers (`notFromVossie`, `__vossie…`), comments, the package name.
+- **The database's words say CampusCart** (`20261024120000_campuscart_name.sql`: the staff role notifications and the first admin's audit line), as do the seed's Hub posts and the sign-in code email (`supabase/config.toml`, `supabase/templates/`). Notifications and audit entries already written keep their words.
+- **Vossie by design:** the `vossie.net` email domain (students' real addresses), the folder and repository, the "Vossie Market" Supabase project, `vossie-pi.vercel.app`, and the dated specs, plans and progress entries.
+- **New user-facing text says CampusCart.**
 
 ## Source of truth
 - Homepage spec: `docs/superpowers/specs/2026-10-08-homepage-design.md`

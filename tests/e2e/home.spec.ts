@@ -21,7 +21,7 @@ test("the homepage has one H1 and the sections in the approved order", async ({ 
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
   // Text content, so the screen-reader-only headings count too.
   expect(await page.locator("main h2").allTextContents()).toEqual([
-    "Why you can trust Vossie",
+    "Why you can trust CampusCart",
     "Shop by category",
     "Collections from the Incubation Hub",
     "Shop by campus",
@@ -236,7 +236,7 @@ test("a heart saves on this device, and the header counts it (spec 7.8)", async 
 test.describe("the strip under the hero (spec 7.4)", () => {
   test("a first visit sees the trust strip", async ({ page }) => {
     await page.goto("/");
-    const strip = page.getByRole("region", { name: "Why you can trust Vossie" });
+    const strip = page.getByRole("region", { name: "Why you can trust CampusCart" });
     await expect(strip.getByRole("link", { name: "How trust works" })).toBeVisible();
   });
 

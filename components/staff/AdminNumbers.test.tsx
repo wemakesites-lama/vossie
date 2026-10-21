@@ -47,7 +47,7 @@ function view(campus: (typeof CAMPUSES)[number] | null = null, sampleMode = true
 describe("the admin's numbers (stage J spec decisions 10 to 13)", () => {
   it("says how it counts, and that the preview's store starts again on restart", () => {
     view();
-    expect(screen.getByText(/^Counted from Vossie's store as this page opens\./)).toHaveTextContent(
+    expect(screen.getByText(/^Counted from CampusCart's store as this page opens\./)).toHaveTextContent(
       'Small numbers of private things show as "Under 5" or "Hidden", so no one can be picked out.',
     );
     expect(screen.getByText("In this preview the store starts again whenever the server restarts.")).toBeInTheDocument();

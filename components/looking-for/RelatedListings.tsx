@@ -26,7 +26,7 @@ export async function RelatedListings({ request, categoryName, campusNames }: Re
   return (
     <section id="already-on-vossie" aria-labelledby="already-on-vossie-title" className="request-related">
       <h2 id="already-on-vossie-title" className="listing-section-title">
-        Already on Vossie
+        Already on CampusCart
       </h2>
       {listings ? (
         <>

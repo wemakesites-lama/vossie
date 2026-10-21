@@ -275,7 +275,7 @@ test.describe("messaging a seller (messaging spec 3.1 to 3.3)", () => {
     // Only the seller's own message is left (plan decision 14), with no reply form and no sale button.
     await expect(bubble(seller, "Yes, it is.")).toContainText("You");
     expect(await main(seller).getByRole("listitem").filter({ hasText: "Is it still available?" }).count()).toBe(0);
-    await expect(main(seller).getByText("This person has left Vossie, so you can't reply.")).toBeVisible();
+    await expect(main(seller).getByText("This person has left CampusCart, so you can't reply.")).toBeVisible();
     expect(await field(seller, "Your reply").count()).toBe(0);
     expect(await button(seller, "Mark as completed").count()).toBe(0);
     await seller.context().close();
@@ -509,10 +509,10 @@ test("messaging pages stay out of search engines", async ({ page }) => {
   onlyAt("desktop-1440");
   await signUp(page, newBuyer());
   for (const [path, title] of [
-    ["/messages", "Messages · Vossie"],
-    ["/notifications", "Notifications · Vossie"],
-    ["/listings/l-002/message", "Message Book swap · Vossie"],
-    ["/report?listing=l-002", "Report · Vossie"],
+    ["/messages", "Messages · CampusCart"],
+    ["/notifications", "Notifications · CampusCart"],
+    ["/listings/l-002/message", "Message Book swap · CampusCart"],
+    ["/report?listing=l-002", "Report · CampusCart"],
   ]) {
     await page.goto(path);
     await expect(page).toHaveTitle(title);

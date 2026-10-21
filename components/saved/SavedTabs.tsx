@@ -43,7 +43,7 @@ function SavedTabContent({ tab }: { tab: SavedTab }) {
       {tab === "listings" && (
         <>
           <p className="saved-note">
-            Saved on this device. Once Vossie is live, your saves will follow your account to any device.
+            Saved on this device. Once CampusCart is live, your saves will follow your account to any device.
           </p>
           <SavedList />
         </>

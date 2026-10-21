@@ -50,12 +50,12 @@ const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Ma
   ["staff-email-missing", { message: "Enter their Eduvos email.", field: "email" }],
   [
     "staff-email-unknown",
-    { message: "No Vossie account uses that email. Ask them to sign in once, then try again.", field: "email" },
+    { message: "No CampusCart account uses that email. Ask them to sign in once, then try again.", field: "email" },
   ],
   ["staff-role-missing", { message: "Choose Mentor or Admin.", field: "role" }],
   ["staff-role-held", { message: "That account has that role already.", field: "role" }],
   ["staff-own-admin", { message: "You can't remove your own admin role. Ask another admin.", field: "none" }],
-  ["staff-last-admin", { message: "Vossie needs at least one admin.", field: "none" }],
+  ["staff-last-admin", { message: "CampusCart needs at least one admin.", field: "none" }],
   // The Hub's post editor (lib/staff/post-rules.ts), in the form's order.
   ["post-kind-missing", { message: "Choose a tip, an event or office hours.", field: "kind" }],
   ["post-title-missing", { message: "Give the post a title.", field: "title" }],

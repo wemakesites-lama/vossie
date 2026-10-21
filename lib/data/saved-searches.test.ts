@@ -160,7 +160,7 @@ describe("telling students about a new listing (spec 2.9 to 2.11, plan decision 
     expect(await notifySavedSearches({ listingId: publish(), now: at(9) })).toBe(0);
     await addSavedSearch("acc-student", search(), at(8));
     expect(await notifySavedSearches({ listingId: publish({ id: "l-draft", state: "draft" }), now: at(9) })).toBe(0);
-    const hidden = publish({ id: "l-hidden", hiddenAt: at(8).toISOString(), hiddenReason: "Not allowed on Vossie." });
+    const hidden = publish({ id: "l-hidden", hiddenAt: at(8).toISOString(), hiddenReason: "Not allowed on CampusCart." });
     expect(await notifySavedSearches({ listingId: hidden, now: at(9) })).toBe(0);
     sampleStore().sellerProfiles.get("acc-seller")!.status = "paused";
     expect(await notifySavedSearches({ listingId: publish({ id: "l-paused-shop" }), now: at(9) })).toBe(0);

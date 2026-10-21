@@ -14,7 +14,7 @@ test("shows the photos, price, collect box, seller and more from them", async ({
   await expect(page.getByText("Collect at Midrand · Library entrance")).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "Tech corner", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "More from Tech corner" })).toBeAttached();
-  await expect(page).toHaveTitle("Casio fx-991ZA Plus calculator · Vossie");
+  await expect(page).toHaveTitle("Casio fx-991ZA Plus calculator · CampusCart");
 });
 
 test("docks Message, Save and Share at the bottom on phones, covering nothing", async ({ page }) => {
@@ -156,7 +156,7 @@ test("each listing has a share card for link previews", async ({ page, request, 
   );
   await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute(
     "content",
-    "Casio fx-991ZA Plus calculator, R250, at Midrand on Vossie",
+    "Casio fx-991ZA Plus calculator, R250, at Midrand on CampusCart",
   );
   // metadataBase comes from NEXT_PUBLIC_SITE_URL (http://localhost:3000 when it isn't set), so the card's address is
   // absolute, and in this test it names another port: fetch its path from the test server. There is one og:image, in

@@ -18,7 +18,7 @@ describe("HowItWorks (spec 7.9)", () => {
 
   it("ends with the safety rules", () => {
     render(<HowItWorks />);
-    const rules = screen.getByRole("list", { name: "How Vossie keeps you safe" });
+    const rules = screen.getByRole("list", { name: "How CampusCart keeps you safe" });
     expect(within(rules).getAllByRole("listitem").map((item) => item.textContent)).toEqual([
       "Verified sellers",
       "Approved pickup points",

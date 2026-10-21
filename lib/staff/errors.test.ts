@@ -63,7 +63,7 @@ describe("Give a staff role and Remove a role (stage J spec decisions 3 and 5)",
     ]);
     expect(staffErrors(["staff-email-unknown"], GIVE_ROLE_FIELDS)).toEqual([
       {
-        message: "No Vossie account uses that email. Ask them to sign in once, then try again.",
+        message: "No CampusCart account uses that email. Ask them to sign in once, then try again.",
         fieldId: "give-role-email",
       },
     ]);
@@ -76,7 +76,7 @@ describe("Give a staff role and Remove a role (stage J spec decisions 3 and 5)",
   it("words a refused removal, linked to no field", () => {
     expect(staffErrors(["staff-own-admin", "staff-last-admin"], {})).toEqual([
       { message: "You can't remove your own admin role. Ask another admin.", fieldId: null },
-      { message: "Vossie needs at least one admin.", fieldId: null },
+      { message: "CampusCart needs at least one admin.", fieldId: null },
     ]);
   });
 });

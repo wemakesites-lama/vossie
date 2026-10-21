@@ -68,7 +68,7 @@ describe("sending and checking a code on the local stack (phase B, Task 11)", ()
     const before = new Date();
     expect(await sendSignInCode(email)).toBe("sent");
     const message = await newestMessage(email, before);
-    expect(message?.Subject).toBe("Your Vossie sign-in code");
+    expect(message?.Subject).toBe("Your CampusCart sign-in code");
     const code = /\b(\d{6})\b/.exec(message!.Text)![1];
     // The code stands on its own large line in the HTML template (supabase/templates/sign-in-code.html).
     expect(message!.HTML).toMatch(new RegExp(`>\\s*${code}\\s*<`));

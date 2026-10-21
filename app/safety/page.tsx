@@ -5,7 +5,7 @@ import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
 export const metadata: Metadata = {
   title: "Safety",
   description:
-    "How to buy and sell safely on Vossie: meeting on campus, checking an item, never paying in advance, spotting a scam and reporting a problem.",
+    "How to buy and sell safely on CampusCart: meeting on campus, checking an item, never paying in advance, spotting a scam and reporting a problem.",
 };
 
 const SECTIONS: readonly InfoSection[] = [
@@ -55,12 +55,12 @@ const SECTIONS: readonly InfoSection[] = [
           advance, even a small amount.
         </li>
         <li>
-          Vossie has no online payments, so nobody on Vossie should ask you to pay by EFT, voucher or app before you
+          CampusCart has no online payments, so nobody on CampusCart should ask you to pay by EFT, voucher or app before you
           meet.
         </li>
         <li>
           Never share your bank card details, PIN, passwords or one-time codes (OTPs), not with a seller, a buyer or
-          anyone who says they&apos;re from Vossie.
+          anyone who says they&apos;re from CampusCart.
         </li>
         <li>
           If you&apos;re paid in cash, check it before you hand over the item. If it&apos;s a swap, see what you&apos;re
@@ -103,8 +103,8 @@ const SECTIONS: readonly InfoSection[] = [
           on 10111.
         </p>
         <p>
-          Want to know how Vossie checks its sellers? Read <Link href="/trust">how trust works</Link>, or find out about
-          the <Link href="/hub">Incubation Hub</Link> that runs Vossie.
+          Want to know how CampusCart checks its sellers? Read <Link href="/trust">how trust works</Link>, or find out about
+          the <Link href="/hub">Incubation Hub</Link> that runs CampusCart.
         </p>
       </>
     ),
