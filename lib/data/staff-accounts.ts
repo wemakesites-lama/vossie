@@ -86,6 +86,17 @@ export async function countAdmins(): Promise<number> {
 }
 
 /**
+ * What the remove-mentor confirm page shows, read from the store now (stage M spec decisions 2 and 6): whether
+ * `personId` mentors `viewerId`'s own shop, and whether exactly one account holds the admin role.
+ */
+export async function removeMentorView(
+  viewerId: string,
+  personId: string,
+): Promise<{ mentorsOwnShop: boolean; onlyAdmin: boolean }> {
+  return { mentorsOwnShop: ownShopMentorId(viewerId) === personId, onlyAdmin: (await countAdmins()) === 1 };
+}
+
+/**
  * Gives `role` to the account with exactly this email (spec decision 3): trimmed and lower case, the lookup sign-in
  * uses, never a search. "no-account" when none has it (giving a role never makes an account), "held" when it has the
  * role already.

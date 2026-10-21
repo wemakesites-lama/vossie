@@ -397,6 +397,17 @@ describe("one reminder before a request closes itself (stage M spec decisions 13
     expect(sampleStore().requests.get(id)?.remindedFor).toBe("2026-10-29");
   });
 
+  it("sends nothing the second time when the closing day moves back to one already reminded for (decision 15)", async () => {
+    const { id } = await post("acc-student", NOW, DATED);
+    await settleRequests(ON_THE_18TH);
+    expect(await notes()).toHaveLength(1);
+    await updateRequest("acc-student", id, { ...DATED, neededBy: "2026-10-25" }, new Date("2026-10-18T09:00:00.000Z"));
+    await updateRequest("acc-student", id, DATED, new Date("2026-10-18T10:00:00.000Z"));
+    await settleRequests(new Date("2026-10-19T08:00:00.000Z"));
+    expect(await notes()).toHaveLength(1);
+    expect(sampleStore().requests.get(id)?.remindedFor).toBe("2026-10-20");
+  });
+
   it("reminds again after a reopen gives the request a new closing day", async () => {
     // Posted 14 September: closed from 14 October, reminded from the 12th.
     const { id } = await post("acc-student", new Date("2026-09-14T08:00:00.000Z"));

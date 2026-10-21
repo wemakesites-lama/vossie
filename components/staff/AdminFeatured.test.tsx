@@ -48,7 +48,7 @@ describe("Featured (staff tools spec 2.3 and 2.8)", () => {
     await show();
     expect(
       screen.getByText(
-        /A seller who has been featured sits out for a week when there are enough other Verified sellers to fill the row\./,
+        /A seller who has been featured sits out for a week when there are enough other Verified sellers to fill the row\. When there aren't, the sellers featured longest ago come back first\./,
       ),
     ).toBeInTheDocument();
     // The old line promised a strict break, which the draw doesn't keep (amendment 3).

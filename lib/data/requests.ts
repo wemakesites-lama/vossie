@@ -26,7 +26,8 @@ import { sampleStore } from "./store";
 //
 // Old requests close themselves (stage L spec decisions 8 to 16). Every reader that lists requests applies the rule by
 // `today`, so it's right whether or not the close has been stored, and settleRequests(now) stores it the first time
-// something request-time looks, telling the asker once. Two days before, it reminds them once (stage M). Nothing here that's called from "use cache" writes.
+// something request-time looks, telling the asker once. Two days before, it reminds them once (stage M). Nothing here
+// that's called from "use cache" writes.
 
 /** A row as part B's LookingForRequest. The offers count is the offer threads plus the sample's number (spec 2.11). */
 function toRequest(row: RequestRow): LookingForRequest {

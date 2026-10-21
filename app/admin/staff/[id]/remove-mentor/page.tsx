@@ -5,7 +5,7 @@ import { StaffFrame } from "@/components/staff/StaffFrame";
 import { roleConfirmTitle, StaffRoleConfirm } from "@/components/staff/StaffRoleConfirm";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
 import { readFormState } from "@/lib/auth/form-state";
-import { countAdmins, getStaffAccount, ownShopMentorId } from "@/lib/data/staff-accounts";
+import { getStaffAccount, removeMentorView } from "@/lib/data/staff-accounts";
 import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors } from "@/lib/staff/errors";
@@ -37,8 +37,7 @@ async function Remove({ params }: Pick<PageProps<"/admin/staff/[id]/remove-mento
   if (!person || !person.roles.includes("mentor")) notFound();
   const state = await readFormState(removeRoleForm(id, "mentor"));
   // Whether this person mentors the admin's own shop, read from the store now (stage M spec decisions 2 and 6).
-  const mentorsOwnShop = ownShopMentorId(account.id) === id;
-  const onlyAdmin = (await countAdmins()) === 1;
+  const { mentorsOwnShop, onlyAdmin } = await removeMentorView(account.id, id);
   return (
     <StaffFrame
       account={account}

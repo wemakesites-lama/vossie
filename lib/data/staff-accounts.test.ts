@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAccount } from "./accounts";
-import { countAdmins, getStaffAccount, giveRole, listStaffAccounts, ownShopMentorId, removeRole } from "./staff-accounts";
+import { countAdmins, getStaffAccount, giveRole, listStaffAccounts, ownShopMentorId, removeMentorView, removeRole } from "./staff-accounts";
 import { resetSampleStore, sampleStore } from "./store";
 
 const NOW = new Date("2026-10-20T08:00:00.000Z");
@@ -187,5 +187,19 @@ describe("the mentor of the admin's own shop (stage M spec decisions 1 to 5)", (
     expect(await removeRole("acc-mentor", "admin", "acc-seller")).toMatchObject({ role: "admin", unassigned: [] });
     expect(sampleStore().accounts.get("acc-mentor")?.roles).toEqual(["mentor"]);
     expect(sampleStore().sellerProfiles.get("acc-seller")?.mentorId).toBe("acc-mentor");
+  });
+});
+
+describe("what the remove-mentor confirm page needs (stage M spec decisions 2 and 6)", () => {
+  it("says whether the person mentors the viewer's own shop", async () => {
+    expect((await removeMentorView("acc-seller", "acc-mentor")).mentorsOwnShop).toBe(true);
+    expect((await removeMentorView("acc-seller", "acc-admin")).mentorsOwnShop).toBe(false);
+    expect((await removeMentorView("acc-student", "acc-mentor")).mentorsOwnShop).toBe(false);
+  });
+
+  it("says whether the viewer is the only admin: true with one, false with two", async () => {
+    expect((await removeMentorView("acc-admin", "acc-mentor")).onlyAdmin).toBe(true);
+    sampleStore().accounts.get("acc-mentor")!.roles.push("admin");
+    expect((await removeMentorView("acc-admin", "acc-mentor")).onlyAdmin).toBe(false);
   });
 });
