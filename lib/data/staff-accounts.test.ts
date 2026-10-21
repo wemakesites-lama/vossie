@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAccount } from "./accounts";
-import { countAdmins, getStaffAccount, giveRole, listStaffAccounts, removeRole } from "./staff-accounts";
+import { countAdmins, getStaffAccount, giveRole, listStaffAccounts, ownShopMentorId, removeRole } from "./staff-accounts";
 import { resetSampleStore, sampleStore } from "./store";
 
 const NOW = new Date("2026-10-20T08:00:00.000Z");
@@ -148,5 +148,44 @@ describe("taking a role away (stage J spec decisions 5 and 6)", () => {
   it("changes nothing for a role already gone or an unknown account", async () => {
     expect(await removeRole("acc-student", "mentor", "acc-admin")).toBeNull();
     expect(await removeRole("acc-nobody", "admin", "acc-admin")).toBeNull();
+  });
+});
+
+describe("the mentor of the admin's own shop (stage M spec decisions 1 to 5)", () => {
+  it("reads who mentors an owner's shop from the store: Naledi for Sipho, nobody for Lerato or a student", () => {
+    expect(ownShopMentorId("acc-seller")).toBe("acc-mentor");
+    expect(ownShopMentorId("acc-pending")).toBeNull();
+    expect(ownShopMentorId("acc-student")).toBeNull();
+    sampleStore().sellerProfiles.get("acc-seller")!.mentorId = null;
+    expect(ownShopMentorId("acc-seller")).toBeNull();
+  });
+
+  it("refuses to remove the mentor role of whoever mentors the asking admin's own shop, changing nothing at all", async () => {
+    sampleStore().accounts.get("acc-seller")!.roles = ["admin"];
+    const before = structuredClone(sampleStore());
+    expect(await removeRole("acc-mentor", "mentor", "acc-seller")).toBe("own-shop-mentor");
+    expect(sampleStore()).toEqual(before);
+    expect(sampleStore().accounts.get("acc-mentor")?.roles).toEqual(["mentor"]);
+    expect(sampleStore().sellerProfiles.get("acc-seller")?.mentorId).toBe("acc-mentor");
+  });
+
+  it("goes by the seller profile, not the live shop: a paused shop is still the admin's own", async () => {
+    sampleStore().sellerProfiles.get("acc-seller")!.status = "paused";
+    expect(await removeRole("acc-mentor", "mentor", "acc-seller")).toBe("own-shop-mentor");
+  });
+
+  it("still lets another admin remove it, and Tech corner loses its mentor as before (stage J)", async () => {
+    expect(await removeRole("acc-mentor", "mentor", "acc-admin")).toMatchObject({
+      role: "mentor",
+      unassigned: ["Tech corner"],
+    });
+    expect(sampleStore().sellerProfiles.get("acc-seller")?.mentorId).toBeNull();
+  });
+
+  it("leaves removing the admin role alone, for someone who holds both (decision 3)", async () => {
+    sampleStore().accounts.get("acc-mentor")!.roles = ["mentor", "admin"];
+    expect(await removeRole("acc-mentor", "admin", "acc-seller")).toMatchObject({ role: "admin", unassigned: [] });
+    expect(sampleStore().accounts.get("acc-mentor")?.roles).toEqual(["mentor"]);
+    expect(sampleStore().sellerProfiles.get("acc-seller")?.mentorId).toBe("acc-mentor");
   });
 });

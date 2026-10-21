@@ -33,6 +33,7 @@ function view(overrides: Partial<Parameters<typeof AdminStaff>[0]> = {}) {
     <AdminStaff
       people={[naledi, pieter]}
       viewerId="acc-admin"
+      ownShopMentorId={null}
       campusNames={campusNames}
       values={{}}
       errors={[]}
@@ -85,6 +86,35 @@ describe("Staff accounts (stage J spec decision 2)", () => {
     const own = screen.getAllByRole("row")[2];
     expect(within(own).queryByRole("link")).toBeNull();
     expect(within(own).getByText("This is you.")).toBeInTheDocument();
+  });
+
+  it("says Mentors your shop. on the mentor role of whoever mentors the viewer's shop, with no link (stage M spec decision 6)", () => {
+    const sipho: StaffAccount = {
+      id: "acc-seller",
+      firstName: "Sipho",
+      email: "seller@eduvos.com",
+      campusSlug: "midrand",
+      roles: ["admin"],
+      mentors: [],
+    };
+    view({
+      people: [{ ...naledi, roles: ["mentor", "admin"] }, pieter, sipho],
+      viewerId: "acc-seller",
+      ownShopMentorId: "acc-mentor",
+    });
+    const [, nalediRow, pieterRow, siphoRow] = screen.getAllByRole("row");
+    expect(within(nalediRow).getByText("Mentors your shop.")).toHaveClass("staff-muted");
+    expect(within(nalediRow).queryByRole("link", { name: "Remove mentor role for Naledi" })).toBeNull();
+    // Her admin role is another matter (decision 3).
+    expect(within(nalediRow).getByRole("link", { name: "Remove admin role for Naledi" })).toBeInTheDocument();
+    expect(within(pieterRow).getByRole("link", { name: "Remove admin role for Pieter" })).toBeInTheDocument();
+    expect(within(siphoRow).getByText("This is you.")).toBeInTheDocument();
+  });
+
+  it("offers every Remove link when nobody mentors the viewer's shop", () => {
+    view();
+    expect(screen.getByRole("link", { name: "Remove mentor role for Naledi" })).toBeInTheDocument();
+    expect(screen.queryByText("Mentors your shop.")).toBeNull();
   });
 
   it("counts the shops a mentor mentors, and says None for an admin who isn't one (plan decision 11)", () => {

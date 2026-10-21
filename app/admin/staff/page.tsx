@@ -5,7 +5,7 @@ import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
 import { readFormState } from "@/lib/auth/form-state";
 import { getCampuses } from "@/lib/data";
-import { listStaffAccounts } from "@/lib/data/staff-accounts";
+import { listStaffAccounts, ownShopMentorId } from "@/lib/data/staff-accounts";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { GIVE_ROLE_FIELDS, staffErrors } from "@/lib/staff/errors";
 import { GIVE_ROLE_FORM, takeNotice } from "@/lib/staff/form-state";
@@ -41,6 +41,7 @@ async function StaffAccounts() {
       <AdminStaff
         people={people}
         viewerId={account.id}
+        ownShopMentorId={ownShopMentorId(account.id)}
         campusNames={new Map(campuses.map((campus) => [campus.slug, campus.name]))}
         values={state?.values ?? {}}
         errors={staffErrors(state?.errors ?? [], GIVE_ROLE_FIELDS)}

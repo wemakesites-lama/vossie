@@ -26,3 +26,11 @@ describe("an admin's own shop or request (stage L spec decision 3)", () => {
     expect(staffNoticeText("own-request")).toBe("Nothing changed. It's your own request, so another admin must do this.");
   });
 });
+
+describe("the mentor of the admin's own shop (stage M spec decision 5)", () => {
+  it("says nothing changed and why", () => {
+    expect(staffNoticeText("own-shop-mentor")).toBe(
+      "Nothing changed. They mentor your own shop, so another admin must remove their mentor role.",
+    );
+  });
+});

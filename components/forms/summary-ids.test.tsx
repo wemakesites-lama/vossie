@@ -324,6 +324,7 @@ describe("error summary ids (accounts spec 6)", () => {
         <AdminStaff
           people={[]}
           viewerId="acc-admin"
+          ownShopMentorId={null}
           campusNames={new Map()}
           values={{}}
           errors={oops}

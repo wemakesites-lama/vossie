@@ -74,4 +74,28 @@ describe("taking a role away (stage J spec decisions 4 and 5)", () => {
     expect(roleConfirmTitle(pieter, "admin", "acc-other")).toBe("Remove Pieter's admin role");
     expect(roleConfirmTitle(naledi, "mentor", "acc-mentor")).toBe("Remove Naledi's mentor role");
   });
+
+  it("refuses the mentor role of whoever mentors your own shop: the line, no form, a way back (stage M spec decision 6)", () => {
+    render(<StaffRoleConfirm person={naledi} role="mentor" viewerId="acc-seller" errors={[]} mentorsOwnShop />);
+    expect(
+      screen.getByText(
+        "Naledi mentors your own shop, so another admin must remove this role: it would leave your shop without a mentor.",
+      ),
+    ).toHaveClass("staff-confirm-lead");
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(document.querySelector("form")).toBeNull();
+    expect(screen.queryByText(/You're the only admin/)).toBeNull();
+    expect(screen.getByRole("link", { name: "Back to staff accounts" })).toHaveAttribute("href", "/admin/staff");
+  });
+
+  it("tells the only admin to give someone else the Admin role first", () => {
+    render(<StaffRoleConfirm person={naledi} role="mentor" viewerId="acc-seller" errors={[]} mentorsOwnShop onlyAdmin />);
+    expect(screen.getByText("You're the only admin. Give someone else the Admin role first.")).toBeInTheDocument();
+  });
+
+  it("titles that page with the person's role, since it refuses rather than asks", () => {
+    expect(roleConfirmTitle(naledi, "mentor", "acc-seller", true)).toBe("Naledi's mentor role");
+    expect(roleConfirmTitle(naledi, "mentor", "acc-seller", false)).toBe("Remove Naledi's mentor role");
+    expect(roleConfirmTitle(naledi, "mentor", "acc-seller")).toBe("Remove Naledi's mentor role");
+  });
 });

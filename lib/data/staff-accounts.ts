@@ -57,6 +57,15 @@ function toStaff(row: AccountRow): StaffAccount {
 
 const adminRows = () => [...sampleStore().accounts.values()].filter((row) => row.roles.includes("admin"));
 
+/**
+ * Who mentors `ownerId`'s own shop, read from the store now, never from a form (stage M spec decision 2): their seller
+ * profile's mentor, whatever state the shop is in (live, paused or waiting), or null. Synchronous, so removeRole checks
+ * it and writes in one pass.
+ */
+export function ownShopMentorId(ownerId: string): string | null {
+  return sampleStore().sellerProfiles.get(ownerId)?.mentorId ?? null;
+}
+
 /** Everyone with a role, and no one else, by first name, then email (spec decision 2). */
 export async function listStaffAccounts(): Promise<StaffAccount[]> {
   return [...sampleStore().accounts.values()]
@@ -92,17 +101,20 @@ export async function giveRole(email: string, role: StaffRole): Promise<GivenRol
 
 /**
  * Takes `role` away from `accountId`, asked by the admin `byId` (spec decisions 5 and 6). Never your own admin role
- * ("own-admin"), never the last admin ("last-admin"). A mentor's shops lose their mentor, as deleting the account does
- * (lib/data/staff-privacy.ts); their notes, check-ins and Hub posts stay. Null when there's no such role to take.
+ * ("own-admin"), never the last admin ("last-admin"), and never the mentor role of whoever mentors `byId`'s own shop
+ * ("own-shop-mentor", stage M spec decision 2): leaving your own shop without a mentor is another admin's decision. A
+ * mentor's shops lose their mentor, as deleting the account does (lib/data/staff-privacy.ts); their notes, check-ins
+ * and Hub posts stay. Null when there's no such role to take.
  */
 export async function removeRole(
   accountId: string,
   role: StaffRole,
   byId: string,
-): Promise<RemovedRole | "own-admin" | "last-admin" | null> {
+): Promise<RemovedRole | "own-admin" | "last-admin" | "own-shop-mentor" | null> {
   const store = sampleStore();
   const row = store.accounts.get(accountId);
   if (!row || !row.roles.includes(role)) return null;
+  if (role === "mentor" && ownShopMentorId(byId) === accountId) return "own-shop-mentor";
   if (role === "admin" && accountId === byId) return "own-admin";
   if (role === "admin" && adminRows().length <= 1) return "last-admin";
   const unassigned = role === "mentor" ? mentoredShopNames(accountId) : [];

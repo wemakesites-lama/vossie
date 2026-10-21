@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { readFormState } from "@/lib/auth/form-state";
+import { readFormState, writeFormState } from "@/lib/auth/form-state";
 import { createAccount, deleteAccountData } from "@/lib/data/accounts";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
-import { redirectOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
+import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
 import { form, signedInAs, STAFF_NOW } from "@/tests/helpers/staff";
 import { giveStaffRole, removeStaffRole } from "./account-actions";
 import { GIVE_ROLE_FORM, removeRoleForm, STAFF_NOTICE } from "./form-state";
@@ -230,5 +230,43 @@ describe("taking a role away (stage J spec decisions 4 to 7)", () => {
     }
     expect(auditRows()).toEqual([]);
     expect(sampleStore().accounts.get("acc-mentor")?.roles).toEqual(["mentor"]);
+  });
+});
+
+describe("the mentor of the admin's own shop (stage M spec decisions 2, 5 and 7)", () => {
+  /** The store as a refusal must leave it: everything but form state, which may gain only the notice. */
+  function everythingButFormState() {
+    const copy = structuredClone(sampleStore());
+    copy.formStates.clear();
+    return copy;
+  }
+
+  it("refuses Sipho, an admin, removing Naledi's mentor role: only the notice, on the staff page", async () => {
+    sampleStore().accounts.get("acc-seller")!.roles = ["admin"];
+    await signedInAs(request, "acc-seller");
+    // A refusal left on the confirm page by an earlier try stays as it was: the form state isn't written or cleared.
+    await writeFormState(removeRoleForm("acc-mentor", "mentor"), { errors: ["once-expired"], values: {}, notice: null }, STAFF_NOW);
+    const before = everythingButFormState();
+    const redirect = await redirectSignalOf(() => removeStaffRole(form({ account: "acc-mentor", role: "mentor" })));
+    expect([redirect.url, redirect.type, request.refreshed]).toEqual(["/admin/staff", "replace", true]);
+    expect(everythingButFormState()).toEqual(before);
+    expect(await notice()).toBe("own-shop-mentor");
+    expect((await readFormState(removeRoleForm("acc-mentor", "mentor")))?.errors).toEqual(["once-expired"]);
+    expect([auditRows(), notesOf("acc-mentor"), request.updatedTags]).toEqual([[], [], []]);
+  });
+
+  it("still lets another admin remove it", async () => {
+    sampleStore().accounts.get("acc-seller")!.roles = ["admin"];
+    await asAdmin();
+    expect(await redirectOf(() => removeStaffRole(form({ account: "acc-mentor", role: "mentor" })))).toBe("/admin/staff");
+    expect(await notice()).toBe("role-removed");
+    expect(sampleStore().sellerProfiles.get("acc-seller")?.mentorId).toBeNull();
+    expect(auditRows()).toHaveLength(1);
+  });
+
+  it("checks the role first: Sipho without the Admin role gets the 404, never the notice (spec section 3, Rules)", async () => {
+    await signedInAs(request, "acc-seller");
+    await expect(removeStaffRole(form({ account: "acc-mentor", role: "mentor" }))).rejects.toThrow("notFound");
+    expect(await notice()).toBeNull();
   });
 });

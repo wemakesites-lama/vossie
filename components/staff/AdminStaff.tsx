@@ -14,6 +14,8 @@ type AdminStaffProps = {
   people: readonly StaffAccount[];
   /** The signed-in admin: their own admin role has no Remove link (spec decision 5). */
   viewerId: string;
+  /** Who mentors the signed-in admin's own shop: their mentor role has no Remove link (stage M spec decision 6). */
+  ownShopMentorId: string | null;
   campusNames: ReadonlyMap<string, string>;
   /** What was typed and chosen before a failed Give role. */
   values: Readonly<Record<string, string>>;
@@ -37,19 +39,38 @@ function RemoveLink({ person, role }: { person: StaffAccount; role: StaffRole })
   );
 }
 
-/** One link per role; the admin's own admin role says "This is you." instead (spec decision 5). */
-function RowActions({ person, viewerId }: { person: StaffAccount; viewerId: string }) {
+/**
+ * One link per role. The admin's own admin role says "This is you." instead (spec decision 5), and the mentor role of
+ * whoever mentors the admin's own shop says "Mentors your shop." (stage M spec decision 6).
+ */
+function RowActions({
+  person,
+  viewerId,
+  ownShopMentorId,
+}: {
+  person: StaffAccount;
+  viewerId: string;
+  ownShopMentorId: string | null;
+}) {
   return (
     <div className="staff-row-actions">
-      {person.roles.map((role) =>
-        role === "admin" && person.id === viewerId ? (
-          <span key={role} className="staff-muted">
-            This is you.
-          </span>
-        ) : (
-          <RemoveLink key={role} person={person} role={role} />
-        ),
-      )}
+      {person.roles.map((role) => {
+        if (role === "admin" && person.id === viewerId) {
+          return (
+            <span key={role} className="staff-muted">
+              This is you.
+            </span>
+          );
+        }
+        if (role === "mentor" && person.id === ownShopMentorId) {
+          return (
+            <span key={role} className="staff-muted">
+              Mentors your shop.
+            </span>
+          );
+        }
+        return <RemoveLink key={role} person={person} role={role} />;
+      })}
     </div>
   );
 }
@@ -128,7 +149,7 @@ function GiveRoleForm({ values, errors, once }: Pick<AdminStaffProps, "values" |
  * email is shown because roles are given by email and two staff may share a first name. Server-rendered, with no
  * client code. The words are samples for Lama to change.
  */
-export function AdminStaff({ people, viewerId, campusNames, values, errors, once }: AdminStaffProps) {
+export function AdminStaff({ people, viewerId, ownShopMentorId, campusNames, values, errors, once }: AdminStaffProps) {
   return (
     <>
       <GiveRoleForm values={values} errors={errors} once={once} />
@@ -151,7 +172,7 @@ export function AdminStaff({ people, viewerId, campusNames, values, errors, once
               campusNames.get(person.campusSlug) ?? person.campusSlug,
               rolesText(person.roles),
               mentoredText(person),
-              <RowActions key="change" person={person} viewerId={viewerId} />,
+              <RowActions key="change" person={person} viewerId={viewerId} ownShopMentorId={ownShopMentorId} />,
             ],
           }))}
           empty="No one has a staff role."

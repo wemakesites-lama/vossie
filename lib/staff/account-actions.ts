@@ -97,7 +97,9 @@ export async function giveStaffRole(formData: FormData): Promise<void> {
 
 /**
  * Take a role away, from its confirm page (spec decisions 4 and 5). Never your own admin role, never the last admin:
- * those go back to the confirm page with the words. A mentor's shops lose their mentor, and the entry names them.
+ * those go back to the confirm page with the words. Never the mentor role of whoever mentors your own shop (stage M
+ * spec decision 5): that lands on the staff page with a notice, and nothing else is written. A mentor's shops lose
+ * their mentor, and the entry names them.
  */
 export async function removeStaffRole(formData: FormData): Promise<void> {
   const raw = field(formData, "account");
@@ -108,6 +110,12 @@ export async function removeStaffRole(formData: FormData): Promise<void> {
   const now = new Date();
   if (!accountId || !role) return nothingChanged(now);
   const removed = await removeRole(accountId, role, staff.id);
+  if (removed === "own-shop-mentor") {
+    // Another admin's decision (stage M spec decisions 2 and 5): the notice is the only write, on the page that shows
+    // staff notices. The confirm page's form state is left as it was.
+    await leaveNotice("own-shop-mentor", now);
+    done(ADMIN_STAFF_PATH);
+  }
   if (removed === "own-admin" || removed === "last-admin") {
     await writeFormState(removeRoleForm(accountId, role), { errors: [`staff-${removed}`], values: {}, notice: null }, now);
     done(path);

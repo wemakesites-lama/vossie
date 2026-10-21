@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { StaffFrame } from "@/components/staff/StaffFrame";
-import { StaffRoleConfirm } from "@/components/staff/StaffRoleConfirm";
+import { roleConfirmTitle, StaffRoleConfirm } from "@/components/staff/StaffRoleConfirm";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
 import { readFormState } from "@/lib/auth/form-state";
-import { getStaffAccount } from "@/lib/data/staff-accounts";
+import { countAdmins, getStaffAccount, ownShopMentorId } from "@/lib/data/staff-accounts";
 import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors } from "@/lib/staff/errors";
@@ -36,15 +36,25 @@ async function Remove({ params }: Pick<PageProps<"/admin/staff/[id]/remove-mento
   const person = isId(id) ? await getStaffAccount(id) : null;
   if (!person || !person.roles.includes("mentor")) notFound();
   const state = await readFormState(removeRoleForm(id, "mentor"));
+  // Whether this person mentors the admin's own shop, read from the store now (stage M spec decisions 2 and 6).
+  const mentorsOwnShop = ownShopMentorId(account.id) === id;
+  const onlyAdmin = (await countAdmins()) === 1;
   return (
     <StaffFrame
       account={account}
       area="Admin console"
-      title={`Remove ${person.firstName}'s mentor role`}
+      title={roleConfirmTitle(person, "mentor", account.id, mentorsOwnShop)}
       current={ADMIN_STAFF_PATH}
       notice={null}
     >
-      <StaffRoleConfirm person={person} role="mentor" viewerId={account.id} errors={staffErrors(state?.errors ?? [], {})} />
+      <StaffRoleConfirm
+        person={person}
+        role="mentor"
+        viewerId={account.id}
+        errors={staffErrors(state?.errors ?? [], {})}
+        mentorsOwnShop={mentorsOwnShop}
+        onlyAdmin={onlyAdmin}
+      />
     </StaffFrame>
   );
 }
