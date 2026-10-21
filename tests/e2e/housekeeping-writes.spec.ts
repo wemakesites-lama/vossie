@@ -11,6 +11,11 @@ import { copySession, giveRole } from "./helpers/staff-accounts";
 // finally; the second posts requests as a fresh account. A built server's clock can't be moved, so the closing itself
 // is unit-tested; here, the dates the asker is shown.
 
+// Two tests give Sipho the Admin role for their length and take it away in a finally, and fullyParallel is on: run this
+// file's tests one at a time, in order, or one would take the role away mid-test of the other (stage M plan decision
+// 13). After a failure the rest carry on in a fresh worker; retries stay per test, and a failure doesn't skip the rest.
+test.describe.configure({ mode: "default" });
+
 const OWN_SHOP_LINE =
   "This is your own shop, so another admin must make the Hub's decisions about it: approving, verifying, pausing, pinning and choosing its mentor.";
 const VERIFY = /^(Verify|Remove Verified from) Tech corner$/;
@@ -100,6 +105,98 @@ test("an admin who owns a shop sees why in place of its controls, and a forged p
     await expect(main(pieter).getByRole("button", { name: VERIFY })).toBeVisible();
     await expect(main(pieter).getByRole("link", { name: "Pause Tech corner" })).toBeVisible();
     await expect(main(pieter).getByRole("region", { name: "Mentor" }).getByRole("combobox")).toBeVisible();
+  } finally {
+    await plain?.close().catch(() => {});
+    await siphoContext?.close().catch(() => {});
+    await removeSiphosAdminRole(pieter).finally(() => pieter.context().close());
+  }
+});
+
+const REMOVE_NALEDIS_MENTOR_ROLE = "/admin/staff/acc-mentor/remove-mentor";
+const OWN_MENTOR_LINE =
+  "Naledi mentors your own shop, so another admin must remove this role: it would leave your shop without a mentor.";
+
+test("an admin can't remove the mentor role from whoever mentors their own shop, and a forged post changes nothing (stage M spec section 3)", async ({
+  browser,
+  baseURL,
+}) => {
+  test.setTimeout(240_000);
+  const pieter = await signedInPage(browser, baseURL!, "Admin", "/admin/staff");
+  let plain: BrowserContext | null = null;
+  let siphoContext: BrowserContext | null = null;
+  try {
+    // An interrupted earlier run on the same server may have left Sipho an admin: start clean.
+    await removeSiphosAdminRole(pieter);
+    await giveRole(pieter, "seller@eduvos.com", "Admin");
+    // The remove form as Pieter's page draws it without the app's JavaScript: its fields, the Server Action's own among
+    // them, are what a forged post or an old tab would send (stage M plan decision 14).
+    plain = await browser.newContext({ baseURL, serviceWorkers: "block" });
+    await plain.route("**/_next/static/**/*.js", (route) => route.abort());
+    await copySession(browser, plain, baseURL!, "Admin");
+    const pieterPlain = await plain.newPage();
+    await pieterPlain.goto(REMOVE_NALEDIS_MENTOR_ROLE);
+    const removeForm = main(pieterPlain)
+      .locator("form")
+      .filter({ has: pieterPlain.getByRole("button", { name: "Remove Naledi's mentor role" }) });
+    const fields = await removeForm.evaluate((form) =>
+      Object.fromEntries([...new FormData(form as HTMLFormElement)].map(([name, value]) => [name, String(value)])),
+    );
+    expect([fields.account, fields.role]).toEqual(["acc-mentor", "mentor"]);
+
+    // Sipho, now an admin, on Staff accounts: Naledi mentors his shop, so her row says so in place of the link.
+    const sipho = await signedInPage(browser, baseURL!, "Seller, Tech corner", "/admin/staff");
+    siphoContext = sipho.context();
+    await expect(main(sipho).getByRole("table", { name: /^Staff accounts/ })).toBeVisible(POST_LANDS);
+    const naledisRow = main(sipho).getByRole("row").filter({ hasText: "mentor@eduvos.com" });
+    await expect(naledisRow).toContainText("Mentors your shop.");
+    await expect(naledisRow.getByRole("link", { name: "Remove mentor role for Naledi" })).toHaveCount(0);
+    await expect(
+      main(sipho)
+        .getByRole("row")
+        .filter({ hasText: "admin@eduvos.com" })
+        .getByRole("link", { name: "Remove admin role for Pieter" }),
+    ).toBeVisible();
+
+    // The confirm page refuses rather than asks: the line, no button, the way back. axe at 1440 and 390.
+    await sipho.goto(REMOVE_NALEDIS_MENTOR_ROLE);
+    await expect(
+      main(sipho).getByRole("heading", { level: 1, name: "Naledi's mentor role", exact: true }),
+    ).toBeVisible();
+    await expect(main(sipho).getByText(OWN_MENTOR_LINE)).toBeVisible();
+    await expect(main(sipho).getByRole("button", { name: "Remove Naledi's mentor role" })).toHaveCount(0);
+    await expect(main(sipho).getByRole("link", { name: "Back to staff accounts" })).toBeVisible();
+    // Pieter is an admin too, so Sipho isn't the only one.
+    await expect(main(sipho).getByText(/You're the only admin/)).toHaveCount(0);
+    // A staff page's tab title streams in after its heading (stage J's checks): axe once the page is whole.
+    await expect(sipho).toHaveTitle(/\S/);
+    expect(await seriousIssues(sipho)).toEqual([]);
+    await sipho.setViewportSize({ width: 390, height: 844 });
+    await sipho.reload();
+    await expect(main(sipho).getByText(OWN_MENTOR_LINE)).toBeVisible();
+    await expect(sipho).toHaveTitle(/\S/);
+    expect(await seriousIssues(sipho)).toEqual([]);
+    await sipho.setViewportSize({ width: 1440, height: 900 });
+
+    // A forged removal: the form's own fields, sent with Sipho's session. It lands with the notice and changes nothing.
+    const posted = await sipho.request.post(REMOVE_NALEDIS_MENTOR_ROLE, {
+      multipart: fields,
+      headers: { Origin: new URL(baseURL!).origin },
+      maxRedirects: 0,
+    });
+    expect(posted.status(), "the Server Action ends with a redirect").toBeGreaterThanOrEqual(300);
+    expect(posted.status()).toBeLessThan(400);
+    await sipho.goto("/admin/staff");
+    await expect(staffNotice(sipho)).toHaveText(
+      "Nothing changed. They mentor your own shop, so another admin must remove their mentor role.",
+    );
+    await expect(naledisRow).toContainText("Mentors your shop.");
+
+    // Pieter, whose shop it isn't: Naledi keeps the role and still mentors Tech corner.
+    await pieter.goto("/admin/staff");
+    await expect(main(pieter).getByRole("table", { name: /^Staff accounts/ })).toBeVisible(POST_LANDS);
+    await expect(main(pieter).getByRole("link", { name: "Remove mentor role for Naledi" })).toBeVisible();
+    await pieter.goto("/admin/sellers/tech-corner");
+    await expect(main(pieter).getByRole("combobox", { name: "Mentor for Tech corner" })).toHaveValue("acc-mentor");
   } finally {
     await plain?.close().catch(() => {});
     await siphoContext?.close().catch(() => {});
