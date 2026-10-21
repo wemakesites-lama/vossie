@@ -907,12 +907,44 @@ Review notes that were deliberately not acted on:
   - end to end: the 19 device specs the rename touched, plus `performance.spec.ts`, at 360, 390 and 1440px, on a fresh server: 729 passed and 315 skipped by design. The page-size budgets passed.
   - `staff-accounts-writes.spec.ts` (one changed line) was not rerun.
 
+## 2026-10-21: The Supabase backend finished on `backend/phases-b-c` (phases B and C, step 5 as the MVP cut)
+- **Where:** branch `backend/phases-b-c` (worktree `../Vossie-backend`), HEAD `33e0290`. Main is merged into it, with the CampusCart rename (`ad5652d`). Not yet merged into `main` or pushed.
+- **Lama's decisions (2026-10-21):** the live site is the "Vossie Market" project on vossie-pi.vercel.app, for the challenge submission; exactly `@vossie.net` and `@eduvos.com` may sign in; sessions slide for 30 days; sign-in codes come from Resend at `codes@wemakesites.co.za` (Brevo as the fallback); photos are capped at 4 MB each and 4 MiB a post; step 5 is cut to twelve end-to-end flows on Supabase (approved in the "In" session), and the full suite on Supabase moves to before any wider rollout.
+- **Built, each step planned, reviewed before code, built test first and reviewed after:**
+  - **Step 2b:** the database for stages L and M. Requests close themselves by the app's rule, with the nightly settle and reminder. No admin acts on their own shop, listings or request, or removes their own shop's mentor. Campuses, categories, pickup points and the allowed domains are migrations, so production gets them without the seed.
+  - **C0 and C1:** the switch (`VOSSIE_BACKEND=supabase`, `onSupabase()`) and the contract tests that run the same scenarios on the sample store and local Supabase. The public reads: catalog, pickup points, Hub, requests, Featured, shop stats and badges. Pages built from data keep one placeholder when the live database is empty.
+  - **Phase B, sign-in on Supabase Auth:**
+    - 5 tries counted atomically, a final lockout, and 15 code emails per network an hour;
+    - only `proxy.ts` renews a session, and page reads never do;
+    - the `vossie_auth` cookie lasts 30 days;
+    - account deletion through `forget_account`, and Auth's audit log swept;
+    - a guarded clear-out script for the sample data, and `make_first_admin`.
+    - The privacy page names Supabase (Ireland), Vercel (Dublin) and Resend (US).
+  - **C2 and C3, selling and messaging:**
+    - photos in Storage behind `/photos/[id]`, cached an hour when public and never when private, and a daily cron that clears abandoned uploads;
+    - shops and listings;
+    - notifications written only by the database, and message limits decided under a lock;
+    - badges recalculated after replies and sales, and nightly.
+  - **C4 and C5, community and staff:** requests, offers, follows and saved searches. Every staff tool, with every refusal tested on both backends: the Hub, mentors, staff accounts by exact email, the last-admin race, the numbers only through `protectCounts`, and the staff privacy pages.
+  - **Step 5 (the MVP cut):** `tests/e2e-supabase/mvp.spec.ts` covers twelve flows, from public reads to account deletion and both crons. 24 of 24 pass at 390 and 1440.
+- **Checks at `33e0290`:**
+  - pgTAP 2,541;
+  - unit 3,308;
+  - contract tests on local Supabase 338;
+  - `pnpm e2e:supabase` 48 passed;
+  - lint and types clean.
+  - Every page's first-visit JS is unchanged to the byte (homepage 150,661 B brotli), and no browser file names Supabase or a key.
+- **Every decision and change is in the plans:** `docs/superpowers/plans/2026-10-21-supabase-step-2b-and-phase-c-foundation.md`, `…-phase-b-sign-in.md` (its Task 13 is the go-live runbook), `…-phase-c2-c3-selling-messaging.md` and `…-phase-c4-c5-community-staff.md`.
+- **Known, not fixed:**
+  - The Show again confirm page's short-phone layout-shift check fails on main's code too: a random test title wraps to a third line once the web font lands (0.0892 against 0.05). Fix it with closer fallback font metrics or a fixed test title.
+  - Two requests renewing one session at the same moment: look at it before many people sign in.
+
 ## Next
 - **Every planned stage (A to M) is built in sample mode** and merged into `main`. The four phone e2e failures that predated stage L are fixed (`d13321b`). The full device suite last ran before stage M: rerun it once before go-live.
-- **The Supabase backend continues on `backend/phases-b-c`** (worktree `../Vossie-backend`). Done there: step 2b, C0 (the backend switch), C1 (the public reads), phase B (sign-in on Supabase), and C2/C3 Tasks 0 to 4. Next: C2/C3 Tasks 5 to 17 (selling, photos and messaging), then C4/C5 (24 tasks: community, alerts and staff), then step 5 (the full e2e run on local Supabase). Merging the branch into `main` needs Lama's go-ahead.
+- **The Supabase backend is finished on `backend/phases-b-c`** (above). Merging it into `main` (a fast-forward) and pushing need Lama's go-ahead; the push also publishes the CampusCart rename.
 - **Going live** (submission: vossie-pi.vercel.app on the "Vossie Market" project):
-  - Lama renews the Supabase CLI token (the current one expires on 2026-10-22);
-  - a dry run of the 35 migrations, then the push;
+  - Lama logs the Supabase CLI in with a new token (`supabase login`);
+  - a dry run of the migrations, then the push, then the guarded clear-out of the sample data and `make_first_admin`;
   - sign-in codes through Resend from wemakesites.co.za;
   - the environment settings (`VOSSIE_AUTH_HMAC_KEY`, `NEXT_PUBLIC_SITE_URL`, a stable Server Actions key), the nightly jobs, and unsetting `VOSSIE_NOINDEX`.
 
