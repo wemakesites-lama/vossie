@@ -243,3 +243,17 @@ Lama confirmed these with the step 2 plan (`docs/superpowers/plans/2026-10-20-su
    An offer is a conversation marked `is_offer`, a mark that never changes, so a deleted request's offers never turn into enquiries.
 5. **A shop the Hub paused has no storefront** (`private.shop_is_public` matches the app's `hasStorefront`). Section 4.3's "read if approved or paused" now reads "approved, or paused by its seller".
 6. **When a mentor deletes their account,** their name is blanked from the audit entries that name them (Lama, 2026-10-20, POPIA's minimum), in the app and in `forget_account`.
+
+## 13. Amendments (2026-10-21, phase B: sign-in on Supabase Auth)
+
+Lama's decisions of 2026-10-21 and the phase B plan (`docs/superpowers/plans/2026-10-21-supabase-phase-b-sign-in.md`), which records every decision and change made during the build.
+
+1. **The staging project is the live one** (Lama, 2026-10-21; changes section 2.2). "Vossie Market" (Ireland, Free plan) serves https://vossie-pi.vercel.app with real students' data. `config.toml` still calls it `staging`, and it is never seeded.
+2. **Allowed sign-in addresses:** any `@vossie.net` address and `@eduvos.com` (Lama). `vossie.test` stays in `seed.sql` for local runs only.
+3. **The sliding 30 days** (closes open decision 4): Auth's inactivity timeout is Pro only, so the `vossie_auth` cookie lasts 30 days from its last renewal, and an hourly job (`private.sweep_idle_sessions()`) deletes sessions not refreshed for 30 days. Only `proxy.ts` refreshes a session; a page render checks the stored access token and never refreshes.
+4. **Email** (closes open decision 1 for the submission): codes go through Resend's SMTP from `wemakesites.co.za`, Lama's verified domain, with Brevo as a dashboard-only fallback. Eduvos's own domain follows only if Vossie is taken on.
+5. **The live project holds real student data** (changes section 9's "staging holds no real student data"). The privacy page names Supabase (Ireland), Vercel's functions (Dublin) and Resend (United States) under POPIA section 72, and that Supabase Auth keeps security records of sign-ins (IP address and browser) for a limited time.
+6. **Every code try is counted before Supabase checks it** (phase B decision 2): Supabase can't compare a code without `verifyOtp`, so "count a wrong try before comparing" (section 4.4) becomes "count every try, atomically, before calling `verifyOtp`". A lockout is final for its attempt.
+7. **Who's signed in** (phase B decision 7): the verified claims, then the profile, every request; a session with no profile is signed out, so an unfinished sign-in is never an account.
+8. **Account deletion** (phase B decision 8) re-checks the session with Supabase Auth, runs `forget_account` (retried once on a deadlock), removes the photo files, then hard-deletes the Auth user; if that last step fails, the daily `sweep_unfinished_users` job removes the profileless user. Only `forget_account`'s failure is shown as "couldn't delete".
+9. **Vercel's Supabase settings are for Production only** (phase B decision 13), so branch previews stay on sample mode.

@@ -1,5 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { cache } from "react";
 import { authClient, clearHere } from "@/lib/supabase/auth";
 import { accessTokenFrom } from "@/lib/supabase/cookies";
@@ -18,10 +19,16 @@ import { forPublic } from "./clients";
 /** A verified session, with the access token the viewer's client sends (forViewer, clients.ts). Server only. */
 export type VerifiedSession = SessionClaims & { accessToken: string };
 
-/** The stored session's access token, read from the request's cookies as they are now (a write earlier included). */
+/**
+ * The stored session's access token, read from the request's cookies as they are now (a write earlier included). With
+ * a token, it waits for the request first: checking it reads the clock (the token's exp against Date.now()), which Next
+ * refuses while it prerenders a page (phase B Task 6's spike), as the sample path's getViewer does. No cookie, no wait.
+ */
 async function storedAccessToken(): Promise<string | null> {
   const store = await cookies();
-  return accessTokenFrom((name) => store.get(name)?.value);
+  const token = await accessTokenFrom((name) => store.get(name)?.value);
+  if (token) await connection();
+  return token;
 }
 
 const isText = (value: unknown): value is string => typeof value === "string" && value !== "";

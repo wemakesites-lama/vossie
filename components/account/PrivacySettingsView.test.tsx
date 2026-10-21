@@ -1,5 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { DELETE_FIELDS } from "@/lib/auth/form-state";
+import { formErrors } from "@/lib/auth/messages";
 import { PrivacySettingsView } from "./PrivacySettingsView";
 
 const consent = { version: "2026-10-draft", agreedAt: "2026-10-14T08:42:00.000Z" };
@@ -57,6 +59,14 @@ describe("Privacy settings (accounts spec 3.3)", () => {
     const box = screen.getByRole("checkbox", { name: "I understand this can't be undone" });
     expect(box).toHaveAttribute("aria-invalid", "true");
     expect(box).toHaveAccessibleDescription("Error: Tick the box to confirm you understand.");
+  });
+
+  it("says a failed deletion in the summary, without a link, and leaves the box alone (Supabase phase B, Task 7)", () => {
+    render(<PrivacySettingsView consent={consent} deleteErrors={formErrors(["delete-failed"], DELETE_FIELDS)} reports={[]} />);
+    const summary = screen.getByRole("alert");
+    expect(summary).toHaveTextContent("We couldn't delete your account just now. Try again in a minute.");
+    expect(within(summary).queryByRole("link")).toBeNull();
+    expect(screen.getByRole("checkbox", { name: "I understand this can't be undone" })).not.toHaveAttribute("aria-invalid", "true");
   });
 
   it("says the download holds your conversations, reports and notifications (messaging plan decision 15)", () => {

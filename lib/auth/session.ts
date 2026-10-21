@@ -109,3 +109,13 @@ export async function endSession(): Promise<void> {
   if (key) await deleteSession(key);
   await deleteCookie(SESSION_COOKIE);
 }
+
+/**
+ * Signs this browser out after its account was deleted (accounts spec 2.13): the account and its sessions have gone
+ * already, so only the cookie is left. Sample mode deletes vossie_session; Supabase clears every vossie_auth cookie
+ * without asking Supabase, whose Auth user has gone. Route Handlers only.
+ */
+export async function endSessionAfterDeletion(): Promise<void> {
+  if (signInMode() === "supabase") await clearAuthCookies();
+  else await deleteCookie(SESSION_COOKIE);
+}

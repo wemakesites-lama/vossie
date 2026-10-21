@@ -8,6 +8,9 @@ import { isAuthCookie } from "@/lib/auth/cookie-names";
 
 /** Renews the request's Supabase session before the page renders, or passes the request on untouched. */
 export async function renewFromProxy(request: NextRequest): Promise<NextResponse> {
-  if (!onSupabase() || !request.cookies.getAll().some(({ name }) => isAuthCookie(name))) return NextResponse.next();
+  // An empty vossie_auth is no session: nothing to renew.
+  if (!onSupabase() || !request.cookies.getAll().some(({ name, value }) => isAuthCookie(name) && value !== "")) {
+    return NextResponse.next();
+  }
   return (await import("./supabase/session-renewal")).renewFromProxy(request);
 }

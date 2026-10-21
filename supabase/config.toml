@@ -199,7 +199,9 @@ password_requirements = ""
 
 [auth.rate_limit]
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
-email_sent = 30
+# Locally the codes go to Mailpit, so the end-to-end suites never wait on this (Supabase phase B decision 16). Takes
+# effect when the local stack next starts.
+email_sent = 1000
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
 sms_sent = 30
 # Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.
@@ -241,6 +243,9 @@ otp_length = 6
 otp_expiry = 600
 
 # Use a production-ready SMTP server
+# Never declared here, on any remote (Supabase phase B decision 11): with no [auth.email.smtp] block, `config push`
+# leaves the live project's SMTP settings, password included, as Lama typed them into the dashboard (Resend, amendment
+# 21). Keep this block commented out.
 # [auth.email.smtp]
 # enabled = true
 # host = "smtp.sendgrid.net"
@@ -282,6 +287,8 @@ max_frequency = "5s"
 # 4152127777 = "123456"
 
 # Configure logged in session timeouts.
+# Pro plan only, so never declared (Supabase phase B decision 3): the 30 idle days come from the vossie_auth cookie's
+# 30 days and private.sweep_idle_sessions(). On Pro, inactivity_timeout = "720h" replaces the job (GO-LIVE).
 # [auth.sessions]
 # Force log out after the specified duration.
 # timebox = "24h"
@@ -435,17 +442,29 @@ enabled = true
 
 # Staging: the "Vossie Market" project in Ireland (backend spec section 2). These values replace the local ones when
 # the CLI acts on this project (`config push`, `config diff`); everything else above applies to staging too.
-# Production gets its own block when it exists (phase E).
+# It is the live project (Lama, 2026-10-21; Supabase phase B decision 1): https://vossie-pi.vercel.app runs on it, with
+# real students' data. The name stays "staging" so the CLI's commands don't change (phase B decision 17).
 [remotes.staging]
 project_id = "kahzsitqnocygsrdfpre"
 
 [remotes.staging.auth]
 # Sign-in emails carry a code, not a link, so this is only Auth's allow-list base.
 site_url = "https://vossie-pi.vercel.app"
-additional_redirect_urls = ["http://localhost:3100"]
+# No local address on the live project (amendment 19b): Auth's other emails would otherwise accept a redirect to one.
+additional_redirect_urls = []
 
-# The seed runs on staging only when asked (`db push --include-seed`), never on production: it holds the @vossie.test
-# sample accounts and allows that domain.
+# The live project's rate limits (Supabase phase B decision 16): a campus's Wi-Fi puts many students behind one
+# address, so sign-ins and code checks allow 60 per 5 minutes per address (Auth counts each student's own address,
+# sent in Sb-Forwarded-For). email_sent is a record only: `config push` sends it only with an [auth.email.smtp] block,
+# which this file never declares (amendment 9), so Lama sets "emails sent per hour" in the dashboard: 30, under
+# Resend's free plan of 100 a day (amendment 21).
+[remotes.staging.auth.rate_limit]
+email_sent = 30
+sign_in_sign_ups = 60
+token_verifications = 60
+token_refresh = 150
+
+# Never seeded: it's the live project (phase B decision 17), so no `db push` can put the @vossie.test sample accounts
+# on it. supabase/ops/clear-sample-data.sql clears what the earlier seeding left (runbook B3 and B4).
 [remotes.staging.db.seed]
-enabled = true
-sql_paths = ["./seed.sql"]
+enabled = false

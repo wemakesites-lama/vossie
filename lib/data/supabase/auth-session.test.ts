@@ -28,7 +28,10 @@ const state = vi.hoisted(() => ({
     signOutHere: vi.fn(),
   },
   clearHere: vi.fn(),
+  connection: vi.fn(async () => {}),
 }));
+
+vi.mock("next/server", () => ({ connection: state.connection }));
 
 vi.mock("next/headers", () => ({
   cookies: async () => ({
@@ -60,6 +63,25 @@ function signedInCookie(token = "eyJ.access.token") {
 }
 
 describe("who the session says this is (phase B, Task 4; amendment 3)", () => {
+  it("waits for the request before checking a token, since the check reads the clock (Task 6's spike)", async () => {
+    // getClaims compares the token's exp with Date.now(), which Next refuses while it prerenders a page; the sample
+    // path's getViewer awaits connection() for the same reason. A visitor with no cookie doesn't wait.
+    expect(await currentClaims()).toBeNull();
+    expect(state.connection).not.toHaveBeenCalled();
+    signedInCookie();
+    state.getClaims.mockImplementation(async () => {
+      expect(state.connection).toHaveBeenCalled();
+      return { data: { claims: CLAIMS }, error: null };
+    });
+    state.getUser.mockImplementation(async () => {
+      expect(state.connection).toHaveBeenCalled();
+      return { data: { user: { id: "user-1" } }, error: null };
+    });
+    expect(await readClaims()).not.toBeNull();
+    state.connection.mockClear();
+    expect(await liveUserId()).toBe("user-1");
+  });
+
   it("is null with no cookie, and asks nobody", async () => {
     expect(await currentClaims()).toBeNull();
     expect(await readClaims()).toBeNull();

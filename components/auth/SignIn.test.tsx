@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { formErrors, SIGN_IN_FIELDS } from "@/lib/auth/messages";
 import type { SignInView } from "@/lib/auth/sign-in-view";
 import { SignIn } from "./SignIn";
 
@@ -72,5 +73,54 @@ describe("SignIn (accounts spec 3.1)", () => {
     view.current = { step: "unavailable" };
     render(await SignIn({ next: null }));
     expect(screen.getByText(/Sign-in isn't available yet/)).toBeInTheDocument();
+  });
+});
+
+describe("the sign-in card on Supabase (Supabase phase B, Task 8)", () => {
+  const REFUSALS = ["code-soon", "ip-rate", "send-failed"];
+  const WORDS = [
+    "We sent you a code less than a minute ago. Wait a minute, then ask again.",
+    "Too many sign-ins from your network just now. Try again in a few minutes.",
+    "We couldn't send the code just now. Try again in a few minutes.",
+  ];
+
+  it("has nothing about sample accounts or sample codes on any step", async () => {
+    vi.stubEnv("VOSSIE_BACKEND", "supabase");
+    for (const current of [
+      STEP_1,
+      { step: "code", maskedEmail: "t•••@vossie.net", errors: [], resent: true, sampleCode: null },
+      { step: "profile", firstName: "", campus: "", errors: [] },
+    ] satisfies SignInView[]) {
+      view.current = current;
+      const { container, unmount } = render(await SignIn({ next: "/saved" }));
+      expect(container.innerHTML).not.toMatch(/sample/i);
+      unmount();
+    }
+  });
+
+  it("lists Supabase's refusals on step 1, each linked to the email field", async () => {
+    vi.stubEnv("VOSSIE_BACKEND", "supabase");
+    view.current = { ...STEP_1, email: "thandi@vossie.net", consented: true, errors: formErrors(REFUSALS, SIGN_IN_FIELDS) };
+    render(await SignIn({ next: null }));
+    const summary = screen.getByRole("alert", { name: "There's a problem" });
+    expect(within(summary).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual(
+      WORDS.map((words) => [words, `#${SIGN_IN_FIELDS.email}`]),
+    );
+  });
+
+  it("lists them at the top of step 2, which has no email field, without links", async () => {
+    vi.stubEnv("VOSSIE_BACKEND", "supabase");
+    view.current = {
+      step: "code",
+      maskedEmail: "t•••@vossie.net",
+      errors: formErrors(REFUSALS, { code: SIGN_IN_FIELDS.code }),
+      resent: false,
+      sampleCode: null,
+    };
+    render(await SignIn({ next: null }));
+    const summary = screen.getByRole("alert", { name: "There's a problem" });
+    expect(within(summary).queryAllByRole("link")).toEqual([]);
+    expect(within(summary).getAllByRole("listitem").map((item) => item.textContent)).toEqual(WORDS);
+    expect(screen.getByLabelText("6-digit code")).not.toHaveAttribute("aria-invalid", "true");
   });
 });

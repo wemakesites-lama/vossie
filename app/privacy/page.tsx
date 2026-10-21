@@ -37,11 +37,13 @@ const SECTIONS: readonly InfoSection[] = [
     children: (
       <>
         <p>
-          Vossie is still a preview. If you sign in, the server keeps your account, your sign-ins, your consent, your staff role if you have one, your
+          Vossie runs in two places: a preview, which keeps everything in memory, and the live site. If you sign in on
+          the preview, the server keeps your account, your sign-ins, your consent, your staff role if you have one, your
           Looking For requests and the shops you follow, your saved searches, your RSVPs and slot requests, your messages, your
           reports, your notifications and, if you sell, your shop, your
           listings and their photos in its memory only, so they are wiped whenever it restarts, and no email is sent (the sign-in code shows on the
-          screen). Apart from that, a few small things are kept on your own device, so the site can remember your
+          screen). On the live site, all of this is kept in Supabase&apos;s database until you delete it or Eduvos&apos;s
+          retention periods remove it, and the sign-in code is emailed to you. Apart from that, a few small things are kept on your own device, so the site can remember your
           choices.
         </p>
         <h3>Two first-party cookies</h3>
@@ -59,16 +61,22 @@ const SECTIONS: readonly InfoSection[] = [
             the listing ids to Vossie with each visit so the Saved page can show them; nothing is stored on a server.
           </li>
         </ul>
-        <h3>Three sign-in cookies</h3>
+        <h3>Sign-in cookies</h3>
         <p>
-          These belong to Vossie too. The first two can only be read by Vossie&apos;s server, never by scripts on the
+          These belong to Vossie too. The first three can only be read by Vossie&apos;s server, never by scripts on the
           page.
         </p>
         <ul>
           <li>
-            <code>vossie_session</code>: a random code that keeps you signed in, for up to 30 days. Vossie&apos;s
-            server keeps only a fingerprint of it, made with a secret key, so the code can&apos;t be read back from the
-            server&apos;s records. Signing out or deleting your account ends it.
+            <code>vossie_auth</code>: keeps you signed in on the live site. It holds a signed sign-in token from
+            Supabase, our database provider, and may be split into parts named <code>vossie_auth.0</code>,{" "}
+            <code>vossie_auth.1</code>. It lasts 30 days from your last visit, so it ends if you don&apos;t use Vossie
+            for 30 days. Signing out or deleting your account ends it.
+          </li>
+          <li>
+            <code>vossie_session</code>: does the same on the preview: a random code that keeps you signed in, for up
+            to 30 days. Vossie&apos;s server keeps only a fingerprint of it, made with a secret key, so the code
+            can&apos;t be read back from the server&apos;s records. Signing out or deleting your account ends it.
           </li>
           <li>
             <code>vossie_signin</code>: a random code that holds your place while you sign in, for up to 30 minutes.
@@ -103,8 +111,8 @@ const SECTIONS: readonly InfoSection[] = [
             <code>/browse?q=calculator</code>), so it can find results.
           </li>
           <li>
-            Whoever hosts Vossie keeps ordinary server logs (page addresses, times and technical details of each
-            request) to keep the site running and secure. The hosting service is still to be decided.
+            Vercel, which hosts Vossie, keeps ordinary server logs (page addresses, times and technical details of
+            each request) to keep the site running and secure.
           </li>
           <li>
             The campus updates form in the footer doesn&apos;t send or store your email address yet. When there is a real
@@ -138,7 +146,9 @@ const SECTIONS: readonly InfoSection[] = [
             <strong>Your Eduvos email address.</strong> To check that you are an Eduvos student and to send you sign-in
             codes. A sign-in code is kept only as a fingerprint made with a secret key, and only until you finish
             signing in or the attempt runs out after 30 minutes. In this preview the code shows on screen instead of
-            being emailed, so until the attempt ends it&apos;s also kept as written. Allowed under POPIA section 11: it
+            being emailed, so until the attempt ends it&apos;s also kept as written. On the live site, Vossie doesn&apos;t
+            keep the code at all: it&apos;s emailed to you, and Supabase keeps only a fingerprint of it, for the 10
+            minutes it works. Allowed under POPIA section 11: it
             is needed to run the account you ask for.
           </li>
           <li>
@@ -151,8 +161,10 @@ const SECTIONS: readonly InfoSection[] = [
             that you were asked. Allowed under POPIA section 11: your consent.
           </li>
           <li>
-            <strong>A sign-in cookie.</strong> A random code that keeps you signed in for up to 30 days. Allowed under
-            POPIA section 11: needed to run your account.
+            <strong>A sign-in cookie and your sign-ins.</strong> The cookie keeps you signed in for 30 days from your
+            last visit (up to 30 days on the preview). Supabase Auth keeps security records of your sign-ins (the IP
+            address and browser) for a limited time. Allowed under POPIA section 11: needed to run your account, and
+            our legitimate interest in keeping accounts secure.
           </li>
           <li>
             <strong>Your messages, swap offers and reports.</strong> To pass them to the other person, to work out reply
@@ -230,7 +242,7 @@ const SECTIONS: readonly InfoSection[] = [
       <ul>
         <li>
           The campus and saved cookies last up to a year, and some browsers clear them sooner. The sign-in cookies last
-          up to 30 days, 30 minutes and a minute. Your browser keeps the other four things until you clear them.
+          30 days from your last visit (up to 30 days on the preview), 30 minutes and a minute. Your browser keeps the other four things until you clear them.
         </li>
         <li>Your account details stay until you delete your account.</li>
         <li>
@@ -243,12 +255,14 @@ const SECTIONS: readonly InfoSection[] = [
         </li>
         <li>
           While Vossie is a preview, Looking For requests, follows, saved searches, messages, reports, notifications, shops, listings
-          and photos live in the server&apos;s memory and go whenever it restarts. Eduvos will set how long they are kept before launch, and
+          and photos live in the server&apos;s memory and go whenever it restarts. On the live site, they&apos;re kept in
+          Supabase&apos;s database until you delete them or Eduvos&apos;s retention periods remove them. Eduvos will set how long they are kept before launch, and
           this policy will say so.
         </li>
         <li>
-          Server logs are kept for a short time. The hosting service decides how long, and this policy will say once it
-          is chosen.
+          Server logs and Supabase&apos;s records of sign-ins are kept for a limited time, set by Vercel and Supabase.
+          Resend keeps its logs of the sign-in emails it sends for its own retention period. Eduvos will confirm these
+          periods before launch, and this policy will say so.
         </li>
       </ul>
     ),
@@ -273,8 +287,8 @@ const SECTIONS: readonly InfoSection[] = [
             never who; small numbers are hidden so no one can be picked out.
           </li>
           <li>
-            <strong>Service providers</strong> that run Vossie for Eduvos, such as hosting, the database and the service
-            that sends sign-in codes, handle information for us and only for that purpose. They are still to be chosen.
+            <strong>Service providers</strong> that run Vossie for Eduvos handle information for us and only for that
+            purpose: Supabase (the database and sign-in), Vercel (hosting) and Resend (sign-in emails).
           </li>
           <li>
             <strong>The law.</strong> We will share information if the law requires it.
@@ -288,10 +302,13 @@ const SECTIONS: readonly InfoSection[] = [
     title: "Where it is hosted",
     children: (
       <p>
-        The hosting for Vossie is still to be decided. If personal information is stored outside South Africa, POPIA
-        section 72 generally allows it where the country, the company or a binding agreement gives it protection at
-        least as strong as POPIA, or where you consent. Eduvos will confirm where Vossie&apos;s data lives before
-        launch, and this page will say so.
+        Vossie&apos;s data is stored by Supabase in Ireland (Amazon Web Services, eu-west-1), and its pages are served
+        by Vercel, whose servers that handle your requests are in Dublin. Sign-in codes are emailed by Resend, in the
+        United States, which keeps your email address and the email in its logs for its retention period. Storing or
+        sending personal information outside South Africa is allowed under POPIA section 72 where the country, the
+        company or a binding agreement gives it protection at least as strong as POPIA; Supabase&apos;s, Vercel&apos;s
+        and Resend&apos;s data processing agreements are the binding agreements Vossie relies on. Eduvos will confirm
+        this before launch.
       </p>
     ),
   },

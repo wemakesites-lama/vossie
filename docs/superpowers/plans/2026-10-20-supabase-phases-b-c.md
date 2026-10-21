@@ -112,3 +112,11 @@ The full e2e suite against the local stack with `VOSSIE_BACKEND=supabase`, then 
 - Contract tests: `lib/data/contract/*.test.ts` on the sample store (`pnpm test`) and `*.db.test.ts` on the local stack (`pnpm test:db`, after `supabase db reset`), with parity checks against the seed.
 - The JS budget is unchanged to the byte (sample build), no chunk names Supabase, and a build with `VOSSIE_BACKEND=supabase` against the local stack builds the same routes with only the URL and publishable key (no secret key at build time).
 - Detail in that plan's "Changes made during the build".
+
+**Step 4, phase B (built 2026-10-21; `2026-10-21-supabase-phase-b-sign-in.md`, Tasks 0 to 12; Task 13 is the runbook):**
+- With `VOSSIE_BACKEND=supabase`, a student signs in with the 6-digit code Supabase Auth emails; the session lives in `vossie_auth` for a sliding 30 days (the cookie's lifetime from its last renewal, and `private.sweep_idle_sessions()`); `getViewer()` reads the verified claims and the profile every request; sign-out, the data download and account deletion work on Supabase. Sample mode is unchanged and off on Supabase.
+- `proxy.ts` is the only place a session is refreshed, and runs only for requests carrying `vossie_auth` (or `vossie_auth.0`); Task 6's spike found Supabase's no-store headers survive on prerendered pages.
+- The privacy page names `vossie_auth`, Supabase (Ireland), Vercel (Dublin) and Resend (United States); its cookie guard is whole again.
+- `stats.db.test.ts` no longer depends on the hourly `settle-sales` job.
+- Checks: unit 2,933; db 60; pgTAP 2,337; `pnpm e2e:supabase` 23 passed; the sample sign-in, accounts and performance specs at 390 and 1440 pass. Detail in that plan's "Changes made during the build".
+

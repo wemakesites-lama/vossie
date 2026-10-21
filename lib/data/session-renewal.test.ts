@@ -29,7 +29,7 @@ describe("renewFromProxy's early returns (phase B, Task 4)", () => {
 
   it("passes the request on, loading nothing, on Supabase without a vossie_auth cookie", async () => {
     vi.stubEnv("VOSSIE_BACKEND", "supabase");
-    const response = await renewFromProxy(request("vossie_session=x; vossie_authx=y; vossie_campus=pretoria"));
+    const response = await renewFromProxy(request("vossie_session=x; vossie_authx=y; vossie_auth=; vossie_campus=pretoria"));
     expect(response.headers.get("x-middleware-next")).toBe("1");
     expect(twin.loaded).toBe(false);
   });

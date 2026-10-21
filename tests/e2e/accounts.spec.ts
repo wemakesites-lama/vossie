@@ -285,6 +285,13 @@ test.describe("no stale pages after signing in or out (plan decision 2)", () => 
     onlyAt("phone-390", "desktop-1440");
     await signInAsSample(page, "Student, Midrand");
     await expect(page).toHaveURL(/\/account$/);
+    // The account page's own links hydrate after the header's (they stream in later). A click before then is the
+    // browser's own full page load, not the client-side navigation this test is about, and the Menu click below would
+    // then land on a page that hasn't hydrated (seen once proxy.ts existed: Supabase phase B, Task 11).
+    await page.waitForFunction(() => {
+      const link = document.querySelector('main a[href="/saved"]');
+      return link !== null && Object.keys(link).some((key) => key.startsWith("__reactProps"));
+    });
     await main(page).getByRole("link", { name: "Saved" }).click();
     await expect(page).toHaveURL(/\/saved$/);
     await page.getByRole("button", { name: "Menu", exact: true }).click();

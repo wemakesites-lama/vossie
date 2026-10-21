@@ -3,6 +3,7 @@ import { onSupabase } from "@/lib/backend";
 import { recalculateBadges } from "@/lib/data/badges";
 import { recentCounts, shopStats } from "@/lib/data/shop-stats";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
+import { testAdminClient } from "@/tests/db/accounts";
 import { parity } from "@/tests/db/parity";
 import { type SupabaseWorld, supabaseWorld } from "@/tests/db/supabase-world";
 import { statsContract } from "./stats.contract";
@@ -10,6 +11,34 @@ import { statsContract } from "./stats.contract";
 // Shop stats and badges on the local stack (2b plan Task 19): the behaviour contract, the numbers giving the sample
 // store's answers on the seed's conversations, and the badges the database holds after recalculating being the ones
 // the sample store holds after the same call.
+
+/**
+ * The seed's one sale as the seed has it: Tech corner's, done on 13 October and not yet confirmed. The hourly
+ * settle-sales job confirms it by itself once its 7 days have passed, so on a stack that has been up an hour the
+ * database says "confirmed on 20 October" while the sample store, which settles only when it's read, still says "done".
+ * The counts at a fixed past time then differ by that sale. Before each test, an automatic confirmation the job made is
+ * taken back, and put back after, so these tests pass whether or not the job has run (phase B, controller decision 4).
+ */
+const admin = testAdminClient();
+let confirmedByTheJob: { id: string; confirmed_at: string | null }[] = [];
+
+beforeEach(async () => {
+  const { data, error } = await admin.from("conversations").select("id, confirmed_at").eq("status", "confirmed").eq("confirmed_by", "auto");
+  if (error) throw new Error(error.message);
+  confirmedByTheJob = data;
+  for (const { id } of data) {
+    const undone = await admin.from("conversations").update({ status: "done", confirmed_at: null, confirmed_by: null }).eq("id", id);
+    if (undone.error) throw new Error(undone.error.message);
+  }
+});
+
+afterEach(async () => {
+  for (const { id, confirmed_at } of confirmedByTheJob) {
+    const redone = await admin.from("conversations").update({ status: "confirmed", confirmed_at, confirmed_by: "auto" }).eq("id", id);
+    if (redone.error) throw new Error(redone.error.message);
+  }
+  confirmedByTheJob = [];
+});
 
 describe("shop stats and badges on the local stack (2b plan Task 19)", () => {
   statsContract(supabaseWorld);

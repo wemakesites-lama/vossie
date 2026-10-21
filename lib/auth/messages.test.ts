@@ -69,3 +69,11 @@ describe("error messages (accounts spec 3.1, plan decision 7)", () => {
     ]);
   });
 });
+
+describe("a failed account deletion (Supabase phase B, Task 7)", () => {
+  it("has its words and no field, so the delete form lists it without a link", () => {
+    expect(formErrors(["delete-failed"], { confirm: "delete-confirm" })).toEqual([
+      { message: "We couldn't delete your account just now. Try again in a minute.", fieldId: null },
+    ]);
+  });
+});

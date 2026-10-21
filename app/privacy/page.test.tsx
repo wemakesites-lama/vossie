@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { AUTH_COOKIE } from "@/lib/auth/cookie-names";
 import { SESSION_COOKIE, SIGN_IN_COOKIE } from "@/lib/auth/cookies";
 import { CAMPUS_COOKIE } from "@/lib/campus";
 import { FLASH_COOKIE } from "@/lib/flash";
@@ -81,14 +82,20 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     ).toEqual([RECENTLY_VIEWED_KEY, RECENT_KEY, LOW_DATA_KEY, OFFLINE_CACHE]);
   });
 
-  it("names the three sign-in cookies by their real names (accounts spec 2.2, 2.5 and plan decision 12)", () => {
+  it("names the four sign-in cookies by their real names (accounts spec 2.2 and 2.5; Supabase phase B, Task 9)", () => {
     render(<PrivacyPage />);
     const today = screen.getByRole("region", { name: "What this site stores today" });
-    expect(codesAfter(within(today).getByRole("heading", { level: 3, name: "Three sign-in cookies" }))).toEqual([
+    expect(codesAfter(within(today).getByRole("heading", { level: 3, name: "Sign-in cookies" }))).toEqual([
+      AUTH_COOKIE,
+      `${AUTH_COOKIE}.0`,
+      `${AUTH_COOKIE}.1`,
       SESSION_COOKIE,
       SIGN_IN_COOKIE,
       FLASH_COOKIE,
     ]);
+    expect(today).toHaveTextContent(
+      "It lasts 30 days from your last visit, so it ends if you don't use Vossie for 30 days. Signing out or deleting your account ends it.",
+    );
   });
 
   it("says plainly that the saved ids travel to Vossie with each visit, and that nothing is stored on a server", () => {
@@ -174,11 +181,37 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     expect(sharing).toHaveTextContent(/A mentor sees your shop's numbers, never your messages\./);
   });
 
-  it("says where it is hosted is still to be decided, with the section 72 safeguards", () => {
-    render(<PrivacyPage />);
+  it("says where it is hosted: Supabase in Ireland, Vercel in Dublin, Resend in the United States, under section 72", () => {
+    const { container } = render(<PrivacyPage />);
     const hosting = screen.getByRole("region", { name: "Where it is hosted" });
-    expect(within(hosting).getByText(/still to be decided/)).toBeInTheDocument();
-    expect(within(hosting).getByText(/POPIA section 72/)).toBeInTheDocument();
+    expect(hosting).toHaveTextContent(/stored by Supabase in Ireland/);
+    expect(hosting).toHaveTextContent(/served by Vercel, whose servers that handle your requests are in Dublin/);
+    expect(hosting).toHaveTextContent(
+      /Sign-in codes are emailed by Resend, in the United States, which keeps your email address and the email in its logs for its retention period/,
+    );
+    expect(hosting).toHaveTextContent(/POPIA section 72/);
+    // Nothing on the page says the hosting or the providers are still to be chosen.
+    expect(container.textContent).not.toMatch(/still to be (decided|chosen)|once it is chosen/);
+  });
+
+  it("says Supabase Auth keeps security records of sign-ins, with the address and browser, for a limited time (amendment 17)", () => {
+    render(<PrivacyPage />);
+    expect(screen.getByRole("region", { name: "Your account" })).toHaveTextContent(
+      "Supabase Auth keeps security records of your sign-ins (the IP address and browser) for a limited time.",
+    );
+    expect(screen.getByRole("region", { name: "Who it is shared with" })).toHaveTextContent(
+      "Supabase (the database and sign-in), Vercel (hosting) and Resend (sign-in emails)",
+    );
+  });
+
+  it("says what is kept in memory on the preview, and in Supabase's database on the live site", () => {
+    render(<PrivacyPage />);
+    expect(screen.getByRole("region", { name: "What this site stores today" })).toHaveTextContent(
+      "On the live site, all of this is kept in Supabase's database until you delete it or Eduvos's retention periods remove it, and the sign-in code is emailed to you.",
+    );
+    expect(screen.getByRole("region", { name: "How long we keep it" })).toHaveTextContent(
+      "On the live site, they're kept in Supabase's database until you delete them or Eduvos's retention periods remove them.",
+    );
   });
 
   it("lists the rights and points to the Information Regulator", () => {
@@ -265,42 +298,21 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     }
     expect(names.size).toBeGreaterThanOrEqual(5);
     const { container } = render(<PrivacyPage />);
-    for (const name of names) {
-      if (NOT_YET_SET.has(name)) continue;
-      expect(container.textContent, name).toContain(name);
-    }
+    for (const name of names) expect(container.textContent, name).toContain(name);
   });
 
-  it("lets a cookie go unnamed only while no page or action can set it (Supabase plan, phase A)", () => {
-    // vossie_auth is Supabase's session cookie (lib/supabase/cookies.ts). Until phase B wires lib/supabase into sign-in,
-    // nothing outside lib/supabase reaches the modules that can set it, so no visitor can get the cookie. Phase B names
-    // it on this page and empties NOT_YET_SET.
-    // Since the sign-in client sends codes without cookies (lib/supabase/auth.ts), Supabase sets no other cookie, so
-    // vossie_auth-…-code-verifier needs no entry here.
-    // Narrowed in phase C's C0 (2b plan amendment 9, confirmed by the controller): lib/data/supabase reaches the public
-    // and admin clients, which hold no cookies, so until then only the four ways of setting the cookie are banned.
-    // Narrowed again in phase B's Tasks 4 and 5: lib/data/supabase's auth session and forViewer() now reach the sign-in
-    // client and the cookie helpers. lib/data/supabase loads only through import() with VOSSIE_BACKEND=supabase
-    // (lib/data/boundaries.test.ts, rule 2), which no deployment sets before phase B's Task 9 names the cookie here
-    // (the runbook's Part B needs it merged). Task 9 empties NOT_YET_SET, and this test then checks nothing.
+  it("names vossie_auth, now that sign-in reaches the modules that set it (Supabase phase B, Task 9)", () => {
+    // Phase A let vossie_auth go unnamed while nothing outside lib/supabase reached Supabase, and C0 and phase B's
+    // Tasks 4 and 5 narrowed that guard. Phase B's sign-in sets the cookie, so the page names it and no name is exempt:
+    // the test above checks every vossie_ name in the code, with no exceptions.
     const importers: string[] = [];
     for (const file of appSourceFiles()) {
-      if (file.startsWith(SUPABASE_DIR) || file.startsWith(`${DATA_SUPABASE_DIR}/`)) continue;
-      if (cookieSetterImports(readFileSync(file, "utf8"), file).length > 0) importers.push(file.slice(process.cwd().length + 1));
+      if (file.startsWith(`${SUPABASE_DIR}/`)) continue;
+      if (supabaseImports(readFileSync(file, "utf8"), file).length > 0) importers.push(file.slice(process.cwd().length + 1));
     }
-    if (NOT_YET_SET.size > 0) expect(importers).toEqual([]);
-  });
-
-  it("knows the four ways of setting vossie_auth, and that the cookieless clients aren't among them (2b plan amendment 9)", () => {
-    const from = join(process.cwd(), "lib", "data", "supabase", "clients.ts");
-    expect(cookieSetterImports(`import { viewerClient } from "@/lib/supabase/viewer";`, from)).toHaveLength(1);
-    expect(cookieSetterImports(`import { requestCookies } from "../../supabase/cookies";`, from)).toHaveLength(1);
-    expect(cookieSetterImports(`const { authClient } = await import("@/lib/supabase/auth.ts");`, from)).toHaveLength(1);
-    expect(cookieSetterImports(`import { createServerClient } from "@supabase/ssr";`, from)).toHaveLength(1);
-    expect(cookieSetterImports(`import { publicClient } from "@/lib/supabase/public";`, from)).toEqual([]);
-    expect(cookieSetterImports(`import { adminClient } from "@/lib/supabase/admin";`, from)).toEqual([]);
-    expect(cookieSetterImports(`import { createClient } from "@supabase/supabase-js";`, from)).toEqual([]);
-    expect(cookieSetterImports(`import { x } from "@/lib/supabase/viewer-notes";`, from)).toEqual([]);
+    expect(importers.length).toBeGreaterThan(0);
+    const { container } = render(<PrivacyPage />);
+    expect(container.textContent).toContain(AUTH_COOKIE);
   });
 
   it("finds every way of reaching lib/supabase or Supabase's packages, relative paths included", () => {
@@ -384,12 +396,7 @@ describe("what stages H to K changed in the policy (stage K spec 6)", () => {
   });
 });
 
-/** Cookies named in code that nothing can set yet. Must be empty once anything outside lib/supabase imports it. */
-const NOT_YET_SET = new Set(["vossie_auth"]);
-
 const SUPABASE_DIR = join(process.cwd(), "lib", "supabase");
-/** Supabase's twins of lib/data, loaded only through import() on Supabase (phase B narrows the guard to skip them). */
-const DATA_SUPABASE_DIR = join(process.cwd(), "lib", "data", "supabase");
 
 /** The app's own source files: app, components, hooks and lib, and the files at the root (proxy.ts). Not tests. */
 function appSourceFiles(): string[] {
@@ -426,17 +433,5 @@ function supabaseImports(source: string, file: string): string[] {
         ? resolve(dirname(file), specifier)
         : null;
     return target !== null && (target === SUPABASE_DIR || target.startsWith(`${SUPABASE_DIR}/`));
-  });
-}
-
-/** The modules that can set vossie_auth: the viewer and sign-in clients, the cookie helpers, and @supabase/ssr. */
-const COOKIE_SETTERS = ["viewer", "cookies", "auth"].map((name) => join(SUPABASE_DIR, name));
-
-/** The module paths in `source` (written at `file`) that reach a module able to set vossie_auth (2b plan amendment 9). */
-function cookieSetterImports(source: string, file: string): string[] {
-  return supabaseImports(source, file).filter((specifier) => {
-    if (specifier.startsWith("@supabase/")) return specifier === "@supabase/ssr" || specifier.startsWith("@supabase/ssr/");
-    const target = specifier.startsWith("@/") ? join(process.cwd(), specifier.slice(2)) : resolve(dirname(file), specifier);
-    return COOKIE_SETTERS.includes(target.replace(/\.(tsx?|mts|cts|jsx?|mjs|cjs)$/, ""));
   });
 }
