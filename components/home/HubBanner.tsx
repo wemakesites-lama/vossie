@@ -20,7 +20,7 @@ export async function HubBanner() {
             Built for student hustles, backed by the Hub
           </h2>
           <p className="hub-banner-copy">
-            Vossie is run by the Eduvos Incubation Hub. Mentors help sellers grow, and the Hub runs pitch nights,
+            CampusCart is run by the Eduvos Incubation Hub. Mentors help sellers grow, and the Hub runs pitch nights,
             workshops and office hours on every campus.
           </p>
           <Link href="/hub" className="btn btn-sky hub-banner-action">

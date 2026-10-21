@@ -40,7 +40,7 @@ test("the main controls are reachable with the keyboard", async ({ page }) => {
   const expectedNames = [
     "Skip to content",
     "Menu",
-    "Vossie home",
+    "CampusCart home",
     phone ? "Account" : "Sign in",
     "Shop your campus",
     "Start selling",

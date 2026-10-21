@@ -15,7 +15,7 @@ import {
 // doesn't give), each linked to its field, in the shape D's ErrorSummary and errorFor take.
 
 const CONTACT =
-  "Take out the phone number or email. Shops will message you on Vossie. If it's an ISBN, write ISBN before it.";
+  "Take out the phone number or email. Shops will message you on CampusCart. If it's an ISBN, write ISBN before it.";
 
 // A Map, so a stray code such as "toString" finds nothing. The limits belong to no field.
 const MESSAGES: ReadonlyMap<string, { message: string; field: string }> = new Map([

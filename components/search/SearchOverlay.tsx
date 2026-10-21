@@ -60,11 +60,11 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
   }
 
   return (
-    <dialog ref={dialogRef} aria-label="Search Vossie" onClick={onLinkClick} className="search-dialog">
+    <dialog ref={dialogRef} aria-label="Search CampusCart" onClick={onLinkClick} className="search-dialog">
       <div className="search-inner">
         <form action="/browse" onSubmit={onSubmit} role="search" className="search-form">
           <label htmlFor={`${id}-q`} className="sr-only">
-            Search Vossie
+            Search CampusCart
           </label>
           <SearchIcon className="size-6 shrink-0 text-navy" />
           <input
@@ -117,7 +117,7 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
 
         <section aria-labelledby={`${id}-trending`} className="search-section">
           <h2 ref={trendingHeadingRef} tabIndex={-1} id={`${id}-trending`} className="search-heading">
-            {trendingCampus ? `Trending at ${trendingCampus.name}` : "Trending on Vossie"}
+            {trendingCampus ? `Trending at ${trendingCampus.name}` : "Trending on CampusCart"}
           </h2>
           <ul className="search-chips">
             {trendingTerms.map((term) => (

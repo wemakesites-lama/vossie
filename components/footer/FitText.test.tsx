@@ -18,10 +18,10 @@ describe("FitText", () => {
     } as DOMRect);
     render(
       <div style={{ paddingLeft: "10px", paddingRight: "10px" }}>
-        <FitText>VOSSIE</FitText>
+        <FitText>CAMPUSCART</FitText>
       </div>,
     );
     // Content width 1000px; text measured at 340px when set to 100px, so 100 × 1000 / 340.
-    expect(screen.getByText("VOSSIE")).toHaveStyle({ fontSize: "294.1px" });
+    expect(screen.getByText("CAMPUSCART")).toHaveStyle({ fontSize: "294.1px" });
   });
 });

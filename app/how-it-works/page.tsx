@@ -3,9 +3,9 @@ import Link from "next/link";
 import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
 
 export const metadata: Metadata = {
-  title: "How Vossie works",
+  title: "How CampusCart works",
   description:
-    "How buying and selling work on Vossie, the Eduvos student marketplace: find it, message the seller, meet on campus, then pay or swap.",
+    "How buying and selling work on CampusCart, the Eduvos student marketplace: find it, message the seller, meet on campus, then pay or swap.",
 };
 
 const SECTIONS: readonly InfoSection[] = [
@@ -15,7 +15,7 @@ const SECTIONS: readonly InfoSection[] = [
     children: (
       <>
         <p>
-          Vossie is where Eduvos students buy and sell textbooks, tech, food, services and more. There&apos;s no cart and
+          CampusCart is where Eduvos students buy and sell textbooks, tech, food, services and more. There&apos;s no cart and
           no checkout. You and the seller agree the details, then meet.
         </p>
         <ol>
@@ -32,7 +32,7 @@ const SECTIONS: readonly InfoSection[] = [
           </li>
           <li>
             <strong>See it, then pay or swap.</strong> Check the item first. If it&apos;s what you were promised, pay
-            cash or swap on the spot. Vossie takes no online payments.
+            cash or swap on the spot. CampusCart takes no online payments.
           </li>
         </ol>
         <p>
@@ -76,7 +76,7 @@ const SECTIONS: readonly InfoSection[] = [
     title: "Trust, in one paragraph",
     children: (
       <p>
-        Vossie has no star ratings. The Incubation Hub marks the sellers it has checked as Verified, and Vossie awards
+        CampusCart has no star ratings. The Incubation Hub marks the sellers it has checked as Verified, and CampusCart awards
         badges for what a seller actually does: replying quickly and completing sales that buyers confirm.{" "}
         <Link href="/trust">How trust works</Link> explains each one.
       </p>
@@ -87,14 +87,14 @@ const SECTIONS: readonly InfoSection[] = [
     title: "Questions and answers",
     children: (
       <>
-        <h3>Who can use Vossie?</h3>
+        <h3>Who can use CampusCart?</h3>
         <p>
           Anyone can browse, save and share listings, and read Looking For and the Hub. Messaging, selling, reporting,
           posting a request, following a shop, saving a search and saying you&apos;ll go to a Hub event need an
           account. Accounts are for Eduvos students, who sign in with their Eduvos email address.
         </p>
         <h3>Does it cost anything?</h3>
-        <p>Listing is free. Vossie doesn&apos;t handle payments, so it takes no cut of a sale.</p>
+        <p>Listing is free. CampusCart doesn&apos;t handle payments, so it takes no cut of a sale.</p>
         <h3>How do I pay?</h3>
         <p>
           Straight to the seller, in cash or as a swap, when you meet. Agree it when you message. Don&apos;t pay before
@@ -110,7 +110,7 @@ const SECTIONS: readonly InfoSection[] = [
           Sign in, press Start selling on Sell, and answer five short questions about your shop. The Incubation Hub
           checks it, usually within two working days, and you can prepare listings while it does.
         </p>
-        <h3>What can I do on Vossie today?</h3>
+        <h3>What can I do on CampusCart today?</h3>
         <p>
           Browse every campus, save listings on your device and share them, and sign in with your Eduvos email. Signed
           in, you can message sellers, report a problem, ask for something on Looking For and read shops&apos; offers,
@@ -122,8 +122,8 @@ const SECTIONS: readonly InfoSection[] = [
           reminded 2 days before, and you can reopen one.
         </p>
         <p>
-          While Vossie is a preview, what you add lives in the server&apos;s memory, so it can disappear when the
-          server restarts. Notifications show on Vossie only: nothing is emailed yet.
+          While CampusCart is a preview, what you add lives in the server&apos;s memory, so it can disappear when the
+          server restarts. Notifications show on CampusCart only: nothing is emailed yet.
         </p>
       </>
     ),
@@ -133,7 +133,7 @@ const SECTIONS: readonly InfoSection[] = [
 export default function HowItWorksPage() {
   return (
     <InfoPage
-      title="How Vossie works"
+      title="How CampusCart works"
       lede="Find it, message the seller, meet on campus, then pay or swap."
       updated="2026-10-21"
       sections={SECTIONS}

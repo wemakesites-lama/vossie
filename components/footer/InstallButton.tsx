@@ -24,7 +24,7 @@ export function InstallButton() {
         className="btn btn-sky footer-install"
       >
         <PlusSquareIcon className="size-5" />
-        Add Vossie to your home screen
+        Add CampusCart to your home screen
       </button>
     );
   }
@@ -39,7 +39,7 @@ export function InstallButton() {
           className="btn btn-sky footer-install"
         >
           <PlusSquareIcon className="size-5" />
-          Add Vossie to your home screen
+          Add CampusCart to your home screen
         </button>
         <IosInstallHelp />
       </>
@@ -61,7 +61,7 @@ function IosInstallHelp() {
       <div className="sheet-inner">
         <div className="flex items-start justify-between gap-3 pt-3">
           <h2 id="install-help-title" className="font-display text-[1.75rem] uppercase leading-none text-navy">
-            Add Vossie to your home screen
+            Add CampusCart to your home screen
           </h2>
           <button type="button" onClick={close} aria-label="Close" className="icon-btn -mr-2 -mt-2">
             <CloseIcon />
@@ -75,7 +75,7 @@ function IosInstallHelp() {
             Choose <PlusSquareIcon className="install-icon" /> <strong>Add to Home Screen</strong>.
           </li>
           <li>
-            Tap <strong>Add</strong>. Vossie opens like an app.
+            Tap <strong>Add</strong>. CampusCart opens like an app.
           </li>
         </ol>
       </div>

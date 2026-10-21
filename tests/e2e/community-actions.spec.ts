@@ -20,7 +20,7 @@ test.describe("community actions (community actions spec section 6)", () => {
     await fillRequest(page, title, { details: "Call me on 082 123 4567 about a desk lamp." });
     await button(page, "Post request").click();
     const summary = main(page).getByRole("alert", { name: "There's a problem" });
-    await expect(summary).toContainText("Take out the phone number or email. Shops will message you on Vossie.", POST_LANDS);
+    await expect(summary).toContainText("Take out the phone number or email. Shops will message you on CampusCart.", POST_LANDS);
     // Nothing was made: the form is still there, with what was typed.
     await expect(page).toHaveURL(/\/looking-for\/new$/);
     await expect(field(page, "What you need")).toHaveValue(title);
@@ -52,7 +52,7 @@ test.describe("community actions (community actions spec section 6)", () => {
     await signUp(page, newBuyer());
     await page.goto("/looking-for/r-002/offer");
     await expect(main(page).getByRole("heading", { level: 1, name: "Offer to help" })).toBeVisible();
-    const note = main(page).getByText("Offers come from shops on Vossie, so the Hub has checked who's offering.");
+    const note = main(page).getByText("Offers come from shops on CampusCart, so the Hub has checked who's offering.");
     await expect(note.filter({ visible: true })).toBeVisible();
     await expect(main(page).getByRole("link", { name: "Start selling" })).toHaveAttribute("href", "/sell");
     // The note has replaced the form, so the page has drawn: this is a snapshot, not a wait.
@@ -66,7 +66,7 @@ test.describe("community actions (community actions spec section 6)", () => {
     await signInAsSample(page, "Seller, Tech corner", "/looking-for/r-002/offer");
     await expect(main(page).getByRole("heading", { level: 1, name: "Offer to help" })).toBeVisible();
     await expect(
-      main(page).getByText("This is one of Vossie's sample requests, so it can't take offers.").filter({ visible: true }),
+      main(page).getByText("This is one of CampusCart's sample requests, so it can't take offers.").filter({ visible: true }),
     ).toBeVisible();
     expect(await button(page, "Send offer").count()).toBe(0);
   });

@@ -36,7 +36,7 @@ test.describe("staff pages (staff tools spec 2.1, plan decision 1)", () => {
     ]) {
       await page.goto(path);
       await expect(notFoundHeading(page), path).toBeVisible();
-      await expect(page, path).toHaveTitle("Page not found · Vossie");
+      await expect(page, path).toHaveTitle("Page not found · CampusCart");
       // Next adds its own noindex to every 404 page, beside the page's: every one says so.
       await expect(page.locator('meta[name="robots"]').first(), path).toHaveAttribute("content", /noindex/);
       await expect(page.locator('meta[name="robots"]:not([content*="noindex"])'), path).toHaveCount(0);
@@ -55,15 +55,15 @@ test.describe("staff pages (staff tools spec 2.1, plan decision 1)", () => {
     for (const path of ["/admin", "/admin/sellers", "/admin/audit"]) {
       await page.goto(path);
       await expect(notFoundHeading(page), path).toBeVisible();
-      await expect(page, path).toHaveTitle("Page not found · Vossie");
+      await expect(page, path).toHaveTitle("Page not found · CampusCart");
     }
     // A mentor does have the Hub's tools and the dashboard.
     await page.goto("/hub/manage");
     await expect(main(page).getByRole("heading", { level: 1, name: "Hub posts" })).toBeVisible();
-    await expect(page).toHaveTitle("Hub posts and office hours · Vossie");
+    await expect(page).toHaveTitle("Hub posts and office hours · CampusCart");
     await page.goto("/mentor");
     await expect(main(page).getByRole("heading", { level: 1, name: "Mentor dashboard" })).toBeVisible();
-    await expect(page).toHaveTitle("Mentor dashboard · Vossie");
+    await expect(page).toHaveTitle("Mentor dashboard · CampusCart");
   });
 });
 
@@ -81,7 +81,7 @@ test.describe("sellers (staff tools spec 2.3, plan decision 2)", () => {
 
     const admin = await signedInPage(browser, baseURL!, "Admin", "/admin");
     await expect(main(admin).getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
-    await expect(admin).toHaveTitle("Admin console · Vossie");
+    await expect(admin).toHaveTitle("Admin console · CampusCart");
     await reviewShop(admin, shopName);
     await button(admin, `Approve ${shopName}`).click();
     await expect(staffNotice(admin)).toHaveText("Approved. The shop is live, and its owner has been told.", POST_LANDS);
@@ -175,7 +175,7 @@ test.describe("mentoring (staff tools spec 2.6, plan decisions 15 to 17)", () =>
     const downloading = page.waitForEvent("download");
     await main(page).getByRole("link", { name: "Download CSV" }).click();
     const download = await downloading;
-    expect(download.suggestedFilename()).toMatch(/^vossie-mentoring-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(download.suggestedFilename()).toMatch(/^campuscart-mentoring-\d{4}-\d{2}-\d{2}\.csv$/);
     const csv = await readFile(await download.path(), "utf8");
     // A byte-order mark first, so Excel reads it as UTF-8 (amendment 12.2); every text cell quoted (amendment 12.1).
     expect(csv.startsWith("﻿")).toBe(true);

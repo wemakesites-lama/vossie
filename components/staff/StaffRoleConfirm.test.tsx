@@ -62,10 +62,10 @@ describe("taking a role away (stage J spec decisions 4 and 5)", () => {
         person={sam}
         role="admin"
         viewerId="acc-admin"
-        errors={[{ message: "Vossie needs at least one admin.", fieldId: null }]}
+        errors={[{ message: "CampusCart needs at least one admin.", fieldId: null }]}
       />,
     );
-    expect(screen.getByRole("alert", { name: "There's a problem" })).toHaveTextContent("Vossie needs at least one admin.");
+    expect(screen.getByRole("alert", { name: "There's a problem" })).toHaveTextContent("CampusCart needs at least one admin.");
   });
 
   it("titles the page Your admin role only for your own, otherwise Remove {name}'s role", () => {

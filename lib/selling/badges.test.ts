@@ -55,7 +55,7 @@ describe("what the next badge needs (selling spec 2.8, plan decision 18)", () =>
 
   it("counts the days a new account still needs for Trusted", () => {
     expect(badgeProgress("responsive", counts(3, 3, 3, 5), "2026-10-04T08:00:00.000Z", NOW)).toBe(
-      "20 more days on Vossie for Trusted.",
+      "20 more days on CampusCart for Trusted.",
     );
   });
 

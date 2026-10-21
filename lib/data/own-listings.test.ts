@@ -146,11 +146,11 @@ describe("a shop's own listings (selling spec 2.9 and 2.10, plan decision 3)", (
   it("keeps a listing the Hub hid hidden when its seller saves it (staff tools plan decision 4)", async () => {
     Object.assign(sampleStore().listings.get("l-001")!, {
       hiddenAt: "2026-10-14T08:00:00.000Z",
-      hiddenReason: "Not allowed on Vossie.",
+      hiddenReason: "Not allowed on CampusCart.",
     });
     expect(await save({ id: "l-001" })).toMatchObject({
       hiddenAt: "2026-10-14T08:00:00.000Z",
-      hiddenReason: "Not allowed on Vossie.",
+      hiddenReason: "Not allowed on CampusCart.",
     });
     const fresh = (await save())!;
     expect("hiddenAt" in fresh).toBe(false);

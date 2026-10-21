@@ -64,7 +64,7 @@ describe("reading requests (community actions plan decision 1)", () => {
   });
 
   it("leaves a hidden request out of every list, and gives it no page", async () => {
-    await hideRequest("r-001", "Not allowed on Vossie.", NOW);
+    await hideRequest("r-001", "Not allowed on CampusCart.", NOW);
     expect(publicRequest("r-001")).toBeNull();
     expect(listedRequests(TODAY).map((request) => request.id)).not.toContain("r-001");
     expect(publicRequestIds()).not.toContain("r-001");

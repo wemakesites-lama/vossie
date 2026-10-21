@@ -24,7 +24,7 @@ export function isSameOrigin(request: Pick<Request, "headers">): boolean {
 
 /** The answer to a post from anywhere else. Nobody using Vossie ever sees it. */
 export function notFromVossie(): Response {
-  return new Response("This form must be sent from Vossie.", {
+  return new Response("This form must be sent from CampusCart.", {
     status: 403,
     headers: { "Content-Type": "text/plain; charset=utf-8" },
   });

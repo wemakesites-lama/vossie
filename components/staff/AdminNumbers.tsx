@@ -81,7 +81,7 @@ export function AdminNumbers({ weeks, shown, campuses, campus, sampleMode }: Adm
           How these are counted
         </h2>
         <p>
-          Counted from Vossie&apos;s store as this page opens. Weeks run Monday to Sunday, South African time. Things
+          Counted from CampusCart&apos;s store as this page opens. Weeks run Monday to Sunday, South African time. Things
           deleted since aren&apos;t counted. Small numbers of private things show as &quot;Under 5&quot; or &quot;Hidden&quot;,
           so no one can be picked out.
         </p>

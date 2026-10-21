@@ -5,7 +5,7 @@ import { resetSampleStore } from "@/lib/data/store";
 import { RequestView } from "./RequestView";
 
 // The async listings are tested on their own; here they stand in (jsdom can't render async components in a tree).
-vi.mock("./RelatedListings", () => ({ RelatedListings: () => <section aria-label="Already on Vossie, stood in" /> }));
+vi.mock("./RelatedListings", () => ({ RelatedListings: () => <section aria-label="Already on CampusCart, stood in" /> }));
 
 // The session's links are async Server Components; here they're the signed-out links (messaging plan, Task 7).
 vi.mock("@/components/messages/ViewerLinks", async () => (await import("@/tests/helpers/viewer-links")).signedOutViewerLinks);
@@ -96,9 +96,9 @@ describe("RequestView (community spec 4.2)", () => {
     expect(screen.queryByRole("link", { name: "Offer to help" })).toBeNull();
   });
 
-  it("shows listings already on Vossie, then a report link through the sign-in page", async () => {
+  it("shows listings already on CampusCart, then a report link through the sign-in page", async () => {
     await show("r-001");
-    expect(screen.getByRole("region", { name: "Already on Vossie, stood in" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Already on CampusCart, stood in" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Report this request" })).toHaveAttribute(
       "href",
       "/login?next=%2Freport%3Frequest%3Dr-001",

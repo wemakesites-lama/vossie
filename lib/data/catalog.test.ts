@@ -111,7 +111,7 @@ describe("hidden listings (staff tools plan decision 4)", () => {
   it("keeps a listing the Hub hid out of every list, and gives it no page", () => {
     Object.assign(sampleStore().listings.get("l-007")!, {
       hiddenAt: "2026-10-14T08:00:00.000Z",
-      hiddenReason: "Not allowed on Vossie.",
+      hiddenReason: "Not allowed on CampusCart.",
     });
     expect(listedListings().some((listing) => listing.id === "l-007")).toBe(false);
     expect(publicListing("l-007")).toBeNull();

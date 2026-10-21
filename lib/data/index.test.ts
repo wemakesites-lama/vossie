@@ -399,7 +399,7 @@ describe("Looking For data (community spec 4.3)", () => {
     expect(every).toContain("r-016");
   });
 
-  it("finds listings already on Vossie in the request's category, its campus first, then the newest", async () => {
+  it("finds listings already on CampusCart in the request's category, its campus first, then the newest", async () => {
     expect(ids(await getRelatedListings({ categorySlug: "tutoring", campusSlug: "midrand", limit: 4 }))).toEqual([
       "l-005",
       "l-013",
@@ -420,7 +420,7 @@ describe("Looking For data (community spec 4.3)", () => {
     ]);
   });
 
-  it("leaves paused and sold listings out of Already on Vossie", async () => {
+  it("leaves paused and sold listings out of Already on CampusCart", async () => {
     // The paused lash listing (l-016) is Pretoria's only hair and beauty listing; the sold calculator is East London's.
     expect(ids(await getRelatedListings({ categorySlug: "hair-beauty", campusSlug: "pretoria", limit: 4 }))).toEqual([
       "l-004",

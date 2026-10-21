@@ -46,7 +46,7 @@ describe("POST /login/sample (stage K spec decisions 2 to 4)", () => {
     const { stand, wasRead } = posted({ email: "student@eduvos.com" }, "https://evil.example");
     const response = await POST(stand);
     expect(response.status).toBe(403);
-    expect(await response.text()).toBe("This form must be sent from Vossie.");
+    expect(await response.text()).toBe("This form must be sent from CampusCart.");
     expect(wasRead()).toBe(false);
     expect(request.cookies.has(SESSION_COOKIE)).toBe(false);
   });

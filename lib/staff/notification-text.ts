@@ -58,12 +58,12 @@ export function slotRequestedText(student: string, postTitle: string): string {
 export function staffRoleText(change: "given" | "removed", role: StaffRole): string {
   if (change === "given") {
     return role === "mentor"
-      ? "You're a Vossie mentor now. The Hub's tools and the mentor dashboard are on your account page."
-      : "You're a Vossie admin now. The admin console is on your account page.";
+      ? "You're a CampusCart mentor now. The Hub's tools and the mentor dashboard are on your account page."
+      : "You're a CampusCart admin now. The admin console is on your account page.";
   }
   return role === "mentor"
-    ? "Your mentor role on Vossie has ended. Thank you for helping student sellers."
-    : "Your admin role on Vossie has ended.";
+    ? "Your mentor role on CampusCart has ended. Thank you for helping student sellers."
+    : "Your admin role on CampusCart has ended.";
 }
 
 /** A hidden listing shown again, for its seller, with the "shop-update" kind (stage J spec decision 14). */

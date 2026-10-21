@@ -45,7 +45,7 @@ test.describe("the Looking For board (spec 4.1)", () => {
     await expect(titles).toHaveCount(14);
     await expect(titles.first()).toHaveText("Accounting 1 tutor this week");
     await expect(page.getByText("Kettle for res")).toHaveCount(0);
-    await expect(page).toHaveTitle("Looking For · Vossie");
+    await expect(page).toHaveTitle("Looking For · CampusCart");
   });
 
   test("puts the chosen campus first, then every other, naming no one", async ({ page, context, baseURL }) => {
@@ -172,15 +172,15 @@ test.describe("a request's page (spec 4.2)", () => {
       "href",
       "/login?next=%2Flooking-for%2Fr-001%2Foffer",
     );
-    await expect(page).toHaveTitle("Accounting 1 tutor this week · Vossie");
+    await expect(page).toHaveTitle("Accounting 1 tutor this week · CampusCart");
     await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /^I'm stuck on adjustments/);
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
   });
 
-  test("shows listings already on Vossie, the request's campus first, and links to the rest", async ({ page }) => {
+  test("shows listings already on CampusCart, the request's campus first, and links to the rest", async ({ page }) => {
     onlyAt("phone-390", "desktop-1440");
     await page.goto("/looking-for/r-001");
-    const related = page.getByRole("region", { name: "Already on Vossie" });
+    const related = page.getByRole("region", { name: "Already on CampusCart" });
     const cards = related.locator("article");
     await expect(cards).toHaveCount(4);
     const hrefs = await cards
@@ -226,11 +226,11 @@ test.describe("the Hub (spec 5.1)", () => {
   test("tells the Hub's story and shows its Verified sellers", async ({ page }) => {
     await page.goto("/hub");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("The Incubation Hub");
-    await expect(page.getByText("The Hub also runs Vossie.", { exact: false })).toBeVisible();
+    await expect(page.getByText("The Hub also runs CampusCart.", { exact: false })).toBeVisible();
     const verified = page.getByRole("region", { name: "Verified by the Hub" });
     await expect(verified.getByRole("link")).toHaveCount(9);
     await expect(verified.getByRole("link").first()).toHaveAttribute("href", "/sellers/code-coach");
-    await expect(page).toHaveTitle("The Incubation Hub · Vossie");
+    await expect(page).toHaveTitle("The Incubation Hub · CampusCart");
   });
 
   test("the Verified sellers scroll sideways on phones and wrap from the tablet step", async ({ page }) => {
@@ -345,7 +345,7 @@ test.describe("Hub posts (spec 5.2)", () => {
     await expect(link).toHaveAttribute("href", "/browse");
     await expect(link).toHaveCSS("text-decoration-line", "underline");
     await expect(link).toHaveCSS("color", "rgb(30, 123, 168)");
-    await expect(page).toHaveTitle("How to price your first listing · Vossie");
+    await expect(page).toHaveTitle("How to price your first listing · CampusCart");
     await expect(page.locator('meta[name="description"]')).toHaveAttribute(
       "content",
       /^Pricing is the first thing buyers look at/,

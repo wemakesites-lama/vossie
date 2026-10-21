@@ -55,7 +55,7 @@ export function PrivacySettingsView({ consent, deleteErrors, reports, staff = nu
           Download your data
         </h2>
         <p>
-          A file of what Vossie holds about you: your account, your consent, when you signed in, your Looking For
+          A file of what CampusCart holds about you: your account, your consent, when you signed in, your Looking For
           requests and the shops you follow, your saved searches, your RSVPs and slot requests, your conversations, your
           reports and your notifications. If you sell, it holds your shop and your
           listings too, with each photo&apos;s address so you can download it. Mentors&apos; notes about your shop
@@ -64,7 +64,7 @@ export function PrivacySettingsView({ consent, deleteErrors, reports, staff = nu
         </p>
         {/* A file from a route handler, not a page, so a plain link. */}
         <p>
-          <a href="/account/privacy/export" download="vossie-data.json" className="btn btn-outline text-navy">
+          <a href="/account/privacy/export" download="campuscart-data.json" className="btn btn-outline text-navy">
             Download your data
           </a>
         </p>
@@ -120,7 +120,7 @@ export function PrivacySettingsView({ consent, deleteErrors, reports, staff = nu
         {/* A warning, not a block: deleting your account is your right under POPIA (spec decision 8). */}
         {staff?.onlyAdmin && (
           <p>
-            <strong>You&apos;re Vossie&apos;s only admin.</strong> Give someone else the admin role first, or no one can
+            <strong>You&apos;re CampusCart&apos;s only admin.</strong> Give someone else the admin role first, or no one can
             use the admin console.
           </p>
         )}

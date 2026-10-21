@@ -15,7 +15,7 @@ describe("the request form's error words (community actions spec 2.3 and 2.4)", 
     });
     expect(requestErrors(["title-contact", "needed-past", "open-limit"], ids)).toEqual([
       {
-        message: "Take out the phone number or email. Shops will message you on Vossie. If it's an ISBN, write ISBN before it.",
+        message: "Take out the phone number or email. Shops will message you on CampusCart. If it's an ISBN, write ISBN before it.",
         fieldId: "request-new-title",
       },
       { message: "Choose today or a later date.", fieldId: "request-new-needed-by" },

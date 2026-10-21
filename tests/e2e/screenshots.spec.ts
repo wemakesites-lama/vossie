@@ -11,7 +11,7 @@ test("shell review screenshots", async ({ page }) => {
   const file = (name: string) => `docs/progress/part-1/${project}-${name}.png`;
   const shot = (name: string) => page.screenshot({ path: file(name) });
   const menu = page.getByRole("dialog", { name: "Menu" });
-  const search = page.getByRole("dialog", { name: "Search Vossie" });
+  const search = page.getByRole("dialog", { name: "Search CampusCart" });
   const picker = page.getByRole("dialog", { name: "Choose your campus" });
 
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -408,7 +408,7 @@ test("messaging review screenshots", async ({ page, browser, baseURL }) => {
 
   await page.goto("/listings/l-007/message");
   await expect(main.getByRole("region", { name: "Stay safe" })).toBeVisible();
-  await expect(page).toHaveTitle("Message Tech corner · Vossie");
+  await expect(page).toHaveTitle("Message Tech corner · CampusCart");
   await page.screenshot({ path: file("01-composer"), fullPage: true });
 
   await page.getByLabel("Your message", { exact: true }).fill("Hi! Can I pay a deposit to hold it?");
@@ -697,7 +697,7 @@ test("community actions review screenshots", async ({ page, browser, baseURL }) 
   await expect(main.getByRole("button", { name: /^Unfollow Tech corner/ })).toBeVisible();
   await shot(page, "09-saved-shops");
   await page.goto("/looking-for/r-002/offer");
-  await expect(main.getByText("Offers come from shops on Vossie", { exact: false })).toBeVisible();
+  await expect(main.getByText("Offers come from shops on CampusCart", { exact: false })).toBeVisible();
   await shot(page, "10-offer-no-shop");
   await page.goto("/offline");
   await expect(page.getByRole("heading", { level: 1, name: "You're offline" })).toBeVisible();

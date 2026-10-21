@@ -197,7 +197,7 @@ test.describe("signing in comes back to the page that asked (stage K spec 3)", (
       maxRedirects: 0,
     });
     expect(response.status()).toBe(403);
-    expect(await response.text()).toBe("This form must be sent from Vossie.");
+    expect(await response.text()).toBe("This form must be sent from CampusCart.");
     const away = await page.request.get("/login/sample", { maxRedirects: 0 });
     expect([away.status(), away.headers()["location"]]).toEqual([303, "/login"]);
     await page.goto("/account");

@@ -78,7 +78,7 @@ export function OfferView({ subject, status, form }: OfferViewProps) {
     case "no-shop":
       main = (
         <Note
-          sentence="Offers come from shops on Vossie, so the Hub has checked who's offering."
+          sentence="Offers come from shops on CampusCart, so the Hub has checked who's offering."
           link={{ href: "/sell", label: "Start selling", primary: true }}
         />
       );
@@ -100,7 +100,7 @@ export function OfferView({ subject, status, form }: OfferViewProps) {
       main = <Note sentence="This request is closed, so it isn't taking offers." />;
       break;
     case "sample":
-      main = <Note sentence="This is one of Vossie's sample requests, so it can't take offers." />;
+      main = <Note sentence="This is one of CampusCart's sample requests, so it can't take offers." />;
       break;
     case "offered":
       main = (

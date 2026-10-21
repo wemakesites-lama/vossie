@@ -91,7 +91,7 @@ export const hubPosts: readonly HubPost[] = [
         "## Bring",
         "- What it costs you to make or deliver one item or session",
         "- Your prices now, if you have them",
-        "- Two or three listings like yours on Vossie",
+        "- Two or three listings like yours on CampusCart",
         "",
         "Slots are 20 minutes. Read [how to price your first listing](/hub/h-013) before you come.",
       ),
@@ -123,7 +123,7 @@ export const hubPosts: readonly HubPost[] = [
       summary: "Book 15 minutes in the studio room and leave with photos of your products or your work.",
       body: lines(
         "A Hub mentor sets up a light box and a plain backdrop in the studio room. Book a slot, bring up to five " +
-          "items or examples of your work, and leave with photos you can use on Vossie.",
+          "items or examples of your work, and leave with photos you can use on CampusCart.",
         "",
         "- Clean your items first: dust shows up on camera.",
         "- Selling a service? Bring something that shows your work, like a finished set of nails or a printed logo.",
@@ -169,7 +169,7 @@ export const hubPosts: readonly HubPost[] = [
     "h-007", "Office hours: your first listing", "midrand", "2026-10-09T08:00:00Z",
     { startsAt: "2026-11-19T11:00:00Z", place: "The Hub, Block C" },
     {
-      summary: "Sit with a mentor and put your first listing on Vossie, from the title to the photos.",
+      summary: "Sit with a mentor and put your first listing on CampusCart, from the title to the photos.",
       body: lines(
         "Never listed anything before? Bring your phone and the thing you want to sell, and a mentor will help you " +
           "list it in one sitting.",
@@ -231,7 +231,7 @@ export const hubPosts: readonly HubPost[] = [
     {
       summary: "An open day at every campus's Hub: meet the mentors and see what the Hub can do for your business.",
       body: lines(
-        "Every campus's Hub opened its doors for the evening. Students met the mentors, heard how Vossie works and " +
+        "Every campus's Hub opened its doors for the evening. Students met the mentors, heard how CampusCart works and " +
           "booked their first office hours.",
         "",
         "Missed it? The Hub runs [office hours](/hub?type=office-hours) through the year.",
@@ -260,7 +260,7 @@ export const hubPosts: readonly HubPost[] = [
         "there, then check it against your own costs.",
       "",
       "## Start from what's out there",
-      "1. Search Vossie for the same thing, or [browse what's already listed](/browse).",
+      "1. Search CampusCart for the same thing, or [browse what's already listed](/browse).",
       "2. Note the lowest and highest prices for the same condition.",
       "3. Price yours somewhere in between, and say why in the description.",
       "",
@@ -292,7 +292,7 @@ export const hubPosts: readonly HubPost[] = [
   tip("h-015", "Meeting a buyer safely on campus", "2026-10-06T07:00:00Z", {
     summary: "Meet in a busy place on campus, in daylight, and check the item before any money moves.",
     body: lines(
-      "Most sales on Vossie end with a handover on campus. A few habits keep them easy and safe.",
+      "Most sales on CampusCart end with a handover on campus. A few habits keep them easy and safe.",
       "",
       "## Before you meet",
       "- Agree on the price and the place in your messages, so there are no surprises.",
@@ -304,7 +304,7 @@ export const hubPosts: readonly HubPost[] = [
       "- For cash, count it there and then. For a transfer, wait until it shows in your account.",
       "- If something feels wrong, walk away. There will be other buyers.",
       "",
-      "Read Vossie's [safety tips](/safety) for more.",
+      "Read CampusCart's [safety tips](/safety) for more.",
     ),
   }),
   tip("h-016", "Writing a listing people trust", "2026-10-01T07:00:00Z", {
@@ -332,7 +332,7 @@ export const hubPosts: readonly HubPost[] = [
         "takes about a week.",
       "",
       "## How it works",
-      "1. Sell on Vossie for at least a month.",
+      "1. Sell on CampusCart for at least a month.",
       "2. Book [office hours](/hub?type=office-hours) and tell the mentor you'd like to be verified.",
       "3. Bring your ID and examples of your work. The mentor checks them with you.",
       "4. Once you're verified, the badge shows on your shop and your listings.",

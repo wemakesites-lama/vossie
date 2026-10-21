@@ -9,7 +9,7 @@ describe("HubStory (community spec 5.1)", () => {
     render(<HubStory image={banner} />);
     expect(screen.getByRole("heading", { level: 1, name: "The Incubation Hub" })).toBeInTheDocument();
     expect(screen.getByText(/backs student businesses on every campus/)).toBeInTheDocument();
-    expect(screen.getByText(/The Hub also runs Vossie/)).toBeInTheDocument();
+    expect(screen.getByText(/The Hub also runs CampusCart/)).toBeInTheDocument();
   });
 
   it("keeps the photo out of the reading order", () => {

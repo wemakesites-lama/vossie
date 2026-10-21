@@ -18,7 +18,7 @@ test("a first visit shows every campus, 24 at a time", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Everything");
   await expect(page.getByText("Showing 24 of 36")).toBeVisible();
   await expect(cards(page)).toHaveCount(24);
-  await expect(page).toHaveTitle("Browse · Vossie");
+  await expect(page).toHaveTitle("Browse · CampusCart");
 });
 
 test("Show more lands on the 25th card", async ({ page }) => {
@@ -79,7 +79,7 @@ test("the category tabs change the title and the results", async ({ page }) => {
   await expect(page).toHaveURL(/\/browse\?cat=tech$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tech");
   await expect(cards(page)).toHaveCount(5);
-  await expect(page).toHaveTitle("Tech · Vossie");
+  await expect(page).toHaveTitle("Tech · CampusCart");
 });
 
 test("Filters narrows the results and shows a chip", async ({ page }) => {
@@ -112,10 +112,10 @@ test("search forgives a typo, finds seller names, and stays out of search engine
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("“brads”");
   await expect(cards(page)).toHaveCount(1);
   await expect(cards(page).first()).toContainText("Box braids");
-  await expect(page).toHaveTitle("“brads” · Vossie");
+  await expect(page).toHaveTitle("“brads” · CampusCart");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
 
-  const box = page.getByRole("search").getByRole("searchbox", { name: "Search Vossie" });
+  const box = page.getByRole("search").getByRole("searchbox", { name: "Search CampusCart" });
   await box.fill("bakery");
   await box.press("Enter");
   await expect(page).toHaveURL(/\/browse\?q=bakery$/);
@@ -125,15 +125,15 @@ test("search forgives a typo, finds seller names, and stays out of search engine
 test("only plain, category and campus pages are open to search engines", async ({ page }) => {
   onlyAt("desktop-1440");
   const cases: ReadonlyArray<[path: string, title: string, indexed: boolean]> = [
-    ["/browse", "Browse · Vossie", true],
-    ["/browse?cat=tech", "Tech · Vossie", true],
-    ["/browse?campus=midrand", "Browse · Vossie", true],
-    ["/browse?cat=tech&campus=midrand", "Tech · Vossie", true],
-    ["/browse?cat=tech&sort=price-low", "Tech · Vossie", false],
-    ["/browse?cat=tech&price=free", "Tech · Vossie", false],
-    ["/browse?pay=swap", "Browse · Vossie", false],
-    ["/browse?deals=free-and-swaps&campus=all", "Browse · Vossie", false],
-    ["/browse?n=48", "Browse · Vossie", false],
+    ["/browse", "Browse · CampusCart", true],
+    ["/browse?cat=tech", "Tech · CampusCart", true],
+    ["/browse?campus=midrand", "Browse · CampusCart", true],
+    ["/browse?cat=tech&campus=midrand", "Tech · CampusCart", true],
+    ["/browse?cat=tech&sort=price-low", "Tech · CampusCart", false],
+    ["/browse?cat=tech&price=free", "Tech · CampusCart", false],
+    ["/browse?pay=swap", "Browse · CampusCart", false],
+    ["/browse?deals=free-and-swaps&campus=all", "Browse · CampusCart", false],
+    ["/browse?n=48", "Browse · CampusCart", false],
   ];
   for (const [path, title, indexed] of cases) {
     await page.goto(path);

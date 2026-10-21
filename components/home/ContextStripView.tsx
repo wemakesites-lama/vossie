@@ -29,7 +29,7 @@ function TrustStrip() {
   return (
     <div className="context-strip context-outlined">
       <h2 id="context-title" className="sr-only">
-        Why you can trust Vossie
+        Why you can trust CampusCart
       </h2>
       <ul className="context-row context-trust">
         {TRUST.map(({ Icon, long, short }) => (

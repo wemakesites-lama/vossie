@@ -17,7 +17,7 @@ vi.mock("@/lib/data/viewer", () => ({
 describe("ContextStripView (spec 7.4)", () => {
   it("shows the trust strip on a first visit", () => {
     render(<ContextStripView activity={null} />);
-    expect(screen.getByRole("heading", { level: 2, name: "Why you can trust Vossie" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Why you can trust CampusCart" })).toBeInTheDocument();
     expect(screen.getByText("Verified Incubation Hub sellers")).toBeInTheDocument();
     expect(screen.getByText("Never pay before you see it")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "How trust works" })).toHaveAttribute("href", "/trust");
@@ -50,6 +50,6 @@ describe("ContextStripContent", () => {
   it("shows the trust strip to a signed-out first visitor", async () => {
     viewer.signedIn = false;
     render(await ContextStripContent());
-    expect(screen.getByRole("heading", { level: 2, name: "Why you can trust Vossie" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Why you can trust CampusCart" })).toBeInTheDocument();
   });
 });

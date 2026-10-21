@@ -134,7 +134,7 @@ describe("a thread (messaging spec 3.3)", () => {
     show(makeThread({ otherName: "Deleted account", otherPresent: false }));
     expect(screen.queryByLabelText("Your reply")).toBeNull();
     expect(screen.getByRole("heading", { level: 1, name: "Messages with Deleted account" })).toBeInTheDocument();
-    expect(screen.getByText("This person has left Vossie, so you can't reply.")).toBeInTheDocument();
+    expect(screen.getByText("This person has left CampusCart, so you can't reply.")).toBeInTheDocument();
   });
 });
 
@@ -149,7 +149,7 @@ describe("the sale (messaging spec 2.5, plan decision 30)", () => {
   it("offers the seller no Mark as completed when the buyer has left (messaging plan amendment 3, items 1 and 3)", () => {
     show(makeThread({ role: "seller", otherName: "Deleted account", otherPresent: false, status: "replied" }));
     expect(screen.queryByRole("button", { name: "Mark as completed" })).toBeNull();
-    expect(screen.getByText("This person has left Vossie, so you can't reply.")).toBeInTheDocument();
+    expect(screen.getByText("This person has left CampusCart, so you can't reply.")).toBeInTheDocument();
   });
 
   it("asks the buyer whether a sale marked done happened, and says when it confirms itself", () => {
@@ -173,7 +173,7 @@ describe("the sale (messaging spec 2.5, plan decision 30)", () => {
     );
     expect(screen.queryByRole("region", { name: "Did the sale happen?" })).toBeNull();
     expect(screen.queryByRole("button", { name: /Confirm the sale|It didn't happen/ })).toBeNull();
-    expect(screen.getByText("This person has left Vossie, so you can't reply.")).toBeInTheDocument();
+    expect(screen.getByText("This person has left CampusCart, so you can't reply.")).toBeInTheDocument();
   });
 
   it("tells the seller nothing is waiting when the buyer has left, the same rule from the other side", () => {
@@ -187,7 +187,7 @@ describe("the sale (messaging spec 2.5, plan decision 30)", () => {
       }),
     );
     expect(screen.queryByText(/You marked this as completed/)).toBeNull();
-    expect(screen.getByText("This person has left Vossie, so you can't reply.")).toBeInTheDocument();
+    expect(screen.getByText("This person has left CampusCart, so you can't reply.")).toBeInTheDocument();
   });
 
   it("tells the seller they're waiting for the buyer", () => {
@@ -290,12 +290,12 @@ describe("offer threads (community actions spec 2.7 to 2.10, plan decision 8)", 
     expect(screen.getByRole("link", { name: "Clip-on lamp" })).toHaveAttribute("href", "/listings/l-test");
   });
 
-  it("keeps the other conversations' note and the left-Vossie line (messaging amendment 3.9)", () => {
+  it("keeps the other conversations' note and the left-CampusCart line (messaging amendment 3.9)", () => {
     const { unmount } = show(makeThread(), { sent: true });
     expect(screen.getByRole("status")).toHaveTextContent("Sent. Sellers usually reply within a day.");
     unmount();
     show(makeThread({ otherPresent: false, otherName: "Deleted account" }));
-    expect(screen.getByText("This person has left Vossie, so you can't reply.")).toBeInTheDocument();
+    expect(screen.getByText("This person has left CampusCart, so you can't reply.")).toBeInTheDocument();
     expect(screen.queryByLabelText("Your reply")).toBeNull();
   });
 
@@ -303,11 +303,11 @@ describe("offer threads (community actions spec 2.7 to 2.10, plan decision 8)", 
   it("tells the asker the shop has closed, not that a person has left; the shop still reads about a person", () => {
     const { unmount } = show({ ...offer, otherPresent: false, otherName: "A closed shop" });
     expect(screen.getByText("This shop has closed, so you can't reply.")).toBeInTheDocument();
-    expect(screen.queryByText(/has left Vossie/)).toBeNull();
+    expect(screen.queryByText(/has left CampusCart/)).toBeNull();
     expect(screen.queryByLabelText("Your reply")).toBeNull();
     unmount();
     show({ ...offer, role: "seller", otherPresent: false, otherName: "Deleted account" });
-    expect(screen.getByText("This person has left Vossie, so you can't reply.")).toBeInTheDocument();
+    expect(screen.getByText("This person has left CampusCart, so you can't reply.")).toBeInTheDocument();
     expect(screen.queryByText(/shop has closed/)).toBeNull();
   });
 

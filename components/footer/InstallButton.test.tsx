@@ -32,9 +32,9 @@ describe("InstallButton", () => {
         <InstallButton />
       </>,
     );
-    await user.click(screen.getByRole("button", { name: "Add Vossie to your home screen" }));
+    await user.click(screen.getByRole("button", { name: "Add CampusCart to your home screen" }));
     expect(prompt).toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: "Add Vossie to your home screen" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add CampusCart to your home screen" })).not.toBeInTheDocument();
     // The button is gone, so focus sits on the footer's heading rather than dropping to <body>.
     expect(screen.getByRole("heading", { name: "Campus updates" })).toHaveFocus();
   });
@@ -47,17 +47,17 @@ describe("InstallButton", () => {
       userChoice: Promise.resolve({ outcome: "dismissed" as const }),
     });
     render(<InstallButton />);
-    await user.click(screen.getByRole("button", { name: "Add Vossie to your home screen" }));
+    await user.click(screen.getByRole("button", { name: "Add CampusCart to your home screen" }));
     expect(prompt).toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: "Add Vossie to your home screen" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add CampusCart to your home screen" })).not.toBeInTheDocument();
   });
 
   it("explains Share › Add to Home Screen on iPhone", async () => {
     const user = userEvent.setup();
     vi.spyOn(Navigator.prototype, "userAgent", "get").mockReturnValue(IPHONE);
     render(<InstallButton />);
-    await user.click(screen.getByRole("button", { name: "Add Vossie to your home screen" }));
-    const sheet = screen.getByRole("dialog", { name: "Add Vossie to your home screen" });
+    await user.click(screen.getByRole("button", { name: "Add CampusCart to your home screen" }));
+    const sheet = screen.getByRole("dialog", { name: "Add CampusCart to your home screen" });
     expect(within(sheet).getByText(/Add to Home Screen/)).toBeInTheDocument();
   });
 
@@ -70,8 +70,8 @@ describe("InstallButton", () => {
     Object.defineProperty(navigator, "maxTouchPoints", { configurable: true, get: () => 5 });
     try {
       render(<InstallButton />);
-      await user.click(screen.getByRole("button", { name: "Add Vossie to your home screen" }));
-      expect(screen.getByRole("dialog", { name: "Add Vossie to your home screen" })).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Add CampusCart to your home screen" }));
+      expect(screen.getByRole("dialog", { name: "Add CampusCart to your home screen" })).toBeInTheDocument();
     } finally {
       Reflect.deleteProperty(navigator, "maxTouchPoints");
     }

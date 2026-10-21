@@ -16,7 +16,7 @@ test.describe("header", () => {
   test("hides completely on the way down and comes back whole on the way up, without moving the page", async ({ page }) => {
     await page.goto("/");
     const menu = page.getByRole("button", { name: "Menu", exact: true });
-    const home = page.getByRole("link", { name: "Vossie home" });
+    const home = page.getByRole("link", { name: "CampusCart home" });
     await expect(menu).toBeVisible();
 
     await page.mouse.wheel(0, 900);
@@ -66,7 +66,7 @@ test.describe("header", () => {
   test("the home pennant scrolls back to the top on the homepage", async ({ page }) => {
     await page.goto("/");
     await page.evaluate(() => window.scrollTo(0, 80));
-    await page.getByRole("link", { name: "Vossie home" }).click();
+    await page.getByRole("link", { name: "CampusCart home" }).click();
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
   });
 
@@ -192,8 +192,8 @@ test.describe("search", () => {
   test("submits to browse and remembers the search", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Search", exact: true }).click();
-    const dialog = page.getByRole("dialog", { name: "Search Vossie" });
-    const box = dialog.getByRole("searchbox", { name: "Search Vossie" });
+    const dialog = page.getByRole("dialog", { name: "Search CampusCart" });
+    const box = dialog.getByRole("searchbox", { name: "Search CampusCart" });
     await expect(box).toBeFocused();
     // An empty search goes nowhere and keeps the overlay open.
     await box.press("Enter");
@@ -239,7 +239,7 @@ test.describe("announcement bar", () => {
 });
 
 test.describe("footer", () => {
-  test("the VOSSIE wordmark fills the footer width", async ({ page }) => {
+  test("the CAMPUSCART wordmark fills the footer width", async ({ page }) => {
     await page.goto("/");
     const wordmark = page.locator(".footer-wordmark-text");
     await wordmark.scrollIntoViewIfNeeded();
@@ -279,13 +279,13 @@ test.describe("footer", () => {
   test.describe("with reduced motion", () => {
     test.use({ reducedMotion: "reduce" });
 
-    test("the VOSSIE wordmark holds one size", async ({ page }) => {
+    test("the CAMPUSCART wordmark holds one size", async ({ page }) => {
       await page.goto("/");
       expect(await wordmarkSizes(page)).toHaveLength(1);
     });
   });
 
-  test("the VOSSIE wordmark holds one size with data saver on", async ({ page }) => {
+  test("the CAMPUSCART wordmark holds one size with data saver on", async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem("vossie_low_data", "1"));
     await page.goto("/");
     await expect(page.locator("html")).toHaveAttribute("data-low-data", "");
@@ -367,7 +367,7 @@ test.describe("privacy", () => {
         () => null,
       );
     await page.getByRole("button", { name: "Search", exact: true }).click();
-    const dialog = page.getByRole("dialog", { name: "Search Vossie" });
+    const dialog = page.getByRole("dialog", { name: "Search CampusCart" });
     await expect(dialog.getByRole("link", { name: term, exact: true })).toBeVisible();
     expect(await leak).toBeNull();
   });

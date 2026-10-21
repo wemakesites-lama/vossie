@@ -54,7 +54,7 @@ export function ThreadView({ thread, now, reply, sent, campusName }: ThreadViewP
   const sentNote = !thread.request ? "Sent. Sellers usually reply within a day." : waiting ? OFFER_SENT_NOTE : null;
   // The asker of an offer dealt with a shop, not a person, so a shop that has gone has closed (plan amendment 19.2).
   const goneNote =
-    thread.request && thread.role === "buyer" ? SHOP_CLOSED_NOTE : "This person has left Vossie, so you can't reply.";
+    thread.request && thread.role === "buyer" ? SHOP_CLOSED_NOTE : "This person has left CampusCart, so you can't reply.";
   return (
     <div className="thread-column">
       <Link href={inboxPath(thread.role === "seller" ? "selling" : "buying")} prefetch={false} className="msg-crumb">

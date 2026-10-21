@@ -26,7 +26,7 @@ test("an admin gives a fresh account the mentor role by email, and takes it away
 
   const admin = await signedInPage(browser, baseURL!, "Admin", "/admin/staff");
   await expect(main(admin).getByRole("heading", { level: 1, name: "Staff accounts" })).toBeVisible();
-  await expect(admin).toHaveTitle("Staff accounts · Vossie");
+  await expect(admin).toHaveTitle("Staff accounts · CampusCart");
   // The email's case doesn't matter: it's matched exactly once normalised (spec decision 3).
   await giveRole(admin, student.email.toUpperCase(), "Mentor");
   const row = main(admin).getByRole("row").filter({ hasText: student.email });
@@ -36,7 +36,7 @@ test("an admin gives a fresh account the mentor role by email, and takes it away
   await page.goto("/notifications");
   await expect(
     main(page)
-      .getByText("You're a Vossie mentor now. The Hub's tools and the mentor dashboard are on your account page.")
+      .getByText("You're a CampusCart mentor now. The Hub's tools and the mentor dashboard are on your account page.")
       .filter({ visible: true }),
   ).toBeVisible();
   await page.goto("/account");
@@ -66,7 +66,7 @@ test("an admin gives a fresh account the mentor role by email, and takes it away
   await page.goto("/notifications");
   await expect(
     main(page)
-      .getByText("Your mentor role on Vossie has ended. Thank you for helping student sellers.")
+      .getByText("Your mentor role on CampusCart has ended. Thank you for helping student sellers.")
       .filter({ visible: true }),
   ).toBeVisible();
   if (STAFF_404_IS_REAL) expect((await page.request.get("/mentor", { maxRedirects: 0 })).status()).toBe(404);
@@ -96,7 +96,7 @@ test("the admin's own row has no Remove admin role, and an unknown email keeps w
   await button(admin, "Give role").click();
   const summary = main(admin).getByRole("alert", { name: "There's a problem" });
   await expect(summary).toContainText(
-    "No Vossie account uses that email. Ask them to sign in once, then try again.",
+    "No CampusCart account uses that email. Ask them to sign in once, then try again.",
     POST_LANDS,
   );
   await expect(summary).toBeFocused();
@@ -206,7 +206,7 @@ test("the numbers: both tables, a campus view and the key, and the 404 page for 
   test.setTimeout(60_000);
   const admin = await signedInPage(browser, baseURL!, "Admin", "/admin/numbers");
   await expect(main(admin).getByRole("heading", { level: 1, name: "Numbers" })).toBeVisible();
-  await expect(admin).toHaveTitle("Numbers · Vossie");
+  await expect(admin).toHaveTitle("Numbers · CampusCart");
   await expect(main(admin).getByRole("table", { name: "All campuses, by week" })).toBeVisible();
   await expect(main(admin).getByRole("table", { name: /^By campus, last week \(/ })).toBeVisible();
   await expect(main(admin).getByText(/^Hidden: not shown by campus/).first()).toBeVisible();

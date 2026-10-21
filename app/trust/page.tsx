@@ -5,7 +5,7 @@ import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
 export const metadata: Metadata = {
   title: "How trust works",
   description:
-    "How Vossie decides who to trust: Verified sellers, the New seller, Responsive and Trusted badges, what happens after a report, and how Featured today is picked.",
+    "How CampusCart decides who to trust: Verified sellers, the New seller, Responsive and Trusted badges, what happens after a report, and how Featured today is picked.",
 };
 
 const SECTIONS: readonly InfoSection[] = [
@@ -33,17 +33,17 @@ const SECTIONS: readonly InfoSection[] = [
     children: (
       <>
         <p>
-          Badges are worked out by Vossie from what a seller does, not from what they say. A seller shows the highest
+          Badges are worked out by CampusCart from what a seller does, not from what they say. A seller shows the highest
           badge they meet, and a badge can go down again if their habits change.
         </p>
         <p>
           A shop with an account behind it gets its badge worked out by the rules below, from its conversations on
-          Vossie, whenever the Hub reviews the marketplace and after each reply or confirmed sale. While Vossie is a
+          CampusCart, whenever the Hub reviews the marketplace and after each reply or confirmed sale. While CampusCart is a
           preview, most shops are samples with no account behind them, and they show sample badges.
         </p>
         <h3>New seller</h3>
         <p>
-          Everyone starts here. It means the seller hasn&apos;t built up a record on Vossie yet, which is normal for a
+          Everyone starts here. It means the seller hasn&apos;t built up a record on CampusCart yet, which is normal for a
           new shop.
         </p>
         <h3>Responsive</h3>
@@ -66,7 +66,7 @@ const SECTIONS: readonly InfoSection[] = [
     children: (
       <>
         <ul>
-          <li>An enquiry is a buyer&apos;s first message to a seller about a listing, sent through Vossie.</li>
+          <li>An enquiry is a buyer&apos;s first message to a seller about a listing, sent through CampusCart.</li>
           <li>
             The 48 hours run from when the message arrives. A message that is still inside its 48 hours doesn&apos;t
             count against the seller.
@@ -76,11 +76,11 @@ const SECTIONS: readonly InfoSection[] = [
             says nothing. If the buyer says it didn&apos;t happen, it doesn&apos;t count.
           </li>
           <li>
-            Chats that happen outside Vossie, such as on WhatsApp, can&apos;t be seen, so they don&apos;t count either
+            Chats that happen outside CampusCart, such as on WhatsApp, can&apos;t be seen, so they don&apos;t count either
             way.
           </li>
         </ul>
-        <p>A badge is a record of how someone has behaved on Vossie so far. It isn&apos;t a guarantee.</p>
+        <p>A badge is a record of how someone has behaved on CampusCart so far. It isn&apos;t a guarantee.</p>
       </>
     ),
   },

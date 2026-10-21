@@ -14,7 +14,7 @@ describe("BrowseHeader (spec 4.1, 4.2)", () => {
     render(<BrowseHeader query={makeBrowseQuery({ q: "calculator", sort: "match" })} categoryName="Tech" />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("“calculator”");
     expect(screen.getByText("Search in Tech")).toBeInTheDocument();
-    expect(screen.getByRole("searchbox", { name: "Search Vossie" })).toHaveValue("calculator");
+    expect(screen.getByRole("searchbox", { name: "Search CampusCart" })).toHaveValue("calculator");
   });
 
   it("searches with a plain form that keeps the category and filters, and the campus only from the link", () => {

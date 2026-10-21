@@ -30,7 +30,7 @@ export default async function Image({ params }: Props) {
   const { id } = await params;
   const detail = await getListingDetail(id);
   // Capped, so a long title can't run past the 630px height.
-  const title = detail ? shortDescription(detail.listing.title, 90) : "Vossie";
+  const title = detail ? shortDescription(detail.listing.title, 90) : "CampusCart";
   const price = detail ? priceLabel(detail.listing) : "";
   const campus = detail?.campus.name ?? "Every Eduvos campus";
 
@@ -50,7 +50,7 @@ export default async function Image({ params }: Props) {
       >
         <img src={crest} width={181} height={304} alt="" />
         <div style={{ display: "flex", flexDirection: "column", gap: 24, flex: 1 }}>
-          <div style={{ fontSize: 30, letterSpacing: 2, textTransform: "uppercase" }}>{`Vossie · ${campus}`}</div>
+          <div style={{ fontSize: 30, letterSpacing: 2, textTransform: "uppercase" }}>{`CampusCart · ${campus}`}</div>
           <div style={{ fontSize: 64, lineHeight: 1.05 }}>{title}</div>
           {price && <div style={{ fontSize: 96, lineHeight: 1, color: "#29ABE2" }}>{price}</div>}
         </div>

@@ -18,7 +18,7 @@ beforeEach(async () => {
     staff: { id: "acc-admin", firstName: "Pieter" },
     action: "listing-hidden",
     target: { kind: "listing", id: "l-001", name: "Desk lamp" },
-    detail: "Not allowed on Vossie.",
+    detail: "Not allowed on CampusCart.",
     now: NOW,
   });
 });
@@ -33,7 +33,7 @@ describe("the audit log (staff tools spec 2.2 and 2.3, plan decision 6)", () => 
       "WhoPieter",
       "WhatHid a listing",
       "AboutDesk lamp",
-      "DetailNot allowed on Vossie.",
+      "DetailNot allowed on CampusCart.",
     ]);
     expect(within(second).getByRole("cell", { name: "Added a mentor's note" })).toBeInTheDocument();
   });

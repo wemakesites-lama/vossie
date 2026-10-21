@@ -22,7 +22,7 @@ beforeEach(() => {
 });
 
 describe("the data export (accounts spec 3.3, plan decision 20)", () => {
-  it("downloads the signed-in account's data as vossie-data.json, never cached", async () => {
+  it("downloads the signed-in account's data as campuscart-data.json, never cached", async () => {
     await createSession({
       key: hashToken("token-1"),
       accountId: "acc-student",
@@ -32,7 +32,7 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
     request.cookies.set(SESSION_COOKIE, "token-1");
     const response = await GET();
     expect(response.headers.get("content-type")).toBe("application/json; charset=utf-8");
-    expect(response.headers.get("content-disposition")).toBe('attachment; filename="vossie-data.json"');
+    expect(response.headers.get("content-disposition")).toBe('attachment; filename="campuscart-data.json"');
     expect(response.headers.get("cache-control")).toBe("no-store");
     const data = await response.json();
     expect(data).toMatchObject({

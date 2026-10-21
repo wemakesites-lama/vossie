@@ -20,14 +20,14 @@ export const metadata: Metadata = {
   // The base of every relative address in metadata, such as the share cards' (info and system spec 2.7).
   metadataBase: new URL(siteUrl()),
   title: {
-    default: "Vossie · The Eduvos student marketplace",
-    template: "%s · Vossie",
+    default: "CampusCart · The Eduvos student marketplace",
+    template: "%s · CampusCart",
   },
   description: "Buy and sell textbooks, tech and services with students on your Eduvos campus.",
-  applicationName: "Vossie",
+  applicationName: "CampusCart",
   appleWebApp: {
     capable: true,
-    title: "Vossie",
+    title: "CampusCart",
     statusBarStyle: "default",
   },
 };

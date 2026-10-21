@@ -33,7 +33,7 @@ describe("SiteHeader", () => {
   it("starts expanded, with the pennant as the home link", () => {
     const header = renderHeader();
     expect(header).toHaveAttribute("data-mode", "expanded");
-    expect(screen.getByRole("link", { name: "Vossie home" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "CampusCart home" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("button", { name: "Menu" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
     expect(screen.getByRole("link", { name: "Saved" })).toHaveAttribute("href", "/saved");
@@ -56,7 +56,7 @@ describe("SiteHeader", () => {
     act(() => setScrollY(850));
     expect(header).toHaveAttribute("data-mode", "shown");
     expect(header.querySelector(".hdr-bar")).not.toHaveAttribute("inert");
-    expect(screen.getByRole("link", { name: "Vossie home" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "CampusCart home" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Show navigation" })).not.toBeInTheDocument();
     act(() => setScrollY(930));
     expect(header).toHaveAttribute("data-mode", "hidden");
@@ -92,7 +92,7 @@ describe("SiteHeader", () => {
   it("scrolls to the top instead of reloading when the home link is used on the homepage", async () => {
     const user = userEvent.setup();
     renderHeader();
-    await user.click(screen.getByRole("link", { name: "Vossie home" }));
+    await user.click(screen.getByRole("link", { name: "CampusCart home" }));
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
   });
 
@@ -143,7 +143,7 @@ describe("SiteHeader", () => {
 
   it("lets a modified click on the home link through, so it can open a new tab", () => {
     renderHeader();
-    fireEvent.click(screen.getByRole("link", { name: "Vossie home" }), { metaKey: true });
+    fireEvent.click(screen.getByRole("link", { name: "CampusCart home" }), { metaKey: true });
     expect(window.scrollTo).not.toHaveBeenCalled();
   });
 

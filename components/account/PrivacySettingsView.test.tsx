@@ -30,7 +30,7 @@ describe("Privacy settings (accounts spec 3.3)", () => {
     render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} />);
     const link = screen.getByRole("link", { name: "Download your data" });
     expect(link).toHaveAttribute("href", "/account/privacy/export");
-    expect(link).toHaveAttribute("download", "vossie-data.json");
+    expect(link).toHaveAttribute("download", "campuscart-data.json");
   });
 
   it("says what deleting does, and asks for the box before the red button (spec 2.13)", () => {
@@ -143,7 +143,7 @@ describe("Privacy settings (accounts spec 3.3)", () => {
 describe("deleting a staff account (stage J spec decision 8)", () => {
   const STAFF_LINE =
     "You're Hub staff. Your Hub posts stay with no author, your notes and check-ins stay as \"Deleted account\", the shops you mentor lose their mentor, and the audit log keeps your entries, and those naming you as a mentor, without your name.";
-  const ONLY_ADMIN = "You're Vossie's only admin. Give someone else the admin role first, or no one can use the admin console.";
+  const ONLY_ADMIN = "You're CampusCart's only admin. Give someone else the admin role first, or no one can use the admin console.";
 
   it("says nothing about staff work to a student", () => {
     render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} />);
@@ -161,11 +161,11 @@ describe("deleting a staff account (stage J spec decision 8)", () => {
     expect(within(section).getByRole("button", { name: "Delete my account" })).toBeEnabled();
   });
 
-  it("warns Vossie's only admin to give the role to someone else first", () => {
+  it("warns CampusCart's only admin to give the role to someone else first", () => {
     render(<PrivacySettingsView consent={consent} deleteErrors={[]} reports={[]} staff={{ onlyAdmin: true }} />);
     const section = screen.getByRole("region", { name: "Delete your account" });
     expect(within(section).getByText(STAFF_LINE)).toBeInTheDocument();
-    expect(within(section).getByText(/^You're Vossie's only admin\./).closest("p")).toHaveTextContent(ONLY_ADMIN);
+    expect(within(section).getByText(/^You're CampusCart's only admin\./).closest("p")).toHaveTextContent(ONLY_ADMIN);
     expect(within(section).getByRole("button", { name: "Delete my account" })).toBeEnabled();
   });
 });

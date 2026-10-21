@@ -46,7 +46,7 @@ function openSearch() {
   );
   const trigger = screen.getByRole("button", { name: "Search trigger" });
   act(() => openOverlay("search", trigger));
-  return screen.getByRole("dialog", { name: "Search Vossie" });
+  return screen.getByRole("dialog", { name: "Search CampusCart" });
 }
 
 /** jsdom can't navigate and reports it on every link click. Cancel the click's default once React has handled it. */
@@ -57,8 +57,8 @@ function swallowNavigation() {
 describe("SearchOverlay", () => {
   it("opens with the search box focused and shows trending searches for all campuses", () => {
     const dialog = openSearch();
-    expect(within(dialog).getByRole("searchbox", { name: "Search Vossie" })).toHaveFocus();
-    expect(within(dialog).getByRole("heading", { name: "Trending on Vossie" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("searchbox", { name: "Search CampusCart" })).toHaveFocus();
+    expect(within(dialog).getByRole("heading", { name: "Trending on CampusCart" })).toBeInTheDocument();
     expect(within(dialog).getByRole("link", { name: "Laptop charger" })).toHaveAttribute(
       "href",
       "/browse?q=Laptop%20charger",
@@ -75,7 +75,7 @@ describe("SearchOverlay", () => {
   it("falls back to all-campus terms when the campus has none of its own", () => {
     setCampusChoice("pretoria");
     const dialog = openSearch();
-    expect(within(dialog).getByRole("heading", { name: "Trending on Vossie" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: "Trending on CampusCart" })).toBeInTheDocument();
     expect(within(dialog).getByRole("link", { name: "Scientific calculator" })).toBeInTheDocument();
   });
 
@@ -88,15 +88,15 @@ describe("SearchOverlay", () => {
       </>,
     );
     act(() => openOverlay("search", screen.getByRole("button", { name: "Search trigger" })));
-    const dialog = screen.getByRole("dialog", { name: "Search Vossie" });
-    expect(within(dialog).getByRole("heading", { name: "Trending on Vossie" })).toBeInTheDocument();
+    const dialog = screen.getByRole("dialog", { name: "Search CampusCart" });
+    expect(within(dialog).getByRole("heading", { name: "Trending on CampusCart" })).toBeInTheDocument();
     expect(within(dialog).getByRole("link", { name: "Scientific calculator" })).toBeInTheDocument();
   });
 
   it("remembers a submitted search and closes", async () => {
     const user = userEvent.setup();
     const dialog = openSearch();
-    await user.type(within(dialog).getByRole("searchbox", { name: "Search Vossie" }), "  calculator {enter}");
+    await user.type(within(dialog).getByRole("searchbox", { name: "Search CampusCart" }), "  calculator {enter}");
     expect(getRecentSearches()).toEqual(["calculator"]);
     expect(dialog).not.toHaveAttribute("open");
     expect(router.push).toHaveBeenCalledTimes(1);
@@ -106,14 +106,14 @@ describe("SearchOverlay", () => {
   it("encodes the submitted term in the address it goes to", async () => {
     const user = userEvent.setup();
     const dialog = openSearch();
-    await user.type(within(dialog).getByRole("searchbox", { name: "Search Vossie" }), "desk lamp & chair{enter}");
+    await user.type(within(dialog).getByRole("searchbox", { name: "Search CampusCart" }), "desk lamp & chair{enter}");
     expect(router.push).toHaveBeenCalledWith("/browse?q=desk%20lamp%20%26%20chair");
   });
 
   it("ignores an empty search", async () => {
     const user = userEvent.setup();
     const dialog = openSearch();
-    await user.type(within(dialog).getByRole("searchbox", { name: "Search Vossie" }), "   {enter}");
+    await user.type(within(dialog).getByRole("searchbox", { name: "Search CampusCart" }), "   {enter}");
     expect(getRecentSearches()).toEqual([]);
     expect(dialog).toHaveAttribute("open");
     expect(router.push).not.toHaveBeenCalled();
@@ -130,7 +130,7 @@ describe("SearchOverlay", () => {
     await user.click(within(dialog).getByRole("button", { name: "Clear" }));
     expect(within(dialog).queryByRole("heading", { name: "Recent" })).not.toBeInTheDocument();
     expect(getRecentSearches()).toEqual([]);
-    expect(within(dialog).getByRole("heading", { name: "Trending on Vossie" })).toHaveFocus();
+    expect(within(dialog).getByRole("heading", { name: "Trending on CampusCart" })).toHaveFocus();
   });
 
   it("links every category", () => {
@@ -167,7 +167,7 @@ describe("SearchOverlay", () => {
   it("reopens with the last query selected, so typing replaces it", async () => {
     const user = userEvent.setup();
     const dialog = openSearch();
-    const box = within(dialog).getByRole<HTMLInputElement>("searchbox", { name: "Search Vossie" });
+    const box = within(dialog).getByRole<HTMLInputElement>("searchbox", { name: "Search CampusCart" });
     await user.type(box, "calc");
     await user.click(within(dialog).getByRole("button", { name: "Close search" }));
     act(() => openOverlay("search", screen.getByRole("button", { name: "Search trigger" })));
@@ -178,7 +178,7 @@ describe("SearchOverlay", () => {
   it("limits a query to 100 characters", async () => {
     const user = userEvent.setup();
     const dialog = openSearch();
-    const box = within(dialog).getByRole<HTMLInputElement>("searchbox", { name: "Search Vossie" });
+    const box = within(dialog).getByRole<HTMLInputElement>("searchbox", { name: "Search CampusCart" });
     await user.paste("x".repeat(120));
     expect(box.value).toHaveLength(100);
   });

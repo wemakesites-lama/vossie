@@ -7,7 +7,7 @@ type Step = { title: string; body: string };
 
 const BUYING: readonly Step[] = [
   { title: "Find it on your campus", body: "Search, browse categories, or shop every campus." },
-  { title: "Message the seller", body: "Chat in Vossie. Offer a swap if they accept one." },
+  { title: "Message the seller", body: "Chat in CampusCart. Offer a swap if they accept one." },
   { title: "Meet at a pickup point", body: "See it first, then pay or swap on the spot." },
 ];
 
@@ -27,12 +27,12 @@ const SAFETY = [
 export function HowItWorks() {
   return (
     <section aria-labelledby="how-title" className="home-section">
-      <SectionHeader id="how" eyebrow="How Vossie works" title="Safe, simple, on campus" align="center" />
+      <SectionHeader id="how" eyebrow="How CampusCart works" title="Safe, simple, on campus" align="center" />
       <div className="how-grid">
         <HowCard title="Buying" steps={BUYING} action={{ href: "/browse", label: "Start shopping" }} tone="grey" />
         <HowCard title="Selling" steps={SELLING} action={{ href: "/sell", label: "Start selling" }} tone="navy" />
       </div>
-      <ul aria-label="How Vossie keeps you safe" className="safety-row">
+      <ul aria-label="How CampusCart keeps you safe" className="safety-row">
         {SAFETY.map(({ Icon, label }) => (
           <li key={label}>
             <Icon className="safety-icon" />

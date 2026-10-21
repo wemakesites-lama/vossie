@@ -26,7 +26,7 @@ test.describe("the seller storefront (spec 4)", () => {
       "Casio fx-991ZA Plus calculator",
       "Gaming headset, barely used",
     ]);
-    await expect(page).toHaveTitle("Tech corner · Vossie");
+    await expect(page).toHaveTitle("Tech corner · CampusCart");
   });
 
   test("puts About beside the listings, 4 across, on desktop", async ({ page }) => {
@@ -69,10 +69,10 @@ test.describe("the seller storefront (spec 4)", () => {
   test("each seller has a share card for link previews", async ({ page, request, baseURL }) => {
     onlyAt("desktop-1440");
     await page.goto("/sellers/tech-corner");
-    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", "Tech corner · Midrand on Vossie");
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", "Tech corner · Midrand on CampusCart");
     await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute(
       "content",
-      "Tech corner, Tech at Midrand on Vossie",
+      "Tech corner, Tech at Midrand on CampusCart",
     );
     // As on the listing page: metadataBase makes the card's address absolute, so there is one og:image, and its
     // address names the site's own origin. Fetch its path from the test server.
@@ -184,7 +184,7 @@ test.describe("Saved (spec 5)", () => {
     onlyAt("phone-390", "desktop-1440");
     await page.goto("/saved");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Saved");
-    await expect(page.getByText("Saved on this device. Once Vossie is live")).toBeVisible();
+    await expect(page.getByText("Saved on this device. Once CampusCart is live")).toBeVisible();
     await expect(page.getByRole("heading", { level: 2, name: "Nothing saved yet" })).toBeVisible();
     await page.getByRole("link", { name: "Start browsing" }).click();
     await expect(page).toHaveURL(/\/browse$/);
@@ -208,7 +208,7 @@ test.describe("Saved (spec 5)", () => {
     onlyAt("desktop-1440");
     await page.goto("/saved");
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
-    await expect(page).toHaveTitle("Saved · Vossie");
+    await expect(page).toHaveTitle("Saved · CampusCart");
   });
 });
 
@@ -223,7 +223,7 @@ test.describe("collection pages (spec 7.2)", () => {
       .getByRole("link")
       .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
     expect(hrefs).toEqual(["/listings/l-014", "/listings/l-006", "/listings/l-027", "/listings/fs-003", "/listings/fs-005"]);
-    await expect(page).toHaveTitle("Res setup under R500 · Vossie");
+    await expect(page).toHaveTitle("Res setup under R500 · CampusCart");
   });
 
   test("runs the photo edge to edge on phones, and beside the text from the tablet step", async ({ page }) => {

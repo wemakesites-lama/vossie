@@ -88,7 +88,7 @@ describe("giving a role (stage J spec decisions 3, 6 and 7)", () => {
     expect(notesOf(account.id)).toEqual([
       expect.objectContaining({
         subjectId: "mentor",
-        text: "You're a Vossie mentor now. The Hub's tools and the mentor dashboard are on your account page.",
+        text: "You're a CampusCart mentor now. The Hub's tools and the mentor dashboard are on your account page.",
         href: "/account",
         readAt: null,
       }),
@@ -188,7 +188,7 @@ describe("taking a role away (stage J spec decisions 4 to 7)", () => {
     expect(notesOf("acc-mentor")).toEqual([
       expect.objectContaining({
         subjectId: "mentor",
-        text: "Your mentor role on Vossie has ended. Thank you for helping student sellers.",
+        text: "Your mentor role on CampusCart has ended. Thank you for helping student sellers.",
         href: "/account",
       }),
     ]);
@@ -204,7 +204,7 @@ describe("taking a role away (stage J spec decisions 4 to 7)", () => {
     await redirectOf(() => removeStaffRole(form({ account: "acc-mentor", role: "admin" })));
     expect(sampleStore().accounts.get("acc-mentor")?.roles).toEqual(["mentor"]);
     expect(auditRows()[0]).toMatchObject({ action: "role-removed", detail: "Admin" });
-    expect(notesOf("acc-mentor")[0]?.text).toBe("Your admin role on Vossie has ended.");
+    expect(notesOf("acc-mentor")[0]?.text).toBe("Your admin role on CampusCart has ended.");
   });
 
   it("refuses your own admin role, back on its confirm page with the words, changing nothing", async () => {

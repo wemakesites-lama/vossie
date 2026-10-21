@@ -1,4 +1,4 @@
-# Vossie go-live checklist
+# CampusCart go-live checklist
 
 Every page and view the marketplace needs before it can go live, plus the work that isn't a screen. Drawn from the app's routes, the old demo's function map (`FUNCTION-MAP.md`) and the homepage spec's "Not in this stage" list.
 
@@ -65,7 +65,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 
 | Screen or view | Route | Status |
 |---|---|---|
-| "Sell on Vossie" pitch, for people who aren't selling yet | `/sell` | **Built (sample mode)** |
+| "Sell on CampusCart" pitch, for people who aren't selling yet | `/sell` | **Built (sample mode)** |
 | Become-a-seller steps: basics, about, photo, campus and pickup points, review | `/sell/onboarding` | **Built (sample mode)**: no contact step (decision 57) |
 | Waiting-for-approval state | `/sell` | **Built (sample mode)**: the shop can prepare drafts; the Hub approves or declines it (stage G), and a declined shop sees the reason and can send it again |
 | Seller dashboard: status, the last 7 days' numbers, the badge's next step | `/sell` | **Built (sample mode)**: enquiries, replies within 48 hours and confirmed sales; no view counts |
@@ -132,10 +132,10 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] Final privacy policy, with a named Information Officer. A draft is live at `/privacy`; Eduvos's legal team reviews it.
 - [ ] Terms of use and seller guidelines. Drafts are live at `/terms` and `/seller-guidelines`; Eduvos's legal team reviews them.
 - [ ] **Claims in the drafts for Eduvos's lawyers to confirm** (plan decision 17 in `2026-10-14-info-and-system-pages.md`, and the review that followed):
-  - Eduvos is the responsible party for the personal information Vossie collects.
-  - Under-18s need a parent's or guardian's consent to use Vossie.
-  - Vossie sells no personal information and shares none for advertising.
-  - Each POPIA section 11 ground the privacy page gives for what accounts will collect: needed to run the account, consent, or Eduvos's legitimate interest (safety, supporting student businesses, running Vossie fairly).
+  - Eduvos is the responsible party for the personal information CampusCart collects.
+  - Under-18s need a parent's or guardian's consent to use CampusCart.
+  - CampusCart sells no personal information and shares none for advertising.
+  - Each POPIA section 11 ground the privacy page gives for what accounts will collect: needed to run the account, consent, or Eduvos's legitimate interest (safety, supporting student businesses, running CampusCart fairly).
   - Deleting an account removes its data straight away, and the other retention promises under "How long we keep it".
   - Hosting and section 72: the page says section 72 "generally allows" data stored abroad where the country, the company or an agreement protects it, and that Eduvos will say where it lives before launch.
   - A contact address for privacy requests, and the Information Officer's name: both are still to be named.
@@ -143,7 +143,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] The data export and deletion flows.
 - [ ] Eduvos sets how long messages, reports and notifications are kept; the privacy policy says so (messaging plan decision 27). In sample mode they last until the server restarts.
 - [ ] Where the data is hosted. The old demo ran in Ireland; sending data abroad needs adequate safeguards (section 72).
-- [ ] The privacy policy's "Vossie is still a preview" sentence comes out once accounts move to the real backend.
+- [ ] The privacy policy's "CampusCart is still a preview" sentence comes out once accounts move to the real backend.
 - [ ] Whether POPIA's right of access puts mentors' notes in the seller's data download; today the Information Officer is asked for them (staff tools plan decision 16).
 - [ ] How long the staff audit log, RSVPs and slot requests are kept.
 
@@ -155,7 +155,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] The Hub's real posts and office hours, and give the real staff their roles in `/admin/staff` (stage J).
 - [ ] Real Hub events, tips and story. The 18 posts and the Hub's two paragraphs are sample wording.
 - [ ] Real Looking For requests. The 16 requests (and the offers counts on them) are samples to remove, with their `seedOffers` (stage H).
-- [ ] Info pages say what's true today; update them as stages land (How it works' "What can I do on Vossie today?", the trust page's sample notes, the privacy page's "Your account" section). Brought up to date after stages H to J in stage K; keep updating them as stages land. The trust page's "When something is reported" is sample wording Lama kept for now.
+- [ ] Info pages say what's true today; update them as stages land (How it works' "What can I do on CampusCart today?", the trust page's sample notes, the privacy page's "Your account" section). Brought up to date after stages H to J in stage K; keep updating them as stages land. The trust page's "When something is reported" is sample wording Lama kept for now.
 - [ ] Remove every sample listing and the sample accounts (sample mode off). The development sign-in switch went in stage D.
 
 ### Production
@@ -191,7 +191,8 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] Enough sellers listed before day one, so it doesn't open empty.
 - [ ] Possibly a pilot on one campus.
 - [ ] Remove the sample accounts' exemption from the message limits with sample mode (it goes by itself, since `isSampleAccount` needs sample mode; listed so nobody keeps it on purpose).
-- [ ] Unset `VOSSIE_NOINDEX` on the live deployment and rebuild, so search engines can find Vossie (decision 68).
+- [ ] Unset `VOSSIE_NOINDEX` on the live deployment and rebuild, so search engines can find CampusCart (decision 68).
+- [ ] **The rename's second pass (decision 83),** after `backend/phases-b-c` merges: the `vossie_` cookies and storage keys, the `VOSSIE_` settings (renamed in Vercel at the same moment, or the preview loses `NOINDEX` and its sign-in key), code identifiers and comments, and a migration for the SQL's visible strings (the staff role notifications, the seed's Hub posts, the code email subject in `supabase/config.toml`).
 
 ## 7. Decisions for Lama and Eduvos
 

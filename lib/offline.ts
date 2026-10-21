@@ -14,7 +14,7 @@ export const OFFLINE_PAGE = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#15305d">
-<title>You're offline · Vossie</title>
+<title>You're offline · CampusCart</title>
 <style>
 :root{--vos-font-display:"Arial Narrow",sans-serif;--vos-font-text:ui-sans-serif,system-ui,sans-serif;--navy:#15305d;--ink:#373f41}
 *{box-sizing:border-box}
@@ -29,9 +29,9 @@ a:focus-visible{outline:2.5px solid var(--navy);outline-offset:3px}
 </head>
 <body>
 <main>
-<p class="brand">Vossie</p>
+<p class="brand">CampusCart</p>
 <h1>You're offline</h1>
-<p>Vossie needs a connection to show listings and messages. Check your data or Wi-Fi.</p>
+<p>CampusCart needs a connection to show listings and messages. Check your data or Wi-Fi.</p>
 <a href="">Try again</a>
 </main>
 </body>
@@ -76,12 +76,12 @@ export function pageHash(text: string): string {
 export function workerSource(on: boolean = WORKER_ON, page: string = OFFLINE_PAGE): string {
   const cache = JSON.stringify(OFFLINE_CACHE);
   if (!on) {
-    return `// Vossie's service worker, switched off (${WORKER_VERSION}): it removes its cache and itself.
+    return `// CampusCart's service worker, switched off (${WORKER_VERSION}): it removes its cache and itself.
 self.addEventListener("install",()=>self.skipWaiting());
 self.addEventListener("activate",e=>e.waitUntil(caches.delete(${cache}).then(()=>self.registration.unregister())));
 `;
   }
-  return `// Vossie's service worker (${WORKER_VERSION}, page ${pageHash(page)}): it keeps the offline page, and shows it when a page load fails.
+  return `// CampusCart's service worker (${WORKER_VERSION}, page ${pageHash(page)}): it keeps the offline page, and shows it when a page load fails.
 const C=${cache},P=${JSON.stringify(OFFLINE_PATH)};
 self.addEventListener("install",e=>e.waitUntil(caches.open(C).then(c=>c.add(new Request(P,{cache:"reload"}))).then(()=>self.skipWaiting())));
 self.addEventListener("activate",e=>e.waitUntil(Promise.resolve(self.registration.navigationPreload&&self.registration.navigationPreload.enable()).then(()=>self.clients.claim())));

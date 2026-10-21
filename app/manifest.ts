@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Vossie · The Eduvos student marketplace",
-    short_name: "Vossie",
+    name: "CampusCart · The Eduvos student marketplace",
+    short_name: "CampusCart",
     description: "Buy and sell textbooks, tech and services with students on your Eduvos campus.",
     start_url: "/",
     display: "standalone",

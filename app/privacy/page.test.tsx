@@ -91,14 +91,14 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     ]);
   });
 
-  it("says plainly that the saved ids travel to Vossie with each visit, and that nothing is stored on a server", () => {
+  it("says plainly that the saved ids travel to CampusCart with each visit, and that nothing is stored on a server", () => {
     render(<PrivacyPage />);
     const today = screen.getByRole("region", { name: "What this site stores today" });
-    const saved = within(today).getByText(/Your browser sends the listing ids to Vossie with each visit/);
+    const saved = within(today).getByText(/Your browser sends the listing ids to CampusCart with each visit/);
     expect(saved.tagName).toBe("LI");
     expect(saved.textContent).toBe(
       `Your saved listings, in a cookie called ${SAVED_COOKIE} that lasts up to a year. ` +
-        "Your browser sends the listing ids to Vossie with each visit so the Saved page can show them; " +
+        "Your browser sends the listing ids to CampusCart with each visit so the Saved page can show them; " +
         "nothing is stored on a server.",
     );
   });
@@ -249,7 +249,7 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     ).toBeInTheDocument();
     const keep = screen.getByRole("region", { name: "How long we keep it" });
     expect(
-      within(keep).getByText(/While Vossie is a preview, Looking For requests, follows, saved searches, messages, reports, notifications, shops, listings and photos live in the server/),
+      within(keep).getByText(/While CampusCart is a preview, Looking For requests, follows, saved searches, messages, reports, notifications, shops, listings and photos live in the server/),
     ).toBeInTheDocument();
   });
 
@@ -326,7 +326,7 @@ describe("what stages H to K changed in the policy (stage K spec 6)", () => {
       "A sign-in code is kept only as a fingerprint made with a secret key, and only until you finish signing in or the attempt runs out after 30 minutes.",
     );
     expect(screen.getByRole("region", { name: "What this site stores today" })).toHaveTextContent(
-      "Vossie's server keeps only a fingerprint of it, made with a secret key, so the code can't be read back from the server's records.",
+      "CampusCart's server keeps only a fingerprint of it, made with a secret key, so the code can't be read back from the server's records.",
     );
   });
 

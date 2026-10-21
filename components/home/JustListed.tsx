@@ -11,7 +11,7 @@ import { SectionHeader } from "./SectionHeader";
 const LIMIT = 10;
 const SEE_ALL = { href: "/browse", label: "See all", context: " new listings" };
 // Spec 7.8's quiet note. The "Saved on this device" toast says the same at the moment of saving (plan decision 13).
-const SAVE_NOTE = "Hearts save to this device for now. They'll follow your account once Vossie is live.";
+const SAVE_NOTE = "Hearts save to this device for now. They'll follow your account once CampusCart is live.";
 
 /** Just listed (spec 7.8): the newest listings at the visitor's campus, with a switch to every campus. */
 export function JustListed() {
