@@ -11,6 +11,7 @@ import { postFieldIds, staffErrors } from "@/lib/staff/errors";
 import { postForm, postPrefix } from "@/lib/staff/form-state";
 import { issueOnceToken } from "@/lib/staff/once";
 import { HUB_MANAGE_PATH, HUB_NEW_PATH } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("hub", "Write a post");
@@ -19,9 +20,11 @@ export async function generateMetadata(): Promise<Metadata> {
 /** A new Hub post (staff tools spec 2.4). */
 export default function NewPostPage() {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <NewPost />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <NewPost />
+      </Suspense>
+    </PageTransition>
   );
 }
 

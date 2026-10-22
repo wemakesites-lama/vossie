@@ -11,6 +11,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
 import { hideForm } from "@/lib/staff/form-state";
 import { ADMIN_REPORTS_PATH, hideReportedPath } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "Hide a listing or request");
@@ -26,9 +27,11 @@ export function generateStaticParams() {
  */
 export default function HideReportedPage({ params }: PageProps<"/admin/reports/[id]/hide">) {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <Hide params={params} />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <Hide params={params} />
+      </Suspense>
+    </PageTransition>
   );
 }
 

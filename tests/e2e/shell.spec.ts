@@ -91,7 +91,7 @@ test.describe("tab bar", () => {
       await expect(bar).toBeHidden();
       return;
     }
-    await expect(bar.getByRole("link")).toHaveText(["Home", "Shop", "Sell", "Saved", "Account"]);
+    await expect(bar.getByRole("link")).toHaveText(["Home", "Shop", "Sell", "Saved", "You"]);
     await expect(bar.getByRole("link", { name: "Home" })).toHaveAttribute("aria-current", "page");
     await page.mouse.wheel(0, 900);
     await expect(page.getByRole("button", { name: "Menu", exact: true })).toBeHidden();

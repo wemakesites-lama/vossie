@@ -63,7 +63,7 @@ function Tab({ href, icon, label, match, prefetch, className = "tab", describedB
 }
 
 /**
- * Account: /account when signed in, with the header icon's red badge for new notifications (messaging spec 2.9),
+ * You (/account) when signed in, with the header icon's red badge for new notifications (messaging spec 2.9),
  * which describes the tab without changing its name, as the header's does; sign-in when signed out, never the gated
  * page itself (CLAUDE.md).
  */
@@ -73,7 +73,7 @@ export function AccountTab({ signedIn, unread = 0 }: { signedIn: boolean; unread
     <Tab
       href={signedIn ? "/account" : "/login"}
       icon={<UserIcon />}
-      label="Account"
+      label="You"
       match="section"
       prefetch={false}
       describedBy={badge ? "tab-account-new" : undefined}

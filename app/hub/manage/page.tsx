@@ -10,6 +10,7 @@ import { takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { HUB_MANAGE_PATH } from "@/lib/staff/paths";
 import { isAdmin } from "@/lib/staff/roles";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("hub", "Hub posts and office hours");
@@ -18,9 +19,11 @@ export async function generateMetadata(): Promise<Metadata> {
 /** The Hub's tools (staff tools spec 3): posts and the office-hours queue. Mentors and admins only. */
 export default function HubManagePage() {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <Manage />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <Manage />
+      </Suspense>
+    </PageTransition>
   );
 }
 

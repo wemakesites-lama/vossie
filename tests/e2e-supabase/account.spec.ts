@@ -10,7 +10,7 @@ const main = (page: Page) => page.locator("main");
 const field = (page: Page, label: string) => page.getByLabel(label, { exact: true }).filter({ visible: true });
 const button = (page: Page, name: string) => main(page).getByRole("button", { name, exact: true });
 const accountIcon = (page: Page) =>
-  page.locator(".site-header, .tabbar").getByRole("link", { name: /^(Sign in|Your account|Account)$/ });
+  page.locator(".site-header, .tabbar").getByRole("link", { name: /^(Sign in|Your account|You)$/ });
 
 /** Step 1 and step 2; a new address also finishes step 3. */
 async function signIn(page: Page, email: string, { isNew = true } = {}) {

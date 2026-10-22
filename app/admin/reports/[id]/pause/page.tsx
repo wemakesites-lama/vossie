@@ -11,6 +11,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
 import { reportPauseForm } from "@/lib/staff/form-state";
 import { ADMIN_REPORTS_PATH, pauseReportedPath } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "Pause a shop");
@@ -23,9 +24,11 @@ export function generateStaticParams() {
 /** Pause the account's confirm page (staff tools spec 2.9, plan decisions 3, 5 and 18). */
 export default function PauseReportedPage({ params }: PageProps<"/admin/reports/[id]/pause">) {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <Pause params={params} />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <Pause params={params} />
+      </Suspense>
+    </PageTransition>
   );
 }
 

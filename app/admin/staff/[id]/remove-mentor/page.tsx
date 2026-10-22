@@ -11,6 +11,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors } from "@/lib/staff/errors";
 import { removeRoleForm } from "@/lib/staff/form-state";
 import { ADMIN_STAFF_PATH, removeRolePath } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "Remove a role");
@@ -24,9 +25,11 @@ export function generateStaticParams() {
 /** Remove a mentor role's confirm page (stage J spec decision 4). Someone who isn't a mentor is the 404. */
 export default function RemoveMentorPage({ params }: PageProps<"/admin/staff/[id]/remove-mentor">) {
   return (
-    <Suspense fallback={<StaffSkeleton short />}>
-      <Remove params={params} />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton short />}>
+        <Remove params={params} />
+      </Suspense>
+    </PageTransition>
   );
 }
 

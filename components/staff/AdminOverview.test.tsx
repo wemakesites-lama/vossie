@@ -8,9 +8,9 @@ describe("Overview (staff tools spec 2.3)", () => {
     const attention = screen.getByRole("region", { name: "Needs attention" });
     const items = within(attention).getAllByRole("listitem");
     expect(items.map((item) => item.textContent)).toEqual([
-      "2Sellers waiting for approvalReview sellers",
-      "1Open reportsReview reports",
-      "0Slot requests waiting for an answerAnswer slot requests",
+      "Sellers waiting for approval 2Review sellers",
+      "Open reports 1Review reports",
+      "Slot requests waiting for an answer 0Answer slot requests",
     ]);
     expect(within(items[0]).getByRole("link")).toHaveAttribute("href", "/admin/sellers");
     expect(within(items[1]).getByRole("link")).toHaveAttribute("href", "/admin/reports");

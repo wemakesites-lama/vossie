@@ -21,10 +21,10 @@ beforeEach(() => {
 
 /** The page's request-time part, run on its own: jsdom can't render an async component inside a tree. */
 async function open(slug: string): Promise<unknown> {
-  const page = MentorShopPage({ params: Promise.resolve({ slug }) } as never) as ReactElement<{
-    children: ReactElement<Record<string, unknown>>;
-  }>;
-  const shop = page.props.children;
+  type Wrapper = ReactElement<{ children: ReactElement<Record<string, unknown>> }>;
+  // PageTransition, then Suspense, then the request-time part.
+  const page = MentorShopPage({ params: Promise.resolve({ slug }) } as never) as ReactElement<{ children: Wrapper }>;
+  const shop = page.props.children.props.children;
   return (shop.type as (props: Record<string, unknown>) => Promise<unknown>)(shop.props);
 }
 

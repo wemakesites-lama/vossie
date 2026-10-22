@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronRightIcon } from "@/components/icons";
+import { StatRow, StatTile } from "@/components/kit/StatTile";
 import { cx } from "@/lib/cx";
 import { followersLine } from "@/lib/following/rules";
 import { badgeLabel } from "@/lib/format";
@@ -73,20 +74,17 @@ export function Dashboard({ shop, paused, stats, badgeLine, notice, hubPause = n
         <h2 id="sell-week-title" className="sell-section-title">
           In the last 7 days
         </h2>
-        <dl className="sell-numbers">
-          <div>
-            <dt>New enquiries</dt>
-            <dd>{week.enquiries}</dd>
+        <StatRow label="In the last 7 days">
+          <StatTile label="New enquiries" value={week.enquiries} />
+          {/* Words, not a number, so a "0" never sits beside "None due yet". */}
+          <div className="stat-tile">
+            <span className="stat-tile-label">Replied within 48 hours</span>{" "}
+            <span className="stat-tile-value" data-masked="">
+              {week.due === 0 ? "None due yet" : `${week.repliedInTime} of ${week.due}`}
+            </span>
           </div>
-          <div>
-            <dt>Replied within 48 hours</dt>
-            <dd>{week.due === 0 ? "None due yet" : `${week.repliedInTime} of ${week.due}`}</dd>
-          </div>
-          <div>
-            <dt>Sales confirmed</dt>
-            <dd>{week.salesConfirmed}</dd>
-          </div>
-        </dl>
+          <StatTile label="Sales confirmed" value={week.salesConfirmed} />
+        </StatRow>
       </section>
 
       <section aria-labelledby="sell-badge-title" className="sell-section">

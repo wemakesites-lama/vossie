@@ -21,7 +21,8 @@ describe("the dashboard (selling spec 2.8)", () => {
       ["Edit shop", "/sell/profile"],
       ["View your shop", "/sellers/tech-corner"],
     ]);
-    expect(screen.getByText("Replied within 48 hours").nextElementSibling).toHaveTextContent("None due yet");
+    const numbers = screen.getByRole("list", { name: "In the last 7 days" });
+    expect(within(numbers).getByText("Replied within 48 hours").nextElementSibling).toHaveTextContent("None due yet");
     expect(screen.getByText("Responsive")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pause my shop" })).toHaveAttribute("type", "submit");
   });

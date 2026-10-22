@@ -6,6 +6,7 @@ import { DETAILS_FORM, readFormState } from "@/lib/auth/form-state";
 import { requireAccount } from "@/lib/auth/session";
 import { getCampuses } from "@/lib/data";
 import { unreadCounts } from "@/lib/data/messages";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 /** An account page belongs to one person, so search engines leave it out (accounts spec 3.3). */
 export const metadata: Metadata = { title: "Your account", robots: { index: false } };
@@ -16,12 +17,14 @@ export const metadata: Metadata = { title: "Your account", robots: { index: fals
  */
 export default function AccountPage() {
   return (
-    <div className="page account-page">
-      <h1 className="account-title">Your account</h1>
-      <Suspense fallback={<AccountSkeleton />}>
-        <AccountContent />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="page account-page">
+        <h1 className="account-title">Your account</h1>
+        <Suspense fallback={<AccountSkeleton />}>
+          <AccountContent />
+        </Suspense>
+      </div>
+    </PageTransition>
   );
 }
 

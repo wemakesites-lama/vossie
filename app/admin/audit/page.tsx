@@ -9,6 +9,7 @@ import { parseAuditFilter } from "@/lib/staff/audit-words";
 import { takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { ADMIN_AUDIT_PATH } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "Audit log");
@@ -17,9 +18,11 @@ export async function generateMetadata(): Promise<Metadata> {
 /** The audit log (staff tools spec 2.2 and 2.3). Its filters are in the link, read inside <Suspense>. */
 export default function AdminAuditPage({ searchParams }: PageProps<"/admin/audit">) {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <Audit searchParams={searchParams} />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <Audit searchParams={searchParams} />
+      </Suspense>
+    </PageTransition>
   );
 }
 

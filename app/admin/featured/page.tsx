@@ -14,6 +14,7 @@ import { PIN_FORM, takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { ADMIN_FEATURED_PATH } from "@/lib/staff/paths";
 import { sastDate } from "@/lib/time";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "Featured");
@@ -22,9 +23,11 @@ export async function generateMetadata(): Promise<Metadata> {
 /** Featured (staff tools spec 2.3 and 2.8). */
 export default function AdminFeaturedPage() {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <Featured />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <Featured />
+      </Suspense>
+    </PageTransition>
   );
 }
 

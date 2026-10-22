@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { SellHome } from "@/components/sell/SellHome";
 import { SellSkeleton } from "@/components/sell/SellSkeleton";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export const metadata: Metadata = { title: "Sell on CampusCart", robots: { index: false } };
 
@@ -11,10 +12,12 @@ export const metadata: Metadata = { title: "Sell on CampusCart", robots: { index
  */
 export default function SellPage() {
   return (
-    <div className="page sell-page">
-      <Suspense fallback={<SellSkeleton />}>
-        <SellHome />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="page sell-page">
+        <Suspense fallback={<SellSkeleton />}>
+          <SellHome />
+        </Suspense>
+      </div>
+    </PageTransition>
   );
 }

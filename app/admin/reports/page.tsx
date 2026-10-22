@@ -8,6 +8,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { ADMIN_REPORTS_PATH } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "Reports");
@@ -16,9 +17,11 @@ export async function generateMetadata(): Promise<Metadata> {
 /** Reports (staff tools spec 2.3): open first. */
 export default function AdminReportsPage() {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <Reports />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <Reports />
+      </Suspense>
+    </PageTransition>
   );
 }
 

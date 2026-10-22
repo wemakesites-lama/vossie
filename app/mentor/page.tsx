@@ -11,6 +11,7 @@ import { takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { MENTOR_PATH } from "@/lib/staff/paths";
 import { isAdmin } from "@/lib/staff/roles";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("mentor", "Mentor dashboard");
@@ -19,9 +20,11 @@ export async function generateMetadata(): Promise<Metadata> {
 /** The mentor dashboard (staff tools spec 2.6). Mentors and admins only. */
 export default function MentorPage() {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <Dashboard />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <Dashboard />
+      </Suspense>
+    </PageTransition>
   );
 }
 

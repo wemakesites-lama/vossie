@@ -12,6 +12,7 @@ import { GIVE_ROLE_FORM, takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { issueOnceToken } from "@/lib/staff/once";
 import { ADMIN_STAFF_PATH } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "Staff accounts");
@@ -20,9 +21,11 @@ export async function generateMetadata(): Promise<Metadata> {
 /** Staff accounts (stage J spec decisions 2 and 3). Admins only. */
 export default function AdminStaffPage() {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <StaffAccounts />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <StaffAccounts />
+      </Suspense>
+    </PageTransition>
   );
 }
 

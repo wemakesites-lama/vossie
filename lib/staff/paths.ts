@@ -12,6 +12,8 @@ export const ADMIN_AUDIT_PATH = "/admin/audit";
 export const ADMIN_NUMBERS_PATH = "/admin/numbers";
 export const ADMIN_STAFF_PATH = "/admin/staff";
 export const ADMIN_HIDDEN_PATH = "/admin/hidden";
+/** The admin bar's More (role views spec 4.1): everything the five tabs don't hold. */
+export const ADMIN_MORE_PATH = "/admin/more";
 export const HUB_MANAGE_PATH = "/hub/manage";
 export const HUB_NEW_PATH = "/hub/new";
 export const MENTOR_PATH = "/mentor";

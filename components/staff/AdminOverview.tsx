@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { StatRow, StatTile } from "@/components/kit/StatTile";
 import { ADMIN_HIDDEN_PATH, ADMIN_REPORTS_PATH, ADMIN_SELLERS_PATH, HUB_MANAGE_PATH } from "@/lib/staff/paths";
 
 type AdminOverviewProps = {
@@ -50,17 +51,20 @@ export function AdminOverview({ waiting, openReports, openSlots, badgesChanged, 
         <h2 id="admin-attention-title" className="staff-section-title">
           Needs attention
         </h2>
-        <ul className="staff-counts">
+        <StatRow label="Needs attention">
           {items.map((item) => (
-            <li key={item.id} className="staff-count">
-              <p className="staff-count-number">{item.count}</p>
-              <p className="staff-count-label">{item.label}</p>
-              <Link href={item.href} prefetch={false} className="staff-row-action">
-                {item.action}
-              </Link>
-            </li>
+            <StatTile
+              key={item.id}
+              label={item.label}
+              value={item.count}
+              footer={
+                <Link href={item.href} prefetch={false} className="staff-row-action">
+                  {item.action}
+                </Link>
+              }
+            />
           ))}
-        </ul>
+        </StatRow>
       </section>
       <section aria-labelledby="admin-hidden-title" className="staff-section">
         <h2 id="admin-hidden-title" className="staff-section-title">

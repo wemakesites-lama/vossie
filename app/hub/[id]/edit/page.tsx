@@ -13,6 +13,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { postFieldIds, staffErrors } from "@/lib/staff/errors";
 import { postForm, postPrefix } from "@/lib/staff/form-state";
 import { editPostPath, HUB_MANAGE_PATH } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("hub", "Edit a post");
@@ -26,9 +27,11 @@ export function generateStaticParams() {
 /** Editing a post (staff tools spec 2.4): its author, or an admin. Anyone else, or an unknown post, gets the 404. */
 export default function EditPostPage({ params }: PageProps<"/hub/[id]/edit">) {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <EditPost params={params} />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <EditPost params={params} />
+      </Suspense>
+    </PageTransition>
   );
 }
 

@@ -24,7 +24,7 @@ const button = (page: Page, name: string) => main(page).getByRole("button", { na
 const accountIcon = (page: Page) =>
   // The header's icon from the tablet step, the tab bar's Account tab on phones (spec section 6.2). Its address says
   // who's signed in at every width: /account signed in, /login signed out.
-  page.locator(".site-header, .tabbar").getByRole("link", { name: /^(Sign in|Your account|Account)$/ });
+  page.locator(".site-header, .tabbar").getByRole("link", { name: /^(Sign in|Your account|You)$/ });
 
 /** The code sample mode shows on step 2 (spec 2.3). */
 async function shownCode(page: Page): Promise<string> {

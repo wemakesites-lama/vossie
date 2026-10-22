@@ -9,6 +9,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { ADMIN_SELLERS_PATH } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "Sellers");
@@ -17,9 +18,11 @@ export async function generateMetadata(): Promise<Metadata> {
 /** Sellers (staff tools spec 2.3): waiting for approval first. Per request, behind a wordless skeleton. */
 export default function AdminSellersPage() {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <Sellers />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <Sellers />
+      </Suspense>
+    </PageTransition>
   );
 }
 

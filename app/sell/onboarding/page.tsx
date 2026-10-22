@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Onboarding } from "@/components/sell/Onboarding";
 import { SellFormSkeleton } from "@/components/sell/SellSkeleton";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export const metadata: Metadata = { title: "Set up your shop", robots: { index: false } };
 
@@ -11,13 +12,15 @@ export const metadata: Metadata = { title: "Set up your shop", robots: { index: 
  */
 export default function OnboardingPage({ searchParams }: PageProps<"/sell/onboarding">) {
   return (
-    <div className="page sell-page">
-      <div className="sell-column">
-        <h1 className="sell-title">Set up your shop</h1>
-        <Suspense fallback={<SellFormSkeleton />}>
-          <Onboarding searchParams={searchParams} />
-        </Suspense>
+    <PageTransition>
+      <div className="page sell-page">
+        <div className="sell-column">
+          <h1 className="sell-title">Set up your shop</h1>
+          <Suspense fallback={<SellFormSkeleton />}>
+            <Onboarding searchParams={searchParams} />
+          </Suspense>
+        </div>
       </div>
-    </div>
+    </PageTransition>
   );
 }

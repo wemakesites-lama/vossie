@@ -16,6 +16,7 @@ import { issueOnceToken } from "@/lib/staff/once";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { MENTOR_PATH, mentorShopPath } from "@/lib/staff/paths";
 import { sastDate } from "@/lib/time";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("mentor", "A mentored shop");
@@ -29,9 +30,11 @@ export function generateStaticParams() {
 /** A shop's mentor page (staff tools spec 2.6): its mentor or an admin; anyone else, or a shop with none, the 404. */
 export default function MentorShopPage({ params }: PageProps<"/mentor/[slug]">) {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <Shop params={params} />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <Shop params={params} />
+      </Suspense>
+    </PageTransition>
   );
 }
 

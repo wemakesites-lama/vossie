@@ -13,6 +13,7 @@ import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
 import { dismissForm, takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { ADMIN_REPORTS_PATH, adminReportPath } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "A report");
@@ -26,9 +27,11 @@ export function generateStaticParams() {
 /** A report's page (staff tools spec 2.3). An unknown report is the 404. */
 export default function AdminReportPage({ params }: PageProps<"/admin/reports/[id]">) {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <Report params={params} />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <Report params={params} />
+      </Suspense>
+    </PageTransition>
   );
 }
 

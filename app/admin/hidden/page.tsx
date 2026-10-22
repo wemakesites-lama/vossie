@@ -9,6 +9,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { ADMIN_HIDDEN_PATH, ADMIN_REPORTS_PATH } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "Hidden listings and requests");
@@ -17,9 +18,11 @@ export async function generateMetadata(): Promise<Metadata> {
 /** Hidden listings and requests (stage J spec decision 14). Admins only; it sits under Reports in the frame. */
 export default function AdminHiddenPage() {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <Hidden />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <Hidden />
+      </Suspense>
+    </PageTransition>
   );
 }
 

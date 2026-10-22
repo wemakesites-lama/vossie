@@ -8116,38 +8116,6 @@
     color: var(--color-danger);
   }
 
-  .sell-numbers {
-    display: grid;
-    gap: 12px;
-  }
-
-  @media (min-width: 48rem) and (min-height: 30rem) {
-    .sell-numbers {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
-  .sell-numbers div {
-    display: grid;
-    align-content: start;
-    gap: 6px;
-    padding: 16px;
-    border-radius: var(--radius-card);
-    background: var(--color-panel);
-  }
-
-  .sell-numbers dt {
-    color: var(--color-muted);
-    font-size: 14px;
-  }
-
-  .sell-numbers dd {
-    color: var(--color-navy);
-    font-family: var(--vos-font-display);
-    font-size: 28px;
-    line-height: 1;
-  }
-
   .sell-badge {
     color: var(--color-navy);
     font-weight: 700;
@@ -8824,33 +8792,6 @@
 
 /* --- Staff tools: Overview and a shop's review (staff tools plan, Task 11, spec 2.3) --- */
 @layer components {
-  .staff-counts {
-    display: grid;
-    gap: 12px;
-  }
-
-  .staff-count {
-    display: grid;
-    justify-items: start;
-    gap: 6px;
-    padding: 18px;
-    border-radius: var(--radius-card);
-    background: var(--color-panel);
-  }
-
-  /* Navy on the grey panel is 11.8:1. */
-  .staff-count-number {
-    color: var(--color-navy);
-    font-family: var(--vos-font-display);
-    font-size: 40px;
-    line-height: 1;
-  }
-
-  .staff-count-label {
-    color: var(--color-ink);
-    font-weight: 600;
-  }
-
   .staff-standing {
     color: var(--color-navy);
     font-weight: 600;
@@ -8879,10 +8820,6 @@
   }
 
   @media (min-width: 48rem) and (min-height: 30rem) {
-    .staff-counts {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
     .staff-facts {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -10365,6 +10302,281 @@
 
   .feed-items li + li {
     border-top: 1px solid var(--color-line);
+  }
+
+  /* --- Section bars (role views spec 4.1) --- */
+  .section-bar {
+    display: none;
+  }
+
+  .section-tab {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    height: 56px;
+    color: var(--color-muted);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .section-tab:focus-visible {
+    outline-offset: -4px;
+  }
+
+  .section-tab-icon {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 30px;
+    border-radius: 999px;
+  }
+
+  .section-tab-icon > svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Five tabs at 360px are about 72px each: one line, cut with an ellipsis rather than wrapping. */
+  .section-tab-label {
+    max-width: 100%;
+    overflow: hidden;
+    padding-inline: 2px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .section-tab[aria-current] {
+    color: var(--color-navy);
+  }
+
+  .section-tab[aria-current] .section-tab-icon {
+    background: var(--color-pale);
+  }
+
+  .section-tab .hdr-badge {
+    top: 3px;
+    right: auto;
+    left: calc(50% + 8px);
+  }
+}
+
+/* Phones: the section bar replaces the main tab bar at the bottom. Where :has isn't supported both show, the section
+   bar above, both usable (role views spec 4.1). */
+@media not all and (min-width: 48rem) and (min-height: 30rem) {
+  .section-bar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 31;
+    display: block;
+    padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    border-top: 1px solid var(--color-line);
+    background: var(--color-white);
+  }
+
+  .section-bar ul {
+    display: grid;
+    grid-template-columns: repeat(var(--tabs), 1fr);
+    max-width: 32rem;
+    margin-inline: auto;
+  }
+
+  /* Next keeps pages you've left in the page, hidden with an inline display style (Activity:
+     node_modules/next/dist/docs/01-app/02-guides/preserving-ui-state.md), so every page-level rule names only a
+     shell that is showing, as .listing-page:not([style*="display"]) already does. */
+  body:has(.section-shell:not([style*="display"]) > .section-bar) .tabbar {
+    display: none;
+  }
+
+  body:has(:is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"]), textarea):focus)
+    .section-bar {
+    display: none;
+  }
+}
+
+/* Tablet and up: a sticky sidebar beside the page column (plan decision 1). */
+@media (min-width: 48rem) and (min-height: 30rem) {
+  .section-shell:has(.section-bar),
+  .section-shell[data-bar] {
+    display: grid;
+    grid-template-columns: 13rem minmax(0, 1fr);
+    align-items: start;
+    max-width: var(--container-page);
+    margin-inline: auto;
+  }
+
+  .section-main {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .section-bar {
+    grid-column: 1;
+    grid-row: 1;
+    position: sticky;
+    top: 88px;
+    display: block;
+    padding: 16px 8px;
+  }
+
+  .section-bar ul {
+    display: grid;
+    gap: 2px;
+  }
+
+  .section-tab {
+    flex-direction: row;
+    justify-content: start;
+    gap: 10px;
+    height: 44px;
+    padding-inline: 8px;
+    border-radius: 10px;
+    font-size: 15px;
+  }
+
+  .section-tab-icon {
+    width: 28px;
+    height: 28px;
+    background: none;
+  }
+
+  .section-tab[aria-current] {
+    background: var(--color-pale);
+  }
+
+  .section-tab[aria-current] .section-tab-icon {
+    background: none;
+  }
+
+  .section-tab .hdr-badge {
+    position: static;
+    margin-left: auto;
+  }
+}
+
+/* Inside a section the bar is the navigation: StaffFrame's pill row steps aside (plan decision 1). */
+.section-shell:has(.section-bar) .staff-nav {
+  display: none;
+}
+
+/* The slim footer on section pages (role views spec 4.1): the legal links and the campus line stay. */
+body:has(.section-shell:not([style*="display"]) > .section-bar) :is(.footer-giants, .footer-grid, .footer-wordmark) {
+  display: none;
+}
+
+/* --- Page transitions (role views spec 4.4): opacity and transform only, no blur, no size animation --- */
+::view-transition {
+  pointer-events: none;
+}
+
+/* The header and both bars never move. */
+.site-header {
+  view-transition-name: site-header;
+}
+
+.tabbar {
+  view-transition-name: main-tabbar;
+}
+
+.section-bar {
+  view-transition-name: section-bar;
+}
+
+::view-transition-group(site-header),
+::view-transition-group(main-tabbar),
+::view-transition-group(section-bar),
+::view-transition-old(site-header),
+::view-transition-new(site-header),
+::view-transition-old(main-tabbar),
+::view-transition-new(main-tabbar),
+::view-transition-old(section-bar),
+::view-transition-new(section-bar) {
+  animation: none;
+}
+
+/* The browser's own root crossfade stays off: only the typed page wrappers animate (plan decision 2). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* Typed animations exist only when motion is wanted, so reduced motion and data saver get an instant swap with no
+   !important (the motion off switches above ask that nothing else uses it on animation properties). */
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-low-data])::view-transition-old(.nav-tab) {
+    animation: 120ms var(--ease-out) both vt-fade reverse;
+  }
+
+  :root:not([data-low-data])::view-transition-new(.nav-tab) {
+    animation: 180ms var(--ease-out) 60ms both vt-fade;
+  }
+
+  :root:not([data-low-data])::view-transition-old(.nav-forward) {
+    animation:
+      140ms ease-in both vt-fade reverse,
+      200ms ease-in both vt-slide-out;
+  }
+
+  :root:not([data-low-data])::view-transition-new(.nav-forward) {
+    animation:
+      200ms var(--ease-out) 60ms both vt-fade,
+      200ms var(--ease-out) both vt-slide-in;
+  }
+}
+
+@keyframes vt-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes vt-slide-out {
+  to {
+    transform: translateX(-12px);
+  }
+}
+
+@keyframes vt-slide-in {
+  from {
+    transform: translateX(12px);
+  }
+}
+
+/* And the browser's default group animation (position and size) is off for both too. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+}
+
+:root[data-low-data]::view-transition-group(*),
+:root[data-low-data]::view-transition-old(*),
+:root[data-low-data]::view-transition-new(*) {
+  animation: none;
+}
+
+/* --- Press feedback (role views spec 4.5). .btn is left out: it has its own transform transition and :active scale. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-low-data]) :is(.section-tab, .needs-row, .list-row, .stat-tile-link, .link-segment) {
+    transition:
+      scale 100ms var(--ease-out),
+      opacity 100ms var(--ease-out);
+  }
+
+  :root:not([data-low-data]) :is(.section-tab, .needs-row, .list-row, .stat-tile-link, .link-segment):active {
+    scale: 0.98;
+    opacity: 0.85;
   }
 }
 

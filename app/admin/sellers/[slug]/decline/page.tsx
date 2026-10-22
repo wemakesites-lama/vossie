@@ -12,6 +12,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
 import { declineForm } from "@/lib/staff/form-state";
 import { ADMIN_SELLERS_PATH, declineSellerPath } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "Decline a shop");
@@ -24,9 +25,11 @@ export function generateStaticParams() {
 /** Decline's confirm page (staff tools spec 2.9, plan decision 18). */
 export default function DeclineSellerPage({ params }: PageProps<"/admin/sellers/[slug]/decline">) {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <Decline params={params} />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <Decline params={params} />
+      </Suspense>
+    </PageTransition>
   );
 }
 

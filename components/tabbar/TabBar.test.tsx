@@ -26,10 +26,10 @@ function renderBar(account = <AccountTab signedIn={false} />) {
 }
 
 describe("the phone tab bar (spec section 6.2)", () => {
-  it("has Home, Shop, Sell, Saved and Account, in that order, each with a visible label", () => {
+  it("has Home, Shop, Sell, Saved and You, in that order, each with a visible label", () => {
     const bar = renderBar();
     const links = within(bar).getAllByRole("link");
-    expect(links.map((link) => link.textContent)).toEqual(["Home", "Shop", "Sell", "Saved", "Account"]);
+    expect(links.map((link) => link.textContent)).toEqual(["Home", "Shop", "Sell", "Saved", "You"]);
     expect(links.map((link) => link.getAttribute("href"))).toEqual(["/", "/browse", "/sell", "/saved", "/login"]);
   });
 
@@ -63,7 +63,7 @@ describe("the phone tab bar (spec section 6.2)", () => {
     viewer.account = { id: "acc-student" };
     notifications.count = 3;
     const bar = renderBar(await TabAccount());
-    const account = within(bar).getByRole("link", { name: "Account" });
+    const account = within(bar).getByRole("link", { name: "You" });
     expect(account).toHaveAttribute("href", "/account");
     expect(account).toHaveAccessibleDescription("3 new notifications");
     expect(account.querySelector(".hdr-badge")).toHaveClass("hdr-badge-alert");
@@ -73,9 +73,9 @@ describe("the phone tab bar (spec section 6.2)", () => {
     viewer.account = { id: "acc-student" };
     notifications.failing = true;
     const { unmount } = render(await TabAccount());
-    expect(screen.getByRole("link", { name: "Account" })).toHaveAttribute("href", "/account");
+    expect(screen.getByRole("link", { name: "You" })).toHaveAttribute("href", "/account");
     unmount();
     render(<AccountTab signedIn={false} unread={4} />);
-    expect(screen.getByRole("link", { name: "Account" }).querySelector(".hdr-badge")).toBeNull();
+    expect(screen.getByRole("link", { name: "You" }).querySelector(".hdr-badge")).toBeNull();
   });
 });

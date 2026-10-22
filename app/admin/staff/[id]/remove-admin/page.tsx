@@ -11,6 +11,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors } from "@/lib/staff/errors";
 import { removeRoleForm } from "@/lib/staff/form-state";
 import { ADMIN_STAFF_PATH, removeRolePath } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "Remove a role");
@@ -24,9 +25,11 @@ export function generateStaticParams() {
 /** Remove an admin role's confirm page (stage J spec decisions 4 and 5). Someone who isn't an admin is the 404; your own admin role shows the refusal and no button. */
 export default function RemoveAdminPage({ params }: PageProps<"/admin/staff/[id]/remove-admin">) {
   return (
-    <Suspense fallback={<StaffSkeleton short />}>
-      <Remove params={params} />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton short />}>
+        <Remove params={params} />
+      </Suspense>
+    </PageTransition>
   );
 }
 

@@ -8,6 +8,7 @@ import { getHidden } from "@/lib/data/staff-reports";
 import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { ADMIN_REPORTS_PATH, showRequestPath } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "Show again");
@@ -21,9 +22,11 @@ export function generateStaticParams() {
 /** Show a hidden request again: its confirm page (stage J spec decision 14). One that isn't hidden is the 404. */
 export default function ShowRequestPage({ params }: PageProps<"/admin/hidden/requests/[id]">) {
   return (
-    <Suspense fallback={<StaffSkeleton short />}>
-      <Show params={params} />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton short />}>
+        <Show params={params} />
+      </Suspense>
+    </PageTransition>
   );
 }
 

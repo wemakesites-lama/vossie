@@ -13,6 +13,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { ADMIN_SELLERS_PATH, adminSellerPath } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "Review a shop");
@@ -26,9 +27,11 @@ export function generateStaticParams() {
 /** A shop's review page (staff tools spec 2.3). An unknown shop is the 404. */
 export default function AdminSellerPage({ params }: PageProps<"/admin/sellers/[slug]">) {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <SellerReview params={params} />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <SellerReview params={params} />
+      </Suspense>
+    </PageTransition>
   );
 }
 

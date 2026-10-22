@@ -35,7 +35,7 @@ const main = (page: Page) => page.locator("main");
 const field = (page: Page, label: string) => page.getByLabel(label, { exact: true }).filter({ visible: true });
 const button = (page: Page, name: string) => main(page).getByRole("button", { name, exact: true });
 const accountIcon = (page: Page) =>
-  page.locator(".site-header, .tabbar").getByRole("link", { name: /^(Sign in|Your account|Account)$/ });
+  page.locator(".site-header, .tabbar").getByRole("link", { name: /^(Sign in|Your account|You)$/ });
 
 /** Waits for the header's buttons to be hydrated after a full page load, so a click on the menu isn't lost. */
 async function hydrated(page: Page) {

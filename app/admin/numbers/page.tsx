@@ -12,6 +12,7 @@ import { takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { parseNumbersCampus, protectCounts } from "@/lib/staff/numbers";
 import { ADMIN_NUMBERS_PATH } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "Numbers");
@@ -20,9 +21,11 @@ export async function generateMetadata(): Promise<Metadata> {
 /** The admin's numbers (stage J spec decisions 9 to 13). Admins only, in G's shape: the gate runs inside <Suspense>. */
 export default function AdminNumbersPage({ searchParams }: PageProps<"/admin/numbers">) {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <Numbers searchParams={searchParams} />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <Numbers searchParams={searchParams} />
+      </Suspense>
+    </PageTransition>
   );
 }
 

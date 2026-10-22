@@ -12,6 +12,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { ADMIN_PATH } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 /** "Admin console" for admins, "Page not found" for everyone else (plan decision 1). */
 export async function generateMetadata(): Promise<Metadata> {
@@ -21,9 +22,11 @@ export async function generateMetadata(): Promise<Metadata> {
 /** Overview (staff tools spec 2.3). The static shell is a wordless skeleton; everything else needs the session. */
 export default function AdminPage() {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <Overview />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <Overview />
+      </Suspense>
+    </PageTransition>
   );
 }
 

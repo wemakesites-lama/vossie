@@ -11,6 +11,7 @@ import { staffErrors } from "@/lib/staff/errors";
 import { pointAddForm, pointRenameForm, takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { ADMIN_POINTS_PATH } from "@/lib/staff/paths";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "Pickup points");
@@ -19,9 +20,11 @@ export async function generateMetadata(): Promise<Metadata> {
 /** Pickup points (staff tools spec 2.3, plan decision 10). */
 export default function AdminPickupPointsPage() {
   return (
-    <Suspense fallback={<StaffSkeleton />}>
-      <PickupPoints />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<StaffSkeleton />}>
+        <PickupPoints />
+      </Suspense>
+    </PageTransition>
   );
 }
 

@@ -41,7 +41,7 @@ test("the main controls are reachable with the keyboard", async ({ page }) => {
     "Skip to content",
     "Menu",
     "CampusCart home",
-    phone ? "Account" : "Sign in",
+    phone ? "You" : "Sign in",
     "Shop your campus",
     "Start selling",
     "Get updates",

@@ -26,7 +26,7 @@ export const button = (page: Page, name: string) =>
 export const accountIcon = (page: Page) =>
   // The header's icon from the tablet step, the tab bar's Account tab on phones (spec section 6.2). Its address says
   // who's signed in at every width: /account signed in, /login signed out.
-  page.locator(".site-header, .tabbar").getByRole("link", { name: /^(Sign in|Your account|Account)$/ });
+  page.locator(".site-header, .tabbar").getByRole("link", { name: /^(Sign in|Your account|You)$/ });
 
 /** A status pill on the page that's showing. */
 export const statusPill = (page: Page, label: string) =>
