@@ -100,12 +100,19 @@ export async function authClient(): Promise<AuthClient> {
         global,
       });
       const link = await admin.auth.admin.generateLink({ type: "magiclink", email });
-      if (link.error) return refusal(link.error);
+      if (link.error) {
+        // The step and the error's kind only, never its message or the address.
+        console.error(`[vossie] demo sign-in: generateLink refused (${link.error.name}, ${link.error.status})`);
+        return refusal(link.error);
+      }
       const { data, error } = await (await cookieClient()).auth.verifyOtp({
         token_hash: link.data.properties.hashed_token,
         type: "magiclink",
       });
-      if (error) return refusal(error);
+      if (error) {
+        console.error(`[vossie] demo sign-in: verifyOtp refused (${error.name}, ${error.status})`);
+        return refusal(error);
+      }
       if (!data.user) return { ok: false, code: "no_user", status: 500 };
       return { ok: true, userId: data.user.id };
     },
