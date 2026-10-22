@@ -987,8 +987,26 @@ Review notes that were deliberately not acted on:
   - N1's sidebar shift on a slow network from the tablet step (fix in N1's shell: reserve the column before the bar arrives), and the signed-out `/sell` font shift;
   - no screenshots this stage: look at `/sell` (Tech corner, and a new shop), Your listings and a selling thread at a phone and a desktop width; the team brief's seller screenshot can be retaken now.
 
+## 2026-10-23: Role views N3 built (the admin's Today)
+
+**Built.** `/admin` is Today: "N waiting · oldest X days", then Waiting oldest first (shops to approve, open reports, slot requests, then Hidden by the Hub, which isn't counted as waiting), each row opening its oldest item with an age chip (warning after 48 hours) and "All clear" at zero; Last week's three tiles against the week before and listings by campus as bars, only through `protectCounts` (a masked figure reads Hidden or Under 5, never 0); the trust badges last. Each card fails on its own. Shop and report pages lead on to the next waiting shop or open report. Shops, Reports and Hidden filter by campus with link chips (an unknown campus shows all). The numbers page is called Last week and draws each measure by campus. Staff lists people before the form. One set of names: Today, Shops, Hidden, Last week; "Hub console" as the eyebrow (a mentor sees "Hub tools" on the Hub's pages). In the admin bar, More is current on the pages it holds. `listBookings` lists open requests oldest first on both backends, and a report carries its campus.
+
+**Where the build differed from the plan.** Decision 8 reversed (More current through `NavLink`'s `also`, for screen readers too); "Hub tools" for mentors; e2e trimmed to behaviour, no screenshots; Next open report checked in staff-writes (the seed has no reports); Reports and Hidden use the short skeleton; three CSS fixes the e2e run found (the chips widened the whole page on phones, wrapped differently once the fonts swapped in at 1440, and the footer could rise into a phone's first screen on a slow network); N2's skeleton test now waits for the waiting page. Details in the N3 plan's "Changes made during the build".
+
+**Checks.** Lint and types clean. Unit: 3,079 tests; on a machine under heavy load 13 files timed out, and all 13 pass run again. E2E (staff, staff-checks, role-views, role-views-admin, a11y, cls, performance at 360, 390, 768, 1024 and 1440): 757 passed, 2 failed, of which N2's skeleton race is fixed and passes, and the signed-out /sell pitch at 390 (0.0598) predates N1. Write projects (staff-writes, staff-accounts-writes, housekeeping-writes): 40 passed. Today's body 3.4 KB (390) and 4.0 KB (1440). Layout shift 0.0333 or less everywhere measured (Today 0.0007; Reports and Hidden 0.0202 or less; 375x667 0.0333 or less; slow network 0.0012 or less). JS: every page +25 B on N2 (NavLink `also`), the largest 152,372 B, inside 150 KB.
+
+**Open points for Lama.**
+- Plan decisions 2 (Hidden's row: last, only when something is hidden, not counted), 6 ("All numbers" as the link), 7 (the eyebrow; mentors see "Hub tools") and 8 (More current on the pages it holds).
+- The 48-hour warning threshold.
+- The sample words on Today and the empty states.
+- The campus chips now scroll sideways at every size (14 chips) rather than wrapping from the tablet step.
+- Next.js 16.4.0's security notice at build time: an upgrade is waiting for your go-ahead.
+- No N3 screenshots were taken (Lama's call); `SCREENSHOTS=1` can make them later.
+
+**Next.** N4, the mentor's caseload, can be planned.
+
 ## Next
-- **Role views: N3, the admin Today, is next** (`docs/superpowers/plans/` has N3 to N5). N1 (the kit) and N2 (the seller home) are built (above).
+- **Role views: N4, the mentor caseload, is next** (`docs/superpowers/plans/` has N4 and N5). N1 (the kit), N2 (the seller home) and N3 (the admin's Today) are built (above).
 - **Every planned stage (A to M) is built in sample mode** and merged into `main`. The four phone e2e failures that predated stage L are fixed (`d13321b`). The full device suite last ran before stage M: rerun it once before go-live.
 - **The Supabase backend is finished, merged into `main` and pushed** (above), with the CampusCart rename: `main` and `origin/main` are at `88ba438`.
 - **Going live** (submission: vossie-pi.vercel.app on the "Vossie Market" project):
