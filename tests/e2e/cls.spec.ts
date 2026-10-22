@@ -128,6 +128,9 @@ const SLOW_PAGES: ReadonlyArray<
   ["inbox page (buying)", "/messages", "Student, Midrand"],
   ["inbox page (selling)", "/messages?tab=selling", "Seller, Tech corner"],
   ["thread page", "/messages/conv-s1", "Seller, Tech corner"],
+  // Role views N2: the seller home's cards stream in under a short skeleton, on a screen-tall page (plan decision 15).
+  ["seller home", "/sell", "Seller, Tech corner"],
+  ["Your listings", "/sell/listings", "Seller, Tech corner"],
   ["notifications page", "/notifications", "Seller, Tech corner"],
   ["request form", "/looking-for/new", "Student, Midrand"],
   ["Your requests", "/account/requests", "Student, Midrand"],
@@ -143,6 +146,11 @@ const SLOW_PAGES: ReadonlyArray<
   ["Saved page's Searches tab (signed out)", "/saved?tab=searches"],
 ];
 
+// From the tablet step a section's sidebar column appears when its bar streams in, after the page on a slow network:
+// 0.18 on /sell and 0.39 on /admin at 1440, the same on N1's build (426e8da), so it predates N2. An open point for
+// Lama (role views N2 plan, "Changes made during the build"); these rows are expected to fail at 1440 until it's fixed.
+const SIDEBAR_ARRIVES_LATE = new Set(["seller home", "Your listings"]);
+
 for (const [name, path, signIn, cookies] of SLOW_PAGES) {
   test(`the ${name} holds still on a slow network, after another page (CLS 0.05 or less, spec 11)`, async ({
     page,
@@ -150,6 +158,10 @@ for (const [name, path, signIn, cookies] of SLOW_PAGES) {
     baseURL,
   }) => {
     test.skip(!["phone-390", "desktop-1440"].includes(test.info().project.name), "Measured at 390 and 1440");
+    test.fail(
+      test.info().project.name === "desktop-1440" && SIDEBAR_ARRIVES_LATE.has(name),
+      "The sidebar column appears when the bar streams in (N1)",
+    );
     test.slow();
     if (cookies) {
       await context.addCookies(Object.entries(cookies).map(([cookie, value]) => ({ name: cookie, value, url: baseURL! })));

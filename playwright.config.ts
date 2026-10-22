@@ -47,6 +47,20 @@ const HARDENING_WRITES = /hardening-writes\.spec\.ts$/;
 // Stage L's tests give the sample seller the Admin role for their length, and post requests as a fresh account, so
 // they run after every other test (stage L plan decision 26).
 const HOUSEKEEPING_WRITES = /housekeeping-writes\.spec\.ts$/;
+// Role views' writes (a new shop approved, a buyer's first message, a listing marked sold from its thread) run after
+// every other test, so no count another test reads moves under them (role views spec 9; N2 plan, Task 14).
+const ROLE_VIEWS_WRITES = /role-views-writes\.spec\.ts$/;
+// Every write project's files: the device projects leave them all out.
+const WRITES = [
+  SELLING_WRITES,
+  STAFF_WRITES,
+  COMMUNITY_WRITES,
+  ALERTS_WRITES,
+  STAFF_ACCOUNTS,
+  HARDENING_WRITES,
+  HOUSEKEEPING_WRITES,
+  ROLE_VIEWS_WRITES,
+];
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -74,15 +88,15 @@ export default defineConfig({
     timeout: 240_000,
   },
   projects: [
-    { name: "phone-360", use: phone(360, 780), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES, STAFF_ACCOUNTS, HARDENING_WRITES, HOUSEKEEPING_WRITES] },
-    { name: "phone-390", use: phone(390, 844), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES, STAFF_ACCOUNTS, HARDENING_WRITES, HOUSEKEEPING_WRITES] },
+    { name: "phone-360", use: phone(360, 780), testIgnore: WRITES },
+    { name: "phone-390", use: phone(390, 844), testIgnore: WRITES },
     {
       name: "tablet-768",
       use: { ...desktop(768, 1024), screen: { width: 768, height: 1024 }, hasTouch: true },
-      testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES, STAFF_ACCOUNTS, HARDENING_WRITES, HOUSEKEEPING_WRITES],
+      testIgnore: WRITES,
     },
-    { name: "laptop-1024", use: desktop(1024, 768), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES, STAFF_ACCOUNTS, HARDENING_WRITES, HOUSEKEEPING_WRITES] },
-    { name: "desktop-1440", use: desktop(1440, 900), testIgnore: [SELLING_WRITES, STAFF_WRITES, COMMUNITY_WRITES, ALERTS_WRITES, STAFF_ACCOUNTS, HARDENING_WRITES, HOUSEKEEPING_WRITES] },
+    { name: "laptop-1024", use: desktop(1024, 768), testIgnore: WRITES },
+    { name: "desktop-1440", use: desktop(1440, 900), testIgnore: WRITES },
     // After the five above (selling plan decision 25). Run it alone with --project=selling-writes --no-deps.
     { name: "selling-writes", use: phone(390, 844), testMatch: SELLING_WRITES, dependencies: DEVICE_PROJECTS },
     // After everything else (staff tools plan decision 21). Run it alone with --project=staff-writes --no-deps.
@@ -133,6 +147,22 @@ export default defineConfig({
         "alerts-writes",
         "staff-accounts-writes",
         "hardening-writes",
+      ],
+    },
+    // After everything else (role views spec 9). Run it alone with --project=role-views-writes --no-deps.
+    {
+      name: "role-views-writes",
+      use: phone(390, 844),
+      testMatch: ROLE_VIEWS_WRITES,
+      dependencies: [
+        ...DEVICE_PROJECTS,
+        "selling-writes",
+        "staff-writes",
+        "community-writes",
+        "alerts-writes",
+        "staff-accounts-writes",
+        "hardening-writes",
+        "housekeeping-writes",
       ],
     },
   ],

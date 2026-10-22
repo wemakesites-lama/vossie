@@ -151,7 +151,7 @@ test("an admin pauses the shop behind a report: its owner sees why with no Resum
 
   // The owner sees why and has no way to resume; buyers get the 404 where the shop was.
   await owner.goto("/sell");
-  await expect(main(owner).getByText("Paused by the Hub: buyers can't see your listings").filter({ visible: true })).toBeVisible();
+  await expect(main(owner).getByText("Paused by the Hub", { exact: true }).filter({ visible: true })).toBeVisible();
   await expect(main(owner).getByText("Asked buyers for a deposit.").filter({ visible: true })).toBeVisible();
   await expect(button(owner, "Resume my shop")).toHaveCount(0);
   await expect(button(owner, "Pause my shop")).toHaveCount(0);

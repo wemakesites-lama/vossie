@@ -92,7 +92,7 @@ test.describe("sellers (staff tools spec 2.3, plan decision 2)", () => {
 
     await page.goto("/sell");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(shopName);
-    await expect(main(page).getByText("Your shop is live").filter({ visible: true })).toBeVisible();
+    await expect(main(page).getByText("Live", { exact: true }).filter({ visible: true })).toBeVisible();
     await page.goto("/notifications");
     await expect(
       main(page).getByText(`The Hub approved ${shopName}. You can publish your listings now.`).filter({ visible: true }),

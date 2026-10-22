@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seriousIssues } from "./helpers/axe";
 import { main, onlyAt, project, signInAsSample } from "./helpers/messaging";
+import { expectStill, holdFonts, recordShifts } from "./helpers/shifts";
 
 // Role views N1 (plan Task 16): the section bars, the sidebar, the slim footer, axe and motion. Only the checks that
 // guard behaviour (Lama, 2026-10-22: no redundant tests).
@@ -123,5 +124,96 @@ test.describe("motion (role views spec 4.4 and 4.5)", () => {
     await signInAsSample(page, "Admin", "/admin");
     await page.evaluate(() => document.documentElement.setAttribute("data-low-data", ""));
     expect(await tabAnimation(page)).toBe("none");
+  });
+});
+
+// N1's `/sell` main HTML for Tech corner's seller (outerHTML length at 426e8da, measured for the N2 plan's Task 14): the
+// home may add at most about 8 KB (spec 9).
+const N1_SELL_MAIN_HTML = 5861;
+
+// Role views N2 (plan Task 14): the seller home's read-only checks. Its writes (Needs you's rows, the bar's badge, Mark
+// as sold from a thread) are in role-views-writes.spec.ts; axe on the home is above, on Your listings in a11y.spec.ts.
+test.describe("the seller home (role views N2, spec 7.1)", () => {
+  test("Your listings' four segments stay on one line at 360px, and its targets are 44px or more", async ({ page }) => {
+    onlyAt("phone-360");
+    await signInAsSample(page, "Seller, Tech corner", "/sell/listings");
+    const nav = main(page).getByRole("navigation", { name: "Listings by state" });
+    const segments = nav.getByRole("link");
+    await expect(segments).toHaveCount(4);
+    const tops = await segments.evaluateAll((links) => links.map((link) => Math.round(link.getBoundingClientRect().top)));
+    expect(new Set(tops).size, "one line").toBe(1);
+    expect(
+      await nav.evaluate(
+        (element) =>
+          element.scrollWidth <= element.clientWidth &&
+          [...element.querySelectorAll("a")].every((link) => link.scrollWidth <= link.clientWidth),
+      ),
+      "nothing cut off or scrolled",
+    ).toBe(true);
+    const heights = await main(page)
+      .locator(".link-segment, .list-row, .sell-action, .mylist-delete")
+      .evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
+    expect(heights.length).toBeGreaterThan(0);
+    expect(Math.min(...heights)).toBeGreaterThanOrEqual(44);
+  });
+
+  test("the Delete page leads back to Your listings, and the owner's storefront back to the shop", async ({ page }) => {
+    onlyAt("phone-390", "desktop-1440");
+    await signInAsSample(page, "Seller, Tech corner", "/sell/listings/l-001/delete");
+    await expect(main(page).getByRole("link", { name: "Your listings" })).toHaveAttribute("href", "/sell/listings");
+    await expect(page).toHaveTitle("Delete your listing · CampusCart");
+    await page.goto("/sellers/tech-corner");
+    await expect(page.getByRole("link", { name: "Back to your shop" }).filter({ visible: true })).toHaveAttribute(
+      "href",
+      "/sell",
+    );
+    await page.goto("/sell/listings");
+    await expect(page).toHaveTitle("Your listings · CampusCart");
+  });
+
+  test("the skeleton is shorter than the pitch and the waiting page", async ({ page }) => {
+    onlyAt("phone-390", "desktop-1440");
+    const skeletonAndPage = () =>
+      page.evaluate(() => {
+        const column = document.querySelector<HTMLElement>("main .sell-page > .sell-column")!;
+        const box = document.createElement("div");
+        box.className = "sell-column sell-home";
+        box.innerHTML = '<span class="skeleton sell-skeleton-head"></span><span class="skeleton sell-skeleton-body"></span>';
+        column.parentElement!.append(box);
+        const sizes = [box.getBoundingClientRect().height, column.getBoundingClientRect().height];
+        box.remove();
+        return sizes;
+      });
+    await page.goto("/sell");
+    await expect(main(page).getByRole("link", { name: "Start selling" })).toBeVisible();
+    const [skeleton, pitch] = await skeletonAndPage();
+    expect(skeleton).toBeLessThan(pitch);
+    await signInAsSample(page, "Seller waiting for approval", "/sell");
+    const [again, waiting] = await skeletonAndPage();
+    expect(again).toBeLessThan(waiting);
+  });
+
+  for (const [name, path] of [
+    ["seller home", "/sell"],
+    ["Your listings", "/sell/listings"],
+  ] as const) {
+    test(`the ${name} holds still on a short phone (375x667)`, async ({ page }) => {
+      onlyAt("phone-390");
+      await page.setViewportSize({ width: 375, height: 667 });
+      await signInAsSample(page, "Seller, Tech corner", "/account");
+      await holdFonts(page);
+      await recordShifts(page);
+      await expectStill(page, `${name} at 375x667`, path);
+    });
+  }
+
+  test("the home adds under about 8 KB of HTML (spec 9)", async ({ page }) => {
+    onlyAt("phone-390");
+    await signInAsSample(page, "Seller, Tech corner", "/sell");
+    await expect(main(page).getByRole("region", { name: "Your listings" })).toBeVisible();
+    await page.waitForLoadState("networkidle");
+    const size = await main(page).evaluate((element) => element.outerHTML.length);
+    console.log(`seller home main HTML: ${size} (N1: ${N1_SELL_MAIN_HTML}, +${size - N1_SELL_MAIN_HTML})`);
+    expect(size).toBeLessThanOrEqual(N1_SELL_MAIN_HTML + 8 * 1024);
   });
 });

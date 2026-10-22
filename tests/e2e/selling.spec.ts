@@ -121,12 +121,12 @@ test.describe("selling (selling spec section 3)", () => {
     onlyAt(...BOTH);
     await signInAsSample(page, "Seller, Tech corner", "/sell");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tech corner");
-    await expect(main(page).getByText("Your shop is live")).toBeVisible();
+    await expect(main(page).getByText("Live", { exact: true })).toBeVisible();
     // Other tests message Tech corner at the same time, so the numbers themselves aren't checked.
     await expect(main(page).getByRole("region", { name: "In the last 7 days" })).toBeVisible();
     // Its badge is worked out from its conversations, which other tests add to (staff tools approval 7).
     await expect(main(page).getByRole("region", { name: "Your badge" })).toContainText(/New seller|Responsive|Trusted/);
-    await main(page).getByRole("link", { name: "My listings" }).click();
+    await main(page).getByRole("link", { name: "Manage listings" }).click();
     await expect(page).toHaveURL(/\/sell\/listings$/);
     await expect(main(page).getByRole("link", { name: "Edit Casio fx-991ZA Plus calculator" })).toBeVisible();
   });

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seriousIssues } from "./helpers/axe";
-import { newBuyer, reply, sellerPage, sendFirstMessage, signUp, signUpHere } from "./helpers/messaging";
+import { newBuyer, reply, sellerPage, sendFirstMessage, settled, signUp, signUpHere } from "./helpers/messaging";
 import { newSeller } from "./helpers/selling";
 
 test.use({ reducedMotion: "reduce" });
@@ -242,6 +242,8 @@ async function signInAsSample(page: Page, label = "Student, Midrand") {
   await page.goto("/login");
   await page.locator("main").getByRole("button", { name: label, exact: true }).click();
   await expect(page).toHaveURL(/\/account$/);
+  // Signing in ends with a full page load (stage K): wait for the header to hydrate, so a click on Menu isn't lost.
+  await settled(page);
 }
 
 /** Step 1 with a new address, ending on step 2. */
@@ -493,15 +495,15 @@ test("the dashboard, my listings in each tab and delete's confirmation", async (
   // empty ones.
   await page.goto("/sell/listings");
   await expect(page.getByRole("navigation", { name: "Listings by state" })).toBeVisible();
-  await expect(page.locator("main .sell-item").filter({ visible: true })).toHaveCount(2);
+  await expect(page.locator("main .list-row").filter({ visible: true })).toHaveCount(2);
   expect(await seriousIssues(page)).toEqual([]);
   for (const [tab, empty] of [
-    ["paused", "Nothing paused."],
-    ["sold", "Nothing sold yet."],
-    ["drafts", "No drafts."],
+    ["paused", "Nothing paused"],
+    ["sold", "Nothing sold yet"],
+    ["drafts", "No drafts"],
   ]) {
     await page.goto(`/sell/listings?tab=${tab}`);
-    await expect(page.getByText(empty, { exact: true })).toBeVisible();
+    await expect(page.locator("main").getByRole("heading", { name: empty })).toBeVisible();
     expect(await seriousIssues(page), `the ${tab} tab`).toEqual([]);
   }
   await page.goto("/sell/listings/l-001/delete");
@@ -706,7 +708,7 @@ test("the dashboard's followers line, and the account page's Your requests row (
   await expect(page.locator("main").getByRole("link", { name: /^Your requests/ })).toBeVisible();
   await expectAccessible(page);
   await page.goto("/sell");
-  await expect(page.locator("main").getByText(/(follows|follow) your shop/).filter({ visible: true })).toBeVisible();
+  await expect(page.locator("main").getByText(/^(\d+ followers?|No followers yet)$/).filter({ visible: true })).toBeVisible();
   await expectAccessible(page);
 });
 
