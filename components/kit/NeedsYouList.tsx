@@ -45,6 +45,8 @@ export function NeedsYouList({ label, items, allClear }: NeedsYouListProps) {
             </span>
             {item.age && (
               <span className="needs-age" data-tone={item.age.tone}>
+                {/* "26h" alone is unclear when read aloud. */}
+                <span className="sr-only">oldest waiting </span>
                 {item.age.label}
               </span>
             )}

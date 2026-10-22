@@ -115,7 +115,7 @@ describe("/sell (selling spec section 3)", () => {
     const week = within(screen.getByRole("list", { name: "In the last 7 days" })).getAllByRole("listitem");
     expect(week[0]).toHaveTextContent(/^Enquiries\s*2/);
     expect(week[1]).toHaveTextContent(/^Sales\s*0/);
-    expect(screen.getByText("2 enquiries in the last 7 days, none today.")).toBeInTheDocument();
+    expect(screen.getByText("2 enquiries across these 7 days, none today.")).toBeInTheDocument();
     expect(screen.getByText("1 more enquiry and 5 more confirmed sales for Trusted.")).toBeInTheDocument();
   });
 

@@ -101,8 +101,8 @@ describe("the setup checklist (role views spec 7.1, N2 plan decision 6)", () => 
 describe("the home's words", () => {
   it("labels the days by SAST date and sums the week", () => {
     expect(dayLabels(3, NOW)).toEqual(["12 Oct", "13 Oct", "14 Oct"]);
-    expect(enquirySummary([0, 0, 0, 0, 1, 1, 0])).toBe("2 enquiries in the last 7 days, none today.");
-    expect(enquirySummary([null, null, 0, 0, 0, 0, 1])).toBe("1 enquiry in the last 7 days, 1 today.");
-    expect(enquirySummary([0, 0, 0])).toBe("No enquiries in the last 3 days yet.");
+    expect(enquirySummary([0, 0, 0, 0, 1, 1, 0])).toBe("2 enquiries across these 7 days, none today.");
+    expect(enquirySummary([null, null, 0, 0, 0, 0, 1])).toBe("1 enquiry across these 7 days, 1 today.");
+    expect(enquirySummary([0, 0, 0])).toBe("No enquiries in these 3 days yet.");
   });
 });

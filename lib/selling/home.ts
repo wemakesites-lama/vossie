@@ -125,7 +125,7 @@ export function dayLabels(days: number, now: Date): string[] {
 /** The chart's takeaway (spec 5.3): the window's total and today's, in words. */
 export function enquirySummary(points: readonly (number | null)[]): string {
   const total = points.reduce<number>((sum, point) => sum + (point ?? 0), 0);
-  if (total === 0) return `No enquiries in the last ${points.length} days yet.`;
+  if (total === 0) return `No enquiries in these ${points.length} days yet.`;
   const today = points.at(-1) ?? 0;
-  return `${total} ${plural(total, "enquiry", "enquiries")} in the last ${points.length} days, ${today === 0 ? "none" : today} today.`;
+  return `${total} ${plural(total, "enquiry", "enquiries")} across these ${points.length} days, ${today === 0 ? "none" : today} today.`;
 }
