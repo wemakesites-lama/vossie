@@ -35,7 +35,10 @@ export function Sparkline({ points, labels, label, summary }: SparklineProps) {
             <polyline key={segment} points={segment} className="sparkline-line" />
           ))}
           {line.gapEdges.map((edge) => (
-            <circle key={`${edge.x}-${edge.y}`} cx={edge.x} cy={edge.y} r={2.5} className="sparkline-gap" />
+            <circle key={`gap-${edge.x}`} cx={edge.x} cy={edge.y} r={2.5} className="sparkline-gap" />
+          ))}
+          {line.isolated.map((point) => (
+            <circle key={`one-${point.x}`} cx={point.x} cy={point.y} r={2.5} className="sparkline-dot" />
           ))}
           {line.last && <circle cx={line.last.x} cy={line.last.y} r={3} className="sparkline-dot" />}
         </svg>

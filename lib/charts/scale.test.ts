@@ -52,3 +52,12 @@ describe("sparkline", () => {
     expect(sparkline([3, 5, null], { width: 100, height: 20, pad: 2 }).last).toBeNull();
   });
 });
+
+describe("sparkline, a known value between two gaps", () => {
+  it("draws it as one filled dot, not a line or a gap circle", () => {
+    const line = sparkline([5, null, 7, null, 9], { width: 100, height: 20, pad: 2 });
+    expect(line.segments).toEqual([]);
+    expect(line.gapEdges).toEqual([]);
+    expect(line.isolated.map((point) => point.x)).toEqual([2, 50, 98]);
+  });
+});

@@ -10370,8 +10370,8 @@
   }
 }
 
-/* Phones: the section bar replaces the main tab bar at the bottom. Where :has isn't supported both show, the section
-   bar above, both usable (role views spec 4.1). */
+/* Phones: the section bar replaces the main tab bar at the bottom. Where :has isn't supported, both are fixed to the
+   bottom and the section bar (z-index 31) covers the main bar, which is the same result (role views spec 4.1). */
 @media not all and (min-width: 48rem) and (min-height: 30rem) {
   .section-bar {
     position: fixed;

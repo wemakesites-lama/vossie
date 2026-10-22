@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Children, type ReactNode } from "react";
+import { Children, isValidElement, type ReactNode } from "react";
 import { StatDelta, type CountValue } from "@/components/charts/StatDelta";
 
 type StatTileProps = {
@@ -45,8 +45,9 @@ export function StatTile({ label, value, delta, href, footer }: StatTileProps) {
 export function StatRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <ul aria-label={label} className="stat-row">
-      {Children.map(children, (child) => (
-        <li>{child}</li>
+      {/* toArray drops null and false, so a conditional tile never leaves an empty cell. */}
+      {Children.toArray(children).map((child, index) => (
+        <li key={isValidElement(child) && child.key !== null ? child.key : index}>{child}</li>
       ))}
     </ul>
   );

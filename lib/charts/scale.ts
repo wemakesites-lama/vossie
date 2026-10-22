@@ -31,25 +31,35 @@ export function sparkline(points: readonly (number | null)[], { width, height, p
     y: round(height - pad - (max > 0 ? (value / max) * (height - 2 * pad) : 0)),
   });
 
+  // Unbroken runs of known points, each with whether a gap sits before and after it.
+  const runs: { points: Point[]; gapBefore: boolean; gapAfter: boolean }[] = [];
+  points.forEach((value, index) => {
+    if (value === null) return;
+    const point = at(value, index);
+    const previous = runs[runs.length - 1];
+    if (previous && points[index - 1] !== null && index > 0) previous.points.push(point);
+    else runs.push({ points: [point], gapBefore: index > 0 && points[index - 1] === null, gapAfter: false });
+  });
+  // Runs are separated by nulls, so every run but the last has a gap after it.
+  runs.forEach((run, i) => {
+    run.gapAfter = i < runs.length - 1 || points[points.length - 1] === null;
+  });
+
   const segments: string[] = [];
   const gapEdges: Point[] = [];
-  let run: Point[] = [];
-  points.forEach((value, index) => {
-    if (value === null) {
-      if (run.length) {
-        gapEdges.push(run[run.length - 1]);
-        segments.push(run.map((p) => `${p.x},${p.y}`).join(" "));
-        run = [];
-      }
-      return;
+  // A known value with gaps on both sides draws no line: it's a filled dot, not a "missing next to here" circle.
+  const isolated: Point[] = [];
+  for (const run of runs) {
+    if (run.points.length === 1 && (run.gapBefore || run.gapAfter)) {
+      isolated.push(run.points[0]);
+      continue;
     }
-    const point = at(value, index);
-    if (run.length === 0 && index > 0 && points[index - 1] === null) gapEdges.push(point);
-    run.push(point);
-  });
-  if (run.length) segments.push(run.map((p) => `${p.x},${p.y}`).join(" "));
+    segments.push(run.points.map((p) => `${p.x},${p.y}`).join(" "));
+    if (run.gapBefore) gapEdges.push(run.points[0]);
+    if (run.gapAfter) gapEdges.push(run.points[run.points.length - 1]);
+  }
 
   const lastValue = points[points.length - 1];
   const last = lastValue === null || lastValue === undefined ? null : at(lastValue, points.length - 1);
-  return { segments, gapEdges, last };
+  return { segments, gapEdges, isolated, last };
 }
