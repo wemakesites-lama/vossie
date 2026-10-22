@@ -8,8 +8,14 @@
 -- The guard stops it, changing nothing, if one of the five ids or addresses already belongs to something else. The last
 -- statement lists the five as they are afterwards: each should show its name, and Naledi and Pieter their roles.
 --
--- The clear-out (clear-sample-data.sql) removes these accounts with the rest of the sample data, and the demo sign-in
--- must be off (unset VOSSIE_DEMO_SIGN_IN) before the first real student signs in (GO-LIVE gate).
+-- It also allows vossie.test in private.allowed_email_domains: the access token hook (private.custom_access_token)
+-- gives no session to an address outside the allowed domains, so without it Auth refuses the demo sign-in with a 403.
+-- The app's own sign-in form still refuses vossie.test (VOSSIE_EMAIL_DOMAINS), and a .test address can't receive a
+-- code.
+--
+-- The clear-out (clear-sample-data.sql) removes these accounts with the rest of the sample data, and vossie.test from
+-- the allowed domains, and the demo sign-in must be off (unset VOSSIE_DEMO_SIGN_IN) before the first real student signs
+-- in (GO-LIVE gate).
 begin;
 
 -- The guard.
@@ -63,6 +69,9 @@ insert into public.consents (id, account_id, version, agreed_at) values
   ('4b976ce9-df34-5a87-b94a-246f384e3bf0', '15eea3f4-7e8b-5176-ab1d-91a512bb16ae', '2026-10-draft', '2026-10-14T08:00:00.000Z'),
   ('77897d2f-c8e3-55e9-bf88-ad1dcca794d2', 'bfad90c4-30ec-5ca2-bf9c-ec7af7909917', '2026-10-draft', '2026-10-14T08:00:00.000Z'),
   ('2163702a-68d9-5643-973a-663906b61f4f', 'a4a401d5-3cef-507f-9fc2-9940ca64cb87', '2026-10-draft', '2026-10-14T08:00:00.000Z')
+on conflict do nothing;
+
+insert into private.allowed_email_domains (domain) values ('vossie.test')
 on conflict do nothing;
 
 commit;
