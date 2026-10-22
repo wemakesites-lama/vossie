@@ -1,80 +1,69 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { ShopStats } from "@/lib/types";
+import type { SellerQueue } from "@/lib/types";
+import { prefetchingLinks } from "@/tests/helpers/next-link";
 import { Dashboard } from "./Dashboard";
 
 // The form only needs something to post to; the actions have their own tests.
 vi.mock("@/lib/selling/shop-actions", () => ({ pauseShop: async () => {}, resumeShop: async () => {} }));
+vi.mock("next/link", async () => (await import("@/tests/helpers/next-link")).nextLinkShowingPrefetch);
 
+const NOW = new Date("2026-10-14T10:00:00.000Z");
 const none = { enquiries: 0, due: 0, repliedInTime: 0, salesConfirmed: 0 };
-const stats: ShopStats = { week: none, record: none };
-const shop = { name: "Tech corner", slug: "tech-corner", badge: "responsive" as const };
+const EMPTY = { count: 0, oldest: null };
+const QUIET: SellerQueue = {
+  replies: EMPTY,
+  sales: [],
+  drafts: EMPTY,
+  hidden: EMPTY,
+  paused: EMPTY,
+  listings: { available: 2, paused: 0, sold: 1, drafts: 0 },
+  everReplied: true,
+};
 
-describe("the dashboard (selling spec 2.8)", () => {
-  it("links to every part of the shop, and says when no enquiry is due yet", () => {
-    render(<Dashboard shop={shop} paused={false} stats={stats} badgeLine="3 more enquiries for Trusted." notice={null} />);
-    const links = within(screen.getByRole("navigation", { name: "Your shop's pages" })).getAllByRole("link");
-    expect(links.map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
-      ["New listing", "/sell/listings/new"],
-      ["My listings", "/sell/listings"],
-      ["Messages from buyers", "/messages?tab=selling"],
-      ["Edit shop", "/sell/profile"],
-      ["View your shop", "/sellers/tech-corner"],
-    ]);
-    const numbers = screen.getByRole("list", { name: "In the last 7 days" });
-    expect(within(numbers).getByText("Replied within 48 hours").nextElementSibling).toHaveTextContent("None due yet");
-    expect(screen.getByText("Responsive")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pause my shop" })).toHaveAttribute("type", "submit");
-  });
+type Props = Parameters<typeof Dashboard>[0];
+const BASE: Props = {
+  shop: {
+    name: "Tech corner",
+    slug: "tech-corner",
+    badge: "responsive",
+    image: null,
+    about: "Calculators and cables.",
+    pickupPointIds: ["pp-midrand-library"],
+  },
+  paused: false,
+  notice: null,
+  now: NOW,
+  queue: QUIET,
+  record: { enquiries: 4, due: 4, repliedInTime: 3, salesConfirmed: 2 },
+  badgeLine: "3 more confirmed sales for Trusted.",
+  week: { enquiries: 5, due: 4, repliedInTime: 4, salesConfirmed: 1, previous: { ...none, enquiries: 2, salesConfirmed: 1 } },
+  daily: [0, 1, 0, 2, 0, 1, 1],
+  followers: { total: 38, recent: 3 },
+  campusHasPoints: true,
+};
+const show = (extra: Partial<Props> = {}) => render(<Dashboard {...BASE} {...extra} />);
 
-  it("shows the last action's notice as a status line", () => {
-    render(<Dashboard shop={shop} paused={false} stats={stats} badgeLine="" notice="Your shop is live again." />);
-    expect(screen.getByRole("status")).toHaveTextContent("Your shop is live again.");
-  });
-
-  it("leaves the Pause form out when the Hub paused the shop (staff tools plan decision 3)", () => {
-    render(<Dashboard shop={shop} paused stats={stats} badgeLine="" notice={null} hubPause="Selling exam answers." />);
-    expect(screen.getByText("Paused by the Hub: buyers can't see your listings")).toBeInTheDocument();
-    expect(screen.getByText(/Only the Hub can resume it/)).toBeInTheDocument();
+describe("the seller home (role views spec 7.1)", () => {
+  it("shows a shop the Hub paused with its reason, no Resume and no storefront link (staff tools plan decision 3)", () => {
+    show({ paused: true, hubPause: "Selling exam answers." });
+    expect(within(screen.getByRole("banner")).getByText("Paused by the Hub")).toHaveAttribute("data-tone", "danger");
+    expect(screen.getByRole("region", { name: "Why the Hub paused it" })).toHaveTextContent("Selling exam answers.");
     expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByRole("link", { name: "View your shop" })).toBeNull();
   });
 
-  it("offers no link to the storefront of a shop the Hub paused, since it answers 404 (amendment 13.2)", () => {
-    render(<Dashboard shop={shop} paused stats={stats} badgeLine="" notice={null} hubPause="Selling exam answers." />);
-    const links = within(screen.getByRole("navigation", { name: "Your shop's pages" })).getAllByRole("link");
-    expect(links.map((link) => link.textContent)).toEqual(["New listing", "My listings", "Messages from buyers", "Edit shop"]);
+  it("shows a card's error box when its reader failed, and keeps the others (spec 8)", () => {
+    show({ queue: null, week: null });
+    expect(screen.getByText("What needs you didn't load.")).toBeInTheDocument();
+    expect(screen.getByText("Your numbers didn't load.")).toBeInTheDocument();
+    expect(screen.getByText("Your listings didn't load.")).toBeInTheDocument();
+    expect(screen.getByRole("meter")).toBeInTheDocument();
   });
 
-  it("keeps the Resume form and the storefront link for a shop the seller paused", () => {
-    render(<Dashboard shop={shop} paused stats={stats} badgeLine="" notice={null} hubPause={null} />);
-    expect(screen.getByText("Paused: buyers can't see your listings")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Resume my shop" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "View your shop" })).toHaveAttribute("href", "/sellers/tech-corner");
-  });
-
-  it("keeps a Hub reason that is empty as a Hub pause all the same", () => {
-    render(<Dashboard shop={shop} paused stats={stats} badgeLine="" notice={null} hubPause="" />);
-    expect(screen.getByText("Paused by the Hub: buyers can't see your listings")).toBeInTheDocument();
-    expect(screen.queryByRole("button")).toBeNull();
-  });
-
-  it("says how many follow the shop, never who (community actions spec 2.18)", () => {
-    const { unmount } = render(
-      <Dashboard shop={shop} paused={false} stats={stats} badgeLine="" notice={null} followers={12} />,
-    );
-    expect(screen.getByText("12 people follow your shop")).toBeInTheDocument();
-    unmount();
-    const one = render(<Dashboard shop={shop} paused={false} stats={stats} badgeLine="" notice={null} followers={1} />);
-    expect(screen.getByText("1 person follows your shop")).toBeInTheDocument();
-    one.unmount();
-    render(<Dashboard shop={shop} paused={false} stats={stats} badgeLine="" notice={null} />);
-    expect(screen.getByText("No one follows your shop yet")).toBeInTheDocument();
-  });
-
-  it("says it under the shop's status, in the header", () => {
-    render(<Dashboard shop={shop} paused={false} stats={stats} badgeLine="" notice={null} followers={3} />);
-    const header = screen.getByRole("banner");
-    expect(within(header).getByText("Your shop is live")).toBeInTheDocument();
-    expect(within(header).getByText("3 people follow your shop")).toBeInTheDocument();
+  it("never prefetches (the header prefetches /sell on every page; CLAUDE.md)", () => {
+    const { container } = show({ queue: { ...QUIET, everReplied: false } });
+    expect(container.querySelectorAll("a[data-prefetch]").length).toBeGreaterThan(0);
+    expect(prefetchingLinks(container)).toEqual([]);
   });
 });

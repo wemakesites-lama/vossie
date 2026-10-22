@@ -14,7 +14,7 @@ import {
 import { photoSrcsOf, storePhotos, type Upload } from "@/lib/data/photos";
 import { notifySavedSearches } from "@/lib/data/saved-searches";
 import { listingsChanged } from "@/lib/data/tags";
-import { isId } from "@/lib/messaging/paths";
+import { isId, threadPath } from "@/lib/messaging/paths";
 import { characterCount, keepTyped } from "@/lib/messaging/rules";
 import { PHOTOS_PER_LISTING } from "@/lib/photos/rules";
 import { done, field, fieldList, fileList } from "./action-helpers";
@@ -26,6 +26,7 @@ import {
   MY_LISTINGS_FORM,
   sentListing,
   takeListingToken,
+  threadSoldForm,
   type ListingSent,
 } from "./form-state";
 import { requireShopOwner, type ShopOwner } from "./owner";
@@ -262,10 +263,18 @@ export async function saveListingForm(formData: FormData): Promise<void> {
 
 const NOTICE_FOR = { paused: "paused", available: "resumed", sold: "sold" } as const;
 
-/** Pause, Resume, Mark sold and Relist on My listings (selling spec 2.9, plan decision 3), back to the same tab. */
+/**
+ * Pause, Resume, Mark sold and Relist on My listings (selling spec 2.9, plan decision 3), back to the same tab. "Mark
+ * {title} as sold" in a selling thread posts the thread too (role views N2 plan decision 4): back there, with its
+ * notice. The way back is built from an id that passed isId, so a form can't send anyone elsewhere; another account's
+ * thread is that page's 404.
+ */
 export async function changeListingState(formData: FormData): Promise<void> {
   const tab = parseListingsTab(field(formData, "tab"));
-  const owner = await requireShopOwner(myListingsPath(tab));
+  const thread = field(formData, "thread");
+  const fromThread = isId(thread);
+  const back = fromThread ? threadPath(thread) : myListingsPath(tab);
+  const owner = await requireShopOwner(back);
   const id = field(formData, "listing");
   const to = field(formData, "to");
   if (isId(id) && (to === "available" || to === "paused" || to === "sold")) {
@@ -276,10 +285,11 @@ export async function changeListingState(formData: FormData): Promise<void> {
       // Resume and Relist don't put a paused shop's listing in front of buyers (amendment 11.6).
       const pausedNotice = to === "available" ? pausedShopNotice(owner) : null;
       const notice = pausedNotice ?? NOTICE_FOR[to];
-      await writeFormState(MY_LISTINGS_FORM, { errors: [], values: { listing: row.id }, notice }, now);
+      const form = fromThread ? threadSoldForm(thread) : MY_LISTINGS_FORM;
+      await writeFormState(form, { errors: [], values: { listing: row.id }, notice }, now);
     }
   }
-  done(myListingsPath(tab));
+  done(back);
 }
 
 /** Delete listing, from its confirm page (selling spec 2.9): it and its photos go; conversations keep its title. */

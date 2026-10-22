@@ -85,9 +85,10 @@ describe("the inbox (messaging spec 3.2)", () => {
     expect(prefetchingLinks(full.container)).toEqual([]);
   });
 
-  it("tells a seller with no enquiries where they'll show up (plan decision 26)", () => {
+  it("tells a seller with no enquiries where they'll show up, and offers the next step (role views spec 7.1)", () => {
     render(<InboxView tab="selling" hasShop conversations={[]} now={NOW} />);
-    expect(screen.getByText("No enquiries yet. When a buyer messages your shop, it shows up here.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "No enquiries yet" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "New listing" })).toHaveAttribute("href", "/sell/listings/new");
     expect(screen.queryByRole("link", { name: "Browse" })).toBeNull();
   });
 

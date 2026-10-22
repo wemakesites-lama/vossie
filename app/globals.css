@@ -8099,48 +8099,9 @@
     gap: 12px 16px;
   }
 
-  .sell-status {
-    display: inline-flex;
-    align-items: center;
-    min-height: 32px;
-    padding: 4px 14px;
-    border-radius: 999px;
-    background: var(--color-pale);
-    color: var(--color-navy);
-    font-weight: 600;
-  }
-
-  /* Danger red on panel is 6.0:1. */
-  .sell-status-paused {
-    background: var(--color-panel);
-    color: var(--color-danger);
-  }
-
   .sell-badge {
     color: var(--color-navy);
     font-weight: 700;
-  }
-
-  .sell-rows {
-    display: grid;
-    border-top: 1.5px solid var(--color-line);
-  }
-
-  .sell-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 56px;
-    border-bottom: 1.5px solid var(--color-line);
-    color: var(--color-navy);
-    font-weight: 600;
-  }
-
-  .sell-row svg {
-    flex: none;
-    width: 20px;
-    height: 20px;
   }
 
   .sell-pause {
@@ -8151,15 +8112,17 @@
     border-top: 1.5px solid var(--color-line);
   }
 
-  /* While /sell streams in: about the pitch's height. Task 17 checked it: the footer is below the first screen both
-     before and after at 390 and 1440, so it doesn't move (the pitch is 1,065px high at 390, the dashboard 1,117px,
-     the waiting page 756px, against this skeleton's 784px). */
+  /* While /sell streams in (role views N2 plan decision 15): the header card and one card. Shorter than the shortest
+     state (a new shop's checklist), which tests/e2e/role-views-writes.spec.ts measures; .sell-page is a screen tall,
+     so the footer doesn't move. */
   .sell-skeleton-head {
-    height: 13rem;
+    height: 9rem;
+    border-radius: var(--radius-card);
   }
 
   .sell-skeleton-body {
-    height: 34rem;
+    height: 7rem;
+    border-radius: var(--radius-card);
   }
 }
 
@@ -8283,43 +8246,10 @@
     font-weight: 600;
   }
 
-  .sell-tabs ul {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .sell-tab {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    min-height: 44px;
-    padding: 0 16px;
-    border: 1.5px solid var(--color-field);
-    border-radius: 999px;
-    color: var(--color-navy);
-    font-weight: 600;
-  }
-
-  .sell-tab[aria-current="page"] {
-    border-color: var(--color-navy);
-    background: var(--color-navy);
-    color: var(--color-white);
-  }
-
-  .sell-tab-count {
-    font-weight: 400;
-  }
-
   /* The notice's "See it as buyers do" is navy on pale like the text round it, so the underline is what marks it. */
   .sell-column .form-notice a {
     text-decoration: underline;
     text-underline-offset: 3px;
-  }
-
-  .sell-list {
-    display: grid;
-    border-top: 1.5px solid var(--color-line);
   }
 
   .sell-item {
@@ -8353,24 +8283,6 @@
     font-size: 14px;
   }
 
-  .sell-item-actions {
-    display: flex;
-    flex-wrap: wrap;
-    grid-column: 1 / -1;
-    gap: 8px;
-  }
-
-  @media (min-width: 48rem) and (min-height: 30rem) {
-    .sell-item {
-      grid-template-columns: 64px 1fr auto;
-    }
-
-    .sell-item-actions {
-      grid-column: auto;
-      justify-content: flex-end;
-    }
-  }
-
   .sell-action {
     display: inline-flex;
     align-items: center;
@@ -8386,13 +8298,6 @@
   /* Danger red on panel is 6.0:1. */
   .sell-action-danger {
     color: var(--color-danger);
-  }
-
-  .sell-empty {
-    padding: 24px;
-    border-radius: var(--radius-card);
-    background: var(--color-panel);
-    color: var(--color-muted);
   }
 }
 
@@ -9605,15 +9510,6 @@
   }
 }
 
-/* --- Community actions: the dashboard's followers (community actions plan, Task 19, spec 2.18) --- */
-@layer components {
-  .sell-followers {
-    margin-top: 6px;
-    color: var(--color-muted);
-    font-size: 14px;
-  }
-}
-
 /* --- Search alerts: Save this search on browse (search alerts plan, Task 4, spec 2.5 and 2.6) --- */
 @layer components {
   /* Always there and the same height in every state, whatever the session says, so nothing below moves when it
@@ -10588,5 +10484,155 @@ body:has(.section-shell:not([style*="display"]) > .section-bar) :is(.footer-gian
 @media (min-width: 48rem) and (min-height: 30rem) {
   :root {
     --space-card: 16px;
+  }
+}
+
+/* --- Role views: the seller home and My listings (N2; role views spec 7.1) ------------------------------------------
+   Built on the kit. Colours only from tokens; sky only as N1's solid "live" pill. Every control 44px or more. */
+@layer components {
+  .sell-home {
+    gap: 16px;
+  }
+
+  .sell-home-head {
+    display: grid;
+    justify-items: start;
+    gap: 8px;
+  }
+
+  .sell-home-facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sell-home-followers {
+    color: var(--color-muted);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .sell-home-note {
+    color: var(--color-ink);
+    font-size: 14px;
+  }
+
+  /* Links on white are sky-dark (4.7:1), underlined. */
+  .sell-home-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .sell-home-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .sell-home-buttons .btn {
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .stat-tile-note {
+    color: var(--color-muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* My listings' segments: the count under the label, so four fit one line at 360px (plan decision 12). */
+  .link-segment:has(> .link-segment-count) {
+    padding-inline: 4px;
+    line-height: 1.15;
+  }
+
+  .link-segment-label {
+    font-size: 13px;
+  }
+
+  .link-segment-count {
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .link-segments li {
+    min-width: 0;
+  }
+
+  /* My listings' rows: the row is the edit link; its actions sit under it, Delete apart at the far end. */
+  .mylist {
+    gap: 0;
+  }
+
+  .mylist-new {
+    justify-self: start;
+    min-height: 44px;
+  }
+
+  .mylist > li + li {
+    border-top: 1px solid var(--color-line);
+  }
+
+  .mylist > li + li > .list-row {
+    border-top: 0;
+  }
+
+  .list-row-lead .sell-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .list-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    padding-bottom: 12px;
+  }
+
+  .list-row-actions .staff-hidden-note {
+    flex-basis: 100%;
+  }
+
+  .mylist-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Danger red on white is 6.57:1. A text link, never a pill beside Mark sold (spec 7.1, Fixes). */
+  .mylist-delete {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-inline-start: auto;
+    color: var(--color-danger);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* PendingButton (plan decision 17): the wrapper is only its live region; the button looks busy while it posts. */
+  .pending-button {
+    display: contents;
+  }
+
+  .pending-button [aria-disabled="true"] {
+    opacity: 0.7;
+    cursor: progress;
+  }
+}
+
+@media (min-width: 48rem) and (min-height: 30rem) {
+  .list-row-actions {
+    padding-left: 50px;
   }
 }

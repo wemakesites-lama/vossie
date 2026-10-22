@@ -1,16 +1,18 @@
 import { connection } from "next/server";
 import { getViewer } from "@/lib/auth/session";
 import { getPickupPoints } from "@/lib/data";
-import { countFollowers } from "@/lib/data/follows";
+import { followerCounts } from "@/lib/data/follows";
 import type { OnboardingDraftRow } from "@/lib/data/rows";
-import { shopStats } from "@/lib/data/shop-stats";
+import { dailyEnquiries, recentCounts, shopStats } from "@/lib/data/shop-stats";
 import { getOnboardingDraft, getShopOf } from "@/lib/data/shops";
 import { shopStanding } from "@/lib/data/staff-shops";
+import { DAY_MS } from "@/lib/messaging/rules";
 import { signInHref } from "@/lib/next-path";
 import { badgeProgress } from "@/lib/selling/badges";
 import { DASHBOARD_FORM, takeNotice } from "@/lib/selling/form-state";
 import { noticeText } from "@/lib/selling/notices";
 import { onboardingPath, type OnboardingStep } from "@/lib/selling/paths";
+import { queueFor } from "@/lib/selling/queue";
 import type { PickupPoint } from "@/lib/types";
 import { Dashboard } from "./Dashboard";
 import { SellPitch } from "./SellPitch";
@@ -32,8 +34,8 @@ function resumeStep(draft: OnboardingDraftRow, pickupPoints: readonly PickupPoin
 
 /**
  * Which /sell this visitor sees (selling spec section 3): the pitch without a shop, the waiting page while the Hub
- * checks one (spec 2.7), or the Hub's reason once it has declined it (staff tools plan decision 2), the dashboard once
- * it's approved or paused (spec 2.8). Request-time: it reads the session.
+ * checks one (spec 2.7), or the Hub's reason once it has declined it (staff tools plan decision 2), the home once
+ * it's approved or paused (role views spec 7.1). Request-time: it reads the session.
  */
 export async function SellHome() {
   const account = await getViewer().catch(() => null);
@@ -53,24 +55,35 @@ export async function SellHome() {
     // Sent again after a decline, it shows the date it was sent again (amendment 6).
     return <ShopWaiting shopName={own.shop.name} sentAt={standing?.appliedAt ?? own.shop.createdAt} />;
   }
-  // The week's numbers read the clock (decision 26).
+  // The ages, the weeks and the days read the clock (decision 26).
   await connection();
   const now = new Date();
-  // The notice is taken as it is shown, so a second visit says nothing (amendment 10.6).
-  const [stats, state, followers] = await Promise.all([
-    shopStats(own.shop.slug, now),
+  const slug = own.shop.slug;
+  // Each card stands on its own reader: a failure is null, and only that card shows its error box (spec 8). The
+  // notice is taken as it is shown, so a second visit says nothing (amendment 10.6).
+  const [queue, stats, week, daily, followers, state, points] = await Promise.all([
+    queueFor(slug).catch(() => null),
+    shopStats(slug, now).catch(() => null),
+    recentCounts(slug, 7, now).catch(() => null),
+    dailyEnquiries(slug, 7, now).catch(() => null),
+    followerCounts(slug, new Date(now.getTime() - 7 * DAY_MS)).catch(() => null),
     takeNotice(DASHBOARD_FORM),
-    countFollowers(own.shop.slug),
+    getPickupPoints().catch(() => [] as PickupPoint[]),
   ]);
   return (
     <Dashboard
-      shop={{ name: own.shop.name, slug: own.shop.slug, badge: own.shop.badge }}
+      shop={own.shop}
       paused={own.status === "paused"}
-      stats={stats}
-      badgeLine={badgeProgress(own.shop.badge, stats.record, account.createdAt, now)}
-      notice={noticeText(state?.notice)}
       hubPause={standing?.pausedByHub ? (standing.reason ?? "") : null}
+      notice={noticeText(state?.notice)}
+      now={now}
+      queue={queue}
+      record={stats?.record ?? null}
+      badgeLine={stats ? badgeProgress(own.shop.badge, stats.record, account.createdAt, now) : ""}
+      week={week}
+      daily={daily}
       followers={followers}
+      campusHasPoints={points.some((point) => point.campusSlug === own.shop.campusSlug)}
     />
   );
 }

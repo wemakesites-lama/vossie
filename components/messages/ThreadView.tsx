@@ -9,11 +9,11 @@ import { messagingErrors, replyFields } from "@/lib/messaging/errors";
 import { inboxPath, threadPath } from "@/lib/messaging/paths";
 import { parseWarnings, type ScamWarning } from "@/lib/messaging/scam-check";
 import { messageTime } from "@/lib/time";
-import type { Thread } from "@/lib/types";
+import type { SaleToMark, Thread } from "@/lib/types";
 import { MessageField } from "./MessageField";
 import { MessageSummary } from "./MessageSummary";
 import { OfferAbout } from "./OfferAbout";
-import { SaleActions } from "./SaleActions";
+import { MarkSoldForm, SaleActions } from "./SaleActions";
 import { ScamCheck } from "./ScamCheck";
 import { StatusPill } from "./StatusPill";
 
@@ -38,6 +38,10 @@ type ThreadViewProps = {
   /** The composer has just sent the first message (plan decision 7). */
   sent: boolean;
   campusName: string;
+  /** The seller's sale whose listing is still up (role views N2), from the shop's queue; null otherwise. */
+  markSold?: SaleToMark | null;
+  /** "Marked as sold…", once, after the form above. */
+  soldNotice?: string | null;
 };
 
 /**
@@ -46,7 +50,15 @@ type ThreadViewProps = {
  * Message text is React text: no markup, and addresses aren't made into links (spec 2.12). An offer thread shows its
  * request, and the shop waits for the asker's reply (community actions plan decision 8).
  */
-export function ThreadView({ thread, now, reply, sent, campusName }: ThreadViewProps) {
+export function ThreadView({
+  thread,
+  now,
+  reply,
+  sent,
+  campusName,
+  markSold = null,
+  soldNotice = null,
+}: ThreadViewProps) {
   // The shop that offered waits for the asker's reply before writing again (community actions spec 2.9).
   const waiting = thread.request !== null && thread.role === "seller" && thread.status === "offered";
   // The note after the composer sent the first message. A shop's offer says who is told, only while the asker has not
@@ -114,6 +126,12 @@ export function ThreadView({ thread, now, reply, sent, campusName }: ThreadViewP
         </ol>
       </section>
       <SaleActions thread={thread} />
+      {soldNotice && (
+        <p role="status" className="form-notice">
+          {soldNotice}
+        </p>
+      )}
+      {markSold && <MarkSoldForm conversationId={thread.id} listingId={markSold.listingId} title={markSold.title} />}
       {thread.otherPresent && waiting && <p className="form-notice">{SHOP_WAITS_NOTE}</p>}
       {thread.otherPresent && !waiting && <ReplyFormView thread={thread} reply={reply} />}
       {!thread.otherPresent && <p className="form-notice">{goneNote}</p>}

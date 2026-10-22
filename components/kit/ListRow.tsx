@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { ChevronRightIcon } from "@/components/icons";
 
 type Lead =
@@ -14,6 +14,10 @@ type ListRowProps = {
   detail?: string;
   pill?: ReactNode;
   meta?: string;
+  /** The link's own name ("Edit Desk fan"); the detail is then its description (role views N2 plan decision 12). */
+  label?: string;
+  /** Forms and links beside the row, outside its link (My listings' Pause, Mark sold, Delete). */
+  actions?: ReactNode;
 };
 
 /** "Tech corner" → "TC"; one word → its first two letters. */
@@ -24,21 +28,34 @@ export function initialsOf(text: string): string {
 }
 
 /** A row in a list (role views spec 5.2): one link, at least 56px tall, that goes deeper. Render it inside a <ul>. */
-export function ListRow({ href, lead, title, detail, pill, meta }: ListRowProps) {
+export function ListRow({ href, lead, title, detail, pill, meta, label, actions }: ListRowProps) {
+  const detailId = useId();
   return (
-    <li>
-      <Link href={href} prefetch={false} transitionTypes={["nav-forward"]} className="list-row">
+    <li className={actions ? "list-row-item" : undefined}>
+      <Link
+        href={href}
+        prefetch={false}
+        transitionTypes={["nav-forward"]}
+        className="list-row"
+        aria-label={label}
+        aria-describedby={label && detail ? detailId : undefined}
+      >
         <span className="list-row-lead" aria-hidden="true">
           {lead.kind === "initials" ? initialsOf(lead.text) : lead.kind === "icon" ? lead.icon : lead.node}
         </span>
         <span className="list-row-text">
           <span className="list-row-title">{title}</span>{" "}
-          {detail && <span className="list-row-detail">{detail}</span>}
+          {detail && (
+            <span id={detailId} className="list-row-detail">
+              {detail}
+            </span>
+          )}
         </span>
         {pill}
         {meta && <span className="list-row-meta">{meta}</span>}
         <ChevronRightIcon className="needs-chevron" />
       </Link>
+      {actions && <div className="list-row-actions">{actions}</div>}
     </li>
   );
 }

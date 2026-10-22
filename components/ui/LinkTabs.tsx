@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-export type LinkTab = { key: string; label: string; href: string };
+/** `count`: drawn under the label in the segmented look (role views N2 plan decision 12). */
+export type LinkTab = { key: string; label: string; href: string; count?: number };
 
 type LinkTabsProps = {
   /** The row's name for screen readers, e.g. "Categories". */
@@ -32,7 +33,14 @@ export function LinkTabs({ label, tabs, current, look }: LinkTabsProps) {
               aria-current={tab.key === current ? "page" : undefined}
               className={linkClass}
             >
-              {tab.label}
+              {tab.count === undefined ? (
+                tab.label
+              ) : (
+                <>
+                  <span className="link-segment-label">{tab.label}</span>{" "}
+                  <span className="link-segment-count">{tab.count}</span>
+                </>
+              )}
             </Link>
           </li>
         ))}

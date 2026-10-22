@@ -7,7 +7,7 @@ import { SellFormSkeleton } from "@/components/sell/SellSkeleton";
 import { myListingsPath } from "@/lib/selling/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
-export const metadata: Metadata = { title: "Edit listing", robots: { index: false } };
+export const metadata: Metadata = { title: "Edit your listing", robots: { index: false } };
 
 /** One sample, so the build checks the request-time part sits inside <Suspense> (CLAUDE.md). It matches no listing. */
 export async function generateStaticParams() {
@@ -23,7 +23,7 @@ export default function EditListingPage({ params }: PageProps<"/sell/listings/[i
           <header className="sell-head">
             <Link href={myListingsPath()} prefetch={false} className="sell-crumb">
               <ChevronLeftIcon className="size-4" />
-              My listings
+              Your listings
             </Link>
             <h1 className="sell-title">Edit listing</h1>
           </header>

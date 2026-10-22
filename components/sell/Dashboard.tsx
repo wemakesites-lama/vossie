@@ -1,58 +1,102 @@
 import Link from "next/link";
-import { ChevronRightIcon } from "@/components/icons";
+import { RatioBar } from "@/components/charts/RatioBar";
+import { Sparkline } from "@/components/charts/Sparkline";
+import { SplitBar } from "@/components/charts/SplitBar";
+import { SectionError } from "@/components/home/SectionError";
+import { Card } from "@/components/kit/Card";
+import { NeedsYouList } from "@/components/kit/NeedsYouList";
+import { Pill } from "@/components/kit/Pill";
+import { SetupChecklist } from "@/components/kit/SetupChecklist";
 import { StatRow, StatTile } from "@/components/kit/StatTile";
-import { cx } from "@/lib/cx";
-import { followersLine } from "@/lib/following/rules";
+import type { SellerRow } from "@/lib/data/rows";
 import { badgeLabel } from "@/lib/format";
 import { inboxPath } from "@/lib/messaging/paths";
-import { myListingsPath, NEW_LISTING_PATH, PROFILE_PATH } from "@/lib/selling/paths";
+import { replyRateTarget } from "@/lib/selling/badges";
+import {
+  dayLabels,
+  enquirySummary,
+  followerCountLabel,
+  isNewShop,
+  newFollowersLine,
+  sellerNeeds,
+  setupSteps,
+} from "@/lib/selling/home";
+import { myListingsPath, NEW_LISTING_PATH, SELL_PATH } from "@/lib/selling/paths";
 import { pauseShop, resumeShop } from "@/lib/selling/shop-actions";
-import type { ShopStats, TrustBadge } from "@/lib/types";
+import type { EnquiryCounts, FollowerCounts, RecentCounts, SellerQueue } from "@/lib/types";
 
 type DashboardProps = {
-  shop: { name: string; slug: string; badge: TrustBadge | null };
+  shop: Pick<SellerRow, "name" | "slug" | "badge" | "image" | "about" | "pickupPointIds">;
   paused: boolean;
-  stats: ShopStats;
-  /** What the next badge needs (lib/selling/badges.ts). */
-  badgeLine: string;
-  /** The words for the last action's notice, if any. */
-  notice: string | null;
   /** The Hub's reason when the Hub paused the shop (staff tools plan decision 3); the seller can't resume it. */
   hubPause?: string | null;
-  /** How many follow the shop (community actions spec 2.18): the shop sees the number, never who. */
-  followers?: number;
+  /** The words for the last action's notice, if any. */
+  notice: string | null;
+  /** Read after `await connection()`, for the age chips. */
+  now: Date;
+  /** Each reader's answer, or null when it failed: that card shows its error box (spec 8). */
+  queue: SellerQueue | null;
+  /** The badge rules' record (shopStats's `record`). */
+  record: EnquiryCounts | null;
+  /** What the next badge needs (lib/selling/badges.ts). */
+  badgeLine: string;
+  week: RecentCounts | null;
+  /** Enquiries per SAST day, the last 7, oldest first. */
+  daily: readonly (number | null)[] | null;
+  followers: FollowerCounts | null;
+  /** The shop's campus has pickup points to choose (the checklist's third step). */
+  campusHasPoints: boolean;
 };
 
+const PERIOD = "the week before";
+
 /**
- * The dashboard (selling spec 2.8, plan decision 18): whether the shop is live, the last 7 days' numbers, the badge
- * and what the next one needs, the shop's pages, and Pause my shop or Resume. No view counts: nothing records views.
- * A shop the Hub paused says so, with the Hub's reason and no Pause or Resume form (staff tools plan decision 3).
+ * The seller home (role views spec 7.1): what needs the seller now, then a few honest numbers and small charts, or the
+ * setup checklist for a new shop. No view counts: nothing records views. Followers are a number, never who. A shop the
+ * Hub paused says so, with the Hub's reason and no Pause or Resume (staff tools plan decision 3). Each card stands on
+ * its own reader: one failing shows its error box and leaves the rest (spec 8).
  */
-export function Dashboard({ shop, paused, stats, badgeLine, notice, hubPause = null, followers = 0 }: DashboardProps) {
+export function Dashboard(props: DashboardProps) {
+  const { shop, paused, hubPause = null, notice, now, queue, record, badgeLine, week, daily, followers, campusHasPoints } =
+    props;
   const byHub = hubPause !== null;
-  const { week } = stats;
-  const pages: Array<[label: string, href: string]> = [
-    ["New listing", NEW_LISTING_PATH],
-    ["My listings", myListingsPath()],
-    ["Messages from buyers", inboxPath("selling")],
-    ["Edit shop", PROFILE_PATH],
-  ];
-  // A shop the Hub paused has no storefront while it's paused: its page answers 404 (amendment 13.2).
-  if (!byHub) pages.push(["View your shop", `/sellers/${shop.slug}`]);
+  const newShop = queue !== null && isNewShop(queue);
   return (
-    <div className="sell-column">
-      <header className="sell-head">
-        <p className="eyebrow">Your shop</p>
-        <h1 className="sell-title">{shop.name}</h1>
-        <p className={cx("sell-status", paused && "sell-status-paused")}>
-          {byHub
-            ? "Paused by the Hub: buyers can't see your listings"
-            : paused
-              ? "Paused: buyers can't see your listings"
-              : "Your shop is live"}
-        </p>
-        <p className="sell-followers">{followersLine(followers)}</p>
-      </header>
+    <div className="sell-column sell-home">
+      <Card>
+        <header className="sell-home-head">
+          <p className="eyebrow">Your shop</p>
+          <h1 className="sell-title">{shop.name}</h1>
+          <ul className="sell-home-facts">
+            <li>
+              {byHub ? (
+                <Pill tone="danger">Paused by the Hub</Pill>
+              ) : paused ? (
+                <Pill tone="warning">Paused</Pill>
+              ) : (
+                <Pill tone="live">Live</Pill>
+              )}
+            </li>
+            <li>
+              <Pill tone="neutral">{shop.badge ? badgeLabel(shop.badge) : "No badge yet"}</Pill>
+            </li>
+            {followers && <li className="sell-home-followers">{followerCountLabel(followers.total)}</li>}
+          </ul>
+          {paused && (
+            <p className="sell-home-note">
+              {byHub
+                ? "Buyers can't see your listings. Only the Hub can resume your shop."
+                : "Buyers can't see your listings until you resume your shop."}
+            </p>
+          )}
+          {/* A shop the Hub paused has no storefront while it's paused: its page answers 404 (amendment 13.2). */}
+          {!byHub && (
+            <Link href={`/sellers/${shop.slug}`} prefetch={false} className="sell-home-link">
+              View your shop
+            </Link>
+          )}
+        </header>
+      </Card>
 
       {notice && (
         <p role="status" className="form-notice">
@@ -61,60 +105,107 @@ export function Dashboard({ shop, paused, stats, badgeLine, notice, hubPause = n
       )}
 
       {byHub && (
-        <section aria-labelledby="sell-hub-pause-title" className="sell-section">
-          <h2 id="sell-hub-pause-title" className="sell-section-title">
-            Why the Hub paused it
-          </h2>
+        <Card title="Why the Hub paused it">
           <blockquote className="staff-reason">{hubPause}</blockquote>
           <p>Only the Hub can resume it. Talk to the Hub on your campus once you&apos;ve sorted it out.</p>
-        </section>
+        </Card>
       )}
 
-      <section aria-labelledby="sell-week-title" className="sell-section">
-        <h2 id="sell-week-title" className="sell-section-title">
-          In the last 7 days
-        </h2>
-        <StatRow label="In the last 7 days">
-          <StatTile label="New enquiries" value={week.enquiries} />
-          {/* Words, not a number, so a "0" never sits beside "None due yet". */}
-          <div className="stat-tile">
-            <span className="stat-tile-label">Replied within 48 hours</span>{" "}
-            <span className="stat-tile-value" data-masked="">
-              {week.due === 0 ? "None due yet" : `${week.repliedInTime} of ${week.due}`}
-            </span>
-          </div>
-          <StatTile label="Sales confirmed" value={week.salesConfirmed} />
-        </StatRow>
-      </section>
+      <Card title="Needs you">
+        {queue ? (
+          <NeedsYouList label="Needs you" items={sellerNeeds(queue, now)} allClear="All clear: nothing is waiting for you." />
+        ) : (
+          <SectionError id="sell-needs" title="What needs you" path={SELL_PATH} />
+        )}
+      </Card>
 
-      <section aria-labelledby="sell-badge-title" className="sell-section">
-        <h2 id="sell-badge-title" className="sell-section-title">
-          Your badge
-        </h2>
-        <p className="sell-badge">{shop.badge ? badgeLabel(shop.badge) : "No badge yet"}</p>
-        <p>
-          {badgeLine}{" "}
-          <Link href="/trust" prefetch={false}>
-            How badges work
-          </Link>
-        </p>
-      </section>
+      <div className="sell-home-buttons">
+        <Link href={NEW_LISTING_PATH} prefetch={false} className="btn btn-primary">
+          New listing
+        </Link>
+        <Link href={inboxPath("selling")} prefetch={false} className="btn btn-outline text-navy">
+          Messages
+        </Link>
+      </div>
 
-      <nav aria-labelledby="sell-pages-title" className="sell-section">
-        <h2 id="sell-pages-title" className="sell-section-title">
-          Your shop&apos;s pages
-        </h2>
-        <ul className="sell-rows">
-          {pages.map(([label, href]) => (
-            <li key={href}>
-              <Link href={href} prefetch={false} className="sell-row">
-                {label}
-                <ChevronRightIcon />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      {newShop ? (
+        <SetupChecklist title="Get your shop going" steps={setupSteps(shop, queue, campusHasPoints)} />
+      ) : (
+        <>
+          <Card title="In the last 7 days">
+            {week ? (
+              <StatRow label="In the last 7 days">
+                <StatTile
+                  key="enquiries"
+                  label="Enquiries"
+                  value={week.enquiries}
+                  delta={{ previous: week.previous.enquiries, period: PERIOD }}
+                />
+                <StatTile
+                  key="sales"
+                  label="Sales"
+                  value={week.salesConfirmed}
+                  delta={{ previous: week.previous.salesConfirmed, period: PERIOD }}
+                />
+                {followers && (
+                  <StatTile
+                    key="followers"
+                    label="Followers"
+                    value={followers.total}
+                    footer={<p className="stat-tile-note">{newFollowersLine(followers.recent)}</p>}
+                  />
+                )}
+              </StatRow>
+            ) : (
+              <SectionError id="sell-week" title="Your numbers" path={SELL_PATH} />
+            )}
+          </Card>
+
+          <Card title="Enquiries, last 7 days">
+            {daily ? (
+              <Sparkline
+                points={daily}
+                labels={dayLabels(daily.length, now)}
+                label="Enquiries"
+                summary={enquirySummary(daily)}
+              />
+            ) : (
+              <SectionError id="sell-daily" title="Your enquiries by day" path={SELL_PATH} />
+            )}
+          </Card>
+
+          <Card title="Your badge" action={{ label: "How badges work", href: "/trust" }}>
+            <p className="sell-badge">{shop.badge ? badgeLabel(shop.badge) : "No badge yet"}</p>
+            {record ? (
+              <RatioBar
+                done={record.repliedInTime}
+                total={record.due}
+                target={replyRateTarget(shop.badge)}
+                label="Enquiries answered within 48 hours, last 90 days"
+              />
+            ) : (
+              <SectionError id="sell-badge" title="Your reply rate" path={SELL_PATH} />
+            )}
+            {badgeLine && <p>{badgeLine}</p>}
+          </Card>
+        </>
+      )}
+
+      <Card title="Your listings" action={{ label: "Manage listings", href: myListingsPath() }}>
+        {queue ? (
+          <SplitBar
+            label="Your listings"
+            parts={[
+              { label: "available", value: queue.listings.available, tone: "navy" },
+              { label: "paused", value: queue.listings.paused, tone: "sky-dark" },
+              { label: "sold", value: queue.listings.sold, tone: "muted" },
+              { label: "drafts", value: queue.listings.drafts, tone: "idle" },
+            ]}
+          />
+        ) : (
+          <SectionError id="sell-listings" title="Your listings" path={SELL_PATH} />
+        )}
+      </Card>
 
       {!byHub && (
         <form action={paused ? resumeShop : pauseShop} className="sell-pause">

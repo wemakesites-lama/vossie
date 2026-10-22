@@ -16,6 +16,7 @@ import { openBookingCount } from "@/lib/data/hub-posts";
 import { getShopOf } from "@/lib/data/shops";
 import { openReportCount } from "@/lib/data/staff-reports";
 import { countWaitingShops } from "@/lib/data/staff-shops";
+import { queueFor } from "@/lib/selling/queue";
 import {
   ADMIN_MORE_PATH,
   ADMIN_PATH,
@@ -40,20 +41,30 @@ function badge(count: number | null, one: string, many: string): SectionTab["bad
   return count === null ? null : { count, words: count === 1 ? one : many };
 }
 
-/** Selling: only for an account that has a shop. A pending shop (waiting, or declined: still "pending" with the Hub's
- * reason, SellHome.tsx) has no Messages yet. */
+/**
+ * Selling: only for an account that has a shop. A pending shop (waiting, or declined: still "pending" with the Hub's
+ * reason, SellHome.tsx) has no Messages yet. Messages carries the buyers waiting for a reply, from the queue the home's
+ * Needs you reads in the same request (role views N2 plan decision 8); a failed read shows no badge (spec 4.2).
+ */
 export async function SellBar() {
   const account = await getViewer().catch(() => null);
   if (!account) return null;
   const own = await getShopOf(account.id).catch(() => null);
   if (!own) return null;
   const open = own.status !== "pending";
+  const waiting = open ? await queueFor(own.shop.slug).then((queue) => queue.replies.count, () => null) : null;
+  const messages: SectionTab = {
+    key: "messages",
+    href: "/messages?tab=selling",
+    label: "Messages",
+    icon: <MessageIcon />,
+    prefetch: false,
+    badge: badge(waiting, "buyer waiting for a reply", "buyers waiting for a reply"),
+  };
   const tabs: SectionTab[] = [
     { key: "overview", href: "/sell", label: "Overview", icon: <GridIcon /> },
     { key: "listings", href: "/sell/listings", label: "Listings", icon: <BagIcon />, match: "section", prefetch: false },
-    ...(open
-      ? [{ key: "messages", href: "/messages?tab=selling", label: "Messages", icon: <MessageIcon />, prefetch: false } as const]
-      : []),
+    ...(open ? [messages] : []),
     { key: "shop", href: "/sell/profile", label: "Shop", icon: <StoreIcon />, prefetch: false },
     EXIT,
   ];

@@ -5,8 +5,17 @@ import { AdminBar, MentorBar, SellBar } from "./sections";
 const viewer = vi.hoisted(() => ({ account: null as { id: string; roles: string[] } | null }));
 vi.mock("@/lib/auth/session", () => ({ getViewer: async () => viewer.account }));
 
-const shop = vi.hoisted(() => ({ own: null as { status: string } | null }));
+const shop = vi.hoisted(() => ({ own: null as { status: string; shop: { slug: string } } | null }));
 vi.mock("@/lib/data/shops", () => ({ getShopOf: async () => shop.own }));
+
+const queue = vi.hoisted(() => ({ waiting: 2, failing: false, reads: 0 }));
+vi.mock("@/lib/selling/queue", () => ({
+  queueFor: async () => {
+    queue.reads += 1;
+    if (queue.failing) throw new Error("down");
+    return { replies: { count: queue.waiting, oldest: null } };
+  },
+}));
 
 const counts = vi.hoisted(() => ({ waiting: 3, reports: 2, slots: 1, failing: false }));
 vi.mock("@/lib/data/staff-shops", () => ({
@@ -22,6 +31,8 @@ afterEach(() => {
   viewer.account = null;
   shop.own = null;
   counts.failing = false;
+  queue.failing = false;
+  queue.reads = 0;
 });
 
 const labels = (nav: HTMLElement) =>
@@ -40,16 +51,29 @@ describe("SellBar", () => {
 
   it("gives an open shop Overview, Listings, Messages, Shop and CampusCart", async () => {
     viewer.account = { id: "a", roles: [] };
-    shop.own = { status: "approved" };
+    shop.own = { status: "approved", shop: { slug: "tech-corner" } };
     render(await SellBar());
     const bar = screen.getByRole("navigation", { name: "Selling" });
     expect(labels(bar)).toEqual(["Overview", "Listings", "Messages", "Shop", "CampusCart"]);
     expect(within(bar).getByRole("link", { name: "Messages" })).toHaveAttribute("href", "/messages?tab=selling");
   });
 
+  it("drops the Messages badge when the queue fails, and never reads it for a waiting shop (spec 4.2)", async () => {
+    viewer.account = { id: "a", roles: [] };
+    shop.own = { status: "approved", shop: { slug: "tech-corner" } };
+    queue.failing = true;
+    const failed = render(await SellBar());
+    expect(within(failed.container).getByRole("link", { name: "Messages" })).not.toHaveAttribute("aria-describedby");
+    failed.unmount();
+    queue.reads = 0;
+    shop.own = { status: "pending", shop: { slug: "crochet-corner" } };
+    render(await SellBar());
+    expect(queue.reads).toBe(0);
+  });
+
   it("gives a waiting shop no Messages tab", async () => {
     viewer.account = { id: "a", roles: [] };
-    shop.own = { status: "pending" };
+    shop.own = { status: "pending", shop: { slug: "crochet-corner" } };
     render(await SellBar());
     expect(labels(screen.getByRole("navigation", { name: "Selling" }))).toEqual([
       "Overview",

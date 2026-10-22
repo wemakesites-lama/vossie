@@ -4,12 +4,15 @@ import { Suspense } from "react";
 import { ChevronLeftIcon } from "@/components/icons";
 import { MyListings } from "@/components/sell/MyListings";
 import { SellFormSkeleton } from "@/components/sell/SellSkeleton";
-import { NEW_LISTING_PATH, SELL_PATH } from "@/lib/selling/paths";
+import { SELL_PATH } from "@/lib/selling/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
-export const metadata: Metadata = { title: "My listings", robots: { index: false } };
+export const metadata: Metadata = { title: "Your listings", robots: { index: false } };
 
-/** My listings (selling spec 2.9): the heading is prerendered; the tab and its listings stream in. */
+/**
+ * Your listings (selling spec 2.9): the heading is prerendered; the tab and its listings stream in. New listing comes
+ * with them, above the rows, or as an empty tab's own button, so it is never there twice (plan review fix 10).
+ */
 export default function MyListingsPage({ searchParams }: PageProps<"/sell/listings">) {
   return (
     <PageTransition>
@@ -20,10 +23,7 @@ export default function MyListingsPage({ searchParams }: PageProps<"/sell/listin
               <ChevronLeftIcon className="size-4" />
               Your shop
             </Link>
-            <h1 className="sell-title">My listings</h1>
-            <Link href={NEW_LISTING_PATH} prefetch={false} className="btn btn-primary">
-              New listing
-            </Link>
+            <h1 className="sell-title">Your listings</h1>
           </header>
           <Suspense fallback={<SellFormSkeleton />}>
             <MyListings searchParams={searchParams} />

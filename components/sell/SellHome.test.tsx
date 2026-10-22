@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { addFollow } from "@/lib/data/follows";
 import { saveFormState } from "@/lib/data/form-states";
 import { emptyDraft, saveOnboardingDraft } from "@/lib/data/shops";
-import { declineShop, resendForApproval } from "@/lib/data/staff-shops";
+import { approveShop, declineShop, resendForApproval } from "@/lib/data/staff-shops";
 import { resetSampleStore, sampleStore } from "@/lib/data/store";
 import { DASHBOARD_FORM } from "@/lib/selling/form-state";
 import { prefetchingLinks } from "@/tests/helpers/next-link";
@@ -102,26 +102,43 @@ describe("/sell (selling spec section 3)", () => {
     expect(lede.childNodes).toHaveLength(1);
   });
 
-  it("shows an approved seller the dashboard: this week's numbers and the next badge (spec 2.8)", async () => {
+  it("shows an approved seller the home: Needs you, the week against the week before, and the next badge (spec 7.1)", async () => {
     viewer.id = "acc-seller";
     render(await SellHome());
     expect(screen.getByRole("heading", { level: 1, name: "Tech corner" })).toBeInTheDocument();
-    expect(screen.getByText("Your shop is live")).toBeInTheDocument();
-    const week = screen.getByRole("region", { name: "In the last 7 days" });
-    expect(within(week).getByText("New enquiries").nextElementSibling).toHaveTextContent("2");
-    expect(within(week).getByText("Replied within 48 hours").nextElementSibling).toHaveTextContent("2 of 2");
-    expect(within(week).getByText("Sales confirmed").nextElementSibling).toHaveTextContent("0");
+    expect(within(screen.getByRole("banner")).getByText("Live")).toBeInTheDocument();
+    // The seed's calculator sale (conv-s2) was marked done on 13 October, after l-001 last changed.
+    expect(screen.getByRole("link", { name: /1\s*Sale to mark as sold\s*Casio fx-991ZA Plus calculator/ })).toHaveAttribute(
+      "href",
+      "/messages/conv-s2",
+    );
+    const week = within(screen.getByRole("list", { name: "In the last 7 days" })).getAllByRole("listitem");
+    expect(week[0]).toHaveTextContent(/^Enquiries\s*2/);
+    expect(week[1]).toHaveTextContent(/^Sales\s*0/);
+    expect(screen.getByText("2 enquiries in the last 7 days, none today.")).toBeInTheDocument();
     expect(screen.getByText("1 more enquiry and 5 more confirmed sales for Trusted.")).toBeInTheDocument();
   });
 
-  it("tells the shop how many follow it, from the follows in the store (community actions spec 2.18)", async () => {
+  it("shows a newly approved shop its checklist, done from its own data (spec 7.1, New shop)", async () => {
+    await approveShop("crochet-corner", "acc-pending", new Date("2026-10-12T08:00:00.000Z"));
+    viewer.id = "acc-pending";
+    render(await SellHome());
+    // No photo yet; about and a pickup point from the wizard; no listing; no reply.
+    const checklist = screen.getByRole("region", { name: "Get your shop going" });
+    expect(within(checklist).getByText("2 of 5 done")).toBeInTheDocument();
+    expect(within(checklist).getByRole("link", { name: "Add a photo of your shop" })).toHaveClass("btn-primary");
+    expect(screen.queryByRole("region", { name: "In the last 7 days" })).toBeNull();
+  });
+
+  it("tells the shop how many follow it and how many are new, numbers only (spec 7.1)", async () => {
     viewer.id = "acc-seller";
     const first = render(await SellHome());
-    expect(screen.getByText("No one follows your shop yet")).toBeInTheDocument();
+    expect(within(screen.getByRole("banner")).getByText("No followers yet")).toBeInTheDocument();
     first.unmount();
     await addFollow("acc-student", "tech-corner", new Date("2026-10-14T08:42:00.000Z"));
     render(await SellHome());
-    expect(screen.getByText("1 person follows your shop")).toBeInTheDocument();
+    expect(within(screen.getByRole("banner")).getByText("1 follower")).toBeInTheDocument();
+    expect(screen.getByText("+1 new this week")).toBeInTheDocument();
   });
 
   it("says what the last action did once: a second visit shows no notice (amendment 10.6)", async () => {
@@ -150,7 +167,7 @@ describe("/sell (selling spec section 3)", () => {
     viewer.id = "acc-seller";
     sampleStore().sellerProfiles.get("acc-seller")!.status = "paused";
     render(await SellHome());
-    expect(screen.getByText("Paused: buyers can't see your listings")).toBeInTheDocument();
+    expect(within(screen.getByRole("banner")).getByText("Paused")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Resume my shop" })).toHaveAttribute("type", "submit");
   });
 
@@ -181,7 +198,7 @@ describe("/sell (selling spec section 3)", () => {
     });
     viewer.id = "acc-seller";
     render(await SellHome());
-    expect(screen.getByText("Paused by the Hub: buyers can't see your listings")).toBeInTheDocument();
+    expect(within(screen.getByRole("banner")).getByText("Paused by the Hub")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Why the Hub paused it" })).toHaveTextContent("Selling exam answers.");
     expect(screen.queryByRole("button", { name: "Resume my shop" })).toBeNull();
   });
@@ -194,7 +211,7 @@ describe("/sell (selling spec section 3)", () => {
     });
     viewer.id = "acc-seller";
     render(await SellHome());
-    expect(screen.getByText("Paused: buyers can't see your listings")).toBeInTheDocument();
+    expect(within(screen.getByRole("banner")).getByText("Paused")).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Why the Hub paused it" })).toBeNull();
     expect(screen.getByRole("button", { name: "Resume my shop" })).toBeInTheDocument();
   });

@@ -18,6 +18,7 @@ vi.mock("@/lib/messaging/actions", () => ({
   sendReply: async () => {},
   sendReport: async () => {},
 }));
+vi.mock("@/lib/selling/listing-actions", () => ({ changeListingState: async () => {} }));
 
 // Messaging plan amendment 5. Next keeps the last pages hidden in the DOM, so two composers (for two listings) or two
 // threads can be there at once. A <label for>, an error summary's "#field" link and an aria-describedby all go to the

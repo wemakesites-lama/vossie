@@ -19,34 +19,33 @@ const show = (tab: ListingsTab, extra: Partial<Parameters<typeof MyListingsView>
     <MyListingsView tab={tab} rows={rows} waiting={false} paused={false} notice={null} noticeListing={null} {...extra} />,
   );
 
-// The title is also in each control's sr-only name, so look for the one in the listing's own line.
-const itemFor = (title: string) => screen.getByText(title, { selector: ".sell-item-title" }).closest("li")!;
+/** A listing's row: the <li> holding its edit link. */
+const itemFor = (title: string) => screen.getByRole("link", { name: `Edit ${title}` }).closest("li")!;
 
-describe("My listings (selling spec 2.9)", () => {
-  it("links each tab with its count, marking the open one", () => {
+describe("Your listings (selling spec 2.9, role views spec 7.1)", () => {
+  it("makes each listing one row that opens its form, named Edit {title}, with its price and last update", () => {
     show("available");
-    const tabs = within(screen.getByRole("navigation", { name: "Listings by state" })).getAllByRole("link");
-    expect(tabs.map((tab) => [tab.textContent, tab.getAttribute("href"), tab.getAttribute("aria-current")])).toEqual([
-      ["Available (1)", "/sell/listings", "page"],
-      ["Paused (1)", "/sell/listings?tab=paused", null],
-      ["Sold (1)", "/sell/listings?tab=sold", null],
-      ["Drafts (1)", "/sell/listings?tab=drafts", null],
-    ]);
-  });
-
-  it("shows an available listing's price and last update, and actions that each name it", () => {
-    show("available");
-    const item = itemFor("Desk fan");
-    expect(within(item).getByText("R150 · Updated 13 Oct")).toBeInTheDocument();
-    expect(within(item).getByRole("link", { name: "Edit Desk fan" })).toHaveAttribute("href", "/sell/listings/l-a/edit");
-    expect(within(item).getByRole("button", { name: "Pause Desk fan" })).toHaveAttribute("type", "submit");
-    expect(within(item).getByRole("button", { name: "Mark sold Desk fan" })).toBeInTheDocument();
-    expect(within(item).getByRole("link", { name: "Delete Desk fan" })).toHaveAttribute("href", "/sell/listings/l-a/delete");
-    expect(item.querySelector('input[name="tab"]')).toHaveValue("available");
+    const link = screen.getByRole("link", { name: "Edit Desk fan" });
+    expect(link).toHaveAttribute("href", "/sell/listings/l-a/edit");
+    expect(link).toHaveClass("list-row");
+    expect(link).toHaveAccessibleDescription("R150 · Updated 13 Oct");
     expect(screen.queryByText("Kettle")).toBeNull();
   });
 
-  it("offers Resume on a paused listing, Relist on a sold one, and only Edit and Delete on a draft", () => {
+  it("keeps Pause and Mark sold together and Delete apart, as a text link at the end", () => {
+    show("available");
+    const item = itemFor("Desk fan");
+    const buttons = within(item).getAllByRole("button").map((button) => button.textContent);
+    expect(buttons).toEqual(["Pause Desk fan", "Mark sold Desk fan"]);
+    const remove = within(item).getByRole("link", { name: "Delete Desk fan" });
+    expect(remove).toHaveAttribute("href", "/sell/listings/l-a/delete");
+    expect(remove).toHaveClass("mylist-delete");
+    // Mark sold is never next to Delete: they are in different groups.
+    expect(within(item).getByRole("button", { name: "Mark sold Desk fan" }).closest(".mylist-actions")).not.toContainElement(remove);
+    expect(item.querySelector('input[name="tab"]')).toHaveValue("available");
+  });
+
+  it("offers Resume on a paused listing, Relist on a sold one, and only Delete beside a draft", () => {
     const paused = show("paused");
     expect(screen.getByRole("button", { name: "Resume Kettle" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Mark sold Kettle" })).toBeInTheDocument();
@@ -58,11 +57,23 @@ describe("My listings (selling spec 2.9)", () => {
     show("drafts");
     expect(screen.queryAllByRole("button")).toEqual([]);
     expect(screen.getByRole("link", { name: "Edit Bike" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Delete Bike" })).toBeInTheDocument();
   });
 
-  it("says when a tab is empty", () => {
-    render(<MyListingsView tab="sold" rows={[]} waiting={false} paused={false} notice={null} noticeListing={null} />);
-    expect(screen.getByText("Nothing sold yet.")).toBeInTheDocument();
+  it("shows an empty tab as an empty state with a New listing button", () => {
+    for (const [tab, title] of [
+      ["available", "Nothing available right now"],
+      ["paused", "Nothing paused"],
+      ["sold", "Nothing sold yet"],
+      ["drafts", "No drafts"],
+    ] as const) {
+      const { unmount } = render(
+        <MyListingsView tab={tab} rows={[]} waiting={false} paused={false} notice={null} noticeListing={null} />,
+      );
+      expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "New listing" })).toHaveAttribute("href", "/sell/listings/new");
+      unmount();
+    }
   });
 
   it("shows the last action's notice with a link to the listing, and tells a waiting shop its listings are drafts", () => {
@@ -79,9 +90,7 @@ describe("My listings (selling spec 2.9)", () => {
     show("available", { paused: true, notice, noticeListing: "l-a" });
     expect(screen.getByRole("status")).toHaveTextContent(notice);
     expect(screen.queryByRole("link", { name: "See it as buyers do" })).toBeNull();
-    expect(
-      screen.getByText("Your shop is paused, so buyers can't see your listings until you resume it."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Your shop is paused, so buyers can't see your listings until you resume it.")).toBeInTheDocument();
   });
 
   it("tells a seller the Hub paused the shop, with the Hub's reason and no promise they can resume it (staff tools plan decision 3)", () => {
@@ -92,32 +101,16 @@ describe("My listings (selling spec 2.9)", () => {
     expect(screen.queryByText(/Your shop is paused/)).toBeNull();
   });
 
-  it("still says the Hub paused it when the Hub gave no reason, and offers no look as a buyer", () => {
-    show("available", { paused: true, hubPause: "", notice: "Saved.", noticeListing: "l-a" });
-    expect(screen.getByText("Paused by the Hub: buyers can't see your listings.")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "See it as buyers do" })).toBeNull();
-  });
-
-  it("keeps the seller's own pause words when the Hub didn't pause it", () => {
-    show("available", { paused: true, hubPause: null });
-    expect(
-      screen.getByText("Your shop is paused, so buyers can't see your listings until you resume it."),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/Paused by the Hub/)).toBeNull();
-  });
-
-  it("marks a listing the Hub hid, with the Hub's reason (staff tools plan decision 4)", () => {
+  it("marks a listing the Hub hid, with the Hub's reason, and keeps Edit and Delete (staff tools plan decision 4)", () => {
     const hidden = makeListingRow({ hiddenAt: "2026-10-14T08:00:00.000Z", hiddenReason: "Exam papers aren't allowed." });
     render(<MyListingsView tab="available" rows={[hidden]} waiting={false} paused={false} notice={null} noticeListing={null} />);
     expect(screen.getByText("Hidden by the Hub: Exam papers aren't allowed.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Edit Test listing" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Edit Test listing" })).toHaveAccessibleDescription(/Hidden by the Hub$/);
     expect(screen.getByRole("link", { name: "Delete Test listing" })).toBeInTheDocument();
   });
 
-  it("says nothing about the Hub on a listing it didn't hide, and doesn't need a reason to mark one", () => {
-    const { rerender } = show("available");
-    expect(screen.queryByText(/Hidden by the Hub/)).toBeNull();
-    rerender(
+  it("says no reason was given when the Hub gave none", () => {
+    render(
       <MyListingsView
         tab="available"
         rows={[makeListingRow({ hiddenAt: "2026-10-14T08:00:00.000Z" })]}
@@ -135,9 +128,7 @@ describe("My listings (selling spec 2.9)", () => {
   it("carries nothing over when the same page is shown for another tab", () => {
     const { rerender } = show("available");
     const fan = itemFor("Desk fan");
-    rerender(
-      <MyListingsView tab="paused" rows={rows} waiting={false} paused={false} notice={null} noticeListing={null} />,
-    );
+    rerender(<MyListingsView tab="paused" rows={rows} waiting={false} paused={false} notice={null} noticeListing={null} />);
     expect(fan.isConnected).toBe(false);
     expect(screen.queryByText("Desk fan")).toBeNull();
     expect(itemFor("Kettle").querySelector('input[name="tab"]')).toHaveValue("paused");

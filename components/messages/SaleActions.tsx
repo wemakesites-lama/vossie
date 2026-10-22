@@ -1,5 +1,7 @@
+import { PendingButton } from "@/components/kit/PendingButton";
 import { confirmTheSale, markAsCompleted, saleDidntHappen } from "@/lib/messaging/actions";
 import { autoConfirmAt } from "@/lib/messaging/rules";
+import { changeListingState } from "@/lib/selling/listing-actions";
 import { shortSastDate } from "@/lib/time";
 import type { Thread } from "@/lib/types";
 
@@ -69,4 +71,24 @@ export function SaleActions({ thread }: { thread: Thread }) {
     );
   }
   return null;
+}
+
+/**
+ * "Mark {title} as sold" (role views spec 7.1, Fixes): shown to the seller in a thread whose sale is completed while
+ * its listing is still up, exactly when the shop's queue lists it (N2 plan decision 3). One small form to the listing
+ * buttons' own action, which comes back here; it says what's happening and takes no second press (plan decision 17).
+ */
+export function MarkSoldForm({ conversationId, listingId, title }: { conversationId: string; listingId: string; title: string }) {
+  return (
+    <form action={changeListingState} className="thread-sale thread-sale-mark">
+      <input type="hidden" name="listing" value={listingId} />
+      <input type="hidden" name="to" value="sold" />
+      <input type="hidden" name="tab" value="available" />
+      <input type="hidden" name="thread" value={conversationId} />
+      <PendingButton className="btn btn-primary" pendingLabel="Marking as sold…">
+        Mark {title} as sold
+      </PendingButton>
+      <p className="form-hint">It moves to Sold in Your listings. Its page stays up and says Sold.</p>
+    </form>
+  );
 }

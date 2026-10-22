@@ -16,6 +16,7 @@ vi.mock("@/lib/messaging/actions", () => ({
   saleDidntHappen: async () => {},
   sendReply: async () => {},
 }));
+vi.mock("@/lib/selling/listing-actions", () => ({ changeListingState: async () => {} }));
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
 vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
 
@@ -49,5 +50,24 @@ describe("a thread for this visitor (messaging spec 3.3)", () => {
     session.accountId = "acc-student";
     await expect(OpenThread({ id: "conv-nope" })).rejects.toThrow("notFound");
     expect(sampleStore().messages.get("msg-s2")?.readAt).toBeNull();
+  });
+
+  it("offers the seller Mark {title} as sold once the sale is completed and the listing is still up (role views N2)", async () => {
+    session.accountId = "acc-seller";
+    render(await OpenThread({ id: "conv-s2" }));
+    const form = screen.getByRole("button", { name: "Mark Casio fx-991ZA Plus calculator as sold" }).closest("form")!;
+    expect(form.querySelector('input[name="listing"]')).toHaveValue("l-001");
+    expect(form.querySelector('input[name="to"]')).toHaveValue("sold");
+    expect(form.querySelector('input[name="thread"]')).toHaveValue("conv-s2");
+  });
+
+  it("never offers it to the buyer, nor once the listing is sold", async () => {
+    const buyer = render(await OpenThread({ id: "conv-s2" }));
+    expect(screen.queryByRole("button", { name: /as sold$/ })).toBeNull();
+    buyer.unmount();
+    sampleStore().listings.get("l-001")!.state = "sold";
+    session.accountId = "acc-seller";
+    render(await OpenThread({ id: "conv-s2" }));
+    expect(screen.queryByRole("button", { name: /as sold$/ })).toBeNull();
   });
 });

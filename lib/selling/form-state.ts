@@ -18,6 +18,9 @@ export const DASHBOARD_FORM = "sell-dashboard";
 /** Edit shop's errors, typed values and notice. */
 export const PROFILE_FORM = "shop-profile";
 
+/** A selling thread's notice after "Mark {title} as sold" (role views N2 plan decision 4). */
+export const threadSoldForm = (conversationId: string) => `thread-sold:${conversationId}`;
+
 /** Forgets this browser's state for `form`. Server Actions only. */
 export async function clearForm(form: string): Promise<void> {
   const sessionKey = await getSessionKey();

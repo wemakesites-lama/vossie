@@ -18,7 +18,7 @@ export default function NewListingPage() {
           <header className="sell-head">
             <Link href={myListingsPath()} prefetch={false} className="sell-crumb">
               <ChevronLeftIcon className="size-4" />
-              My listings
+              Your listings
             </Link>
             <h1 className="sell-title">New listing</h1>
           </header>

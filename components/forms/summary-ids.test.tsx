@@ -59,7 +59,7 @@ vi.mock("@/lib/selling/shop-actions", () => ({
   saveShopProfile: async () => {},
   sendForApproval: async () => {},
 }));
-vi.mock("@/lib/selling/listing-actions", () => ({ saveListingForm: async () => {} }));
+vi.mock("@/lib/selling/listing-actions", () => ({ saveListingForm: async () => {}, changeListingState: async () => {} }));
 vi.mock("@/lib/staff/admin-actions", () => ({
   declineSeller: async () => {},
   dismissReport: async () => {},

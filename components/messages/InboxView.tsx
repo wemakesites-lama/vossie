@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { MessageIcon } from "@/components/icons";
+import { EmptyState } from "@/components/kit/EmptyState";
 import { Photo } from "@/components/listings/Photo";
 import { offerAbout } from "@/lib/looking-for/words";
 import { inboxPath, threadPath } from "@/lib/messaging/paths";
+import { NEW_LISTING_PATH } from "@/lib/selling/paths";
 import { inboxTime } from "@/lib/time";
 import type { ConversationSummary, InboxTab } from "@/lib/types";
 import { StatusPill } from "./StatusPill";
@@ -106,9 +109,12 @@ function InboxRow({ conversation, now }: { conversation: ConversationSummary; no
 function InboxEmpty({ tab }: { tab: InboxTab }) {
   if (tab === "selling") {
     return (
-      <div className="inbox-empty">
-        <p>No enquiries yet. When a buyer messages your shop, it shows up here.</p>
-      </div>
+      <EmptyState
+        icon={<MessageIcon />}
+        title="No enquiries yet"
+        line="When a buyer messages your shop, it shows up here. A new listing brings buyers."
+        action={{ label: "New listing", href: NEW_LISTING_PATH }}
+      />
     );
   }
   return (

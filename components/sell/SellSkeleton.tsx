@@ -1,7 +1,11 @@
-/** /sell's shape while it streams in: a heading block and the sections under it (heights checked in Task 17). */
+/**
+ * /sell's shape while it streams in (role views N2 plan decision 15): the header card and one card under it, shorter
+ * than every state (the shortest, a new shop's checklist, is measured in tests/e2e/role-views-writes.spec.ts).
+ * `.sell-page` is a screen tall, so the footer stays below the first screen while it streams.
+ */
 export function SellSkeleton() {
   return (
-    <div className="sell-column" aria-hidden="true">
+    <div className="sell-column sell-home" aria-hidden="true">
       <span className="skeleton sell-skeleton-head" />
       <span className="skeleton sell-skeleton-body" />
     </div>

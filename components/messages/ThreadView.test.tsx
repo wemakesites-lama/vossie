@@ -11,6 +11,7 @@ vi.mock("@/lib/messaging/actions", () => ({
   saleDidntHappen: async () => {},
   sendReply: async () => {},
 }));
+vi.mock("@/lib/selling/listing-actions", () => ({ changeListingState: async () => {} }));
 
 // Wednesday 14 October 2026, 15:00 in South Africa.
 const NOW = new Date("2026-10-14T13:00:00Z");

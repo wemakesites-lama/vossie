@@ -15,7 +15,15 @@ import { DAY_MS, KEEP_MAX } from "@/lib/messaging/rules";
 import type { MatchQuery } from "@/lib/types";
 import { ascii, containsText, GPS, pngBytes } from "@/tests/helpers/image-bytes";
 import { redirectOf, redirectSignalOf, resetRequest, type FakeRequest } from "@/tests/helpers/next-request";
-import { issueListingToken, listingForm, LISTING_TOKEN_TTL_MS, MY_LISTINGS_FORM, takeListingToken, takeNotice } from "./form-state";
+import {
+  issueListingToken,
+  listingForm,
+  LISTING_TOKEN_TTL_MS,
+  MY_LISTINGS_FORM,
+  takeListingToken,
+  takeNotice,
+  threadSoldForm,
+} from "./form-state";
 import { changeListingState, deleteListingForm, saveListingForm } from "./listing-actions";
 import { resumeShop } from "./shop-actions";
 
@@ -440,6 +448,33 @@ describe("My listings' buttons and Delete listing (selling spec 2.9, plan decisi
     await move("draft", "available");
     expect((await getOwnListing("tech-corner", "l-001"))?.state).toBe("available");
     expect(request.updatedTags).toEqual(["listings", "listings", "listings", "listings"]);
+  });
+
+  it("marks a listing sold from its selling thread and goes back there, saying so (role views N2)", async () => {
+    await signedInAs("acc-seller");
+    const post = form({ listing: "l-001", to: "sold", tab: "available", thread: "conv-s2" });
+    expect(await redirectOf(() => changeListingState(post))).toBe("/messages/conv-s2");
+    expect((await getOwnListing("tech-corner", "l-001"))?.state).toBe("sold");
+    expect((await readFormState(threadSoldForm("conv-s2")))?.notice).toBe("sold");
+    expect(await readFormState(MY_LISTINGS_FORM)).toBeNull();
+    // listingsChanged() ran before done()'s redirect; a second press changes nothing and expires nothing more.
+    expect(await redirectOf(() => changeListingState(post))).toBe("/messages/conv-s2");
+    expect(request.updatedTags).toEqual(["listings"]);
+  });
+
+  it("lets only the listing's owner mark it sold from a thread", async () => {
+    await signedInAs("acc-pending");
+    const post = form({ listing: "l-001", to: "sold", tab: "available", thread: "conv-s2" });
+    expect(await redirectOf(() => changeListingState(post))).toBe("/messages/conv-s2");
+    expect((await getOwnListing("tech-corner", "l-001"))?.state).toBe("available");
+    expect(await readFormState(threadSoldForm("conv-s2"))).toBeNull();
+    expect(request.updatedTags).toEqual([]);
+  });
+
+  it("goes back to My listings when the thread field isn't an id", async () => {
+    await signedInAs("acc-seller");
+    const post = form({ listing: "l-001", to: "sold", tab: "available", thread: "https://example.com" });
+    expect(await redirectOf(() => changeListingState(post))).toBe("/sell/listings");
   });
 
   it("tells a paused shop the truth on Resume and Relist, and keeps Pause's and Mark sold's words (amendment 11.6)", async () => {

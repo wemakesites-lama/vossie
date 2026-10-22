@@ -65,8 +65,10 @@ describe("Follow, once the session is read (community actions spec 2.16)", () =>
     expect(screen.getByRole("status")).toHaveTextContent("You follow Tech corner.");
   });
 
-  it("is nothing for the shop's owner, who has Edit shop in the band", async () => {
+  it("gives the shop's owner the way back to their shop, in Follow's place (role views spec 7.1)", async () => {
     viewer.account = { id: "acc-seller", seller: { status: "approved", sellerSlug: "tech-corner" } };
-    expect(await ViewerFollow({ slug: "tech-corner", name: "Tech corner" })).toBeNull();
+    render((await ViewerFollow({ slug: "tech-corner", name: "Tech corner" }))!);
+    expect(screen.getByRole("link", { name: "Back to your shop" })).toHaveAttribute("href", "/sell");
+    expect(screen.queryByRole("button")).toBeNull();
   });
 });

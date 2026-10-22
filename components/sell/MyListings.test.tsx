@@ -36,8 +36,8 @@ describe("My listings' and Delete listing's request-time parts (selling spec 2.9
   it("shows the signed-in seller's own listings on the tab asked for", async () => {
     viewer.id = "acc-seller";
     render(await MyListings({ searchParams: Promise.resolve({ tab: "available" }) }));
-    // The title is also in each control's sr-only name, so look for the one in the listing's own line.
-    expect(screen.getByText("Casio fx-991ZA Plus calculator", { selector: ".sell-item-title" })).toBeInTheDocument();
+    // The row's link is named Edit {title}.
+    expect(screen.getByRole("link", { name: "Edit Casio fx-991ZA Plus calculator" })).toBeInTheDocument();
     expect(screen.queryByText("Box braids, shoulder length")).toBeNull();
   });
 
