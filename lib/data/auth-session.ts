@@ -58,6 +58,12 @@ export async function verifySignInCode(email: string, code: string): Promise<Ver
   return (await supabase()).verifySignInCode(email, code);
 }
 
+/** The demo sign-in (isDemoSignIn): straight into a seed account, no code; the vossie_auth cookie holds the session. */
+export async function signInDemo(email: string): Promise<VerifyOutcome> {
+  if (!onSupabase()) supabaseOnly("signInDemo");
+  return (await supabase()).signInDemo(email);
+}
+
 /** Signs this browser out: signOut({ scope: "local" }), then every vossie_auth cookie cleared, whatever Supabase said. */
 export async function signOutHere(): Promise<void> {
   if (!onSupabase()) supabaseOnly("signOutHere");

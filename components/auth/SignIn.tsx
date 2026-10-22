@@ -1,4 +1,4 @@
-import { isSampleMode } from "@/lib/auth/config";
+import { isDemoSignIn, isSampleMode } from "@/lib/auth/config";
 import { getSignInView } from "@/lib/auth/sign-in-view";
 import { getCampuses } from "@/lib/data";
 import { getSampleSignIns } from "@/lib/data/accounts";
@@ -39,7 +39,7 @@ export async function SignIn({ next }: { next: string | null }) {
           email={view.email}
           consented={view.consented}
           errors={view.errors}
-          samples={isSampleMode() ? await getSampleSignIns() : null}
+          samples={isSampleMode() || isDemoSignIn() ? await getSampleSignIns() : null}
         />
       );
   }

@@ -247,6 +247,45 @@ describe("the sample accounts on Supabase (decision 1)", () => {
   });
 });
 
+describe("the demo sign-in on Supabase (VOSSIE_DEMO_SIGN_IN, Lama 2026-10-22)", () => {
+  beforeEach(() => vi.stubEnv("VOSSIE_DEMO_SIGN_IN", "1"));
+  const demo = (email: string) => finishSample(form({ email, next: NEXT }), NOW);
+
+  it("signs a sample button straight into its seed account and goes on to next", async () => {
+    supabase.verifyOutcome = { ok: true, userId: "user-admin" };
+    supabase.profiles.set("user-admin", supabaseAccount("user-admin", "admin@vossie.test", { roles: ["admin"] }));
+    expect(await demo("admin@eduvos.com")).toBe(NEXT);
+    expect(supabase.calls).toEqual(["readClaims", "demo:admin@vossie.test", "hasProfile"]);
+  });
+
+  it("signs a browser's old session out first", async () => {
+    supabase.verifyOutcome = { ok: true, userId: "user-student" };
+    supabase.profiles.set("user-student", supabaseAccount("user-student", "student@vossie.test"));
+    supabase.claims = { userId: "someone", sessionId: "old", email: EMAIL };
+    expect(await demo("student@eduvos.com")).toBe(NEXT);
+    expect(supabase.calls.slice(0, 3)).toEqual(["readClaims", "signOutHere", "demo:student@vossie.test"]);
+  });
+
+  it("refuses any address that isn't one of the five buttons', asking Supabase nothing", async () => {
+    supabase.verifyOutcome = { ok: true, userId: "user-1" };
+    expect(await demo(EMAIL)).toBe("/login?next=%2Flistings%2Fl-001");
+    expect(await demo("admin@vossie.test")).toBe("/login?next=%2Flistings%2Fl-001");
+    expect(supabase.calls).toEqual([]);
+  });
+
+  it("goes back to sign-in, signed out, when the seed account has no profile", async () => {
+    supabase.verifyOutcome = { ok: true, userId: "user-gone" };
+    expect(await demo("seller@eduvos.com")).toBe("/login?next=%2Flistings%2Fl-001");
+    expect(supabase.calls.at(-1)).toBe("signOutHere");
+    expect(supabase.claims).toBeNull();
+  });
+
+  it("goes back to sign-in when Supabase refuses", async () => {
+    supabase.verifyOutcome = "failed";
+    expect(await demo("mentor@eduvos.com")).toBe("/login?next=%2Flistings%2Fl-001");
+  });
+});
+
 describe("Send a new code on Supabase (amendment 6)", () => {
   it("refuses within a minute of the last code, without using one of the hour's codes", async () => {
     await onStep2();

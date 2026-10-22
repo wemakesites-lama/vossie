@@ -101,7 +101,7 @@ function SampleAccounts({ next, samples }: { next: string | null; samples: reado
       <h2 id="signin-samples-title" className="signin-samples-title">
         Sign in as a sample account
       </h2>
-      <p className="form-hint">Sample mode only: straight in, no code.</p>
+      <p className="form-hint">For demos only: straight in, no code.</p>
       <form action={SIGN_IN_POSTS.sample} method="post" className="signin-sample-list">
         <NextField next={next} />
         {samples.map((sample) => (

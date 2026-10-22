@@ -10,6 +10,7 @@ const calls = vi.hoisted(() => ({
   createClient: vi.fn(),
   createServerClient: vi.fn(),
   signInWithOtp: vi.fn(),
+  generateLink: vi.fn(),
   verifyOtp: vi.fn(),
   signOut: vi.fn(),
   realIp: "196.25.1.1" as string | null,
@@ -26,7 +27,7 @@ const calls = vi.hoisted(() => ({
 vi.mock("@supabase/supabase-js", () => ({
   createClient: (...args: unknown[]) => {
     calls.createClient(...args);
-    return { auth: { signInWithOtp: calls.signInWithOtp } };
+    return { auth: { signInWithOtp: calls.signInWithOtp, admin: { generateLink: calls.generateLink } } };
   },
 }));
 vi.mock("@supabase/ssr", () => ({
@@ -58,8 +59,8 @@ beforeEach(() => {
 });
 
 describe("the sign-in client's type (backend spec 5)", () => {
-  it("has the three sign-in calls and nothing else", () => {
-    expectTypeOf<keyof AuthClient>().toEqualTypeOf<"sendSignInCode" | "verifySignInCode" | "signOutHere">();
+  it("has the four sign-in calls and nothing else", () => {
+    expectTypeOf<keyof AuthClient>().toEqualTypeOf<"sendSignInCode" | "verifySignInCode" | "signOutHere" | "signInDemo">();
     expectTypeOf<AuthClient>().not.toHaveProperty("auth");
     expectTypeOf<AuthClient>().not.toHaveProperty("admin");
     expectTypeOf<AuthClient>().not.toHaveProperty("from");
@@ -106,6 +107,21 @@ describe("the sign-in client (backend spec 5)", () => {
       cookieOptions: { name: "vossie_auth", httpOnly: true, sameSite: "lax", secure: true, path: "/" },
       global: { headers: { "Sb-Forwarded-For": "196.25.1.1" } },
     });
+  });
+
+  it("signs in a demo account with a magic link token it checks at once, sending no email", async () => {
+    calls.generateLink.mockResolvedValue({ data: { properties: { hashed_token: "hashed-1" }, user: {} }, error: null });
+    calls.verifyOtp.mockResolvedValue({ data: { user: { id: "user-5" }, session: {} }, error: null });
+    expect(await (await authClient()).signInDemo("admin@vossie.test")).toEqual({ ok: true, userId: "user-5" });
+    expect(calls.generateLink).toHaveBeenCalledWith({ type: "magiclink", email: "admin@vossie.test" });
+    expect(calls.verifyOtp).toHaveBeenCalledWith({ token_hash: "hashed-1", type: "magiclink" });
+    expect(calls.signInWithOtp).not.toHaveBeenCalled();
+  });
+
+  it("passes on a demo link's refusal without checking anything", async () => {
+    calls.generateLink.mockResolvedValue({ data: { properties: null, user: null }, error: { code: "user_not_found", status: 404, message: "…" } });
+    expect(await (await authClient()).signInDemo("gone@vossie.test")).toEqual({ ok: false, code: "user_not_found", status: 404 });
+    expect(calls.verifyOtp).not.toHaveBeenCalled();
   });
 
   it("passes on Auth's refusal as its code and status, never its message", async () => {

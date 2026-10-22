@@ -6,6 +6,7 @@ import {
   CODES_PER_HOUR,
   DEFAULT_EMAIL_DOMAINS,
   emailDomains,
+  isDemoSignIn,
   isSampleMode,
   MAX_WRONG_TRIES,
   policyLabel,
@@ -58,6 +59,13 @@ describe("the sign-in mode (Supabase phase B, decision 1)", () => {
     expect(signInMode({ VOSSIE_BACKEND: "supabase", VOSSIE_SAMPLE_MODE: "1" })).toBe("supabase");
     expect(signInMode({ VOSSIE_BACKEND: "supabase", VOSSIE_SAMPLE_MODE: "0" })).toBe("supabase");
     expect(signInMode({ VOSSIE_BACKEND: "sample", VOSSIE_SAMPLE_MODE: "0" })).toBe("off");
+  });
+
+  it("offers the demo sign-in only on Supabase with VOSSIE_DEMO_SIGN_IN=1", () => {
+    expect(isDemoSignIn({ VOSSIE_BACKEND: "supabase", VOSSIE_DEMO_SIGN_IN: "1" })).toBe(true);
+    expect(isDemoSignIn({ VOSSIE_BACKEND: "supabase" })).toBe(false);
+    expect(isDemoSignIn({ VOSSIE_BACKEND: "supabase", VOSSIE_DEMO_SIGN_IN: "true" })).toBe(false);
+    expect(isDemoSignIn({ VOSSIE_DEMO_SIGN_IN: "1" })).toBe(false);
   });
 
   it("never counts as sample mode on Supabase, whatever VOSSIE_SAMPLE_MODE says", () => {

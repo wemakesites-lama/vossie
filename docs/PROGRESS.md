@@ -908,7 +908,7 @@ Review notes that were deliberately not acted on:
   - `staff-accounts-writes.spec.ts` (one changed line) was not rerun.
 
 ## 2026-10-21: The Supabase backend finished on `backend/phases-b-c` (phases B and C, step 5 as the MVP cut)
-- **Where:** branch `backend/phases-b-c` (worktree `../Vossie-backend`), HEAD `33e0290`. Main is merged into it, with the CampusCart rename (`ad5652d`). Not yet merged into `main` or pushed.
+- **Where:** branch `backend/phases-b-c` (worktree `../Vossie-backend`), HEAD `33e0290`. Main is merged into it, with the CampusCart rename (`ad5652d`). Since merged into `main` and pushed: `main` and `origin/main` are at `88ba438` (2026-10-22).
 - **Lama's decisions (2026-10-21):** the live site is the "Vossie Market" project on vossie-pi.vercel.app, for the challenge submission; exactly `@vossie.net` and `@eduvos.com` may sign in; sessions slide for 30 days; sign-in codes come from Resend at `codes@wemakesites.co.za` (Brevo as the fallback); photos are capped at 4 MB each and 4 MiB a post; step 5 is cut to twelve end-to-end flows on Supabase (approved in the "In" session), and the full suite on Supabase moves to before any wider rollout.
 - **Built, each step planned, reviewed before code, built test first and reviewed after:**
   - **Step 2b:** the database for stages L and M. Requests close themselves by the app's rule, with the nightly settle and reminder. No admin acts on their own shop, listings or request, or removes their own shop's mentor. Campuses, categories, pickup points and the allowed domains are migrations, so production gets them without the seed.
@@ -937,11 +937,19 @@ Review notes that were deliberately not acted on:
 - **Every decision and change is in the plans:** `docs/superpowers/plans/2026-10-21-supabase-step-2b-and-phase-c-foundation.md`, `…-phase-b-sign-in.md` (its Task 13 is the go-live runbook), `…-phase-c2-c3-selling-messaging.md` and `…-phase-c4-c5-community-staff.md`.
 - **Known, not fixed:**
   - The Show again confirm page's short-phone layout-shift check fails on main's code too: a random test title wraps to a third line once the web font lands (0.0892 against 0.05). Fix it with closer fallback font metrics or a fixed test title.
-  - Two requests renewing one session at the same moment: look at it before many people sign in.
+  - Two requests renewing one session at the same moment: looked at on 2026-10-22 (below), and it holds.
+
+## 2026-10-22: Demo sign-in on the live site, the renewal race, and the go-live checklist
+- **Demo roles on the live site** (Lama: no students are being onboarded yet, so the demo runs on the live site). `VOSSIE_DEMO_SIGN_IN=1` on Supabase (`isDemoSignIn()`, `lib/auth/config.ts`) shows the five sample buttons at sign-in again. `/login/sample` signs each into its seed account (`student@vossie.test` and so on, `seedEmail` now in `lib/auth/seed-email.ts`) with a magic link token made with the secret key and checked at once, so no email is sent. Only the five fixture addresses work; an account without a profile goes back to sign-in. The hint under the buttons now says "For demos only". GO-LIVE has a new gate: unset it before the first real student signs in.
+- **A separate demo site didn't work.** The `campuscart-demo` Vercel project (sample mode) could show pages but never keep a sign-in: Vercel ran `/login/sample` and the pages in different instances, each with its own in-memory sample store. Deleted on Lama's yes. Sample mode needs one long-running server.
+- **The renewal race holds.** `lib/supabase/renewal.db.test.ts`: two proxy renewals of one nearly expired session at once both refresh, and both new sessions renew again, because of Supabase's 10-second refresh token reuse interval. Keep it at 10 on the live project.
+- **The Show again short-phone shift isn't fixed, and its cause is now clearer.** It's the page heading in the display font (Special Gothic Condensed): its fallback has different metrics, so a heading can wrap to a different number of lines when the web font lands, depending on the title's length. A realistic title made it worse (0.075 and 0.226, the staff nav and body moving), so the test change was reverted. The fix is closer fallback metrics for the display font (it touches every heading), a decision for Lama.
+- **GO-LIVE:** 19 backend items ticked as built on Supabase (each one checked against the migrations); partial ones stay open (`/photos/[id]` stays, and deleting old messages waits for retention periods).
+- **Checks:** unit 3,316; the auth-session and renewal db tests on the local stack; lint and types clean; the production build passes, with no browser chunk naming Supabase or registering the worker.
 
 ## Next
 - **Every planned stage (A to M) is built in sample mode** and merged into `main`. The four phone e2e failures that predated stage L are fixed (`d13321b`). The full device suite last ran before stage M: rerun it once before go-live.
-- **The Supabase backend is finished on `backend/phases-b-c`** (above). Merging it into `main` (a fast-forward) and pushing need Lama's go-ahead; the push also publishes the CampusCart rename.
+- **The Supabase backend is finished, merged into `main` and pushed** (above), with the CampusCart rename: `main` and `origin/main` are at `88ba438`.
 - **Going live** (submission: vossie-pi.vercel.app on the "Vossie Market" project):
   - Lama logs the Supabase CLI in with a new token (`supabase login`);
   - a dry run of the migrations, then the push, then the guarded clear-out of the sample data and `make_first_admin`;

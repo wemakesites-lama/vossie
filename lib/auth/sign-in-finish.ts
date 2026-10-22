@@ -3,11 +3,19 @@ import {
   completeProfile,
   createAccount,
   findAccountByEmail,
+  getSampleSignIns,
   hasProfile,
   recordConsent,
   restoreSampleAccount,
 } from "@/lib/data/accounts";
-import { readClaims, sendSignInCode, signOutHere, type SendOutcome, verifySignInCode } from "@/lib/data/auth-session";
+import {
+  readClaims,
+  sendSignInCode,
+  signInDemo,
+  signOutHere,
+  type SendOutcome,
+  verifySignInCode,
+} from "@/lib/data/auth-session";
 import type { SignInAttemptRow, SignInError } from "@/lib/data/rows";
 import { restoreSampleShop } from "@/lib/data/shops";
 import {
@@ -27,6 +35,7 @@ import {
   CODE_TTL_MS,
   CODES_PER_HOUR,
   IP_SENDS_PER_HOUR,
+  isDemoSignIn,
   isSampleMode,
   MAX_WRONG_TRIES,
   POLICY_VERSION,
@@ -35,6 +44,7 @@ import {
 import { deleteCookie, readCookieValue, setPrivateCookie, SIGN_IN_COOKIE } from "./cookies";
 import { normaliseEmail } from "./email";
 import { checkCampus, checkFirstName } from "./profile";
+import { seedEmail } from "./seed-email";
 import { codeMatches, hashCode, hashIp, hashToken, newCode, newToken } from "./secrets";
 import { startSession } from "./session";
 
@@ -327,6 +337,7 @@ export async function finishProfile(formData: FormData, now: Date): Promise<stri
 /** "Sign in as a sample account" (spec 2.8): straight in, in sample mode only, and only as one of the five. POST /login/sample. */
 export async function finishSample(formData: FormData, now: Date): Promise<string> {
   const next = nextFrom(formData);
+  if (isDemoSignIn()) return finishDemo(formData, next, now);
   if (!isSampleMode()) return signInPath(next);
   const account = await restoreSampleAccount(normaliseEmail(text(formData, "email")));
   if (!account) return signInPath(next);
@@ -335,5 +346,24 @@ export async function finishSample(formData: FormData, now: Date): Promise<strin
   if (await restoreSampleShop(account.id)) sellersChangedNow();
   await endAttempt(now);
   await startSession(account.id, now);
+  return afterSignInPath(next);
+}
+
+/**
+ * The same buttons on Supabase, with the demo sign-in on (isDemoSignIn): only one of the five fixtures' addresses, as
+ * its seed account. A browser already signed in is signed out first, as a code sign-in does. An account without a
+ * profile (deleted, or never seeded) isn't signed in: back to sign-in.
+ */
+async function finishDemo(formData: FormData, next: string | null, now: Date): Promise<string> {
+  const email = normaliseEmail(text(formData, "email"));
+  if (!(await getSampleSignIns()).some((sample) => sample.email === email)) return signInPath(next);
+  if ((await readClaims()) !== null) await signOutHere();
+  const signedIn = await signInDemo(seedEmail(email));
+  if (signedIn === "wrong" || signedIn === "failed" || signedIn === "ip-rate") return signInPath(next);
+  if (!(await hasProfile(signedIn.userId))) {
+    await signOutHere();
+    return signInPath(next);
+  }
+  await endAttempt(now);
   return afterSignInPath(next);
 }

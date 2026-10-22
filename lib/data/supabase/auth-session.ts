@@ -104,6 +104,13 @@ export async function verifySignInCode(email: string, code: string): Promise<Ver
   return "failed";
 }
 
+export async function signInDemo(email: string): Promise<VerifyOutcome> {
+  const signedIn = await (await authClient()).signInDemo(email);
+  if (signedIn.ok) return { ok: true, userId: signedIn.userId };
+  if (signedIn.code === "over_request_rate_limit") return "ip-rate";
+  return "failed";
+}
+
 export async function signOutHere(): Promise<void> {
   try {
     await (await authClient()).signOutHere();

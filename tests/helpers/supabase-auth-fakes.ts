@@ -88,6 +88,12 @@ export function authSessionModule(fakes: SupabaseFakes) {
       if (typeof outcome === "object") fakes.claims = { userId: outcome.userId, sessionId: "session-new", email };
       return outcome;
     }),
+    signInDemo: vi.fn(async (email: string) => {
+      fakes.calls.push(`demo:${email}`);
+      const outcome = fakes.verifyOutcome;
+      if (typeof outcome === "object") fakes.claims = { userId: outcome.userId, sessionId: "session-new", email };
+      return outcome;
+    }),
     signOutHere: vi.fn(async () => {
       fakes.calls.push("signOutHere");
       if (fakes.signOutRejects) throw new Error("Supabase is unreachable");

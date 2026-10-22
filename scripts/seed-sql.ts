@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { seedEmail } from "../lib/auth/seed-email.ts";
 import type { SampleAccount } from "../data/fixtures/accounts.ts";
 import type {
   ConsentRow,
@@ -58,19 +59,7 @@ export type SeedFixtures = {
  */
 export const SEED_EMAIL_DOMAINS: readonly string[] = ["vossie.test"];
 
-/** The reserved test domain of the seed's sample accounts (RFC 2606's .test: it can never be a real mailbox). */
-export const SEED_ACCOUNT_DOMAIN = "vossie.test";
-
-/**
- * A sample account's address in the seed: the fixture's own name on the test domain, so "student@eduvos.com" in sample
- * mode is "student@vossie.test" here. The fixtures stay as they are (sample mode uses them); seed accounts, admin and
- * mentor included, never look like someone's real Eduvos address.
- */
-export function seedEmail(fixtureEmail: string): string {
-  const at = fixtureEmail.lastIndexOf("@");
-  if (at < 1) throw new Error(`Not an email address: ${fixtureEmail}`);
-  return `${fixtureEmail.slice(0, at)}@${SEED_ACCOUNT_DOMAIN}`;
-}
+export { SEED_ACCOUNT_DOMAIN, seedEmail } from "../lib/auth/seed-email.ts";
 
 /** A fixed uuid for a fixture's id: the SHA-1 of the kind and the id, shaped as a version 5 uuid (RFC 9562). */
 export function seedUuid(kind: string, id: string): string {

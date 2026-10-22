@@ -54,6 +54,15 @@ export function isSampleMode(env: Env = process.env): boolean {
 }
 
 /**
+ * The demo sign-in (Lama, 2026-10-22): on Supabase with VOSSIE_DEMO_SIGN_IN "1", the sign-in page offers the five sample
+ * accounts' buttons, each signing in to its seed account (name@vossie.test) with no code. Anyone can then act as the
+ * Admin, so it's for demos before students are onboarded: unset it before the first real student signs in.
+ */
+export function isDemoSignIn(env: Env = process.env): boolean {
+  return onSupabase(env) && env.VOSSIE_DEMO_SIGN_IN === "1";
+}
+
+/**
  * The domains that can sign in when VOSSIE_EMAIL_DOMAINS lists none: students sign in as eduv and 7 digits at
  * vossie.net, staff at eduvos.com (Lama, 2026-10-21). Exact domains only, no subdomains. Production's database gets the
  * same list from supabase/migrations/20261021120000_reference_data.sql, which scripts/reference-sql.ts writes from this.

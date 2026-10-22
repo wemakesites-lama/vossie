@@ -32,6 +32,11 @@ export type AuthClient = {
   verifySignInCode(email: string, token: string): Promise<VerifyResult>;
   /** Sign out: ends this browser's session only (spec 5) and clears its cookie. */
   signOutHere(): Promise<SignOutResult>;
+  /**
+   * The demo sign-in (isDemoSignIn): a one-time magic link token made with the secret key, sending no email, checked at
+   * once, so the vossie_auth cookie holds a session for that account. Called only for the five seed addresses.
+   */
+  signInDemo(email: string): Promise<VerifyResult>;
 };
 
 function refusal(error: AuthError): AuthRefusal {
@@ -88,6 +93,21 @@ export async function authClient(): Promise<AuthClient> {
     async signOutHere() {
       const { error } = await (await cookieClient()).auth.signOut({ scope: "local" });
       return error ? refusal(error) : { ok: true };
+    },
+    async signInDemo(email) {
+      const admin = createClient<Database>(supabaseUrl(), secretKey(), {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        global,
+      });
+      const link = await admin.auth.admin.generateLink({ type: "magiclink", email });
+      if (link.error) return refusal(link.error);
+      const { data, error } = await (await cookieClient()).auth.verifyOtp({
+        token_hash: link.data.properties.hashed_token,
+        type: "magiclink",
+      });
+      if (error) return refusal(error);
+      if (!data.user) return { ok: false, code: "no_user", status: 500 };
+      return { ok: true, userId: data.user.id };
     },
   };
 }

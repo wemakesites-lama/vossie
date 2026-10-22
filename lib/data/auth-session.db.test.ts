@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { dbEnv, removeAccounts, testAdminClient } from "@/tests/db/accounts";
-import { sendSignInCode, verifySignInCode } from "./auth-session";
+import { sendSignInCode, signInDemo, verifySignInCode } from "./auth-session";
 
 // Sign-in's calls to Supabase Auth on the local stack (Supabase phase B, Task 11): the domain hook's refusal, the code
 // email, and checking a code. Next's cookies are a plain map here, as a Route Handler's would be. The codes are read
@@ -79,6 +79,20 @@ describe("sending and checking a code on the local stack (phase B, Task 11)", ()
     expect(verified).toEqual({ ok: true, userId: await userIdFor(email) });
     expect([...jar.keys()].every((name) => /^vossie_auth(\.\d+)?$/.test(name))).toBe(true);
     expect(jar.size).toBeGreaterThan(0);
+  });
+
+  it("signs an existing account in for the demo with the session in the cookie, and emails nothing", async () => {
+    const email = address("demo");
+    made.push(email);
+    expect(await sendSignInCode(email)).toBe("sent");
+    await newestMessage(email, new Date(Date.now() - 5_000));
+    jar.clear();
+    const before = new Date(Date.now() + 1_000);
+    const signedIn = await signInDemo(email);
+    expect(signedIn).toEqual({ ok: true, userId: await userIdFor(email) });
+    expect([...jar.keys()].every((name) => /^vossie_auth(\.\d+)?$/.test(name))).toBe(true);
+    expect(jar.size).toBeGreaterThan(0);
+    expect(await newestMessage(email, before, 1_500)).toBeNull();
   });
 
   it("gives no session to a password sign-up, which the app never offers (phase A's guard)", async () => {
