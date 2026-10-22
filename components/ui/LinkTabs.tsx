@@ -8,8 +8,9 @@ type LinkTabsProps = {
   tabs: readonly LinkTab[];
   /** The key of the tab this page shows. */
   current: string;
-  /** "chips": pills, the board's (plan decision 7). "tabs": browse's underlined tabs, the Hub's. */
-  look: "chips" | "tabs";
+  /** "chips": pills, the board's (plan decision 7). "tabs": browse's underlined tabs, the Hub's. "segmented": 2 to 4
+   * views as one control (role views spec 5.2). */
+  look: "chips" | "tabs" | "segmented";
 };
 
 /**
@@ -18,9 +19,10 @@ type LinkTabsProps = {
  * of results (decision 28).
  */
 export function LinkTabs({ label, tabs, current, look }: LinkTabsProps) {
-  const chips = look === "chips";
+  const navClass = { chips: "link-chips", tabs: "category-tabs", segmented: "link-segments" }[look];
+  const linkClass = { chips: "link-chip", tabs: "category-tab", segmented: "link-segment" }[look];
   return (
-    <nav aria-label={label} className={chips ? "link-chips" : "category-tabs"}>
+    <nav aria-label={label} className={navClass}>
       <ul>
         {tabs.map((tab) => (
           <li key={tab.key}>
@@ -28,7 +30,7 @@ export function LinkTabs({ label, tabs, current, look }: LinkTabsProps) {
               href={tab.href}
               prefetch={false}
               aria-current={tab.key === current ? "page" : undefined}
-              className={chips ? "link-chip" : "category-tab"}
+              className={linkClass}
             >
               {tab.label}
             </Link>

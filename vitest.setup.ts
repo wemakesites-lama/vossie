@@ -30,6 +30,10 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+// The role views charts import "server-only", whose default export throws outside a server build. Tests render them
+// directly, so it's a no-op here (role views N1 plan, Task 4).
+vi.mock("server-only", () => ({}));
+
 vi.mock("next/image", async () => {
   const { createElement } = await import("react");
   return {
