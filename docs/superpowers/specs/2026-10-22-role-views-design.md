@@ -17,7 +17,7 @@ The team wants each role to have its own focused experience: buyers, sellers, ad
 
 The dashboards are also almost all text: there are no charts, meters or trend arrows anywhere in the app.
 
-**Goal:** each role opens on a home that answers "what needs me now?", followed by a few honest numbers and small charts. The role's bottom bar holds its own tools. Navigation feels smooth. All of this costs **no new first-visit JavaScript**.
+**Goal:** each role opens on a home that answers "what needs me now?", followed by a few honest numbers and small charts. The role's bottom bar holds its own tools. Navigation feels smooth. All of it stays inside the first-visit JavaScript budget.
 
 ## 2. Lama's decisions (2026-10-22)
 
@@ -31,7 +31,7 @@ The dashboards are also almost all text: there are no charts, meters or trend ar
 
 ## 3. What stays true (constraints)
 
-- **JS:** every public page's first-visit JS is unchanged to the byte (homepage 150,661 B brotli at `88ba438`). Everything in this spec is a Server Component, except the `NavLink` that already exists.
+- **Smooth, functional, fast (Lama, 2026-10-22):** every page stays inside the first-visit JavaScript budget (150 KB brotli, homepage spec section 11; 150,661 B at `88ba438`), and the numbers are measured and recorded each stage. Small client costs are fine when they buy function, accessibility or smoothness; nothing is dropped only to keep bundles byte-identical. Server Components stay the default.
 - **Privacy (POPIA):**
   - no view counts;
   - a shop sees only how many follow it;
@@ -104,7 +104,7 @@ The dashboards are also almost all text: there are no charts, meters or trend ar
   - `blur` and `filter` keyframes;
   - animating width or height;
   - cross-document `@view-transition`.
-- If the N1 build shows `<ViewTransition>` adds any first-visit JS, transitions are dropped from N1. That is a gate, not a trade-off.
+- N1 measures what `<ViewTransition>` costs and records it. Transitions stay as long as every page stays inside the budget.
 
 ### 4.5 Press feedback
 
@@ -301,7 +301,7 @@ The page order for a live or paused shop:
   - Writes (mark sold from a thread, the mentor notification) go in `tests/e2e/role-views-writes.spec.ts`, in a new `role-views-writes` project that runs last, after `housekeeping-writes`. Every `browser.newContext(` in it says `serviceWorkers: "block"`.
 - **Screenshots:** `tests/e2e/role-views-screenshots.spec.ts` (only with `SCREENSHOTS=1`), each home at 390 and 1440px, saved in `docs/progress/role-views/`.
 - **Gates for every stage:**
-  - first-visit JS on every public page unchanged to the byte;
+  - first-visit JS on every page inside the 150 KB budget, each page's number recorded against the stage's baseline, and any page that grows by more than 1 KB explained in the progress entry;
   - layout shift under 0.05 at 390 and 1440px, and on 375×667 for short pages;
   - each home's skeleton no taller than its shortest state ("All clear" or the setup checklist);
   - each home's added HTML under about 8 KB before compression.
