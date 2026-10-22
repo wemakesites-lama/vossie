@@ -361,6 +361,7 @@ async function finishDemo(formData: FormData, next: string | null, now: Date): P
   const signedIn = await signInDemo(seedEmail(email));
   if (signedIn === "wrong" || signedIn === "failed" || signedIn === "ip-rate") return signInPath(next);
   if (!(await hasProfile(signedIn.userId))) {
+    console.error("[vossie] demo sign-in: the seed account has no profile");
     await signOutHere();
     return signInPath(next);
   }

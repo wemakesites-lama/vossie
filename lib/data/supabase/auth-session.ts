@@ -107,6 +107,8 @@ export async function verifySignInCode(email: string, code: string): Promise<Ver
 export async function signInDemo(email: string): Promise<VerifyOutcome> {
   const signedIn = await (await authClient()).signInDemo(email);
   if (signedIn.ok) return { ok: true, userId: signedIn.userId };
+  // Auth's code and status only, never its message or the address.
+  console.error(`[vossie] demo sign-in refused: ${signedIn.code} (${signedIn.status})`);
   if (signedIn.code === "over_request_rate_limit") return "ip-rate";
   return "failed";
 }
