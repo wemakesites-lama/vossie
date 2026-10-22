@@ -725,7 +725,7 @@ export async function showListingAgain(formData: FormData): Promise<void> {
   const staff = await requireStaffAction("admin", id ? showListingPath(id) : ADMIN_HIDDEN_PATH);
   const now = new Date();
   if (id && await ownsListing(staff.id, id)) return refuseOwn("listing", ADMIN_HIDDEN_PATH, now);
-  const shown = id ? await decide(showListing(id), ADMIN_HIDDEN_PATH, now) : null;
+  const shown = id ? await decide(showListing(id, now), ADMIN_HIDDEN_PATH, now) : null;
   if (!shown) return nothingChanged(ADMIN_HIDDEN_PATH, now);
   await sampleFollowUps(async () => {
     await recordAudit({

@@ -281,6 +281,8 @@ export async function hideListing(
   if (!row || row.hiddenAt) return null;
   row.hiddenAt = now.toISOString();
   row.hiddenReason = reason;
+  // A hide is a change to the listing, as hide_listing's updated_at = now() (role views N2 plan decision 3).
+  row.updatedAt = now.toISOString();
   const ownerId = sampleStore().sellers.get(row.sellerSlug)?.ownerId ?? null;
   return { id: row.id, title: row.title, sellerSlug: row.sellerSlug, state: row.state, ownerId };
 }
@@ -289,16 +291,19 @@ export async function hideListing(
 export type ShownListing = { id: string; title: string; state: ListingState; ownerId: string | null };
 
 /**
- * Show again (stage J spec decision 14): the mirror of Hide the listing. Its hide and reason are cleared and nothing else
+ * Show again (stage J spec decision 14): the mirror of Hide the listing. Its hide and reason are cleared, its updatedAt
+ * moves as the database's does (role views N2 plan decision 3), and nothing else
  * changes: its own state (sold, paused, a draft) stays, and so do the reports that closed. Its photos are public again
  * by themselves (lib/data/photos.ts hides them only while hiddenAt is set). Null when it has gone or isn't hidden.
  */
-export async function showListing(id: string): Promise<ShownListing | null> {
-  if (onSupabase()) return (await import("./supabase/staff-shops")).showListing(id);
+export async function showListing(id: string, now: Date): Promise<ShownListing | null> {
+  if (onSupabase()) return (await import("./supabase/staff-shops")).showListing(id, now);
   const row = sampleStore().listings.get(id);
   if (!row || !row.hiddenAt) return null;
   row.hiddenAt = null;
   row.hiddenReason = null;
+  // Showing again is a change too, as show_listing's updated_at = now() (role views N2 plan decision 3).
+  row.updatedAt = now.toISOString();
   const ownerId = sampleStore().sellers.get(row.sellerSlug)?.ownerId ?? null;
   return { id: row.id, title: row.title, state: row.state, ownerId };
 }

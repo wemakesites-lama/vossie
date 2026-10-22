@@ -22,6 +22,18 @@ export function sastToday(): string {
   return sastDate(new Date());
 }
 
+/**
+ * The last `days` South African dates up to `now`'s, oldest first, as YYYY-MM-DD (role views spec 6: a seller's
+ * enquiries by day). Worked out in UTC from the SAST date, so the server's timezone can't move a day. It reads no
+ * clock: `now` comes from the caller.
+ */
+export function lastSastDays(days: number, now: Date): string[] {
+  const [year, month, day] = sastDate(now).split("-").map(Number);
+  return Array.from({ length: days }, (_, index) =>
+    new Date(Date.UTC(year, month - 1, day - (days - 1 - index))).toISOString().slice(0, 10),
+  );
+}
+
 // en-GB writes "12 October 2026": day, month in words, year.
 const SAST_LONG = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Africa/Johannesburg",

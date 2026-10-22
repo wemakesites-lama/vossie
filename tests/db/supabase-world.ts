@@ -391,10 +391,14 @@ export function supabaseWorld(): SupabaseWorld {
       }
       return slug;
     },
-    async follow(follower, slug) {
+    async follow(follower, slug, at) {
       const added = await admin
         .from("follows")
-        .insert({ account_id: await this.signedIn(follower), shop_id: await shopId(slug) })
+        .insert({
+          account_id: await this.signedIn(follower),
+          shop_id: await shopId(slug),
+          ...(at ? { created_at: at.toISOString() } : {}),
+        })
         .select("id")
         .single();
       if (added.error) throw new Error(added.error.message);

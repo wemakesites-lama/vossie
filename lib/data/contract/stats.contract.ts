@@ -31,14 +31,14 @@ export function statsContract(makeWorld: () => World): void {
   it("counts nothing for a shop with no conversations, or no such shop", async () => {
     for (const slug of ["hair-studio", "no-such-shop"]) {
       expect(await shopStats(slug, now), slug).toEqual({ week: NOTHING, record: NOTHING });
-      expect(await recentCounts(slug, 14, now), slug).toEqual(NOTHING);
+      expect(await recentCounts(slug, 14, now), slug).toEqual({ ...NOTHING, previous: NOTHING });
     }
   });
 
   it("counts Tech corner's two enquiries, both answered in time, and no sale yet", async () => {
     const counts = { enquiries: 2, due: 2, repliedInTime: 2, salesConfirmed: 0 };
     expect(await shopStats("tech-corner", now)).toEqual({ week: counts, record: counts });
-    expect(await recentCounts("tech-corner", 14, now)).toEqual(counts);
+    expect(await recentCounts("tech-corner", 14, now)).toEqual({ ...counts, previous: NOTHING });
   });
 
   it("works out the owned shop's badge once, and leaves the sample shops' badges alone", async () => {

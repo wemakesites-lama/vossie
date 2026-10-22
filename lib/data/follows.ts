@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { onSupabase } from "@/lib/backend";
 import { FOLLOW_LIMIT } from "@/lib/following/rules";
-import type { FollowedShop } from "@/lib/types";
+import type { FollowedShop, FollowerCounts } from "@/lib/types";
 import { listedListings, shopStatus, storefrontRow, toSeller } from "./catalog";
 import { deleteNotificationsAbout, notifyNewListing } from "./notifications";
 import type { FollowRow } from "./rows";
@@ -98,6 +98,19 @@ export async function shopNameOf(sellerSlug: string): Promise<string | null> {
 export async function countFollowers(sellerSlug: string): Promise<number> {
   if (onSupabase()) return (await import("./supabase/follows")).countFollowers(sellerSlug);
   return followsOf(sellerSlug).length;
+}
+
+/**
+ * How many follow the shop, and how many of those follows were made since `since` (role views spec 7.1: "+N new this
+ * week"). An unfollow deletes its follow, so this is follows that still stand, never a net change. Never who.
+ */
+export async function followerCounts(sellerSlug: string, since: Date): Promise<FollowerCounts> {
+  if (onSupabase()) return (await import("./supabase/follows")).followerCounts(sellerSlug, since);
+  const follows = followsOf(sellerSlug);
+  return {
+    total: follows.length,
+    recent: follows.filter((row) => Date.parse(row.createdAt) >= since.getTime()).length,
+  };
 }
 
 /**

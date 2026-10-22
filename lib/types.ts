@@ -476,6 +476,41 @@ export type ShopStats = {
   record: EnquiryCounts;
 };
 
+/** A window's counts and the window of the same length before it (role views spec 6: recentCounts + previous). */
+export type RecentCounts = EnquiryCounts & { previous: EnquiryCounts };
+
+/** How many follow a shop, and how many of those follows were made since a time and still stand. Never who. */
+export type FollowerCounts = { total: number; recent: number };
+
+/**
+ * The oldest thing in one of the seller's Needs-you rows (role views spec 6): a conversation (`state` null; `title` the
+ * listing's, or null for a question to the shop) or a listing (`state` its own). `at` is UTC, ISO.
+ */
+export type QueueOldest = { id: string; title: string | null; at: string; state: ListingState | null };
+
+/** One Needs-you row's count and its oldest item. */
+export type QueueRow = { count: number; oldest: QueueOldest | null };
+
+/** A sale marked completed in a selling thread whose listing is still up for sale (role views N2 plan decision 3). */
+export type SaleToMark = { conversationId: string; listingId: string; title: string; at: string };
+
+/** What needs a shop's owner now (role views spec 6 and 7.1), in one read. Request-time; never cached across requests. */
+export type SellerQueue = {
+  /** Buyers waiting for a first reply (plan decision 2). */
+  replies: QueueRow;
+  /** Oldest first. The Needs-you number is how many listings these are. */
+  sales: SaleToMark[];
+  drafts: QueueRow;
+  /** Listings the Hub hid, oldest hide first. */
+  hidden: QueueRow;
+  /** Listings the seller paused. */
+  paused: QueueRow;
+  /** The shop's listings by state, for the Listings card. */
+  listings: { available: number; paused: number; sold: number; drafts: number };
+  /** The shop has answered a buyer at least once (not an offer): the setup checklist's last step. */
+  everReplied: boolean;
+};
+
 // --- Staff tools (staff tools plan, Task 1) ------------------------------------------------------------------------
 
 /** The three staff areas (staff tools spec 2.1): the admin console, the Hub's tools and the mentor dashboard. */

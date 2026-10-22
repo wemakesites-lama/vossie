@@ -141,8 +141,8 @@ export interface World {
   ageWaitingPhoto(src: string, hours: number): Promise<void>;
   /** Opens a shop for the account, which has none; its link (C2/C3 plan Task 8). Undone in cleanup. */
   openShop(name: WorldAccountName, shop?: WorldShop): Promise<string>;
-  /** That account follows the shop (C2/C3 plan Task 9; C4's verb of the same name). */
-  follow(follower: WorldAccountName, slug: string): Promise<void>;
+  /** That account follows the shop (C2/C3 plan Task 9; C4's verb of the same name), now or at `at` (role views N2). */
+  follow(follower: WorldAccountName, slug: string, at?: Date): Promise<void>;
   /**
    * Gives the account a notification, as a database function or a TypeScript writer would have (C2/C3 plan Task 9),
    * made now or at `at` (Task 12).

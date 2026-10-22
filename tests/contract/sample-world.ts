@@ -200,11 +200,11 @@ export function sampleWorld(): World {
       });
       return slug;
     },
-    async follow(follower, slug) {
+    async follow(follower, slug, at = new Date()) {
       const accountId = await this.signedIn(follower);
       const follows = sampleStore().follows;
       const id = `follow-contract-${follows.size + 1}`;
-      follows.set(id, { id, accountId, sellerSlug: slug, createdAt: new Date().toISOString() });
+      follows.set(id, { id, accountId, sellerSlug: slug, createdAt: at.toISOString() });
     },
     async addNotification(name, note, at = new Date()) {
       const accountId = await this.signedIn(name);

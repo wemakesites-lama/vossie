@@ -135,6 +135,17 @@ export const countFollowers: typeof Sample.countFollowers = async (sellerSlug) =
   return data ?? 0;
 };
 
+/** How many follow the signed-in owner's shop, and how many since `since` (follower_counts answers its owner only). */
+export const followerCounts: typeof Sample.followerCounts = async (sellerSlug, since) => {
+  const client = await forViewer();
+  const shopId = await shopIdOf(client, sellerSlug);
+  if (!shopId) return { total: 0, recent: 0 };
+  const { data, error } = await client.rpc("follower_counts", { p_shop: shopId, p_since: since.toISOString() });
+  if (error) failed("follower_counts", error);
+  const row = data?.[0];
+  return { total: row?.total ?? 0, recent: row?.recent ?? 0 };
+};
+
 /**
  * Nothing to do on Supabase (decision 10): save_listing told the followers of a first publish by an approved shop of
  * a listing the Hub hasn't hidden, in its own transaction, once a day each, and never the owner. saveListingForm keeps

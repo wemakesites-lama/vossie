@@ -1052,6 +1052,11 @@ isOneToOne: false
 "follower_count":
 { Args: { "p_shop": string }; Returns: number
                            },
+"follower_counts":
+{ Args: { "p_shop": string,"p_since": string }; Returns: {
+              "recent": number,"total": number
+            }[]
+                           },
 "forget_account":
 { Args: { "p_account_id": string }; Returns: (string)[]
                            },
@@ -1166,6 +1171,9 @@ isOneToOne: false
                            },
 "save_sign_in_attempt":
 { Args: { "p_attempt": Json }; Returns: undefined
+                           },
+"seller_queue":
+{ Args: { "p_slug": string }; Returns: Json
                            },
 "send_message":
 { Args: { "p_body": string,"p_conversation_id": string }; Returns: string

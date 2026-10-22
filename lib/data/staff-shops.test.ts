@@ -252,15 +252,15 @@ describe("Show again (stage J spec decision 14)", () => {
   it("clears a listing's hide and keeps its own state; null when it isn't hidden or has gone", async () => {
     sampleStore().listings.get("l-001")!.state = "sold";
     await hideListing("l-001", "Checking it.", NOW);
-    expect(await showListing("l-001")).toEqual({
+    expect(await showListing("l-001", new Date())).toEqual({
       id: "l-001",
       title: "Casio fx-991ZA Plus calculator",
       state: "sold",
       ownerId: "acc-seller",
     });
     expect(sampleStore().listings.get("l-001")).toMatchObject({ hiddenAt: null, hiddenReason: null, state: "sold" });
-    expect(await showListing("l-001")).toBeNull();
-    expect(await showListing("l-nope")).toBeNull();
+    expect(await showListing("l-001", new Date())).toBeNull();
+    expect(await showListing("l-nope", new Date())).toBeNull();
   });
 });
 

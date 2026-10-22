@@ -3,7 +3,7 @@ import { MENTOR_WINDOW_DAYS, mentorFlags } from "@/lib/staff/mentor";
 import type { MentoredShop, SellerStatus, TrustBadge } from "@/lib/types";
 import type * as Sample from "../mentors";
 import { Refused, type RefusalCode } from "../refused";
-import { recentCounts } from "../shop-stats";
+import { currentOf, recentCounts } from "../shop-stats";
 import { forViewer, type DbClient } from "./clients";
 import { iso, selectAll } from "./rows";
 import { forViewerAs } from "./viewer";
@@ -70,7 +70,7 @@ export const mentoredShops: typeof Sample.mentoredShops = async (viewer, now) =>
     const ownerName = names.get(profile.account_id!);
     if (!shop || ownerName === undefined) continue;
     const status = profile.status as SellerStatus;
-    const counts = await recentCounts(shop.slug, MENTOR_WINDOW_DAYS, now);
+    const counts = currentOf(await recentCounts(shop.slug, MENTOR_WINDOW_DAYS, now));
     rows.push({
       slug: shop.slug,
       name: shop.name,

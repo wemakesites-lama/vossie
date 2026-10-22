@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ConversationRow } from "./rows";
-import { recentCounts, shopStats } from "./shop-stats";
+import { dailyEnquiries, recentCounts, shopStats } from "./shop-stats";
 import { resetSampleStore, sampleStore } from "./store";
 
 const NOW = new Date("2026-10-14T10:00:00.000Z");
@@ -88,7 +88,7 @@ describe("the dashboard's numbers (selling spec 2.8, plan decision 18)", () => {
     expect([...sampleStore().conversations.values()].filter((row) => row.status === "done")).toHaveLength(2);
   });
 
-  it("counts any window, such as the mentor dashboard's 14 days (staff tools plan decision 15)", async () => {
+  it("counts any window, such as the mentor dashboard's 14 days (staff tools plan decision 15), and the window before it (role views N2)", async () => {
     sampleStore().conversations.clear();
     add({ createdAt: ago(24 * 10), firstReplyAt: ago(24 * 10 - 1) });
     add({ createdAt: ago(24 * 15) });
@@ -100,6 +100,8 @@ describe("the dashboard's numbers (selling spec 2.8, plan decision 18)", () => {
       due: 1,
       repliedInTime: 1,
       salesConfirmed: 1,
+      // 14 to 28 days ago: the two older enquiries, neither answered in time; the sale counted 13 days ago is this window's.
+      previous: { enquiries: 2, due: 2, repliedInTime: 0, salesConfirmed: 0 },
     });
   });
 });
@@ -129,5 +131,28 @@ describe("offers and the shop's numbers (community actions spec 2.12)", () => {
     const after = await shopStats("tech-corner", now);
     expect(after.week).toEqual({ ...before.week, salesConfirmed: before.week.salesConfirmed + 1 });
     expect(after.record).toEqual({ ...before.record, salesConfirmed: before.record.salesConfirmed + 1 });
+  });
+});
+
+describe("enquiries by SAST day (role views spec 6)", () => {
+  it("counts each day's enquiries, oldest day first, leaving out offers and questions to the shop", async () => {
+    sampleStore().conversations.clear();
+    // NOW is 12:00 on 14 October in South Africa.
+    add({ createdAt: "2026-10-13T21:59:00.000Z" }); // 23:59 on the 13th
+    add({ createdAt: "2026-10-13T22:01:00.000Z" }); // 00:01 on the 14th
+    add({ createdAt: "2026-10-14T06:00:00.000Z" });
+    add({ createdAt: "2026-10-12T06:00:00.000Z", requestId: "r-001", requestTitle: "A lamp" });
+    add({ createdAt: "2026-10-12T06:00:00.000Z", listingId: null, listingTitle: null });
+    add({ createdAt: "2026-10-12T06:00:00.000Z", sellerGone: true });
+    expect(await dailyEnquiries("tech-corner", 3, NOW)).toEqual([0, 1, 2]);
+  });
+
+  it("has no number for the days before the shop existed", async () => {
+    // Crochet corner was made at 14:20 on 10 October in South Africa.
+    expect(await dailyEnquiries("crochet-corner", 7, NOW)).toEqual([null, null, 0, 0, 0, 0, 0]);
+  });
+
+  it("has no number on any day for a shop that doesn't exist", async () => {
+    expect(await dailyEnquiries("no-such-shop", 2, NOW)).toEqual([null, null]);
   });
 });

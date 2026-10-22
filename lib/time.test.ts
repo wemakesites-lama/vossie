@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   inboxTime,
+  lastSastDays,
   longSastDate,
   messageTime,
   sastClock,
@@ -107,5 +108,16 @@ describe("the unit tests' own clock (staff tools plan amendment 12.3)", () => {
     // 00:30 in South Africa on the 15th is 22:30 UTC on the 14th: the machine's own date would say the 15th.
     expect(new Date("2026-10-14T22:30:00Z").getDate()).toBe(14);
     expect(Intl.DateTimeFormat().resolvedOptions().timeZone).toBe("UTC");
+  });
+});
+
+describe("lastSastDays (role views N2)", () => {
+  it("gives the last days by South African date, oldest first, across a month end", () => {
+    // 00:30 on 1 November in South Africa is still 31 October in UTC.
+    expect(lastSastDays(3, new Date("2026-10-31T22:30:00.000Z"))).toEqual(["2026-10-30", "2026-10-31", "2026-11-01"]);
+  });
+
+  it("gives today alone for one day", () => {
+    expect(lastSastDays(1, new Date("2026-10-14T10:00:00.000Z"))).toEqual(["2026-10-14"]);
   });
 });

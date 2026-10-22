@@ -4,7 +4,7 @@ import { MENTOR_WINDOW_DAYS, mentorFlags } from "@/lib/staff/mentor";
 import { isAdmin } from "@/lib/staff/roles";
 import type { Account, MentoredShop } from "@/lib/types";
 import type { MentorNoteRow } from "./rows";
-import { recentCounts } from "./shop-stats";
+import { currentOf, recentCounts } from "./shop-stats";
 import { sampleStore } from "./store";
 
 // The mentor dashboard's data (staff tools spec 2.6; plan decisions 15 and 16). A mentor sees the shops assigned to
@@ -33,7 +33,7 @@ export async function mentoredShops(viewer: Pick<Account, "id" | "roles">, now: 
     const shop = sellers.get(profile.sellerSlug);
     const owner = accounts.get(profile.accountId);
     if (!shop || !owner) continue;
-    const counts = await recentCounts(shop.slug, MENTOR_WINDOW_DAYS, now);
+    const counts = currentOf(await recentCounts(shop.slug, MENTOR_WINDOW_DAYS, now));
     rows.push({
       slug: shop.slug,
       name: shop.name,

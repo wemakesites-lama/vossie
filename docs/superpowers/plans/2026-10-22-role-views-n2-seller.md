@@ -4477,4 +4477,6 @@ Stage only these lines if other sessions have uncommitted lines in PROGRESS or t
 
 ## Changes made during the build
 
-- **Baseline (Task 0):** _to be filled in by the implementer: each page's `scriptBrotli`, public and signed in, and the N1 `/sell` main HTML length._
+- **Baseline (Task 0):** not re-measured (Lama: reuse N1's). N1's numbers, the same to the byte as `7ee5d53` (N1 plan, "Changes made during the build"), at 390px: homepage, info, Hub, sell, account and most signed-in pages 150,674 B; listing 151,830 B; browse 151,421 B; storefront 151,434 B; Saved 151,309 B; request and collection 151,150 B; new and edit listing forms 152,347 B. The N1 `/sell` main HTML length wasn't measured (no build in this batch); Task 14 measures it.
+- **Task 5, plan decision 3 on Supabase:** `hide_listing` and `show_listing` did **not** set `listings.updated_at` (the lines the plan cited are `hide_request` and `show_request`). The migration `20261025120000_role_views_seller.sql` replaces both (from `20261021120500_own_target_gate.sql`) with `updated_at = now()` added; pgTAP has two more tests (22), and the contract's hide-and-show scenario passes on both backends.
+- **Tests left out (Lama's rule: no redundant tests):** the sample-only `followerCounts` unit test (the contract covers it on both backends), the sample-only hide/show `updatedAt` unit test (the contract scenario covers it), `replyRateTarget`'s test, and the follower words in `home.test.ts`.

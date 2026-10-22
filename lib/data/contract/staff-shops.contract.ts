@@ -139,13 +139,13 @@ export function staffShopsContract(makeWorld: () => World): void {
       ownerId: shopperId,
     });
     expect(await asStaff(() => hideListing(id, "Again.", NOW()))).toBeNull();
-    expect(await asStaff(() => showListing(id))).toEqual({
+    expect(await asStaff(() => showListing(id, new Date()))).toEqual({
       id,
       title: "Contract hidden lamp",
       state: "available",
       ownerId: shopperId,
     });
-    expect(await asStaff(() => showListing(id))).toBeNull();
+    expect(await asStaff(() => showListing(id, new Date()))).toBeNull();
   });
 
   it("knows whose a shop, a listing and a request are, a waiting shop's too", async () => {
@@ -207,7 +207,7 @@ export function staffShopsContract(makeWorld: () => World): void {
     await refusedWith("own-shop", () => asStaff(() => hideListing(listing, "My own listing.", NOW())));
     await world.hideListing(listing, "Hidden by another admin.");
     const hidden = await snapshot(slug);
-    await refusedWith("own-shop", () => asStaff(() => showListing(listing)));
+    await refusedWith("own-shop", () => asStaff(() => showListing(listing, new Date())));
     expect(await snapshot(slug)).toEqual(hidden);
     expect(hidden.audit).toBe(before.audit);
   });
@@ -231,7 +231,7 @@ export function staffShopsContract(makeWorld: () => World): void {
     await refusedWith("forbidden", () => asAsker(() => staffResumeShop(open)));
     await refusedWith("forbidden", () => asAsker(() => setShopMentor(open, null)));
     await refusedWith("forbidden", () => asAsker(() => hideListing(listing, "Not mine to say.", NOW())));
-    await refusedWith("forbidden", () => asAsker(() => showListing(listing)));
+    await refusedWith("forbidden", () => asAsker(() => showListing(listing, new Date())));
     expect(await snapshot(open)).toEqual(opened);
   });
 

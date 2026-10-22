@@ -16,6 +16,14 @@ export function replyRate(counts: Pick<EnquiryCounts, "due" | "repliedInTime">):
 }
 
 /**
+ * The reply rate the badge bar's target tick marks (role views spec 7.1, item 6): Responsive's until the shop has it,
+ * then Trusted's, which Trusted keeps.
+ */
+export function replyRateTarget(current: TrustBadge | null): number {
+  return current === "responsive" || current === "trusted" ? RULES.trusted.rate : RULES.responsive.rate;
+}
+
+/**
  * The badge a shop has earned (the trust page's rules; staff tools spec 2.7): Trusted, else Responsive, else New
  * seller. `record` is the last 90 days' enquiries and every confirmed sale (shopStats's `record`); `accountCreatedAt`
  * is the owner's. With no enquiry due yet the reply rate isn't known, so neither higher badge is met. A badge goes
