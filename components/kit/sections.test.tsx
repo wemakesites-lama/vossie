@@ -41,12 +41,22 @@ const labels = (nav: HTMLElement) =>
     .map((link) => link.querySelector(".section-tab-label")?.textContent);
 
 describe("SellBar", () => {
-  it("shows nothing to a visitor or a student without a shop: the main bar stays", async () => {
-    const { container } = render(await SellBar());
-    expect(container).toBeEmptyDOMElement();
+  it("gives a visitor or a student without a shop the side panel, not a section bar: the main bar stays", async () => {
+    const visitor = render(await SellBar());
+    const side = screen.getByRole("navigation", { name: "Selling" });
+    expect(side).toHaveClass("section-side");
+    expect(visitor.container.querySelector(".section-bar")).toBeNull();
+    expect(labels(side)).toEqual(["Start selling", "How selling works", "Seller guidelines", "CampusCart"]);
+    expect(within(side).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/login?next=%2Fsell%2Fonboarding",
+      "/how-it-works",
+      "/seller-guidelines",
+      "/",
+    ]);
+    visitor.unmount();
     viewer.account = { id: "a", roles: [] };
-    const second = render(await SellBar());
-    expect(second.container).toBeEmptyDOMElement();
+    render(await SellBar());
+    expect(screen.getByRole("link", { name: "Start selling" })).toHaveAttribute("href", "/sell/onboarding");
   });
 
   it("gives an open shop Overview, Listings, Messages, Shop and CampusCart", async () => {

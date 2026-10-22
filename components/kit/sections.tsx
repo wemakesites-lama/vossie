@@ -6,14 +6,18 @@ import {
   FlagIcon,
   GridIcon,
   HomeIcon,
+  InfoIcon,
   MenuIcon,
   MessageIcon,
   PlusSquareIcon,
+  ShieldIcon,
   StoreIcon,
 } from "@/components/icons";
 import { getViewer } from "@/lib/auth/session";
 import { openBookingCount } from "@/lib/data/hub-posts";
 import { getShopOf } from "@/lib/data/shops";
+import { signInHref } from "@/lib/next-path";
+import { onboardingPath } from "@/lib/selling/paths";
 import { openReportCount } from "@/lib/data/staff-reports";
 import { countWaitingShops } from "@/lib/data/staff-shops";
 import { queueFor } from "@/lib/selling/queue";
@@ -42,15 +46,38 @@ function badge(count: number | null, one: string, many: string): SectionTab["bad
 }
 
 /**
- * Selling: only for an account that has a shop. A pending shop (waiting, or declined: still "pending" with the Hub's
+ * Selling for anyone without a shop: a side panel in the column the shell reserves from the tablet step (hidden on
+ * phones, where the main bar stays), so the pitch doesn't move when this arrives. Not a section bar: the phone rules
+ * that hide the main bar and slim the footer never apply. A student without a shop starts at step 1; the wizard
+ * itself picks up a draft.
+ */
+function sellSide(signedIn: boolean) {
+  const start = onboardingPath(1);
+  const tabs: SectionTab[] = [
+    {
+      key: "start",
+      href: signedIn ? start : signInHref(start),
+      label: "Start selling",
+      icon: <PlusSquareIcon />,
+      prefetch: false,
+    },
+    { key: "how", href: "/how-it-works", label: "How selling works", icon: <InfoIcon />, prefetch: false },
+    { key: "guidelines", href: "/seller-guidelines", label: "Seller guidelines", icon: <ShieldIcon />, prefetch: false },
+    EXIT,
+  ];
+  return <SectionBar label="Selling" tabs={tabs} side />;
+}
+
+/**
+ * Selling: the bar only for an account that has a shop; the side panel for everyone else. A pending shop (waiting, or declined: still "pending" with the Hub's
  * reason, SellHome.tsx) has no Messages yet. Messages carries the buyers waiting for a reply, from the queue the home's
  * Needs you reads in the same request (role views N2 plan decision 8); a failed read shows no badge (spec 4.2).
  */
 export async function SellBar() {
   const account = await getViewer().catch(() => null);
-  if (!account) return null;
+  if (!account) return sellSide(false);
   const own = await getShopOf(account.id).catch(() => null);
-  if (!own) return null;
+  if (!own) return sellSide(true);
   const open = own.status !== "pending";
   const waiting = open ? await queueFor(own.shop.slug).then((queue) => queue.replies.count, () => null) : null;
   const messages: SectionTab = {

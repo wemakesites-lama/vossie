@@ -10206,7 +10206,8 @@
   }
 
   /* --- Section bars (role views spec 4.1) --- */
-  .section-bar {
+  .section-bar,
+  .section-side {
     display: none;
   }
 
@@ -10312,12 +10313,20 @@
     margin-inline: auto;
   }
 
+  /* At least a screen tall, less the header (78px, then 122px with the desktop's quick links), as .sell-page is: a staff
+     page shorter than StaffSkeleton let the footer into the first screen, and it rose when the content arrived (0.0956
+     on /mentor at 1440 on the slow network). */
   .section-main {
+    --section-header: 78px;
     grid-column: 2;
     grid-row: 1;
+    min-height: calc(100vh - var(--section-header));
+    min-height: calc(100svh - var(--section-header));
   }
 
-  .section-bar {
+  /* .section-side: selling's panel for anyone without a shop, in the same column (it has no phone form). */
+  .section-bar,
+  .section-side {
     grid-column: 1;
     grid-row: 1;
     position: sticky;
@@ -10326,7 +10335,8 @@
     padding: 16px 8px;
   }
 
-  .section-bar ul {
+  .section-bar ul,
+  .section-side ul {
     display: grid;
     gap: 2px;
   }
@@ -10358,6 +10368,12 @@
   .section-tab .hdr-badge {
     position: static;
     margin-left: auto;
+  }
+}
+
+@media (min-width: 64rem) and (min-height: 30rem) {
+  .section-main {
+    --section-header: 122px;
   }
 }
 

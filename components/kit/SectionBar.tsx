@@ -23,9 +23,19 @@ export type SectionTab = {
  * the main bar while this one is on the page), a sidebar from the tablet step. Server-rendered; the only client code
  * is NavLink, already in every page's layout chunk.
  */
-export function SectionBar({ label, tabs }: { label: string; tabs: readonly SectionTab[] }) {
+export function SectionBar({
+  label,
+  tabs,
+  side = false,
+}: {
+  label: string;
+  tabs: readonly SectionTab[];
+  /** A desktop-only side panel in the reserved column (`section-side`): never fixed to the bottom, never in place of
+   * the main bar, and none of the phone rules that key on `.section-bar` apply. */
+  side?: boolean;
+}) {
   return (
-    <nav aria-label={label} className="section-bar">
+    <nav aria-label={label} className={side ? "section-side" : "section-bar"}>
       <ul style={{ "--tabs": tabs.length } as CSSProperties}>
         {tabs.map((tab) => (
           <li key={tab.key}>

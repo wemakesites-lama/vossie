@@ -30,11 +30,14 @@ test.describe("section bars (role views spec 4.1)", () => {
     await expect(page.locator(".footer-giants")).toBeVisible();
   });
 
-  test("a student without a shop keeps the main bar on /sell", async ({ page }) => {
+  test("a student without a shop keeps the main bar on /sell, with the side panel from the tablet step", async ({
+    page,
+  }) => {
     await signInAsSample(page, "Student, Midrand", "/sell");
     await expect(main(page).getByRole("heading").first()).toBeVisible();
-    await expect(bar(page, "Selling")).toHaveCount(0);
+    await expect(page.locator(".section-bar")).toHaveCount(0);
     if (phone()) await expect(mainBar(page)).toBeVisible();
+    await expect(bar(page, "Selling")).toBeVisible({ visible: !phone() });
   });
 
   test("the waiting seller's bar has no Messages", async ({ page }) => {
@@ -185,7 +188,7 @@ test.describe("the seller home (role views N2, spec 7.1)", () => {
         return sizes;
       });
     await page.goto("/sell");
-    await expect(main(page).getByRole("link", { name: "Start selling" })).toBeVisible();
+    await expect(page.locator(".sell-page").getByRole("link", { name: "Start selling" })).toBeVisible();
     const [skeleton, pitch] = await skeletonAndPage();
     expect(skeleton).toBeLessThan(pitch);
     await signInAsSample(page, "Seller waiting for approval", "/sell");
