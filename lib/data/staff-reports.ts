@@ -39,6 +39,11 @@ export type ReportView = {
   unseen: "hidden" | "paused" | null;
   /** The shop a pause would pause: the listing's, or the one reported. */
   shop: { slug: string; name: string } | null;
+  /**
+   * Where what was reported is, for the Reports list's campus chips (role views N3 plan decision 10): the shop's campus
+   * for a listing or a shop, the request's own for a request. Null once it has gone.
+   */
+  campusSlug: string | null;
   /** What the Hub can still do, besides Dismiss (plan decision 5). Nothing once it's closed. */
   can: { hide: boolean; pause: boolean };
   /**
@@ -58,8 +63,8 @@ export const DELETED = "Deleted account";
  */
 export type ReportLookups = {
   listing(id: string): { sellerSlug: string; hiddenAt?: string | null } | undefined;
-  shop(slug: string): { slug: string; name: string } | undefined;
-  request(id: string): { hiddenAt: string | null } | undefined;
+  shop(slug: string): { slug: string; name: string; campusSlug: string | null } | undefined;
+  request(id: string): { hiddenAt: string | null; campusSlug: string | null } | undefined;
   /** The shop's owner's seller profile; none for a sample shop no account owns. */
   profileOf(slug: string): { status: SellerStatus; pausedBy?: "seller" | "staff" | null } | undefined;
   firstName(accountId: string | null | undefined): string;
@@ -148,6 +153,7 @@ export const reportViewOver = (lookups: ReportLookups) => (row: ReportRow, viewe
     exists,
     unseen,
     shop: shopRow ? { slug: shopRow.slug, name: shopRow.name } : null,
+    campusSlug: row.targetKind === "request" ? (requestRow?.campusSlug ?? null) : (shopRow?.campusSlug ?? null),
     can: {
       hide: own === null && canHide,
       pause: own === null && open && shopRow !== undefined && pausable(lookups, shopRow.slug),

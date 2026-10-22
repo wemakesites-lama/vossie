@@ -159,7 +159,9 @@ export function hubStaffContract(makeWorld: () => World): void {
       createdAt: booking.createdAt,
     });
     expect(await world.asViewer("staff", () => openBookingCount())).toBe(openBefore + 1);
-    expect((await world.asViewer("staff", () => listBookings()))[0]).toMatchObject({ id: booking.id, studentName: "Asker", status: "open" });
+    // Open requests come oldest first (role views spec 6), so the one just made is the last open one.
+    const open = (await world.asViewer("staff", () => listBookings())).filter((row) => row.status === "open");
+    expect(open.at(-1)).toMatchObject({ id: booking.id, studentName: "Asker", status: "open" });
 
     const answer = () => world.asViewer("staff", (id) => answerBooking(booking.id, "accepted", id, new Date()));
     expect(await answer()).toEqual({ accountId: askerId, postId: post, postTitle: title, studentName: "Asker" });
@@ -167,5 +169,28 @@ export function hubStaffContract(makeWorld: () => World): void {
     expect(await world.asViewer("staff", () => openBookingCount())).toBe(openBefore);
     expect(await world.asViewer("asker", (id) => latestBooking(post, id))).toMatchObject({ id: booking.id, status: "accepted" });
     expect(await world.asViewer("staff", (id) => answerBooking("bk-no-such-booking", "declined", id, new Date()))).toBeNull();
+  });
+
+  it("lists open slot requests oldest first, before the answered ones (role views spec 6)", async () => {
+    await world.signedIn("asker");
+    await world.signedIn("shopper");
+    const post = await newPost({ ...TIP, kind: "office-hours", title: "Contract queue order", campusSlug: "pretoria", startsAt: AHEAD(), place: "The Hub" });
+    const ask = async (name: "asker" | "shopper") => {
+      const now = new Date();
+      const made = await world.asViewer(name, (id) =>
+        requestSlot({ postId: post, accountId: id, help: "Pricing.", time: "Any time", today: sastDate(now), now }),
+      );
+      // Two requests never share a time on either backend.
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      return (made as Exclude<typeof made, string>).booking.id;
+    };
+    const first = await ask("asker");
+    const second = await ask("shopper");
+    const queue = await world.asViewer("staff", () => listBookings());
+    const open = queue.filter((row) => row.status === "open");
+    // Every open request comes before every answered one, in the order they were asked.
+    expect(queue.slice(0, open.length).every((row) => row.status === "open")).toBe(true);
+    expect(open.map((row) => row.createdAt)).toEqual([...open.map((row) => row.createdAt)].sort());
+    expect(open.findIndex((row) => row.id === first)).toBeLessThan(open.findIndex((row) => row.id === second));
   });
 }

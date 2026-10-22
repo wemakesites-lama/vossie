@@ -157,9 +157,9 @@ describe("slot requests (staff tools spec 2.4 and 2.5, plan decisions 13 and 14)
     expect(await latestBooking("h-002", "acc-student")).toBeNull();
   });
 
-  it("lists open requests first, newest first, then answered ones; an answer is given once", async () => {
+  it("lists open requests first, oldest first, then answered ones; an answer is given once (role views spec 6)", async () => {
     const made = (await slot("acc-seller")) as Exclude<Awaited<ReturnType<typeof slot>>, string>;
-    expect((await listBookings()).map((booking) => booking.id)).toEqual([made.booking.id, "bk-s1"]);
+    expect((await listBookings()).map((booking) => booking.id)).toEqual(["bk-s1", made.booking.id]);
     expect(await openBookingCount()).toBe(2);
     expect(await answerBooking("bk-s1", "accepted", "acc-mentor", LATER)).toEqual({
       accountId: "acc-student",

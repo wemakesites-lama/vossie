@@ -36,7 +36,7 @@ function AnswerButton({ booking, answer }: { booking: HubBooking; answer: "accep
 
 /**
  * /hub/manage (spec 3): the posts this account may edit, drafts included, with Write a post; then the office-hours
- * queue that every mentor and admin shares (plan decision 14), open requests first, newest first, each answered with
+ * queue that every mentor and admin shares (plan decision 14), open requests first, oldest first, each answered with
  * Accept or Decline. Neither removes anything, so neither has a confirm page.
  */
 export function HubManage({ posts, everyPost, bookings, campusNames }: HubManageProps) {
@@ -83,7 +83,7 @@ export function HubManage({ posts, everyPost, bookings, campusNames }: HubManage
           Office-hours requests
         </h2>
         <StaffTable
-          caption="Slot requests, open first, newest first"
+          caption="Slot requests, open first, oldest first"
           columns={["Office hours", "Student", "What they'd like help with", "A time that suits", "Answer"]}
           rows={bookings.map((booking) => ({
             key: booking.id,

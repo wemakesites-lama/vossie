@@ -287,11 +287,16 @@ export async function latestBooking(postId: string, accountId: string): Promise<
   return rows.length > 0 ? toBooking(rows[0]) : null;
 }
 
-/** The office-hours queue (plan decision 14): open requests, newest first, then the 30 most recently answered. */
+/**
+ * The office-hours queue (plan decision 14; role views spec 6): open requests oldest first, so the one that has waited
+ * longest is answered first and the admin's Today can link to it; then the 30 most recently answered.
+ */
 export async function listBookings(): Promise<HubBooking[]> {
   if (onSupabase()) return (await supabase()).listBookings();
   const rows = [...sampleStore().hubBookings.values()];
-  const open = rows.filter((row) => row.status === "open").sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const open = rows
+    .filter((row) => row.status === "open")
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
   const answered = rows
     .filter((row) => row.status !== "open")
     .sort((a, b) => (b.answeredAt ?? "").localeCompare(a.answeredAt ?? ""))

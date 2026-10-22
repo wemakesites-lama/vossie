@@ -370,7 +370,7 @@ export const latestBooking: typeof Sample.latestBooking = async (postId, account
   return (await bookingViews(client, data, false))[0] ?? null;
 };
 
-/** The office-hours queue: open requests newest first, then the 30 most recently answered (hub staff read every one). */
+/** The office-hours queue: open requests oldest first (role views spec 6), then the 30 most recently answered (hub staff read every one). */
 export const listBookings: typeof Sample.listBookings = async () => {
   const client = await forViewer();
   const [open, answered] = await Promise.all([
@@ -380,7 +380,7 @@ export const listBookings: typeof Sample.listBookings = async () => {
           .from("hub_bookings")
           .select(BOOKING_COLUMNS)
           .eq("status", "open")
-          .order("created_at", { ascending: false }),
+          .order("created_at", { ascending: true }),
       ["id"],
     ),
     client
@@ -392,8 +392,8 @@ export const listBookings: typeof Sample.listBookings = async () => {
       .limit(30),
   ]);
   if (answered.error) failed("hub_bookings", answered.error);
-  const newestFirst = [...open].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at) || b.id.localeCompare(a.id));
-  return bookingViews(client, [...newestFirst, ...answered.data], true);
+  const oldestFirst = [...open].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at) || a.id.localeCompare(b.id));
+  return bookingViews(client, [...oldestFirst, ...answered.data], true);
 };
 
 export const openBookingCount: typeof Sample.openBookingCount = async () => {

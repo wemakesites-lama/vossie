@@ -50,6 +50,7 @@ export function staffReportsContract(makeWorld: () => World): void {
       exists: true,
       unseen: null,
       shop: { slug, name: "Contract Shopper's shop" },
+      campusSlug: "pretoria",
       can: { hide: true, pause: true },
       own: null,
     });
@@ -75,6 +76,7 @@ export function staffReportsContract(makeWorld: () => World): void {
     expect(await asStaff((staffId) => getReport(id, staffId))).toMatchObject({
       exists: true,
       shop: null,
+      campusSlug: "pretoria",
       can: { hide: true, pause: false },
       own: null,
     });
@@ -85,11 +87,12 @@ export function staffReportsContract(makeWorld: () => World): void {
   it("shows a shop that has gone as gone, with no shop to pause", async () => {
     const slug = await world.openShop("shopper");
     const id = await world.addReport("asker", { kind: "seller", id: slug });
-    expect(await asStaff((staffId) => getReport(id, staffId))).toMatchObject({ exists: true, can: { pause: true } });
+    expect(await asStaff((staffId) => getReport(id, staffId))).toMatchObject({ exists: true, campusSlug: "pretoria", can: { pause: true } });
     await world.closeShop(slug);
     expect(await asStaff((staffId) => getReport(id, staffId))).toMatchObject({
       exists: false,
       shop: null,
+      campusSlug: null,
       unseen: null,
       can: { hide: false, pause: false },
     });

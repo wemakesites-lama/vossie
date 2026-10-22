@@ -3103,4 +3103,5 @@ If other sessions have uncommitted lines in PROGRESS or the decisions log, stage
 
 ## Changes made during the build
 
-- **Baseline (N3 Task 0):** _to be filled in by the implementer: each page's `scriptBrotli`._
+- **Baseline (N3 Task 0):** not re-measured (Lama: reuse N2's). N2's numbers (N2 plan, "Baseline (Task 0)"), at 390px: homepage, info, Hub, sell, account and most signed-in pages 150,674 B; listing 151,830 B; browse 151,421 B; storefront 151,434 B; Saved 151,309 B; request and collection 151,150 B; new and edit listing forms 152,347 B.
+- **Tasks 0 to 5 (batch 1):** N1 is in (git log; N2 on top). Tasks 1 to 5 built as written, code copied from the plan unchanged. No red-green run (Lama's speed rule), and only the tests for the two backend changes, `waitAge`, the queue and `protectCounts` handling were kept. Task 1's and 2's contract scenarios pass on both backends (`pnpm test:db` on hub-staff and staff-reports, local stack already running, no reset).

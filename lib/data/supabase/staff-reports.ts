@@ -83,12 +83,12 @@ async function lookupsFor(client: DbClient, records: readonly ReportRecord[]): P
   const ids = (kind: string) => records.flatMap((row) => (row.target_kind === kind && row.target_id ? [row.target_id] : []));
   const [listings, requests] = await Promise.all([
     rowsIn((chunk) => client.from("listings").select("id, shop_id, hidden_at").in("id", chunk), ids("listing"), "listings"),
-    rowsIn((chunk) => client.from("requests").select("id, hidden_at").in("id", chunk), ids("request"), "requests"),
+    rowsIn((chunk) => client.from("requests").select("id, hidden_at, campus_slug").in("id", chunk), ids("request"), "requests"),
   ]);
   const shopIds = listings.map((row) => row.shop_id);
   const [byId, bySlug] = await Promise.all([
-    rowsIn((chunk) => client.from("shops").select("id, slug, name").in("id", chunk), shopIds, "shops"),
-    rowsIn((chunk) => client.from("shops").select("id, slug, name").in("slug", chunk), ids("seller"), "shops"),
+    rowsIn((chunk) => client.from("shops").select("id, slug, name, campus_slug").in("id", chunk), shopIds, "shops"),
+    rowsIn((chunk) => client.from("shops").select("id, slug, name, campus_slug").in("slug", chunk), ids("seller"), "shops"),
   ]);
   const shops = new Map([...byId, ...bySlug].map((row) => [row.slug, row]));
   const slugOf = new Map([...shops.values()].map((row) => [row.id, row.slug]));
@@ -113,10 +113,13 @@ async function lookupsFor(client: DbClient, records: readonly ReportRecord[]): P
       const sellerSlug = row ? slugOf.get(row.shop_id) : undefined;
       return row && sellerSlug ? { sellerSlug, hiddenAt: iso(row.hidden_at) } : undefined;
     },
-    shop: (slug) => shops.get(slug),
+    shop(slug) {
+      const row = shops.get(slug);
+      return row ? { slug: row.slug, name: row.name, campusSlug: row.campus_slug ?? null } : undefined;
+    },
     request(id) {
       const row = requestById.get(id);
-      return row ? { hiddenAt: iso(row.hidden_at) } : undefined;
+      return row ? { hiddenAt: iso(row.hidden_at), campusSlug: row.campus_slug ?? null } : undefined;
     },
     profileOf(slug) {
       const row = profileBySlug.get(slug);
