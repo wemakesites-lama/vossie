@@ -168,3 +168,28 @@ for (const [name, path, signIn, cookies] of SLOW_PAGES) {
     await expectStill(page, `${name} (slow network)`, path);
   });
 }
+
+// Role views N1 (plan Task 16): the section bars stream in after the page. On phones the bar is fixed, so it moves
+// nothing; from the tablet step it's a sidebar column, which appears when the bar arrives (plan Task 11 Step 6), so
+// these are measured at 768 too.
+const SECTION_PAGES: ReadonlyArray<[name: string, path: string, signIn: string]> = [
+  ["Hub console's Today", "/admin", "Admin"],
+  ["mentoring page", "/mentor", "Mentor"],
+  ["sell page (the seller's bar)", "/sell", "Seller, Tech corner"],
+];
+
+for (const [name, path, signIn] of SECTION_PAGES) {
+  test(`the ${name} holds still while its section bar arrives (CLS 0.05 or less, spec 11)`, async ({ page }) => {
+    test.skip(
+      !["phone-390", "tablet-768", "desktop-1440"].includes(test.info().project.name),
+      "Measured at 390, 768 and 1440",
+    );
+    await page.goto("/login");
+    await page.locator("main").getByRole("button", { name: signIn, exact: true }).click();
+    await page.waitForURL(/\/account$/);
+
+    await holdFonts(page);
+    await recordShifts(page);
+    await expectStill(page, name, path);
+  });
+}

@@ -9032,7 +9032,12 @@
 
 /* --- Staff tools: the mentor dashboard (staff tools plan, Task 16, spec 2.6) --- */
 @layer components {
+  /* Always on a line of its own: beside the sidebar (role views N1) the sentence and the button just fit one line in
+     the display font but not in its fallback, so the button wrapped and the table jumped 25px when the font arrived
+     (0.11 at 1440). */
   .staff-download {
+    display: flex;
+    width: fit-content;
     margin-top: 8px;
   }
 
