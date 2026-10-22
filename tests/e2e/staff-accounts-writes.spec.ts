@@ -126,9 +126,9 @@ test("a hidden listing is shown again from /admin/hidden: back in browse and on 
   await page.goto(browseFor(word));
   await expect(page.getByRole("heading", { level: 2, name: "Nothing here yet" })).toBeVisible();
 
-  // Overview says something is hidden, and links to the list; the list has it.
+  // Today's Waiting list has a Hidden row, which opens the list; the list has it.
   await admin.goto("/admin");
-  await main(admin).getByRole("link", { name: / (is|are) hidden$/ }).click();
+  await main(admin).getByRole("list", { name: "Waiting" }).getByRole("link", { name: /Hidden by the Hub/ }).click();
   await expect(admin).toHaveURL(/\/admin\/hidden$/);
   const row = main(admin).getByRole("row").filter({ hasText: title });
   await expect(row).toContainText("Tech corner");
@@ -205,8 +205,8 @@ test("the numbers: both tables, a campus view and the key, and the 404 page for 
 }) => {
   test.setTimeout(60_000);
   const admin = await signedInPage(browser, baseURL!, "Admin", "/admin/numbers");
-  await expect(main(admin).getByRole("heading", { level: 1, name: "Numbers" })).toBeVisible();
-  await expect(admin).toHaveTitle("Numbers · CampusCart");
+  await expect(main(admin).getByRole("heading", { level: 1, name: "Last week" })).toBeVisible();
+  await expect(admin).toHaveTitle("Last week · CampusCart");
   await expect(main(admin).getByRole("table", { name: "All campuses, by week" })).toBeVisible();
   await expect(main(admin).getByRole("table", { name: /^By campus, last week \(/ })).toBeVisible();
   await expect(main(admin).getByText(/^Hidden: not shown by campus/).first()).toBeVisible();

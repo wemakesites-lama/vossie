@@ -41,8 +41,8 @@ const PAGES: ReadonlyArray<[path: string, heading: string]> = [
   ["/admin/staff/acc-mentor/remove-mentor", "Remove Naledi's mentor role"],
   // The admin's own role: the page refuses and has no button (spec decision 5).
   ["/admin/staff/acc-admin/remove-admin", "Your admin role"],
-  ["/admin/numbers", "Numbers"],
-  ["/admin/numbers?campus=midrand", "Numbers"],
+  ["/admin/numbers", "Last week"],
+  ["/admin/numbers?campus=midrand", "Last week"],
   ["/admin/hidden", "Hidden listings and requests"],
 ];
 
@@ -180,7 +180,7 @@ test("a Show again confirm page holds still on a short phone, 375 by 667 (CLS 0.
 });
 
 const SIZE_PAGES: ReadonlyArray<[name: string, path: string]> = [
-  ["Overview", "/admin"],
+  ["Today", "/admin"],
   ["Staff accounts", "/admin/staff"],
   ["Numbers", "/admin/numbers"],
   ["Hidden", "/admin/hidden"],

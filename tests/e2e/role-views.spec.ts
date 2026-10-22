@@ -192,6 +192,8 @@ test.describe("the seller home (role views N2, spec 7.1)", () => {
     const [skeleton, pitch] = await skeletonAndPage();
     expect(skeleton).toBeLessThan(pitch);
     await signInAsSample(page, "Seller waiting for approval", "/sell");
+    // The waiting page, not its skeleton (which measured 272 against itself before it streamed in, N3 build).
+    await expect(main(page).getByRole("heading", { level: 1, name: "The Hub is checking your shop" })).toBeVisible();
     const [again, waiting] = await skeletonAndPage();
     expect(again).toBeLessThan(waiting);
   });

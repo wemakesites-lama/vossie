@@ -80,8 +80,8 @@ test.describe("sellers (staff tools spec 2.3, plan decision 2)", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("The Hub is checking your shop");
 
     const admin = await signedInPage(browser, baseURL!, "Admin", "/admin");
-    await expect(main(admin).getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
-    await expect(admin).toHaveTitle("Admin console · CampusCart");
+    await expect(main(admin).getByRole("heading", { level: 1, name: "Today" })).toBeVisible();
+    await expect(admin).toHaveTitle("Today · CampusCart");
     await reviewShop(admin, shopName);
     await button(admin, `Approve ${shopName}`).click();
     await expect(staffNotice(admin)).toHaveText("Approved. The shop is live, and its owner has been told.", POST_LANDS);

@@ -24,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function AdminHiddenPage({ searchParams }: PageProps<"/admin/hidden">) {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton />}>
+      <Suspense fallback={<StaffSkeleton short />}>
         <Hidden searchParams={searchParams} />
       </Suspense>
     </PageTransition>

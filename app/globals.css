@@ -10702,4 +10702,37 @@ body:has(.section-shell:not([style*="display"]) > .section-bar) :is(.footer-gian
     color: var(--color-navy);
     font-weight: 700;
   }
+
+  /* The campus chips stay one row that scrolls sideways at every size. Wrapped, the fourteen chips took another row
+     when the fonts swapped in, and the list below moved down 52px (0.07 at 1440, N3 build). The row is the chosen
+     chip's scroller, so it can bring that chip into view. A grid item of .staff-body, the row must be let shrink, or
+     it grows to its chips' width and widens the whole page on a phone (1986px at 390 before, N3 build). */
+  .staff-page .link-chips {
+    min-width: 0;
+  }
+
+  /* On phones a section's staff page is at least a screen tall, less the 64px header, as .sell-page is (from the
+     tablet step .section-main does it). Under the short skeleton Reports and Hidden let the footer into the first
+     screen on a slow network, and it dropped when the list arrived (0.52 and 0.39 at 390, N3 build). */
+  @media (max-width: 47.99rem), (max-height: 29.99rem) {
+    .section-main .staff-page {
+      min-height: calc(100vh - 64px);
+      min-height: calc(100svh - 64px);
+    }
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .staff-page .link-chips ul {
+      flex-wrap: nowrap;
+      margin-inline: -4px;
+      padding-inline: 4px;
+      overflow-x: auto;
+      /* A mouse needs a bar to scroll by. */
+      scrollbar-width: thin;
+    }
+
+    .staff-page .link-chip[aria-current="page"] {
+      scroll-initial-target: nearest;
+    }
+  }
 }

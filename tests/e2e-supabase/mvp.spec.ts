@@ -163,7 +163,7 @@ test.describe("flows 2 to 11, in order: a seller, a buyer and the first admin", 
       expect(sql(`select count(*) from public.profiles where 'admin' = any (roles)`)).toEqual([String(others.length + 1)]);
     }
     await admin.goto("/account");
-    await expect(main(admin).getByRole("link", { name: /Admin console/ }).first()).toBeVisible();
+    await expect(main(admin).getByRole("link", { name: /Hub console/ }).first()).toBeVisible();
     await admin.goto("/admin/audit?kind=staff");
     await expect(
       main(admin).getByRole("row").filter({ hasText: "Set up outside CampusCart" }).filter({ hasText: people.admin.firstName }),
@@ -435,7 +435,7 @@ test.describe("flows 2 to 11, in order: a seller, a buyer and the first admin", 
     );
     expect(moved).toHaveLength(1);
     await admin.goto("/admin/numbers");
-    await expect(main(admin).getByRole("heading", { level: 1, name: "Numbers" })).toBeVisible();
+    await expect(main(admin).getByRole("heading", { level: 1, name: "Last week" })).toBeVisible();
     const all = main(admin).getByRole("table", { name: "All campuses, by week" });
     // Last week, the week before, the change and since the start (each cell starts with its column's name for phones):
     // one report is "Under 5", so no change and no tens.

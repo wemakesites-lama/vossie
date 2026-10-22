@@ -33,8 +33,8 @@ async function copySession(browser: Browser, context: BrowserContext, baseURL: s
 }
 
 const STAFF_PAGES: ReadonlyArray<[path: string, heading: string]> = [
-  ["/admin", "Overview"],
-  ["/admin/sellers", "Sellers"],
+  ["/admin", "Today"],
+  ["/admin/sellers", "Shops"],
   ["/admin/sellers/crochet-corner", "Crochet corner"],
   ["/admin/sellers/crochet-corner/decline", "Decline Crochet corner"],
   ["/admin/sellers/tech-corner", "Tech corner"],
@@ -128,7 +128,7 @@ test.describe("the staff tools have no serious or critical axe issues (staff too
 const SHIFT_PAGES: ReadonlyArray<[name: string, path: string, label: string]> = [
   ["slot request page (a request waiting)", "/hub/h-007/book", "Student, Midrand"],
   ["slot request page (the form)", "/hub/h-007/book", "Seller, Tech corner"],
-  ["admin console's Overview", "/admin", "Admin"],
+  ["Hub console's Today", "/admin", "Admin"],
   ["mentor dashboard", "/mentor", "Mentor"],
 ];
 
@@ -167,9 +167,9 @@ for (const [name, path, label] of SHIFT_PAGES) {
 }
 
 const SIZE_PAGES: ReadonlyArray<[name: string, path: string]> = [
-  ["Overview", "/admin"],
-  ["Sellers", "/admin/sellers"],
-  ["Hub tools", "/hub/manage"],
+  ["Today", "/admin"],
+  ["Shops", "/admin/sellers"],
+  ["Hub posts", "/hub/manage"],
   ["Mentor dashboard", "/mentor"],
 ];
 

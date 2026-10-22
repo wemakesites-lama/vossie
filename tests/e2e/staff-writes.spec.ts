@@ -130,12 +130,30 @@ test("an admin pauses the shop behind a report: its owner sees why with no Resum
   await expect(page).toHaveURL(/\/report\/sent/, POST_LANDS);
   const secondContext = await browser.newContext({ baseURL, serviceWorkers: "block" });
   const second = await secondContext.newPage();
-  await signUp(second, newBuyer());
+  const secondBuyer = newBuyer();
+  await signUp(second, secondBuyer);
   await second.goto(`/report?seller=${slug}`);
   await main(second).getByRole("radio", { name: "Harassment" }).check();
   await button(second, "Send report").click();
   await expect(second).toHaveURL(/\/report\/sent/, POST_LANDS);
 
+  await admin.goto("/admin/reports");
+  // Role views N3 (spec 7.2): a report's Next link and Today's Reports row open the oldest open report, from the list.
+  const open = main(admin).getByRole("table", { name: "Open reports, oldest first" });
+  const oldest = await open.getByRole("link", { name: /^Review the report about / }).first().getAttribute("href");
+  const newer = await open
+    .getByRole("row")
+    .filter({ hasText: secondBuyer.firstName })
+    .getByRole("link", { name: `Review the report about ${shopName}` })
+    .getAttribute("href");
+  expect(newer, "the second report isn't the oldest").not.toBe(oldest);
+  await admin.goto(newer!);
+  await expect(main(admin).getByRole("link", { name: /^Next open report: / })).toHaveAttribute("href", oldest!);
+  await admin.goto("/admin");
+  await expect(main(admin).getByRole("list", { name: "Waiting" }).getByRole("link", { name: /Open reports?/ })).toHaveAttribute(
+    "href",
+    oldest!,
+  );
   await admin.goto("/admin/reports");
   const row = main(admin).getByRole("row").filter({ hasText: first.firstName });
   await row.getByRole("link", { name: `Review the report about ${shopName}` }).click();
