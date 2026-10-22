@@ -34,7 +34,7 @@ export function AdminMore({ hidden }: { hidden: { listings: number; requests: nu
         detail="Each campus's meeting places"
       />
       <ListRow href={ADMIN_STAFF_PATH} lead={{ kind: "icon", icon: <ShieldIcon /> }} title="Staff accounts" detail="Who has a role" />
-      <ListRow href={ADMIN_NUMBERS_PATH} lead={{ kind: "icon", icon: <ChartIcon /> }} title="Numbers" detail="Last week, by campus" />
+      <ListRow href={ADMIN_NUMBERS_PATH} lead={{ kind: "icon", icon: <ChartIcon /> }} title="Last week" detail="Every measure, by campus" />
       <ListRow href={ADMIN_AUDIT_PATH} lead={{ kind: "icon", icon: <ClockIcon /> }} title="Audit log" detail="Every staff action" />
       <ListRow href={MENTOR_PATH} lead={{ kind: "icon", icon: <StoreIcon /> }} title="Mentoring" detail="Shops you mentor" />
     </ul>

@@ -7,7 +7,7 @@ import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
 import { getHidden } from "@/lib/data/staff-reports";
 import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
-import { ADMIN_REPORTS_PATH, showRequestPath } from "@/lib/staff/paths";
+import { ADMIN_HIDDEN_PATH, showRequestPath, STAFF_EYEBROW } from "@/lib/staff/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -36,7 +36,7 @@ async function Show({ params }: Pick<PageProps<"/admin/hidden/requests/[id]">, "
   const item = isId(id) ? await getHidden("request", id, account.id) : null;
   if (!item) notFound();
   return (
-    <StaffFrame account={account} area="Admin console" title={`Show ${item.title} again`} current={ADMIN_REPORTS_PATH} notice={null}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title={`Show ${item.title} again`} current={ADMIN_HIDDEN_PATH} notice={null}>
       <ShowAgainConfirm item={item} />
     </StaffFrame>
   );

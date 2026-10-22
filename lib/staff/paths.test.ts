@@ -40,19 +40,21 @@ describe("the staff pages' addresses (staff tools spec section 3)", () => {
     expect(auditPath({ staff: "acc-admin", kind: "reports" })).toBe("/admin/audit?staff=acc-admin&kind=reports");
   });
 
-  it("lists the frame's sections, the admin console's eight first", () => {
+  it("lists the frame's sections, the Hub console's nine first (role views N3 plan decision 7)", () => {
     expect(STAFF_SECTIONS.map((section) => section.label)).toEqual([
-      "Overview",
-      "Sellers",
+      "Today",
+      "Shops",
       "Reports",
+      "Hidden",
       "Featured",
       "Pickup points",
-      "Numbers",
+      "Last week",
       "Staff",
       "Audit log",
       "Hub posts",
       "Mentoring",
     ]);
+    expect(AREA_HOME.admin).toEqual({ href: "/admin", label: "Hub console" });
     expect(AREA_HOME.hub).toEqual({ href: "/hub/manage", label: "Hub posts and office hours" });
   });
 });

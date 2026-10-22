@@ -115,14 +115,14 @@ describe("Your account (accounts spec 3.2)", () => {
   it("links staff to the tools their roles open (staff tools plan decision 19)", () => {
     renderAccount({ ...account, roles: ["admin"] });
     const rows = screen.getByRole("navigation", { name: "Your account's pages" });
-    expect(within(rows).getByRole("link", { name: "Admin console" })).toHaveAttribute("href", "/admin");
+    expect(within(rows).getByRole("link", { name: "Hub console" })).toHaveAttribute("href", "/admin");
     expect(within(rows).getByRole("link", { name: "Hub posts and office hours" })).toHaveAttribute("href", "/hub/manage");
     expect(within(rows).getByRole("link", { name: "Mentor dashboard" })).toHaveAttribute("href", "/mentor");
   });
 
   it("gives a mentor the Hub's tools and the dashboard, and a student no staff rows", () => {
     const { unmount } = renderAccount({ ...account, roles: ["mentor"] });
-    expect(screen.queryByRole("link", { name: "Admin console" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Hub console" })).toBeNull();
     expect(screen.getByRole("link", { name: "Hub posts and office hours" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Mentor dashboard" })).toBeInTheDocument();
     unmount();
@@ -140,7 +140,7 @@ describe("Your account (accounts spec 3.2)", () => {
       "Saved",
       "Your requests",
       "Start selling",
-      "Admin console",
+      "Hub console",
       "Hub posts and office hours",
       "Mentor dashboard",
       "Privacy settings",
@@ -149,7 +149,7 @@ describe("Your account (accounts spec 3.2)", () => {
 
   it("never prefetches the staff rows: every staff page reads the session (staff tools plan decision 19)", () => {
     renderAccount({ ...account, roles: ["admin"] });
-    for (const name of ["Admin console", "Hub posts and office hours", "Mentor dashboard"]) {
+    for (const name of ["Hub console", "Hub posts and office hours", "Mentor dashboard"]) {
       expect(screen.getByRole("link", { name }).dataset.prefetch, name).toBe("false");
     }
   });

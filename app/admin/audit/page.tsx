@@ -8,7 +8,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { parseAuditFilter } from "@/lib/staff/audit-words";
 import { takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
-import { ADMIN_AUDIT_PATH } from "@/lib/staff/paths";
+import { ADMIN_AUDIT_PATH, STAFF_EYEBROW } from "@/lib/staff/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -31,7 +31,7 @@ async function Audit({ searchParams }: Pick<PageProps<"/admin/audit">, "searchPa
   const filter = parseAuditFilter(await searchParams);
   const [entries, staff, notice] = await Promise.all([listAudit(filter), auditStaff(), takeNotice()]);
   return (
-    <StaffFrame account={account} area="Admin console" title="Audit log" current={ADMIN_AUDIT_PATH} notice={staffNoticeText(notice)}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Audit log" current={ADMIN_AUDIT_PATH} notice={staffNoticeText(notice)}>
       <AdminAudit entries={entries} staff={staff} filter={filter} />
     </StaffFrame>
   );

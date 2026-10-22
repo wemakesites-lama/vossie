@@ -11,11 +11,11 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { parseNumbersCampus, protectCounts } from "@/lib/staff/numbers";
-import { ADMIN_NUMBERS_PATH } from "@/lib/staff/paths";
+import { ADMIN_NUMBERS_PATH, STAFF_EYEBROW } from "@/lib/staff/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
-  return staffMetadata("admin", "Numbers");
+  return staffMetadata("admin", "Last week");
 }
 
 /** The admin's numbers (stage J spec decisions 9 to 13). Admins only, in G's shape: the gate runs inside <Suspense>. */
@@ -42,7 +42,7 @@ async function Numbers({ searchParams }: Pick<PageProps<"/admin/numbers">, "sear
   const { weeks, raw } = await countByWeek(new Date());
   const chosen = parseNumbersCampus(params, slugs);
   return (
-    <StaffFrame account={account} area="Admin console" title="Numbers" current={ADMIN_NUMBERS_PATH} notice={staffNoticeText(notice)}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Last week" current={ADMIN_NUMBERS_PATH} notice={staffNoticeText(notice)}>
       <AdminNumbers
         weeks={weeks}
         shown={protectCounts(raw, slugs)}

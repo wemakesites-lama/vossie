@@ -41,26 +41,59 @@ export function numbersPath(campusSlug: string | null): string {
 
 /** Each area's front page, as the account page names it (plan decision 19). */
 export const AREA_HOME: Readonly<Record<StaffArea, { href: string; label: string }>> = {
-  admin: { href: ADMIN_PATH, label: "Admin console" },
+  admin: { href: ADMIN_PATH, label: "Hub console" },
   hub: { href: HUB_MANAGE_PATH, label: "Hub posts and office hours" },
   mentor: { href: MENTOR_PATH, label: "Mentor dashboard" },
 };
 
 /**
- * The staff frame's row of section links (spec section 3): the admin console's eight sections, then the Hub's tools and
- * the mentor dashboard. The frame shows the ones the account may use.
+ * The staff frame's row of section links (spec section 3): the Hub console's nine sections (role views N3 plan decision
+ * 7's names), then the Hub's tools and the mentor dashboard. The frame shows the ones the account may use. Inside the
+ * section shell the admin bar replaces this row (role views N1); it still shows on the Hub's pages.
  */
 export const STAFF_SECTIONS: ReadonlyArray<{ href: string; label: string; area: StaffArea }> = [
-  { href: ADMIN_PATH, label: "Overview", area: "admin" },
-  { href: ADMIN_SELLERS_PATH, label: "Sellers", area: "admin" },
+  { href: ADMIN_PATH, label: "Today", area: "admin" },
+  { href: ADMIN_SELLERS_PATH, label: "Shops", area: "admin" },
   { href: ADMIN_REPORTS_PATH, label: "Reports", area: "admin" },
+  { href: ADMIN_HIDDEN_PATH, label: "Hidden", area: "admin" },
   { href: ADMIN_FEATURED_PATH, label: "Featured", area: "admin" },
   { href: ADMIN_POINTS_PATH, label: "Pickup points", area: "admin" },
-  { href: ADMIN_NUMBERS_PATH, label: "Numbers", area: "admin" },
+  { href: ADMIN_NUMBERS_PATH, label: "Last week", area: "admin" },
   { href: ADMIN_STAFF_PATH, label: "Staff", area: "admin" },
   { href: ADMIN_AUDIT_PATH, label: "Audit log", area: "admin" },
   { href: HUB_MANAGE_PATH, label: "Hub posts", area: "hub" },
   { href: MENTOR_PATH, label: "Mentoring", area: "mentor" },
+];
+
+/**
+ * The staff pages' eyebrow (role views spec 7.2: one name for the console). A test reads app/admin and app/hub for it.
+ * `hubTools` is what a mentor without the admin role sees on the Hub's pages: they have no console (Lama, N3 build).
+ */
+export const STAFF_EYEBROW = {
+  admin: "Hub console",
+  hub: "Hub console",
+  hubTools: "Hub tools",
+  mentor: "Mentoring",
+} as const;
+
+/** The Hub pages' eyebrow: "Hub console" for an admin, "Hub tools" for a mentor, who has no console (Lama, N3 build). */
+export function hubEyebrow(account: { roles: readonly StaffRole[] }): string {
+  return account.roles.includes("admin") ? STAFF_EYEBROW.hub : STAFF_EYEBROW.hubTools;
+}
+
+/**
+ * The pages the admin bar's More holds (role views N1's /admin/more), and the mentor dashboard an admin reaches from
+ * it: on these, and the pages below them, More is the current tab (N3 plan decision 8, through NavLink's `also`).
+ * Add a new More page's path here.
+ */
+export const ADMIN_MORE_SECTIONS: readonly string[] = [
+  ADMIN_HIDDEN_PATH,
+  ADMIN_FEATURED_PATH,
+  ADMIN_POINTS_PATH,
+  ADMIN_STAFF_PATH,
+  ADMIN_NUMBERS_PATH,
+  ADMIN_AUDIT_PATH,
+  MENTOR_PATH,
 ];
 
 /** The audit log with its filters in the link (spec 2.3: by staff member and by kind, as links). */

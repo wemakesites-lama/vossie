@@ -10,7 +10,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { postFieldIds, staffErrors } from "@/lib/staff/errors";
 import { postForm, postPrefix } from "@/lib/staff/form-state";
 import { issueOnceToken } from "@/lib/staff/once";
-import { HUB_MANAGE_PATH, HUB_NEW_PATH } from "@/lib/staff/paths";
+import { HUB_MANAGE_PATH, HUB_NEW_PATH, hubEyebrow } from "@/lib/staff/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -35,7 +35,7 @@ async function NewPost() {
   const ids = postFieldIds(postPrefix(null));
   const codes = state?.errors ?? [];
   return (
-    <StaffFrame account={account} area="Hub tools" title="Write a post" current={HUB_MANAGE_PATH} notice={null}>
+    <StaffFrame account={account} area={hubEyebrow(account)} title="Write a post" current={HUB_MANAGE_PATH} notice={null}>
       <PostEditor
         postId={null}
         values={state?.values ?? NEW_POST_VALUES}

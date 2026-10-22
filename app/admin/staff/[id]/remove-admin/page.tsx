@@ -10,7 +10,7 @@ import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors } from "@/lib/staff/errors";
 import { removeRoleForm } from "@/lib/staff/form-state";
-import { ADMIN_STAFF_PATH, removeRolePath } from "@/lib/staff/paths";
+import { ADMIN_STAFF_PATH, removeRolePath, STAFF_EYEBROW } from "@/lib/staff/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -42,7 +42,7 @@ async function Remove({ params }: Pick<PageProps<"/admin/staff/[id]/remove-admin
   return (
     <StaffFrame
       account={account}
-      area="Admin console"
+      area={STAFF_EYEBROW.admin}
       title={roleConfirmTitle(person, "admin", account.id)}
       current={ADMIN_STAFF_PATH}
       notice={null}

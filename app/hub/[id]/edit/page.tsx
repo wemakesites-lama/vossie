@@ -12,7 +12,7 @@ import { sellingErrors } from "@/lib/selling/errors";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { postFieldIds, staffErrors } from "@/lib/staff/errors";
 import { postForm, postPrefix } from "@/lib/staff/form-state";
-import { editPostPath, HUB_MANAGE_PATH } from "@/lib/staff/paths";
+import { editPostPath, HUB_MANAGE_PATH, hubEyebrow } from "@/lib/staff/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -45,7 +45,7 @@ async function EditPost({ params }: Pick<PageProps<"/hub/[id]/edit">, "params">)
   const ids = postFieldIds(postPrefix(id));
   const codes = state?.errors ?? [];
   return (
-    <StaffFrame account={account} area="Hub tools" title={`Edit ${row.title}`} current={HUB_MANAGE_PATH} notice={null}>
+    <StaffFrame account={account} area={hubEyebrow(account)} title={`Edit ${row.title}`} current={HUB_MANAGE_PATH} notice={null}>
       <PostEditor
         postId={id}
         values={state?.values ?? postValues(row)}

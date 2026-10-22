@@ -145,14 +145,14 @@ function GiveRoleForm({ values, errors, once }: Pick<AdminStaffProps, "values" |
 }
 
 /**
- * Staff accounts (spec decisions 2 and 3): the Give a staff role form, then everyone with a role, and no one else. The
+ * Staff accounts (spec decisions 2 and 3): everyone with a role, and no one else, then the Give a staff role form (role
+ * views spec 7.2). The
  * email is shown because roles are given by email and two staff may share a first name. Server-rendered, with no
  * client code. The words are samples for Lama to change.
  */
 export function AdminStaff({ people, viewerId, ownShopMentorId, campusNames, values, errors, once }: AdminStaffProps) {
   return (
     <>
-      <GiveRoleForm values={values} errors={errors} once={once} />
       <section aria-labelledby="admin-staff-list-title" className="staff-section">
         <h2 id="admin-staff-list-title" className="staff-section-title">
           Who has a role
@@ -178,6 +178,7 @@ export function AdminStaff({ people, viewerId, ownShopMentorId, campusNames, val
           empty="No one has a staff role."
         />
       </section>
+      <GiveRoleForm values={values} errors={errors} once={once} />
     </>
   );
 }

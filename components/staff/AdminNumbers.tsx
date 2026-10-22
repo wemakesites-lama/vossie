@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BarList } from "@/components/charts/BarList";
 import {
   HIDDEN,
   MEASURES,
@@ -10,6 +11,7 @@ import {
   type ShownCounts,
 } from "@/lib/staff/numbers";
 import { ADMIN_NUMBERS_PATH, numbersPath } from "@/lib/staff/paths";
+import { campusBars } from "@/lib/staff/today-numbers";
 import { StaffTable } from "./StaffTable";
 
 type Place = { slug: string; name: string };
@@ -66,6 +68,33 @@ function NumbersKey() {
  * The admin's numbers (spec decisions 9 to 13): plain tables with captions and row headers, no charts and no client
  * code. Nothing counted is named, linked or identified; the only links are each campus's view.
  */
+/**
+ * Last week, each measure by campus (role views spec 7.2, N3 plan decision 5): a bar chart where there's enough to draw,
+ * words where there isn't, and one sentence where every campus is hidden. Only protectCounts' words reach it.
+ */
+function MeasureBars({ shown, campuses }: { shown: ShownCounts; campuses: readonly Place[] }) {
+  return (
+    <section aria-labelledby="admin-numbers-bars-title" className="staff-section">
+      <h2 id="admin-numbers-bars-title" className="staff-section-title">
+        Each measure by campus
+      </h2>
+      {MEASURES.map(({ measure, label }) => {
+        const bars = campusBars(shown, measure, campuses);
+        return (
+          <div key={measure} className="numbers-bars">
+            <h3 className="numbers-bars-title">{label}</h3>
+            {bars.tooSmall ? (
+              <p className="chart-summary">{bars.summary}</p>
+            ) : (
+              <BarList rows={bars.rows} label={`${label}, last week`} summary={bars.summary} rowHeader="Campus" />
+            )}
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
 export function AdminNumbers({ weeks, shown, campuses, campus, sampleMode }: AdminNumbersProps) {
   const columns = [
     "Measure",
@@ -125,6 +154,7 @@ export function AdminNumbers({ weeks, shown, campuses, campus, sampleMode }: Adm
             />
             <NumbersKey />
           </section>
+          <MeasureBars shown={shown} campuses={campuses} />
           <section aria-labelledby="admin-numbers-by-campus-title" className="staff-section">
             <h2 id="admin-numbers-by-campus-title" className="staff-section-title">
               By campus, last week

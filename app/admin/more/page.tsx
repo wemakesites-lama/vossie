@@ -6,7 +6,7 @@ import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
 import { countHidden } from "@/lib/data/staff-reports";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
-import { ADMIN_MORE_PATH } from "@/lib/staff/paths";
+import { ADMIN_MORE_PATH, STAFF_EYEBROW } from "@/lib/staff/paths";
 
 export async function generateMetadata(): Promise<Metadata> {
   return staffMetadata("admin", "More tools");
@@ -27,7 +27,7 @@ async function More() {
   const account = await requireStaff("admin", ADMIN_MORE_PATH);
   const hidden = await countHidden();
   return (
-    <StaffFrame account={account} area="Admin console" title="More tools" current={ADMIN_MORE_PATH} notice={null}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="More tools" current={ADMIN_MORE_PATH} notice={null}>
       <AdminMore hidden={hidden} />
     </StaffFrame>
   );

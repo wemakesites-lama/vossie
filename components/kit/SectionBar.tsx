@@ -8,6 +8,8 @@ export type SectionTab = {
   icon: ReactNode;
   /** "section" also marks the pages under href, as the main bar's Shop and Sell do. */
   match?: "section";
+  /** Other paths whose pages also make this tab current (the admin bar's More, N3 plan decision 8). */
+  also?: readonly string[];
   /** Only a tab whose route has no client component may prefetch (decision 53); everything else passes false. */
   prefetch?: false;
   /** A file, not a page: a plain <a download> (the mentor's CSV). */
@@ -72,6 +74,7 @@ function SectionLink({ tab }: { tab: SectionTab }) {
     <NavLink
       href={tab.href}
       match={tab.match}
+      also={tab.also}
       prefetch={tab.prefetch}
       transitionTypes={tab.exit ? undefined : ["nav-tab"]}
       className="section-tab"

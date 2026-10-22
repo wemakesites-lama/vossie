@@ -8,7 +8,7 @@ import { canEditPost, listBookings, listPostsForStaff } from "@/lib/data/hub-pos
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
-import { HUB_MANAGE_PATH } from "@/lib/staff/paths";
+import { HUB_MANAGE_PATH, hubEyebrow } from "@/lib/staff/paths";
 import { isAdmin } from "@/lib/staff/roles";
 import { PageTransition } from "@/components/kit/PageTransition";
 
@@ -38,7 +38,7 @@ async function Manage() {
   return (
     <StaffFrame
       account={account}
-      area="Hub tools"
+      area={hubEyebrow(account)}
       title="Hub posts"
       current={HUB_MANAGE_PATH}
       notice={staffNoticeText(notice)}

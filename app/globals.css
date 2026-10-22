@@ -10652,3 +10652,54 @@ body:has(.section-shell:not([style*="display"]) > .section-bar) :is(.footer-gian
     padding-left: 50px;
   }
 }
+
+/* --- Role views N3: the admin's Today and the console's fixes ------------------------------------------------- */
+@layer components {
+  .staff-lede {
+    color: var(--color-muted);
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .today {
+    display: grid;
+    gap: 16px;
+    max-width: 48rem;
+  }
+
+  .staff-next {
+    margin-bottom: 8px;
+  }
+
+  .staff-next-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    color: var(--color-sky-dark);
+    font-weight: 600;
+  }
+
+  .staff-next-label {
+    color: var(--color-ink);
+    font-weight: 400;
+  }
+
+  .staff-next-link > svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+  }
+
+  .numbers-bars {
+    display: grid;
+    gap: 6px;
+    margin-top: 16px;
+  }
+
+  .numbers-bars-title {
+    color: var(--color-navy);
+    font-weight: 700;
+  }
+}

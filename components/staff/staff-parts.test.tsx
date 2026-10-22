@@ -28,11 +28,11 @@ describe("the staff frame (staff tools spec section 3)", () => {
 
   it("gives an admin every section, and shows the last action's notice as a status line (spec 4)", () => {
     render(
-      <StaffFrame account={{ roles: ["admin"] }} area="Admin console" title="Sellers" current="/admin/sellers" notice="Approved.">
+      <StaffFrame account={{ roles: ["admin"] }} area="Hub console" title="Shops" current="/admin/sellers" notice="Approved.">
         <p>The page</p>
       </StaffFrame>,
     );
-    expect(within(screen.getByRole("navigation", { name: "Staff tools" })).getAllByRole("link")).toHaveLength(10);
+    expect(within(screen.getByRole("navigation", { name: "Staff tools" })).getAllByRole("link")).toHaveLength(11);
     expect(screen.getByRole("status")).toHaveTextContent("Approved.");
   });
 

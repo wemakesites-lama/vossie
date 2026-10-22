@@ -9,6 +9,8 @@ type AdminHiddenProps = {
   listings: readonly HiddenItem[];
   requests: readonly HiddenItem[];
   campusNames: ReadonlyMap<string, string>;
+  /** The campus the list is filtered to, for the captions (role views spec 7.2). */
+  campusName?: string | null;
 };
 
 function ShowLink({ item }: { item: HiddenItem }) {
@@ -29,7 +31,8 @@ function HiddenOn({ item }: { item: HiddenItem }) {
  * again. A request never names its asker. The words are samples for Lama to change.
  * The admin's own listing or request says "Yours" where Show again was (stage L).
  */
-export function AdminHidden({ listings, requests, campusNames }: AdminHiddenProps) {
+export function AdminHidden({ listings, requests, campusNames, campusName = null }: AdminHiddenProps) {
+  const at = campusName ? ` · ${campusName}` : "";
   const campus = (slug: string) => campusNames.get(slug) ?? slug;
   return (
     <>
@@ -42,7 +45,7 @@ export function AdminHidden({ listings, requests, campusNames }: AdminHiddenProp
           Listings
         </h2>
         <StaffTable
-          caption={`Hidden listings (${listings.length})`}
+          caption={`Hidden listings (${listings.length})${at}`}
           columns={["Listing", "Shop", "Campus", "Hidden on", "Reason", "Show again"]}
           rows={listings.map((item) => ({
             key: item.id,
@@ -63,7 +66,7 @@ export function AdminHidden({ listings, requests, campusNames }: AdminHiddenProp
           Looking For requests
         </h2>
         <StaffTable
-          caption={`Hidden requests (${requests.length})`}
+          caption={`Hidden requests (${requests.length})${at}`}
           columns={["Request", "Campus", "Hidden on", "Reason", "Show again"]}
           rows={requests.map((item) => ({
             key: item.id,

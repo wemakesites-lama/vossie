@@ -43,7 +43,15 @@ function ReviewLink({ report }: { report: ReportView }) {
 }
 
 /** Reports (spec 2.3): open first, oldest first, each with what, why and who sent it (first name only), then closed ones. */
-export function AdminReports({ reports }: { reports: readonly ReportView[] }) {
+export function AdminReports({
+  reports,
+  campusName = null,
+}: {
+  reports: readonly ReportView[];
+  /** The campus the list is filtered to, for the captions (role views spec 7.2). */
+  campusName?: string | null;
+}) {
+  const at = campusName ? ` · ${campusName}` : "";
   const open = reports.filter((report) => report.open);
   const closed = reports.filter((report) => !report.open);
   return (
@@ -58,7 +66,7 @@ export function AdminReports({ reports }: { reports: readonly ReportView[] }) {
           Open
         </h2>
         <StaffTable
-          caption="Open reports, oldest first"
+          caption={`Open reports, oldest first${at}`}
           columns={["Sent", "What", "Reason", "Reporter", "Review"]}
           rows={open.map((report) => ({
             key: report.id,
@@ -80,7 +88,7 @@ export function AdminReports({ reports }: { reports: readonly ReportView[] }) {
           Closed
         </h2>
         <StaffTable
-          caption="Closed recently"
+          caption={`Closed recently${at}`}
           columns={["What", "Outcome", "Closed", "By", "Review"]}
           rows={closed.map((report) => ({
             key: report.id,

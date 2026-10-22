@@ -44,4 +44,19 @@ describe("NavLink", () => {
     );
     expect(screen.getByRole("link", { name: "Shop" })).toHaveAttribute("href", "/browse");
   });
+
+  it("is current as a section on any path it's also given, on its own boundary only (role views N3)", () => {
+    render(
+      <>
+        <NavLink href="/admin/more" also={["/"]}>
+          More
+        </NavLink>
+        <NavLink href="/admin/more" also={["/admin/hidden", "/x"]}>
+          Other more
+        </NavLink>
+      </>,
+    );
+    expect(screen.getByRole("link", { name: "More" })).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("link", { name: "Other more" })).not.toHaveAttribute("aria-current");
+  });
 });

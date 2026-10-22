@@ -10,7 +10,7 @@ import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
 import { reportPauseForm } from "@/lib/staff/form-state";
-import { ADMIN_REPORTS_PATH, pauseReportedPath } from "@/lib/staff/paths";
+import { ADMIN_REPORTS_PATH, pauseReportedPath, STAFF_EYEBROW } from "@/lib/staff/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -41,7 +41,7 @@ async function Pause({ params }: Pick<PageProps<"/admin/reports/[id]/pause">, "p
   return (
     <StaffFrame
       account={account}
-      area="Admin console"
+      area={STAFF_EYEBROW.admin}
       title={report.shop ? `Pause ${report.shop.name}` : "Pause a shop"}
       current={ADMIN_REPORTS_PATH}
       notice={null}

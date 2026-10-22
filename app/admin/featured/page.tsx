@@ -12,7 +12,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
 import { PIN_FORM, takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
-import { ADMIN_FEATURED_PATH } from "@/lib/staff/paths";
+import { ADMIN_FEATURED_PATH, STAFF_EYEBROW } from "@/lib/staff/paths";
 import { sastDate } from "@/lib/time";
 import { PageTransition } from "@/components/kit/PageTransition";
 
@@ -55,7 +55,7 @@ async function Featured() {
     takeNotice(),
   ]);
   return (
-    <StaffFrame account={account} area="Admin console" title="Featured" current={ADMIN_FEATURED_PATH} notice={staffNoticeText(notice)}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Featured" current={ADMIN_FEATURED_PATH} notice={staffNoticeText(notice)}>
       <AdminFeatured
         today={today}
         rows={rows}

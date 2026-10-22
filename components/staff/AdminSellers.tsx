@@ -30,7 +30,17 @@ function ReviewLink({ review }: { review: ShopReview }) {
  * Sellers (spec 2.3): the shops waiting for approval first (declined ones with them, until they're sent again), then
  * every open and paused shop, each with a link to its review page, which names the shop.
  */
-export function AdminSellers({ rows, campusNames }: { rows: readonly ShopReview[]; campusNames: ReadonlyMap<string, string> }) {
+export function AdminSellers({
+  rows,
+  campusNames,
+  campusName = null,
+}: {
+  rows: readonly ShopReview[];
+  campusNames: ReadonlyMap<string, string>;
+  /** The campus the list is filtered to, for the captions (role views spec 7.2). */
+  campusName?: string | null;
+}) {
+  const at = campusName ? ` · ${campusName}` : "";
   const waiting = rows.filter((row) => row.standing === "waiting" || row.standing === "declined");
   const others = rows.filter((row) => row.standing === "open" || row.standing === "paused");
   const campus = (row: ShopReview) => campusNames.get(row.shop.campusSlug) ?? row.shop.campusSlug;
@@ -41,7 +51,7 @@ export function AdminSellers({ rows, campusNames }: { rows: readonly ShopReview[
           Waiting for approval
         </h2>
         <StaffTable
-          caption="Shops waiting for approval, oldest first"
+          caption={`Shops waiting for approval, oldest first${at}`}
           columns={["Shop", "Campus", "Applied", "Status", "Review"]}
           rows={waiting.map((row) => ({
             key: row.shop.slug,
@@ -67,7 +77,7 @@ export function AdminSellers({ rows, campusNames }: { rows: readonly ShopReview[
           Every shop
         </h2>
         <StaffTable
-          caption="Open and paused shops, A to Z"
+          caption={`Open and paused shops, A to Z${at}`}
           columns={["Shop", "Campus", "Owner", "Status", "Verified", "Listed", "Review"]}
           rows={others.map((row) => ({
             key: row.shop.slug,

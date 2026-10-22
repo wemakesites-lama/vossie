@@ -23,6 +23,7 @@ import { countWaitingShops } from "@/lib/data/staff-shops";
 import { queueFor } from "@/lib/selling/queue";
 import {
   ADMIN_MORE_PATH,
+  ADMIN_MORE_SECTIONS,
   ADMIN_PATH,
   ADMIN_REPORTS_PATH,
   ADMIN_SELLERS_PATH,
@@ -98,7 +99,7 @@ export async function SellBar() {
   return <SectionBar label="Selling" tabs={tabs} />;
 }
 
-/** The Hub console: admins only. Badges from the same counters the Overview shows (plan decision 3). */
+/** The Hub console: admins only. Badges from the same counters Today's queue reads (plan decision 3). */
 export async function AdminBar() {
   const account = await getViewer().catch(() => null);
   if (!canUse(account, "admin")) return null;
@@ -135,7 +136,7 @@ export async function AdminBar() {
       prefetch: false,
       badge: badge(slots, "slot request waiting", "slot requests waiting"),
     },
-    { key: "more", href: ADMIN_MORE_PATH, label: "More", icon: <MenuIcon />, prefetch: false },
+    { key: "more", href: ADMIN_MORE_PATH, label: "More", icon: <MenuIcon />, prefetch: false, also: ADMIN_MORE_SECTIONS },
   ];
   return <SectionBar label="Hub console" tabs={tabs} />;
 }

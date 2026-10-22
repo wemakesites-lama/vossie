@@ -10,7 +10,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors } from "@/lib/staff/errors";
 import { pointAddForm, pointRenameForm, takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
-import { ADMIN_POINTS_PATH } from "@/lib/staff/paths";
+import { ADMIN_POINTS_PATH, STAFF_EYEBROW } from "@/lib/staff/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -48,7 +48,7 @@ async function PickupPoints() {
     points.map((point) => ({ key: point.id, form: pointRenameForm(point.id), fieldId: `point-${point.id}-name` })),
   );
   return (
-    <StaffFrame account={account} area="Admin console" title="Pickup points" current={ADMIN_POINTS_PATH} notice={staffNoticeText(notice)}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Pickup points" current={ADMIN_POINTS_PATH} notice={staffNoticeText(notice)}>
       <AdminPickupPoints
         campuses={campuses.map((campus) => ({ slug: campus.slug, name: campus.name }))}
         points={points}

@@ -2,17 +2,19 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AdminSeller } from "@/components/staff/AdminSeller";
+import { NextInQueue } from "@/components/staff/NextInQueue";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
 import { getCampuses, getCategories } from "@/lib/data";
 import { listPickupPoints } from "@/lib/data/pickup-points";
 import { countAdmins } from "@/lib/data/staff-accounts";
-import { getShopForReview, listMentors, ownsShop } from "@/lib/data/staff-shops";
+import { getShopForReview, listMentors, listShopsForReview, ownsShop } from "@/lib/data/staff-shops";
 import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
-import { ADMIN_SELLERS_PATH, adminSellerPath } from "@/lib/staff/paths";
+import { ADMIN_SELLERS_PATH, adminSellerPath, STAFF_EYEBROW } from "@/lib/staff/paths";
+import { nextWaitingShop } from "@/lib/staff/queue";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -44,7 +46,7 @@ async function SellerReview({ params }: Pick<PageProps<"/admin/sellers/[slug]">,
   // The admin's own shop shows why in place of its controls, and its owner is never offered as its mentor (stage L
   // spec decisions 4 to 6).
   const own = await ownsShop(account.id, slug);
-  const [campuses, categories, points, mentors, notice, admins] = await Promise.all([
+  const [campuses, categories, points, mentors, notice, admins, shops] = await Promise.all([
     getCampuses(),
     getCategories(),
     // Every point, retired ones too, on either backend (C4/C5 plan Task 17).
@@ -52,15 +54,23 @@ async function SellerReview({ params }: Pick<PageProps<"/admin/sellers/[slug]">,
     listMentors(review.shop.ownerId),
     takeNotice(),
     own ? countAdmins() : Promise.resolve(0),
+    // For the Next link (role views spec 7.2): the oldest waiting shop that isn't this one.
+    listShopsForReview(),
   ]);
+  const next = nextWaitingShop(shops, slug);
   return (
     <StaffFrame
       account={account}
-      area="Admin console"
+      area={STAFF_EYEBROW.admin}
       title={review.shop.name}
       current={ADMIN_SELLERS_PATH}
       notice={staffNoticeText(notice)}
     >
+      <NextInQueue
+        label="Next waiting shop"
+        next={next && { title: next.shop.name, href: adminSellerPath(next.shop.slug) }}
+        none="No other shop is waiting."
+      />
       <AdminSeller
         review={review}
         campusName={campuses.find((campus) => campus.slug === review.shop.campusSlug)?.name ?? ""}

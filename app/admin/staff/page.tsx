@@ -11,7 +11,7 @@ import { GIVE_ROLE_FIELDS, staffErrors } from "@/lib/staff/errors";
 import { GIVE_ROLE_FORM, takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { issueOnceToken } from "@/lib/staff/once";
-import { ADMIN_STAFF_PATH } from "@/lib/staff/paths";
+import { ADMIN_STAFF_PATH, STAFF_EYEBROW } from "@/lib/staff/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -41,7 +41,7 @@ async function StaffAccounts() {
     ownShopMentor(account.id),
   ]);
   return (
-    <StaffFrame account={account} area="Admin console" title="Staff accounts" current={ADMIN_STAFF_PATH} notice={staffNoticeText(notice)}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Staff accounts" current={ADMIN_STAFF_PATH} notice={staffNoticeText(notice)}>
       <AdminStaff
         people={people}
         viewerId={account.id}
