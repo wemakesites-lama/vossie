@@ -22,7 +22,7 @@ export const field = (page: Page, label: string) => page.getByLabel(label, { exa
 export const button = (page: Page, name: string) =>
   main(page).getByRole("button", { name, exact: true }).filter({ visible: true });
 
-/** The header's account icon (accounts spec 3.4), which carries the new notifications' badge (plan decision 10). */
+/** The header's account icon (accounts spec 3.4), which carries For you's badge (role views N5). */
 export const accountIcon = (page: Page) =>
   // The header's icon from the tablet step, the tab bar's Account tab on phones (spec section 6.2). Its address says
   // who's signed in at every width: /account signed in, /login signed out.

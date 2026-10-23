@@ -179,8 +179,9 @@ test.describe("sample accounts (accounts spec 2.8)", () => {
       await context.clearCookies();
       await signInAsSample(page, label);
       await expect(page).toHaveURL(/\/account$/);
-      await expect(main(page).getByRole("heading", { level: 2, name: firstName })).toBeVisible();
+      await expect(main(page).getByRole("heading", { level: 1, name: `Hi, ${firstName}` })).toBeVisible();
     }
+    await page.goto("/account/details");
     await expect(main(page).getByText("Hub role", { exact: true })).toBeVisible();
   });
 
@@ -190,7 +191,7 @@ test.describe("sample accounts (accounts spec 2.8)", () => {
     await expect(page).toHaveURL(/\/saved$/);
     await page.goto("/account");
     // The dashboard, not the storefront (selling plan decision 21).
-    await expect(main(page).getByRole("link", { name: "Your shop" })).toHaveAttribute("href", "/sell");
+    await expect(main(page).getByRole("link", { name: /^Your shop/ })).toHaveAttribute("href", "/sell");
   });
 });
 
@@ -210,6 +211,7 @@ test.describe("the header and the menu (accounts spec 3.4)", () => {
     await expect(accountIcon(page)).toHaveAttribute("href", "/account");
     await menuButton.click();
     await expect(menu.getByRole("link", { name: "Your account" })).toHaveAttribute("href", "/account");
+    await expect(menu.getByRole("link", { name: "Looking For" })).toHaveAttribute("href", "/looking-for");
 
     // Sign out from the menu: it closes, the homepage says so, and the header follows (plan decisions 12 and 14).
     await menu.getByRole("button", { name: "Sign out" }).click();
@@ -292,7 +294,7 @@ test.describe("no stale pages after signing in or out (plan decision 2)", () => 
       const link = document.querySelector('main a[href="/saved"]');
       return link !== null && Object.keys(link).some((key) => key.startsWith("__reactProps"));
     });
-    await main(page).getByRole("link", { name: "Saved" }).click();
+    await main(page).locator('a[href="/saved"]').click();
     await expect(page).toHaveURL(/\/saved$/);
     await page.getByRole("button", { name: "Menu", exact: true }).click();
     await page.getByRole("dialog", { name: "Menu" }).getByRole("button", { name: "Sign out" }).click();
@@ -304,7 +306,7 @@ test.describe("no stale pages after signing in or out (plan decision 2)", () => 
     await page.goBack();
     // The kept copy of /account must not come back: the server sends a signed-out visitor to sign in.
     await expect(page).toHaveURL(/\/login\?next=%2Faccount$/);
-    await expect(main(page).getByRole("heading", { level: 2, name: "Thandi" })).toHaveCount(0);
+    await expect(main(page).getByRole("heading", { level: 1, name: "Hi, Thandi" })).toHaveCount(0);
     await expect(accountIcon(page)).toHaveAttribute("href", "/login");
   });
 });
@@ -314,11 +316,15 @@ test.describe("your account (accounts spec 3.2 and 3.3)", () => {
     onlyAt("phone-390", "desktop-1440");
     await signUp(page, newEmail());
     await expect(page).toHaveURL(/\/account$/);
+    await expect(main(page).getByRole("heading", { level: 1, name: "Hi, Ayanda" })).toBeVisible();
+    await main(page).getByRole("link", { name: /^Your details/ }).click();
+    await expect(page).toHaveURL(/\/account\/details$/);
     await expect(main(page).getByRole("heading", { level: 2, name: "Ayanda" })).toBeVisible();
     await expect(main(page).getByText(/^Member since /)).toBeVisible();
     await field(page, "Your first name").fill("Lindiwe");
     await field(page, "Your campus").selectOption({ label: "Durban Umhlanga" });
     await button(page, "Save changes").click();
+    await expect(page).toHaveURL(/\/account\/details$/);
     await expect(main(page).getByRole("status")).toHaveText("Your details are saved.");
     await expect(main(page).getByRole("heading", { level: 2, name: "Lindiwe" })).toBeVisible();
     await expect(main(page).getByText("Campus", { exact: true }).locator("xpath=following-sibling::dd")).toHaveText(
@@ -330,12 +336,16 @@ test.describe("your account (accounts spec 3.2 and 3.3)", () => {
       "Your first name must be 2 to 40 characters.",
     );
     await expect(field(page, "Your first name")).toHaveValue("L");
+    // Back to You greets the saved name (role views N5).
+    await main(page).getByRole("link", { name: "Back to You" }).click();
+    await expect(page).toHaveURL(/\/account$/);
+    await expect(main(page).getByRole("heading", { level: 1, name: "Hi, Lindiwe" })).toBeVisible();
   });
 
   test("Download your data saves campuscart-data.json with your account in it and no ids", async ({ page }) => {
     onlyAt("phone-390", "desktop-1440");
     await signInAsSample(page, "Mentor");
-    await main(page).getByRole("link", { name: "Privacy settings" }).click();
+    await main(page).getByRole("link", { name: /^Privacy/ }).click();
     await expect(page).toHaveURL(/\/account\/privacy$/);
     await expect(main(page).getByText(/You agreed to the privacy policy/)).toContainText("(draft of October 2026)");
     const [download] = await Promise.all([
@@ -413,7 +423,8 @@ test("sign-in and account pages stay out of search engines", async ({ page }) =>
   await signInAsSample(page, "Student, Midrand");
   await expect(page).toHaveURL(/\/account$/);
   for (const [path, title] of [
-    ["/account", "Your account · CampusCart"],
+    ["/account", "You · CampusCart"],
+    ["/account/details", "Your details · CampusCart"],
     ["/account/privacy", "Privacy settings · CampusCart"],
   ]) {
     await page.goto(path);
@@ -446,7 +457,7 @@ test.describe("without the app's JavaScript (spec 2.2, plan decisions 2 and 11)"
     // On a phone a listing's dock stands in for the tab bar (spec section 6.2); /account below shows the sign-in.
     if (test.info().project.name !== "phone-390") await expect(accountIcon(page)).toHaveAttribute("href", "/account");
     await page.goto("/account");
-    await expect(main(page).getByRole("heading", { level: 2, name: "Ayanda" })).toBeVisible();
+    await expect(main(page).getByRole("heading", { level: 1, name: "Hi, Ayanda" })).toBeVisible();
     await button(page, "Sign out").click();
     await expect(page).toHaveURL(`${baseURL}/`);
     await expect(accountIcon(page)).toHaveAttribute("href", "/login");
@@ -456,6 +467,7 @@ test.describe("without the app's JavaScript (spec 2.2, plan decisions 2 and 11)"
     onlyAt("phone-390", "desktop-1440");
     await signUp(page, newEmail());
     await expect(page).toHaveURL(/\/account$/);
+    await page.goto("/account/details");
     await field(page, "Your first name").fill("Zola");
     await button(page, "Save changes").click();
     await expect(main(page).getByRole("status")).toHaveText("Your details are saved.");
@@ -473,6 +485,6 @@ test.describe("without the app's JavaScript (spec 2.2, plan decisions 2 and 11)"
     await expect(page).toHaveURL(/\/login\?next=%2Faccount$/);
     await button(page, "Student, Midrand").click();
     await expect(page).toHaveURL(/\/account$/);
-    await expect(main(page).getByRole("heading", { level: 2, name: "Thandi" })).toBeVisible();
+    await expect(main(page).getByRole("heading", { level: 1, name: "Hi, Thandi" })).toBeVisible();
   });
 });

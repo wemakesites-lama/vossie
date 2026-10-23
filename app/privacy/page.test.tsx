@@ -105,8 +105,8 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     expect(saved.tagName).toBe("LI");
     expect(saved.textContent).toBe(
       `Your saved listings, in a cookie called ${SAVED_COOKIE} that lasts up to a year. ` +
-        "Your browser sends the listing ids to CampusCart with each visit so the Saved page can show them; " +
-        "nothing is stored on a server.",
+        "Your browser sends the listing ids to CampusCart with each visit so the Saved page can show them and your " +
+        "You page can count them; nothing is stored on a server.",
     );
   });
 

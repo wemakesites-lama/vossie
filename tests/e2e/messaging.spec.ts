@@ -394,7 +394,7 @@ test.describe("reports (messaging spec 2.8 and 3.4)", () => {
 });
 
 test.describe("notifications and the header's badge (messaging spec 2.9, 3.5 and 3.6)", () => {
-  test("the header counts new notifications, and the notifications page lists them", async ({
+  test("the account icon counts For you, and the notifications page lists them", async ({
     page,
     browser,
     baseURL,
@@ -415,11 +415,11 @@ test.describe("notifications and the header's badge (messaging spec 2.9, 3.5 and
     // The header is drawn again on a full page load (plan decision 11).
     await page.goto("/");
     await expect(accountIcon(page)).toHaveAttribute("href", "/account");
-    await expect(accountIcon(page)).toHaveAccessibleDescription("1 new notification");
+    await expect(accountIcon(page)).toHaveAccessibleDescription("1 thing for you");
     await expect(page.getByText("1 new message", { exact: true })).toBeVisible();
     await page.goto("/account");
-    await expect(main(page).getByRole("link", { name: /^Messages\s*,\s*1 unread$/ })).toBeVisible();
-    await main(page).getByRole("link", { name: /^Notifications\s*,\s*1 new$/ }).click();
+    await expect(main(page).getByRole("link", { name: /^Messages\s+1 unread$/ })).toBeVisible();
+    await main(page).getByRole("link", { name: /^Notifications\s+1 new$/ }).click();
     await expect(page).toHaveURL(/\/notifications$/);
     const note = main(page)
       .getByRole("link")

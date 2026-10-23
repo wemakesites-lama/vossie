@@ -368,13 +368,13 @@ test("accounts review screenshots", async ({ page, context }) => {
   await expect(main.getByText(/You're signed in as/)).toBeVisible();
   await page.screenshot({ path: file("05-signed-in-already") });
 
-  await page.goto("/account");
+  await page.goto("/account/details");
   await expect(main.getByRole("heading", { level: 2, name: "Ayanda" })).toBeVisible();
-  await page.screenshot({ path: file("06-account"), fullPage: true });
+  await page.screenshot({ path: file("06-your-details"), fullPage: true });
 
   await main.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(main.getByRole("status")).toHaveText("Your details are saved.");
-  await page.screenshot({ path: file("07-account-saved") });
+  await page.screenshot({ path: file("07-your-details-saved") });
 
   await page.goto("/account/privacy");
   await main.getByRole("button", { name: "Delete my account", exact: true }).click();

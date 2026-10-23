@@ -105,7 +105,8 @@ for (const [name, path, saved] of PAGES) {
 // cached yet (accounts plan, Task 14; messaging plan, Task 16). The seller reads the thread and notifications. The
 // listing form's two pages are the only routes with selling's client code, the photo field (selling plan, Task 12).
 const SIGNED_IN_PAGES: ReadonlyArray<[name: string, path: string, account: string]> = [
-  ["account page", "/account", "Student, Midrand"],
+  ["You page", "/account", "Student, Midrand"],
+  ["Your details page", "/account/details", "Student, Midrand"],
   ["inbox page", "/messages", "Student, Midrand"],
   ["thread page", "/messages/conv-s1", "Seller, Tech corner"],
   ["composer page", "/listings/l-002/message", "Student, Midrand"],

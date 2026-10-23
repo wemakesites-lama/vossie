@@ -7153,8 +7153,9 @@
     border-radius: var(--radius-panel);
   }
 
+  /* 21rem: Your details at 1440 (card and form only since role views N5) is 545px; the two blocks and the gap 540px. */
   .account-skeleton-form {
-    height: 22rem;
+    height: 21rem;
   }
 
   @media (min-width: 48rem) and (min-height: 30rem) {

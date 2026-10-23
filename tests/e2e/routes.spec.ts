@@ -55,6 +55,8 @@ test.describe("routes", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Sign in");
     await page.goto("/account/privacy");
     await expect(page).toHaveURL(/\/login\?next=%2Faccount%2Fprivacy$/);
+    await page.goto("/account/details");
+    await expect(page).toHaveURL(/\/login\?next=%2Faccount%2Fdetails$/);
   });
 
   test("messaging pages send a signed-out visitor to sign in, coming back afterwards (messaging spec 3)", async ({

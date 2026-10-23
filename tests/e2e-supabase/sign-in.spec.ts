@@ -97,7 +97,8 @@ test.describe("signing in by code on Supabase (phase B, Task 11)", () => {
     if (project() === "phone-390") expect(await seriousIssues(page)).toEqual([]);
     await finishFirstSignIn(page);
     await expect(page).toHaveURL(/\/account$/);
-    await expect(main(page).getByText(email)).toBeVisible();
+    // You greets by name; the email is on Your details (role views N5).
+    await expect(main(page).getByRole("heading", { level: 1, name: /^Hi, / })).toBeVisible();
 
     const cookies = await page.context().cookies();
     const auth = cookies.filter((cookie) => /^vossie_auth(\.\d+)?$/.test(cookie.name));
@@ -248,7 +249,7 @@ test.describe("signing in by code on Supabase (phase B, Task 11)", () => {
     expect(setCookie).toMatch(/vossie_auth(\.\d+)?=base64-/);
     expect(setCookie).toMatch(/Max-Age=2592000/);
     expect(await renewed!.headerValue("cache-control")).toMatch(/no-store/);
-    await expect(main(page).getByRole("heading", { level: 2, name: "Ayanda" })).toBeVisible();
+    await expect(main(page).getByRole("heading", { level: 1, name: "Hi, Ayanda" })).toBeVisible();
     const after = await storedSession(page.context());
     expect(after?.refresh_token).not.toBe(before?.refresh_token);
     const again = await page.goto("/account");
@@ -291,6 +292,8 @@ test.describe("signing in by code on Supabase (phase B, Task 11)", () => {
     await page.context().addCookies(firstSession);
     await enterCode(page, await latestCode(SECOND[project()], asked));
     await expect(page).toHaveURL(/\/account$/);
+    // The email is on Your details (role views N5).
+    await page.goto("/account/details");
     await expect(main(page).getByText(SECOND[project()])).toBeVisible();
     const session = await storedSession(page.context());
     expect((session?.user as { email?: string } | undefined)?.email).toBe(SECOND[project()]);

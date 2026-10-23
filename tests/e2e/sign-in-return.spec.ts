@@ -117,7 +117,7 @@ test.describe("signing in comes back to the page that asked (stage K spec 3)", (
       await push(page, "/account");
       await expect(page).toHaveURL(/\/login\?next=%2Faccount$/, POST_LANDS);
       await signUpHere(page, newBuyer());
-      await staysOn(page, /\/account$/, "Your account");
+      await staysOn(page, /\/account$/, /^Hi, /);
     } finally {
       report();
     }
@@ -144,7 +144,7 @@ test.describe("signing in comes back to the page that asked (stage K spec 3)", (
       await page.goto("/account");
       await expect(page).toHaveURL(/\/login\?next=%2Faccount$/, POST_LANDS);
       await button(page, "Student, Midrand").click();
-      await staysOn(page, /\/account$/, "Your account");
+      await staysOn(page, /\/account$/, /^Hi, /);
     } finally {
       report();
     }
@@ -159,14 +159,14 @@ test.describe("signing in comes back to the page that asked (stage K spec 3)", (
     test("a first sign-in by code from /login?next=/account opens the account", async ({ page }) => {
       await page.goto("/login?next=%2Faccount");
       await signUpHere(page, newBuyer());
-      await staysOn(page, /\/account$/, "Your account");
+      await staysOn(page, /\/account$/, /^Hi, /);
     });
 
     test("a full page load of /account, then a first sign-in by code, opens the account", async ({ page }) => {
       await page.goto("/account");
       await expect(page).toHaveURL(/\/login\?next=%2Faccount$/, POST_LANDS);
       await signUpHere(page, newBuyer());
-      await staysOn(page, /\/account$/, "Your account");
+      await staysOn(page, /\/account$/, /^Hi, /);
     });
   });
 
@@ -213,12 +213,15 @@ test.describe("signing out leaves nothing signed in behind (Lama, 2026-10-20)", 
     baseURL,
   }) => {
     needsTheFix(SIGN_OUT_ENDS_IN_A_PAGE_LOAD);
-    await signInAsSample(page, "Student, Midrand", "/account");
+    // The email is on Your details (role views N5).
+    await signInAsSample(page, "Student, Midrand", "/account/details");
     await expect(main(page).getByText("student@eduvos.com").filter({ visible: true })).toBeVisible();
-    // A client navigation away: Next keeps /account hidden in the document (spec 2.1).
-    await main(page).getByRole("link", { name: "Saved" }).click();
+    // Client navigations away: Next keeps /account/details hidden in the document (spec 2.1).
+    await main(page).getByRole("link", { name: "Back to You" }).click();
+    await expect(page).toHaveURL(/\/account$/);
+    await main(page).locator('a[href="/saved"]').click();
     await expect(page).toHaveURL(/\/saved$/);
-    expect(await page.content(), "the kept /account is still in the document before signing out").toContain(
+    expect(await page.content(), "the kept /account/details is still in the document before signing out").toContain(
       "student@eduvos.com",
     );
     await page.getByRole("button", { name: "Menu", exact: true }).click();

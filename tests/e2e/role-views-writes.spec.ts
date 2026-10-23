@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seriousIssues } from "./helpers/axe";
-import { button, field, main, newBuyer, reply, sendFirstMessage, signUp } from "./helpers/messaging";
+import { button, field, main, newBuyer, reply, sellerPage, sendFirstMessage, signUp } from "./helpers/messaging";
 import { expectNoShorterThanSkeleton } from "./helpers/role-views";
 import { POST_LANDS, publishListing, uniqueWord } from "./helpers/selling";
 import { expectStill, holdFonts, recordShifts } from "./helpers/shifts";
@@ -187,4 +187,48 @@ test("a new mentor's empty caseload; assigning them tells them once; a check-in 
   await page.goto("/notifications");
   await expect(told()).toHaveCount(1);
   await admin.context().close();
+});
+
+// Role views N5: For you, its badge and the strip's notifications line, lit by a real reply (spec 4.2 and 7.4).
+test("the You badge is For you's sum on the tab and the header, its row opens the inbox, and the strip links to Notifications", async ({
+  page,
+  browser,
+  baseURL,
+}) => {
+  test.setTimeout(120_000);
+  const allClear = "All clear. Nothing needs you right now.";
+  const badges = page.locator("#tab-account-new, #hdr-account-new");
+  await signUp(page, newBuyer());
+  await expect(main(page).getByText(allClear)).toBeVisible();
+  await expect(badges).toHaveCount(0);
+
+  const id = await sendFirstMessage(page, "l-001", "Hi! Is it still available?");
+  const seller = await sellerPage(browser, baseURL!);
+  await seller.goto(`/messages/${id}`);
+  await reply(seller, "Yes, it is.");
+  await expect(seller.locator("main").getByText("Yes, it is.").first()).toBeVisible();
+  await seller.context().close();
+
+  // For you lists the conversation once, and the tab and the header icon say the same number (plan decision 7).
+  await page.goto("/account");
+  const forYou = main(page).getByRole("list", { name: "For you" });
+  await expect(forYou.getByRole("link")).toHaveCount(1);
+  const row = forYou.getByRole("link", { name: /Conversation with new messages/ });
+  await expect(row).toContainText("1");
+  await expect(badges).toHaveText([/^1 thing for you$/, /^1 thing for you$/]);
+
+  // The homepage's strip links the new notification to Notifications.
+  await page.goto("/");
+  await expect(page.locator(".context-strip")).toHaveCount(1);
+  await expect(page.getByRole("link", { name: "1 new notification" })).toHaveAttribute("href", "/notifications");
+
+  // The row opens the inbox; opening the thread reads it, and You is all clear again.
+  await page.goto("/account");
+  await row.click();
+  await expect(page).toHaveURL(/\/messages$/);
+  await page.goto(`/messages/${id}`);
+  await expect(main(page).getByText("Yes, it is.").first()).toBeVisible();
+  await page.goto("/account");
+  await expect(main(page).getByText(allClear)).toBeVisible();
+  await expect(badges).toHaveCount(0);
 });

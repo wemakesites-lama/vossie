@@ -36,6 +36,7 @@ test.describe("your account on Supabase (phase B, Task 11)", () => {
   test("Edit details saves, and Download your data holds the address, one consent, one session and no ids", async ({ page }) => {
     const email = newAddress(project());
     await signIn(page, email);
+    await page.goto("/account/details");
     await field(page, "Your first name").fill("Lindiwe");
     await field(page, "Your campus").selectOption({ label: "Durban Umhlanga" });
     await button(page, "Save changes").click();

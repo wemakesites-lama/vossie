@@ -3566,6 +3566,19 @@ Stage only this stage's lines if other sessions have uncommitted lines in PROGRE
   - Tests left out as restating others (Lama's speed rule): `groupNewByKind`'s unit test (the notifications contract covers grouping and newest on both backends), `listOwnBookings`' seed test in `hub-posts.test.ts` (`lib/you/read.test.ts` checks Thandi's h-007 booking), the You model's word tests (`savedDetail`, `requestsDetail`, `searchesDetail`, `shopDetail`, `bookingsRow`, `closingSoonText`; Task 7's view tests will show them). `closesSoon`'s two cases are one test; the model's tests are three (rows and sum, an offer counted once, Your stuff's counts with closing soon); `read.test.ts` is two (For you on the seed with another account's offer left out; Your stuff).
   - `pnpm test:db` for the notifications and hub-staff contracts: 17 passed. No SQL changed, so `supabase test db` wasn't re-run.
 
+- **Tasks 6 to 11 (batch B, 02cff44):** built from the plan. The staff tools' rows use `AREA_HOME`'s own labels, so the admin's first one reads "Hub console", not "Admin console" (Task 13's test follows the label).
+- **Tasks 12 to 15 (batch C):**
+  - Task 12 as written, plus lookups the plan didn't list: `tests/e2e-supabase/sign-in.spec.ts` test 10 reads the second account's email on Your details; `screenshots.spec.ts` shoots Your details (`06-your-details`, `07-your-details-saved`). `accounts.spec.ts`' details test also checks "Back to You" greets the saved name ("Hi, Lindiwe"). The a11y spec's extra "You, signed in as the sample student" test was left out: `you.spec.ts` runs axe on a new account's You, the admin's You and Your details.
+  - `you.spec.ts` (Lama's speed rule): the bookings test was left out (`lib/you/read.test.ts` checks Thandi's h-007 booking); the seller, staff and HTML checks are one test; reads run at 390 and 1440, the header check at 1024 and 1440, layout shift at 360 and 768 (cls.spec.ts has 390 and 1440) and at 375x667 (`setViewportSize`, as role-views.spec.ts does). New: Looking For in the header's quick links, which stay on one row inside the header with no page scroll at 1024 and 1440; AccountSkeleton against Your details.
+  - The HTML gate (decision 17) measures what You added: the admin's `.you-body` is 10,117 B, and the old account page also held Your details' card and form (2,132 B), so 7,985 B was added (under 8 KB). Each ListRow is about 650 B, mostly the kit's two inline SVGs (lead icon and chevron); moving the chevron into CSS would save about 280 B a row if You grows.
+  - `AccountSkeleton`'s form block is 21rem (was 22rem): with Edit details alone on Your details, the skeleton (556px) was 11px taller than a new account's page at 1440 (545px). Now 540px; 563px at 390.
+  - The board's link: checked inside the existing post-a-request test in `community-writes.spec.ts` ("Your requests (1 open)" after posting, none once it's closed), not a new test with its own account. The offer test checks For you has one row, the offer's, linking to its thread, and the tab says "1 thing for you".
+  - The badge write (`role-views-writes.spec.ts`) checks the tab's and the header icon's badges together ("1 thing for you" on both), and the thread being read before You is all clear.
+  - No screenshots (Lama). Task 14's full e2e run was replaced by the targeted run below.
+- **Checks (batch C):** lint and types clean. Unit: 3,443 tests, 425 files. E2E on one build: you, accounts, a11y, messaging, sign-in-return, account-delete-return, routes, shell, home, community, cls, performance and role-views at 360, 390, 768, 1024 and 1440: 1,047 passed, 4 failed: the admin's HTML gate twice (re-measured as above) and Your details' skeleton at 1440 (fixed), both passing on the rebuild (you.spec 15 passed); the signed-out /sell pitch at 390 (0.0598) predates N1. community-writes and role-views-writes (`--no-deps`): 19 passed. `pnpm e2e:supabase`: 47 passed, 1 failed (test 10 looked for the email on You; fixed, passes), 6 skipped.
+- **Layout shift:** You 0.0003 (390), 0.0004 (1440), 0.0106 (360), 0.0002 (768), 0.0000 slow at 390 and 1440, 0.0000 at 375x667 for a new account; Your details 0.0004 and 0.0005, 0.0000 slow. YouSkeleton 544px against a new account's You at 868px (390) and 925px (1440).
+- **First-visit JS (phone-390, brotli) against N4:** every page +401 B, the menu's and the header's Looking For link in the shared chunk: homepage, info, Hub, sell, You, Your details and the other signed-in pages 151,100 (N4 150,699); thread, delete listing and Your listings 151,385 (150,984); listing 152,256 (151,855); browse 151,847 (151,446); storefront 151,860 (151,459); Saved 151,735 (151,334); request and collection 151,576 (151,175); listing forms 152,773 (152,372). None grows by 1 KB; all inside 150 KB (153,600 B). The homepage didn't shrink: `ActivityLines` moved words, not code. No new client component (`PendingButton` is N2's); no `serviceWorker.register` in the chunks.
+
 ## Changes after plan review
 
 The plan review's fixes, applied to this plan before any code (2026-10-22):
@@ -3587,3 +3600,31 @@ Lama: "I'm not obsessed with saving bytes for JavaScript, the app just needs to 
 2. **Looking For in the header's quick links is in scope:** Task 11 is required, with a unit test; decision 10 rewritten.
 3. **Decisions made only to save client JS, revisited:** Looking For in the menu moves from the drawer's server slot (after Safety) to `MenuDrawer`'s own list beside Hub (decision 11, Task 8 rewritten; `MenuAccount.tsx` is no longer touched). The server-drawn strip (decision 12) stays, on its merits: one testable server file for the words and the new link.
 4. **One count for the tab and the header icon** (decision 7, new Task 5b): `HeaderAccount` reads `readForYou` too and says "N things for you", so a person sees the same number on a phone and a laptop. `AccountLink` is a server component, so no client code changes. Task 12 Step 3 expects "1 thing for you" at every width.
+
+## Progress entry (for docs/PROGRESS.md)
+
+Written here because another session has uncommitted edits in `docs/PROGRESS.md`. Paste it before "## Next" there, and replace "## Next"'s N5 line.
+
+## 2026-10-23: Role views N5 built (You); the role views redesign is finished
+
+**Built.** `/account` is You: "Hi, {first name}" and the campus; For you (conversations with new messages, new offers, new saved-search matches, followed shops' new listings), which marks nothing read; a banner while an open request is in its last 2 days; Your stuff (Messages, Notifications, Saved on this device and followed shops, Your requests, Saved searches, Hub bookings, Your shop for sellers, staff tools by role); Settings (Your details, Privacy, Sign out). Edit details moved to Your details at `/account/details`. The You tab and the header's account icon show one badge, For you's sum ("N things for you"); a new offer counts once. `listOwnBookings` and `newNotificationsByKind` on both backends, with contract tests. Looking For is in the menu beside Hub and in the header's quick links; the board shows a signed-in asker "Your requests (N open)"; `savedItemsBack` is gone; the home strip links new notifications to Notifications. The privacy page says You counts the saved-listings cookie.
+
+**Where the build differed from the plan.** Tests that restated others were left out (Lama's speed rule); the HTML gate measures what You added over the old account page (7,985 B for the admin); AccountSkeleton's form block is 1rem shorter so it stays under Your details at 1440; the staff row reads "Hub console" (`AREA_HOME`); no screenshots. Details in the N5 plan's "Changes made during the build".
+
+**Checks.** Lint and types clean. Unit: 3,443 tests, 425 files. E2E (you, accounts, a11y, messaging, sign-in-return, account-delete-return, routes, shell, home, community, cls, performance, role-views at 360, 390, 768, 1024 and 1440): 1,047 passed; the 3 new-test failures were fixed and pass, and the signed-out /sell pitch at 390 (0.0598) predates N1. community-writes and role-views-writes: 19 passed. Local Supabase: 47 passed, 1 fixed (an email lookup that moved to Your details). Layout shift on You at most 0.0106 (360), 0.0000 on a slow network and at 375x667. JS: every page +401 B brotli against N4 (the new Looking For links), all inside 150 KB. The header's quick links stay on one row at 1024 and 1440.
+
+**The role views redesign, N1 to N5, is finished.** N1 the kit and section bars (sell, admin, mentor; a sidebar from the tablet step; "You" in the tab bar); N2 the seller home (Needs you, mark sold from a thread); N3 the admin's Today (one queue, protected numbers, Next in queue, campus chips); N4 the mentor's caseload (most in need first, check-ins, enquiry charts); N5 the buyer's You. Every page stays inside the 150 KB first-visit JS budget.
+
+**Open points for Lama.**
+- N5 plan decisions 1 (the offers row counts new offers), 7 (one badge for the tab and the header icon), 10 (Looking For in the header), 12 (the strip's lines on the server) and 19 (notification-only accounts now get the "Welcome back" strip).
+- The sample words on You (for example "Saved 0 listings on this device · 0 shops followed", "None yet").
+- No N5 screenshots; `SCREENSHOTS=1` with Task 13's shots can make them later.
+
+**Known items, carried.**
+- The signed-out /sell pitch shifts about 0.06 at 390 while its font swaps in (predates N1).
+- Next.js's security notice at build time: an upgrade is waiting for your go-ahead (builds pass on a retry).
+- The local Supabase seed data has drifted: a badge differs in the mentors.db contract test (data, not code).
+- A previous mentor's notification still links to a shop they no longer mentor (accepted).
+- Today's Shops row can open the admin's own shop (accepted; the decision itself is refused in the action).
+
+**Next.** The role views are done: Lama's review of the open points above, then the go-live gates.

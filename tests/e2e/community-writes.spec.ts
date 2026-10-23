@@ -37,6 +37,11 @@ test.describe("community actions that buyers see (community actions spec section
     await expect(
       page.getByRole("region", { name: "At Mbombela" }).getByRole("heading", { level: 3, name: title }),
     ).toBeVisible();
+    // The asker's way to Your requests, with the open count (role views N5, plan decision 16).
+    await expect(main(page).getByRole("link", { name: "Your requests (1 open)" })).toHaveAttribute(
+      "href",
+      "/account/requests",
+    );
     await page.goto("/");
     await expect(page.locator("#looking-for").getByRole("link", { name: new RegExp(title) })).toBeVisible();
 
@@ -56,6 +61,8 @@ test.describe("community actions that buyers see (community actions spec section
     await page.goto("/looking-for");
     await expect(page.locator(".board-row").filter({ visible: true }).first()).toBeVisible();
     expect(await page.getByRole("heading", { level: 3, name: edited }).count()).toBe(0);
+    // With nothing open, the board has no Your requests link (role views N5).
+    expect(await main(page).getByRole("link", { name: /^Your requests/ }).count()).toBe(0);
 
     await page.goto("/account/requests");
     await expect(main(page).getByRole("listitem").filter({ hasText: edited })).toContainText("Closed");
@@ -163,6 +170,16 @@ test.describe("community actions that buyers see (community actions spec section
     await expect(shopRow).toContainText(`Request: ${title}`);
     await expect(shopRow).toContainText("The student who asked");
     expect(await shopRow.textContent()).not.toContain(student.firstName);
+
+    // You counts the new offer once, linking to its thread, and the tab's badge says the same (role views N5).
+    await page.goto("/account");
+    const forYou = main(page).getByRole("list", { name: "For you" });
+    await expect(forYou.getByRole("link", { name: /New offer on your requests/ })).toHaveAttribute(
+      "href",
+      `/messages/${conversation}`,
+    );
+    await expect(forYou.getByRole("link")).toHaveCount(1);
+    await expect(page.locator(".tabbar #tab-account-new")).toHaveText(/^1 thing for you$/);
 
     // The asker is told, and the count and the offer show on the request's page.
     await page.goto("/notifications");

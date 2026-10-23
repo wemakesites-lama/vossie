@@ -293,8 +293,9 @@ test("the sign-in page when signed in already", async ({ page }) => {
   expect(await seriousIssues(page)).toEqual([]);
 });
 
-test("your account, after a save that went wrong", async ({ page }) => {
+test("your details, after a save that went wrong", async ({ page }) => {
   await signInAsSample(page);
+  await page.goto("/account/details");
   await page.getByLabel("Your first name", { exact: true }).fill("T");
   await page.locator("main").getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(page.getByRole("alert", { name: "There's a problem" })).toBeVisible();
@@ -448,7 +449,7 @@ test("the header with a new notification's badge, and the account page's counts"
   await expect(page.locator(":is(.site-header, .tabbar) .hdr-badge-alert").filter({ visible: true })).toBeVisible();
   expect(await seriousIssues(page)).toEqual([]);
   await page.goto("/account");
-  await expect(page.getByRole("link", { name: /^Notifications\s*,\s*1 new$/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Notifications\s+1 new$/ })).toBeVisible();
   expect(await seriousIssues(page)).toEqual([]);
 });
 

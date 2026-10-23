@@ -14,11 +14,15 @@ test.describe("deleting an account leaves nothing signed in behind (stage K deci
   }) => {
     const buyer = newBuyer();
     await signUp(page, buyer);
+    // The email is on Your details (role views N5).
+    await page.goto("/account/details");
     await expect(main(page).getByText(buyer.email).filter({ visible: true })).toBeVisible();
-    // A client navigation away: Next keeps /account hidden in the document (spec 2.1).
-    await main(page).getByRole("link", { name: "Privacy settings" }).click();
+    // Client navigations away: Next keeps /account/details hidden in the document (spec 2.1).
+    await main(page).getByRole("link", { name: "Back to You" }).click();
+    await expect(page).toHaveURL(/\/account$/);
+    await main(page).getByRole("link", { name: /^Privacy/ }).click();
     await expect(page).toHaveURL(/\/account\/privacy$/);
-    expect(await page.content(), "the kept /account is still in the document before deleting").toContain(buyer.email);
+    expect(await page.content(), "the kept /account/details is still in the document before deleting").toContain(buyer.email);
     await field(page, "I understand this can't be undone").check();
     await button(page, "Delete my account").click();
     await expect(page).toHaveURL(`${baseURL}/`, POST_LANDS);
@@ -37,7 +41,7 @@ test.describe("deleting an account leaves nothing signed in behind (stage K deci
     expect(response.status()).toBe(403);
     const away = await page.request.get("/account/privacy/delete", { maxRedirects: 0 });
     expect([away.status(), away.headers()["location"]]).toEqual([303, "/account/privacy"]);
-    await page.goto("/account");
+    await page.goto("/account/details");
     await expect(main(page).getByText(buyer.email).filter({ visible: true })).toBeVisible();
   });
 });

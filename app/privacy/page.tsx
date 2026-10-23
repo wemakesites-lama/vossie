@@ -58,7 +58,8 @@ const SECTIONS: readonly InfoSection[] = [
           </li>
           <li>
             Your saved listings, in a cookie called <code>vossie_saved</code> that lasts up to a year. Your browser sends
-            the listing ids to CampusCart with each visit so the Saved page can show them; nothing is stored on a server.
+            the listing ids to CampusCart with each visit so the Saved page can show them and your You page can count
+            them; nothing is stored on a server.
           </li>
         </ul>
         <h3>Sign-in cookies</h3>
