@@ -7,10 +7,13 @@ export function barShare(value: number, max: number): number {
   return Math.min(1, Math.max(0, value / max));
 }
 
-/** Fewer than 2 known points, or a largest value of 3 or under: write the numbers instead of a chart (spec 5.3). */
-export function isTooSmallToChart(points: readonly (number | null)[]): boolean {
+/**
+ * Fewer than 2 known points, or a largest value of 3 or under: write the numbers instead of a chart (spec 5.3). Small
+ * multiples pass their shared largest value (`max`), so they're all charts or all words (N4 plan decision 8).
+ */
+export function isTooSmallToChart(points: readonly (number | null)[], max?: number): boolean {
   const known = points.filter((point): point is number => point !== null);
-  return known.length < 2 || Math.max(...known) <= 3;
+  return known.length < 2 || (max ?? Math.max(...known)) <= 3;
 }
 
 type Box = { width: number; height: number; pad: number };
@@ -20,11 +23,12 @@ const round = (n: number) => Math.round(n * 100) / 100;
 
 /**
  * A sparkline's polyline segments in a width × height box: one segment per unbroken run of known points, the edges
- * of each gap (drawn as open circles), and the last point (drawn as a dot) when the last day is known.
+ * of each gap (drawn as open circles), and the last point (drawn as a dot) when the last day is known. `sharedMax` is
+ * the largest value across a set of small multiples, so they share one scale (N4 plan decision 8).
  */
-export function sparkline(points: readonly (number | null)[], { width, height, pad }: Box) {
+export function sparkline(points: readonly (number | null)[], { width, height, pad }: Box, sharedMax?: number) {
   const known = points.filter((point): point is number => point !== null);
-  const max = known.length ? Math.max(...known) : 0;
+  const max = sharedMax ?? (known.length ? Math.max(...known) : 0);
   const step = points.length > 1 ? (width - 2 * pad) / (points.length - 1) : 0;
   const at = (value: number, index: number): Point => ({
     x: round(pad + index * step),

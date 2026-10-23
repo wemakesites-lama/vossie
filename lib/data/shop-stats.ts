@@ -127,3 +127,31 @@ export async function dailyEnquiries(sellerSlug: string, days: number, now: Date
   if (onSupabase()) return (await import("./supabase/shop-stats")).dailyEnquiries(sellerSlug, days, now);
   return dailyOver(rowsOf(sellerSlug), sampleStore().sellers.get(sellerSlug)?.createdAt ?? null, days, now);
 }
+
+/**
+ * Enquiries a day over the last `days` SAST days for each shop in `slugs`, in one read for the whole caseload (role
+ * views spec 6): a map from slug to the series `dailyEnquiries` gives that shop, oldest first, null before it opened. A
+ * slug with no shop is left out. Request-time only. Callers pass only mentoredShops' slugs (on Supabase this reads with
+ * the admin client, N4 plan decision 9).
+ */
+export async function dailyEnquiriesFor(
+  slugs: readonly string[],
+  days: number,
+  now: Date,
+): Promise<Map<string, (number | null)[]>> {
+  if (onSupabase()) return (await import("./supabase/shop-stats")).dailyEnquiriesFor(slugs, days, now);
+  const wanted = new Set(slugs);
+  const bySlug = new Map<string, ConversationRow[]>();
+  for (const row of sampleStore().conversations.values()) {
+    if (!wanted.has(row.sellerSlug) || row.sellerGone) continue;
+    const list = bySlug.get(row.sellerSlug) ?? [];
+    list.push(row);
+    bySlug.set(row.sellerSlug, list);
+  }
+  const series = new Map<string, (number | null)[]>();
+  for (const slug of wanted) {
+    const shop = sampleStore().sellers.get(slug);
+    if (shop) series.set(slug, dailyOver(bySlug.get(slug) ?? [], shop.createdAt, days, now));
+  }
+  return series;
+}

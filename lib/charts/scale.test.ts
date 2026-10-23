@@ -61,3 +61,23 @@ describe("sparkline, a known value between two gaps", () => {
     expect(line.isolated.map((point) => point.x)).toEqual([2, 50, 98]);
   });
 });
+
+describe("a shared scale for small multiples (role views N4 plan decision 8)", () => {
+  it("draws against the shared largest value, not the line's own", () => {
+    const own = sparkline([0, 5], { width: 100, height: 20, pad: 2 });
+    const shared = sparkline([0, 5], { width: 100, height: 20, pad: 2 }, 10);
+    expect(own.last).toEqual({ x: 98, y: 2 });
+    expect(shared.last).toEqual({ x: 98, y: 10 });
+  });
+
+  it("draws a line of zeros along the bottom on a shared scale", () => {
+    expect(sparkline([0, 0], { width: 100, height: 20, pad: 2 }, 8).segments).toEqual(["2,18 98,18"]);
+  });
+
+  it("judges too small by the shared largest value", () => {
+    expect(isTooSmallToChart([0, 0, 0])).toBe(true);
+    expect(isTooSmallToChart([0, 0, 0], 8)).toBe(false);
+    expect(isTooSmallToChart([4, 5], 3)).toBe(true);
+    expect(isTooSmallToChart([null, 0], 8)).toBe(true);
+  });
+});

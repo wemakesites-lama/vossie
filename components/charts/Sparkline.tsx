@@ -10,13 +10,15 @@ type SparklineProps = {
   label: string;
   /** The takeaway, one sentence: the figure's name and its visible caption. */
   summary: string;
+  /** The largest value across a set of small multiples, so they share one scale (role views N4 plan decision 8). */
+  max?: number;
 };
 
 const BOX = { width: 120, height: 32, pad: 3 };
 
 /** A day-by-day trend (role views spec 5.3): a 2px navy line, gaps for missing days, the last value in text. */
-export function Sparkline({ points, labels, label, summary }: SparklineProps) {
-  if (isTooSmallToChart(points)) {
+export function Sparkline({ points, labels, label, summary, max }: SparklineProps) {
+  if (isTooSmallToChart(points, max)) {
     // Too little to draw: the takeaway and the values themselves, in words (spec 5.3).
     const values = points.map((point, index) => `${labels[index] ?? index + 1}: ${point ?? "no data"}`).join(", ");
     return (
@@ -25,7 +27,7 @@ export function Sparkline({ points, labels, label, summary }: SparklineProps) {
       </p>
     );
   }
-  const line = sparkline(points, BOX);
+  const line = sparkline(points, BOX, max);
   const last = points[points.length - 1];
   return (
     <div className="chart">

@@ -391,7 +391,7 @@ describe("what stages H to K changed in the policy (stage K spec 6)", () => {
     render(<PrivacyPage />);
     const account = screen.getByRole("region", { name: "Your account" });
     expect(account).toHaveTextContent(/a search you saved has a new match, the Hub acts on your report/);
-    expect(account).toHaveTextContent(/your staff role changes\. Only you see them\./);
+    expect(account).toHaveTextContent(/your staff role changes, or an admin asks you to mentor a shop\. Only you see them\./);
     expect(within(account).getByText(/If you're Hub staff: your role\./)).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "What this site stores today" })).toHaveTextContent(
       "your consent, your staff role if you have one, your Looking For requests",

@@ -198,6 +198,22 @@ describe("editing the shop (selling spec 2.11, plan decisions 16 and 17)", () =>
     expect(await changeShopSlug("acc-seller", "gadgets-two", NOW)).toBe("used");
   });
 
+  it("moves a mentor's \"You're now mentoring\" notification to the shop's new link (role views N4)", async () => {
+    const store = sampleStore();
+    store.notifications.set("note-mentoring", {
+      id: "note-mentoring",
+      accountId: "acc-mentor",
+      kind: "staff-role",
+      subjectId: "tech-corner",
+      text: "You're now mentoring Tech corner.",
+      href: "/mentor/tech-corner",
+      createdAt: NOW.toISOString(),
+      readAt: null,
+    });
+    expect(await changeShopSlug("acc-seller", "gadgets", NOW)).toBe("changed");
+    expect(store.notifications.get("note-mentoring")?.href).toBe("/mentor/gadgets");
+  });
+
   it("moves Featured pins and recorded rows to the new link too (amendment 13.4)", async () => {
     const store = sampleStore();
     store.featuredPins.set("pin-t1", {

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, expect, it } from "vitest";
-import { addNote, getMentoredShop, listNotes, mentoredShops } from "@/lib/data/mentors";
+import { addNote, getMentoredShop, lastCheckIns, listNotes, mentoredShops } from "@/lib/data/mentors";
 import { isRefused } from "@/lib/data/refused";
 import { addDays } from "@/lib/looking-for/rules";
 import { sastDate } from "@/lib/time";
@@ -68,7 +68,8 @@ export function mentorsContract(makeWorld: () => World): void {
         mentorId: askerId,
         mentorName: "Asker",
         counts: expect.objectContaining({ enquiries: 0 }),
-        flags: expect.arrayContaining(["no-enquiries"]),
+        flags: ["no-listings"],
+        lastCheckInOn: null,
       },
     ]);
     expect((await shopsFor("staff")).map((shop) => shop.slug)).toContain(slug);
@@ -137,5 +138,48 @@ export function mentorsContract(makeWorld: () => World): void {
     expect(isRefused(await refusal(() => write("asker", once)), "once-taken")).toBe(true);
     expect(await world.asViewer("staff", () => listNotes(shopperId))).toHaveLength(1);
     expect(await world.auditCount()).toBe(before.audit + 1);
+  });
+
+  it("gives the latest check-in day per owner, never text, and nothing about the viewer's own shop (role views spec 6)", async () => {
+    const [shopperId, staffId] = await Promise.all([world.signedIn("shopper"), world.signedIn("staff")]);
+    await world.setRoles("asker", ["mentor"]);
+    await world.setMentor(await world.openShop("shopper"), "asker");
+    await world.setMentor(await world.openShop("staff"), "asker");
+    const DAY = 86_400_000;
+    const now = Date.now();
+    await note("asker", "shopper", "Talked about photos.", new Date(now - 3 * DAY), true);
+    await note("asker", "shopper", "Priced the calculators.", new Date(now - DAY), true);
+    await note("asker", "shopper", "A note, not a check-in.", new Date(now));
+    await note("asker", "staff", "Met the admin who sells.", new Date(now - 2 * DAY), true);
+    const seen = (name: WorldAccountName, owners: string[]) =>
+      world.asViewer(name, async () => lastCheckIns(await world.viewerAccount(name), owners));
+    const shopperDay = sastDate(new Date(now - DAY));
+    const staffDay = sastDate(new Date(now - 2 * DAY));
+
+    expect(await seen("asker", [shopperId, staffId])).toEqual(new Map([[shopperId, shopperDay], [staffId, staffDay]]));
+    // An admin who sells learns nothing about their own shop; its owner nothing; another mentor nothing.
+    expect(await seen("staff", [shopperId, staffId])).toEqual(new Map([[shopperId, shopperDay]]));
+    expect(await seen("shopper", [shopperId])).toEqual(new Map());
+    await world.setRoles("seller", ["mentor"]);
+    expect(await seen("seller", [shopperId, staffId])).toEqual(new Map());
+    // Days only.
+    for (const day of (await seen("asker", [shopperId, staffId])).values()) expect(day).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("puts the shops with the most flags first, then the longest without a check-in, then by name (role views spec 6)", async () => {
+    await world.setRoles("asker", ["mentor"]);
+    const shopper = await world.openShop("shopper");
+    const seller = await world.openShop("seller");
+    await world.setMentor(shopper, "asker");
+    await world.setMentor(seller, "asker");
+    const order = async () => (await shopsFor("asker")).map((shop) => shop.slug);
+    // One flag each (no listings yet) and no check-ins: by name, "Contract Seller's shop" first.
+    expect(await order()).toEqual([seller, shopper]);
+    // A check-in at Seller's: Shopper's has gone longer without one.
+    await note("asker", "seller", "Checked in about the first listing.", new Date(), true);
+    expect(await order()).toEqual([shopper, seller]);
+    // Seller's is paused by its seller: two flags beat one.
+    await world.pauseShop(seller, "seller");
+    expect(await order()).toEqual([seller, shopper]);
   });
 }

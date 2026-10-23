@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { sampleAccounts, sampleConsents } from "@/data/fixtures/accounts";
 import { onSupabase } from "@/lib/backend";
+import { mentorShopPath } from "@/lib/staff/paths";
 import type { Account, Consent, SellerStatus, StaffRole, ViewerActivity } from "@/lib/types";
 import type { SessionClaims } from "./auth-session";
 import { exportFollowing, forgetFollowsOf } from "./follows";
@@ -311,6 +312,14 @@ export async function deleteAccountData(accountId: string): Promise<void> {
   // plan decision 21). Its offer threads have just followed messaging's rules.
   await forgetRequestsOf(accountId);
   await forgetFollowsOf(accountId);
+  // A mentor's "You're now mentoring {shop}" names this account's shop: it goes with the shop (role views N4, POPIA).
+  // On Supabase the shops table's trigger does it (private.forget_mentor_word_about_shop).
+  const ownSlug = store.sellerProfiles.get(accountId)?.sellerSlug ?? null;
+  if (ownSlug) {
+    for (const [id, row] of store.notifications) {
+      if (row.kind === "staff-role" && row.href === mentorShopPath(ownSlug)) store.notifications.delete(id);
+    }
+  }
   // And its saved searches (search alerts spec 2.15). Their search-match notifications go with them.
   await forgetSavedSearchesOf(accountId);
   // Then its shop, the shop's listings, every photo it uploaded and its wizard draft (selling plan decision 22).

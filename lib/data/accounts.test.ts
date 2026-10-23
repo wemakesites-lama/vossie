@@ -366,6 +366,26 @@ describe("deleting an account (accounts spec 2.13)", () => {
     await deleteAccountData("acc-student");
     expect(sampleStore().hubBookings.size).toBe(0);
   });
+
+  it("takes away a mentor's \"You're now mentoring\" notification about the deleted seller's shop, and nothing else (role views N4, POPIA)", async () => {
+    const store = sampleStore();
+    const note = (id: string, subjectId: string, text: string, href: string) =>
+      store.notifications.set(id, {
+        id,
+        accountId: "acc-mentor",
+        kind: "staff-role",
+        subjectId,
+        text,
+        href,
+        createdAt: NOW.toISOString(),
+        readAt: null,
+      });
+    note("note-mentoring", "tech-corner", "You're now mentoring Tech corner.", "/mentor/tech-corner");
+    note("note-role", "mentor", "You're a CampusCart mentor now.", "/account");
+    await deleteAccountData("acc-seller");
+    expect(store.notifications.has("note-mentoring")).toBe(false);
+    expect(store.notifications.has("note-role")).toBe(true);
+  });
 });
 
 describe("sample accounts come back (plan decision 15)", () => {

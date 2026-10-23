@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { lastSastDays } from "@/lib/time";
 import type * as Sample from "../shop-stats";
 import { type CountedConversation, dailyOver, recentOver, statsOver } from "../shop-stats";
 import { forServer } from "./clients";
@@ -70,3 +71,54 @@ export const recentCounts: typeof Sample.recentCounts = async (sellerSlug, days,
 /** A shop's enquiries per SAST day, null before it existed. */
 export const dailyEnquiries: typeof Sample.dailyEnquiries = async (sellerSlug, days, now) =>
   dailyOver(await conversationsOfSlug(sellerSlug), (await shopOf(sellerSlug))?.createdAt ?? null, days, now);
+
+/**
+ * The caseload's enquiries a day (role views spec 6; N4 plan decision 9): the shops by their links, then all their
+ * conversations since the first day's SAST midnight, a hundred shops a request, mapped as conversationsOf maps them and
+ * counted by N2's dailyOver. Admin client, as shopStats: only the counts leave the server, and callers pass only
+ * mentoredShops' slugs.
+ */
+export const dailyEnquiriesFor: typeof Sample.dailyEnquiriesFor = async (slugs, days, now) => {
+  const series = new Map<string, (number | null)[]>();
+  const unique = [...new Set(slugs)];
+  if (unique.length === 0) return series;
+  // The first day's midnight in South Africa (UTC+2 all year), as UTC: earlier conversations can't land in the window.
+  const since = new Date(Date.parse(`${lastSastDays(days, now)[0]}T00:00:00+02:00`)).toISOString();
+  const shops: { id: string; slug: string; created_at: string }[] = [];
+  for (let from = 0; from < unique.length; from += 100) {
+    const { data, error } = await forServer()
+      .from("shops")
+      .select("id, slug, created_at")
+      .in("slug", unique.slice(from, from + 100));
+    if (error) throw new Error(error.message);
+    shops.push(...data);
+  }
+  const byShop = new Map<string, CountedConversation[]>(shops.map((shop) => [shop.id, []]));
+  const ids = shops.map((shop) => shop.id);
+  for (let from = 0; from < ids.length; from += 100) {
+    const rows = await selectAll(
+      () =>
+        forServer()
+          .from("conversations")
+          .select("id, shop_id, listing_id, is_offer, request_id, created_at, first_reply_at, status, completed_at, confirmed_at")
+          .in("shop_id", ids.slice(from, from + 100))
+          .eq("seller_gone", false)
+          .gte("created_at", since),
+      ["id"],
+    );
+    for (const row of rows) {
+      if (row.shop_id === null) continue;
+      byShop.get(row.shop_id)?.push({
+        listingId: row.listing_id,
+        requestId: row.is_offer ? (row.request_id ?? GONE_REQUEST) : null,
+        createdAt: row.created_at,
+        firstReplyAt: row.first_reply_at,
+        status: row.status as CountedConversation["status"],
+        completedAt: row.completed_at,
+        confirmedAt: row.confirmed_at,
+      });
+    }
+  }
+  for (const shop of shops) series.set(shop.slug, dailyOver(byShop.get(shop.id) ?? [], shop.created_at, days, now));
+  return series;
+};

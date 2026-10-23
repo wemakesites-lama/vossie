@@ -75,3 +75,8 @@ export function listingShownText(title: string): string {
 export function requestShownText(title: string): string {
   return `The Hub is showing your request ${title} again.`;
 }
+
+/** A shop given to a mentor, for the mentor, with the "staff-role" kind (role views spec 7.3, N4 plan decision 1). */
+export function mentorAssignedText(shop: string): string {
+  return `You're now mentoring ${shop}.`;
+}

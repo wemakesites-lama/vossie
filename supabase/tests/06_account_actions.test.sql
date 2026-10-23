@@ -85,6 +85,7 @@ select is(
     'hide_listing(text,text)',
     'hide_request(text,text)',
     'hub_going(text)',
+    'last_check_ins(uuid[])',
     'mark_completed(uuid)',
     'mark_notifications_read()',
     'mark_thread_read(uuid)',

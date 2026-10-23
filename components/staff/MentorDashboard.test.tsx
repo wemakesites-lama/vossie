@@ -15,7 +15,8 @@ const tech: MentoredShop = {
   mentorId: "acc-mentor",
   mentorName: "Naledi",
   counts: { enquiries: 4, due: 4, repliedInTime: 1, salesConfirmed: 2 },
-  flags: ["slow-replies", "paused"],
+  flags: ["slow-replies", "paused-by-seller"],
+  lastCheckInOn: null,
 };
 const names = new Map([["midrand", "Midrand"]]);
 
@@ -32,7 +33,7 @@ describe("the mentor dashboard (staff tools spec 2.6, plan decision 15)", () => 
       "Enquiries (14 days)4",
       "Replied within 48 hours1 of 4",
       "Sales confirmed (14 days)2",
-      "FlagsSlow replies (under 50% in 48 hours), Shop paused",
+      "FlagsSlow replies (under 50% in 48 hours), Paused by the seller",
     ]);
     expect(within(table).queryByRole("columnheader", { name: "Mentor" })).toBeNull();
   });

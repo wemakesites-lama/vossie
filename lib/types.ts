@@ -331,6 +331,8 @@ export type ReportTarget = { kind: "listing" | "seller" | "request"; id: string 
  * update about your request, and a followed shop's new listing (community actions plan decision 14).
  * Saved-search alerts add a saved search's new match (search alerts spec 2.12).
  * Staff accounts add a staff role given or taken away (stage J spec decision 7).
+ * A "staff-role" notification's subject is the role ("mentor", "admin"), or, for a mentor's new shop (role views N4),
+ * the shop's link, with the href /mentor/<slug>.
  */
 export type NotificationKind =
   | "message"
@@ -601,8 +603,11 @@ export type HubBooking = {
   createdAt: string;
 };
 
-/** A mentor's flags on a shop (staff tools spec 2.6, plan decision 15). */
-export type MentorFlag = "no-enquiries" | "slow-replies" | "paused";
+/**
+ * A shop's flags on the mentor dashboard (staff tools spec 2.6; role views spec 7.3). "no-listings" replaces
+ * "no-enquiries" when nothing is up for buyers; a pause says whose it is.
+ */
+export type MentorFlag = "no-listings" | "no-enquiries" | "slow-replies" | "paused-by-hub" | "paused-by-seller";
 
 /** A row of the mentor dashboard (staff tools spec 2.6, plan decision 15). */
 export type MentoredShop = {
@@ -622,6 +627,11 @@ export type MentoredShop = {
   /** The last 14 days (plan decision 15). */
   counts: EnquiryCounts;
   flags: MentorFlag[];
+  /**
+   * The latest check-in's day, YYYY-MM-DD in South Africa, or null when there's been none (role views spec 6). The day
+   * only: never what was said.
+   */
+  lastCheckInOn: string | null;
 };
 
 // --- Community actions (community actions plan, Task 1) -----------------------------------------------------------

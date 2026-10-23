@@ -261,8 +261,16 @@ export function adminGatesContract(scenario: () => ActionScenario): void {
     });
     expect(await changes(verifySeller, { shop: slug, verified: "yes" })).toMatchObject({ notice: "nothing", audit: 0, told: {}, tags: [] });
 
-    expect(await changes(assignMentor, { shop: slug, mentor: shopperId })).toMatchObject({ notice: "mentor-assigned", audit: 1, told: {}, tags: [] });
-    expect(await changes(assignMentor, { shop: slug, mentor: shopperId })).toMatchObject({ notice: "nothing", audit: 0 });
+    // The new mentor is told, with the shop's mentor page (role views spec 7.3); the same mentor again tells no one.
+    expect(await changes(assignMentor, { shop: slug, mentor: shopperId })).toMatchObject({
+      notice: "mentor-assigned",
+      audit: 1,
+      told: { shopper: ["staff-role"] },
+      texts: { shopper: [expect.stringMatching(/^You're now mentoring .+\.$/)] },
+      tags: [],
+    });
+    expect(await changes(assignMentor, { shop: slug, mentor: shopperId })).toMatchObject({ notice: "nothing", audit: 0, told: {} });
+    expect(await changes(assignMentor, { shop: slug, mentor: "" })).toMatchObject({ notice: "mentor-removed", audit: 1, told: {} });
 
     expect(await changes(dismissReport, { report: reports.shop, note: "No problem found." })).toMatchObject({
       redirect: ADMIN_REPORTS_PATH,

@@ -48,8 +48,8 @@ describe("a shop's mentor page (staff tools spec 2.6, plan decisions 15 and 16)"
   it("explains each flag", async () => {
     sampleStore().sellerProfiles.get("acc-seller")!.status = "paused";
     await show();
-    expect(screen.getByText("Shop paused")).toBeInTheDocument();
-    expect(screen.getByText("Buyers can't see the shop's listings until it's resumed.")).toBeInTheDocument();
+    expect(screen.getByText("Paused by the seller")).toBeInTheDocument();
+    expect(screen.getByText("The seller paused the shop, so buyers can't see its listings until they resume it.")).toBeInTheDocument();
   });
 
   it("lists the notes and check-ins, newest first, with who wrote them", async () => {

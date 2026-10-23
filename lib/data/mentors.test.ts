@@ -27,6 +27,7 @@ describe("the mentor dashboard (staff tools spec 2.6, plan decision 15)", () => 
         mentorName: "Naledi",
         counts: { enquiries: 2, due: 2, repliedInTime: 2, salesConfirmed: 0 },
         flags: [],
+        lastCheckInOn: "2026-10-06",
       },
     ]);
   });
@@ -36,10 +37,10 @@ describe("the mentor dashboard (staff tools spec 2.6, plan decision 15)", () => 
     expect(await mentoredShops(zanele, NOW)).toEqual([]);
   });
 
-  it("flags a paused shop, and one with no enquiries in the 14 days", async () => {
+  it("flags a shop the seller paused, and one with no enquiries in the 14 days", async () => {
     sampleStore().sellerProfiles.get("acc-seller")!.status = "paused";
     const later = new Date("2026-11-14T10:00:00.000Z");
-    expect((await mentoredShops(naledi, later))[0].flags).toEqual(["no-enquiries", "paused"]);
+    expect((await mentoredShops(naledi, later))[0].flags).toEqual(["no-enquiries", "paused-by-seller"]);
   });
 
   it("says who paused a paused shop, so the page can leave out a storefront link buyers get the 404 for (amendment 15.5)", async () => {

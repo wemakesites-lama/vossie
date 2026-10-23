@@ -2,6 +2,7 @@ import { categories } from "@/data/fixtures/categories";
 import { onSupabase } from "@/lib/backend";
 import { sampleListingRows, sampleSellerRows, sampleShopOwners } from "@/data/fixtures/shops";
 import { nameKey, RESERVED_SLUGS, SLUG_MAX, slugify } from "@/lib/selling/rules";
+import { mentorShopPath } from "@/lib/staff/paths";
 import { sastDate } from "@/lib/time";
 import type { Condition, Handover, ImageRef, ListingKind, ListingState, PayMode, SellerStatus } from "@/lib/types";
 import { attachPhotos, deletePhotosOf, deletePhotosUsedBy } from "./photos";
@@ -222,6 +223,12 @@ export async function changeShopSlug(accountId: string, slug: string, now: Date)
   if (own.shop.slugChanged) return "used";
   if (slugInUse(slug)) return "taken";
   moveShop(own.shop.slug, slug);
+  // A mentor's "You're now mentoring" follows the shop to its new link (role views N4). On Supabase the shops table's
+  // trigger does it (private.move_mentor_word_with_shop).
+  const before = mentorShopPath(own.shop.slug);
+  for (const note of sampleStore().notifications.values()) {
+    if (note.kind === "staff-role" && note.href === before) note.href = mentorShopPath(slug);
+  }
   const row = sampleStore().sellers.get(slug)!;
   row.slugChanged = true;
   row.previousSlugs.push(own.shop.slug);

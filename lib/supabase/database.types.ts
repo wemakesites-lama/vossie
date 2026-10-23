@@ -1075,6 +1075,11 @@ isOneToOne: false
 "hub_going":
 { Args: { "p_post": string }; Returns: number
                            },
+"last_check_ins":
+{ Args: { "p_owners": (string)[] }; Returns: {
+              "last_on": string,"owner_id": string
+            }[]
+                           },
 "mark_completed":
 { Args: { "p_conversation_id": string }; Returns: string
                            },

@@ -9,7 +9,7 @@ const NOTICES: ReadonlyMap<string, string> = new Map([
   ["unverified", "Verified is off. The tick has gone from the shop and its listings."],
   ["paused", "Paused. The shop and its listings are hidden from buyers, and its owner has been told why."],
   ["resumed", "Resumed. The shop and its listings are back, and its owner has been told."],
-  ["mentor-assigned", "Mentor saved."],
+  ["mentor-assigned", "Mentor saved. They've been told."],
   ["mentor-removed", "The shop has no mentor now."],
   ["dismissed", "Dismissed. The reporter has been told."],
   ["hidden", "Hidden. Its seller and everyone who reported it have been told."],

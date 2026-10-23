@@ -3415,5 +3415,14 @@ If other sessions have uncommitted lines in PROGRESS or the decisions log, stage
 
 ## Changes made during the build
 
-- **Baseline (Task 0):** _to be filled in by the implementer: each public page's `scriptBrotli`, and `MENTOR_HTML_BEFORE` / `MENTOR_SHOP_HTML_BEFORE`._
-- **N2 at Task 0:** _N2's six names found (required), and whether `role-views-writes` existed._
+- **Baseline (Task 0):** not re-measured (Lama: reuse N3's). N3's numbers (N3 plan, "JS against N2's baseline", 390, brotli): homepage, info, Hub, sell, account and the signed-in pages 150,699 B; listing 151,855; browse 151,446; storefront 151,459; Saved 151,334; request and collection 151,175; new and edit listing forms 152,372. `MENTOR_HTML_BEFORE` / `MENTOR_SHOP_HTML_BEFORE` not measured (no build in this batch): Task 11 measures them against the last commit.
+- **N2 at Task 0:** all six names found (`lastSastDays`, `dailyOver`, `currentOf`, `recentCounts`, `dailyEnquiries`, `RecentCounts`), and `components/kit/PendingButton.tsx`. The `role-views-writes` project exists (`playwright.config.ts:154`).
+- **Tasks 0 to 7 (batch 1):** built as written, code copied from the plan, with these changes:
+  - The migration is `20261025120100_mentor_caseload.sql`: N2's `20261025120000_role_views_seller.sql` took the plan's timestamp. Applied with `supabase migration up --local` (no reset); `pnpm db:types` added only `last_check_ins`.
+  - `components/charts/Sparkline.test.tsx` doesn't exist: the shared scale is tested in `lib/charts/scale.test.ts` only (the maths), no component case.
+  - `dailyEnquiriesFor`'s twin skips a conversation whose `shop_id` is null (the generated type allows it).
+  - `supabase/tests/16_staff_shop_actions.test.sql`'s "nobody is told (spec 2.6)" after `set_shop_mentor` now expects Mona's one "You're now mentoring Lerato crafts." notification.
+  - Existing tests that named the old flags follow the new words: `components/staff/MentorShop.test.tsx` ("Paused by the seller" and its explanation) and `components/staff/MentorDashboard.test.tsx` (the fixture's flag, `lastCheckInOn: null`, the Flags cell); Task 8 rewrites the latter.
+  - Tests left out as restating others (Lama's speed rule): `lib/data/shop-stats.test.ts`'s two unit cases (the stats contract covers them on both backends), the new "check-ins and order" `describe` and the No-listings case in `lib/data/mentors.test.ts` (the mentors contract and `lib/staff/mentor.test.ts` cover them), `notification-text.test.ts`'s sentence case (pgTAP 52 and the admin-gates contract check the words) and `admin-actions.test.ts`'s told case (the admin-gates contract runs on the sample store too).
+  - Task 6: `app/mentor/export/route.test.ts` passes unchanged.
+  - `changeShopSlug` takes the old link before `moveShop`, so the notification's href is compared with it whatever `moveShop` does to the row.

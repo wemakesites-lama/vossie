@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it } from "vitest";
 import { getSeller, getSellerSlugs } from "@/lib/data";
 import { recalculateBadgeFor, recalculateBadges } from "@/lib/data/badges";
 import { saveOwnListing } from "@/lib/data/own-listings";
-import { recentCounts, shopStats } from "@/lib/data/shop-stats";
+import { dailyEnquiries, dailyEnquiriesFor, recentCounts, shopStats } from "@/lib/data/shop-stats";
 import type { TrustBadge } from "@/lib/types";
 import type { World, WorldAccountName } from "@/tests/contract/world";
 
@@ -112,5 +112,30 @@ export function statsContract(makeWorld: () => World): void {
     // A conversation whose shop has gone is no shop's to work out.
     await world.shopGone(first);
     expect(await recalculateBadgeFor(first, now)).toBe(false);
+  });
+
+  it("counts Tech corner's enquiries by SAST day for the mentor's chart, as dailyEnquiries does (role views spec 6)", async () => {
+    const series = await dailyEnquiriesFor(["tech-corner", "no-such-shop"], 14, now);
+    expect([...series.keys()]).toEqual(["tech-corner"]);
+    // The seed's two enquiries started on 12 and 13 October (SAST); the 14 days run from 1 to 14 October.
+    expect(series.get("tech-corner")).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0]);
+    expect(await dailyEnquiriesFor([], 14, now)).toEqual(new Map());
+  });
+
+  it("leaves the days before a shop opened empty, never 0, for every shop in one read", async () => {
+    await world.tidyMessaging();
+    const opened = new Date();
+    const slug = await world.openShop("shopper");
+    const listingId = await world.addListing(slug, { title: "Desk lamp for the chart" });
+    await world.addConversation({
+      buyer: "asker",
+      slug,
+      listingId,
+      messages: [{ side: "buyer", body: "Is the desk lamp still there?", sentAt: opened }],
+    });
+    const series = await dailyEnquiriesFor([slug, "tech-corner"], 7, opened);
+    expect(series.get(slug)).toEqual([null, null, null, null, null, null, 1]);
+    expect(series.get(slug)).toEqual(await dailyEnquiries(slug, 7, opened));
+    expect(series.get("tech-corner")).toHaveLength(7);
   });
 }

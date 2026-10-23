@@ -64,6 +64,7 @@ import {
 import {
   listingHiddenText,
   listingShownText,
+  mentorAssignedText,
   reportOutcomeText,
   requestShownText,
   shopApprovedText,
@@ -80,6 +81,7 @@ import {
   adminSellerPath,
   declineSellerPath,
   hideReportedPath,
+  mentorShopPath,
   pauseReportedPath,
   pauseSellerPath,
   showListingPath,
@@ -333,7 +335,11 @@ export async function resumeSeller(formData: FormData): Promise<void> {
   done(path);
 }
 
-/** A shop's mentor (spec 2.6, plan decision 15): `mentor` is an account with the mentor role, or "" for none. */
+/**
+ * A shop's mentor (spec 2.6, plan decision 15): `mentor` is an account with the mentor role, or "" for none. The new
+ * mentor is told, with a link to the shop's mentor page (role views spec 7.3); a removal tells no one. On Supabase
+ * set_shop_mentor sends it in its own transaction.
+ */
 export async function assignMentor(formData: FormData): Promise<void> {
   const slug = idFrom(formData, "shop");
   const path = slug ? adminSellerPath(slug) : ADMIN_SELLERS_PATH;
@@ -355,6 +361,16 @@ export async function assignMentor(formData: FormData): Promise<void> {
       relatedId: changed.mentorName ? mentorId : null,
       now,
     });
+    if (changed.mentorName && typeof mentorId === "string") {
+      await notify({
+        accountId: mentorId,
+        kind: "staff-role",
+        subjectId: changed.slug,
+        text: mentorAssignedText(changed.name),
+        href: mentorShopPath(changed.slug),
+        now,
+      });
+    }
   });
   await leaveNotice(changed.mentorName ? "mentor-assigned" : "mentor-removed", now);
   done(path);

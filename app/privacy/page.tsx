@@ -184,7 +184,7 @@ const SECTIONS: readonly InfoSection[] = [
             offers to help with your request, a shop you follow lists something new, a search you saved has a new
             match, the Hub acts on your report, your shop, your listing or your request, your request is about to
             close automatically, or does, a mentor answers your slot request, someone asks for a slot at your office
-            hours, or your staff role changes. Only you see them.
+            hours, your staff role changes, or an admin asks you to mentor a shop. Only you see them.
             Allowed under POPIA section 11: needed to run your account.
           </li>
           <li>

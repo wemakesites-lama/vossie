@@ -1,5 +1,6 @@
 import "server-only";
-import { MENTOR_WINDOW_DAYS, mentorFlags } from "@/lib/staff/mentor";
+import { byNeed, MENTOR_WINDOW_DAYS, mentorFlags } from "@/lib/staff/mentor";
+import { sastDate } from "@/lib/time";
 import type { MentoredShop, SellerStatus, TrustBadge } from "@/lib/types";
 import type * as Sample from "../mentors";
 import { Refused, type RefusalCode } from "../refused";
@@ -13,7 +14,8 @@ import { forViewerAs } from "./viewer";
 // to them and an admin every one; mentor_notes gives the shop's mentor and admins the notes about its owner, never the
 // owner themselves, an admin who sells included (private.can_mentor), which is also what keeps notes out of the data
 // download. The viewer's own shop is left out, as the sample does (amendment 15.3). The 14-day numbers are C1's
-// recentCounts (the admin client, request-time). A note or check-in is add_mentor_note or add_check_in with the
+// recentCounts (the admin client, request-time); the last check-in's day comes from public.last_check_ins with the
+// viewer's session (role views N4). A note or check-in is add_mentor_note or add_check_in with the
 // author's session, which takes the form's one-time token and writes the audit entry in the same transaction
 // (decisions 3 and 6). Request-time only, never cached.
 
@@ -33,6 +35,40 @@ async function firstNames(client: DbClient, ids: readonly string[]): Promise<Map
     for (const row of data) names.set(row.id, row.first_name);
   }
   return names;
+}
+
+/** Each shop's listings a buyer could ask about (available, not hidden), a hundred shops a request: the viewer reads them as their mentor or an admin. */
+async function availableCounts(client: DbClient, shopIds: readonly string[]): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  for (let from = 0; from < shopIds.length; from += 100) {
+    const rows = await selectAll(
+      () =>
+        client
+          .from("listings")
+          .select("id, shop_id")
+          .in("shop_id", shopIds.slice(from, from + 100))
+          .eq("state", "available")
+          .is("hidden_at", null),
+      ["id"],
+    );
+    for (const row of rows) counts.set(row.shop_id, (counts.get(row.shop_id) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/**
+ * The latest check-in day per owner through public.last_check_ins, with `client`'s session, so private.can_mentor
+ * decides (role views spec 6): days only, nothing about the viewer's own shop. A hundred owners a call.
+ */
+async function checkInsWith(client: DbClient, ownerIds: readonly string[]): Promise<Map<string, string>> {
+  const latest = new Map<string, string>();
+  const unique = [...new Set(ownerIds)];
+  for (let from = 0; from < unique.length; from += 100) {
+    const { data, error } = await client.rpc("last_check_ins", { p_owners: unique.slice(from, from + 100) });
+    if (error) failed("last_check_ins", error);
+    for (const row of data ?? []) latest.set(row.owner_id, row.last_on);
+  }
+  return latest;
 }
 
 export const mentoredShops: typeof Sample.mentoredShops = async (viewer, now) => {
@@ -60,16 +96,18 @@ export const mentoredShops: typeof Sample.mentoredShops = async (viewer, now) =>
     if (error) failed("shops", error);
     for (const row of data) shops.set(row.id, row);
   }
-  const names = await firstNames(
-    client,
-    profiles.flatMap((row) => [row.account_id!, row.mentor_id!]),
-  );
+  const [names, available, checkIns] = await Promise.all([
+    firstNames(client, profiles.flatMap((row) => [row.account_id!, row.mentor_id!])),
+    availableCounts(client, shopIds),
+    checkInsWith(client, profiles.map((row) => row.account_id!)),
+  ]);
   const rows: MentoredShop[] = [];
   for (const profile of profiles) {
     const shop = shops.get(profile.shop_id!);
     const ownerName = names.get(profile.account_id!);
     if (!shop || ownerName === undefined) continue;
     const status = profile.status as SellerStatus;
+    const pausedBy = status === "paused" ? ((profile.paused_by as "seller" | "staff" | null) ?? null) : null;
     const counts = currentOf(await recentCounts(shop.slug, MENTOR_WINDOW_DAYS, now));
     rows.push({
       slug: shop.slug,
@@ -79,15 +117,20 @@ export const mentoredShops: typeof Sample.mentoredShops = async (viewer, now) =>
       ownerId: profile.account_id!,
       badge: shop.badge as TrustBadge | null,
       status,
-      pausedBy: status === "paused" ? ((profile.paused_by as "seller" | "staff" | null) ?? null) : null,
+      pausedBy,
       mentorId: profile.mentor_id!,
       mentorName: names.get(profile.mentor_id!) ?? DELETED,
       counts,
-      flags: mentorFlags(counts, status),
+      flags: mentorFlags({ counts, status, pausedBy, availableListings: available.get(profile.shop_id!) ?? 0 }),
+      lastCheckInOn: checkIns.get(profile.account_id!) ?? null,
     });
   }
-  return rows.sort((a, b) => a.name.localeCompare(b.name));
+  return rows.sort(byNeed(sastDate(now)));
 };
+
+/** The latest check-in day per owner, read with the viewer's session (N4 plan decision 2). */
+export const lastCheckIns: typeof Sample.lastCheckIns = async (viewer, ownerIds) =>
+  ownerIds.length === 0 ? new Map() : checkInsWith(await forViewerAs(viewer.id), ownerIds);
 
 /** What's been written about a shop's owner, newest first: only for their shop's mentor and admins, never the owner. */
 export const listNotes: typeof Sample.listNotes = async (ownerId) => {

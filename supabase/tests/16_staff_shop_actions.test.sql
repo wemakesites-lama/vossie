@@ -371,7 +371,11 @@ select is(
   array['Adam | Adam | mentor-assigned | shop | act-lerato | Lerato crafts | Mona | Lerato | true'],
   'one entry, naming the mentor'
 );
-select is(pg_temp.notes(), '{}'::text[], 'nobody is told (spec 2.6)');
+select is(
+  pg_temp.notes(),
+  array['Mona | staff-role | act-lerato | You''re now mentoring Lerato crafts. | /mentor/act-lerato'],
+  'only Mona is told, once (role views N4; spec 2.6 told nobody)'
+);
 select pg_temp.clear();
 select pg_temp.sign_in(pg_temp.a('f5'));
 select is(public.set_shop_mentor(pg_temp.s('f3'), null), 'changed', 'and takes her away again');
