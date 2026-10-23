@@ -82,8 +82,8 @@ export function hubEyebrow(account: { roles: readonly StaffRole[] }): string {
 }
 
 /**
- * The pages the admin bar's More holds (role views N1's /admin/more), and the mentor dashboard an admin reaches from
- * it: on these, and the pages below them, More is the current tab (N3 plan decision 8, through NavLink's `also`).
+ * The pages the admin bar's More holds (role views N1's /admin/more): on these, and the pages below them, More is the
+ * current tab (N3 plan decision 8, through NavLink's `also`). Mentoring is a More row too, but /mentor has its own bar.
  * Add a new More page's path here.
  */
 export const ADMIN_MORE_SECTIONS: readonly string[] = [
@@ -93,7 +93,6 @@ export const ADMIN_MORE_SECTIONS: readonly string[] = [
   ADMIN_STAFF_PATH,
   ADMIN_NUMBERS_PATH,
   ADMIN_AUDIT_PATH,
-  MENTOR_PATH,
 ];
 
 /** The audit log with its filters in the link (spec 2.3: by staff member and by kind, as links). */

@@ -115,6 +115,8 @@ const SKELETONS: Readonly<Record<string, "full" | "short">> = {
   // The full skeleton was 634px against 507px at 390 (N3 build), so both pages render the short one.
   "/admin/reports?campus=online": "short",
   "/admin/hidden?campus=online": "short",
+  // Shops at a campus with no shops is the same shape (N3 review).
+  "/admin/sellers?campus=online": "short",
 };
 
 test.describe("short pages' skeletons (spec 9)", () => {

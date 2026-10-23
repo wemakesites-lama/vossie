@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function AdminSellersPage({ searchParams }: PageProps<"/admin/sellers">) {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton />}>
+      <Suspense fallback={<StaffSkeleton short />}>
         <Shops searchParams={searchParams} />
       </Suspense>
     </PageTransition>
