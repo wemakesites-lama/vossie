@@ -72,6 +72,9 @@ const PAGES: ReadonlyArray<
   ["browse page, a search (signed in)", "/browse?q=calculator", undefined, "Student, Midrand"],
   ["Saved page, Searches tab", "/saved?tab=searches"],
   ["Saved page, Searches tab (signed in)", "/saved?tab=searches", undefined, "Student, Midrand"],
+  // Role views N4: the mentor's caseload (Needs you is in staff-checks.spec.ts) and a shop's page.
+  ["mentor caseload (all)", "/mentor?view=all", undefined, "Mentor"],
+  ["mentor shop page", "/mentor/tech-corner", undefined, "Mentor"],
   ["offline page", "/offline"],
 ];
 
@@ -139,6 +142,9 @@ const SLOW_PAGES: ReadonlyArray<
   ["Hub console's Reports", "/admin/reports", "Admin"],
   ["Hub console's Hidden", "/admin/hidden", "Admin"],
   ["mentoring page", "/mentor", "Mentor"],
+  // Role views N4: the caseload's All view and a shop's page, forms first, stream in under the staff skeleton.
+  ["mentor caseload (all)", "/mentor?view=all", "Mentor"],
+  ["mentor shop page", "/mentor/tech-corner", "Mentor"],
   ["notifications page", "/notifications", "Seller, Tech corner"],
   ["request form", "/looking-for/new", "Student, Midrand"],
   ["Your requests", "/account/requests", "Student, Midrand"],

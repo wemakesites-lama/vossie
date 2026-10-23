@@ -1,8 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { seriousIssues } from "./helpers/axe";
-import { button, main, newBuyer, reply, sendFirstMessage, signUp } from "./helpers/messaging";
+import { button, field, main, newBuyer, reply, sendFirstMessage, signUp } from "./helpers/messaging";
+import { expectNoShorterThanSkeleton } from "./helpers/role-views";
 import { POST_LANDS, publishListing, uniqueWord } from "./helpers/selling";
+import { expectStill, holdFonts, recordShifts } from "./helpers/shifts";
 import { applyToSell, newShopName, reviewShop, signedInPage, staffNotice } from "./helpers/staff";
+import { giveRole } from "./helpers/staff-accounts";
 
 // Role views N2's end to end that write (role views spec 7.1 and 9): a new shop's home from its checklist to All clear,
 // a buyer waiting with its row and the seller bar's badge, a sale marked as sold from its thread, and a paused listing's
@@ -103,4 +106,85 @@ test("a new shop's home: the checklist, a buyer waiting, a sale marked as sold f
   await expect(page).toHaveURL(/\/sell\/listings\?tab=paused$/);
   await expect(main(page).getByRole("link", { name: `Edit ${second}`, exact: true })).toBeVisible();
   await buyerContext.close();
+});
+
+// Role views N4 (plan Task 12): a fresh mentor and a fresh shop, so the sample staff's roles and the sample shops'
+// mentors never change.
+test("a new mentor's empty caseload; assigning them tells them once; a check-in pressed twice saves once; the same mentor again, or none, tells no one", async ({
+  page,
+  browser,
+  baseURL,
+}) => {
+  test.setTimeout(240_000);
+  const shopName = newShopName();
+  const sellerContext = await browser.newContext({ baseURL, serviceWorkers: "block" });
+  await applyToSell(await sellerContext.newPage(), shopName);
+  await sellerContext.close();
+  const admin = await signedInPage(browser, baseURL!, "Admin", "/admin/sellers");
+  const slug = await reviewShop(admin, shopName);
+  await button(admin, `Approve ${shopName}`).click();
+  await expect(staffNotice(admin)).toContainText("Approved.", POST_LANDS);
+
+  // A fresh mentor with no shops: the caseload's shortest state, no shorter than the skeleton, still on a short phone.
+  const mentor = newBuyer();
+  await signUp(page, mentor);
+  await giveRole(admin, mentor.email, "Mentor");
+  await page.goto("/mentor");
+  await expect(main(page).getByRole("heading", { name: "No shops yet" })).toBeVisible();
+  await expectNoShorterThanSkeleton(page);
+  await page.setViewportSize({ width: 375, height: 667 });
+  await holdFonts(page);
+  await recordShifts(page);
+  await expectStill(page, "an empty caseload at 375x667", "/mentor");
+  await page.unroute(/\.woff2$/);
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  const saveMentor = async (label: string) => {
+    await admin.goto(`/admin/sellers/${slug}`);
+    await field(admin, `Mentor for ${shopName}`).selectOption({ label });
+    await button(admin, `Save mentor for ${shopName}`).click();
+  };
+  // Matched by its sentence and the shop's name, so giveRole's own notification can't be counted.
+  const told = () =>
+    main(page)
+      .getByRole("link", { name: new RegExp(`You're now mentoring ${shopName}\\.`) })
+      .filter({ visible: true });
+
+  await saveMentor(mentor.firstName);
+  await expect(staffNotice(admin)).toHaveText("Mentor saved. They've been told.", POST_LANDS);
+  await page.goto("/notifications");
+  await expect(told()).toHaveCount(1);
+  await expect(told()).toHaveAttribute("href", `/mentor/${slug}`);
+
+  // On the caseload the shop needs them: nothing listed yet, and no check-in.
+  await page.goto("/mentor");
+  const row = main(page)
+    .getByRole("list", { name: "Shops that need you" })
+    .getByRole("link", { name: new RegExp(`^${shopName}`) });
+  await expect(row).toContainText("Nothing is up for buyers yet");
+  await expect(row).toContainText("Check-in: Due");
+
+  // The notification opens the shop's mentor page. A check-in pressed twice saves one (PendingButton and its token).
+  await page.goto("/notifications");
+  await told().click();
+  await expect(main(page).getByRole("heading", { level: 1, name: shopName })).toBeVisible();
+  const word = uniqueWord();
+  await field(page, "What you talked about").fill(`First chat ${word}.`);
+  await button(page, `Add a check-in for ${shopName}`).dblclick();
+  await expect(staffNotice(page)).toHaveText("Check-in saved.", POST_LANDS);
+  const history = main(page).getByRole("region", { name: "Notes and check-ins" });
+  await expect(history.getByRole("listitem").filter({ hasText: word })).toHaveCount(1);
+  await page.goto("/mentor?view=all");
+  await expect(
+    main(page).getByRole("list", { name: "All shops" }).getByRole("link", { name: new RegExp(`^${shopName}`) }),
+  ).toContainText("Check-in: Today");
+
+  // The same mentor again changes nothing and tells no one; removing the mentor tells no one either.
+  await saveMentor(mentor.firstName);
+  await expect(staffNotice(admin)).toHaveText("Nothing changed. It was already done.", POST_LANDS);
+  await saveMentor("No mentor");
+  await expect(staffNotice(admin)).toHaveText("The shop has no mentor now.", POST_LANDS);
+  await page.goto("/notifications");
+  await expect(told()).toHaveCount(1);
+  await admin.context().close();
 });

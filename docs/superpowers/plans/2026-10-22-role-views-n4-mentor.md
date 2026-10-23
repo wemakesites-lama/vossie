@@ -3426,3 +3426,31 @@ If other sessions have uncommitted lines in PROGRESS or the decisions log, stage
   - Tests left out as restating others (Lama's speed rule): `lib/data/shop-stats.test.ts`'s two unit cases (the stats contract covers them on both backends), the new "check-ins and order" `describe` and the No-listings case in `lib/data/mentors.test.ts` (the mentors contract and `lib/staff/mentor.test.ts` cover them), `notification-text.test.ts`'s sentence case (pgTAP 52 and the admin-gates contract check the words) and `admin-actions.test.ts`'s told case (the admin-gates contract runs on the sample store too).
   - Task 6: `app/mentor/export/route.test.ts` passes unchanged.
   - `changeShopSlug` takes the old link before `moveShop`, so the notification's href is compared with it whatever `moveShop` does to the row.
+- **Tasks 11, 12 and 14 (batch C):** e2e trimmed to behaviour (Lama's speed rule), Task 13 (screenshots) skipped:
+  - `tests/e2e/helpers/role-views.ts`'s `expectNoShorterThanSkeleton` uses N3's `STAFF_SKELETON_HTML` (`helpers/staff-skeleton.ts`) instead of building the skeleton by hand, so a skeleton change reaches it.
+  - The N4 reads in `role-views.spec.ts` run at 390 and 1440 only. `/mentor` itself is left out of the new axe list (N1's section-homes test covers it). Rows are waited for before they're counted (a first run counted 0 before the card streamed in), and "All clear" is matched whole (the check icon comes first).
+  - The HTML gate is the caseload's own body (`.mentor-home`, 3,030 B at 390 and 1440, under 8 KB), not a before/after of the whole page: no pre-N4 build was measured (batch A note), and the body replaced the old table. The whole `/mentor?view=all` response is 126,439 B, logged.
+  - 375x667: the sample mentor's Needs you (`role-views.spec.ts`) and a fresh mentor's empty caseload (`role-views-writes.spec.ts`), both 0.0001 or less.
+  - Task 12's test also adds a check-in on the fresh shop with a double click: one entry is saved (PendingButton and its one-time token), and the row's chip goes from Due to Today. The note case stays in `staff.spec.ts` on Tech corner. The writes test closes the seller's browser before the admin's work.
+  - `staff-checks.spec.ts`'s first-visit JS list gains the mentor's shop page (the only staff page with PendingButton): 150,984 B.
+  - `cls.spec.ts`: `/mentor` was already in PAGES (through staff-checks) and SLOW_PAGES; the All view and the shop page join both.
+- **JS (390, brotli) against N3:** every page unchanged: homepage, info, Hub, sell, account, Today, Shops, Hub posts, the mentor dashboard and the other signed-in pages 150,699 B; thread, delete listing and Your listings 150,984; listing 151,855; browse 151,446; storefront 151,459; Saved 151,334; request and collection 151,175; listing forms 152,372. The mentor's shop page (newly measured) 150,984, the same as the other PendingButton pages. All inside 150 KB (153,600 B).
+
+## Progress entry (for docs/PROGRESS.md)
+
+## 2026-10-23: Role views N4 built (the mentor caseload)
+
+**Built.** `/mentor` is a caseload, most in need first: "N of M need you · K slot requests", Needs you / All (`?view=all`), each shop a row with its flags in words (No listings yet; paused by the Hub or by the seller; slow replies) and a check-in chip (Due with none or after 30 days), then small enquiry charts for the shops in the view on one scale over the whole caseload (words when too small). An admin sees every mentored shop with its mentor. A shop's mentor page puts Add a note and Add a check-in first (PendingButton, one-time tokens), the last 14 days against the 14 before, then the history by day. Two readers on both backends: `lastCheckIns` (days only, under `can_mentor`, never the viewer's own shop; `public.last_check_ins` on Supabase) and `dailyEnquiriesFor` (SAST days). Migration `20261025120100_mentor_caseload.sql`. Assigning a mentor tells them once ("You're now mentoring {shop}.", to its mentor page); no change or a removal tells no one; the notification goes with the owner's account and follows a new shop link. The CSV is the Mentoring bar's Export.
+
+**Where the build differed from the plan.** The migration's timestamp (N2 took the plan's); N2's names reused, no second PendingButton; tests that restated others left out; the HTML gate measures the caseload's body, not a before/after; Task 12 also checks a check-in pressed twice saves once; the mentor's shop page joined the JS list; no screenshots (Task 13 skipped). Details in the N4 plan's "Changes made during the build".
+
+**Checks.** Lint and types clean. Unit: 3,425 tests, 419 files. E2E (role-views, role-views-admin, staff, staff-checks, a11y, cls, performance at 360, 390, 768, 1024 and 1440): 777 passed, 3 failed: two were the new caseload test counting rows before they streamed in (fixed, both pass), and the signed-out /sell pitch at 390 (0.0598) predates N1. Write projects (staff-writes, housekeeping-writes, role-views-writes, `--no-deps`): 12 passed. `pnpm e2e:supabase tests/e2e-supabase/mvp.spec.ts`: 12 passed, 2 failed, 10 did not run: flow 6 looks for "1 person follows your shop" on `/sell`, which N2's home words as "1 follower"; not N4's, left for a fix. The caseload's body is 3,030 B; the whole `/mentor?view=all` page 126,439 B. Layout shift: caseload 0.0011 or less, a shop's page 0.0272 (390, fonts held) and 0.0006 (1440); slow network 0.0012 or less; 375x667 0.0001 or less. The skeleton is no taller than the caseload (780 against 780 at 390, 634 against 661 at 1440, and an empty caseload). JS: every page as N3, the largest 152,372 B; the mentor's shop page 150,984 B.
+
+**Open points for Lama.**
+- Plan decisions 1 to 15, in particular 1 (the "staff-role" kind for the new mentor's notification), 4 (No listings yet; whose pause), 5 (the 30-day check-in threshold), 6 (the h1 stays "Mentor dashboard") and 7 (Export only in the bar).
+- The sample words on the caseload, the chips and the empty state.
+- The Supabase MVP flow 6 words ("1 follower" against "1 person follows your shop").
+- Next.js 16.4.0's security notice at build time: an upgrade is waiting for your go-ahead.
+- No N4 screenshots were taken; `SCREENSHOTS=1` with Task 13's shots can make them later.
+
+**Next.** N5, You, can be planned.

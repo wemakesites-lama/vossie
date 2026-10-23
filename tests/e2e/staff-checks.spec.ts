@@ -171,6 +171,8 @@ const SIZE_PAGES: ReadonlyArray<[name: string, path: string]> = [
   ["Shops", "/admin/sellers"],
   ["Hub posts", "/hub/manage"],
   ["Mentor dashboard", "/mentor"],
+  // Role views N4: the only staff page with N2's PendingButton (the note and check-in forms).
+  ["mentor's shop", "/mentor/tech-corner"],
 ];
 
 for (const [name, path] of SIZE_PAGES) {

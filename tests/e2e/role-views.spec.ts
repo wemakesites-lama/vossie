@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seriousIssues } from "./helpers/axe";
 import { main, onlyAt, project, signInAsSample } from "./helpers/messaging";
+import { expectNoShorterThanSkeleton } from "./helpers/role-views";
 import { expectStill, holdFonts, recordShifts } from "./helpers/shifts";
 
 // Role views N1 (plan Task 16): the section bars, the sidebar, the slim footer, axe and motion. Only the checks that
@@ -220,5 +221,114 @@ test.describe("the seller home (role views N2, spec 7.1)", () => {
     const size = await main(page).evaluate((element) => element.outerHTML.length);
     console.log(`seller home main HTML: ${size} (N1: ${N1_SELL_MAIN_HTML}, +${size - N1_SELL_MAIN_HTML})`);
     expect(size).toBeLessThanOrEqual(N1_SELL_MAIN_HTML + 8 * 1024);
+  });
+});
+
+// Role views N4 (plan Task 11): the mentor's caseload and a shop's mentor page, read only. Its writes (a new mentor
+// told once, a check-in pressed twice) are in role-views-writes.spec.ts; the layout shift rows in cls.spec.ts.
+test.describe("the mentor caseload (role views N4, spec 7.3)", () => {
+  const shopsCard = (page: Page) => main(page).getByRole("region", { name: "Your shops" });
+
+  test("Needs you and All split the caseload, the counts match the rows, and every row opens its shop", async ({ page }) => {
+    onlyAt("phone-390", "desktop-1440");
+    await signInAsSample(page, "Mentor", "/mentor?view=all");
+    const card = shopsCard(page);
+    const segments = card.getByRole("navigation", { name: "Which shops" });
+    const rows = card.getByRole("list", { name: "All shops" }).getByRole("link");
+    await expect(rows.first()).toBeVisible();
+    const total = await rows.count();
+    expect(total).toBeGreaterThan(0);
+    await expect(segments.getByRole("link", { name: `All (${total})` })).toHaveAttribute("aria-current", "page");
+    const summary = (await card.locator(".mentor-summary").textContent()) ?? "";
+    const [, need, all] = /^(\d+) of (\d+) need you/.exec(summary) ?? [];
+    expect(Number(all)).toBe(total);
+    // Every row has a check-in chip.
+    await expect(rows.filter({ hasText: /Check-in: (Due|Today|1 day ago|\d+ days ago)/ })).toHaveCount(total);
+
+    const targets = await rows.evaluateAll((links) =>
+      links.map((link) => [link.getAttribute("href")!, link.querySelector(".list-row-title")!.textContent!]),
+    );
+    for (const [href, name] of targets) {
+      await page.goto(href);
+      await expect(main(page).getByRole("heading", { level: 1, name })).toBeVisible();
+    }
+
+    await page.goto("/mentor");
+    await expect(segments.getByRole("link", { name: `Needs you (${need})` })).toHaveAttribute("aria-current", "page");
+    if (Number(need) === 0) await expect(card.getByText("All clear: no shop needs you today.")).toBeVisible();
+    else {
+      const needing = card.getByRole("list", { name: "Shops that need you" }).getByRole("link");
+      await expect(needing).toHaveCount(Number(need));
+      // A shop needs you for a flag, explained in words, or a check-in that's due.
+      for (const text of await needing.allTextContents()) {
+        expect(text.includes("Check-in: Due") || !text.includes("No flags."), text).toBe(true);
+      }
+    }
+  });
+
+  test("one small chart per shop in the view, on one scale, each with its takeaway or its numbers in words", async ({
+    page,
+  }) => {
+    onlyAt("phone-390", "desktop-1440");
+    await signInAsSample(page, "Mentor", "/mentor?view=all");
+    const links = shopsCard(page).getByRole("list", { name: "All shops" }).getByRole("link");
+    await expect(links.first()).toBeVisible();
+    const rows = await links.count();
+    const items = main(page).getByRole("region", { name: "Enquiries, 14 days" }).locator(".mentor-sparks > li");
+    await expect(items).toHaveCount(rows);
+    // A chart (a figure named by its takeaway) or, when too small to chart, the takeaway and the values in words.
+    await expect(items.filter({ has: page.locator("figure.sparkline, p.chart-summary") })).toHaveCount(rows);
+    await expect(items.filter({ hasText: /^Tech corner/ }).locator(".chart-summary")).toHaveText(
+      /^Tech corner: (\d+ enquir(y|ies) in \d+ days?|no days to show yet)/,
+    );
+  });
+
+  test("a shop's page puts both forms before the history, with the last 14 days against the 14 before", async ({ page }) => {
+    onlyAt("phone-390", "desktop-1440");
+    await signInAsSample(page, "Mentor", "/mentor/tech-corner");
+    const facts = main(page).getByRole("region", { name: "This shop" });
+    await expect(facts.getByRole("list", { name: "Last 14 days" }).getByRole("listitem")).toHaveCount(3);
+    const top = async (name: string) => (await main(page).getByRole("region", { name }).boundingBox())!.y;
+    const history = await top("Notes and check-ins");
+    expect(await top("Add a note")).toBeLessThan(history);
+    expect(await top("Add a check-in")).toBeLessThan(history);
+  });
+
+  test("no serious or critical accessibility issues on the caseload and a shop's page", async ({ page }) => {
+    onlyAt("phone-390", "desktop-1440");
+    for (const [label, path] of [
+      ["Mentor", "/mentor?view=all"],
+      ["Mentor", "/mentor/tech-corner"],
+      ["Admin", "/mentor?view=all"],
+    ] as const) {
+      await page.context().clearCookies();
+      await signInAsSample(page, label, path);
+      expect(await seriousIssues(page), `${label} at ${path}`).toEqual([]);
+    }
+  });
+
+  test("the caseload is never shorter than its skeleton, and its HTML stays small", async ({ page }) => {
+    onlyAt("phone-390", "desktop-1440");
+    await signInAsSample(page, "Mentor", "/mentor");
+    await expectNoShorterThanSkeleton(page);
+    await page.goto("/mentor?view=all");
+    await expectNoShorterThanSkeleton(page);
+    // Spec 9: the caseload adds under about 8 KB. Its body replaced the old table, so the whole body is held to that.
+    const body = await main(page)
+      .locator(".mentor-home")
+      .filter({ visible: true })
+      .evaluate((element) => new TextEncoder().encode(element.outerHTML).length);
+    const whole = Buffer.byteLength(await (await page.request.get("/mentor?view=all")).text());
+    console.log(`/mentor?view=all (${test.info().project.name}): caseload ${body} B, page HTML ${whole} B`);
+    expect(body, "the caseload's HTML").toBeLessThanOrEqual(8 * 1024);
+  });
+
+  test("the caseload holds still on a short phone (375x667)", async ({ page }) => {
+    onlyAt("phone-390");
+    await page.setViewportSize({ width: 375, height: 667 });
+    await signInAsSample(page, "Mentor", "/account");
+    await holdFonts(page);
+    await recordShifts(page);
+    await expectStill(page, "mentor caseload at 375x667", "/mentor");
   });
 });

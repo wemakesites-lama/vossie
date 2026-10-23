@@ -307,7 +307,8 @@ test.describe("flows 2 to 11, in order: a seller, a buyer and the first admin", 
     await buyer.goto("/saved?tab=shops");
     await expect(main(buyer).getByRole("link", { name: new RegExp(made.shopName) })).toHaveAttribute("href", `/sellers/${made.slug}`);
     await seller.goto("/sell");
-    await expect(main(seller).getByText("1 person follows your shop")).toBeVisible();
+    // The seller home words the count as "1 follower" (role views N2, followerCountLabel).
+    await expect(main(seller).locator(".sell-home-followers")).toHaveText("1 follower");
 
     const word = uniqueWord();
     await buyer.goto(`/browse?q=${word}&campus=midrand`);
@@ -469,7 +470,7 @@ test.describe("flows 2 to 11, in order: a seller, a buyer and the first admin", 
     await seller.goto(`/looking-for/${made.requestId}`);
     await expect(notFoundHeading(seller)).toBeVisible();
     await seller.goto("/sell");
-    await expect(main(seller).getByText("No one follows your shop yet")).toBeVisible();
+    await expect(main(seller).locator(".sell-home-followers")).toHaveText("No followers yet");
     // The seller keeps their side of the conversation; the buyer's name is gone from it.
     await seller.goto("/messages?tab=selling");
     await expect(main(seller).getByRole("link").filter({ hasText: people.buyer.firstName })).toHaveCount(0);

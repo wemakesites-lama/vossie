@@ -618,8 +618,8 @@ test("staff tools review screenshots", async ({ page, browser, baseURL }) => {
   await button(mentor, "Preview").click();
   await expect(mentorMain.getByRole("region", { name: "Preview" })).toBeVisible(POST_LANDS);
   await shot(mentor, "11-post-preview");
-  await mentor.goto("/mentor");
-  await expect(mentorMain.getByRole("table", { name: "Your sellers, A to Z" })).toBeVisible();
+  await mentor.goto("/mentor?view=all");
+  await expect(mentorMain.getByRole("region", { name: "Your shops" })).toBeVisible();
   await shot(mentor, "12-mentor-dashboard");
   await mentor.goto("/mentor/tech-corner");
   await expect(mentorMain.getByRole("region", { name: "Notes and check-ins" })).toBeVisible();

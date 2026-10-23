@@ -168,12 +168,13 @@ test.describe("mentoring (staff tools spec 2.6, plan decisions 15 to 17)", () =>
   test("a mentor downloads the dashboard as a CSV, and adds a note to a shop they mentor", async ({ page }) => {
     onlyAt(...BOTH);
     test.setTimeout(90_000);
-    await signInAsSample(page, "Mentor", "/mentor");
-    const table = main(page).getByRole("table", { name: "Your sellers, A to Z" });
-    await expect(table.getByRole("link", { name: "Tech corner" })).toBeVisible();
+    await signInAsSample(page, "Mentor", "/mentor?view=all");
+    const shops = main(page).getByRole("region", { name: "Your shops" });
+    await expect(shops.getByRole("link", { name: /^Tech corner/ })).toBeVisible();
 
+    // The CSV is the Mentoring bar's Export (role views N1; N4 plan decision 7).
     const downloading = page.waitForEvent("download");
-    await main(page).getByRole("link", { name: "Download CSV" }).click();
+    await page.getByRole("navigation", { name: "Mentoring" }).getByRole("link", { name: "Export" }).click();
     const download = await downloading;
     expect(download.suggestedFilename()).toMatch(/^campuscart-mentoring-\d{4}-\d{2}-\d{2}\.csv$/);
     const csv = await readFile(await download.path(), "utf8");
@@ -201,7 +202,7 @@ test.describe("mentoring (staff tools spec 2.6, plan decisions 15 to 17)", () =>
     // No messages, no emails: only the table's columns.
     expect(csv).not.toMatch(/@eduvos\.com/);
 
-    await table.getByRole("link", { name: "Tech corner" }).click();
+    await shops.getByRole("link", { name: /^Tech corner/ }).click();
     await expect(main(page).getByRole("heading", { level: 1, name: "Tech corner" })).toBeVisible();
     const word = uniqueWord();
     await field(page, "Note").fill(`Talked about photos ${word}.`);
