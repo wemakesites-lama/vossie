@@ -1005,8 +1005,25 @@ Review notes that were deliberately not acted on:
 
 **Next.** N4, the mentor's caseload, can be planned.
 
+## 2026-10-23: Role views N4 built (the mentor caseload)
+
+**Built.** `/mentor` is a caseload, most in need first: "N of M need you · K slot requests", Needs you / All (`?view=all`), each shop a row with its flags in words (No listings yet; paused by the Hub or by the seller; slow replies) and a check-in chip (Due with none or after 30 days), then small enquiry charts for the shops in the view on one scale over the whole caseload (words when too small). An admin sees every mentored shop with its mentor. A shop's mentor page puts Add a note and Add a check-in first (PendingButton, one-time tokens), the last 14 days against the 14 before, then the history by day. Two readers on both backends: `lastCheckIns` (days only, under `can_mentor`, never the viewer's own shop; `public.last_check_ins` on Supabase) and `dailyEnquiriesFor` (SAST days). Migration `20261025120100_mentor_caseload.sql`. Assigning a mentor tells them once ("You're now mentoring {shop}.", to its mentor page); no change or a removal tells no one; the notification goes with the owner's account and follows a new shop link. The CSV is the Mentoring bar's Export.
+
+**Where the build differed from the plan.** The migration's timestamp (N2 took the plan's); N2's names reused, no second PendingButton; tests that restated others left out; the HTML gate measures the caseload's body, not a before/after; Task 12 also checks a check-in pressed twice saves once; the mentor's shop page joined the JS list; no screenshots (Task 13 skipped). Details in the N4 plan's "Changes made during the build".
+
+**Checks.** Lint and types clean. Unit: 3,425 tests, 419 files. E2E (role-views, role-views-admin, staff, staff-checks, a11y, cls, performance at 360, 390, 768, 1024 and 1440): 777 passed, 3 failed: two were the new caseload test counting rows before they streamed in (fixed, both pass), and the signed-out /sell pitch at 390 (0.0598) predates N1. Write projects (staff-writes, housekeeping-writes, role-views-writes, `--no-deps`): 12 passed. `pnpm e2e:supabase tests/e2e-supabase/mvp.spec.ts`: 12 passed, 2 failed, 10 did not run: flow 6 looks for "1 person follows your shop" on `/sell`, which N2's home words as "1 follower"; not N4's, left for a fix. The caseload's body is 3,030 B; the whole `/mentor?view=all` page 126,439 B. Layout shift: caseload 0.0011 or less, a shop's page 0.0272 (390, fonts held) and 0.0006 (1440); slow network 0.0012 or less; 375x667 0.0001 or less. The skeleton is no taller than the caseload (780 against 780 at 390, 634 against 661 at 1440, and an empty caseload). JS: every page as N3, the largest 152,372 B; the mentor's shop page 150,984 B.
+
+**Open points for Lama.**
+- Plan decisions 1 to 15, in particular 1 (the "staff-role" kind for the new mentor's notification), 4 (No listings yet; whose pause), 5 (the 30-day check-in threshold), 6 (the h1 stays "Mentor dashboard") and 7 (Export only in the bar).
+- The sample words on the caseload, the chips and the empty state.
+- The Supabase MVP flow 6 words ("1 follower" against "1 person follows your shop").
+- Next.js 16.4.0's security notice at build time: an upgrade is waiting for your go-ahead.
+- No N4 screenshots were taken; `SCREENSHOTS=1` with Task 13's shots can make them later.
+
+**Next.** N5, You, can be planned.
+
 ## Next
-- **Role views: N4, the mentor caseload, is next** (`docs/superpowers/plans/` has N4 and N5). N1 (the kit), N2 (the seller home) and N3 (the admin's Today) are built (above).
+- **Role views: N5, the buyer's You, is next** (`docs/superpowers/plans/` has N5). N1 (the kit), N2 (the seller home), N3 (the admin's Today) and N4 (the mentor's caseload) are built (above).
 - **Every planned stage (A to M) is built in sample mode** and merged into `main`. The four phone e2e failures that predated stage L are fixed (`d13321b`). The full device suite last ran before stage M: rerun it once before go-live.
 - **The Supabase backend is finished, merged into `main` and pushed** (above), with the CampusCart rename: `main` and `origin/main` are at `88ba438`.
 - **Going live** (submission: vossie-pi.vercel.app on the "Vossie Market" project):
