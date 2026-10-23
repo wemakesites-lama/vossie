@@ -3559,7 +3559,12 @@ Stage only this stage's lines if other sessions have uncommitted lines in PROGRE
 
 ## Changes made during the build
 
-- **Baseline (Task 0):** _to be filled in by the implementer: each public page's `scriptBrotli`, whether `role-views-writes` existed, and the unit count._
+- **Baseline (Task 0):** not re-measured (Lama: reuse N4's, no build in this batch). N4's numbers (390, brotli): homepage, info, Hub, sell, account and the other signed-in pages 150,699 B; thread, delete listing, Your listings and the mentor's shop page 150,984; listing 151,855; browse 151,446; storefront 151,459; Saved 151,334; request and collection 151,175; listing forms 152,372. N1 checked: the five kit files, the tab's "You" label and the five icons are there; the `role-views-writes` project exists (`playwright.config.ts:154`). Unit count before N5: 3,425 tests, 419 files (N4's progress entry); after Tasks 0 to 5b: 3,434 tests, 421 files, all passing.
+- **Tasks 0 to 5b (batch A):** built from the plan's code, with these changes:
+  - Task 1's contract test first marks the shopper's notifications read (a minute before its own), so a world account's earlier unread notifications can't change the counts.
+  - Task 2's contract event has `capacity: 10`, not null: `hub_posts_capacity_for_events` refuses an event without one on Supabase.
+  - Tests left out as restating others (Lama's speed rule): `groupNewByKind`'s unit test (the notifications contract covers grouping and newest on both backends), `listOwnBookings`' seed test in `hub-posts.test.ts` (`lib/you/read.test.ts` checks Thandi's h-007 booking), the You model's word tests (`savedDetail`, `requestsDetail`, `searchesDetail`, `shopDetail`, `bookingsRow`, `closingSoonText`; Task 7's view tests will show them). `closesSoon`'s two cases are one test; the model's tests are three (rows and sum, an offer counted once, Your stuff's counts with closing soon); `read.test.ts` is two (For you on the seed with another account's offer left out; Your stuff).
+  - `pnpm test:db` for the notifications and hub-staff contracts: 17 passed. No SQL changed, so `supabase test db` wasn't re-run.
 
 ## Changes after plan review
 

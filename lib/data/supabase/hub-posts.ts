@@ -1,7 +1,8 @@
 import "server-only";
+import { sastDate } from "@/lib/time";
 import type { BookingStatus, HubBooking, HubPost, HubPostKind } from "@/lib/types";
 import type * as Sample from "../hub-posts";
-import { HUB_BANNER_IMAGE, toHubPost } from "../hub-posts";
+import { HUB_BANNER_IMAGE, ownBookingsFrom, toHubPost } from "../hub-posts";
 import { Refused, type RefusalCode } from "../refused";
 import type { HubBookingRow, HubPostRow } from "../rows";
 import { tagHub } from "../tags";
@@ -368,6 +369,39 @@ export const latestBooking: typeof Sample.latestBooking = async (postId, account
     .limit(1);
   if (error) failed("hub_bookings", error);
   return (await bookingViews(client, data, false))[0] ?? null;
+};
+
+/**
+ * The student's upcoming RSVPs and slot requests (role views N5, plan decision 9), with their own session: hub_rsvps
+ * and hub_bookings let a student read only their own rows, and hub_posts only published posts, so a post taken back
+ * to a draft drops out as it does in the sample.
+ */
+export const listOwnBookings: typeof Sample.listOwnBookings = async (accountId, now) => {
+  const client = await forViewerAs(accountId);
+  const [rsvps, requests] = await Promise.all([
+    selectAll(() => client.from("hub_rsvps").select("post_id").eq("account_id", accountId), ["post_id"]),
+    selectAll(
+      () => client.from("hub_bookings").select("id, post_id, status, created_at").eq("account_id", accountId),
+      ["id"],
+    ),
+  ]);
+  const ids = [...rsvps.map((row) => row.post_id), ...requests.map((row) => row.post_id)];
+  const posts = ids.length === 0 ? [] : await postTitles(client, ids, false);
+  return ownBookingsFrom({
+    rsvpPostIds: rsvps.map((row) => row.post_id),
+    requests: requests.map((row) => ({
+      id: row.id,
+      postId: row.post_id,
+      status: row.status as BookingStatus,
+      createdAt: iso(row.created_at),
+    })),
+    posts: new Map(
+      posts.flatMap((post) =>
+        post.id && post.title ? [[post.id, { id: post.id, title: post.title, startsAt: iso(post.starts_at) }] as const] : [],
+      ),
+    ),
+    today: sastDate(now),
+  });
 };
 
 /** The office-hours queue: open requests oldest first (role views spec 6), then the 30 most recently answered (hub staff read every one). */

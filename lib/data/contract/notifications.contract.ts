@@ -6,6 +6,7 @@ import {
   exportNotifications,
   getNotifications,
   markNotificationsRead,
+  newNotificationsByKind,
 } from "@/lib/data/notifications";
 import { saveOwnListing } from "@/lib/data/own-listings";
 import { newListingsText, newListingText } from "@/lib/following/rules";
@@ -128,5 +129,31 @@ export function notificationsContract(makeWorld: () => World): void {
     const after = await world.asViewer("shopper", (id) => getNotifications(id, 10));
     expect(after).toHaveLength(1);
     expect(after[0]).toMatchObject({ text: newListingsText("Contract kettles", 2), isNew: false });
+  });
+
+  it("groups the unread ones of the asked kinds for For you, newest first, and reading them marks nothing (role views N5)", async () => {
+    const start = Date.now() - 10 * MINUTE;
+    const add = (name: "shopper" | "asker", kind: string, word: string, minute: number) =>
+      world.addNotification(
+        name,
+        { kind, subjectId: `contract-${word}`, text: `Contract ${word}`, href: `/contract/${word}` },
+        new Date(start + minute * MINUTE),
+      );
+    await world.asViewer("shopper", (id) => markNotificationsRead(id, new Date(start - MINUTE)));
+    await add("shopper", "search-match", "match-old", 0);
+    await add("shopper", "search-match", "match-new", 1);
+    await add("shopper", "new-listing", "listing", 2);
+    await add("shopper", "booking", "booking", 3);
+    await add("asker", "offer", "not-yours", 4);
+    const kinds = ["offer", "search-match", "new-listing"] as const;
+    expect(await world.asViewer("shopper", (id) => newNotificationsByKind(id, kinds))).toEqual({
+      "search-match": { count: 2, newestHref: "/contract/match-new", newestText: "Contract match-new" },
+      "new-listing": { count: 1, newestHref: "/contract/listing", newestText: "Contract listing" },
+    });
+    // Reading them changed nothing: all four are still new.
+    expect(await world.asViewer("shopper", (id) => countNewNotifications(id))).toBe(4);
+    expect(await world.asViewer("shopper", (id) => newNotificationsByKind(id, []))).toEqual({});
+    await world.asViewer("shopper", (id) => markNotificationsRead(id, new Date()));
+    expect(await world.asViewer("shopper", (id) => newNotificationsByKind(id, kinds))).toEqual({});
   });
 }

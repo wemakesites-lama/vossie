@@ -3,13 +3,14 @@ import { SavedCount } from "@/components/header/SiteHeader";
 import { BagIcon, HeartIcon, HomeIcon, PlusIcon, UserIcon } from "@/components/icons";
 import { NavLink } from "@/components/ui/NavLink";
 import { getViewer } from "@/lib/auth/session";
-import { countNewNotifications } from "@/lib/data/notifications";
+import { forYouTotal } from "@/lib/you/model";
+import { readForYou } from "@/lib/you/read";
 
 /** The id of the words that describe the Saved tab (its count). */
 const SAVED_COUNT_ID = "tab-saved-count";
 
 /**
- * The phone tab bar (spec section 6.2): Home, Shop, Sell, Saved and Account, fixed to the bottom of the screen below
+ * The phone tab bar (spec section 6.2): Home, Shop, Sell, Saved and You, fixed to the bottom of the screen below
  * the tablet step and always visible, so the main places are one thumb's tap away while the header is hidden.
  * Rendered on the server: the only client code is NavLink (already in the header's chunk) and Saved's count.
  *
@@ -63,12 +64,12 @@ function Tab({ href, icon, label, match, prefetch, className = "tab", describedB
 }
 
 /**
- * You (/account) when signed in, with the header icon's red badge for new notifications (messaging spec 2.9),
- * which describes the tab without changing its name, as the header's does; sign-in when signed out, never the gated
- * page itself (CLAUDE.md).
+ * You (/account) when signed in, with a red badge that counts For you (role views spec 4.3): the sum of the rows the
+ * You page lists, from the same reader, so the two always agree. It describes the tab ("3 things for you") without
+ * changing its name. Sign-in when signed out, never the gated page itself (CLAUDE.md).
  */
-export function AccountTab({ signedIn, unread = 0 }: { signedIn: boolean; unread?: number }) {
-  const badge = signedIn && unread > 0;
+export function AccountTab({ signedIn, forYou = 0 }: { signedIn: boolean; forYou?: number }) {
+  const badge = signedIn && forYou > 0;
   return (
     <Tab
       href={signedIn ? "/account" : "/login"}
@@ -81,8 +82,8 @@ export function AccountTab({ signedIn, unread = 0 }: { signedIn: boolean; unread
       {badge && (
         // Hidden from the name (the tab has no aria-label), still read as its description.
         <span id="tab-account-new" className="hdr-badge hdr-badge-alert" aria-hidden="true">
-          {unread > 99 ? "99+" : unread}{" "}
-          <span className="sr-only">{`new ${unread === 1 ? "notification" : "notifications"}`}</span>
+          {forYou > 99 ? "99+" : forYou}{" "}
+          <span className="sr-only">{`${forYou === 1 ? "thing" : "things"} for you`}</span>
         </span>
       )}
     </Tab>
@@ -91,10 +92,13 @@ export function AccountTab({ signedIn, unread = 0 }: { signedIn: boolean; unread
 
 /** The tab for this request's session. Request-time, so the layout puts it inside <Suspense>. */
 export async function TabAccount() {
-  // As the header's icon: a failed lookup counts as signed out, a failed count shows no badge. getViewer is one
-  // lookup per render (React's cache), shared with the header.
+  // As the header's icon: a failed lookup counts as signed out, a failed count shows no badge, never a guess (spec 4.2).
+  // getViewer is one lookup per render (React's cache), shared with the header; readForYou is one read per request,
+  // shared with the header's icon and the You page.
   const account = await getViewer().catch(() => null);
   if (!account) return <AccountTab signedIn={false} />;
-  const unread = await countNewNotifications(account.id).catch(() => 0);
-  return <AccountTab signedIn unread={unread} />;
+  const forYou = await readForYou(account.id)
+    .then((read) => forYouTotal(read.items))
+    .catch(() => 0);
+  return <AccountTab signedIn forYou={forYou} />;
 }

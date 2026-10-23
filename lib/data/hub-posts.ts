@@ -3,7 +3,8 @@ import { onSupabase } from "@/lib/backend";
 import { hasPassed } from "@/lib/hub";
 import { isAdmin } from "@/lib/staff/roles";
 import type { PostFields } from "@/lib/staff/post-rules";
-import type { Account, HubBooking, HubPost, HubPostKind, ImageRef } from "@/lib/types";
+import { sastDate } from "@/lib/time";
+import type { Account, BookingStatus, HubBooking, HubPost, HubPostKind, ImageRef, OwnBooking } from "@/lib/types";
 import type { HubBookingRow, HubPostRow } from "./rows";
 import { sampleStore } from "./store";
 
@@ -285,6 +286,69 @@ export async function latestBooking(postId: string, accountId: string): Promise<
     .filter((row) => row.postId === postId && row.accountId === accountId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return rows.length > 0 ? toBooking(rows[0]) : null;
+}
+
+// --- The student's own bookings (role views N5, spec 6) -------------------------------------------------------------
+
+/** What ownBookingsFrom needs of a published post. */
+export type BookedPost = { id: string; title: string; startsAt: string | null };
+
+/**
+ * The student's upcoming bookings (role views spec 6, plan decision 9): an item per RSVP, and one per office hours for
+ * its newest slot request, whatever its answer. Only published posts whose SAST day hasn't passed on `today` (today's
+ * still count, as on the feed). Soonest first, then by title. Pure, so the Supabase twin shares it.
+ */
+export function ownBookingsFrom({
+  rsvpPostIds,
+  requests,
+  posts,
+  today,
+}: {
+  rsvpPostIds: readonly string[];
+  requests: readonly { id: string; postId: string; status: BookingStatus; createdAt: string }[];
+  posts: ReadonlyMap<string, BookedPost>;
+  today: string;
+}): OwnBooking[] {
+  const upcoming = (postId: string): (BookedPost & { startsAt: string }) | null => {
+    const post = posts.get(postId);
+    if (!post || post.startsAt === null || hasPassed(post, today)) return null;
+    return { ...post, startsAt: post.startsAt };
+  };
+  const items: OwnBooking[] = [];
+  for (const postId of new Set(rsvpPostIds)) {
+    const post = upcoming(postId);
+    if (post) items.push({ kind: "rsvp", postId, title: post.title, startsAt: post.startsAt, status: "going" });
+  }
+  const newest = new Map<string, (typeof requests)[number]>();
+  for (const request of requests) {
+    const kept = newest.get(request.postId);
+    const later =
+      !kept ||
+      Date.parse(request.createdAt) > Date.parse(kept.createdAt) ||
+      (request.createdAt === kept.createdAt && request.id > kept.id);
+    if (later) newest.set(request.postId, request);
+  }
+  for (const request of newest.values()) {
+    const post = upcoming(request.postId);
+    if (post) items.push({ kind: "slot", postId: post.id, title: post.title, startsAt: post.startsAt, status: request.status });
+  }
+  return items.sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt) || a.title.localeCompare(b.title));
+}
+
+/** The student's upcoming RSVPs and slot requests, for You (role views spec 6). Only their own. */
+export async function listOwnBookings(accountId: string, now: Date): Promise<OwnBooking[]> {
+  if (onSupabase()) return (await supabase()).listOwnBookings(accountId, now);
+  const { hubPosts, hubRsvps, hubBookings } = sampleStore();
+  const posts = new Map<string, BookedPost>();
+  for (const row of hubPosts.values()) {
+    if (row.published) posts.set(row.id, { id: row.id, title: row.title, startsAt: row.startsAt });
+  }
+  return ownBookingsFrom({
+    rsvpPostIds: [...hubRsvps.values()].filter((row) => row.accountId === accountId).map((row) => row.postId),
+    requests: [...hubBookings.values()].filter((row) => row.accountId === accountId),
+    posts,
+    today: sastDate(now),
+  });
 }
 
 /**

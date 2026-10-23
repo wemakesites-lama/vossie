@@ -4,6 +4,7 @@ import {
   checkNeededBy,
   checkRequest,
   closedAtFor,
+  closesSoon,
   closeReasonOf,
   closingDay,
   hasContactDetails,
@@ -332,5 +333,15 @@ describe("the reminder before a request closes itself (stage M spec decisions 13
     expect(reminderDue({ ...ROW, askerId: null }, "2026-10-18")).toBe(false);
     expect(reminderDue({ ...ROW, hiddenAt: "2026-10-15T08:00:00.000Z" }, "2026-10-18")).toBe(false);
     expect(reminderDue({ ...ROW, status: "closed" }, "2026-10-18")).toBe(false);
+  });
+});
+
+describe("closesSoon (role views N5: the You banner, plan decision 8)", () => {
+  it("is true from the reminder day to the day before the closing day, never for a request that doesn't close itself", () => {
+    expect(closesSoon("2026-10-24", "2026-10-21")).toBe(false);
+    expect(closesSoon("2026-10-24", "2026-10-22")).toBe(true);
+    expect(closesSoon("2026-10-24", "2026-10-23")).toBe(true);
+    expect(closesSoon("2026-10-24", "2026-10-24")).toBe(false);
+    expect(closesSoon(null, "2026-10-22")).toBe(false);
   });
 });

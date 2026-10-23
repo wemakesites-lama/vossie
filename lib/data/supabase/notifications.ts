@@ -1,7 +1,8 @@
 import "server-only";
 import type { NotificationKind } from "@/lib/types";
 import type * as Sample from "../notifications";
-import { iso } from "./rows";
+import { groupNewByKind } from "../notifications";
+import { iso, selectAll } from "./rows";
 import { forViewerAs } from "./viewer";
 
 // Notifications on Supabase (C2/C3 plan Task 12, decision 17). The reads are the account's own, through its own client
@@ -56,6 +57,34 @@ export const countNewNotifications: typeof Sample.countNewNotifications = async 
     .is("read_at", null);
   if (error) failed("notifications", error);
   return count ?? 0;
+};
+
+/**
+ * For you's unread notifications of some kinds, with the account's own session (the notifications policy lets it read
+ * only its own). Every unread row of those kinds, a page at a time, grouped as the sample groups them.
+ */
+export const newNotificationsByKind: typeof Sample.newNotificationsByKind = async (accountId, kinds) => {
+  if (kinds.length === 0) return {};
+  const client = await forViewerAs(accountId);
+  const rows = await selectAll(
+    () =>
+      client
+        .from("notifications")
+        .select("id, kind, text, href, created_at")
+        .eq("account_id", accountId)
+        .is("read_at", null)
+        .in("kind", [...kinds]),
+    ["id"],
+  );
+  return groupNewByKind(
+    rows.map((row) => ({
+      id: row.id,
+      kind: row.kind as NotificationKind,
+      text: row.text,
+      href: row.href,
+      createdAt: iso(row.created_at),
+    })),
+  );
 };
 
 export const markNotificationsRead: typeof Sample.markNotificationsRead = async (accountId) => {

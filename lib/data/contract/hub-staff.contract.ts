@@ -8,6 +8,7 @@ import {
   hasRsvp,
   latestBooking,
   listBookings,
+  listOwnBookings,
   listPostsForStaff,
   openBookingCount,
   removeRsvp,
@@ -192,5 +193,40 @@ export function hubStaffContract(makeWorld: () => World): void {
     expect(queue.slice(0, open.length).every((row) => row.status === "open")).toBe(true);
     expect(open.map((row) => row.createdAt)).toEqual([...open.map((row) => row.createdAt)].sort());
     expect(open.findIndex((row) => row.id === first)).toBeLessThan(open.findIndex((row) => row.id === second));
+  });
+
+  it("lists a student's own upcoming bookings, soonest first, never another's, a past one or a draft's (role views N5)", async () => {
+    const eventStart = AHEAD();
+    const hoursStart = `${addDays(sastDate(new Date()), 8)}T08:00:00.000Z`;
+    const eventFields: PostFields = { ...TIP, kind: "event", title: "Contract market day", campusSlug: "pretoria", startsAt: eventStart, place: "The Hub", capacity: 10 };
+    const event = await newPost(eventFields);
+    const hours = await newPost({ ...TIP, kind: "office-hours", title: "Contract office hours", campusSlug: "pretoria", startsAt: hoursStart, place: "The Hub" });
+    const now = new Date();
+    const today = sastDate(now);
+    await world.asViewer("asker", (id) => addRsvp(event, id, today, now));
+    await world.asViewer("shopper", (id) => addRsvp(event, id, today, now));
+    await world.asViewer("asker", (id) =>
+      requestSlot({ postId: hours, accountId: id, help: "How to price a braid.", time: "After 13:00", today, now }),
+    );
+    const mine = (at = new Date()) => world.asViewer("asker", (id) => listOwnBookings(id, at));
+
+    expect(await mine()).toEqual([
+      { kind: "rsvp", postId: event, title: "Contract market day", startsAt: eventStart, status: "going" },
+      { kind: "slot", postId: hours, title: "Contract office hours", startsAt: hoursStart, status: "open" },
+    ]);
+    expect(await world.asViewer("shopper", (id) => listOwnBookings(id, new Date()))).toEqual([
+      { kind: "rsvp", postId: event, title: "Contract market day", startsAt: eventStart, status: "going" },
+    ]);
+
+    const booking = (await world.asViewer("staff", () => listBookings())).find((row) => row.postId === hours)!;
+    await world.asViewer("staff", (id) => answerBooking(booking.id, "accepted", id, new Date()));
+    expect((await mine())[1]).toMatchObject({ kind: "slot", status: "accepted" });
+
+    // Two days after the office hours, nothing is upcoming.
+    expect(await mine(new Date(Date.parse(hoursStart) + 2 * 86_400_000))).toEqual([]);
+
+    // An event taken back to a draft leaves the list.
+    await save("staff", event, { ...eventFields, published: false });
+    expect((await mine()).map((item) => item.postId)).toEqual([hours]);
   });
 }

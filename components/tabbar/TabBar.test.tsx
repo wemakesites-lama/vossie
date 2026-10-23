@@ -6,18 +6,23 @@ import { AccountTab, TabAccount, TabBar } from "./TabBar";
 const viewer = vi.hoisted(() => ({ account: null as { id: string } | null }));
 vi.mock("@/lib/auth/session", () => ({ getViewer: async () => viewer.account }));
 
-const notifications = vi.hoisted(() => ({ count: 0, failing: false }));
-vi.mock("@/lib/data/notifications", () => ({
-  countNewNotifications: async () => {
-    if (notifications.failing) throw new Error("The store didn't answer");
-    return notifications.count;
+// For you's reader (role views N5): the tab's badge is the sum of what it lists.
+const forYou = vi.hoisted(() => ({ counts: [] as number[], failing: false }));
+vi.mock("@/lib/you/read", () => ({
+  readForYou: async () => {
+    if (forYou.failing) throw new Error("The store didn't answer");
+    return {
+      items: forYou.counts.map((count, i) => ({ key: `item-${i}`, count, title: `Item ${i}`, href: "/account" })),
+      conversations: 0,
+      newNotifications: 0,
+    };
   },
 }));
 
 afterEach(() => {
   viewer.account = null;
-  notifications.count = 0;
-  notifications.failing = false;
+  forYou.counts = [];
+  forYou.failing = false;
 });
 
 function renderBar(account = <AccountTab signedIn={false} />) {
@@ -59,23 +64,36 @@ describe("the phone tab bar (spec section 6.2)", () => {
     expect(saved.querySelector(".hdr-badge")).toBeNull();
   });
 
-  it("goes to sign-in signed out, and to the account with a red badge signed in", async () => {
+  it("goes to sign-in signed out, and to You with a red badge that sums For you (role views spec 4.3)", async () => {
     viewer.account = { id: "acc-student" };
-    notifications.count = 3;
+    forYou.counts = [1, 0, 2];
     const bar = renderBar(await TabAccount());
-    const account = within(bar).getByRole("link", { name: "You" });
-    expect(account).toHaveAttribute("href", "/account");
-    expect(account).toHaveAccessibleDescription("3 new notifications");
-    expect(account.querySelector(".hdr-badge")).toHaveClass("hdr-badge-alert");
+    const you = within(bar).getByRole("link", { name: "You" });
+    expect(you).toHaveAttribute("href", "/account");
+    expect(you).toHaveAccessibleDescription("3 things for you");
+    expect(you.querySelector(".hdr-badge")).toHaveClass("hdr-badge-alert");
+  });
+
+  it("says one thing, caps the number at 99+, and shows no badge with nothing for you", () => {
+    const one = render(<AccountTab signedIn forYou={1} />);
+    expect(screen.getByRole("link", { name: "You" })).toHaveAccessibleDescription("1 thing for you");
+    one.unmount();
+    const many = render(<AccountTab signedIn forYou={140} />);
+    expect(screen.getByRole("link", { name: "You" }).querySelector(".hdr-badge")).toHaveTextContent(/^99\+ /);
+    many.unmount();
+    render(<AccountTab signedIn forYou={0} />);
+    expect(screen.getByRole("link", { name: "You" }).querySelector(".hdr-badge")).toBeNull();
   });
 
   it("shows no badge when the count fails, and none signed out", async () => {
     viewer.account = { id: "acc-student" };
-    notifications.failing = true;
+    forYou.failing = true;
     const { unmount } = render(await TabAccount());
-    expect(screen.getByRole("link", { name: "You" })).toHaveAttribute("href", "/account");
+    const you = screen.getByRole("link", { name: "You" });
+    expect(you).toHaveAttribute("href", "/account");
+    expect(you.querySelector(".hdr-badge")).toBeNull();
     unmount();
-    render(<AccountTab signedIn={false} unread={4} />);
+    render(<AccountTab signedIn={false} forYou={4} />);
     expect(screen.getByRole("link", { name: "You" }).querySelector(".hdr-badge")).toBeNull();
   });
 });

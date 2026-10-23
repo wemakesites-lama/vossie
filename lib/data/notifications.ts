@@ -3,7 +3,7 @@ import { onSupabase } from "@/lib/backend";
 import { newListingsText, newListingText } from "@/lib/following/rules";
 import { searchMatchesText, searchMatchText } from "@/lib/saved-searches/words";
 import { sastDate } from "@/lib/time";
-import type { NotificationItem, NotificationKind } from "@/lib/types";
+import type { NewNotificationsByKind, NotificationItem, NotificationKind } from "@/lib/types";
 import type { NotificationRow } from "./rows";
 import { sampleStore } from "./store";
 
@@ -105,6 +105,38 @@ export async function getNotifications(accountId: string, limit: number): Promis
 export async function countNewNotifications(accountId: string): Promise<number> {
   if (onSupabase()) return (await supabase()).countNewNotifications(accountId);
   return ofAccount(accountId).filter((row) => row.readAt === null).length;
+}
+
+/** A notification as newNotificationsByKind reads it, on either backend. */
+export type NewNotificationRow = { id: string; kind: NotificationKind; text: string; href: string; createdAt: string };
+
+/**
+ * Unread notifications grouped by kind, each with the newest one's link and words (role views spec 7.4). Newest by
+ * time, then by id. Pure, so the Supabase twin shares it.
+ */
+export function groupNewByKind(rows: readonly NewNotificationRow[]): NewNotificationsByKind {
+  const newestFirst = [...rows].sort(
+    (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id.localeCompare(a.id),
+  );
+  const groups: NewNotificationsByKind = {};
+  for (const row of newestFirst) {
+    const group = groups[row.kind];
+    if (group) group.count += 1;
+    else groups[row.kind] = { count: 1, newestHref: row.href, newestText: row.text };
+  }
+  return groups;
+}
+
+/**
+ * For you's notification rows (role views spec 7.4): the account's unread notifications of `kinds`, by kind. Reading
+ * them marks nothing read; opening /notifications, or the thread a notification is about, still does (spec 2.9).
+ */
+export async function newNotificationsByKind(
+  accountId: string,
+  kinds: readonly NotificationKind[],
+): Promise<NewNotificationsByKind> {
+  if (onSupabase()) return (await supabase()).newNotificationsByKind(accountId, kinds);
+  return groupNewByKind(ofAccount(accountId).filter((row) => row.readAt === null && kinds.includes(row.kind)));
 }
 
 /** Opening /notifications marks them all read (spec 2.9). */

@@ -11,20 +11,24 @@ vi.mock("@/lib/auth/session", () => ({
   },
 }));
 
-const notifications = vi.hoisted(() => ({ count: 0, failing: false }));
+const forYou = vi.hoisted(() => ({ counts: [] as number[], failing: false }));
 
-vi.mock("@/lib/data/notifications", () => ({
-  countNewNotifications: async () => {
-    if (notifications.failing) throw new Error("The store didn't answer");
-    return notifications.count;
+vi.mock("@/lib/you/read", () => ({
+  readForYou: async () => {
+    if (forYou.failing) throw new Error("The store didn't answer");
+    return {
+      items: forYou.counts.map((count, i) => ({ key: `item-${i}`, count, title: `Item ${i}`, href: "/account" })),
+      conversations: 0,
+      newNotifications: 0,
+    };
   },
 }));
 
 afterEach(() => {
   viewer.account = null;
   viewer.failing = false;
-  notifications.count = 0;
-  notifications.failing = false;
+  forYou.counts = [];
+  forYou.failing = false;
 });
 
 describe("the header's account icon (accounts spec 3.4)", () => {
@@ -51,34 +55,34 @@ describe("the header's account icon (accounts spec 3.4)", () => {
     expect(screen.getByRole("link", { name: "Sign in" })).toBeInTheDocument();
   });
 
-  it("shows a red badge with the number of new notifications, keeping the name (messaging plan decision 10)", () => {
-    render(<AccountLink signedIn unread={2} />);
+  it("shows a red badge with the For you count, keeping the name (role views N5, plan decision 7)", () => {
+    render(<AccountLink signedIn forYou={2} />);
     const link = screen.getByRole("link", { name: "Your account" });
-    expect(link).toHaveAccessibleDescription("2 new notifications");
+    expect(link).toHaveAccessibleDescription("2 things for you");
     expect(link.querySelector(".hdr-badge")).toHaveClass("hdr-badge-alert");
   });
 
-  it("says one notification, caps the number at 99+, and has no badge signed out or with nothing new", () => {
-    const { unmount } = render(<AccountLink signedIn unread={1} />);
-    expect(screen.getByRole("link", { name: "Your account" })).toHaveAccessibleDescription("1 new notification");
+  it("says one thing, caps the number at 99+, and has no badge signed out or with nothing for you", () => {
+    const { unmount } = render(<AccountLink signedIn forYou={1} />);
+    expect(screen.getByRole("link", { name: "Your account" })).toHaveAccessibleDescription("1 thing for you");
     unmount();
-    const many = render(<AccountLink signedIn unread={120} />);
-    expect(screen.getByRole("link", { name: "Your account" })).toHaveAccessibleDescription("99+ new notifications");
+    const many = render(<AccountLink signedIn forYou={120} />);
+    expect(screen.getByRole("link", { name: "Your account" })).toHaveAccessibleDescription("99+ things for you");
     many.unmount();
-    const none = render(<AccountLink signedIn unread={0} />);
+    const none = render(<AccountLink signedIn forYou={0} />);
     expect(none.container.querySelector(".hdr-badge")).toBeNull();
     none.unmount();
-    render(<AccountLink signedIn={false} unread={3} />);
+    render(<AccountLink signedIn={false} forYou={3} />);
     expect(screen.getByRole("link", { name: "Sign in" })).not.toHaveAttribute("aria-describedby");
   });
 
-  it("counts the session's new notifications, and shows no badge when the count fails", async () => {
+  it("counts the session's For you, the same sum as the You tab, and shows no badge when the read fails", async () => {
     viewer.account = { id: "acc-student" };
-    notifications.count = 2;
+    forYou.counts = [1, 0, 1];
     const { unmount } = render(await HeaderAccount());
-    expect(screen.getByRole("link", { name: "Your account" })).toHaveAccessibleDescription("2 new notifications");
+    expect(screen.getByRole("link", { name: "Your account" })).toHaveAccessibleDescription("2 things for you");
     unmount();
-    notifications.failing = true;
+    forYou.failing = true;
     render(await HeaderAccount());
     expect(screen.getByRole("link", { name: "Your account" })).not.toHaveAttribute("aria-describedby");
   });

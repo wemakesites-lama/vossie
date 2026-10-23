@@ -250,6 +250,15 @@ export function reminderDue(
   return closesOn !== null && reminderDay(closesOn) <= today && today < closesOn && row.remindedFor !== closesOn;
 }
 
+/**
+ * Whether a request with this closing day is in its last days (role views spec 7.4, plan decision 8): from its
+ * reminder day to the day before it closes, on `today`, a SAST date. The You page's banner uses it, whether or not the
+ * reminder has been sent. False for a request that never closes by itself (null). Reads no clock.
+ */
+export function closesSoon(closesOn: string | null, today: string): boolean {
+  return closesOn !== null && reminderDay(closesOn) <= today && today < closesOn;
+}
+
 /** A title on one line: E's cleanText, then every run of white space as one space. */
 function cleanTitle(raw: string): string {
   return cleanText(raw).replace(/\s+/g, " ");

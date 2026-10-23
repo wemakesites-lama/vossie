@@ -426,6 +426,12 @@ export type NotificationItem = {
   isNew: boolean;
 };
 
+/** Unread notifications of one kind, for For you (role views spec 7.4): how many, and the newest one's link and words. */
+export type NewNotifications = { count: number; newestHref: string; newestText: string };
+
+/** Unread notifications by kind. A kind with none is absent. */
+export type NewNotificationsByKind = Partial<Record<NotificationKind, NewNotifications>>;
+
 /** One of the account's reports, for privacy settings (messaging plan decision 18). */
 export type ReportSummary = {
   kind: ReportTarget["kind"];
@@ -601,6 +607,18 @@ export type HubBooking = {
   time: string;
   status: BookingStatus;
   createdAt: string;
+};
+
+/** One of the student's own Hub bookings (role views spec 6): an RSVP to an event, or a slot request at office hours. */
+export type OwnBooking = {
+  kind: "rsvp" | "slot";
+  postId: string;
+  /** The post's title. */
+  title: string;
+  /** When it starts, ISO 8601 in UTC. */
+  startsAt: string;
+  /** "going" for an RSVP; the slot request's own status otherwise. */
+  status: "going" | BookingStatus;
 };
 
 /**
