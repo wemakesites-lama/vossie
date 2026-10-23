@@ -101,6 +101,16 @@ export const mentoredShops: typeof Sample.mentoredShops = async (viewer, now) =>
     availableCounts(client, shopIds),
     checkInsWith(client, profiles.map((row) => row.account_id!)),
   ]);
+  // Each shop's counts at once, not one shop after another (N4 review).
+  const countsByShop = new Map(
+    await Promise.all(
+      profiles.map(async (profile) => {
+        const shop = shops.get(profile.shop_id!);
+        const counts = shop ? currentOf(await recentCounts(shop.slug, MENTOR_WINDOW_DAYS, now)) : null;
+        return [profile.shop_id!, counts] as const;
+      }),
+    ),
+  );
   const rows: MentoredShop[] = [];
   for (const profile of profiles) {
     const shop = shops.get(profile.shop_id!);
@@ -108,7 +118,7 @@ export const mentoredShops: typeof Sample.mentoredShops = async (viewer, now) =>
     if (!shop || ownerName === undefined) continue;
     const status = profile.status as SellerStatus;
     const pausedBy = status === "paused" ? ((profile.paused_by as "seller" | "staff" | null) ?? null) : null;
-    const counts = currentOf(await recentCounts(shop.slug, MENTOR_WINDOW_DAYS, now));
+    const counts = countsByShop.get(profile.shop_id!)!;
     rows.push({
       slug: shop.slug,
       name: shop.name,

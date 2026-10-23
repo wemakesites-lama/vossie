@@ -94,7 +94,7 @@ export function MentorShop({
             delta={{ previous: previous?.enquiries ?? null, period: BEFORE }}
           />
           <div className="stat-tile">
-            <span className="stat-tile-label">Replied within 48 hours</span>
+            <span className="stat-tile-label">Replied within 48 hours</span>{" "}
             <span className="stat-tile-value" data-masked="">
               {repliesInTime(shop.counts)}
             </span>
