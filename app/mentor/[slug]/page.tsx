@@ -8,10 +8,12 @@ import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
 import { readFormState } from "@/lib/auth/form-state";
 import { getCampuses } from "@/lib/data";
 import { getMentoredShop, listNotes } from "@/lib/data/mentors";
+import { recentCounts } from "@/lib/data/shop-stats";
 import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
 import { checkInForm, noteForm, takeNotice } from "@/lib/staff/form-state";
+import { MENTOR_WINDOW_DAYS } from "@/lib/staff/mentor";
 import { issueOnceToken } from "@/lib/staff/once";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { MENTOR_PATH, mentorShopPath } from "@/lib/staff/paths";
@@ -27,7 +29,7 @@ export function generateStaticParams() {
   return [{ slug: "sample" }];
 }
 
-/** A shop's mentor page (staff tools spec 2.6): its mentor or an admin; anyone else, or a shop with none, the 404. */
+/** A shop's mentor page (staff tools spec 2.6; role views spec 7.3): its mentor or an admin; anyone else, or a shop with none, the 404. */
 export default function MentorShopPage({ params }: PageProps<"/mentor/[slug]">) {
   return (
     <PageTransition>
@@ -46,7 +48,7 @@ async function Shop({ params }: Pick<PageProps<"/mentor/[slug]">, "params">) {
   const shop = isId(slug) ? await getMentoredShop(slug, account, now) : null;
   if (!shop) notFound();
   // A note and a check-in each get a one-time token, made now, at request time (staff tools amendment 15.7).
-  const [campuses, notes, note, checkIn, notice, noteOnce, checkInOnce] = await Promise.all([
+  const [campuses, notes, note, checkIn, notice, noteOnce, checkInOnce, previous] = await Promise.all([
     getCampuses(),
     listNotes(shop.ownerId),
     readFormState(noteForm(shop.slug)),
@@ -54,6 +56,10 @@ async function Shop({ params }: Pick<PageProps<"/mentor/[slug]">, "params">) {
     takeNotice(),
     issueOnceToken(),
     issueOnceToken(),
+    // getMentoredShop has checked the viewer may follow this shop: recentCounts reads with the admin client (N4 plan
+    // decision 9), so it's called only after that check. N2's previous window (decision 10); on Supabase its
+    // per-request cache means no second query.
+    recentCounts(shop.slug, MENTOR_WINDOW_DAYS, now).then((counts) => counts.previous, () => null),
   ]);
   return (
     <StaffFrame account={account} area="Mentoring" title={shop.name} current={MENTOR_PATH} notice={staffNoticeText(notice)}>
@@ -69,6 +75,8 @@ async function Shop({ params }: Pick<PageProps<"/mentor/[slug]">, "params">) {
         noteOnce={noteOnce}
         checkInOnce={checkInOnce}
         today={sastDate(now)}
+        previous={previous}
+        now={now}
       />
     </StaffFrame>
   );

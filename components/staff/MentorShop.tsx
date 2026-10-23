@@ -1,14 +1,18 @@
 import Link from "next/link";
 import { ErrorSummary } from "@/components/forms/ErrorSummary";
 import { describedBy, FieldError } from "@/components/forms/FieldError";
+import { Card } from "@/components/kit/Card";
+import { Feed } from "@/components/kit/Feed";
+import { PendingButton } from "@/components/kit/PendingButton";
+import { StatRow, StatTile } from "@/components/kit/StatTile";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import type { MentorNoteView } from "@/lib/data/mentors";
 import { badgeLabel } from "@/lib/format";
 import { staffFieldIds } from "@/lib/staff/errors";
-import { FLAG_WORDS, repliesInTime, statusWords } from "@/lib/staff/mentor";
+import { FLAG_WORDS, MENTOR_WINDOW_DAYS, repliesInTime, shopStanding } from "@/lib/staff/mentor";
 import { addCheckIn, addMentorNote } from "@/lib/staff/mentor-actions";
 import { longSastDate, shortSastDate } from "@/lib/time";
-import type { MentoredShop } from "@/lib/types";
+import type { EnquiryCounts, MentoredShop } from "@/lib/types";
 
 type FormView = { values: Readonly<Record<string, string>>; errors: readonly FormError[] };
 
@@ -23,14 +27,32 @@ type MentorShopProps = {
   checkInOnce: string | null;
   /** Today's SAST date, the check-in's default and latest. */
   today: string;
+  /** The 14 days before the last 14 (N2's RecentCounts.previous), or null when they couldn't be read (N4 plan decision 10). */
+  previous: Pick<EnquiryCounts, "enquiries" | "salesConfirmed"> | null;
+  /** The request's time, for the history's Today, Yesterday and This week. */
+  now: Date;
 };
 
+const BEFORE = `the ${MENTOR_WINDOW_DAYS} days before`;
+
 /**
- * A shop's mentor page (spec 2.6; plan decisions 15 and 16): its numbers and what its flags mean, its notes and
- * check-ins, newest first, and forms to add both. Notes are about the shop's owner, shared with every mentor and
- * admin who can open this page, and never shown to the seller. The words are samples for Lama to change.
+ * A shop's mentor page (staff tools spec 2.6; role views spec 7.3): its facts and numbers against the 14 days before,
+ * what its flags mean, the forms to add a note or a check-in, then what's been written, grouped by day. Notes are
+ * about the shop's owner, shared with every mentor and admin who can open this page, and never shown to the seller.
+ * The words are samples for Lama to change.
  */
-export function MentorShop({ shop, campusName, notes, noteForm, checkInForm, noteOnce, checkInOnce, today }: MentorShopProps) {
+export function MentorShop({
+  shop,
+  campusName,
+  notes,
+  noteForm,
+  checkInForm,
+  noteOnce,
+  checkInOnce,
+  today,
+  previous,
+  now,
+}: MentorShopProps) {
   const note = staffFieldIds(`note-${shop.slug}`);
   const checkIn = staffFieldIds(`check-in-${shop.slug}`);
   const noteError = errorFor(noteForm.errors, note.text);
@@ -38,10 +60,7 @@ export function MentorShop({ shop, campusName, notes, noteForm, checkInForm, not
   const checkInError = errorFor(checkInForm.errors, checkIn.text);
   return (
     <>
-      <section aria-labelledby={`mentor-${shop.slug}-shop-title`} className="staff-section">
-        <h2 id={`mentor-${shop.slug}-shop-title`} className="staff-section-title">
-          This shop
-        </h2>
+      <Card title="This shop" level={2}>
         <dl className="staff-facts">
           <div>
             <dt>Owner</dt>
@@ -57,25 +76,35 @@ export function MentorShop({ shop, campusName, notes, noteForm, checkInForm, not
           </div>
           <div>
             <dt>Status</dt>
-            <dd>{statusWords(shop.status)}</dd>
+            <dd>{shopStanding(shop.status, shop.pausedBy)}</dd>
           </div>
           <div>
             <dt>Badge</dt>
             <dd>{shop.badge ? badgeLabel(shop.badge) : "None"}</dd>
           </div>
           <div>
-            <dt>Enquiries (14 days)</dt>
-            <dd>{shop.counts.enquiries}</dd>
-          </div>
-          <div>
-            <dt>Replied within 48 hours</dt>
-            <dd>{repliesInTime(shop.counts)}</dd>
-          </div>
-          <div>
-            <dt>Sales confirmed (14 days)</dt>
-            <dd>{shop.counts.salesConfirmed}</dd>
+            <dt>Last check-in</dt>
+            <dd>{shop.lastCheckInOn ? longSastDate(`${shop.lastCheckInOn}T10:00:00Z`) : "None yet"}</dd>
           </div>
         </dl>
+        <StatRow label={`Last ${MENTOR_WINDOW_DAYS} days`}>
+          <StatTile
+            label="Enquiries"
+            value={shop.counts.enquiries}
+            delta={{ previous: previous?.enquiries ?? null, period: BEFORE }}
+          />
+          <div className="stat-tile">
+            <span className="stat-tile-label">Replied within 48 hours</span>
+            <span className="stat-tile-value" data-masked="">
+              {repliesInTime(shop.counts)}
+            </span>
+          </div>
+          <StatTile
+            label="Sales confirmed"
+            value={shop.counts.salesConfirmed}
+            delta={{ previous: previous?.salesConfirmed ?? null, period: BEFORE }}
+          />
+        </StatRow>
         {shop.flags.length === 0 ? (
           <p>No flags.</p>
         ) : (
@@ -99,32 +128,7 @@ export function MentorShop({ shop, campusName, notes, noteForm, checkInForm, not
             </Link>
           )}
         </p>
-      </section>
-
-      <section id={`mentor-${shop.slug}-notes`} aria-labelledby={`mentor-${shop.slug}-notes-title`} className="staff-section">
-        <h2 id={`mentor-${shop.slug}-notes-title`} className="staff-section-title">
-          Notes and check-ins
-        </h2>
-        {notes.length === 0 ? (
-          <p className="staff-empty">Nothing written yet.</p>
-        ) : (
-          <ul className="staff-notes">
-            {notes.map((item) => (
-              <li key={item.id} className="staff-note">
-                <p className="staff-note-kind">
-                  {item.kind === "check-in" && item.checkInOn
-                    ? `Check-in on ${longSastDate(`${item.checkInOn}T10:00:00Z`)}`
-                    : "Note"}
-                </p>
-                <p className="staff-prewrap">{item.text}</p>
-                <p className="staff-muted">
-                  {item.authorName}, <time dateTime={item.createdAt}>{shortSastDate(item.createdAt)}</time>
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      </Card>
 
       <section id={`mentor-${shop.slug}-add-note`} aria-labelledby={`mentor-${shop.slug}-add-note-title`} className="staff-section">
         <h2 id={`mentor-${shop.slug}-add-note-title`} className="staff-section-title">
@@ -153,9 +157,9 @@ export function MentorShop({ shop, campusName, notes, noteForm, checkInForm, not
               className="form-input staff-textarea"
             />
           </div>
-          <button type="submit" className="btn btn-primary form-submit">
+          <PendingButton className="btn btn-primary form-submit" pendingLabel="Saving the note…">
             Add a note <span className="sr-only">about {shop.name}</span>
-          </button>
+          </PendingButton>
         </form>
       </section>
 
@@ -207,10 +211,41 @@ export function MentorShop({ shop, campusName, notes, noteForm, checkInForm, not
               className="form-input staff-textarea"
             />
           </div>
-          <button type="submit" className="btn btn-outline text-navy form-submit">
+          <PendingButton className="btn btn-outline text-navy form-submit" pendingLabel="Saving the check-in…">
             Add a check-in <span className="sr-only">for {shop.name}</span>
-          </button>
+          </PendingButton>
         </form>
+      </section>
+
+      <section id={`mentor-${shop.slug}-notes`} aria-labelledby={`mentor-${shop.slug}-notes-title`} className="staff-section">
+        <h2 id={`mentor-${shop.slug}-notes-title`} className="staff-section-title">
+          Notes and check-ins
+        </h2>
+        {notes.length === 0 ? (
+          <p className="staff-empty">Nothing written yet.</p>
+        ) : (
+          <Feed
+            label="Notes and check-ins by day"
+            now={now}
+            items={notes.map((item) => ({
+              id: item.id,
+              at: item.createdAt,
+              content: (
+                <div className="staff-note">
+                  <p className="staff-note-kind">
+                    {item.kind === "check-in" && item.checkInOn
+                      ? `Check-in on ${longSastDate(`${item.checkInOn}T10:00:00Z`)}`
+                      : "Note"}
+                  </p>
+                  <p className="staff-prewrap">{item.text}</p>
+                  <p className="staff-muted">
+                    {item.authorName}, <time dateTime={item.createdAt}>{shortSastDate(item.createdAt)}</time>
+                  </p>
+                </div>
+              ),
+            }))}
+          />
+        )}
       </section>
     </>
   );

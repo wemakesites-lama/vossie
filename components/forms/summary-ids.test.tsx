@@ -299,6 +299,8 @@ describe("error summary ids (accounts spec 6)", () => {
           noteOnce="0b9d6a1c-2f4e-4c7a-8d15-3e2a7c9b1f60"
           checkInOnce="9a3c1d5e-7b2f-4e8a-b6d4-1c0e5f7a2d83"
           today="2026-10-14"
+          previous={null}
+          now={new Date("2026-10-14T08:42:00.000Z")}
         />
         <RequestFormView
           requestId={null}

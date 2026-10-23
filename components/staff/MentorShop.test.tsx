@@ -31,6 +31,8 @@ async function show(forms: { note?: FormView; checkIn?: FormView; noteOnce?: str
       noteOnce={forms.noteOnce === undefined ? NOTE_ONCE : forms.noteOnce}
       checkInOnce={forms.checkInOnce === undefined ? CHECK_IN_ONCE : forms.checkInOnce}
       today="2026-10-14"
+      previous={{ enquiries: 0, salesConfirmed: 0 }}
+      now={NOW}
     />,
   );
 }
@@ -45,10 +47,11 @@ describe("a shop's mentor page (staff tools spec 2.6, plan decisions 15 and 16)"
     expect(within(facts).getByText("No flags.")).toBeInTheDocument();
   });
 
-  it("explains each flag", async () => {
+  it("explains each flag, and says whose pause it is", async () => {
     sampleStore().sellerProfiles.get("acc-seller")!.status = "paused";
     await show();
-    expect(screen.getByText("Paused by the seller")).toBeInTheDocument();
+    expect(screen.getByText("Paused by the seller", { selector: "dt" })).toBeInTheDocument();
+    expect(screen.getByText("Paused by the seller", { selector: "dd" })).toBeInTheDocument();
     expect(screen.getByText("The seller paused the shop, so buyers can't see its listings until they resume it.")).toBeInTheDocument();
   });
 
