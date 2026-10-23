@@ -1022,8 +1022,35 @@ Review notes that were deliberately not acted on:
 
 **Next.** N5, You, can be planned.
 
+## 2026-10-23: Role views N5 built (the buyer's You); the role views redesign is finished
+Written here because another session has uncommitted edits in `docs/PROGRESS.md`. Paste it before "## Next" there, and replace "## Next"'s N5 line.
+
+## 2026-10-23: Role views N5 built (You); the role views redesign is finished
+
+**Built.** `/account` is You: "Hi, {first name}" and the campus; For you (conversations with new messages, new offers, new saved-search matches, followed shops' new listings), which marks nothing read; a banner while an open request is in its last 2 days; Your stuff (Messages, Notifications, Saved on this device and followed shops, Your requests, Saved searches, Hub bookings, Your shop for sellers, staff tools by role); Settings (Your details, Privacy, Sign out). Edit details moved to Your details at `/account/details`. The You tab and the header's account icon show one badge, For you's sum ("N things for you"); a new offer counts once. `listOwnBookings` and `newNotificationsByKind` on both backends, with contract tests. Looking For is in the menu beside Hub and in the header's quick links; the board shows a signed-in asker "Your requests (N open)"; `savedItemsBack` is gone; the home strip links new notifications to Notifications. The privacy page says You counts the saved-listings cookie.
+
+**Where the build differed from the plan.** Tests that restated others were left out (Lama's speed rule); the HTML gate measures what You added over the old account page (7,985 B for the admin); AccountSkeleton's form block is 1rem shorter so it stays under Your details at 1440; the staff row reads "Hub console" (`AREA_HOME`); no screenshots. Details in the N5 plan's "Changes made during the build".
+
+**Checks.** Lint and types clean. Unit: 3,443 tests, 425 files. E2E (you, accounts, a11y, messaging, sign-in-return, account-delete-return, routes, shell, home, community, cls, performance, role-views at 360, 390, 768, 1024 and 1440): 1,047 passed; the 3 new-test failures were fixed and pass, and the signed-out /sell pitch at 390 (0.0598) predates N1. community-writes and role-views-writes: 19 passed. Local Supabase: 47 passed, 1 fixed (an email lookup that moved to Your details). Layout shift on You at most 0.0106 (360), 0.0000 on a slow network and at 375x667. JS: every page +401 B brotli against N4 (the new Looking For links), all inside 150 KB. The header's quick links stay on one row at 1024 and 1440.
+
+**The role views redesign, N1 to N5, is finished.** N1 the kit and section bars (sell, admin, mentor; a sidebar from the tablet step; "You" in the tab bar); N2 the seller home (Needs you, mark sold from a thread); N3 the admin's Today (one queue, protected numbers, Next in queue, campus chips); N4 the mentor's caseload (most in need first, check-ins, enquiry charts); N5 the buyer's You. Every page stays inside the 150 KB first-visit JS budget.
+
+**Open points for Lama.**
+- N5 plan decisions 1 (the offers row counts new offers), 7 (one badge for the tab and the header icon), 10 (Looking For in the header), 12 (the strip's lines on the server) and 19 (notification-only accounts now get the "Welcome back" strip).
+- The sample words on You (for example "Saved 0 listings on this device · 0 shops followed", "None yet").
+- No N5 screenshots; `SCREENSHOTS=1` with Task 13's shots can make them later.
+
+**Known items, carried.**
+- The signed-out /sell pitch shifts about 0.06 at 390 while its font swaps in (predates N1).
+- Next.js's security notice at build time: an upgrade is waiting for your go-ahead (builds pass on a retry).
+- The local Supabase seed data has drifted: a badge differs in the mentors.db contract test (data, not code).
+- A previous mentor's notification still links to a shop they no longer mentor (accepted).
+- Today's Shops row can open the admin's own shop (accepted; the decision itself is refused in the action).
+
+**Next.** The role views are done: Lama's review of the open points above, then the go-live gates.
+
 ## Next
-- **Role views: N5, the buyer's You, is next** (`docs/superpowers/plans/` has N5). N1 (the kit), N2 (the seller home), N3 (the admin's Today) and N4 (the mentor's caseload) are built (above).
+- **Role views are finished:** N1 (the kit), N2 (the seller home), N3 (the admin's Today), N4 (the mentor's caseload) and N5 (the buyer's You) are built (above). Open: Lama's call on the Next.js upgrade the build's security notice offers, and the signed-out `/sell` pitch's font shift at 390.
 - **Every planned stage (A to M) is built in sample mode** and merged into `main`. The four phone e2e failures that predated stage L are fixed (`d13321b`). The full device suite last ran before stage M: rerun it once before go-live.
 - **The Supabase backend is finished, merged into `main` and pushed** (above), with the CampusCart rename: `main` and `origin/main` are at `88ba438`.
 - **Going live** (submission: vossie-pi.vercel.app on the "Vossie Market" project):
