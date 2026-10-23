@@ -1,9 +1,11 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect, RedirectType } from "next/navigation";
 import { getCampuses } from "@/lib/data";
 import { updateAccountDetails } from "@/lib/data/accounts";
 import type { SignInError } from "@/lib/data/rows";
+import { DETAILS_PATH } from "@/lib/you/paths";
 import { signInMode } from "./config";
 import { checkEmail, normaliseEmail } from "./email";
 import { DETAILS_FORM, writeFormState } from "./form-state";
@@ -79,9 +81,12 @@ export async function cancelSignIn(formData: FormData): Promise<void> {
 
 // --- Your account ---------------------------------------------------------------
 
-/** "Edit details" on the account page (spec 3.2): the first name and the campus, checked as step 3 checks them. */
+/**
+ * "Edit details" on Your details (spec 3.2; role views spec 7.4): the first name and the campus, checked as step 3
+ * checks them.
+ */
 export async function updateDetails(formData: FormData): Promise<void> {
-  const account = await requireAccount("/account");
+  const account = await requireAccount(DETAILS_PATH);
   const now = new Date();
   const name = checkFirstName(text(formData, "firstName"));
   const campuses = await getCampuses();
@@ -97,5 +102,7 @@ export async function updateDetails(formData: FormData): Promise<void> {
     // "Your details are saved." is a line on the page, not a toast, so the page needs no client code (plan decision 13).
     await writeFormState(DETAILS_FORM, { errors: [], values: {}, notice: "saved" }, now);
   }
-  redirect("/account", RedirectType.replace);
+  // Drop the browser's kept pages, so Back to You shows the new name and campus (role views N5).
+  refresh();
+  redirect(DETAILS_PATH, RedirectType.replace);
 }

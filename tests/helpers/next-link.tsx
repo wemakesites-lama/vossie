@@ -13,17 +13,23 @@ export const nextLinkShowingPrefetch = {
     href,
     prefetch,
     children,
+    transitionTypes,
     ...rest
   }: {
     href: string;
     prefetch?: boolean | null;
     children?: ReactNode;
     className?: string;
-  }) => (
-    <a href={href} data-prefetch={prefetch === undefined ? "auto" : String(prefetch)} {...rest}>
-      {children}
-    </a>
-  ),
+    transitionTypes?: readonly string[];
+  }) => {
+    // next/link's own prop (N1's ListRow and NeedsYouList pass it): not an attribute of the <a>.
+    void transitionTypes;
+    return (
+      <a href={href} data-prefetch={prefetch === undefined ? "auto" : String(prefetch)} {...rest}>
+        {children}
+      </a>
+    );
+  },
 };
 
 /** The links in `container` that would prefetch: Next's default (the attribute says "auto") or `true`. */

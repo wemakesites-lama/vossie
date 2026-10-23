@@ -67,11 +67,9 @@ describe("the message read twins on the local stack (C2/C3 plan Task 14)", () =>
   it("gives the context strip's numbers from the same counts, writing nothing (getAccountActivity, amendment 11)", async () => {
     await world.markDone(conversation, new Date(Date.now() - 8 * DAY));
     const shopper = await world.signedIn("shopper");
-    expect(await world.asViewer("shopper", () => getAccountActivity(shopper, new Date()))).toEqual({
-      newMessages: 1,
-      salesToConfirm: 0,
-      savedItemsBack: 0,
-    });
+    const activity = await world.asViewer("shopper", () => getAccountActivity(shopper, new Date()));
+    expect(activity).toMatchObject({ newMessages: 1, salesToConfirm: 0 });
+    expect(Object.keys(activity!).sort()).toEqual(["newMessages", "newNotifications", "salesToConfirm"]);
     // The header's numbers settle nothing: the sale is still stored as done until something reads the thread.
     const row = await world.admin.from("conversations").select("status").eq("id", conversation).single();
     expect(row.data?.status).toBe("done");

@@ -9,7 +9,7 @@ import { getCampuses } from "./index";
 /** Activity worth a "Welcome back" strip: any number above zero. Otherwise the strip falls back (accounts spec 3.4). */
 function worthShowing(activity: ViewerActivity | null): ViewerActivity | null {
   if (!activity) return null;
-  return activity.newMessages + activity.salesToConfirm + activity.savedItemsBack > 0 ? activity : null;
+  return activity.newMessages + activity.salesToConfirm + activity.newNotifications > 0 ? activity : null;
 }
 
 /**

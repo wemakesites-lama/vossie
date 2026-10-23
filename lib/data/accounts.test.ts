@@ -108,9 +108,9 @@ describe("accounts (accounts spec 2.6 and 2.9)", () => {
     expect(await updateAccountDetails("acc-nope", { firstName: "Zola", campusSlug: "pretoria" })).toBeNull();
   });
 
-  it("counts new messages and sales to confirm for the context strip (spec 2.9, messaging spec 3.6)", async () => {
-    expect(await getAccountActivity("acc-student", NOW)).toEqual({ newMessages: 1, salesToConfirm: 1, savedItemsBack: 0 });
-    expect(await getAccountActivity("acc-mentor", NOW)).toEqual({ newMessages: 0, salesToConfirm: 0, savedItemsBack: 0 });
+  it("counts new messages, sales to confirm and new notifications for the context strip (spec 2.9; role views N5)", async () => {
+    expect(await getAccountActivity("acc-student", NOW)).toEqual({ newMessages: 1, salesToConfirm: 1, newNotifications: 2 });
+    expect(await getAccountActivity("acc-mentor", NOW)).toEqual({ newMessages: 0, salesToConfirm: 0, newNotifications: 0 });
     expect(await getAccountActivity("acc-nope", NOW)).toBeNull();
   });
 

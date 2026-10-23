@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { AccountView, detailsForm } from "@/components/account/AccountView";
+import { DetailsView, detailsForm } from "@/components/account/DetailsView";
 import { PrivacySettingsView } from "@/components/account/PrivacySettingsView";
 import { CodeStep, EmailStep, ProfileStep } from "@/components/auth/SignInSteps";
 import { OfferView } from "@/components/looking-for/OfferView";
@@ -219,12 +219,7 @@ describe("error summary ids (accounts spec 6)", () => {
         <EmailStep next={null} email="" consented={false} errors={oops} samples={null} />
         <CodeStep next={null} maskedEmail="t•••@eduvos.com" errors={oops} resent={false} sampleCode={null} />
         <ProfileStep next={null} firstName="" campus="" campuses={campuses} errors={oops} />
-        <AccountView
-          account={account}
-          campuses={campuses}
-          details={{ ...detailsForm(account, null), errors: oops }}
-          counts={{ conversations: 0, notifications: 0 }}
-        />
+        <DetailsView account={account} campuses={campuses} details={{ ...detailsForm(account, null), errors: oops }} />
         <PrivacySettingsView consent={null} deleteErrors={oops} reports={[]} />
         <ComposerView subject={composer} status={{ kind: "open" }} form={composerWithErrors} />
         <ThreadView

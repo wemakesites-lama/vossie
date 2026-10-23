@@ -10,7 +10,7 @@ vi.mock("@/lib/data/viewer", () => ({
   getViewerContext: async () => ({
     campus: "all",
     signedIn: viewer.signedIn,
-    activity: viewer.signedIn ? { newMessages: 2, salesToConfirm: 1, savedItemsBack: 1 } : null,
+    activity: viewer.signedIn ? { newMessages: 2, salesToConfirm: 1, newNotifications: 3 } : null,
   }),
 }));
 
@@ -30,21 +30,22 @@ describe("ContextStripView (spec 7.4)", () => {
     expect(screen.getByRole("link", { name: "Casio calculator" })).toHaveAttribute("href", "/listings/l-001");
   });
 
-  it("shows activity when signed in", () => {
-    render(<ContextStripView activity={{ newMessages: 2, salesToConfirm: 1, savedItemsBack: 1 }} />);
+  it("places the server's lines when signed in, with the inbox link", () => {
+    render(<ContextStripView activity={<ul className="context-activity"><li>2 new messages</li></ul>} />);
     expect(screen.getByRole("heading", { level: 2, name: "Welcome back" })).toBeInTheDocument();
     expect(screen.getByText("2 new messages")).toBeInTheDocument();
-    expect(screen.getByText("1 sale to confirm")).toBeInTheDocument();
-    expect(screen.getByText("1 saved item is back")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open inbox" })).toHaveAttribute("href", "/messages");
   });
 });
 
 describe("ContextStripContent", () => {
-  it("passes the viewer's activity to the strip", async () => {
+  it("draws the viewer's activity on the server and hands it to the strip", async () => {
     viewer.signedIn = true;
     render(await ContextStripContent());
     expect(screen.getByRole("heading", { level: 2, name: "Welcome back" })).toBeInTheDocument();
+    expect(screen.getByText("2 new messages")).toBeInTheDocument();
+    expect(screen.getByText("1 sale to confirm")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "3 new notifications" })).toHaveAttribute("href", "/notifications");
   });
 
   it("shows the trust strip to a signed-out first visitor", async () => {

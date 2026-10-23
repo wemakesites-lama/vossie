@@ -1,15 +1,12 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { campuses } from "@/data/fixtures/campuses";
-import type { FormStateRow } from "@/lib/data/rows";
+import { dayMonth } from "@/lib/format";
 import type { Account } from "@/lib/types";
-import { AccountView, detailsForm } from "./AccountView";
+import { forYouItems, type ForYou, type YourStuff } from "@/lib/you/model";
+import { YouView } from "./AccountView";
 
-// next/link draws a plain <a> in jsdom; this one shows `prefetch` as data, for the test that checks the staff rows.
+// next/link draws a plain <a> in jsdom; this one shows `prefetch` as data, for the tests that check it.
 vi.mock("next/link", async () => (await import("@/tests/helpers/next-link")).nextLinkShowingPrefetch);
-
-// The forms only need something to post to; the actions have their own tests.
-vi.mock("@/lib/auth/actions", () => ({ updateDetails: async () => {} }));
 
 const account: Account = {
   id: "acc-student",
@@ -21,150 +18,129 @@ const account: Account = {
   createdAt: "2026-09-01T07:30:00.000Z",
 };
 
-const state = (fields: Partial<FormStateRow>): FormStateRow => ({
-  key: "session-key:details",
-  sessionKey: "session-key",
-  form: "details",
-  errors: [],
-  values: {},
-  notice: null,
-  expiresAt: "2099-01-01T00:00:00.000Z",
-  ...fields,
-});
+const quiet: ForYou = { items: forYouItems({ conversations: 0, byKind: {} }), conversations: 0, newNotifications: 0 };
+const busy: ForYou = {
+  items: forYouItems({
+    conversations: 2,
+    byKind: { "search-match": { count: 1, newestHref: "/listings/l-001", newestText: "A calculator matches your search" } },
+  }),
+  conversations: 2,
+  newNotifications: 3,
+};
+const empty: YourStuff = {
+  savedListings: 0,
+  followedShops: 0,
+  requests: { open: 0, closed: 0, hidden: 0 },
+  closingSoon: null,
+  searches: { count: 0, alertsOn: 0 },
+  bookings: [],
+};
 
-function renderAccount(
-  who: Account = account,
-  formState: FormStateRow | null = null,
-  counts = { conversations: 0, notifications: 0 },
-) {
-  return render(
-    <AccountView account={who} campuses={campuses} details={detailsForm(who, formState)} counts={counts} />,
-  );
+function renderYou({
+  who = account,
+  forYou = quiet,
+  stuff = empty,
+}: { who?: Account; forYou?: ForYou | null; stuff?: YourStuff | null } = {}) {
+  return render(<YouView account={who} campusName="Midrand" forYou={forYou} stuff={stuff} />);
 }
 
-describe("Your account (accounts spec 3.2)", () => {
-  it("shows the first name, the email, the campus and when they joined", () => {
-    renderAccount();
-    expect(screen.getByRole("heading", { level: 2, name: "Thandi" })).toBeInTheDocument();
-    expect(screen.getByText("Email").nextElementSibling).toHaveTextContent("student@eduvos.com");
-    expect(screen.getByText("Campus").nextElementSibling).toHaveTextContent("Midrand");
-    expect(screen.getByText("Member since September 2026")).toBeInTheDocument();
-    expect(screen.queryByText("Hub role")).toBeNull();
+/** A card's rows as [title, address]. */
+function rowsIn(card: string) {
+  return within(screen.getByRole("region", { name: card }))
+    .getAllByRole("link")
+    .map((link) => [link.querySelector(".list-row-title")?.textContent, link.getAttribute("href")]);
+}
+
+describe("You (role views spec 7.4)", () => {
+  it("greets the student by first name, with their campus", () => {
+    renderYou();
+    expect(screen.getByRole("heading", { level: 1, name: "Hi, Thandi" })).toBeInTheDocument();
+    expect(screen.getByText("Midrand")).toBeInTheDocument();
   });
 
-  it("starts Edit details on the account's details", () => {
-    renderAccount();
-    const edit = screen.getByRole("region", { name: "Edit details" });
-    expect(within(edit).getByLabelText("Your first name")).toHaveValue("Thandi");
-    expect(within(edit).getByRole("combobox", { name: "Your campus" })).toHaveValue("midrand");
-    expect(within(edit).getByRole("button", { name: "Save changes" })).toHaveAttribute("type", "submit");
-    expect(screen.queryByRole("status")).toBeNull();
-    expect(screen.queryByRole("alert")).toBeNull();
+  it("lists only what's waiting, each one link", () => {
+    renderYou({ forYou: busy });
+    const list = screen.getByRole("list", { name: "For you" });
+    const links = within(list).getAllByRole("link");
+    expect(links.map((link) => link.getAttribute("href"))).toEqual(["/messages", "/notifications"]);
+    expect(links[0]).toHaveAccessibleName(/2\s*Conversations with new messages/);
+    expect(links[1]).toHaveAccessibleName(/1\s*New match for your saved searches\s*A calculator matches your search/);
   });
 
-  it("says when the details were saved (plan decision 13)", () => {
-    renderAccount(account, state({ notice: "saved" }));
-    expect(screen.getByRole("status")).toHaveTextContent("Your details are saved.");
-  });
-
-  it("shows what was typed and what's wrong after a failed save", () => {
-    renderAccount(account, state({ errors: ["first-name-length", "campus-missing"], values: { firstName: "T", campus: "" } }));
-    expect(screen.getByRole("alert", { name: "There's a problem" })).toBeInTheDocument();
-    const name = screen.getByLabelText("Your first name");
-    expect(name).toHaveValue("T");
-    expect(name).toHaveAccessibleDescription(
-      "Sellers see it when you message them. 2 to 40 characters. Error: Your first name must be 2 to 40 characters.",
-    );
-    expect(screen.getByRole("combobox", { name: "Your campus" })).toHaveValue("");
-  });
-
-  it("links to messages, notifications, Saved, Your requests, selling and privacy settings, and offers Sign out (messaging spec 3.6; community actions amendment 11)", () => {
-    renderAccount();
-    const pages = screen.getByRole("navigation", { name: "Your account's pages" });
-    expect(within(pages).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
+  it("lists Your stuff in order, the Messages and Notifications rows counting from For you", () => {
+    renderYou({ forYou: busy });
+    expect(rowsIn("Your stuff")).toEqual([
       ["Messages", "/messages"],
       ["Notifications", "/notifications"],
       ["Saved", "/saved"],
       ["Your requests", "/account/requests"],
-      ["Start selling", "/sell"],
-      ["Privacy settings", "/account/privacy"],
+      ["Saved searches", "/saved?tab=searches"],
+      ["Hub bookings", "/hub"],
     ]);
-    expect(screen.getByRole("button", { name: "Sign out" })).toHaveAttribute("type", "submit");
-    expect(screen.getByRole("button", { name: "Sign out" }).closest("form")).toHaveAttribute("action", "/logout");
+    expect(screen.getByRole("link", { name: /^Messages\s+2 unread$/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Notifications\s+3 new$/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Saved\s+0 listings on this device · 0 shops followed$/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Hub bookings\s+Nothing coming up$/ })).toBeInTheDocument();
   });
 
-  it("points a seller at their shop's pages, and says when it's waiting or paused (selling plan decision 21)", () => {
-    const approved = renderAccount({ ...account, seller: { status: "approved", sellerSlug: "tech-corner" } });
-    expect(screen.getByRole("link", { name: "Your shop" })).toHaveAttribute("href", "/sell");
-    approved.unmount();
-    const pending = renderAccount({ ...account, seller: { status: "pending", sellerSlug: null } });
-    expect(screen.getByRole("link", { name: /^Your shop\s*,\s*Waiting for the Hub's approval$/ })).toHaveAttribute(
-      "href",
-      "/sell",
-    );
-    pending.unmount();
-    renderAccount({ ...account, seller: { status: "paused", sellerSlug: "tech-corner" } });
-    expect(screen.getByRole("link", { name: /^Your shop\s*,\s*Paused$/ })).toHaveAttribute("href", "/sell");
-  });
-
-  it("names a mentor's or an admin's Hub role (plan decision 16)", () => {
-    renderAccount({ ...account, roles: ["admin"] });
-    expect(screen.getByText("Hub role").nextElementSibling).toHaveTextContent("Admin");
-  });
-
-  it("links staff to the tools their roles open (staff tools plan decision 19)", () => {
-    renderAccount({ ...account, roles: ["admin"] });
-    const rows = screen.getByRole("navigation", { name: "Your account's pages" });
-    expect(within(rows).getByRole("link", { name: "Hub console" })).toHaveAttribute("href", "/admin");
-    expect(within(rows).getByRole("link", { name: "Hub posts and office hours" })).toHaveAttribute("href", "/hub/manage");
-    expect(within(rows).getByRole("link", { name: "Mentor dashboard" })).toHaveAttribute("href", "/mentor");
-  });
-
-  it("gives a mentor the Hub's tools and the dashboard, and a student no staff rows", () => {
-    const { unmount } = renderAccount({ ...account, roles: ["mentor"] });
-    expect(screen.queryByRole("link", { name: "Hub console" })).toBeNull();
-    expect(screen.getByRole("link", { name: "Hub posts and office hours" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Mentor dashboard" })).toBeInTheDocument();
-    unmount();
-    renderAccount();
-    expect(screen.queryByRole("link", { name: "Hub posts and office hours" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Mentor dashboard" })).toBeNull();
-  });
-
-  it("lists the staff rows after Your shop and before Privacy settings, in a fixed order", () => {
-    renderAccount({ ...account, roles: ["admin"] });
-    const pages = screen.getByRole("navigation", { name: "Your account's pages" });
-    expect(within(pages).getAllByRole("link").map((link) => link.textContent)).toEqual([
-      "Messages",
-      "Notifications",
-      "Saved",
-      "Your requests",
-      "Start selling",
-      "Hub console",
-      "Hub posts and office hours",
-      "Mentor dashboard",
-      "Privacy settings",
-    ]);
-  });
-
-  it("never prefetches the staff rows: every staff page reads the session (staff tools plan decision 19)", () => {
-    renderAccount({ ...account, roles: ["admin"] });
-    for (const name of ["Hub console", "Hub posts and office hours", "Mentor dashboard"]) {
-      expect(screen.getByRole("link", { name }).dataset.prefetch, name).toBe("false");
+  it("never prefetches a row (decision 53; staff pages read the session)", () => {
+    renderYou({ who: { ...account, roles: ["admin"], seller: { status: "approved", sellerSlug: "tech-corner" } } });
+    for (const link of within(screen.getByRole("region", { name: "Your stuff" })).getAllByRole("link")) {
+      expect(link.dataset.prefetch, link.textContent ?? "").toBe("false");
     }
   });
 
-  it("links to Your requests, with no prefetch: the page reads the session (community actions spec 2.13)", () => {
-    renderAccount();
-    const rows = screen.getByRole("navigation", { name: "Your account's pages" });
-    const link = within(rows).getByRole("link", { name: "Your requests" });
-    expect(link).toHaveAttribute("href", "/account/requests");
-    expect(link.dataset.prefetch).toBe("false");
+  it("shows Your shop only to a seller, with where it stands (plan decision 5)", () => {
+    const student = renderYou();
+    expect(screen.queryByRole("link", { name: /^Your shop/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Start selling/ })).toBeNull();
+    student.unmount();
+    const waiting = renderYou({ who: { ...account, seller: { status: "pending", sellerSlug: null } } });
+    expect(screen.getByRole("link", { name: /^Your shop\s+Waiting for the Hub's approval$/ })).toHaveAttribute("href", "/sell");
+    waiting.unmount();
+    renderYou({ who: { ...account, seller: { status: "paused", sellerSlug: "tech-corner" } } });
+    expect(screen.getByRole("link", { name: /^Your shop\s+Paused$/ })).toHaveAttribute("href", "/sell");
   });
 
-  it("says how many conversations are unread and how many notifications are new (messaging spec 3.6)", () => {
-    renderAccount(account, null, { conversations: 2, notifications: 3 });
-    expect(screen.getByRole("link", { name: /^Messages\s*,\s*2 unread$/ })).toHaveAttribute("href", "/messages");
-    expect(screen.getByRole("link", { name: /^Notifications\s*,\s*3 new$/ })).toHaveAttribute("href", "/notifications");
+  it("gives staff their tools by role, after Your shop (plan decision 6)", () => {
+    const admin = renderYou({ who: { ...account, roles: ["admin"] } });
+    expect(rowsIn("Your stuff").slice(6)).toEqual([
+      ["Hub console", "/admin"],
+      ["Hub posts and office hours", "/hub/manage"],
+      ["Mentor dashboard", "/mentor"],
+    ]);
+    admin.unmount();
+    renderYou({ who: { ...account, roles: ["mentor"] } });
+    expect(rowsIn("Your stuff").slice(6)).toEqual([
+      ["Hub posts and office hours", "/hub/manage"],
+      ["Mentor dashboard", "/mentor"],
+    ]);
+  });
+
+  it("warns when a request closes soon, linking to Your requests (plan decision 8)", () => {
+    renderYou({ stuff: { ...empty, requests: { open: 1, closed: 0, hidden: 0 }, closingSoon: { title: "Desk lamp", closesOn: "2026-10-24", count: 1 } } });
+    expect(screen.getByText(`Your request Desk lamp closes automatically on ${dayMonth("2026-10-24")}.`, { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Your requests" })).toHaveAttribute("href", "/account/requests");
+  });
+
+  it("ends with Settings: Your details, Privacy and Sign out", () => {
+    renderYou();
+    expect(rowsIn("Settings")).toEqual([
+      ["Your details", "/account/details"],
+      ["Privacy", "/account/privacy"],
+    ]);
+    const signOut = screen.getByRole("button", { name: "Sign out" });
+    expect(signOut).toHaveAttribute("type", "submit");
+    expect(signOut.closest("form")).toHaveAttribute("action", "/logout");
+    expect(signOut.closest("form")).toHaveAttribute("method", "post");
+  });
+
+  it("keeps working when a reader fails: that card says so, the rest stays (role views spec 8)", () => {
+    renderYou({ forYou: null, stuff: null });
+    expect(within(screen.getByRole("region", { name: "For you" })).getByText("For you didn't load.")).toBeInTheDocument();
+    const stuff = screen.getByRole("region", { name: "Your stuff" });
+    expect(within(stuff).getByRole("link", { name: "Messages" })).toHaveAttribute("href", "/messages");
+    expect(within(stuff).getByText("Your saved things, requests and bookings didn't load.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
   });
 });

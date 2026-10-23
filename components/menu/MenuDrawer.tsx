@@ -128,6 +128,12 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
                 <NavLink href="/hub">Hub</NavLink>
               </li>
               <li>
+                {/* No prefetch (decision 53): the menu's links come into view together when it opens. */}
+                <NavLink href="/looking-for" prefetch={false}>
+                  Looking For
+                </NavLink>
+              </li>
+              <li>
                 <NavLink href="/how-it-works">How it works</NavLink>
               </li>
               <li>

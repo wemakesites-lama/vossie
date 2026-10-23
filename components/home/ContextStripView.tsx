@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { FlagIcon, MapPinIcon, ShieldIcon } from "@/components/icons";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import type { ViewedItem } from "@/lib/recently-viewed";
-import type { ViewerActivity } from "@/lib/types";
 import { Photo } from "@/components/listings/Photo";
 
 // Phones and tablets get the short words; the desktop strip has room for the long ones.
@@ -15,12 +15,12 @@ const TRUST = [
 ];
 
 /**
- * The strip under the hero (spec 7.4): activity when signed in, otherwise the listings viewed on this device,
+ * The strip under the hero (spec 7.4): activity when signed in (lines drawn on the server), otherwise the listings viewed on this device,
  * otherwise the trust strip. Every state has the same minimum height, so swapping after hydration moves nothing.
  */
-export function ContextStripView({ activity }: { activity: ViewerActivity | null }) {
+export function ContextStripView({ activity }: { activity: ReactNode }) {
   const viewed = useRecentlyViewed();
-  if (activity) return <SignedInStrip activity={activity} viewed={viewed} />;
+  if (activity) return <SignedInStrip lines={activity} viewed={viewed} />;
   if (viewed.length > 0) return <ReturningStrip viewed={viewed} />;
   return <TrustStrip />;
 }
@@ -60,28 +60,14 @@ function ReturningStrip({ viewed }: { viewed: readonly ViewedItem[] }) {
   );
 }
 
-function SignedInStrip({ activity, viewed }: { activity: ViewerActivity; viewed: readonly ViewedItem[] }) {
-  const lines = [
-    activity.newMessages > 0 && `${activity.newMessages} new ${activity.newMessages === 1 ? "message" : "messages"}`,
-    activity.salesToConfirm > 0 &&
-      `${activity.salesToConfirm} ${activity.salesToConfirm === 1 ? "sale" : "sales"} to confirm`,
-    activity.savedItemsBack > 0 &&
-      `${activity.savedItemsBack} saved ${activity.savedItemsBack === 1 ? "item is" : "items are"} back`,
-  ].filter((line): line is string => Boolean(line));
-
+function SignedInStrip({ lines, viewed }: { lines: ReactNode; viewed: readonly ViewedItem[] }) {
   return (
     <div className="context-strip context-signed-in surface-navy">
       <h2 id="context-title" className="context-welcome">
         Welcome back
       </h2>
-      <ul className="context-activity">
-        {lines.map((line) => (
-          <li key={line}>
-            <span className="context-dot" aria-hidden="true" />
-            {line}
-          </li>
-        ))}
-      </ul>
+      {/* The lines come drawn from the server (ActivityLines, role views N5). */}
+      {lines}
       {viewed.length > 0 && <ViewedThumbs viewed={viewed} />}
       {/* No prefetch (CLAUDE.md, decision 53). The inbox is messaging's (messaging spec 3.6). */}
       <Link href="/messages" prefetch={false} className="context-link">

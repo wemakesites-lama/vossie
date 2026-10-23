@@ -2040,7 +2040,8 @@
      composer are the same (community actions plan, Task 23): their skeletons are shorter or taller than a note, a
      list of one request or a form, so the footer moved by up to 0.16 at 390 and 0.055 at 1440. So are messaging's
      inbox, thread and notifications, whose rows are fewer than their skeleton's (0.09 at 390 and 0.05 at 1440 on a
-     slow network, measured as the Seller with the sample data). */
+     slow network, measured as the Seller with the sample data). So is You (role views N5), whose skeleton is shorter
+     than any of its states. */
   .page-fallback,
   .saved-page,
   .browse,
@@ -2049,6 +2050,7 @@
   .offer-page,
   .inbox-page,
   .thread-page,
+  .you-page,
   .notes-page {
     --screen-header: 64px;
     min-height: calc(100vh - var(--screen-header));
@@ -2064,6 +2066,7 @@
     .offer-page,
     .inbox-page,
     .thread-page,
+    .you-page,
     .notes-page {
       --screen-header: 78px;
     }
@@ -2078,6 +2081,7 @@
     .offer-page,
     .inbox-page,
     .thread-page,
+    .you-page,
     .notes-page {
       --screen-header: 122px;
     }
@@ -6097,8 +6101,17 @@
     max-width: 50ch;
   }
 
-  .board-post {
+  /* Post a request, and Your requests once the session says there are some (role views N5). The button sets the row's
+     height, so the link arriving moves nothing; its words wrap inside it on a narrow phone. */
+  .board-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px 16px;
     margin-top: 4px;
+  }
+
+  .board-post {
+    flex: none;
   }
 
   /* LinkTabs' chips: one row that scrolls sideways on phones, out to the screen's edges, and wraps from the tablet
@@ -6289,7 +6302,7 @@
       grid-column: 1;
     }
 
-    .board-post {
+    .board-actions {
       grid-column: 2;
       grid-row: 1 / span 2;
       margin-top: 0;
@@ -10803,5 +10816,92 @@ body:has(.section-shell:not([style*="display"]) > .section-bar) :is(.footer-gian
     .mentor-sparks {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+  }
+}
+
+/* --- Role views: You (N5; role views spec 7.4) -----------------------------------------------------------------------
+   /account as the buyer's hub: the greeting, For you, the closing-soon banner, Your stuff and Settings, as kit cards in
+   one readable column. The page is a screen tall (the streaming block above), so the footer stays below the first
+   screen while it arrives. */
+@layer components {
+  /* The page and its skeleton share the column; the skeleton has a class of its own, so tests can tell them apart. */
+  .you-body,
+  .you-skeleton-body {
+    display: grid;
+    gap: 20px;
+    max-width: 40rem;
+  }
+
+  .you-head {
+    display: grid;
+    gap: 8px;
+  }
+
+  /* Muted on white is 5.9:1; the pin is sky-dark, 4.7:1, beside the words. */
+  .you-campus {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  .you-campus svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    color: var(--color-sky-dark);
+  }
+
+  .you-rows li + li {
+    border-top: 1px solid var(--color-line);
+  }
+
+  .you-rows-error {
+    padding-block: 8px;
+  }
+
+  .you-signout {
+    justify-self: start;
+    margin-top: 4px;
+  }
+
+  /* YouSkeleton (components/account/you-skeleton.ts): together shorter than a new account's You (spec 9), checked by
+     tests/e2e/you.spec.ts at 390 and 1440. */
+  .you-skeleton-head {
+    height: 3.5rem;
+    border-radius: var(--radius-card);
+  }
+
+  .you-skeleton-card {
+    height: 6rem;
+    border-radius: var(--radius-card);
+  }
+
+  .you-skeleton-rows {
+    height: 22rem;
+    border-radius: var(--radius-card);
+  }
+
+  /* Your requests beside Post a request on the board. Sky-dark on white, 4.7:1, underlined. */
+  .board-yours {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    min-height: 44px;
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* The strip's notifications line (ActivityLines): a link on the navy strip, white and underlined, 44px tall. */
+  .context-activity-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-white);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 }

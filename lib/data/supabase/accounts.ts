@@ -143,7 +143,7 @@ export const getLatestConsent: typeof Sample.getLatestConsent = async (accountId
  */
 export const getAccountActivity: typeof Sample.getAccountActivity = async (accountId, now) => {
   const counts = await unreadCounts(accountId, now);
-  return { newMessages: counts.messages, salesToConfirm: counts.salesToConfirm, savedItemsBack: 0 };
+  return { newMessages: counts.messages, salesToConfirm: counts.salesToConfirm, newNotifications: counts.notifications };
 };
 
 /** Sample mode is off on Supabase, so no sample account comes back. */

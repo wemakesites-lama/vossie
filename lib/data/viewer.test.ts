@@ -36,7 +36,7 @@ vi.mock("@/lib/auth/session", () => ({
 }));
 
 vi.mock("./accounts", () => ({
-  getAccountActivity: async () => session.activity ?? { newMessages: 0, salesToConfirm: 0, savedItemsBack: 0 },
+  getAccountActivity: async () => session.activity ?? { newMessages: 0, salesToConfirm: 0, newNotifications: 0 },
 }));
 
 afterEach(() => {
@@ -73,8 +73,14 @@ describe("getViewerContext", () => {
 
   it("passes the account's activity on when there is some", async () => {
     session.accountId = "acc-student";
-    session.activity = { newMessages: 2, salesToConfirm: 0, savedItemsBack: 0 };
-    expect((await getViewerContext()).activity).toEqual({ newMessages: 2, salesToConfirm: 0, savedItemsBack: 0 });
+    session.activity = { newMessages: 2, salesToConfirm: 0, newNotifications: 0 };
+    expect((await getViewerContext()).activity).toEqual({ newMessages: 2, salesToConfirm: 0, newNotifications: 0 });
+  });
+
+  it("shows the strip for new notifications alone (role views N5)", async () => {
+    session.accountId = "acc-student";
+    session.activity = { newMessages: 0, salesToConfirm: 0, newNotifications: 1 };
+    expect((await getViewerContext()).activity).toEqual({ newMessages: 0, salesToConfirm: 0, newNotifications: 1 });
   });
 
   it("counts a failed session lookup as signed out, instead of failing every section", async () => {

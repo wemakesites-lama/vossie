@@ -23,7 +23,7 @@ export default function PrivacySettingsPage() {
     <div className="page account-page">
       <Link href="/account" className="account-crumb">
         <ArrowLeftIcon />
-        Back to your account
+        Back to You
       </Link>
       <h1 className="account-title">Privacy settings</h1>
       <Suspense fallback={<AccountSkeleton />}>

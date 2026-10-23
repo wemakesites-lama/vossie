@@ -76,6 +76,11 @@ export function SiteHeader({ campuses, account }: SiteHeaderProps) {
             <NavLink href="/hub">Hub</NavLink>
           </li>
           <li>
+            <NavLink href="/looking-for" prefetch={false}>
+              Looking For
+            </NavLink>
+          </li>
+          <li>
             <NavLink href="/how-it-works">How it works</NavLink>
           </li>
           <li>

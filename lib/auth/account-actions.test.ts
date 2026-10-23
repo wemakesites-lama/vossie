@@ -45,7 +45,8 @@ describe("editing details (accounts spec 3.2)", () => {
   it("saves the first name and campus, and says so", async () => {
     await signedInAs("acc-student");
     const redirect = await redirectSignalOf(() => updateDetails(form({ firstName: " Thandiwe ", campus: "pretoria" })));
-    expect([redirect.url, redirect.type]).toEqual(["/account", "replace"]);
+    expect([redirect.url, redirect.type]).toEqual(["/account/details", "replace"]);
+    expect(request.refreshed).toBe(true);
     expect(await getAccount("acc-student")).toMatchObject({ firstName: "Thandiwe", campusSlug: "pretoria" });
     expect(await readFormState(DETAILS_FORM)).toMatchObject({ errors: [], notice: "saved" });
   });
@@ -72,7 +73,7 @@ describe("editing details (accounts spec 3.2)", () => {
 
   it("sends a signed-out visitor to sign in", async () => {
     expect(await redirectOf(() => updateDetails(form({ firstName: "Thandi", campus: "midrand" })))).toBe(
-      "/login?next=%2Faccount",
+      "/login?next=%2Faccount%2Fdetails",
     );
   });
 });

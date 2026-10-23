@@ -24,7 +24,7 @@ export function YourRequestsView({ items, notice }: YourRequestsViewProps) {
     <div className="requests-column">
       <Link href="/account" prefetch={false} className="msg-crumb">
         <ArrowLeftIcon />
-        Back to your account
+        Back to You
       </Link>
       <div className="requests-head">
         <h1 className="requests-title">Your requests</h1>

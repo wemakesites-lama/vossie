@@ -157,15 +157,15 @@ export async function getLatestConsent(accountId: string): Promise<Consent | nul
 }
 
 /**
- * The numbers for the context strip (spec 2.9 and 3.4), or null when the account has gone: its unread messages and
- * the sales it has to confirm, from stage E's store (messaging spec 3.6). Saves stay on the device (spec 2.12), so
- * none "come back" through the account. `now` settles the 7-day auto-confirm (messaging spec 2.5).
+ * The numbers for the context strip (spec 2.9 and 3.4; role views N5), or null when the account has gone: its unread
+ * messages, the sales it has to confirm and its new notifications, from stage E's store (messaging spec 3.6). `now`
+ * settles the 7-day auto-confirm (messaging spec 2.5).
  */
 export async function getAccountActivity(accountId: string, now: Date): Promise<ViewerActivity | null> {
   if (onSupabase()) return (await supabase()).getAccountActivity(accountId, now);
   if (!sampleStore().accounts.has(accountId)) return null;
   const counts = await unreadCounts(accountId, now);
-  return { newMessages: counts.messages, salesToConfirm: counts.salesToConfirm, savedItemsBack: 0 };
+  return { newMessages: counts.messages, salesToConfirm: counts.salesToConfirm, newNotifications: counts.notifications };
 }
 
 /** The sample accounts' buttons on the sign-in page (spec 2.8), in the fixture's order. */

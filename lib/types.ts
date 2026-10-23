@@ -222,7 +222,8 @@ export type HubPost = {
 export type ViewerActivity = {
   newMessages: number;
   salesToConfirm: number;
-  savedItemsBack: number;
+  /** New notifications, of any kind: the strip's link to Notifications (role views N5). */
+  newNotifications: number;
 };
 
 /**

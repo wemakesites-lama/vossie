@@ -1,40 +1,42 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { AccountSkeleton } from "@/components/account/AccountSkeleton";
-import { AccountView, detailsForm } from "@/components/account/AccountView";
-import { DETAILS_FORM, readFormState } from "@/lib/auth/form-state";
+import { YouSkeleton } from "@/components/account/AccountSkeleton";
+import { YouView } from "@/components/account/AccountView";
+import { PageTransition } from "@/components/kit/PageTransition";
 import { requireAccount } from "@/lib/auth/session";
 import { getCampuses } from "@/lib/data";
-import { unreadCounts } from "@/lib/data/messages";
-import { PageTransition } from "@/components/kit/PageTransition";
+import { YOU_PATH } from "@/lib/you/paths";
+import { readForYou, readYourStuff } from "@/lib/you/read";
 
-/** An account page belongs to one person, so search engines leave it out (accounts spec 3.3). */
-export const metadata: Metadata = { title: "Your account", robots: { index: false } };
+/** One person's hub, so search engines leave it out (accounts spec 3.3; `/account` is in robots.txt too). */
+export const metadata: Metadata = { title: "You", robots: { index: false } };
 
 /**
- * Your account (accounts spec 3.2). The heading is prerendered; everything else needs the session, so it renders per
- * request inside <Suspense>. A signed-out visitor is sent to sign in, and comes back here afterwards (spec 2.10).
+ * You (role views spec 7.4): everything needs the session, so the static shell is the skeleton and the page renders per
+ * request inside <Suspense> (plan decision 13). A signed-out visitor is sent to sign in, and comes back here (spec 2.10).
  */
-export default function AccountPage() {
+export default function YouPage() {
   return (
     <PageTransition>
-      <div className="page account-page">
-        <h1 className="account-title">Your account</h1>
-        <Suspense fallback={<AccountSkeleton />}>
-          <AccountContent />
+      <div className="page account-page you-page">
+        <Suspense fallback={<YouSkeleton />}>
+          <YouContent />
         </Suspense>
       </div>
     </PageTransition>
   );
 }
 
-async function AccountContent() {
-  const account = await requireAccount("/account");
-  // requireAccount awaited connection() as it found the session, so the counts may read the clock (decision 26).
-  const [campuses, state, counts] = await Promise.all([
-    getCampuses(),
-    readFormState(DETAILS_FORM),
-    unreadCounts(account.id, new Date()),
+async function YouContent() {
+  const account = await requireAccount(YOU_PATH);
+  // requireAccount awaited connection() as it found the session, so the readers may read the clock (decision 26).
+  const now = new Date();
+  // Each card's read fails on its own: its card says so, and the rest of the page works (role views spec 8).
+  const [campuses, forYou, stuff] = await Promise.all([
+    getCampuses().catch(() => []),
+    readForYou(account.id).catch(() => null),
+    readYourStuff(account.id, now).catch(() => null),
   ]);
-  return <AccountView account={account} campuses={campuses} details={detailsForm(account, state)} counts={counts} />;
+  const campusName = campuses.find((campus) => campus.slug === account.campusSlug)?.name ?? "No campus chosen";
+  return <YouView account={account} campusName={campusName} forYou={forYou} stuff={stuff} />;
 }
