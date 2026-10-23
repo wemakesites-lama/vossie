@@ -37,14 +37,17 @@ const plural = (count: number, one: string, many: string) => (count === 1 ? one 
 const onlyOne = (group: NewNotifications | undefined) => (group?.count === 1 ? group.newestText : undefined);
 
 /**
- * For you's rows (spec 7.4, plan decisions 1 and 2): conversations with new messages, new offers on the account's
+ * For you's rows (spec 7.4, plan decisions 1 and 2): conversations with new messages, sales to confirm, new offers on the account's
  * requests, new saved-search matches and new listings from followed shops. NeedsYouList hides the rows at 0.
  */
 export function forYouItems({
   conversations,
+  salesToConfirm = 0,
   byKind,
 }: {
   conversations: number;
+  /** Sales the account, as buyer, is asked to confirm (unreadCounts): a conversation's state, not a notification. */
+  salesToConfirm?: number;
   byKind: NewNotificationsByKind;
 }): NeedsYouItem[] {
   const offers = byKind.offer?.count ?? 0;
@@ -58,6 +61,15 @@ export function forYouItems({
       key: "messages",
       count: messages,
       title: plural(messages, "Conversation with new messages", "Conversations with new messages"),
+      href: "/messages",
+      urgent: true,
+    },
+    {
+      // markCompleted writes only a sale-to-confirm notification, a kind For you doesn't count, so a sale waiting for
+      // the buyer counts once, here (the buyer has 7 days to dispute it).
+      key: "sales",
+      count: salesToConfirm,
+      title: plural(salesToConfirm, "Sale to confirm", "Sales to confirm"),
       href: "/messages",
       urgent: true,
     },

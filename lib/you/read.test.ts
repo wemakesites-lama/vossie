@@ -9,7 +9,7 @@ import { readForYou, readYourStuff } from "./read";
 const saved = vi.hoisted(() => ({ ids: [] as string[] }));
 vi.mock("@/lib/data/saved", () => ({ getSavedIds: async () => saved.ids }));
 
-// The fixtures' day: Thandi (acc-student) has one unread conversation and two new notifications.
+// The fixtures' day: Thandi (acc-student) has one unread conversation, a sale to confirm (conv-s2) and two new notifications.
 const NOW = new Date("2026-10-14T08:42:00.000Z");
 
 beforeEach(() => {
@@ -20,7 +20,7 @@ beforeEach(() => {
 });
 
 describe("You's readers on the seed (role views spec 7.4)", () => {
-  it("For you counts Thandi's unread conversation and her new match, never another account's", async () => {
+  it("For you counts Thandi's unread conversation, her sale to confirm and her new match, never another account's", async () => {
     await notify({
       accountId: "acc-student",
       kind: "search-match",
@@ -33,13 +33,14 @@ describe("You's readers on the seed (role views spec 7.4)", () => {
     const forYou = await readForYou("acc-student");
     expect(forYou.items.map((item) => [item.key, item.count])).toEqual([
       ["messages", 1],
+      ["sales", 1],
       ["offers", 0],
       ["matches", 1],
       ["listings", 0],
     ]);
     expect(forYou.conversations).toBe(1);
     expect(forYou.newNotifications).toBe(3);
-    expect(forYouTotal(forYou.items)).toBe(2);
+    expect(forYouTotal(forYou.items)).toBe(3);
   });
 
   it("Your stuff counts the device's saved listings, her follows and her Hub booking", async () => {

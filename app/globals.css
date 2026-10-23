@@ -4126,8 +4126,9 @@
     --focus-halo: var(--color-navy);
   }
 
-  /* The banner sits on the footer (spec 7.13), so the footer drops its usual gap. */
-  body:has(.hub-banner) .site-footer {
+  /* The banner sits on the footer (spec 7.13), so the footer drops its usual gap. Only while the homepage shows: the
+     banner is a top-level element of the page, which Next keeps hidden (display: none) after navigating away. */
+  body:has(.hub-banner:not([style*="display"])) .site-footer {
     margin-top: 0;
   }
 
@@ -7111,43 +7112,6 @@
     text-transform: uppercase;
   }
 
-  .account-rows {
-    border-top: 1.5px solid var(--color-line);
-  }
-
-  .account-rows li {
-    border-bottom: 1.5px solid var(--color-line);
-  }
-
-  .account-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 56px;
-    padding-block: 10px;
-    color: var(--color-navy);
-    font-weight: 600;
-  }
-
-  .account-row svg {
-    flex: none;
-  }
-
-  .account-row-detail {
-    display: block;
-    color: var(--color-muted);
-    font-size: 13px;
-    font-weight: 400;
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .account-row:hover {
-      text-decoration: underline;
-      text-underline-offset: 3px;
-    }
-  }
-
   .account-skeleton-card {
     height: 10.5rem;
     border-radius: var(--radius-panel);
@@ -7958,15 +7922,6 @@
   .hdr-badge-alert {
     background: var(--color-danger);
     color: var(--color-white);
-  }
-}
-
-/* --- Messaging: the account page's counts (messaging plan, Task 13, spec 3.6) --- */
-@layer components {
-  /* A count that needs attention: danger red, 6.6:1 on white. */
-  .account-row-count {
-    color: var(--color-danger);
-    font-weight: 700;
   }
 }
 
@@ -8951,15 +8906,6 @@
 
 /* --- Staff tools: the mentor dashboard (staff tools plan, Task 16, spec 2.6) --- */
 @layer components {
-  /* Always on a line of its own: beside the sidebar (role views N1) the sentence and the button just fit one line in
-     the display font but not in its fallback, so the button wrapped and the table jumped 25px when the font arrived
-     (0.11 at 1440). */
-  .staff-download {
-    display: flex;
-    width: fit-content;
-    margin-top: 8px;
-  }
-
   /* A flag's name in bold danger red (6.6:1 on white), and what it means under it. */
   .staff-flags {
     display: grid;
@@ -8969,11 +8915,6 @@
   .staff-flags dt {
     color: var(--color-danger);
     font-weight: 700;
-  }
-
-  .staff-notes {
-    display: grid;
-    gap: 12px;
   }
 
   .staff-note {

@@ -5,26 +5,33 @@ import { forYouItems, forYouTotal, yourStuffFrom } from "./model";
 const note = (count: number, href = "/to/newest", text = "The newest") => ({ count, newestHref: href, newestText: text });
 
 describe("For you (role views spec 7.4)", () => {
-  it("lists messages, offers, matches and new listings, and sums to the badge with each offer counted once", () => {
-    const items = forYouItems({ conversations: 5, byKind: { offer: note(3), "search-match": note(1), "new-listing": note(2) } });
+  it("lists messages, sales to confirm, offers, matches and new listings, and sums to the badge with each offer counted once", () => {
+    const items = forYouItems({
+      conversations: 5,
+      salesToConfirm: 1,
+      byKind: { offer: note(3), "search-match": note(1), "new-listing": note(2), "sale-to-confirm": note(1) },
+    });
     expect(items.map((item) => [item.key, item.count, item.href])).toEqual([
       ["messages", 2, "/messages"],
+      ["sales", 1, "/messages"],
       ["offers", 3, "/account/requests"],
       ["matches", 1, "/notifications"],
       ["listings", 2, "/notifications"],
     ]);
-    expect(forYouTotal(items)).toBe(8);
+    // A sale to confirm counts once: its sale-to-confirm notification isn't a For you kind.
+    expect(forYouTotal(items)).toBe(9);
   });
 
   it("counts one new offer once, in the offers row, which opens its thread (plan decision 1)", () => {
     const items = forYouItems({ conversations: 1, byKind: { offer: note(1, "/messages/conv-9", "Tech corner offered") } });
     expect(items.map((item) => [item.key, item.count])).toEqual([
       ["messages", 0],
+      ["sales", 0],
       ["offers", 1],
       ["matches", 0],
       ["listings", 0],
     ]);
-    expect(items[1]).toMatchObject({ href: "/messages/conv-9", detail: "Tech corner offered" });
+    expect(items[2]).toMatchObject({ href: "/messages/conv-9", detail: "Tech corner offered" });
     expect(forYouTotal(items)).toBe(1);
     expect(forYouTotal(forYouItems({ conversations: 0, byKind: {} }))).toBe(0);
   });

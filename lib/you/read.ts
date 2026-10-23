@@ -23,7 +23,7 @@ export const readForYou = cache(async (accountId: string): Promise<ForYou> => {
     newNotificationsByKind(accountId, FOR_YOU_KINDS),
   ]);
   return {
-    items: forYouItems({ conversations: counts.conversations, byKind }),
+    items: forYouItems({ conversations: counts.conversations, salesToConfirm: counts.salesToConfirm, byKind }),
     conversations: counts.conversations,
     newNotifications: counts.notifications,
   };
