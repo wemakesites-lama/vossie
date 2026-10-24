@@ -91,6 +91,8 @@ export type Listing = {
   kind: ListingKind;
   categorySlug: string;
   sellerSlug: string;
+  /** The shop's name, shown on the card above the campus. */
+  sellerName: string;
   /** Up to five more photos after the cover. */
   morePhotos: readonly ImageRef[];
   /** The seller's own words. Line breaks are kept on the page. */

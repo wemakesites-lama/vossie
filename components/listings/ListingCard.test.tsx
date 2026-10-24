@@ -14,17 +14,19 @@ const braids = makeListing({
   kind: "service",
   categorySlug: "hair-beauty",
   sellerSlug: "hair-studio",
+  sellerName: "Hair studio",
   condition: null,
   handover: "on-campus",
   pickupPointId: null,
 });
 
 describe("ListingCard (spec 7.8)", () => {
-  it("links its title to the listing page and shows price, campus and trust badge", () => {
+  it("links its title to the listing page and shows price, shop, campus and trust badge", () => {
     render(<ListingCard listing={braids} campusName="Midrand" />);
     expect(screen.getByRole("heading", { level: 3, name: "Box braids, shoulder length" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Box braids, shoulder length" })).toHaveAttribute("href", "/listings/l-004");
     expect(screen.getByText("From R400")).toBeInTheDocument();
+    expect(screen.getByText("Hair studio")).toHaveClass("listing-shop");
     expect(screen.getByText("Midrand")).toBeInTheDocument();
     expect(screen.getByText("Trusted")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save Box braids, shoulder length" })).toBeInTheDocument();

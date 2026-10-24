@@ -16,6 +16,7 @@ export function makeListing(overrides: Partial<Listing> = {}): Listing {
     kind: "item",
     categorySlug: "tech",
     sellerSlug: "tech-corner",
+    sellerName: "Tech corner",
     morePhotos: [],
     description: "A test listing.",
     condition: "good",

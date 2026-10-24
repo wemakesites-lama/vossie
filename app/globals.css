@@ -2245,8 +2245,19 @@
     text-transform: uppercase;
   }
 
-  .listing-meta {
+  /* One line: a long shop name ends in an ellipsis rather than pushing the campus down. */
+  .listing-shop {
     margin-top: 6px;
+    overflow: hidden;
+    color: var(--color-ink);
+    font-size: 13px;
+    line-height: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .listing-meta {
+    margin-top: 2px;
     color: var(--color-muted);
     font-size: 12px;
   }
@@ -2304,10 +2315,16 @@
     margin-top: 6px;
   }
 
-  .listing-skeleton-meta {
-    width: 60%;
+  .listing-skeleton-shop {
+    width: 70%;
     height: 18px;
     margin-top: 6px;
+  }
+
+  .listing-skeleton-meta {
+    width: 45%;
+    height: 18px;
+    margin-top: 2px;
   }
 
   .listing-skeleton-badge {

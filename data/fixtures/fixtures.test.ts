@@ -131,6 +131,12 @@ describe("seller and collection fixtures (shopping spec 6.1)", () => {
     }
   });
 
+  it("gives every listing its seller's name", () => {
+    for (const listing of listings) {
+      expect(listing.sellerName, listing.id).toBe(sellersBySlug.get(listing.sellerSlug)?.name);
+    }
+  });
+
   it("gives every listing its seller's trust badge", () => {
     for (const listing of listings) {
       expect(listing.badge, listing.id).toBe(sellersBySlug.get(listing.sellerSlug)?.badge);

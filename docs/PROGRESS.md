@@ -1049,6 +1049,11 @@ Written here because another session has uncommitted edits in `docs/PROGRESS.md`
 
 **Next.** The role views are done: Lama's review of the open points above, then the go-live gates.
 
+## 2026-10-24: Listing cards name their shop (decision 89)
+- Every listing card (Home's Just listed, Browse, Saved) shows the shop's name on its own line between the price and the campus: ink, 13px, one line with an ellipsis, plain text. The trust badge below it now reads as the shop's.
+- `Listing.sellerName` is set by `toListing` from the shop, so both backends have it; the fixtures take it from `data/fixtures/sellers.ts` (a fixture test checks every one). The card skeleton gains a matching line.
+- Checks: types and lint clean; the card, fixture and catalog tests pass. At 390 no shop name overflows its 172px card. End to end, `cls`, `browse`, `home` and `performance` at 360, 390 and 1440: 249 passed. The tests that failed under load passed when rerun alone: 9 unit files (63 tests) and 5 homepage tests at 1440, none of them about the card.
+
 ## Next
 - **Role views are finished:** N1 (the kit), N2 (the seller home), N3 (the admin's Today), N4 (the mentor's caseload) and N5 (the buyer's You) are built (above). Open: Lama's call on the Next.js upgrade the build's security notice offers, and the signed-out `/sell` pitch's font shift at 390.
 - **Every planned stage (A to M) is built in sample mode** and merged into `main`. The four phone e2e failures that predated stage L are fixed (`d13321b`). The full device suite last ran before stage M: rerun it once before go-live.

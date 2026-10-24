@@ -8,6 +8,7 @@ import type {
   PayMode,
   TrustBadge,
 } from "@/lib/types";
+import { sellers } from "./sellers";
 
 type Options = {
   /** Services priced "From R400". */
@@ -23,6 +24,8 @@ type Options = {
   morePhotos?: readonly ImageRef[];
   availability?: Availability;
 };
+
+const sellerNames = new Map(sellers.map((seller) => [seller.slug, seller.name]));
 
 /** A labelled placeholder for the second or third photo (plan decision 15). */
 const photo = (n: 2 | 3, alt: string): ImageRef => ({ src: `/placeholders/photo/${n}.svg`, alt });
@@ -62,6 +65,7 @@ const listing = (
   kind,
   categorySlug,
   sellerSlug,
+  sellerName: sellerNames.get(sellerSlug) ?? "",
   morePhotos,
   description,
   condition: kind === "service" ? null : condition,

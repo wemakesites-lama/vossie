@@ -67,6 +67,7 @@ export function catalogOver(source: CatalogSource) {
       kind: row.kind,
       categorySlug: row.categorySlug,
       sellerSlug: row.sellerSlug,
+      sellerName: shop.name,
       morePhotos: more,
       description: row.description,
       condition: row.condition,

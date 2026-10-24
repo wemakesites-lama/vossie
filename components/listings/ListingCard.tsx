@@ -31,6 +31,7 @@ export function ListingCard({ listing, campusName, saved = false }: ListingCardP
         </Link>
       </h3>
       <p className="listing-price">{priceLabel(listing)}</p>
+      <p className="listing-shop">{listing.sellerName}</p>
       <p className="listing-meta">{campusName}</p>
       {listing.badge && <p className="listing-badge">{badgeLabel(listing.badge)}</p>}
       {/* On the photo, but last in reading order (plan decision 6). Only Saved shows paused and sold listings. The
@@ -57,6 +58,7 @@ export function ListingCardSkeleton() {
       <span className="skeleton listing-photo listing-skeleton-photo" />
       <span className="skeleton listing-skeleton-line" />
       <span className="skeleton listing-skeleton-price" />
+      <span className="skeleton listing-skeleton-shop" />
       <span className="skeleton listing-skeleton-meta" />
       <span className="skeleton listing-skeleton-badge" />
     </div>

@@ -326,7 +326,7 @@ Changes with the visitor:
   - Square photo with a Save heart.
   - Title, clamped to 2 lines.
   - Price in the display face ("R250", "From R400", "Swap").
-  - Campus, and the trust badge.
+  - The shop's name on one line, then the campus, and the trust badge (decision 89).
 - **Switching campus or scope** shows matching skeleton cards until the data arrives.
 - **Empty:** "Nothing new at {campus} yet", with a button that switches to All campuses.
 - **Save:**
