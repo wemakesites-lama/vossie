@@ -4,11 +4,12 @@ import { AnnouncementBar } from "@/components/announcement/AnnouncementBar";
 import { CampusPicker } from "@/components/campus/CampusPicker";
 import { SiteFooter } from "@/components/footer/SiteFooter";
 import { AccountLink, HeaderAccount } from "@/components/header/AccountLink";
+import { PhoneSaved } from "@/components/header/PhoneSaved";
 import { SiteHeader } from "@/components/header/SiteHeader";
 import { MenuAccount, MenuAccountLinks } from "@/components/menu/MenuAccount";
 import { MenuDrawer } from "@/components/menu/MenuDrawer";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
-import { AccountTab, TabAccount, TabBar } from "@/components/tabbar/TabBar";
+import { RoleTabs, StudentTail, TabBar } from "@/components/tabbar/TabBar";
 import { ToastRegion } from "@/components/ui/ToastRegion";
 import { BOOT_SCRIPT } from "@/lib/boot-script";
 import { getAnnouncements, getCampuses, getCategories, getTrendingSearches } from "@/lib/data";
@@ -67,16 +68,22 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <HeaderAccount />
             </Suspense>
           }
+          phoneSaved={
+            <Suspense fallback={null}>
+              <PhoneSaved />
+            </Suspense>
+          }
         />
         <main id="main" tabIndex={-1} className="flex-1">
           {children}
         </main>
         <SiteFooter campuses={campuses} />
         <TabBar
-          account={
-            // Streams in like the header's icon; the static shell links to sign-in.
-            <Suspense fallback={<AccountTab signedIn={false} />}>
-              <TabAccount />
+          tail={
+            // Streams in like the header's icon (role bars spec 5): the static shell is the student's bar, linking to
+            // sign-in, and a seller's or staff's slots swap in once, on a full page load.
+            <Suspense fallback={<StudentTail />}>
+              <RoleTabs />
             </Suspense>
           }
         />

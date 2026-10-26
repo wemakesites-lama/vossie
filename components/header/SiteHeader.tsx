@@ -19,7 +19,7 @@ import { SavedLink } from "./SavedLink";
  * layout already loads. Imported from SavedLink.tsx directly, it became a client entry of its own, and Turbopack split
  * the merged layout chunk (decision 63) in two: about 600 B more on every page's first visit.
  */
-export { SavedCount } from "./SavedLink";
+export { SavedCount, SavedLink } from "./SavedLink";
 import { useHeaderMode } from "./useHeaderMode";
 
 type SiteHeaderProps = {
@@ -29,9 +29,11 @@ type SiteHeaderProps = {
    * knows who's signed in without client code (accounts plan decision 1).
    */
   account: ReactNode;
+  /** Saved's heart on phones for sellers and staff (components/header/PhoneSaved.tsx), streamed like the account icon. */
+  phoneSaved: ReactNode;
 };
 
-export function SiteHeader({ campuses, account }: SiteHeaderProps) {
+export function SiteHeader({ campuses, account, phoneSaved }: SiteHeaderProps) {
   const headerRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const { mode, show } = useHeaderMode(headerRef);
@@ -114,6 +116,8 @@ export function SiteHeader({ campuses, account }: SiteHeaderProps) {
           </div>
 
           <div className="hdr-group hdr-group--end">
+            {/* Before Search: the group is end-aligned, so a heart streaming in moves nothing already on screen. */}
+            {phoneSaved}
             <button
               type="button"
               aria-label="Search"
@@ -123,8 +127,8 @@ export function SiteHeader({ campuses, account }: SiteHeaderProps) {
             >
               <SearchIcon />
             </button>
-            {/* Phones have Account and Saved in the tab bar (components/tabbar/TabBar.tsx), so the header keeps
-                Menu, the pennant and Search there. */}
+            {/* Phones have Account in the tab bar (components/tabbar/TabBar.tsx), and Saved too unless the bar is a
+                seller's or staff's (role bars spec 6), so the header keeps Menu, the pennant and Search there. */}
             {account}
             <SavedLink className="hdr-item hidden wide:inline-grid" />
           </div>

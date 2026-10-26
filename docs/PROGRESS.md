@@ -1103,6 +1103,18 @@ Lama asked for a way back on every screen, and found the Hub console's navigatio
 - Lama: a pass on a phone, to check "‹ Parent" reads well everywhere and the console's groups make sense.
 - Committed with Lama's go-ahead (2026-10-26).
 
+## 2026-10-26: Role bars: the phone's main bar fits who is signed in (decision 92)
+Lama asked for a bottom bar that changes with the kind of account signed in, so each tab is useful and the app isn't the same for mentors, admins, sellers and students.
+- **The bars:** Home, Shop and You never move; the centre pill is the role's main job. Students and visitors keep Sell and Saved; sellers get My shop (`/sell`) and Messages; mentors Mentoring (`/mentor`) and Messages; admins Today (`/admin`) and Messages. The highest role wins. `barFor` (`lib/nav/bar.ts`) decides; `RoleTabs` streams slots 3 to 5 over today's bar, so the static shell is the same for everyone. Inside `/sell`, `/admin` and `/mentor` the section bars still take over.
+- **Badges:** My shop counts Needs you, Mentoring the slot requests, Today what's waiting (the admin bar's counters), Messages new messages, sales to confirm and offers; You leaves those out beside a Messages tab ("N other things for you"). Sellers and staff get the Saved heart in the phone header (`PhoneSaved`).
+- **Checks:** types and lint clean; unit 3,496 passed. New `tests/e2e/role-bars.spec.ts` at 390: 8 passed (each sample account's bar and heart, axe, and the seller's and admin's cold load at a layout shift of 0: the final review moved the streamed heart before Search, which took it from 0.0007). Shell, You, role views and layout-shift specs at 390 and 1440: 285 passed, 1 failed (the visitor's `/sell` layout shift, 0.0544, which predates this). Performance budgets 46 passed; the listing forms 153,145 B brotli (+18 B against `271399c`, a build that also holds the launchpad session's uncommitted work).
+- Looked at in the browser at 375 and 360 as the seller, the admin and the mentor: each pill's badge equals its page's count (Today "2 waiting", Mentoring "1 slot request"), and the phone header fits at 360.
+
+**Open**
+- Lama: a pass on a phone with each sample account.
+- Seen in the build: on a signed-in home the router's prefetches keep the network busy long enough that Playwright's "networkidle" never arrives, so the new layout-shift test waits for the tabs instead.
+- Committed with Lama's go-ahead (2026-10-26).
+
 ## Next
 - **Role views are finished:** N1 (the kit), N2 (the seller home), N3 (the admin's Today), N4 (the mentor's caseload) and N5 (the buyer's You) are built (above). Open: Lama's call on the Next.js upgrade the build's security notice offers, and the signed-out `/sell` pitch's font shift at 390.
 - **Every planned stage (A to M) is built in sample mode** and merged into `main`. The four phone e2e failures that predated stage L are fixed (`d13321b`). The full device suite last ran before stage M: rerun it once before go-live.

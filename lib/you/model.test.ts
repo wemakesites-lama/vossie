@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { OwnRequest } from "@/lib/types";
-import { forYouItems, forYouTotal, yourStuffFrom } from "./model";
+import { forYouItems, forYouTotal, messagesTotal, othersTotal, yourStuffFrom } from "./model";
 
 const note = (count: number, href = "/to/newest", text = "The newest") => ({ count, newestHref: href, newestText: text });
 
@@ -64,5 +64,24 @@ describe("Your stuff (role views spec 7.4)", () => {
       searches: { count: 2, alertsOn: 1 },
       bookings: [],
     });
+  });
+});
+
+describe("the Messages tab and You's other things (role bars spec 7, plan decision 4)", () => {
+  const items = [
+    { key: "messages", count: 2 },
+    { key: "sales", count: 1 },
+    { key: "offers", count: 1 },
+    { key: "matches", count: 3 },
+    { key: "listings", count: 0 },
+  ];
+
+  it("counts messages, sales to confirm and offers under Messages", () => {
+    expect(messagesTotal(items)).toBe(4);
+  });
+
+  it("leaves those rows out of You's badge, so nothing counts twice", () => {
+    expect(othersTotal(items)).toBe(3);
+    expect(messagesTotal(items) + othersTotal(items)).toBe(forYouTotal(items));
   });
 });

@@ -25,7 +25,7 @@ const campus = (slug: string, name: string): Campus => ({
 const campuses = [campus("midrand", "Midrand"), campus("pretoria", "Pretoria")];
 
 function renderHeader() {
-  render(<SiteHeader campuses={campuses} account={signedOut} />);
+  render(<SiteHeader campuses={campuses} account={signedOut} phoneSaved={null} />);
   return screen.getByRole("banner");
 }
 
@@ -141,11 +141,11 @@ describe("SiteHeader", () => {
   });
 
   it("leaves the campus pill plain with no choice, or with All campuses", () => {
-    const { unmount } = render(<SiteHeader campuses={campuses} account={signedOut} />);
+    const { unmount } = render(<SiteHeader campuses={campuses} account={signedOut} phoneSaved={null} />);
     expect(screen.getByRole("button", { name: /^Shopping at/ })).not.toHaveAttribute("data-chosen");
     unmount();
     setCampusChoice(ALL_CAMPUSES);
-    render(<SiteHeader campuses={campuses} account={signedOut} />);
+    render(<SiteHeader campuses={campuses} account={signedOut} phoneSaved={null} />);
     expect(screen.getByRole("button", { name: "Shopping at All campuses" })).not.toHaveAttribute("data-chosen");
   });
 
@@ -174,7 +174,7 @@ describe("SiteHeader", () => {
   });
 
   it("shows the account icon it's given, among the items that go inert when hidden (accounts spec 3.4)", () => {
-    render(<SiteHeader campuses={campuses} account={<AccountLink signedIn />} />);
+    render(<SiteHeader campuses={campuses} account={<AccountLink signedIn />} phoneSaved={null} />);
     const link = screen.getByRole("link", { name: "Your account" });
     expect(link).toHaveAttribute("href", "/account");
     act(() => setScrollY(400));

@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { TabAccount } from "@/components/tabbar/TabBar";
+import { RoleTabs } from "@/components/tabbar/TabBar";
 import { forYouItems, forYouTotal } from "@/lib/you/model";
 import { YouView } from "./AccountView";
 
@@ -14,7 +14,7 @@ const parts = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/lib/auth/session", () => ({ getViewer: async () => ({ id: "acc-student" }) }));
+vi.mock("@/lib/auth/session", () => ({ getViewer: async () => ({ id: "acc-student", roles: [], seller: null }) }));
 vi.mock("@/lib/you/read", async () => {
   const { forYouItems: items } = await import("@/lib/you/model");
   return { readForYou: async () => ({ items: items(parts), conversations: parts.conversations, newNotifications: 9 }) };
@@ -23,7 +23,7 @@ vi.mock("@/lib/you/read", async () => {
 describe("the You tab's badge equals For you's list (role views spec 4.2)", () => {
   it("shows the sum of the rows the page lists", async () => {
     const forYou = { items: forYouItems(parts), conversations: parts.conversations, newNotifications: 9 };
-    const tab = render(await TabAccount());
+    const tab = render(<ul>{await RoleTabs()}</ul>);
     const badge = Number.parseInt(screen.getByRole("link", { name: "You" }).querySelector(".hdr-badge")!.textContent!, 10);
     tab.unmount();
 

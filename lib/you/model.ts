@@ -104,6 +104,19 @@ export function forYouTotal(items: readonly Pick<NeedsYouItem, "count">[]): numb
   return items.reduce((sum, item) => sum + item.count, 0);
 }
 
+/** For you's rows that open Messages (role bars plan decision 4): new messages, sales to confirm and new offers. */
+export const MESSAGE_ROWS: ReadonlySet<string> = new Set(["messages", "sales", "offers"]);
+
+/** The Messages tab's badge, on bars that have one: For you's message rows (role bars spec 7). */
+export function messagesTotal(items: readonly Pick<NeedsYouItem, "key" | "count">[]): number {
+  return forYouTotal(items.filter((item) => MESSAGE_ROWS.has(item.key)));
+}
+
+/** You's badge beside a Messages tab: For you without the message rows, so a new message counts once. */
+export function othersTotal(items: readonly Pick<NeedsYouItem, "key" | "count">[]): number {
+  return forYouTotal(items.filter((item) => !MESSAGE_ROWS.has(item.key)));
+}
+
 /** The soonest of the account's open requests in its last days, and how many are. */
 export type ClosingSoon = { title: string; closesOn: string; count: number };
 
