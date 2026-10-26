@@ -356,4 +356,66 @@ export const hubPosts: readonly HubPost[] = [
         "[office hours](/hub?type=office-hours).",
     ),
   }),
+  // More office hours, so there's always one to book on a few campuses (Lama, 2026-10-26).
+  officeHours(
+    "h-019", "Office hours: your first 10 sales", "pretoria", "2026-10-13T08:00:00Z",
+    { startsAt: "2026-10-29T11:00:00Z", place: "Mentor room, Block B" },
+    {
+      summary: "Listed but nothing's selling yet? A mentor looks at your shop with you and finds the next step.",
+      body: lines(
+        "You've put your listings up, but the messages aren't coming. A mentor will look at your shop with you, the " +
+          "way a buyer sees it, and help you pick the one change to make first.",
+        "",
+        "## Bring",
+        "- Your phone, signed in to CampusCart",
+        "- How many messages you've had, and what people asked",
+        "",
+        "Slots are 20 minutes.",
+      ),
+    },
+  ),
+  officeHours(
+    "h-020", "Office hours: questions about selling", "online", "2026-10-13T09:00:00Z",
+    { startsAt: "2026-11-03T11:00:00Z", place: "Online, on a video call" },
+    {
+      summary: "Studying online? Book 20 minutes on a video call with a mentor and ask anything about selling.",
+      body: lines(
+        "For students who study online, or can't get to a Hub. Book a slot, say what you'd like help with, and a " +
+          "mentor sends you the link to a video call.",
+        "",
+        "Ask about anything: what to sell, what to charge, how to deliver to a buyer who isn't on your campus, or " +
+          "[how to get the Verified badge](/hub/h-017).",
+      ),
+    },
+  ),
+  officeHours(
+    "h-021", "Office hours: getting Verified", "bedfordview", "2026-10-13T10:00:00Z",
+    { startsAt: "2026-11-10T11:00:00Z", place: "The Hub, ground floor" },
+    {
+      summary: "Bring your ID and examples of your work, and a mentor checks your business for the Verified badge.",
+      body: lines(
+        "Selling for a month or more? Book a slot and a mentor will go through the Verified checks with you.",
+        "",
+        "## Bring",
+        "- Your student card or ID",
+        "- Two or three examples of your work, or the items you sell",
+        "- Any messages from buyers you're proud of",
+        "",
+        "Read [how to get the Verified badge](/hub/h-017) first.",
+      ),
+    },
+  ),
+  officeHours(
+    "h-022", "Office hours: what to charge", "cape-town-tyger-valley", "2026-10-13T11:00:00Z",
+    { startsAt: "2026-11-12T11:00:00Z", place: "The Hub, next to the library" },
+    {
+      summary: "Bring your price list and a mentor will check it against your costs and what students pay.",
+      body: lines(
+        "Not sure if you're charging too much or too little? Bring your price list, or just your costs, and a mentor " +
+          "will work through it with you.",
+        "",
+        "Slots are 20 minutes. Read [how to price your first listing](/hub/h-013) before you come.",
+      ),
+    },
+  ),
 ];

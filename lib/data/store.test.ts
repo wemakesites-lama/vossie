@@ -36,7 +36,7 @@ describe("the sample store (accounts spec 2.1)", () => {
     expect(store.featuredDraws.size).toBe(0);
     expect(store.pickupPoints.size).toBe(24);
     expect([...store.mentorNotes.keys()]).toEqual(["mn-s1", "mn-s2"]);
-    expect(store.hubPosts.size).toBe(18);
+    expect(store.hubPosts.size).toBe(22);
     expect(store.hubRsvps.size).toBe(0);
     expect([...store.hubBookings.keys()]).toEqual(["bk-s1"]);
     expect([...store.requests.keys()]).toEqual(sampleRequestRows.map((row) => row.id));

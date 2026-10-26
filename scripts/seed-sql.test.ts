@@ -168,7 +168,7 @@ describe("supabase/seed.sql (supabase foundation plan, Task 11; schema catch-up 
     expect(rows.filter((row) => row.includes(", 'closed', ")).map((row) => row.slice(1, 8))).toEqual(["'r-015'", "'r-016'"]);
   });
 
-  it("holds the Hub's 18 posts, every campus as null, Naledi's three, and their placeholder art", () => {
+  it("holds the Hub's 22 posts, every campus as null, Naledi's three, and their placeholder art", () => {
     const sql = makeSeedSql(fixtures);
     const rows = rowsOf(sql, "public.hub_posts");
     expect(columnsOf(sql, "public.hub_posts")).toEqual([
@@ -190,7 +190,7 @@ describe("supabase/seed.sql (supabase foundation plan, Task 11; schema catch-up 
       "created_at",
       "updated_at",
     ]);
-    expect(rows).toHaveLength(18);
+    expect(rows).toHaveLength(22);
     const naledi = seedUuid("account", "acc-mentor");
     sampleHubPostRows.forEach((post, i) => {
       expect(rows[i].startsWith(`(${q(post.id)}, ${q(post.kind)}, ${q(post.title)}, `)).toBe(true);

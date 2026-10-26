@@ -491,7 +491,11 @@ describe("Hub data (community spec 5.3)", () => {
       { date: "2026-10-20", title: "Market day on the lawn", campusSlug: "pretoria", action: "rsvp" },
       { date: "2026-10-22", title: "Photo day for your shop", campusSlug: "bedfordview", action: "book" },
       { date: "2026-10-28", title: "Hub mixer", campusSlug: "all", action: "rsvp" },
+      { date: "2026-10-29", title: "Office hours: your first 10 sales", campusSlug: "pretoria", action: "book" },
+      { date: "2026-11-03", title: "Office hours: questions about selling", campusSlug: "online", action: "book" },
       { date: "2026-11-05", title: "Selling online: photos that sell", campusSlug: "all", action: "rsvp" },
+      { date: "2026-11-10", title: "Office hours: getting Verified", campusSlug: "bedfordview", action: "book" },
+      { date: "2026-11-12", title: "Office hours: what to charge", campusSlug: "cape-town-tyger-valley", action: "book" },
       { date: "2026-11-19", title: "Office hours: your first listing", campusSlug: "midrand", action: "book" },
       { date: "2026-12-03", title: "End-of-year market", campusSlug: "all", action: "rsvp" },
       { date: "2027-01-28", title: "Back-to-campus pop-up", campusSlug: "pretoria", action: "rsvp" },
@@ -506,7 +510,11 @@ describe("Hub data (community spec 5.3)", () => {
       "h-003",
       "h-004",
       "h-005",
+      "h-019",
+      "h-020",
       "h-006",
+      "h-021",
+      "h-022",
       "h-007",
       "h-008",
       "h-009",
@@ -523,7 +531,7 @@ describe("Hub data (community spec 5.3)", () => {
   it("drops past events and office hours, and has none once the sample ones are over", async () => {
     const upcoming = ids(await getHubPosts({ kinds: ["event", "office-hours"], from: "2026-10-15" }));
     expect(upcoming[0]).toBe("h-002");
-    expect(upcoming).toHaveLength(9);
+    expect(upcoming).toHaveLength(13);
     expect(await getHubPosts({ kinds: ["event", "office-hours"], from: "2027-03-01" })).toEqual([]);
   });
 
@@ -537,7 +545,15 @@ describe("Hub data (community spec 5.3)", () => {
       "h-009",
       "h-010",
     ]);
-    expect(ids(await getHubPosts({ kinds: ["office-hours"], from: "2026-10-12" }))).toEqual(["h-002", "h-004", "h-007"]);
+    expect(ids(await getHubPosts({ kinds: ["office-hours"], from: "2026-10-12" }))).toEqual([
+      "h-002",
+      "h-004",
+      "h-019",
+      "h-020",
+      "h-021",
+      "h-022",
+      "h-007",
+    ]);
     expect(ids(await getHubPosts({ kinds: ["tip"], from: "2026-10-12" }))).toHaveLength(6);
   });
 
@@ -545,7 +561,7 @@ describe("Hub data (community spec 5.3)", () => {
     expect((await getHubPost("h-011"))?.title).toBe("Hub open day");
     expect((await getHubPost("h-013"))?.kind).toBe("tip");
     expect(await getHubPost("nope")).toBeNull();
-    expect(await getHubPostIds()).toHaveLength(18);
+    expect(await getHubPostIds()).toHaveLength(22);
   });
 
   it("lists the posts worth crawling on a day: tips, and events and office hours from that day on (stage L spec 2.19)", async () => {

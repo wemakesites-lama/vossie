@@ -1128,6 +1128,14 @@ Two sessions worked beside role bars; their work was checked together on one tre
 - Also committed: docs left uncommitted from earlier sessions (the team brief PDF of 22 October, the photo-to-listing spec of 24 October, the `mvp-cut-c5` plan). `.claude/launch.json`'s local preview change is left out.
 - Committed and pushed with Lama's go-ahead (2026-10-26).
 
+## 2026-10-26: Launchpad's sample office hours
+Lama found Launchpad empty on vossie-pi, so Book office hours didn't explain itself. The live project has no Hub posts: `seed.sql` runs only on a local reset, and `add-demo-accounts.sql` adds the accounts only.
+- **Four more office hours** in `data/fixtures/hub.ts` (h-019 to h-022: Pretoria 29 Oct, Eduvos Online 3 Nov, Bedfordview 10 Nov, Cape Town Tyger Valley 12 Nov), so the Office hours tab lists five upcoming and What's on shows them too. Their placeholders were copied from h-007's (`scripts/make-placeholders.ts` fails: it imports `data/fixtures/sellers` without `.ts`). Seed regenerated.
+- **The Office hours tab says what office hours are** (`HubFeed`, `.hub-feed-note`): free 20-minute sessions with a mentor; choose one, say what you need, the mentor replies with a time.
+- **`supabase/ops/add-demo-hub-posts.sql`** adds the seed's 22 posts to the live project, safe to rerun (`on conflict do nothing`); Naledi stays the author only if her profile is there. Lama runs it in the SQL editor. Not yet run against a database (Docker was off). The clear-out already removes Hub posts; GO-LIVE's gate names the script.
+- **Checks:** types and lint clean; unit 3,496 passed (Hub counts updated); e2e community, home, staff-checks and a11y at 390: 149 passed, 2 skipped.
+- Committed with Lama's go-ahead (2026-10-26), not pushed. `.claude/launch.json` is left out.
+
 ## Next
 - **Photo-to-listing (AI) is specced, not planned** (2026-10-24): `docs/superpowers/specs/2026-10-24-photo-to-listing-design.md`. A seller's cover photo fills in the listing form's empty fields through one server-side Claude call, with a price hint from real CampusCart listings only; no client JS, off by default. Waiting on Lama's answers to its open questions (section 12: the model, timing, photos leaving South Africa, the daily limit, the textbook Looking For line).
 - **Role views are finished:** N1 (the kit), N2 (the seller home), N3 (the admin's Today), N4 (the mentor's caseload) and N5 (the buyer's You) are built (above). Open: Lama's call on the Next.js upgrade the build's security notice offers, and the signed-out `/sell` pitch's font shift at 390.

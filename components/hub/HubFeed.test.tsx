@@ -56,7 +56,11 @@ describe("HubFeed (Launchpad spec 4.2 and 4.3)", () => {
       "Market day on the lawn",
       "Photo day for your shop",
       "Hub mixer",
+      "Office hours: your first 10 sales",
+      "Office hours: questions about selling",
       "Selling online: photos that sell",
+      "Office hours: getting Verified",
+      "Office hours: what to charge",
       "Office hours: your first listing",
       "End-of-year market",
       "Back-to-campus pop-up",
@@ -88,7 +92,7 @@ describe("HubFeed (Launchpad spec 4.2 and 4.3)", () => {
     await show();
     const upcoming = titles("Events and office hours");
     expect(upcoming[0]).toBe("Office hours: pricing your hustle");
-    expect(upcoming).toHaveLength(9);
+    expect(upcoming).toHaveLength(13);
   });
 
   it("narrows Coming up to one type from the link, its tab current, and keeps Tips", async () => {
@@ -102,15 +106,21 @@ describe("HubFeed (Launchpad spec 4.2 and 4.3)", () => {
     expect(titles("Office hours")).toEqual([
       "Office hours: pricing your hustle",
       "Photo day for your shop",
+      "Office hours: your first 10 sales",
+      "Office hours: questions about selling",
+      "Office hours: getting Verified",
+      "Office hours: what to charge",
       "Office hours: your first listing",
     ]);
+    expect(screen.getByText(/Office hours are free 20-minute sessions with a Hub mentor/)).toBeInTheDocument();
     expect(titles("Tips")).toEqual(TIPS);
   });
 
   it("reads an old Tips tab link as All", async () => {
     await show({ type: "tips" });
     expect(screen.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page");
-    expect(titles("Events and office hours")).toHaveLength(10);
+    expect(titles("Events and office hours")).toHaveLength(14);
+    expect(screen.queryByText(/Office hours are free/)).toBeNull();
     expect(titles("Tips")).toEqual(TIPS);
   });
 

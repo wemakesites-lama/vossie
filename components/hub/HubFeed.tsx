@@ -95,6 +95,13 @@ export async function HubFeed({ searchParams }: HubFeedProps) {
           Coming up
         </h2>
         <LinkTabs label="Post types" tabs={tabs} current={type} look="tabs" />
+        {/* Book office hours lands here, so the tab says what booking is (Lama, 2026-10-26). */}
+        {type === "office-hours" && (
+          <p className="hub-feed-note">
+            Office hours are free 20-minute sessions with a Hub mentor, on your campus or online. Choose one, say what
+            you&apos;d like help with, and the mentor replies with a time.
+          </p>
+        )}
         {comingUp}
       </section>
       {tips}

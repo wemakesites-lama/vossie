@@ -70,7 +70,7 @@ describe("saving a Hub post (staff tools spec 2.4, plan decision 11)", () => {
     await signedInAs(request, "acc-student");
     await expect(savePost(await fresh(tip))).rejects.toThrow("notFound");
     await expect(savePost(await fresh({ ...tip, post: "h-002" }))).rejects.toThrow("notFound");
-    expect(sampleStore().hubPosts.size).toBe(18);
+    expect(sampleStore().hubPosts.size).toBe(22);
     expect(sampleStore().hubPosts.get("h-002")?.title).toBe("Office hours: pricing your hustle");
   });
 
@@ -115,7 +115,7 @@ describe("saving a Hub post (staff tools spec 2.4, plan decision 11)", () => {
       values: { kind: "event", title: "", body, published: "yes" },
       notice: null,
     });
-    expect(sampleStore().hubPosts.size).toBe(18);
+    expect(sampleStore().hubPosts.size).toBe(22);
     expect(request.updatedTags).toEqual([]);
     expect(await listAudit({ staff: null, kind: null })).toEqual([]);
   });
@@ -129,7 +129,7 @@ describe("saving a Hub post (staff tools spec 2.4, plan decision 11)", () => {
     const state = (await readFormState(postForm(null)))!;
     expect(state).toMatchObject({ notice: "preview", errors: [], values: { title: "", body: tip.body } });
     expect(state.values.cover).toMatch(/^\/photos\/ph-[0-9a-f-]{36}$/);
-    expect(sampleStore().hubPosts.size).toBe(18);
+    expect(sampleStore().hubPosts.size).toBe(22);
     expect(await listAudit({ staff: null, kind: null })).toEqual([]);
     await redirectOf(async () => savePost(await fresh({ ...tip, keepCover: state.values.cover })));
     const row = newestPost();
@@ -161,7 +161,7 @@ describe("saving a Hub post (staff tools spec 2.4, plan decision 11)", () => {
     const notAPhoto = new File(["not a photo"], "cover.png", { type: "image/png" });
     expect(await redirectOf(async () => savePost(await fresh({ ...tip, cover: notAPhoto })))).toBe("/hub/new");
     expect((await readFormState(postForm(null)))?.errors).toEqual(["photo-type"]);
-    expect(sampleStore().hubPosts.size).toBe(18);
+    expect(sampleStore().hubPosts.size).toBe(22);
   });
 
   it("replaces a post's cover on an edit and deletes the one it had", async () => {
@@ -211,7 +211,7 @@ describe("saving a Hub post (staff tools spec 2.4, plan decision 11)", () => {
     await signedInAs(request, "acc-admin");
     await expect(savePost(await fresh({ ...tip, post: "h-nothing" }))).rejects.toThrow("notFound");
     await expect(savePost(await fresh({ ...tip, post: "../h-001" }))).rejects.toThrow("notFound");
-    expect(sampleStore().hubPosts.size).toBe(18);
+    expect(sampleStore().hubPosts.size).toBe(22);
   });
 });
 
@@ -221,7 +221,7 @@ describe("a new date must not have passed (staff tools amendment 12.5)", () => {
     // 10:00 SAST on the 14th is 8:00 UTC, 42 minutes ago.
     expect(await redirectOf(async () => savePost(await fresh({ ...officeHours, time: "10:00" })))).toBe("/hub/new");
     expect((await readFormState(postForm(null)))?.errors).toEqual(["post-date-past"]);
-    expect(sampleStore().hubPosts.size).toBe(18);
+    expect(sampleStore().hubPosts.size).toBe(22);
     expect(await listAudit({ staff: null, kind: null })).toEqual([]);
     await redirectOf(async () => savePost(await fresh({ ...officeHours, kind: "event", date: "2026-10-13", time: "18:00", capacity: "20" })));
     expect((await readFormState(postForm(null)))?.errors).toEqual(["post-date-past"]);
@@ -273,7 +273,7 @@ describe("a new post is made once (staff tools amendment 15.7)", () => {
     const send = () => redirectSignalOf(() => savePost(form({ ...tip, once })));
     expect((await send()).url).toBe("/hub/manage");
     const posts = sampleStore().hubPosts.size;
-    expect(posts).toBe(19);
+    expect(posts).toBe(23);
     // The list took its notice; the repeat says it again, as the first did, instead of "nothing changed".
     await clearStaffForm(STAFF_NOTICE);
     expect([(await send()).url, await notice()]).toEqual(["/hub/manage", "post-published"]);
@@ -288,7 +288,7 @@ describe("a new post is made once (staff tools amendment 15.7)", () => {
     const send = () => redirectOf(() => savePost(form({ ...tip, once })));
     const results = await Promise.allSettled([send(), send()]);
     expect(results.every((result) => result.status === "fulfilled")).toBe(true);
-    expect(sampleStore().hubPosts.size).toBe(19);
+    expect(sampleStore().hubPosts.size).toBe(23);
     expect(await listAudit({ staff: null, kind: null })).toHaveLength(1);
   });
 
@@ -304,7 +304,7 @@ describe("a new post is made once (staff tools amendment 15.7)", () => {
         notice: null,
       });
     }
-    expect(sampleStore().hubPosts.size).toBe(18);
+    expect(sampleStore().hubPosts.size).toBe(22);
     expect(await listAudit({ staff: null, kind: null })).toEqual([]);
     expect(request.updatedTags).toEqual([]);
   });
@@ -315,7 +315,7 @@ describe("a new post is made once (staff tools amendment 15.7)", () => {
     await signedInAs(request, "acc-admin");
     expect(await redirectOf(() => savePost(form({ ...tip, once })))).toBe("/hub/new");
     expect((await readFormState(postForm(null)))?.errors).toEqual(["once-expired"]);
-    expect(sampleStore().hubPosts.size).toBe(18);
+    expect(sampleStore().hubPosts.size).toBe(22);
   });
 
   it("keeps the token through a Preview and through a post that fails its checks", async () => {
@@ -324,9 +324,9 @@ describe("a new post is made once (staff tools amendment 15.7)", () => {
     await redirectOf(() => savePost(form({ ...tip, once, intent: "preview" })));
     await redirectOf(() => savePost(form({ ...tip, once, title: "" })));
     expect((await readFormState(postForm(null)))?.errors).toEqual(["post-title-missing"]);
-    expect(sampleStore().hubPosts.size).toBe(18);
+    expect(sampleStore().hubPosts.size).toBe(22);
     await redirectOf(() => savePost(form({ ...tip, once })));
-    expect(sampleStore().hubPosts.size).toBe(19);
+    expect(sampleStore().hubPosts.size).toBe(23);
   });
 
   it("goes back to the list before storing another cover when the first save has been made", async () => {
@@ -337,7 +337,7 @@ describe("a new post is made once (staff tools amendment 15.7)", () => {
     expect(sampleStore().photos.size).toBe(1);
     await redirectOf(() => savePost(form({ ...tip, once, cover: cover() })));
     expect(sampleStore().photos.size).toBe(1);
-    expect(sampleStore().hubPosts.size).toBe(19);
+    expect(sampleStore().hubPosts.size).toBe(23);
   });
 
   it("needs no token to edit a post, and ignores one", async () => {

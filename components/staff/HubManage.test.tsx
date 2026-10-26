@@ -31,7 +31,7 @@ describe("the Hub's list and queue (staff tools spec 2.4 and 3)", () => {
     const posts = await listPostsForStaff();
     render(<HubManage posts={posts} everyPost={true} bookings={[]} campusNames={names} />);
     const table = screen.getByRole("table", { name: "Every post, most recently changed first" });
-    expect(within(table).getAllByRole("row")).toHaveLength(19);
+    expect(within(table).getAllByRole("row")).toHaveLength(23);
     const draft = within(table).getByRole("row", { name: /How to price your first listing/ });
     expect(within(draft).getByRole("cell", { name: "Draft" })).toBeInTheDocument();
     expect(within(draft).getByRole("cell", { name: "No date" })).toBeInTheDocument();

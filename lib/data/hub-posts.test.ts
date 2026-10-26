@@ -48,7 +48,7 @@ beforeEach(() => {
 describe("the public pages' posts (staff tools spec 2.4, plan decisions 11 and 13)", () => {
   it("gives only published posts, as part B's shape, with RSVPs added to an event's count", async () => {
     sampleStore().hubPosts.get("h-013")!.published = false;
-    expect(publishedPosts()).toHaveLength(17);
+    expect(publishedPosts()).toHaveLength(21);
     expect(publishedPost("h-013")).toBeNull();
     expect(publishedPost("h-001")).toMatchObject({ id: "h-001", going: 12, capacity: 80 });
     expect(publishedPost("h-001")).not.toHaveProperty("authorId");
@@ -62,7 +62,7 @@ describe("staff writing posts (staff tools spec 2.4, plan decisions 11 and 12)",
   it("lists every post for staff, drafts too, newest change first, naming who wrote it", async () => {
     const draft = (await save({ fields: { ...event, published: false } }))!;
     const rows = await listPostsForStaff();
-    expect(rows).toHaveLength(19);
+    expect(rows).toHaveLength(23);
     expect(rows[0]).toMatchObject({ id: draft.row.id, published: false, authorName: "Naledi" });
     expect(rows.find((row) => row.id === "h-002")?.authorName).toBe("Naledi");
     expect(rows.find((row) => row.id === "h-001")?.authorName).toBe("The Hub");

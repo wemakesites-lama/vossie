@@ -6796,6 +6796,12 @@
   }
 
   /* Navy on the grey panel. */
+  .hub-feed-note {
+    margin-top: 16px;
+    max-width: 40rem;
+    color: var(--color-ink);
+  }
+
   .hub-feed-empty {
     margin-top: 20px;
     padding: 20px;
