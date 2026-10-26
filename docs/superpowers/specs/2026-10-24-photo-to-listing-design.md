@@ -1,7 +1,7 @@
 # CampusCart photo-to-listing: design spec
 
 - **Date:** 2026-10-24
-- **Status:** Draft for Lama. Not planned or built. Revised 2026-10-26: Groq's `qwen/qwen3.8-27b` (free tier) first, behind a provider-neutral module, with Claude Haiku 5.5 as the fallback (decisions 9 to 13). The open questions (section 12) are Lama's to answer before a plan is written.
+- **Status:** Draft for Lama. Not planned or built. Revised 2026-10-26: Groq's `qwen/qwen3.8-27b` (free tier) first, behind a provider-neutral module, with Claude Haiku 5.5 as the fallback (decisions 9 to 13); the screens chosen with Lama from mockups (section 2). The open questions (section 12) are Lama's to answer before a plan is written.
 - **Scope:** a seller adds a photo on the new listing form, presses one button, and the form comes back with a suggested title, category, condition, description and photo description, plus a price hint from similar CampusCart listings. Textbooks also get their module code and, where one exists, a line about open Looking For requests. Nothing is published or priced for the seller.
 
 ## Related documents
@@ -22,17 +22,56 @@
 - Listing an item takes a photo and a check, not a blank form. A marketplace with few listings fails, so making listing easier is the biggest lever there is.
 - What's suggested is grounded: the category and condition can only be ones the form offers, and the price hint comes only from real CampusCart listings, never from the model.
 - It stands out by knowing the campuses: a textbook's module code, and "students are Looking For this".
-- No client JavaScript is added. The form keeps working without JavaScript, and the feature fails quietly into the form as it is today.
+- No new client component: the form keeps working without JavaScript, and the feature fails quietly into the form as it is today. The only client code it adds to the form is the existing `PendingButton` (section 6).
 
 ## 2. What the seller sees
 
-1. **Photos first on a new listing.** On `/sell/listings/new` the photo field moves to the top of the form, under a short line: "Start with a photo and we'll fill in what we can." The edit form keeps today's order (photos last, [ListingFormView.tsx:200](../../../components/sell/ListingFormView.tsx)).
-2. **"Fill in from my photo".** A second submit button in the photo field, shown whenever the feature is on (decision 14). It uses the first photo (the cover). Without JavaScript the server can't know a file has been chosen, so the button is always there; pressed with no photo, the form comes back with "Add a photo first."
-3. **The form comes back filled in.** Empty fields get the suggestion; anything the seller typed stays as typed (decision 5). A notice above the form: "We filled in what we could see. Check every field before you publish." Focus lands on the notice, as for every form notice today.
-4. **A price hint under the price field, not a price.** "Similar on CampusCart: R150 to R220 (4 listings)." The price field stays empty. No hint when fewer than 3 similar listings exist (decision 8).
-5. **Textbooks.** When the photo is a textbook cover, the title carries the book's title and edition, the description starts with the module code if the cover or spine shows one, and, when open Looking For requests match, a line under the notice: "3 students at Pretoria are Looking For this." with a link to the board filtered to it (`prefetch={false}`).
-6. **When it can't help.** A timeout, a busy service, a reply that fails our check, a refusal, a low-confidence read or a photo whose main subject is a person: the form comes back exactly as sent, with "We couldn't read that photo. Fill it in yourself." Selling is never blocked.
-7. **When the day's limit is reached.** "You've used today's photo fills. Fill it in yourself, or try again tomorrow." (decision 12).
+Chosen with Lama on 2026-10-26 from mockups in the brainstorm companion (kept untracked in `.superpowers/brainstorm/`): the entry point, the reading state, how suggestions are marked, the fallback states and the tablet layout.
+
+### 2.1 The photo card (new listings only)
+
+1. **A navy "Start with a photo" card at the top of `/sell/listings/new`,** above the "What are you listing?" field. It holds:
+   - the heading "Start with a photo";
+   - the line "We'll fill in what we can see. You check it before anything goes live.";
+   - the photo field (today's `PhotoFieldset`, moved into the card: thumbnails, Add photos, each photo's buttons, the descriptions);
+   - the "Fill in from my photo" button: a solid sky pill with navy text, the card's main action.
+2. **Then a divider, "or fill it in yourself",** and the form as it is today, without the photo field.
+3. **The edit form is unchanged** (photos last, [ListingFormView.tsx:200](../../../components/sell/ListingFormView.tsx)), with no card and no button (decision 4).
+4. **On navy:** small text is white; sky is only the button (a solid pill). The thumbnails' "add" tile is a white dashed outline. The photo buttons inside the card use the card's white-on-navy variant of `.sell-action`.
+5. **Tablet and desktop** (`wide:`): the card becomes two columns, the cover large on the left (about 120px, the other photos small beneath it) and the heading, line and button on the right. It stays inside the form's column, beside the seller bar's sidebar; the form below keeps its width.
+6. **The button is always there while the feature is on** (decision 14). Without JavaScript the server can't know a file has been chosen, so it never hides; pressed with no photo, it answers with a notice (2.4).
+7. **Not borrowed from the AI SDK's Attachments component:** its remove button that shows on hover (CampusCart has no hover-only features) and its hover-card previews. Kept: a clear thumbnail row with the cover first and large.
+
+### 2.2 While the photo is read
+
+1. **The button is a `PendingButton`** (`components/kit/PendingButton.tsx`): while the post is pending it reads "Reading your photo…" and ignores a second press.
+2. **A status line appears under it,** inside the card: "Looking for a title, category and condition. This takes a few seconds." (`role="status"`, so it's announced once). It's in the markup but hidden until the button is pending.
+3. **A soft band of light sweeps the cover photo,** up and down, so it's clear which photo is being read (the "image processing" idea from AICSS, rebuilt in CSS).
+4. **The fields that are still empty shimmer** below the card, so the seller sees where the result will land. Fields the seller already filled stay still: text fields through `:placeholder-shown` (each gets `placeholder=" "`), selects through `:has(option[value=""]:checked)`, radio groups through `:not(:has(:checked))`.
+5. **All of it is CSS keyed off the pending button:** `.photo-start:has([aria-disabled="true"])` for the card, and `form:has(.photo-start [aria-disabled="true"])` for the fields. Only `transform` and `opacity` animate (the sweep and shimmer are pseudo-elements moved with `translate`). Under `prefers-reduced-motion` and data saver (`html[data-low-data]`) nothing moves: the status line and the button's words carry it.
+6. **Without JavaScript,** there's no pending state, so the browser's own loading indicator is all there is. That's fine.
+7. **No fake progress.** No "Matching a category… Checking prices…" steps: it's one request, and the words would claim steps that don't happen.
+
+### 2.3 The filled form
+
+1. **A notice above the form:** "**We filled in {n} fields from your photo.** Check each one before you publish." ({n} is the fields actually filled; "1 field" for one.) Announced and focused, as every form notice is today.
+2. **A "Suggested" tag on each filled field's label:** a small pill, pale (`#E1F0F7`) with navy text, inside the `<label>` (or `<legend>`), so it's read with the label. It's words, not colour, so it meets WCAG 1.4.1. Only the fields filled by this press get one (decision 5: a typed field is never filled, so never tagged). The tags live in form state with the values, and are gone once the form is saved or reloaded.
+3. **The price hint under the price field,** in the field's hint position and in its `aria-describedby`: "Similar on CampusCart: R180 to R260 (5 listings)." The price box stays empty. No hint with fewer than 3 similar listings (decision 8).
+4. **Textbooks:** the title carries the book's title and edition, and the description starts with the module code when the cover or spine shows one. When open Looking For requests match (decision 15), a line under the notice: "{n} students at {campus} are Looking For this." with "See their requests", a link to the board filtered to it (`prefetch={false}`).
+5. **The photo's description** (the cover's alt text) is filled only when empty, and tagged like the other fields.
+
+### 2.4 When there's no suggestion
+
+The form always comes back exactly as it was sent, so nothing typed is lost. Each case is a form notice above the form (announced and focused), and the fields are untouched.
+
+| Case | Notice | Why it says what it says |
+|---|---|---|
+| Couldn't read it: a timeout, a busy service, a reply that failed our check, a refusal or a low-confidence read | "**We couldn't read that photo.** Fill it in yourself below, or try a clearer, closer photo of the item." | The seller can't act on which one, so it doesn't say. |
+| A person is the main subject | "**We don't fill in listings from photos of people.** Fill it in yourself below. If a person is in the photo, make sure they're happy to be in it." | The seller can act on it (photograph the item), and it repeats the consent rule. |
+| No photo yet | "**Add a photo first.** Choose one above, then press Fill in from my photo." | The button never hides (2.1, item 6). |
+| Today's limit reached (decision 12) | "**You've used today's photo fills.** Fill it in yourself below, or try again tomorrow." | The button stays (no disabled controls), drawn as a secondary button (white outline on navy), with a line in the card: "You can still add photos. Filling in from them is back tomorrow." Pressing it again repeats the notice. |
+
+Selling is never blocked: Save works in every case.
 
 ## 3. Decisions
 
@@ -46,7 +85,7 @@
 ### The merge
 
 5. **Typed fields are never overwritten.** A field is filled only when its posted value is empty (after `cleanLine`). Kind is set to "An item" only if unset. The photo description is filled only for the cover, and only when empty. A second press fills only what's still empty.
-6. **Suggestions are values, not decisions.** They go into the form state's `values`, the same as typed text. `checkListing` runs on Save exactly as today, with every limit (`TITLE_MAX`, `DESCRIPTION_MAX`, `ALT_MAX`). The model's text is cut to those limits before the merge.
+6. **Suggestions are values, not decisions.** They go into the form state's `values`, the same as typed text, with a `suggested` list of the field names this press filled (for the tags, 2.3). `checkListing` runs on Save exactly as today, with every limit (`TITLE_MAX`, `DESCRIPTION_MAX`, `ALT_MAX`). The model's text is cut to those limits before the merge. Any later post of the form (a photo button, a Save that fails) drops `suggested`, so a tag never outlives the press that filled its field.
 7. **Category and condition are closed lists.** The model is given the category slugs and the four conditions as an enum in the output schema, so it can't return anything else. A slug not in `getCategories()` at merge time is dropped.
 
 ### The price hint
@@ -67,7 +106,7 @@
     - `categorySlug` is one of `getCategories()`' slugs and `condition` one of the four;
     - `confidence` isn't `"low"` and `personIsSubject` is `false`.
 
-    Text is then trimmed with `cleanLine` and cut to the form's limits before the merge. Anything else is a quiet failure: the unchanged form and the "couldn't read" notice. Failures are logged by provider and kind only (`timeout`, `rate-limited`, `refusal`, `bad-output`, `low-confidence`, `person`, `model-gone`, `api-error`), never the photo or text, like the demo sign-in's logging.
+    Text is then trimmed with `cleanLine` and cut to the form's limits before the merge. Anything else is a quiet failure: the unchanged form and a notice (2.4), the person notice for `person` and the "couldn't read" notice for every other kind. Failures are logged by provider and kind only (`timeout`, `rate-limited`, `refusal`, `bad-output`, `low-confidence`, `person`, `model-gone`, `api-error`), never the photo or text, like the demo sign-in's logging.
 
 ### Limits and switches
 
@@ -93,17 +132,22 @@
 
 ## 5. Accessibility
 
-- The button is a real submit button, at least 44px, with a visible label.
-- The notice is announced and focused, as form notices are today.
+- The button is a real submit button, at least 44px, with a visible label. Nothing is hover-only, and no control is ever disabled (the limit state is a secondary button, 2.4).
+- The notice is announced and focused, as form notices are today. While pending, one status line is announced once (2.2); there's no running commentary.
+- "Suggested" is a word inside each label, not a colour (WCAG 1.4.1), so a screen reader hears "Title, Suggested".
+- Colour on the navy card: white small text, sky only for the solid button (its navy text on sky passes AA), as the brand rules say.
+- The sweep and shimmer are decoration (pseudo-elements, no text) and still under reduced motion and data saver.
 - The suggested photo description improves the alt text sellers often leave empty. It's an editable field, never applied silently.
 - The price hint is text tied to the price field with `aria-describedby`.
+- Axe runs on the filled form and on one fallback state.
 
 ## 6. Performance
 
-- **No client JavaScript is added.** Both SDKs are server-only. After `pnpm build`, `grep -lE "groq|anthropic" .next/static/chunks/*.js` must print nothing (one more line beside the existing chunk greps).
+- **No new client component.** Both SDKs are server-only. After `pnpm build`, `grep -lE "groq|anthropic" .next/static/chunks/*.js` must print nothing (one more line beside the existing chunk greps).
 - **A fallback adds time only when it's needed.** With Groq answering, a suggestion is fast. When Groq is busy, the 429 comes back at once and Haiku answers in a few seconds; only a Groq timeout costs its full 10 seconds before the fallback starts.
-- Moving the photo field to the top changes markup order only. The new listing form's JS stays at its recorded figure.
-- The suggest post takes a few seconds. The button shows the form's existing pending state; nothing animates beyond what the form already does.
+- **The form's JavaScript grows only by `PendingButton`**, an existing component not yet on the listing form (it's on Your listings and a thread). The plan records the new and edit forms' bytes before and after, and keeps each page inside the 150 KB first-visit budget. The edit form doesn't render the button, so it shouldn't change.
+- Moving the photo field into the card changes markup order only.
+- The reading state is CSS only (2.2), about 30 lines in `app/globals.css` under `.photo-start*`, using brand tokens and the motion rules.
 
 ## 7. Files
 
@@ -118,8 +162,11 @@
 | `lib/data/listing-ai/fake.ts` | New: fixed replies for tests and the demo (decision 13) |
 | `lib/data/listing-ai-limits.ts` | New: the daily count (decision 12), with a Supabase twin |
 | `package.json` | `groq-sdk` and `@anthropic-ai/sdk` (server-only) |
-| `lib/selling/notices.ts` | The `suggested`, `suggest-failed` and `suggest-limit` notices |
-| `components/sell/ListingFormView.tsx` | Photos first on a new listing, the button, the hint, the Looking For line |
+| `lib/selling/notices.ts` | The `suggested` notice (with its count) and the four fallback notices: `suggest-failed`, `suggest-person`, `suggest-no-photo`, `suggest-limit` (2.3, 2.4) |
+| `components/sell/ListingFormView.tsx` | The photo card on a new listing, the divider, the "Suggested" tags, the price hint, the Looking For line (2.1, 2.3) |
+| `components/sell/PhotoStart.tsx` | New, a Server Component: the navy card around `PhotoFieldset`, the button (`PendingButton`), the status line and the limit line (2.1, 2.2, 2.4) |
+| `components/forms/*` (`TextField`, `SelectField`, `RadioGroup`) | An optional `tag` beside the label, and `placeholder=" "` on text fields for the shimmer (2.2, 2.3) |
+| `app/globals.css` | `.photo-start*`: the card, its two-column `wide:` layout, the sweep, the shimmer, the tag, the reduced-motion and data saver stills (2.1 to 2.3) |
 | `app/privacy/page.tsx` | The provider line (section 4) |
 | `docs/reference/GO-LIVE.md` | The switch, the key, and the privacy line before turning it on |
 
@@ -133,7 +180,9 @@ Risk-guarding only:
   - The price hint needs 3 or more matches and leaves out "from" and free.
   - Every failure kind leaves the form unchanged. The limit refuses the 11th call in 24 hours.
 - **Once, by hand, with real keys (not in CI):** Groq's strict `json_schema` with an image, on 3 photos (decision 9).
-- **End-to-end:** one write test with the fake in `tests/e2e/selling-writes.spec.ts` (photo, suggest, fields filled, Save publishes), and an axe check of the filled form.
+  - Tags show only on the fields this press filled, and a later post drops them (decision 6).
+- **End-to-end:** one write test with the fake in `tests/e2e/selling-writes.spec.ts` (photo, suggest, fields filled and tagged, the notice, Save publishes), and axe on the filled form and on the "couldn't read" state.
+- **Screenshots** (only with `SCREENSHOTS=1`): the card at 390 and 1440, the filled form, and the four fallback states. The reading state is checked by eye in the plan's review, since it lasts only while a post is pending.
 - **Build:** the chunk grep in section 6.
 
 ## 9. Go-live
