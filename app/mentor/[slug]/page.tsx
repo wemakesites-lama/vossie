@@ -16,7 +16,7 @@ import { checkInForm, noteForm, takeNotice } from "@/lib/staff/form-state";
 import { MENTOR_WINDOW_DAYS } from "@/lib/staff/mentor";
 import { issueOnceToken } from "@/lib/staff/once";
 import { staffNoticeText } from "@/lib/staff/notices";
-import { MENTOR_PATH, mentorShopPath } from "@/lib/staff/paths";
+import { mentorShopPath, hubEyebrow } from "@/lib/staff/paths";
 import { sastDate } from "@/lib/time";
 import { PageTransition } from "@/components/kit/PageTransition";
 
@@ -62,7 +62,7 @@ async function Shop({ params }: Pick<PageProps<"/mentor/[slug]">, "params">) {
     recentCounts(shop.slug, MENTOR_WINDOW_DAYS, now).then((counts) => counts.previous, () => null),
   ]);
   return (
-    <StaffFrame account={account} area="Mentoring" title={shop.name} current={MENTOR_PATH} notice={staffNoticeText(notice)}>
+    <StaffFrame account={account} area={hubEyebrow(account)} title={shop.name} route="/mentor/[slug]" notice={staffNoticeText(notice)}>
       <MentorShop
         shop={shop}
         campusName={campuses.find((campus) => campus.slug === shop.campusSlug)?.name ?? ""}

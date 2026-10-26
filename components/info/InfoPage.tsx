@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 import { longSastDate } from "@/lib/time";
 
 export type InfoSection = {
@@ -12,6 +14,8 @@ export type InfoSection = {
 };
 
 type InfoPageProps = {
+  /** The page's route, for its breadcrumb trail (wayfinding spec 3.1). */
+  route: string;
   title: string;
   /** One line under the title. */
   lede: string;
@@ -27,9 +31,10 @@ type InfoPageProps = {
  * banner when there is one, then "On this page" and the sections. The list is a row of pills under the lede on phones
  * and tablets, and a column on the left from the desktop step. The text keeps to about 65 characters a line.
  */
-export function InfoPage({ title, lede, updated, draft = false, sections }: InfoPageProps) {
+export function InfoPage({ route, title, lede, updated, draft = false, sections }: InfoPageProps) {
   return (
     <div className="page info-page">
+      <Trail crumbs={trailFor(route, { names: { [route]: title } })} />
       <h1 className="info-title">{title}</h1>
       <p className="info-lede">{lede}</p>
       <p className="info-updated">

@@ -1,16 +1,14 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { AccountSkeleton } from "@/components/account/AccountSkeleton";
 import { DetailsView, detailsForm } from "@/components/account/DetailsView";
-import { ArrowLeftIcon } from "@/components/icons";
 import { PageTransition } from "@/components/kit/PageTransition";
 import { Reveal } from "@/components/kit/Reveal";
-import { NavPending } from "@/components/ui/NavPending";
+import { Trail } from "@/components/ui/Trail";
 import { DETAILS_FORM, readFormState } from "@/lib/auth/form-state";
 import { requireAccount } from "@/lib/auth/session";
 import { getCampuses } from "@/lib/data";
-import { BACK } from "@/lib/motion";
-import { DETAILS_PATH, YOU_PATH } from "@/lib/you/paths";
+import { trailFor } from "@/lib/nav/trail";
+import { DETAILS_PATH } from "@/lib/you/paths";
 
 /** Like every account page, kept out of search engines (accounts spec 3.3; `/account` is in robots.txt too). */
 export const metadata: Metadata = { title: "Your details", robots: { index: false } };
@@ -23,11 +21,7 @@ export default function DetailsPage() {
   return (
     <PageTransition>
       <div className="page account-page">
-        <Link href={YOU_PATH} transitionTypes={BACK} className="account-crumb">
-          <ArrowLeftIcon />
-          Back to You
-          <NavPending />
-        </Link>
+        <Trail crumbs={trailFor("/account/details")} />
         <h1 className="account-title">Your details</h1>
         <Reveal fallback={<AccountSkeleton />}>
           <DetailsContent />

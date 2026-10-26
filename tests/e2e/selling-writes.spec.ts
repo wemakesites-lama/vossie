@@ -207,7 +207,8 @@ test("Back after publishing shows the storefront with the new listing, not a kep
   await page.evaluate(() => ((window as unknown as { kept: boolean }).kept = true));
   await page.getByRole("link", { name: "Edit shop" }).filter({ visible: true }).click();
   await expect(page).toHaveURL(/\/sell\/profile$/);
-  await main(page).getByRole("link", { name: "Your shop" }).filter({ visible: true }).click();
+  // The trail's back link (wayfinding spec 3.1).
+  await main(page).getByRole("link", { name: "Back to Sell" }).filter({ visible: true }).click();
   await expect(page).toHaveURL(/\/sell$/);
   await main(page).getByRole("link", { name: "New listing" }).filter({ visible: true }).click();
   await expect(page).toHaveURL(/\/sell\/listings\/new$/);

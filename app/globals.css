@@ -233,6 +233,91 @@
     color: var(--color-sky-dark);
   }
 
+  /* The breadcrumb trail (wayfinding spec 3.1): on phones only the parent, as a back link; the whole trail from the
+     tablet step. One list either way, so the links are never in the page twice. */
+  .trail {
+    margin-bottom: 4px;
+  }
+
+  .trail ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 6px;
+    min-width: 0;
+  }
+
+  .trail li {
+    display: none;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .trail li.trail-parent {
+    display: flex;
+  }
+
+  .trail-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 44px;
+    max-width: 100%;
+    color: var(--color-sky-dark);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .trail-chevron {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-left: -4px;
+  }
+
+  .trail-label {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .trail-here {
+    color: var(--color-ink);
+    font-size: 14px;
+  }
+
+  @media (hover: hover) {
+    .trail-link:hover .trail-label {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .trail li {
+      display: flex;
+    }
+
+    /* The separator is decoration: the empty alt text keeps screen readers from reading it. */
+    .trail li + li::before {
+      content: "/" / "";
+      margin-right: 6px;
+      color: var(--color-idle-text);
+    }
+
+    .trail-chevron {
+      display: none;
+    }
+
+    .trail li:not(:last-child) .trail-label {
+      max-width: 16rem;
+    }
+
+    .trail li:last-child {
+      flex: 1 1 12rem;
+    }
+  }
+
   .btn {
     display: inline-flex;
     align-items: center;
@@ -5083,31 +5168,6 @@
     padding: 8px 16px 64px;
   }
 
-  .listing-crumbs ol {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0 8px;
-    color: var(--color-muted);
-    font-size: 13px;
-  }
-
-  .listing-crumbs li + li::before {
-    content: "/";
-    margin-right: 8px;
-  }
-
-  .listing-crumbs a {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 44px;
-    min-height: 44px;
-    color: var(--color-sky-dark);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-
   .listing-layout {
     display: grid;
     gap: 22px;
@@ -7155,21 +7215,6 @@
 
 /* --- Accounts: privacy settings (accounts plan, Task 11, spec 3.3) --- */
 @layer components {
-  .account-crumb {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 44px;
-    margin-bottom: 8px;
-    color: var(--color-sky-dark);
-    font-weight: 600;
-  }
-
-  .account-crumb svg {
-    width: 20px;
-    height: 20px;
-  }
-
   /* Links in the text are underlined, so colour isn't the only sign of them. Only links in a paragraph: the error
      summary's links (inside .account-section too) keep their red. */
   .account-section p a:not(.btn) {
@@ -7196,20 +7241,6 @@
 
 /* --- Messaging: shared parts (messaging plan, Task 8, spec 2.3, 3.1 and 3.3) --- */
 @layer components {
-  .msg-crumb {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 44px;
-    color: var(--color-sky-dark);
-    font-weight: 600;
-  }
-
-  .msg-crumb svg {
-    width: 20px;
-    height: 20px;
-  }
-
   .msg-summary {
     display: flex;
     align-items: center;
@@ -7641,11 +7672,6 @@
     max-width: 48rem;
   }
 
-  /* A grid would stretch the back link across the column, under the header's pennant; keep it as wide as its words. */
-  .thread-column > .msg-crumb {
-    justify-self: start;
-  }
-
   .thread-head {
     display: flex;
     align-items: center;
@@ -7786,11 +7812,6 @@
     display: grid;
     gap: 16px;
     max-width: 36rem;
-  }
-
-  /* A grid would stretch the back link across the column, under the header's pennant; keep it as wide as its words. */
-  .report-column > .msg-crumb {
-    justify-self: start;
   }
 
   .report-title {
@@ -8226,15 +8247,6 @@
 
 /* --- Selling: my listings (selling plan, Task 11, spec 2.9) --- */
 @layer components {
-  .sell-crumb {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 44px;
-    color: var(--color-sky-dark);
-    font-weight: 600;
-  }
-
   /* The notice's "See it as buyers do" is navy on pale like the text round it, so the underline is what marks it. */
   .sell-column .form-notice a {
     text-decoration: underline;
@@ -8431,40 +8443,22 @@
     text-transform: uppercase;
   }
 
-  /* The sections wrap onto more lines on a phone, so nothing scrolls sideways. 44px tall, 8px apart. */
-  .staff-nav ul {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 20px;
-  }
-
-  .staff-nav-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 16px;
-    border: 1.5px solid var(--color-field);
-    border-radius: 999px;
-    color: var(--color-navy);
-    font-weight: 600;
-  }
-
-  /* The open section: white on navy (12.6:1). */
-  .staff-nav-link[aria-current="page"] {
-    border-color: var(--color-navy);
-    background: var(--color-navy);
-    color: var(--color-white);
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .staff-nav-link:not([aria-current="page"]):hover {
-      border-color: var(--color-navy);
-    }
-  }
-
   .staff-notice {
     margin-top: 20px;
+  }
+
+  /* More's groups (wayfinding spec 3.3), named like the sidebar's. */
+  .staff-more-group {
+    display: grid;
+    gap: 10px;
+  }
+
+  .staff-more-heading {
+    color: var(--color-muted);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
   }
 
   .staff-body {
@@ -8622,9 +8616,11 @@
     margin-top: 8px;
   }
 
-  .staff-skeleton-nav {
+  /* The trail's line (wayfinding spec 3.1): a back link on phones, the trail from the tablet step, both 44px. */
+  .staff-skeleton-trail {
+    width: 7rem;
     height: 44px;
-    margin-top: 20px;
+    margin-bottom: 4px;
   }
 
   .staff-skeleton-body {
@@ -8722,28 +8718,38 @@
 
 /* --- Staff tools: Featured, pickup points and the audit log (staff tools plan, Task 13, spec 2.3) --- */
 @layer components {
-  .staff-filters {
+  /* The list filters (wayfinding spec 3.4): the selects and Filter on one line where they fit, wrapping on phones. */
+  .staff-filter {
     display: grid;
-    gap: 8px;
+    gap: 10px;
   }
 
-  .staff-filters ul {
+  .staff-filter-form {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    align-items: end;
+    gap: 12px;
   }
 
-  .staff-filter-label {
+  .staff-filter-form .form-field {
+    flex: 1 1 12rem;
+    max-width: 20rem;
+  }
+
+  .staff-filter-form .btn {
+    min-height: 48px;
+  }
+
+  .staff-filter-summary {
     color: var(--color-muted);
     font-size: 14px;
-    font-weight: 600;
   }
 
-  /* A chosen filter, like the open section: white on navy. */
-  .staff-nav-link[aria-current="true"] {
-    border-color: var(--color-navy);
-    background: var(--color-navy);
-    color: var(--color-white);
+  .staff-filter-clear {
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   .staff-points {
@@ -10257,11 +10263,20 @@
     background: var(--color-white);
   }
 
-  .section-bar ul {
+  /* The groups fold into one row (wayfinding spec 3.3): the tabs are the grid's items, the sidebar-only ones and the
+     headings drop out, and the row is at most 32rem wide in the middle. */
+  .section-bar {
     display: grid;
     grid-template-columns: repeat(var(--tabs), 1fr);
-    max-width: 32rem;
-    margin-inline: auto;
+    padding-inline: max(env(safe-area-inset-left), calc((100% - 32rem) / 2));
+  }
+
+  .section-bar :is(.section-group, ul) {
+    display: contents;
+  }
+
+  .section-bar :is(.section-group-label, li[data-only="wide"], .section-tab-label-wide) {
+    display: none;
   }
 
   /* Next keeps pages you've left in the page, hidden with an inline display style (Activity:
@@ -10310,6 +10325,13 @@
     padding: 16px 8px;
   }
 
+  /* The console's grouped sidebar is taller than a short laptop screen: it scrolls on its own, below the header. */
+  .section-bar {
+    max-height: calc(100svh - 88px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
   .section-bar ul,
   .section-side ul {
     display: grid;
@@ -10320,10 +10342,18 @@
     flex-direction: row;
     justify-content: start;
     gap: 10px;
-    height: 44px;
-    padding-inline: 8px;
+    height: auto;
+    min-height: 44px;
+    padding: 6px 8px;
     border-radius: 10px;
     font-size: 15px;
+  }
+
+  /* A long name ("Posts and office hours") wraps in the sidebar rather than pushing its badge out of the column. */
+  .section-tab-label {
+    min-width: 0;
+    line-height: 1.2;
+    white-space: normal;
   }
 
   .section-tab-icon {
@@ -10344,17 +10374,29 @@
     position: static;
     margin-left: auto;
   }
+
+  .section-bar :is(li[data-only="phone"], .section-tab-label-phone) {
+    display: none;
+  }
+
+  .section-group + .section-group {
+    margin-top: 16px;
+  }
+
+  .section-group-label {
+    padding: 0 8px 6px;
+    color: var(--color-muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
 }
 
 @media (min-width: 64rem) and (min-height: 30rem) {
   .section-main {
     --section-header: 122px;
   }
-}
-
-/* Inside a section the bar is the navigation: StaffFrame's pill row steps aside (plan decision 1). */
-.section-shell:has(.section-bar) .staff-nav {
-  display: none;
 }
 
 /* The slim footer on section pages (role views spec 4.1): the legal links and the campus line stay. */

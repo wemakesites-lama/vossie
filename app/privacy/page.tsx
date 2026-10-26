@@ -372,6 +372,7 @@ export default function PrivacyPage() {
   return (
     <PageTransition>
       <InfoPage
+        route="/privacy"
         title="Privacy policy"
         lede="How CampusCart handles your personal information, under the Protection of Personal Information Act (POPIA)."
         updated="2026-10-21"

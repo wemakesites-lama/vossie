@@ -1,17 +1,23 @@
+import type { ReactNode } from "react";
 import {
+  AlertIcon,
   BagIcon,
   CalendarIcon,
+  ChartIcon,
   ClockIcon,
   DownloadIcon,
   FlagIcon,
   GridIcon,
   HomeIcon,
   InfoIcon,
+  MapPinIcon,
   MenuIcon,
   MessageIcon,
   PlusSquareIcon,
   ShieldIcon,
   StoreIcon,
+  TrendingIcon,
+  UserIcon,
 } from "@/components/icons";
 import { getViewer } from "@/lib/auth/session";
 import { openBookingCount } from "@/lib/data/hub-posts";
@@ -21,17 +27,9 @@ import { onboardingPath } from "@/lib/selling/paths";
 import { openReportCount } from "@/lib/data/staff-reports";
 import { countWaitingShops } from "@/lib/data/staff-shops";
 import { queueFor } from "@/lib/selling/queue";
-import {
-  ADMIN_MORE_PATH,
-  ADMIN_MORE_SECTIONS,
-  ADMIN_PATH,
-  ADMIN_REPORTS_PATH,
-  ADMIN_SELLERS_PATH,
-  HUB_MANAGE_PATH,
-  MENTOR_EXPORT_PATH,
-  MENTOR_PATH,
-} from "@/lib/staff/paths";
+import { ADMIN_MORE_PATH, HUB_MANAGE_PATH, MENTOR_EXPORT_PATH, MENTOR_PATH } from "@/lib/staff/paths";
 import { canUse } from "@/lib/staff/roles";
+import { ADMIN_MORE_SECTIONS, STAFF_GROUPS, STAFF_SECTIONS } from "@/lib/staff/sections";
 import { SectionBar, type SectionTab } from "./SectionBar";
 
 // The three sections' bars (role views spec 4.1). Each reads the session itself, inside the layout's <Suspense>, and
@@ -99,7 +97,25 @@ export async function SellBar() {
   return <SectionBar label="Selling" tabs={tabs} />;
 }
 
-/** The Hub console: admins only. Badges from the same counters Today's queue reads (plan decision 3). */
+const SECTION_ICONS: Readonly<Record<string, ReactNode>> = {
+  today: <GridIcon />,
+  shops: <StoreIcon />,
+  reports: <FlagIcon />,
+  hidden: <AlertIcon />,
+  posts: <CalendarIcon />,
+  mentoring: <UserIcon />,
+  numbers: <ChartIcon />,
+  audit: <ClockIcon />,
+  featured: <TrendingIcon />,
+  points: <MapPinIcon />,
+  staff: <ShieldIcon />,
+};
+
+/**
+ * The Hub console: admins only (wayfinding spec 3.3). Every section from lib/staff/sections.ts under its group's heading
+ * in the sidebar; on phones the five tabs (Today, Shops, Reports, Hub, More), the rest in More. Badges from the same
+ * counters Today's queue reads (plan decision 3).
+ */
 export async function AdminBar() {
   const account = await getViewer().catch(() => null);
   if (!canUse(account, "admin")) return null;
@@ -108,37 +124,40 @@ export async function AdminBar() {
     orNull(openReportCount()),
     orNull(openBookingCount()),
   ]);
-  const tabs: SectionTab[] = [
-    { key: "today", href: ADMIN_PATH, label: "Today", icon: <GridIcon />, prefetch: false },
-    {
-      key: "shops",
-      href: ADMIN_SELLERS_PATH,
-      label: "Shops",
-      icon: <StoreIcon />,
-      match: "section",
-      prefetch: false,
-      badge: badge(waiting, "shop waiting", "shops waiting"),
-    },
-    {
-      key: "reports",
-      href: ADMIN_REPORTS_PATH,
-      label: "Reports",
-      icon: <FlagIcon />,
-      match: "section",
-      prefetch: false,
-      badge: badge(reports, "open report", "open reports"),
-    },
-    {
-      key: "hub",
-      href: HUB_MANAGE_PATH,
-      label: "Hub",
-      icon: <CalendarIcon />,
-      prefetch: false,
-      badge: badge(slots, "slot request waiting", "slot requests waiting"),
-    },
-    { key: "more", href: ADMIN_MORE_PATH, label: "More", icon: <MenuIcon />, prefetch: false, also: ADMIN_MORE_SECTIONS },
-  ];
-  return <SectionBar label="Hub console" tabs={tabs} />;
+  const badges: Partial<Record<string, SectionTab["badge"]>> = {
+    shops: badge(waiting, "shop waiting", "shops waiting"),
+    reports: badge(reports, "open report", "open reports"),
+    posts: badge(slots, "slot request waiting", "slot requests waiting"),
+  };
+  const groupLabel = new Map(STAFF_GROUPS.map((group) => [group.key, group.label]));
+  const tabs: SectionTab[] = STAFF_SECTIONS.map((section) => ({
+    key: section.key,
+    href: section.href,
+    label: section.label,
+    icon: SECTION_ICONS[section.key],
+    group: groupLabel.get(section.group),
+    match: section.match,
+    prefetch: false,
+    only: section.phone ? undefined : "wide",
+    short: section.phone && section.phone !== section.label ? section.phone : undefined,
+    badge: badges[section.key],
+  }));
+  const more: SectionTab = {
+    key: "more",
+    href: ADMIN_MORE_PATH,
+    label: "More",
+    icon: <MenuIcon />,
+    prefetch: false,
+    also: ADMIN_MORE_SECTIONS,
+    only: "phone",
+  };
+  return <SectionBar label="Hub console" tabs={[...tabs, more, { ...EXIT, only: "wide" }]} />;
+}
+
+/** The staff pages outside /admin (the Hub's tools, Mentoring): the console's bar for an admin, else Mentoring's. */
+export async function StaffBar() {
+  const account = await getViewer().catch(() => null);
+  return canUse(account, "admin") ? <AdminBar /> : <MentorBar />;
 }
 
 /** Mentoring: mentors and admins (staff tools spec 2.1). */

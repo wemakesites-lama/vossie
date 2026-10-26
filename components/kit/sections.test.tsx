@@ -101,21 +101,53 @@ describe("AdminBar", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("gives an admin Today, Shops, Reports, Hub and More, with the Overview's counts as badges", async () => {
+  it("gives an admin every section under its group in the sidebar, and five tabs on phones (wayfinding spec 3.3)", async () => {
     viewer.account = { id: "x", roles: ["admin"] };
     render(await AdminBar());
     const bar = screen.getByRole("navigation", { name: "Hub console" });
-    expect(labels(bar)).toEqual(["Today", "Shops", "Reports", "Hub", "More"]);
-    expect(within(bar).getByRole("link", { name: "Shops" })).toHaveAccessibleDescription(/3\s+shops waiting/);
-    expect(within(bar).getByRole("link", { name: "Reports" })).toHaveAccessibleDescription(/2\s+open reports/);
-    expect(within(bar).getByRole("link", { name: "Hub" })).toHaveAccessibleDescription(/1\s+slot request waiting/);
+    const items = [...bar.querySelectorAll("li")];
+    // The phone row: every tab not kept for the sidebar, by its short label where it has one (CSS shows only these).
+    const phone = items
+      .filter((item) => item.dataset.only !== "wide")
+      .map((item) => (item.querySelector(".section-tab-label-phone") ?? item.querySelector(".section-tab-label"))!.textContent);
+    expect(phone).toEqual(["Today", "Shops", "Reports", "Hub", "More"]);
+    // The sidebar: the groups' headings, then each group's sections; More is phone-only.
+    expect(within(bar).getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      "Needs you",
+      "Hub",
+      "Insight",
+      "Set up",
+    ]);
+    const wide = items
+      .filter((item) => item.dataset.only !== "phone")
+      .map((item) => item.querySelector(".section-tab-label")!.textContent);
+    expect(wide).toEqual([
+      "Today",
+      "Shops",
+      "Reports",
+      "Hidden",
+      "Posts and office hours",
+      "Mentoring",
+      "Last week",
+      "Audit log",
+      "Featured",
+      "Pickup points",
+      "Staff",
+      "CampusCart",
+    ]);
+    expect(within(bar).getByRole("link", { name: /^Shops/ })).toHaveAccessibleDescription(/3\s+shops waiting/);
+    expect(within(bar).getByRole("link", { name: /^Reports/ })).toHaveAccessibleDescription(/2\s+open reports/);
+    expect(within(bar).getByRole("link", { name: /^Posts and office hours/ })).toHaveAccessibleDescription(
+      /1\s+slot request waiting/,
+    );
+    expect(within(bar).getByRole("link", { name: "More" })).toHaveAttribute("href", "/admin/more");
   });
 
   it("drops a badge whose count failed, never guesses", async () => {
     viewer.account = { id: "x", roles: ["admin"] };
     counts.failing = true;
     render(await AdminBar());
-    expect(screen.getByRole("link", { name: "Shops" })).not.toHaveAttribute("aria-describedby");
+    expect(screen.getByRole("link", { name: /^Shops/ })).not.toHaveAttribute("aria-describedby");
   });
 });
 

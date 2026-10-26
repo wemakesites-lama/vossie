@@ -1,22 +1,21 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ErrorSummary } from "@/components/forms/ErrorSummary";
-import { ArrowLeftIcon } from "@/components/icons";
 import { MessageField } from "@/components/messages/MessageField";
 import { SafetyTips } from "@/components/messages/SafetyTips";
 import { ScamCheck } from "@/components/messages/ScamCheck";
-import { NavPending } from "@/components/ui/NavPending";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
 import { budgetLabel, dayMonth } from "@/lib/format";
 import { sendOffer } from "@/lib/looking-for/actions";
 import { offerErrors, offerFieldIds } from "@/lib/looking-for/errors";
-import { offerFieldPrefix, requestPath } from "@/lib/looking-for/paths";
+import { offerFieldPrefix } from "@/lib/looking-for/paths";
 import type { OfferStatus, OfferSubject } from "@/lib/looking-for/subjects";
 import { threadPath } from "@/lib/messaging/paths";
 import { parseWarnings, type ScamWarning } from "@/lib/messaging/scam-check";
-import { BACK } from "@/lib/motion";
 import type { LookingForRequest } from "@/lib/types";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 /** The composer's fields after a post (D decision 3): what was typed, what's wrong, and the scam check's warnings. */
 export type OfferForm = { body: string; listing: string; errors: FormError[]; warnings: ScamWarning[] };
@@ -115,11 +114,12 @@ export function OfferView({ subject, status, form }: OfferViewProps) {
   }
   return (
     <>
-      <Link href={requestPath(request.id)} transitionTypes={BACK} prefetch={false} className="msg-crumb">
-        <ArrowLeftIcon />
-        Back to the request
-        <NavPending />
-      </Link>
+      <Trail
+        crumbs={trailFor("/looking-for/[id]/offer", {
+          params: { id: request.id },
+          names: { "/looking-for/[id]": request.title },
+        })}
+      />
       <h1 className="composer-title">Offer to help</h1>
       <div className="composer-layout">
         <div className="composer-main">

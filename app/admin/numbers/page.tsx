@@ -42,7 +42,7 @@ async function Numbers({ searchParams }: Pick<PageProps<"/admin/numbers">, "sear
   const { weeks, raw } = await countByWeek(new Date());
   const chosen = parseNumbersCampus(params, slugs);
   return (
-    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Last week" current={ADMIN_NUMBERS_PATH} notice={staffNoticeText(notice)}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Last week" route="/admin/numbers" notice={staffNoticeText(notice)}>
       <AdminNumbers
         weeks={weeks}
         shown={protectCounts(raw, slugs)}

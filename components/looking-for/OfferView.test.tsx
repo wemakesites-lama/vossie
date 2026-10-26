@@ -19,7 +19,7 @@ describe("the offer composer (community actions spec 2.9)", () => {
   it("shows the request, Offer to help, the offer field, the listings to point to, and E's tips", () => {
     render(<OfferView subject={SUBJECT} status={OPEN} form={EMPTY} />);
     expect(screen.getByRole("heading", { level: 1, name: "Offer to help" })).toBeInTheDocument();
-    expect(screen.getByText("Accounting 1 tutor this week")).toBeInTheDocument();
+    expect(screen.getByText("Accounting 1 tutor this week", { selector: ".offer-summary-title" })).toBeInTheDocument();
     expect(screen.getByText("Budget R300")).toBeInTheDocument();
     expect(screen.getByText(/Needed by/)).toHaveTextContent("Needed by 16 Oct");
     expect(screen.getByLabelText("Your offer")).toHaveAccessibleDescription(
@@ -33,7 +33,7 @@ describe("the offer composer (community actions spec 2.9)", () => {
     expect(screen.getByRole("button", { name: "Send offer" })).toHaveAttribute("type", "submit");
     expect(document.querySelector('input[name="request"]')).toHaveValue("r-001");
     expect(screen.getByRole("region", { name: "Stay safe" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Back to the request" })).toHaveAttribute("href", "/looking-for/r-001");
+    expect(screen.getByRole("link", { name: "Back to Accounting 1 tutor this week" })).toHaveAttribute("href", "/looking-for/r-001");
   });
 
   it("leaves the select out when the shop has nothing listed", () => {

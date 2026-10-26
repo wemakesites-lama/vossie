@@ -1,18 +1,16 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { AccountSkeleton } from "@/components/account/AccountSkeleton";
 import { PrivacySettingsView } from "@/components/account/PrivacySettingsView";
-import { ArrowLeftIcon } from "@/components/icons";
 import { PageTransition } from "@/components/kit/PageTransition";
 import { Reveal } from "@/components/kit/Reveal";
-import { NavPending } from "@/components/ui/NavPending";
+import { Trail } from "@/components/ui/Trail";
 import { DELETE_FIELDS, DELETE_FORM, readFormState } from "@/lib/auth/form-state";
 import { formErrors } from "@/lib/auth/messages";
 import { requireAccount } from "@/lib/auth/session";
 import { getLatestConsent } from "@/lib/data/accounts";
 import { listReportsBy } from "@/lib/data/reports";
 import { countAdmins } from "@/lib/data/staff-accounts";
-import { BACK } from "@/lib/motion";
+import { trailFor } from "@/lib/nav/trail";
 
 /** Like every account page, kept out of search engines (accounts spec 3.3). */
 export const metadata: Metadata = { title: "Privacy settings", robots: { index: false } };
@@ -25,11 +23,7 @@ export default function PrivacySettingsPage() {
   return (
     <PageTransition>
       <div className="page account-page">
-        <Link href="/account" transitionTypes={BACK} className="account-crumb">
-          <ArrowLeftIcon />
-          Back to You
-          <NavPending />
-        </Link>
+        <Trail crumbs={trailFor("/account/privacy")} />
         <h1 className="account-title">Privacy settings</h1>
         <Reveal fallback={<AccountSkeleton />}>
           <PrivacySettings />

@@ -40,7 +40,7 @@ describe("RequestView (community spec 4.2)", () => {
     await show("r-001");
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
     expect(within(crumbs).getByRole("link", { name: "Looking For" })).toHaveAttribute("href", "/looking-for");
-    expect(within(crumbs).getByRole("link", { name: "Tutoring" })).toHaveAttribute("href", "/looking-for?cat=tutoring");
+    expect(within(crumbs).getByRole("link", { name: "Back to Tutoring" })).toHaveAttribute("href", "/looking-for?cat=tutoring");
     expect(screen.getByRole("heading", { level: 1, name: "Accounting 1 tutor this week" })).toBeInTheDocument();
   });
 

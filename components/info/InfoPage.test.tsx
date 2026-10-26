@@ -10,11 +10,24 @@ const sections: InfoSection[] = [
 
 function renderPage(props: Partial<ComponentProps<typeof InfoPage>> = {}) {
   return render(
-    <InfoPage title="Demo page" lede="One line about it." updated="2026-10-14" sections={sections} {...props} />,
+    <InfoPage
+      route="/safety"
+      title="Demo page"
+      lede="One line about it."
+      updated="2026-10-14"
+      sections={sections}
+      {...props}
+    />,
   );
 }
 
 describe("InfoPage (info and system spec 2.5)", () => {
+  it("leads with the trail back to Home, the page named by its title (wayfinding spec 3.1)", () => {
+    renderPage();
+    expect(screen.getByRole("link", { name: "Back to Home" })).toHaveAttribute("href", "/");
+    expect(screen.getByText("Demo page", { selector: "[aria-current]" })).toBeInTheDocument();
+  });
+
   it("has one h1, the lede and the date the page last changed", () => {
     const { container } = renderPage();
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);

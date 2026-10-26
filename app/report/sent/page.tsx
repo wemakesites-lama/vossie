@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PageTransition } from "@/components/kit/PageTransition";
 import { ReportSentBack } from "@/components/messages/ReportSentBack";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 export const metadata: Metadata = { title: "Report sent", robots: { index: false } };
 
@@ -14,6 +16,7 @@ export default function ReportSentPage({ searchParams }: PageProps<"/report/sent
     <PageTransition>
       <div className="page report-page">
         <div className="report-column">
+          <Trail crumbs={trailFor("/report/sent")} />
           <h1 className="report-title">Report sent</h1>
           <p className="report-thanks">
             Thanks. The Hub reviews reports within two working days. We&apos;ll let you know what happens.

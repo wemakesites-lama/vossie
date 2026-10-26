@@ -28,8 +28,8 @@ describe("the report form (messaging spec 3.4)", () => {
       <ReportView target={LISTING} subject={SUBJECT} already={false} form={reportForm(null, LISTING)} />,
     );
     expect(screen.getByRole("heading", { level: 1, name: "Report this listing" })).toBeInTheDocument();
-    expect(screen.getByText("Casio fx-991ZA Plus calculator")).toHaveClass("report-subject");
-    expect(screen.getByRole("link", { name: "Back to the listing" })).toHaveAttribute("href", "/listings/l-001");
+    expect(screen.getByText("Casio fx-991ZA Plus calculator", { selector: ".report-subject" })).toHaveClass("report-subject");
+    expect(screen.getByRole("link", { name: "Back to Casio fx-991ZA Plus calculator" })).toHaveAttribute("href", "/listings/l-001");
     const reasons = screen.getByRole("group", { name: "Why are you reporting it?" });
     expect(within(reasons).getAllByRole("radio").map((radio) => radio.getAttribute("value"))).toEqual([
       "scam",

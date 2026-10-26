@@ -139,7 +139,7 @@ const SLOW_PAGES: ReadonlyArray<
   // bar streams in after it: 0.18 on /sell and 0.39 on /admin at 1440 before. A visitor's /sell has the side panel.
   ["sell page (signed out)", "/sell"],
   ["Hub console's Today", "/admin", "Admin"],
-  // Role views N3: the campus chips and the Next links stream in with Reports and Hidden.
+  // Role views N3: the campus filter and the Next links stream in with Reports and Hidden.
   ["Hub console's Reports", "/admin/reports", "Admin"],
   ["Hub console's Hidden", "/admin/hidden", "Admin"],
   ["mentoring page", "/mentor", "Mentor"],

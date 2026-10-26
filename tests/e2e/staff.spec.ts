@@ -41,7 +41,7 @@ test.describe("staff pages (staff tools spec 2.1, plan decision 1)", () => {
       await expect(page.locator('meta[name="robots"]').first(), path).toHaveAttribute("content", /noindex/);
       await expect(page.locator('meta[name="robots"]:not([content*="noindex"])'), path).toHaveCount(0);
       // Nothing of the page's own shows: no staff navigation, no staff tables.
-      await expect(page.getByRole("navigation", { name: "Staff tools" }), path).toHaveCount(0);
+      await expect(page.getByRole("navigation", { name: "Hub console" }), path).toHaveCount(0);
     }
     // The CSV is a real 404 too: a route handler answers before anything is sent.
     expect((await page.request.get("/mentor/export", { maxRedirects: 0 })).status()).toBe(404);
@@ -59,11 +59,11 @@ test.describe("staff pages (staff tools spec 2.1, plan decision 1)", () => {
     }
     // A mentor does have the Hub's tools and the dashboard.
     await page.goto("/hub/manage");
-    await expect(main(page).getByRole("heading", { level: 1, name: "Hub posts" })).toBeVisible();
-    await expect(page).toHaveTitle("Hub posts and office hours · CampusCart");
+    await expect(main(page).getByRole("heading", { level: 1, name: "Posts and office hours" })).toBeVisible();
+    await expect(page).toHaveTitle("Posts and office hours · CampusCart");
     await page.goto("/mentor");
-    await expect(main(page).getByRole("heading", { level: 1, name: "Mentor dashboard" })).toBeVisible();
-    await expect(page).toHaveTitle("Mentor dashboard · CampusCart");
+    await expect(main(page).getByRole("heading", { level: 1, name: "Mentoring" })).toBeVisible();
+    await expect(page).toHaveTitle("Mentoring · CampusCart");
   });
 });
 

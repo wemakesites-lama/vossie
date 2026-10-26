@@ -36,7 +36,8 @@ describe("calm navigation's link types (spec 4, layer 3)", () => {
 
   it("gives every \"Back to\" link the BACK type", () => {
     const backLinks = code.filter((path) => read(path).split("\n").some((line) => notComment(line) && line.includes("Back to")));
-    expect(backLinks.length).toBeGreaterThan(10);
+    // Most pages' way back is the breadcrumb trail's (components/ui/Trail.tsx, wayfinding spec 3.1), one file.
+    expect(backLinks.length).toBeGreaterThan(5);
     const untyped = backLinks.filter((path) => !/transitionTypes=\{BACK\}/.test(read(path)));
     expect(untyped).toEqual([]);
   });

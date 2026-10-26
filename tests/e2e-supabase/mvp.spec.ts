@@ -378,7 +378,7 @@ test.describe("flows 2 to 11, in order: a seller, a buyer and the first admin", 
       note(seller, "You're a CampusCart mentor now. The Hub's tools and the mentor dashboard are on your account page."),
     ).toBeVisible();
     await seller.goto("/mentor");
-    await expect(main(seller).getByRole("heading", { level: 1, name: "Mentor dashboard" })).toBeVisible();
+    await expect(main(seller).getByRole("heading", { level: 1, name: "Mentoring" })).toBeVisible();
 
     await row.getByRole("link", { name: `Remove mentor role for ${people.seller.firstName}` }).click();
     await expect(

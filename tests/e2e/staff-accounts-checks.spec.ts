@@ -37,7 +37,7 @@ async function expectNoSeriousIssues(page: Page) {
 }
 
 const PAGES: ReadonlyArray<[path: string, heading: string]> = [
-  ["/admin/staff", "Staff accounts"],
+  ["/admin/staff", "Staff"],
   ["/admin/staff/acc-mentor/remove-mentor", "Remove Naledi's mentor role"],
   // The admin's own role: the page refuses and has no button (spec decision 5).
   ["/admin/staff/acc-admin/remove-admin", "Your admin role"],
@@ -114,7 +114,7 @@ test.describe("stage J's staff pages have no serious or critical axe issues (spe
 });
 
 const SHIFT_PAGES: ReadonlyArray<[name: string, path: string]> = [
-  ["Staff accounts", "/admin/staff"],
+  ["Staff", "/admin/staff"],
   ["Numbers", "/admin/numbers"],
 ];
 
@@ -181,7 +181,7 @@ test("a Show again confirm page holds still on a short phone, 375 by 667 (CLS 0.
 
 const SIZE_PAGES: ReadonlyArray<[name: string, path: string]> = [
   ["Today", "/admin"],
-  ["Staff accounts", "/admin/staff"],
+  ["Staff", "/admin/staff"],
   ["Numbers", "/admin/numbers"],
   ["Hidden", "/admin/hidden"],
 ];

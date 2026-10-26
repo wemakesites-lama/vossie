@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ChevronLeftIcon } from "@/components/icons";
 import { Reveal } from "@/components/kit/Reveal";
 import { DeleteListing } from "@/components/sell/DeleteListing";
 import { SellDeleteSkeleton } from "@/components/sell/SellSkeleton";
 import { PageTransition } from "@/components/kit/PageTransition";
-import { myListingsPath } from "@/lib/selling/paths";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 export const metadata: Metadata = { title: "Delete your listing", robots: { index: false } };
 
@@ -21,10 +20,7 @@ export default function DeleteListingPage({ params }: PageProps<"/sell/listings/
       <div className="page sell-page">
         <div className="sell-column">
           <header className="sell-head">
-            <Link href={myListingsPath()} prefetch={false} className="sell-crumb">
-              <ChevronLeftIcon className="size-4" />
-              Your listings
-            </Link>
+            <Trail crumbs={trailFor("/sell/listings/[id]/delete", { names: { "/sell/listings/[id]/delete": "Delete this listing?" } })} />
             <h1 className="sell-title">Delete this listing?</h1>
           </header>
           <Reveal fallback={<SellDeleteSkeleton />}>

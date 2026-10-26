@@ -31,7 +31,7 @@ async function Audit({ searchParams }: Pick<PageProps<"/admin/audit">, "searchPa
   const filter = parseAuditFilter(await searchParams);
   const [entries, staff, notice] = await Promise.all([listAudit(filter), auditStaff(), takeNotice()]);
   return (
-    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Audit log" current={ADMIN_AUDIT_PATH} notice={staffNoticeText(notice)}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Audit log" route="/admin/audit" notice={staffNoticeText(notice)}>
       <AdminAudit entries={entries} staff={staff} filter={filter} />
     </StaffFrame>
   );

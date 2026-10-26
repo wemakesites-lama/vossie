@@ -33,7 +33,7 @@ async function Shops({ searchParams }: Pick<PageProps<"/admin/sellers">, "search
   const [params, rows, campuses, notice] = await Promise.all([searchParams, listShopsForReview(), getCampuses(), takeNotice()]);
   const chosen = readCampusFilter(params, campuses);
   return (
-    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Shops" current={ADMIN_SELLERS_PATH} notice={staffNoticeText(notice)}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Shops" route="/admin/sellers" notice={staffNoticeText(notice)}>
       <CampusFilter path={ADMIN_SELLERS_PATH} campuses={campuses} chosen={chosen} />
       <AdminSellers
         rows={inCampus(rows, chosen, (row) => row.shop.campusSlug)}

@@ -120,6 +120,7 @@ export default function SellerGuidelinesPage() {
   return (
     <PageTransition>
       <InfoPage
+        route="/seller-guidelines"
         title="Seller guidelines"
         lede="How to sell well on CampusCart, and what is not allowed."
         updated="2026-10-14"

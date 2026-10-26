@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { FlagIcon } from "@/components/icons";
 import { ReportLink } from "@/components/messages/SessionLinks";
@@ -13,6 +12,8 @@ import { ListingFacts } from "./ListingFacts";
 import { MoreFrom } from "./MoreFrom";
 import { SafetyNote } from "./SafetyNote";
 import { SellerCard } from "./SellerCard";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 /**
  * The listing page (spec 5). On phones everything runs in one column, in reading order, with the actions docked at
@@ -25,18 +26,12 @@ export function ListingView({ detail, campusNames }: { detail: ListingDetail; ca
 
   return (
     <div className="page listing-page">
-      <nav aria-label="Breadcrumb" className="listing-crumbs">
-        <ol>
-          <li>
-            <Link href="/browse">Browse</Link>
-          </li>
-          <li>
-            <Link href={`/browse?cat=${category.slug}`} prefetch={false}>
-              {category.name}
-            </Link>
-          </li>
-        </ol>
-      </nav>
+      <Trail
+        crumbs={trailFor("/listings/[id]", {
+          names: { "/listings/[id]": listing.title },
+          between: [{ label: category.name, href: `/browse?cat=${category.slug}` }],
+        })}
+      />
 
       <div className="listing-layout">
         <Gallery listing={listing} />

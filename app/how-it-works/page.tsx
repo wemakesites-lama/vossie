@@ -135,6 +135,7 @@ export default function HowItWorksPage() {
   return (
     <PageTransition>
       <InfoPage
+        route="/how-it-works"
         title="How CampusCart works"
         lede="Find it, message the seller, meet on campus, then pay or swap."
         updated="2026-10-21"

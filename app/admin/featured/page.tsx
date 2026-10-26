@@ -55,7 +55,7 @@ async function Featured() {
     takeNotice(),
   ]);
   return (
-    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Featured" current={ADMIN_FEATURED_PATH} notice={staffNoticeText(notice)}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Featured" route="/admin/featured" notice={staffNoticeText(notice)}>
       <AdminFeatured
         today={today}
         rows={rows}

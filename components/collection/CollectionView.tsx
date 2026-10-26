@@ -6,6 +6,8 @@ import type { Category, Collection, Listing } from "@/lib/types";
 import { CollectionBrowseLinks } from "./CollectionBrowseLinks";
 import { CollectionHeader } from "./CollectionHeader";
 import { MoreFromHub } from "./MoreFromHub";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 type CollectionViewProps = {
   collection: Collection;
@@ -33,6 +35,7 @@ export function CollectionView({ collection, listings, others, categories, campu
 
   return (
     <div className="page collection-page">
+      <Trail crumbs={trailFor("/collections/[slug]", { names: { "/collections/[slug]": collection.title } })} />
       <CollectionHeader collection={collection} count={listings?.length ?? null} />
       <section id="collection-listings" aria-labelledby="collection-listings-title" className="collection-listings">
         <h2 id="collection-listings-title" className="sr-only">

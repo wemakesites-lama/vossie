@@ -38,17 +38,19 @@ describe("the audit log (staff tools spec 2.2 and 2.3, plan decision 6)", () => 
     expect(within(second).getByRole("cell", { name: "Added a mentor's note" })).toBeInTheDocument();
   });
 
-  it("filters by staff member and by kind, as links, marking the ones chosen", async () => {
+  it("filters by staff member and by kind with two selects in one GET form, keeping the ones chosen (wayfinding 3.4)", async () => {
     render(<AdminAudit entries={[]} staff={await auditStaff()} filter={{ staff: "acc-admin", kind: "reports" }} />);
-    const filters = screen.getByRole("navigation", { name: "Filter the log" });
-    expect(within(filters).getByRole("link", { name: "Everyone" })).toHaveAttribute("href", "/admin/audit?kind=reports");
-    expect(within(filters).getByRole("link", { name: "Pieter" })).toHaveAttribute("aria-current", "true");
-    expect(within(filters).getByRole("link", { name: "Naledi" })).toHaveAttribute(
-      "href",
-      "/admin/audit?staff=acc-mentor&kind=reports",
-    );
-    expect(within(filters).getByRole("link", { name: "Reports" })).toHaveAttribute("aria-current", "true");
-    expect(within(filters).getByRole("link", { name: "Every kind" })).toHaveAttribute("href", "/admin/audit?staff=acc-admin");
+    const filters = screen.getByRole("form", { name: "Filter the log" });
+    expect(filters).toHaveAttribute("action", "/admin/audit");
+    const who = within(filters).getByRole("combobox", { name: "Staff member" });
+    expect(who).toHaveAttribute("name", "staff");
+    expect(who).toHaveValue("acc-admin");
+    expect(within(who).getByRole("option", { name: "Everyone" })).toHaveValue("");
+    expect(within(who).getByRole("option", { name: "Naledi" })).toHaveValue("acc-mentor");
+    const kind = within(filters).getByRole("combobox", { name: "Kind" });
+    expect(kind).toHaveValue("reports");
+    expect(within(kind).getByRole("option", { name: "Every kind" })).toHaveValue("");
+    expect(screen.getByText(/^Showing/)).toHaveTextContent("Showing Pieter · Reports · Clear filters");
     expect(screen.getByText("Nothing in the log matches.")).toBeInTheDocument();
   });
 });

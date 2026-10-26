@@ -6,11 +6,12 @@ import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
 import { readFormState } from "@/lib/auth/form-state";
 import { getReport } from "@/lib/data/staff-reports";
+import { reportedThing } from "@/components/staff/AdminReports";
 import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
 import { reportPauseForm } from "@/lib/staff/form-state";
-import { ADMIN_REPORTS_PATH, pauseReportedPath, STAFF_EYEBROW } from "@/lib/staff/paths";
+import { pauseReportedPath, STAFF_EYEBROW } from "@/lib/staff/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -43,7 +44,8 @@ async function Pause({ params }: Pick<PageProps<"/admin/reports/[id]/pause">, "p
       account={account}
       area={STAFF_EYEBROW.admin}
       title={report.shop ? `Pause ${report.shop.name}` : "Pause a shop"}
-      current={ADMIN_REPORTS_PATH}
+      route="/admin/reports/[id]/pause"
+      trail={{ params: { id }, names: { "/admin/reports/[id]": reportedThing(report) } }}
       notice={null}
     >
       <ReportConfirm

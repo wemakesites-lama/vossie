@@ -13,12 +13,12 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { takeNotice } from "@/lib/staff/form-state";
 import { MENTOR_WINDOW_DAYS } from "@/lib/staff/mentor";
 import { staffNoticeText } from "@/lib/staff/notices";
-import { MENTOR_PATH } from "@/lib/staff/paths";
+import { MENTOR_PATH, hubEyebrow } from "@/lib/staff/paths";
 import { isAdmin } from "@/lib/staff/roles";
 import { lastSastDays, sastDate } from "@/lib/time";
 
 export async function generateMetadata(): Promise<Metadata> {
-  return staffMetadata("mentor", "Mentor dashboard");
+  return staffMetadata("mentor", "Mentoring");
 }
 
 /** The mentor's caseload (staff tools spec 2.6; role views spec 7.3). Mentors and admins only. */
@@ -51,7 +51,7 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/mentor">, "searchPar
     now,
   ).catch(() => null);
   return (
-    <StaffFrame account={account} area="Mentoring" title="Mentor dashboard" current={MENTOR_PATH} notice={staffNoticeText(notice)}>
+    <StaffFrame account={account} area={hubEyebrow(account)} title="Mentoring" route="/mentor" notice={staffNoticeText(notice)}>
       <MentorDashboard
         rows={rows}
         view={view}

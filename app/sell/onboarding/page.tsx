@@ -3,6 +3,8 @@ import { Reveal } from "@/components/kit/Reveal";
 import { Onboarding } from "@/components/sell/Onboarding";
 import { SellFormSkeleton } from "@/components/sell/SellSkeleton";
 import { PageTransition } from "@/components/kit/PageTransition";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 export const metadata: Metadata = { title: "Set up your shop", robots: { index: false } };
 
@@ -15,6 +17,7 @@ export default function OnboardingPage({ searchParams }: PageProps<"/sell/onboar
     <PageTransition>
       <div className="page sell-page">
         <div className="sell-column">
+          <Trail crumbs={trailFor("/sell/onboarding")} />
           <h1 className="sell-title">Set up your shop</h1>
           <Reveal fallback={<SellFormSkeleton />}>
             <Onboarding searchParams={searchParams} />

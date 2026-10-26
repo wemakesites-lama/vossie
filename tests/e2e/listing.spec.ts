@@ -38,8 +38,9 @@ test("the dock's room under the footer doesn't follow you to the next page", asy
   await expect(page.locator("body")).toHaveCSS("padding-bottom", "69px");
   await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
   // Next keeps the listing page hidden in the page for Back, with its dock inside it.
-  await page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("link", { name: "Browse", exact: true }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Everything");
+  // On a phone the trail is one back link, to the listing's category (wayfinding spec 3.1).
+  await page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("link", { name: "Back to Tech" }).click();
+  await expect(page).toHaveURL(/\/browse\?cat=tech$/);
   await expect(page.locator("body")).toHaveCSS("padding-bottom", "57px");
   await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
 });
@@ -48,8 +49,13 @@ test("a keyboard walk goes breadcrumb, photos, then the actions, in reading orde
   onlyAt("phone-390", "desktop-1440");
   await page.goto("/listings/l-001");
   await page.locator("#main").focus();
+  // The trail first: on a phone only its back link shows; from the tablet step every crumb (wayfinding spec 3.1).
+  const expected =
+    project() === "phone-390"
+      ? ["Back to Tech", "Photos", "Message seller", "Save Casio fx-991ZA Plus calculator", "Share"]
+      : ["Home", "Shop", "Back to Tech", "Photos", "Message seller", "Save Casio fx-991ZA Plus calculator"];
   const names: string[] = [];
-  for (let step = 0; step < 6; step += 1) {
+  for (let step = 0; step < expected.length; step += 1) {
     await page.keyboard.press("Tab");
     names.push(
       await page.evaluate(() => {
@@ -58,14 +64,7 @@ test("a keyboard walk goes breadcrumb, photos, then the actions, in reading orde
       }),
     );
   }
-  expect(names).toEqual([
-    "Browse",
-    "Tech",
-    "Photos",
-    "Message seller",
-    "Save Casio fx-991ZA Plus calculator",
-    "Share",
-  ]);
+  expect(names).toEqual(expected);
 });
 
 test("keeps the column with the actions in view on desktop", async ({ page }) => {

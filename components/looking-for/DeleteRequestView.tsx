@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { ArrowLeftIcon } from "@/components/icons";
-import { NavPending } from "@/components/ui/NavPending";
 import { deleteMyRequest } from "@/lib/looking-for/actions";
 import { requestPath, YOUR_REQUESTS_PATH } from "@/lib/looking-for/paths";
-import { BACK } from "@/lib/motion";
 import type { OwnRequest } from "@/lib/types";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 /**
  * Delete request's confirm page (community actions spec 2.6 and section 4): what will happen, Delete request, and Keep
@@ -15,11 +14,14 @@ export function DeleteRequestView({ own }: { own: OwnRequest }) {
   const keep = own.state === "hidden" ? YOUR_REQUESTS_PATH : requestPath(request.id);
   return (
     <div className="request-form-column">
-      <Link href={keep} transitionTypes={BACK} prefetch={false} className="msg-crumb">
-        <ArrowLeftIcon />
-        {own.state === "hidden" ? "Back to Your requests" : "Back to the request"}
-        <NavPending />
-      </Link>
+      {/* A hidden request has no page, so its trail goes through Your requests. */}
+      <Trail
+        crumbs={trailFor("/looking-for/[id]/delete", {
+          params: { id: request.id },
+          names: { "/looking-for/[id]": own.state === "hidden" ? "Your requests" : request.title },
+          hrefs: { "/looking-for/[id]": keep },
+        })}
+      />
       <h1 className="request-form-title">Delete your request</h1>
       <p className="requests-lead">{`Delete ${request.title}? This can't be undone.`}</p>
       <ul className="requests-consequences">

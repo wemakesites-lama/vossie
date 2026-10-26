@@ -13,7 +13,7 @@ import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
-import { ADMIN_SELLERS_PATH, adminSellerPath, STAFF_EYEBROW } from "@/lib/staff/paths";
+import { adminSellerPath, STAFF_EYEBROW } from "@/lib/staff/paths";
 import { nextWaitingShop } from "@/lib/staff/queue";
 import { PageTransition } from "@/components/kit/PageTransition";
 
@@ -63,7 +63,7 @@ async function SellerReview({ params }: Pick<PageProps<"/admin/sellers/[slug]">,
       account={account}
       area={STAFF_EYEBROW.admin}
       title={review.shop.name}
-      current={ADMIN_SELLERS_PATH}
+      route="/admin/sellers/[slug]"
       notice={staffNoticeText(notice)}
     >
       <NextInQueue

@@ -27,7 +27,7 @@ async function More() {
   const account = await requireStaff("admin", ADMIN_MORE_PATH);
   const hidden = await countHidden();
   return (
-    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="More tools" current={ADMIN_MORE_PATH} notice={null}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="More tools" route="/admin/more" notice={null}>
       <AdminMore hidden={hidden} />
     </StaffFrame>
   );

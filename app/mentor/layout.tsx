@@ -1,19 +1,6 @@
-import { Suspense } from "react";
-import { MentorBar } from "@/components/kit/sections";
+import { StaffShell } from "@/components/kit/StaffShell";
 
-/**
- * Mentoring's frame (role views spec 4.1): the mentor bar, for mentors and admins.
- * `data-bar` reserves the sidebar column from the tablet step before the bar streams in, so the page never moves
- * right (an empty column for anyone the section isn't for).
- */
+/** Mentoring's frame (role views spec 4.1, wayfinding spec 3.3): the console's bar for an admin, Mentoring's for a mentor. */
 export default function MentorLayout({ children }: LayoutProps<"/mentor">) {
-  return (
-    <div className="section-shell" data-bar>
-      <div className="section-main">{children}</div>
-      {/* After the content, so "Skip to content" doesn't land before the bar; CSS places it. */}
-      <Suspense fallback={null}>
-        <MentorBar />
-      </Suspense>
-    </div>
-  );
+  return <StaffShell>{children}</StaffShell>;
 }

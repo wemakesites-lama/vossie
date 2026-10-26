@@ -48,7 +48,7 @@ async function PickupPoints() {
     points.map((point) => ({ key: point.id, form: pointRenameForm(point.id), fieldId: `point-${point.id}-name` })),
   );
   return (
-    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Pickup points" current={ADMIN_POINTS_PATH} notice={staffNoticeText(notice)}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Pickup points" route="/admin/pickup-points" notice={staffNoticeText(notice)}>
       <AdminPickupPoints
         campuses={campuses.map((campus) => ({ slug: campus.slug, name: campus.name }))}
         points={points}

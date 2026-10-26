@@ -13,7 +13,7 @@ import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
 import { dismissForm, takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
-import { ADMIN_REPORTS_PATH, adminReportPath, STAFF_EYEBROW } from "@/lib/staff/paths";
+import { adminReportPath, STAFF_EYEBROW } from "@/lib/staff/paths";
 import { nextOpenReport } from "@/lib/staff/queue";
 import { PageTransition } from "@/components/kit/PageTransition";
 
@@ -46,7 +46,7 @@ async function Report({ params }: Pick<PageProps<"/admin/reports/[id]">, "params
   // The Next link (role views spec 7.2): the oldest open report that isn't this one.
   const next = nextOpenReport(reports, id);
   return (
-    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title={reportedThing(report)} current={ADMIN_REPORTS_PATH} notice={staffNoticeText(notice)}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title={reportedThing(report)} route="/admin/reports/[id]" notice={staffNoticeText(notice)}>
       <NextInQueue
         label="Next open report"
         next={next && { title: reportedThing(next), href: adminReportPath(next.id) }}

@@ -1,42 +1,50 @@
-import { ChartIcon, ClockIcon, FlagIcon, MapPinIcon, ShieldIcon, StoreIcon, TrendingIcon } from "@/components/icons";
+import { AlertIcon, ChartIcon, ClockIcon, MapPinIcon, ShieldIcon, TrendingIcon, UserIcon } from "@/components/icons";
 import { ListRow } from "@/components/kit/ListRow";
-import {
-  ADMIN_AUDIT_PATH,
-  ADMIN_FEATURED_PATH,
-  ADMIN_HIDDEN_PATH,
-  ADMIN_NUMBERS_PATH,
-  ADMIN_POINTS_PATH,
-  ADMIN_STAFF_PATH,
-  MENTOR_PATH,
-} from "@/lib/staff/paths";
+import type { ReactNode } from "react";
+import { ADMIN_MORE_SECTIONS, STAFF_GROUPS, STAFF_SECTIONS } from "@/lib/staff/sections";
 
-/** The admin bar's More (role views spec 4.1): the sections the five tabs don't hold, as rows. */
+const ICONS: Readonly<Record<string, ReactNode>> = {
+  hidden: <AlertIcon />,
+  mentoring: <UserIcon />,
+  numbers: <ChartIcon />,
+  audit: <ClockIcon />,
+  featured: <TrendingIcon />,
+  points: <MapPinIcon />,
+  staff: <ShieldIcon />,
+};
+
+/**
+ * The admin bar's More on phones (role views spec 4.1, wayfinding spec 3.3): the sections the five tabs don't hold,
+ * under the same headings as the sidebar, each with what it's for. Hidden also says how much is hidden now.
+ */
 export function AdminMore({ hidden }: { hidden: { listings: number; requests: number } }) {
   const total = hidden.listings + hidden.requests;
+  const more = STAFF_SECTIONS.filter((section) => ADMIN_MORE_SECTIONS.includes(section.href));
   return (
-    <ul aria-label="More tools" className="kit-card">
-      <ListRow
-        href={ADMIN_HIDDEN_PATH}
-        lead={{ kind: "icon", icon: <FlagIcon /> }}
-        title="Hidden by the Hub"
-        detail={total === 0 ? "Nothing hidden" : `${total} hidden now`}
-      />
-      <ListRow
-        href={ADMIN_FEATURED_PATH}
-        lead={{ kind: "icon", icon: <TrendingIcon /> }}
-        title="Featured"
-        detail="Pin sellers to a campus"
-      />
-      <ListRow
-        href={ADMIN_POINTS_PATH}
-        lead={{ kind: "icon", icon: <MapPinIcon /> }}
-        title="Pickup points"
-        detail="Each campus's meeting places"
-      />
-      <ListRow href={ADMIN_STAFF_PATH} lead={{ kind: "icon", icon: <ShieldIcon /> }} title="Staff accounts" detail="Who has a role" />
-      <ListRow href={ADMIN_NUMBERS_PATH} lead={{ kind: "icon", icon: <ChartIcon /> }} title="Last week" detail="Every measure, by campus" />
-      <ListRow href={ADMIN_AUDIT_PATH} lead={{ kind: "icon", icon: <ClockIcon /> }} title="Audit log" detail="Every staff action" />
-      <ListRow href={MENTOR_PATH} lead={{ kind: "icon", icon: <StoreIcon /> }} title="Mentoring" detail="Shops you mentor" />
-    </ul>
+    <>
+      {STAFF_GROUPS.map((group) => {
+        const sections = more.filter((section) => section.group === group.key);
+        if (sections.length === 0) return null;
+        const headingId = `more-${group.key}`;
+        return (
+          <section key={group.key} aria-labelledby={headingId} className="staff-more-group">
+            <h2 id={headingId} className="staff-more-heading">
+              {group.label}
+            </h2>
+            <ul aria-labelledby={headingId} className="kit-card">
+              {sections.map((section) => (
+                <ListRow
+                  key={section.key}
+                  href={section.href}
+                  lead={{ kind: "icon", icon: ICONS[section.key] }}
+                  title={section.label}
+                  detail={section.key === "hidden" ? `${total === 0 ? "Nothing hidden" : `${total} hidden now`}. ${section.purpose}` : section.purpose}
+                />
+              ))}
+            </ul>
+          </section>
+        );
+      })}
+    </>
   );
 }

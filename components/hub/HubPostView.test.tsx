@@ -26,8 +26,8 @@ describe("HubPostView (community spec 5.2)", () => {
   it("leads with the breadcrumb, the cover, the kind and the title", async () => {
     const { container } = await show("h-001");
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
-    expect(within(crumbs).getByRole("link", { name: "The Hub" })).toHaveAttribute("href", "/hub");
-    expect(within(crumbs).getByRole("link", { name: "Events" })).toHaveAttribute("href", "/hub?type=events#hub-feed");
+    expect(within(crumbs).getByRole("link", { name: "Hub" })).toHaveAttribute("href", "/hub");
+    expect(within(crumbs).getByRole("link", { name: "Back to Events" })).toHaveAttribute("href", "/hub?type=events#hub-feed");
     expect(container.querySelector(".hub-post-cover img")).toHaveAttribute("alt", "");
     expect(screen.getByText("Event")).toHaveClass("eyebrow");
     expect(screen.getByRole("heading", { level: 1, name: "Pitch night" })).toBeInTheDocument();
@@ -49,7 +49,7 @@ describe("HubPostView (community spec 5.2)", () => {
   it("lists office hours' facts without numbers, under their own crumb", async () => {
     const { container } = await show("h-002");
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
-    expect(within(crumbs).getByRole("link", { name: "Office hours" })).toHaveAttribute(
+    expect(within(crumbs).getByRole("link", { name: "Back to Office hours" })).toHaveAttribute(
       "href",
       "/hub?type=office-hours#hub-feed",
     );
@@ -59,7 +59,7 @@ describe("HubPostView (community spec 5.2)", () => {
   it("shows a tip's posted date and its body, with no facts and no action", async () => {
     const { container } = await show("h-013");
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
-    expect(within(crumbs).getByRole("link", { name: "Tips" })).toHaveAttribute("href", "/hub?type=tips#hub-feed");
+    expect(within(crumbs).getByRole("link", { name: "Back to Tips" })).toHaveAttribute("href", "/hub?type=tips#hub-feed");
     expect(screen.getByText(/^Posted/)).toHaveTextContent("Posted 12 October 2026");
     expect(container.querySelector(".hub-post-facts")).toBeNull();
     expect(screen.queryByText("Action, stood in")).toBeNull();

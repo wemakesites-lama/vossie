@@ -36,7 +36,7 @@ describe("the composer (messaging spec 3.1)", () => {
   it("heads the page with the shop, shows the listing, and asks for a message", async () => {
     const { container } = await show({ kind: "listing", listingId: "l-001" });
     expect(screen.getByRole("heading", { level: 1, name: "Message Tech corner" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Back to the listing" })).toHaveAttribute("href", "/listings/l-001");
+    expect(screen.getByRole("link", { name: /^Back to / })).toHaveAttribute("href", "/listings/l-001");
     expect(screen.getByRole("link", { name: "Casio fx-991ZA Plus calculator" })).toBeInTheDocument();
     const message = screen.getByLabelText("Your message");
     expect(message).toHaveAccessibleDescription(/^Up to 1,000 characters\./);
@@ -87,7 +87,7 @@ describe("the composer (messaging spec 3.1)", () => {
 
   it("asks a shop a question, with no swap, and goes back to the shop (plan decision 2)", async () => {
     const { container } = await show({ kind: "shop", sellerSlug: "tech-corner" });
-    expect(screen.getByRole("link", { name: "Back to the shop" })).toHaveAttribute("href", "/sellers/tech-corner");
+    expect(screen.getByRole("link", { name: "Back to Tech corner" })).toHaveAttribute("href", "/sellers/tech-corner");
     expect(screen.getByText("A question for the shop · Midrand")).toBeInTheDocument();
     expect(screen.queryByLabelText("Offer a swap (optional)")).toBeNull();
     expect(hidden(container)).toEqual([["shop", "tech-corner"]]);

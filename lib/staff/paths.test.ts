@@ -6,7 +6,6 @@ import {
   adminReportPath,
   adminSellerPath,
   AREA_HOME,
-  auditPath,
   bookSlotPath,
   declineSellerPath,
   editPostPath,
@@ -18,7 +17,6 @@ import {
   removeRolePath,
   showListingPath,
   showRequestPath,
-  STAFF_SECTIONS,
 } from "./paths";
 
 describe("the staff pages' addresses (staff tools spec section 3)", () => {
@@ -34,26 +32,7 @@ describe("the staff pages' addresses (staff tools spec section 3)", () => {
     expect(mentorShopPath("tech-corner")).toBe("/mentor/tech-corner");
   });
 
-  it("filters the audit log by staff member and kind in the link (spec 2.3)", () => {
-    expect(auditPath({ staff: null, kind: null })).toBe("/admin/audit");
-    expect(auditPath({ staff: "acc-admin", kind: null })).toBe("/admin/audit?staff=acc-admin");
-    expect(auditPath({ staff: "acc-admin", kind: "reports" })).toBe("/admin/audit?staff=acc-admin&kind=reports");
-  });
-
-  it("lists the frame's sections, the Hub console's nine first (role views N3 plan decision 7)", () => {
-    expect(STAFF_SECTIONS.map((section) => section.label)).toEqual([
-      "Today",
-      "Shops",
-      "Reports",
-      "Hidden",
-      "Featured",
-      "Pickup points",
-      "Last week",
-      "Staff",
-      "Audit log",
-      "Hub posts",
-      "Mentoring",
-    ]);
+  it("names each area's front page (plan decision 19)", () => {
     expect(AREA_HOME.admin).toEqual({ href: "/admin", label: "Hub console" });
     expect(AREA_HOME.hub).toEqual({ href: "/hub/manage", label: "Hub posts and office hours" });
   });

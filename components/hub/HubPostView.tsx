@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { Photo } from "@/components/listings/Photo";
 import { hubKindLabel, placesLabel } from "@/lib/format";
@@ -8,6 +7,8 @@ import type { HubPost } from "@/lib/types";
 import { Markdown } from "./Markdown";
 import { PostAction, PostActionSkeleton } from "./PostAction";
 import { UpcomingPosts, UpcomingPostsSkeleton } from "./UpcomingPosts";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 /**
  * A Hub post's page (community spec 5.2): the breadcrumb, the cover (decorative), the kind and title; for events and
@@ -39,18 +40,12 @@ export function HubPostView({ post, campusNames }: { post: HubPost; campusNames:
 
   return (
     <div className="page hub-post-page">
-      <nav aria-label="Breadcrumb" className="listing-crumbs">
-        <ol>
-          <li>
-            <Link href="/hub">The Hub</Link>
-          </li>
-          <li>
-            <Link href={hubFeedHref(feedType)} prefetch={false}>
-              {HUB_FEED_LABELS[feedType]}
-            </Link>
-          </li>
-        </ol>
-      </nav>
+      <Trail
+        crumbs={trailFor("/hub/[id]", {
+          names: { "/hub/[id]": post.title },
+          between: [{ label: HUB_FEED_LABELS[feedType], href: hubFeedHref(feedType) }],
+        })}
+      />
 
       <article className="hub-post">
         <Photo

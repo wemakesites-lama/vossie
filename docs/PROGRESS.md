@@ -1089,6 +1089,20 @@ Spec: `docs/superpowers/specs/2026-10-26-calm-navigation-design.md` (researched:
 - Lama: check the "Loading…" announcement with VoiceOver. It's revealed by a `visibility` change, which not every screen reader announces.
 - Committed with Lama's go-ahead (2026-10-26).
 
+## 2026-10-26: Wayfinding: breadcrumbs, back links and one Hub console nav (decision 91)
+Lama asked for a way back on every screen, and found the Hub console's navigation unclear: Audit log (under `/admin`) had the sidebar, while Hub posts (`/hub/manage`) showed only a row of 11 pills.
+- **Breadcrumbs on every page but the top-level ones** (`Trail`, `components/ui/Trail.tsx`). On phones only the parent shows, as "‹ Reports"; from the tablet step the whole trail ("Home / Hub console / Reports / …"). Parents come from one map, `lib/nav/trail.ts`, and a test fails for a page that isn't in it. The trail replaced the pages' own "Back to…" links at the top, and the listing, request and Hub post breadcrumbs (their category stays in the trail).
+- **One console nav.** The pill row is gone. Every staff page has the section bar: `StaffShell` gives the Hub's tools and Mentoring the same frame as `/admin`. From the tablet step the sidebar lists every section under Needs you, Hub, Insight and Set up; phones keep five tabs (Today, Shops, Reports, Hub, More), and More has the same groups. Every section's page says what it's for under its title (`lib/staff/sections.ts`). Renamed to match: "Posts and office hours", "Staff", "Mentoring".
+- **Filters are dropdowns:** Shops, Reports and Hidden's campus, and the audit log's staff member and kind, are a GET form with a Filter button and a "Showing …" line with Clear filters (`FilterForm`).
+- **Checks:** types and lint clean; unit 3,472 passed. Tests written for the old breadcrumbs, pills and More were moved to the trail, the sidebar and the filter form. JS unchanged: the listing forms are still 153,127 B brotli.
+  - **Full e2e, device projects:** 1,423 passed. 4 failed: the visitor's `/sell` layout shift, which predates this work, and three that passed when rerun alone (the wizard's axe after Send for approval at 360, Back to sign-in at 1440, Saved at 1440).
+  - **The write projects, in order with `--no-deps` on a fresh server:** 69 passed, 1 skipped. `selling-writes` clicked Edit shop's old "Your shop" link; it now uses the trail's "Back to Sell".
+- Looked at in the browser as the Admin at 390 and 1440: Hub posts, Audit log and Mentoring show the same sidebar; a campus filter puts `?campus=` in the address and keeps it chosen.
+
+**Open**
+- Lama: a pass on a phone, to check "‹ Parent" reads well everywhere and the console's groups make sense.
+- Committed with Lama's go-ahead (2026-10-26).
+
 ## Next
 - **Role views are finished:** N1 (the kit), N2 (the seller home), N3 (the admin's Today), N4 (the mentor's caseload) and N5 (the buyer's You) are built (above). Open: Lama's call on the Next.js upgrade the build's security notice offers, and the signed-out `/sell` pitch's font shift at 390.
 - **Every planned stage (A to M) is built in sample mode** and merged into `main`. The four phone e2e failures that predated stage L are fixed (`d13321b`). The full device suite last ran before stage M: rerun it once before go-live.

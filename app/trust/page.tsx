@@ -141,6 +141,7 @@ export default function TrustPage() {
   return (
     <PageTransition>
       <InfoPage
+        route="/trust"
         title="How trust works"
         lede="No star ratings. Trust here comes from checks by the Hub and from what sellers actually do."
         updated="2026-10-21"

@@ -1,8 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ErrorSummary } from "@/components/forms/ErrorSummary";
-import { ArrowLeftIcon } from "@/components/icons";
-import { NavPending } from "@/components/ui/NavPending";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
 import { sendFirstMessage } from "@/lib/messaging/actions";
@@ -14,7 +12,8 @@ import { MessageField } from "./MessageField";
 import { MessageSummary } from "./MessageSummary";
 import { SafetyTips } from "./SafetyTips";
 import { ScamCheck } from "./ScamCheck";
-import { BACK } from "@/lib/motion";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 /** The composer's fields after a post (D decision 3): what was typed, what's wrong, and the scam check's warnings. */
 export type ComposerForm = { body: string; swapOffer: string; errors: FormError[]; warnings: ScamWarning[] };
@@ -49,9 +48,16 @@ export function ComposerView({ subject, status, form }: ComposerViewProps) {
   // The tips' heading id ends with the listing or shop, like the fields' ids, so two kept composers never share one
   // (messaging plan amendment 5; community actions plan amendment 19.9).
   const item = target.kind === "listing" ? target.listingId : target.sellerSlug;
-  const back = listing
-    ? { href: `/listings/${listing.id}`, label: "Back to the listing" }
-    : { href: `/sellers/${seller.slug}`, label: "Back to the shop" };
+  const here = `Message ${seller.name}`;
+  const crumbs = listing
+    ? trailFor("/listings/[id]/message", {
+        params: { id: listing.id },
+        names: { "/listings/[id]": listing.title, "/listings/[id]/message": here },
+      })
+    : trailFor("/sellers/[slug]/message", {
+        params: { slug: seller.slug },
+        names: { "/sellers/[slug]": seller.name, "/sellers/[slug]/message": here },
+      });
   let main: ReactNode = null;
   switch (status.kind) {
     case "own":
@@ -91,11 +97,7 @@ export function ComposerView({ subject, status, form }: ComposerViewProps) {
   }
   return (
     <>
-      <Link href={back.href} prefetch={false} transitionTypes={BACK} className="msg-crumb">
-        <ArrowLeftIcon />
-        {back.label}
-        <NavPending />
-      </Link>
+      <Trail crumbs={crumbs} />
       <h1 className="composer-title">{`Message ${seller.name}`}</h1>
       <div className="composer-layout">
         <div className="composer-main">

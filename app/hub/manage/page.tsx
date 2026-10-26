@@ -13,7 +13,7 @@ import { isAdmin } from "@/lib/staff/roles";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
-  return staffMetadata("hub", "Hub posts and office hours");
+  return staffMetadata("hub", "Posts and office hours");
 }
 
 /** The Hub's tools (staff tools spec 3): posts and the office-hours queue. Mentors and admins only. */
@@ -39,8 +39,8 @@ async function Manage() {
     <StaffFrame
       account={account}
       area={hubEyebrow(account)}
-      title="Hub posts"
-      current={HUB_MANAGE_PATH}
+      title="Posts and office hours"
+      route="/hub/manage"
       notice={staffNoticeText(notice)}
     >
       <HubManage

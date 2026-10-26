@@ -40,7 +40,7 @@ async function Hidden({ searchParams }: Pick<PageProps<"/admin/hidden">, "search
       account={account}
       area={STAFF_EYEBROW.admin}
       title="Hidden listings and requests"
-      current={ADMIN_HIDDEN_PATH}
+      route="/admin/hidden"
       notice={staffNoticeText(notice)}
     >
       <CampusFilter path={ADMIN_HIDDEN_PATH} campuses={campuses} chosen={chosen} />

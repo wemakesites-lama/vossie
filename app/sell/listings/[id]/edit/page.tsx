@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ChevronLeftIcon } from "@/components/icons";
 import { Reveal } from "@/components/kit/Reveal";
 import { ListingForm } from "@/components/sell/ListingForm";
 import { SellFormSkeleton } from "@/components/sell/SellSkeleton";
-import { myListingsPath } from "@/lib/selling/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 export const metadata: Metadata = { title: "Edit your listing", robots: { index: false } };
 
@@ -21,10 +20,7 @@ export default function EditListingPage({ params }: PageProps<"/sell/listings/[i
       <div className="page sell-page">
         <div className="sell-column">
           <header className="sell-head">
-            <Link href={myListingsPath()} prefetch={false} className="sell-crumb">
-              <ChevronLeftIcon className="size-4" />
-              Your listings
-            </Link>
+            <Trail crumbs={trailFor("/sell/listings/[id]/edit", { names: { "/sell/listings/[id]/edit": "Edit listing" } })} />
             <h1 className="sell-title">Edit listing</h1>
           </header>
           <Reveal fallback={<SellFormSkeleton />}>

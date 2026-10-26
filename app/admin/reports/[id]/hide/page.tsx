@@ -6,11 +6,12 @@ import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
 import { readFormState } from "@/lib/auth/form-state";
 import { getReport } from "@/lib/data/staff-reports";
+import { reportedThing } from "@/components/staff/AdminReports";
 import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
 import { hideForm } from "@/lib/staff/form-state";
-import { ADMIN_REPORTS_PATH, hideReportedPath, STAFF_EYEBROW } from "@/lib/staff/paths";
+import { hideReportedPath, STAFF_EYEBROW } from "@/lib/staff/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -42,7 +43,8 @@ async function Hide({ params }: Pick<PageProps<"/admin/reports/[id]/hide">, "par
   if (!report) notFound();
   const state = await readFormState(hideForm(id));
   return (
-    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title={`Hide ${report.targetTitle}`} current={ADMIN_REPORTS_PATH} notice={null}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title={`Hide ${report.targetTitle}`} route="/admin/reports/[id]/hide"
+      trail={{ params: { id }, names: { "/admin/reports/[id]": reportedThing(report) } }} notice={null}>
       <ReportConfirm
         kind="hide"
         report={report}

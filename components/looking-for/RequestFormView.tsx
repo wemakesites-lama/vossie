@@ -2,8 +2,6 @@ import Link from "next/link";
 import { CampusSelect } from "@/components/forms/CampusSelect";
 import { ErrorSummary } from "@/components/forms/ErrorSummary";
 import { describedBy, FieldError } from "@/components/forms/FieldError";
-import { ArrowLeftIcon } from "@/components/icons";
-import { NavPending } from "@/components/ui/NavPending";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
 import { reopenMyRequest, saveMyRequest } from "@/lib/looking-for/actions";
@@ -11,8 +9,9 @@ import { requestErrors, requestFieldIds } from "@/lib/looking-for/errors";
 import { requestFieldPrefix, requestPath, YOUR_REQUESTS_PATH } from "@/lib/looking-for/paths";
 import { addDays, DETAILS_MAX, DETAILS_MIN, NEEDED_BY_DAYS, TITLE_MAX, TITLE_MIN } from "@/lib/looking-for/rules";
 import { CLOSES_BY_ITSELF_HINT, REOPEN_CLEARS_DATE_HINT } from "@/lib/looking-for/words";
-import { BACK } from "@/lib/motion";
 import type { Campus, Category, LookingForRequest } from "@/lib/types";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 /** What the request form shows in its fields (community actions spec 2.3). */
 export type RequestFormValues = {
@@ -89,16 +88,15 @@ export function RequestFormView({ requestId, once, form, campuses, categories, t
   const describe = (fieldId: string, withHint = true) =>
     describedBy(withHint && hint(fieldId), problem(fieldId) && errorId(fieldId));
   const invalid = (fieldId: string) => (problem(fieldId) ? true : undefined);
-  const back = requestId
-    ? { href: requestPath(requestId), label: "Back to the request" }
-    : { href: "/looking-for", label: "Back to Looking For" };
   return (
     <div className="request-form-column">
-      <Link href={back.href} prefetch={false} transitionTypes={BACK} className="msg-crumb">
-        <ArrowLeftIcon />
-        {back.label}
-        <NavPending />
-      </Link>
+      <Trail
+        crumbs={
+          requestId
+            ? trailFor("/looking-for/[id]/edit", { params: { id: requestId }, names: { "/looking-for/[id]": "Your request" } })
+            : trailFor("/looking-for/new", { names: { "/looking-for/new": "Ask for what you need" } })
+        }
+      />
       <h1 className="request-form-title">{requestId ? "Edit your request" : "Ask for what you need"}</h1>
       {!requestId && (
         <p className="request-form-lede">
@@ -254,18 +252,17 @@ type RequestLockedProps = {
 
 /** A closed or hidden request's edit page: why it can't be changed, and what can be done (plan decision 6). */
 export function RequestLocked({ requestId, title, state, reopenClearsDate = false }: RequestLockedProps) {
-  const back =
-    state === "closed"
-      ? { href: requestPath(requestId), label: "Back to the request" }
-      : { href: YOUR_REQUESTS_PATH, label: "Back to Your requests" };
   const hintId = reopenClearsDate ? `reopen-hint-locked-${requestId}` : undefined;
   return (
     <div className="request-form-column">
-      <Link href={back.href} prefetch={false} transitionTypes={BACK} className="msg-crumb">
-        <ArrowLeftIcon />
-        {back.label}
-        <NavPending />
-      </Link>
+      {/* A hidden request has no page, so its trail goes through Your requests. */}
+      <Trail
+        crumbs={trailFor("/looking-for/[id]/edit", {
+          params: { id: requestId },
+          names: { "/looking-for/[id]": state === "closed" ? title : "Your requests" },
+          hrefs: { "/looking-for/[id]": state === "closed" ? requestPath(requestId) : YOUR_REQUESTS_PATH },
+        })}
+      />
       <h1 className="request-form-title">Edit your request</h1>
       {state === "closed" ? (
         <div className="request-form-note">

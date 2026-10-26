@@ -15,7 +15,7 @@ import { ADMIN_STAFF_PATH, STAFF_EYEBROW } from "@/lib/staff/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
-  return staffMetadata("admin", "Staff accounts");
+  return staffMetadata("admin", "Staff");
 }
 
 /** Staff accounts (stage J spec decisions 2 and 3). Admins only. */
@@ -41,7 +41,7 @@ async function StaffAccounts() {
     ownShopMentor(account.id),
   ]);
   return (
-    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Staff accounts" current={ADMIN_STAFF_PATH} notice={staffNoticeText(notice)}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Staff" route="/admin/staff" notice={staffNoticeText(notice)}>
       <AdminStaff
         people={people}
         viewerId={account.id}

@@ -1,14 +1,13 @@
 import Link from "next/link";
-import { ArrowLeftIcon } from "@/components/icons";
-import { NavPending } from "@/components/ui/NavPending";
 import { offersLabel } from "@/lib/format";
 import { NEW_REQUEST_PATH, requestPath } from "@/lib/looking-for/paths";
 import { requestStateLabel } from "@/lib/looking-for/words";
-import { BACK } from "@/lib/motion";
 import { shortSastDate } from "@/lib/time";
 import type { OwnRequest } from "@/lib/types";
 import { AutoCloseLine } from "./AutoCloseLine";
 import { RequestActions } from "./RequestActions";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 type YourRequestsViewProps = {
   /** Open, then closed, then hidden, each newest first (plan decision 18). */
@@ -24,11 +23,7 @@ type YourRequestsViewProps = {
 export function YourRequestsView({ items, notice }: YourRequestsViewProps) {
   return (
     <div className="requests-column">
-      <Link href="/account" transitionTypes={BACK} prefetch={false} className="msg-crumb">
-        <ArrowLeftIcon />
-        Back to You
-        <NavPending />
-      </Link>
+      <Trail crumbs={trailFor("/account/requests")} />
       <div className="requests-head">
         <h1 className="requests-title">Your requests</h1>
         <Link href={NEW_REQUEST_PATH} prefetch={false} className="btn btn-primary">

@@ -8,32 +8,46 @@ import { StaffTable } from "./StaffTable";
 const noop = async () => {};
 
 describe("the staff frame (staff tools spec section 3)", () => {
-  it("has the page's heading, the sections the account may use, and the open one marked", () => {
+  it("has the trail, the page's heading, what the section is for, and no row of section links (wayfinding spec 3.3)", () => {
     render(
-      <StaffFrame account={{ roles: ["mentor"] }} area="Hub tools" title="Hub posts" current="/hub/manage" notice={null}>
+      <StaffFrame account={{ roles: ["admin"] }} area="Hub console" title="Reports" route="/admin/reports" notice={null}>
         <p>The page</p>
       </StaffFrame>,
     );
     // A title with one long word (a request's or a listing's) wraps instead of pushing the page sideways on a phone.
-    expect(screen.getByRole("heading", { level: 1, name: "Hub posts" })).toHaveClass("wrap-anywhere");
-    const nav = screen.getByRole("navigation", { name: "Staff tools" });
-    expect(within(nav).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
-      ["Hub posts", "/hub/manage"],
-      ["Mentoring", "/mentor"],
-    ]);
-    expect(within(nav).getByRole("link", { name: "Hub posts" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("heading", { level: 1, name: "Reports" })).toHaveClass("wrap-anywhere");
+    expect(screen.getByRole("link", { name: "Back to Hub console" })).toHaveAttribute("href", "/admin");
+    expect(screen.getByText("Decide what happens to what students report.")).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Staff tools" })).toBeNull();
     expect(screen.getByText("The page")).toBeInTheDocument();
     expect(screen.queryByRole("status")).toBeNull();
   });
 
-  it("gives an admin every section, and shows the last action's notice as a status line (spec 4)", () => {
+  it("names a deep page's parents from what the page passes, and shows the last action's notice (spec 4)", () => {
     render(
-      <StaffFrame account={{ roles: ["admin"] }} area="Hub console" title="Shops" current="/admin/sellers" notice="Approved.">
+      <StaffFrame
+        account={{ roles: ["admin"] }}
+        area="Hub console"
+        title="Pause Tech corner"
+        route="/admin/sellers/[slug]/pause"
+        trail={{ params: { slug: "tech-corner" }, names: { "/admin/sellers/[slug]": "Tech corner" } }}
+        notice="Approved."
+      >
         <p>The page</p>
       </StaffFrame>,
     );
-    expect(within(screen.getByRole("navigation", { name: "Staff tools" })).getAllByRole("link")).toHaveLength(11);
+    expect(screen.getByRole("link", { name: "Back to Tech corner" })).toHaveAttribute("href", "/admin/sellers/tech-corner");
+    expect(screen.getByText("Pause Tech corner", { selector: "[aria-current]" })).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("Approved.");
+  });
+
+  it("starts a mentor's trail at their own tools: they have no console", () => {
+    render(
+      <StaffFrame account={{ roles: ["mentor"] }} area="Hub tools" title="Posts and office hours" route="/hub/manage" notice={null}>
+        <p>The page</p>
+      </StaffFrame>,
+    );
+    expect(screen.queryByRole("navigation", { name: "Breadcrumb" })).toBeNull();
   });
 
   it("is a wordless skeleton in the static shell, saying nothing about the page (plan decision 1)", () => {

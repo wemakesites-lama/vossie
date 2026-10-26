@@ -44,11 +44,11 @@ const STAFF_PAGES: ReadonlyArray<[path: string, heading: string]> = [
   ["/admin/pickup-points", "Pickup points"],
   ["/admin/audit", "Audit log"],
   ["/admin/audit?kind=shops", "Audit log"],
-  ["/hub/manage", "Hub posts"],
+  ["/hub/manage", "Posts and office hours"],
   ["/hub/new", "Write a post"],
   // A past post can still be edited (amendment 12.5), so this page doesn't depend on the date the tests run.
   ["/hub/h-002/edit", "Edit Office hours: pricing your hustle"],
-  ["/mentor", "Mentor dashboard"],
+  ["/mentor", "Mentoring"],
   ["/mentor/tech-corner", "Tech corner"],
 ];
 
@@ -169,8 +169,8 @@ for (const [name, path, label] of SHIFT_PAGES) {
 const SIZE_PAGES: ReadonlyArray<[name: string, path: string]> = [
   ["Today", "/admin"],
   ["Shops", "/admin/sellers"],
-  ["Hub posts", "/hub/manage"],
-  ["Mentor dashboard", "/mentor"],
+  ["Posts and office hours", "/hub/manage"],
+  ["Mentoring", "/mentor"],
   // Role views N4: the only staff page with N2's PendingButton (the note and check-in forms).
   ["mentor's shop", "/mentor/tech-corner"],
 ];

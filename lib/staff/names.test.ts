@@ -13,10 +13,12 @@ const pagesUnder = (folder: string) =>
     .map((file) => path.join(folder, file));
 
 describe("the console's eyebrow", () => {
-  it("comes from STAFF_EYEBROW on every admin page, and from hubEyebrow on every Hub staff page", () => {
+  it("comes from STAFF_EYEBROW on every admin page, and from hubEyebrow on every Hub staff and Mentoring page", () => {
     for (const [folder, eyebrow] of [
       ["app/admin", "area={STAFF_EYEBROW.admin}"],
       ["app/hub", "area={hubEyebrow(account)}"],
+      // Mentoring is a console section for an admin (wayfinding spec 3.3), the mentor's own tools otherwise.
+      ["app/mentor", "area={hubEyebrow(account)}"],
     ] as const) {
       const staffPages = pagesUnder(folder).filter((file) => readFileSync(file, "utf8").includes("<StaffFrame"));
       expect(staffPages.length, folder).toBeGreaterThan(0);

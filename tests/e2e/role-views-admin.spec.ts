@@ -75,6 +75,8 @@ test.describe("Today (role views spec 7.2)", () => {
       const shortest = today.getBoundingClientRect().height;
       const holder = document.createElement("div");
       holder.innerHTML = skeletonHtml;
+      // Today renders <StaffSkeleton trail={false} />: it has no breadcrumb trail.
+      holder.querySelector(".staff-skeleton-trail")?.remove();
       today.after(holder);
       const skeleton = (holder.firstElementChild as HTMLElement).getBoundingClientRect().height;
       holder.remove();
@@ -159,23 +161,30 @@ test.describe("the console's fixes (spec 7.2)", () => {
     await expect(main(page).getByRole("link", { name: "Next waiting shop: Crochet corner" })).toHaveCount(0);
   });
 
-  test("campus chips show one campus, and every campus for one that doesn't exist", async ({ page }) => {
+  test("the campus filter shows one campus, and every campus for one that doesn't exist (wayfinding spec 3.4)", async ({
+    page,
+  }) => {
     onlyAt(...BOTH);
-    await signInAsSample(page, "Admin", "/admin/sellers?campus=pretoria");
-    const chips = main(page).getByRole("navigation", { name: "Filter by campus" });
-    await expect(chips.getByRole("link", { name: "Pretoria" })).toHaveAttribute("aria-current", "page");
+    await signInAsSample(page, "Admin", "/admin/sellers");
+    const filter = main(page).getByRole("form", { name: "Filter by campus" });
+    await filter.getByRole("combobox", { name: "Campus" }).selectOption("pretoria");
+    await filter.getByRole("button", { name: "Filter" }).click();
+    await expect(page).toHaveURL(/\/admin\/sellers\?campus=pretoria$/);
+    await expect(filter.getByRole("combobox", { name: "Campus" })).toHaveValue("pretoria");
     await expect(main(page).getByRole("table", { name: "Shops waiting for approval, oldest first · Pretoria" })).toContainText(
       "Crochet corner",
     );
     await expect(main(page).getByRole("link", { name: "Review Tech corner" })).toHaveCount(0);
+    await main(page).getByRole("link", { name: "Clear filters" }).click();
+    await expect(page).toHaveURL(/\/admin\/sellers$/);
     await page.goto("/admin/sellers?campus=nowhere");
-    await expect(chips.getByRole("link", { name: "All campuses" })).toHaveAttribute("aria-current", "page");
+    await expect(filter.getByRole("combobox", { name: "Campus" })).toHaveValue("");
     await expect(main(page).getByRole("link", { name: "Review Tech corner" })).toBeVisible();
     for (const path of ["/admin/reports", "/admin/hidden"]) {
       await page.goto(`${path}?campus=midrand`);
-      await expect(chips.getByRole("link", { name: "Midrand" }), path).toHaveAttribute("aria-current", "page");
-      await expect(chips.getByRole("link", { name: "All campuses" }), path).toHaveAttribute("href", path);
-      // The fourteen chips scroll inside their row: the page itself never gets wider than the screen.
+      await expect(filter.getByRole("combobox", { name: "Campus" }), path).toHaveValue("midrand");
+      await expect(main(page).getByRole("link", { name: "Clear filters" }), path).toHaveAttribute("href", path);
+      // The page itself never gets wider than the screen.
       expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), path).toBeLessThanOrEqual(0);
     }
   });
@@ -183,12 +192,20 @@ test.describe("the console's fixes (spec 7.2)", () => {
   test("More is the current tab on the pages it holds, Hidden's included, and not after leaving (plan decision 8)", async ({ page }) => {
     onlyAt(...BOTH);
     await signInAsSample(page, "Admin", "/admin");
+    // More is the phone's tab; from the tablet step the sidebar names every section, and the section's own link is
+    // current (wayfinding spec 3.3).
+    const wide = test.info().project.name !== "phone-390";
     const more = consoleBar(page).getByRole("link", { name: "More" });
     const reports = consoleBar(page).getByRole("link", { name: "Reports" });
-    for (const path of ["/admin/hidden", "/admin/numbers", "/admin/staff"]) {
+    for (const [path, own] of [
+      ["/admin/hidden", "Hidden"],
+      ["/admin/numbers", "Last week"],
+      ["/admin/staff", "Staff"],
+    ] as const) {
       await page.goto(path);
       await expect(main(page).getByRole("heading", { level: 1 })).toBeVisible();
-      await expect(more, path).toHaveAttribute("aria-current", "true");
+      if (wide) await expect(consoleBar(page).getByRole("link", { name: own, exact: true }), path).toHaveAttribute("aria-current", "page");
+      else await expect(more, path).toHaveAttribute("aria-current", "true");
       await expect(reports, path).not.toHaveAttribute("aria-current");
     }
     // Leaving Hidden through the bar: Next keeps the Hidden page, hidden, and NavLink reads the new path.
@@ -197,7 +214,7 @@ test.describe("the console's fixes (spec 7.2)", () => {
     await reports.click();
     await expect(main(page).getByRole("heading", { level: 1, name: "Reports" })).toBeVisible();
     await expect(reports).toHaveAttribute("aria-current", "page");
-    await expect(more, "after leaving Hidden").not.toHaveAttribute("aria-current");
+    if (!wide) await expect(more, "after leaving Hidden").not.toHaveAttribute("aria-current");
   });
 
   test("no serious or critical accessibility issues on Today, Reports by campus and Last week", async ({ page }) => {

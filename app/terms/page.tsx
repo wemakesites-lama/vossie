@@ -127,6 +127,7 @@ export default function TermsPage() {
   return (
     <PageTransition>
       <InfoPage
+        route="/terms"
         title="Terms of use"
         lede="The rules for using CampusCart, in plain words."
         updated="2026-10-14"

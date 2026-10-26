@@ -4,6 +4,8 @@ import { monthYear } from "@/lib/format";
 import type { Seller } from "@/lib/types";
 import { SellerHero } from "./SellerHero";
 import { SellerListings } from "./SellerListings";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 type SellerViewProps = {
   seller: Seller;
@@ -17,6 +19,7 @@ type SellerViewProps = {
 export function SellerView({ seller, campusNames }: SellerViewProps) {
   return (
     <div className="page seller-page">
+      <Trail crumbs={trailFor("/sellers/[slug]", { names: { "/sellers/[slug]": seller.name } })} />
       <SellerHero seller={seller} campusName={campusNames.get(seller.campusSlug) ?? ""} />
 
       <div className="seller-layout">

@@ -47,15 +47,23 @@ test.describe("section bars (role views spec 4.1)", () => {
     await expect(bar(page, "Selling").getByRole("link", { name: "Messages" })).toHaveCount(0);
   });
 
-  test("the admin's bar marks Today, and More opens the other tools", async ({ page }) => {
+  test("the admin's bar marks Today; phones open the other tools through More, the sidebar shows them all", async ({
+    page,
+  }) => {
     await signInAsSample(page, "Admin", "/admin");
     const console_ = bar(page, "Hub console");
     await expect(console_.getByRole("link", { name: "Today" })).toHaveAttribute("aria-current", "page");
+    if (!phone()) {
+      // Wayfinding spec 3.3: every section under its group's heading, and no More.
+      await expect(console_.getByRole("heading", { level: 2 })).toHaveText(["Needs you", "Hub", "Insight", "Set up"]);
+      await expect(console_.getByRole("link", { name: "Audit log" })).toBeVisible();
+      await expect(console_.getByRole("link", { name: "More" })).toBeHidden();
+      return;
+    }
+    await expect(console_.getByRole("link", { name: "Audit log" })).toBeHidden();
     await console_.getByRole("link", { name: "More" }).click();
     await expect(page).toHaveURL(/\/admin\/more$/);
-    await expect(
-      main(page).getByRole("list", { name: "More tools" }).filter({ visible: true }).getByRole("link"),
-    ).toHaveCount(7);
+    await expect(main(page).locator(".staff-more-group").filter({ visible: true }).getByRole("link")).toHaveCount(7);
   });
 
   test("a mentor gets the mentoring bar, not the console's", async ({ page }) => {

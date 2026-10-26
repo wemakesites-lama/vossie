@@ -39,7 +39,7 @@ test("review screenshots of staff accounts, the numbers and the hidden list (sta
   // [file name, path, the page's H1, something only the real content has (so no skeleton is captured)]
   const shots: ReadonlyArray<[name: string, path: string, heading: string, content: RegExp | string]> = [
     ["overview", "/admin", "Overview", "Hidden by the Hub"],
-    ["staff", "/admin/staff", "Staff accounts", "Give a staff role"],
+    ["staff", "/admin/staff", "Staff", "Give a staff role"],
     ["remove-mentor", "/admin/staff/acc-mentor/remove-mentor", "Remove Naledi's mentor role", "Remove Naledi's mentor role"],
     ["remove-own-admin", "/admin/staff/acc-admin/remove-admin", "Your admin role", "Back to staff accounts"],
     ["numbers", "/admin/numbers", "Numbers", "All campuses, by week"],

@@ -1,10 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { ErrorSummary } from "@/components/forms/ErrorSummary";
 import { describedBy, FieldError } from "@/components/forms/FieldError";
-import { ChevronLeftIcon } from "@/components/icons";
-import { NavPending } from "@/components/ui/NavPending";
 import { readFormState } from "@/lib/auth/form-state";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import { requireAccount } from "@/lib/auth/session";
@@ -13,7 +10,6 @@ import { latestBooking } from "@/lib/data/hub-posts";
 import { hasPassed } from "@/lib/hub";
 import { sendSlotRequest } from "@/lib/hub-actions";
 import { isId } from "@/lib/messaging/paths";
-import { BACK } from "@/lib/motion";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
 import { HUB_NOTICE, slotForm, takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
@@ -21,6 +17,8 @@ import { bookSlotPath } from "@/lib/staff/paths";
 import { HELP_MAX, TIME_MAX } from "@/lib/staff/rules";
 import { sastDateTime, sastToday } from "@/lib/time";
 import type { HubBooking, HubPost } from "@/lib/types";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 type BookSlotViewProps = {
   post: Pick<HubPost, "id" | "title" | "startsAt" | "place">;
@@ -45,11 +43,7 @@ export function BookSlotView({ post, passed, latest, values, errors, notice }: B
   const canAsk = !passed && !standing;
   return (
     <div className="hub-book-body">
-      <Link href={`/hub/${post.id}`} transitionTypes={BACK} prefetch={false} className="account-crumb">
-        <ChevronLeftIcon />
-        Back to {post.title}
-        <NavPending />
-      </Link>
+      <Trail crumbs={trailFor("/hub/[id]/book", { params: { id: post.id }, names: { "/hub/[id]": post.title } })} />
       <h1 className="hub-book-title">Request a slot</h1>
       <p className="hub-book-post">
         {post.title}

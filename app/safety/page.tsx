@@ -116,6 +116,7 @@ export default function SafetyPage() {
   return (
     <PageTransition>
       <InfoPage
+        route="/safety"
         title="Safety"
         lede="Meet in a safe place, check before you pay, and trust your gut."
         updated="2026-10-20"

@@ -11,7 +11,7 @@ import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
 import { shopPauseForm } from "@/lib/staff/form-state";
-import { ADMIN_SELLERS_PATH, pauseSellerPath, STAFF_EYEBROW } from "@/lib/staff/paths";
+import { pauseSellerPath, STAFF_EYEBROW } from "@/lib/staff/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -44,7 +44,8 @@ async function Pause({ params }: Pick<PageProps<"/admin/sellers/[slug]/pause">, 
     own ? countAdmins() : Promise.resolve(0),
   ]);
   return (
-    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title={`Pause ${review.shop.name}`} current={ADMIN_SELLERS_PATH} notice={null}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title={`Pause ${review.shop.name}`} route="/admin/sellers/[slug]/pause"
+      trail={{ params: { slug }, names: { "/admin/sellers/[slug]": review.shop.name } }} notice={null}>
       <SellerConfirm
         kind="pause"
         review={review}

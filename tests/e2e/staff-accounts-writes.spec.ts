@@ -25,8 +25,8 @@ test("an admin gives a fresh account the mentor role by email, and takes it away
   await signUp(page, student);
 
   const admin = await signedInPage(browser, baseURL!, "Admin", "/admin/staff");
-  await expect(main(admin).getByRole("heading", { level: 1, name: "Staff accounts" })).toBeVisible();
-  await expect(admin).toHaveTitle("Staff accounts · CampusCart");
+  await expect(main(admin).getByRole("heading", { level: 1, name: "Staff" })).toBeVisible();
+  await expect(admin).toHaveTitle("Staff · CampusCart");
   // The email's case doesn't matter: it's matched exactly once normalised (spec decision 3).
   await giveRole(admin, student.email.toUpperCase(), "Mentor");
   const row = main(admin).getByRole("row").filter({ hasText: student.email });
@@ -43,7 +43,7 @@ test("an admin gives a fresh account the mentor role by email, and takes it away
   await expect(main(page).getByRole("link", { name: "Mentor dashboard" })).toBeVisible();
   await expect(main(page).getByRole("link", { name: "Hub posts and office hours" })).toBeVisible();
   await page.goto("/mentor");
-  await expect(main(page).getByRole("heading", { level: 1, name: "Mentor dashboard" })).toBeVisible();
+  await expect(main(page).getByRole("heading", { level: 1, name: "Mentoring" })).toBeVisible();
 
   // Remove it through the confirm page. The link reads "Remove mentor role" and is named for the person (amendment 12).
   await row.getByRole("link", { name: `Remove mentor role for ${student.firstName}` }).click();

@@ -33,7 +33,7 @@ async function Reports({ searchParams }: Pick<PageProps<"/admin/reports">, "sear
   const [params, reports, campuses, notice] = await Promise.all([searchParams, listReports(), getCampuses(), takeNotice()]);
   const chosen = readCampusFilter(params, campuses);
   return (
-    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Reports" current={ADMIN_REPORTS_PATH} notice={staffNoticeText(notice)}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title="Reports" route="/admin/reports" notice={staffNoticeText(notice)}>
       <CampusFilter path={ADMIN_REPORTS_PATH} campuses={campuses} chosen={chosen} />
       <AdminReports reports={inCampus(reports, chosen, (report) => report.campusSlug)} campusName={chosen?.name ?? null} />
     </StaffFrame>

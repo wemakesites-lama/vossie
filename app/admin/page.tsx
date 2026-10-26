@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function AdminPage() {
   return (
     <PageTransition>
-      <Reveal fallback={<StaffSkeleton />}>
+      <Reveal fallback={<StaffSkeleton trail={false} />}>
         <Today />
       </Reveal>
     </PageTransition>
@@ -86,7 +86,7 @@ async function Today() {
       area={STAFF_EYEBROW.admin}
       title="Today"
       lede={queue ? todayLede(queue, now) : undefined}
-      current={ADMIN_PATH}
+      route="/admin"
       notice={staffNoticeText(notice)}
     >
       <AdminToday waiting={queue?.items ?? null} week={week} badgesChanged={badgesChanged} />

@@ -41,7 +41,7 @@ describe("Your requests (community actions spec 2.13, plan decision 18)", () => 
     render(<YourRequestsView items={ITEMS} notice={null} />);
     expect(screen.getByRole("heading", { level: 1, name: "Your requests" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Post a request" })).toHaveAttribute("href", "/looking-for/new");
-    const [open, closed, hidden] = screen.getAllByRole("listitem");
+    const [open, closed, hidden] = screen.getAllByRole("listitem").filter((item) => !item.closest("nav"));
     expect(within(open).getByRole("link", { name: "Desk lamp for res" })).toHaveAttribute("href", "/looking-for/r-a");
     expect(open).toHaveTextContent("Open · 2 offers · Posted 13 Oct");
     expect(within(open).getByRole("link", { name: "Edit Desk lamp for res" })).toHaveAttribute(
@@ -111,7 +111,7 @@ describe("requests that close themselves (stage L spec section 4)", () => {
 
   it("says when an open request will close, and when and why a closed one closed itself, with dates in <time>", () => {
     render(<YourRequestsView items={[OPEN_UNTIL, AUTO, IDLE]} notice={null} />);
-    const [first, second, third] = screen.getAllByRole("listitem");
+    const [first, second, third] = screen.getAllByRole("listitem").filter((item) => !item.closest("nav"));
     expect(first).toHaveTextContent("Closes automatically on 13 Nov.");
     expect(first.querySelector('time[datetime="2026-11-13"]')).not.toBeNull();
     expect(second).toHaveTextContent("Closed automatically on 20 Oct, 3 days after the date you needed it by.");

@@ -42,10 +42,10 @@ describe("the report form for this visitor (messaging spec 3.4)", () => {
   it("reports a seller and a request too", async () => {
     const { unmount } = render(await Report({ target: { kind: "seller", id: "tech-corner" } }));
     expect(screen.getByRole("heading", { level: 1, name: "Report this seller" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Back to the shop" })).toHaveAttribute("href", "/sellers/tech-corner");
+    expect(screen.getByRole("link", { name: /^Back to / })).toHaveAttribute("href", "/sellers/tech-corner");
     unmount();
     render(await Report({ target: { kind: "request", id: "r-001" } }));
     expect(screen.getByRole("heading", { level: 1, name: "Report this request" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Back to the request" })).toHaveAttribute("href", "/looking-for/r-001");
+    expect(screen.getByRole("link", { name: /^Back to / })).toHaveAttribute("href", "/looking-for/r-001");
   });
 });

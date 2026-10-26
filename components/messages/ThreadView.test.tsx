@@ -36,7 +36,7 @@ describe("a thread (messaging spec 3.3)", () => {
   it("is headed by the other side, with the way back, Refresh, and the listing with its status", () => {
     show();
     expect(screen.getByRole("heading", { level: 1, name: "Messages with Tech corner" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Back to messages" })).toHaveAttribute("href", "/messages");
+    expect(screen.getByRole("link", { name: "Back to Messages" })).toHaveAttribute("href", "/messages");
     expect(screen.getByRole("link", { name: "Refresh" })).toHaveAttribute("href", "/messages/conv-test");
     expect(screen.getByRole("link", { name: "Test listing" })).toHaveAttribute("href", "/listings/l-test");
     expect(screen.getByText("Asked")).toHaveClass("status-pill");
@@ -44,7 +44,7 @@ describe("a thread (messaging spec 3.3)", () => {
 
   it("goes back to Selling for the seller", () => {
     show(makeThread({ role: "seller", otherName: "Ayanda" }));
-    expect(screen.getByRole("link", { name: "Back to messages" })).toHaveAttribute("href", "/messages?tab=selling");
+    expect(screen.getByRole("link", { name: "Back to Messages" })).toHaveAttribute("href", "/messages?tab=selling");
     expect(screen.getByRole("heading", { level: 1, name: "Messages with Ayanda" })).toBeInTheDocument();
   });
 

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { FlagIcon } from "@/components/icons";
 import { ReportLink } from "@/components/messages/SessionLinks";
 import { budgetLabel, dayMonth } from "@/lib/format";
@@ -6,6 +5,8 @@ import { shortSastDate } from "@/lib/time";
 import type { Category, LookingForRequest } from "@/lib/types";
 import { OffersPanel } from "./OffersPanel";
 import { RelatedListings } from "./RelatedListings";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 type RequestViewProps = {
   request: LookingForRequest;
@@ -24,18 +25,12 @@ export function RequestView({ request, category, campusNames }: RequestViewProps
 
   return (
     <div className="page request-page">
-      <nav aria-label="Breadcrumb" className="listing-crumbs">
-        <ol>
-          <li>
-            <Link href="/looking-for">Looking For</Link>
-          </li>
-          <li>
-            <Link href={`/looking-for?cat=${category.slug}`} prefetch={false}>
-              {category.name}
-            </Link>
-          </li>
-        </ol>
-      </nav>
+      <Trail
+        crumbs={trailFor("/looking-for/[id]", {
+          names: { "/looking-for/[id]": request.title },
+          between: [{ label: category.name, href: `/looking-for?cat=${category.slug}` }],
+        })}
+      />
 
       <div className="request-layout">
         <div>

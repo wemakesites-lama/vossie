@@ -11,7 +11,7 @@ import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
 import { declineForm } from "@/lib/staff/form-state";
-import { ADMIN_SELLERS_PATH, declineSellerPath, STAFF_EYEBROW } from "@/lib/staff/paths";
+import { declineSellerPath, STAFF_EYEBROW } from "@/lib/staff/paths";
 import { PageTransition } from "@/components/kit/PageTransition";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -44,7 +44,8 @@ async function Decline({ params }: Pick<PageProps<"/admin/sellers/[slug]/decline
     own ? countAdmins() : Promise.resolve(0),
   ]);
   return (
-    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title={`Decline ${review.shop.name}`} current={ADMIN_SELLERS_PATH} notice={null}>
+    <StaffFrame account={account} area={STAFF_EYEBROW.admin} title={`Decline ${review.shop.name}`} route="/admin/sellers/[slug]/decline"
+      trail={{ params: { slug }, names: { "/admin/sellers/[slug]": review.shop.name } }} notice={null}>
       <SellerConfirm
         kind="decline"
         review={review}

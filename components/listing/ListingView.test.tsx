@@ -20,8 +20,8 @@ describe("ListingView (spec 5.1)", () => {
   it("leads with the breadcrumb, title, price and actions", async () => {
     await show("l-001");
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
-    expect(within(crumbs).getByRole("link", { name: "Browse" })).toHaveAttribute("href", "/browse");
-    expect(within(crumbs).getByRole("link", { name: "Tech" })).toHaveAttribute("href", "/browse?cat=tech");
+    expect(within(crumbs).getByRole("link", { name: "Shop" })).toHaveAttribute("href", "/browse");
+    expect(within(crumbs).getByRole("link", { name: "Back to Tech" })).toHaveAttribute("href", "/browse?cat=tech");
     expect(screen.getByRole("heading", { level: 1, name: "Casio fx-991ZA Plus calculator" })).toBeInTheDocument();
     expect(screen.getByText("R250")).toHaveClass("listing-page-price");
     expect(screen.getByRole("link", { name: "Message seller" })).toBeInTheDocument();

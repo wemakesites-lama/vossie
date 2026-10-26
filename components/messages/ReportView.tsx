@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { ErrorSummary } from "@/components/forms/ErrorSummary";
 import { describedBy, FieldError } from "@/components/forms/FieldError";
-import { ArrowLeftIcon } from "@/components/icons";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
 import { sendReport } from "@/lib/messaging/actions";
@@ -11,6 +9,8 @@ import { REPORT_REASONS } from "@/lib/messaging/rules";
 import type { ReportSubject } from "@/lib/messaging/subjects";
 import type { ReportTarget } from "@/lib/types";
 import { MessageField } from "./MessageField";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 /** The report form after a post (D decision 3): the reason picked, the detail typed, and what's wrong. */
 export type ReportForm = { reason: string; detail: string; errors: FormError[] };
@@ -37,10 +37,13 @@ type ReportViewProps = {
 export function ReportView({ target, subject, already, form }: ReportViewProps) {
   return (
     <div className="report-column">
-      <Link href={subject.href} prefetch={false} className="msg-crumb">
-        <ArrowLeftIcon />
-        {subject.backLabel}
-      </Link>
+      {/* A report sits under what it reports. */}
+      <Trail
+        crumbs={trailFor("/report", {
+          parent: { label: subject.title, href: subject.href },
+          names: { "/report": `Report this ${target.kind}` },
+        })}
+      />
       <h1 className="report-title">{`Report this ${target.kind}`}</h1>
       <p className="report-subject">{subject.title}</p>
       {already ? (

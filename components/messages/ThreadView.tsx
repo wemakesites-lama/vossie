@@ -1,7 +1,4 @@
-import Link from "next/link";
 import { ErrorSummary } from "@/components/forms/ErrorSummary";
-import { ArrowLeftIcon } from "@/components/icons";
-import { NavPending } from "@/components/ui/NavPending";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
 import { OFFER_SENT_NOTE, SHOP_CLOSED_NOTE, SHOP_WAITS_NOTE } from "@/lib/looking-for/words";
@@ -9,7 +6,6 @@ import { sendReply } from "@/lib/messaging/actions";
 import { messagingErrors, replyFields } from "@/lib/messaging/errors";
 import { inboxPath, threadPath } from "@/lib/messaging/paths";
 import { parseWarnings, type ScamWarning } from "@/lib/messaging/scam-check";
-import { BACK } from "@/lib/motion";
 import { messageTime } from "@/lib/time";
 import type { SaleToMark, Thread } from "@/lib/types";
 import { MessageField } from "./MessageField";
@@ -18,6 +14,8 @@ import { OfferAbout } from "./OfferAbout";
 import { MarkSoldForm, SaleActions } from "./SaleActions";
 import { ScamCheck } from "./ScamCheck";
 import { StatusPill } from "./StatusPill";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 /** The reply form after a post (D decision 3): what was typed, what's wrong, and the scam check's warnings. */
 export type ReplyForm = { body: string; errors: FormError[]; warnings: ScamWarning[] };
@@ -71,11 +69,12 @@ export function ThreadView({
     thread.request && thread.role === "buyer" ? SHOP_CLOSED_NOTE : "This person has left CampusCart, so you can't reply.";
   return (
     <div className="thread-column">
-      <Link href={inboxPath(thread.role === "seller" ? "selling" : "buying")} transitionTypes={BACK} prefetch={false} className="msg-crumb">
-        <ArrowLeftIcon />
-        Back to messages
-        <NavPending />
-      </Link>
+      <Trail
+        crumbs={trailFor("/messages/[id]", {
+          names: { "/messages/[id]": thread.otherName },
+          hrefs: { "/messages": inboxPath(thread.role === "seller" ? "selling" : "buying") },
+        })}
+      />
       <div className="thread-head">
         <h1 className="thread-title">
           {/* The space sits outside the sr-only span: name computation trims each element's own text. */}
