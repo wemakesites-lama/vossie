@@ -47,8 +47,8 @@ const TIPS = [
   "From side hustle to small business",
 ];
 
-describe("HubFeed (community spec 5.1)", () => {
-  it("shows upcoming events and office hours, soonest first, then tips, newest first", async () => {
+describe("HubFeed (Launchpad spec 4.2 and 4.3)", () => {
+  it("shows Coming up, soonest first, then Tips, newest first", async () => {
     await show();
     expect(titles("Events and office hours")).toEqual([
       "Pitch night",
@@ -63,15 +63,18 @@ describe("HubFeed (community spec 5.1)", () => {
       "Pitch night",
     ]);
     expect(titles("Tips")).toEqual(TIPS);
+    expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      "Coming up",
+      "Tips",
+    ]);
     const tabs = screen.getByRole("navigation", { name: "Post types" });
     expect(within(tabs).getAllByRole("link").map((link) => link.textContent)).toEqual([
       "All",
       "Events",
       "Office hours",
-      "Tips",
     ]);
     expect(within(tabs).getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page");
-    expect(within(tabs).getByRole("link", { name: "All" })).toHaveAttribute("href", "/hub#hub-feed");
+    expect(within(tabs).getByRole("link", { name: "All" })).toHaveAttribute("href", "/hub#hub-coming-up");
   });
 
   it("keeps what's on today, until midnight in SAST", async () => {
@@ -88,26 +91,27 @@ describe("HubFeed (community spec 5.1)", () => {
     expect(upcoming).toHaveLength(9);
   });
 
-  it("narrows to one type from the link, its tab current", async () => {
+  it("narrows Coming up to one type from the link, its tab current, and keeps Tips", async () => {
     await show({ type: "office-hours" });
     const tabs = screen.getByRole("navigation", { name: "Post types" });
     expect(within(tabs).getByRole("link", { name: "Office hours" })).toHaveAttribute("aria-current", "page");
     expect(within(tabs).getByRole("link", { name: "Office hours" })).toHaveAttribute(
       "href",
-      "/hub?type=office-hours#hub-feed",
+      "/hub?type=office-hours#hub-coming-up",
     );
     expect(titles("Office hours")).toEqual([
       "Office hours: pricing your hustle",
       "Photo day for your shop",
       "Office hours: your first listing",
     ]);
-    expect(screen.queryByRole("list", { name: "Tips" })).toBeNull();
+    expect(titles("Tips")).toEqual(TIPS);
   });
 
-  it("shows only tips on the Tips tab", async () => {
+  it("reads an old Tips tab link as All", async () => {
     await show({ type: "tips" });
+    expect(screen.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page");
+    expect(titles("Events and office hours")).toHaveLength(10);
     expect(titles("Tips")).toEqual(TIPS);
-    expect(screen.queryByRole("list", { name: "Events and office hours" })).toBeNull();
   });
 
   it("ignores a type it doesn't know", async () => {
@@ -124,15 +128,15 @@ describe("HubFeed (community spec 5.1)", () => {
 
   it("says when there are no tips", async () => {
     feed.mode = "no-tips";
-    await show({ type: "tips" });
+    await show();
     expect(screen.getByText("No tips yet.")).toBeInTheDocument();
   });
 
   it("says so when the posts don't load, with a way to try again, and keeps the tabs", async () => {
     feed.mode = "failing";
-    await show({ type: "tips" });
-    expect(screen.getByText("We couldn't load the Hub's posts just now.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Try again" })).toHaveAttribute("href", "/hub?type=tips#hub-feed");
+    await show({ type: "events" });
+    expect(screen.getByText("We couldn't load what's coming up just now.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Try again" })).toHaveAttribute("href", "/hub?type=events#hub-coming-up");
     expect(screen.getByRole("navigation", { name: "Post types" })).toBeInTheDocument();
   });
 });

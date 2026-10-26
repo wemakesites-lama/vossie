@@ -50,7 +50,7 @@ test("the main controls are reachable with the keyboard", async ({ page }) => {
     "Save ",
     "Show slide 1 of 3",
     "Post a request",
-    "Our story",
+    "Visit Launchpad",
   ];
   for (const expected of expectedNames) {
     expect([...reached].some((name) => name.startsWith(expected)), `${expected} should be reachable`).toBe(true);

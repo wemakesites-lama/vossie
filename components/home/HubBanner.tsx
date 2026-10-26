@@ -24,7 +24,7 @@ export async function HubBanner() {
             workshops and office hours on every campus.
           </p>
           <Link href="/hub" className="btn btn-sky hub-banner-action">
-            Our story
+            Visit Launchpad
           </Link>
         </div>
         <div id="whats-on" className="whats-on">

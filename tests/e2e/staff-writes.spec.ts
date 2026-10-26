@@ -41,7 +41,7 @@ test("an admin verifies a new shop: Verified on its storefront and in the Hub's 
   await expect(admin.locator(".seller-stamps li").filter({ visible: true }).filter({ hasText: "Verified" })).toHaveCount(1);
   await admin.goto("/hub");
   await expect(
-    admin.getByRole("region", { name: "Verified by the Hub" }).getByRole("link", { name: new RegExp(shopName) }),
+    admin.getByRole("region", { name: "Verified shops" }).getByRole("link", { name: new RegExp(shopName) }),
   ).toBeVisible();
 
   // The owner is told, and the audit log has it.
@@ -313,7 +313,7 @@ test("a mentor publishes an event and office hours; a student RSVPs and asks for
   await expect(field(mentor, "Title")).toHaveValue(`Market ${word}`);
   await button(mentor, "Save the post").click();
   await expect(mentor).toHaveURL(/\/hub\/manage$/, POST_LANDS);
-  await expect(staffNotice(mentor)).toHaveText("Published. It's on the Hub's feed.");
+  await expect(staffNotice(mentor)).toHaveText("Published. It's on Launchpad.");
 
   // Office hours at Midrand.
   await main(mentor).getByRole("link", { name: "Write a post" }).click();
@@ -326,7 +326,7 @@ test("a mentor publishes an event and office hours; a student RSVPs and asks for
   await field(mentor, "Summary").fill("Bring your prices.");
   await field(mentor, "The post").fill("Twenty minutes each.");
   await button(mentor, "Save the post").click();
-  await expect(staffNotice(mentor)).toHaveText("Published. It's on the Hub's feed.", POST_LANDS);
+  await expect(staffNotice(mentor)).toHaveText("Published. It's on Launchpad.", POST_LANDS);
 
   // The event is on the feed; RSVP goes through sign-in and back, then counts.
   await page.goto("/hub?type=events");

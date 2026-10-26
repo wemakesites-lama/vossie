@@ -2,11 +2,18 @@ import { ALL_CAMPUSES } from "./campus";
 import { sastDate } from "./time";
 import type { HubEvent, HubPost, HubPostKind } from "./types";
 
-/** The feed's tabs (community spec 5.1), as `?type=` names them. "all" is the feed with no `type`. */
+/**
+ * The groups a post belongs to (Launchpad spec 4.2): "all" is Coming up with no `type`. Tips have their own section,
+ * not a tab, so only `HUB_FEED_TABS` are tabs.
+ */
 export const HUB_FEED_TYPES = ["all", "events", "office-hours", "tips"] as const;
 export type HubFeedType = (typeof HUB_FEED_TYPES)[number];
 
-/** The tabs' names, which the post page's breadcrumb uses too. */
+/** Coming up's tabs, as `?type=` names them. */
+export const HUB_FEED_TABS = ["all", "events", "office-hours"] as const;
+export type HubFeedTab = (typeof HUB_FEED_TABS)[number];
+
+/** The groups' names, which the post page's breadcrumb uses too. */
 export const HUB_FEED_LABELS: Record<HubFeedType, string> = {
   all: "All",
   events: "Events",
@@ -14,11 +21,10 @@ export const HUB_FEED_LABELS: Record<HubFeedType, string> = {
   tips: "Tips",
 };
 
-const FEED_KINDS: Record<HubFeedType, readonly HubPostKind[]> = {
-  all: ["event", "office-hours", "tip"],
+const FEED_KINDS: Record<HubFeedTab, readonly HubPostKind[]> = {
+  all: ["event", "office-hours"],
   events: ["event"],
   "office-hours": ["office-hours"],
-  tips: ["tip"],
 };
 
 const FEED_TYPE_OF: Record<HubPostKind, Exclude<HubFeedType, "all">> = {
@@ -27,25 +33,26 @@ const FEED_TYPE_OF: Record<HubPostKind, Exclude<HubFeedType, "all">> = {
   tip: "tips",
 };
 
-/** The feed's `?type=`. Anything it doesn't know shows everything. */
-export function readHubFeedType(raw: string | string[] | undefined): HubFeedType {
+/** Coming up's `?type=`. Anything it doesn't know, an old `?type=tips` link included, shows everything. */
+export function readHubFeedType(raw: string | string[] | undefined): HubFeedTab {
   const value = Array.isArray(raw) ? raw[0] : raw;
-  return HUB_FEED_TYPES.find((type) => type === value) ?? "all";
+  return HUB_FEED_TABS.find((type) => type === value) ?? "all";
 }
 
-/** The kinds of post a tab shows. */
-export function feedKinds(type: HubFeedType): readonly HubPostKind[] {
+/** The kinds of dated post a tab shows in Coming up. Tips show under every tab. */
+export function feedKinds(type: HubFeedTab): readonly HubPostKind[] {
   return FEED_KINDS[type];
 }
 
-/** The tab that holds a kind of post, for a post page's breadcrumb. */
+/** The group that holds a kind of post, for a post page's breadcrumb. */
 export function feedTypeOf(kind: HubPostKind): Exclude<HubFeedType, "all"> {
   return FEED_TYPE_OF[kind];
 }
 
-/** A tab's link. It lands on the feed, so a tap below the story keeps the feed in view (plan decision 6). */
+/** A group's link. A tab lands on Coming up, so a tap below the intro keeps it in view; Tips lands on its section. */
 export function hubFeedHref(type: HubFeedType): string {
-  return type === "all" ? "/hub#hub-feed" : `/hub?type=${type}#hub-feed`;
+  if (type === "tips") return "/hub#hub-tips";
+  return type === "all" ? "/hub#hub-coming-up" : `/hub?type=${type}#hub-coming-up`;
 }
 
 /** The South African date (YYYY-MM-DD) an event or office hours fall on; null for a tip. */

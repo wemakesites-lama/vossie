@@ -48,12 +48,12 @@ describe("MenuDrawer", () => {
     renderMenu();
     const { menu } = openMenu();
     expect(within(menu).getByRole("link", { name: "Shop" })).toHaveAttribute("href", "/browse");
-    for (const name of ["Sell", "Hub", "Looking For", "How it works", "Safety", "Sign in"]) {
+    for (const name of ["Sell", "Launchpad", "Looking For", "How it works", "Safety", "Sign in"]) {
       expect(within(menu).getByRole("link", { name })).toBeInTheDocument();
     }
     expect(within(menu).getByRole("link", { name: "Looking For" })).toHaveAttribute("href", "/looking-for");
     const names = within(menu).getAllByRole("link").map((link) => link.textContent);
-    expect(names.indexOf("Looking For")).toBe(names.indexOf("Hub") + 1);
+    expect(names.indexOf("Looking For")).toBe(names.indexOf("Launchpad") + 1);
     expect(within(menu).getByRole("button", { name: "Campuses" })).toBeInTheDocument();
   });
 

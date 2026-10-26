@@ -1049,6 +1049,11 @@ Written here because another session has uncommitted edits in `docs/PROGRESS.md`
 
 **Next.** The role views are done: Lama's review of the open points above, then the go-live gates.
 
+## 2026-10-22: The team brief brought up to date
+- `docs/stakeholder/CampusCart-brief.pdf` is now 8 pages, as of 22 October. It covers every built feature: students' features on one page, and the Hub team's tools, safety, privacy and phone features on another. Its screenshots were retaken at 390px (and the admin console at 1280px) with the CampusCart name, the section bars and the staff tools. "Where we are" now says the backend is finished and on the team preview, with the role homes in progress, and the road to launch has six steps.
+- The seller's overview screenshot shows the N2 seller home as it was in the working tree that day, captioned "new, in progress". Retake it once N2 is built.
+- The brief's source (HTML and the Playwright scripts that render the PDF and take the screenshots) isn't in the repo.
+
 ## 2026-10-24: Listing cards name their shop (decision 89)
 - Every listing card (Home's Just listed, Browse, Saved) shows the shop's name on its own line between the price and the campus: ink, 13px, one line with an ellipsis, plain text. The trust badge below it now reads as the shop's.
 - `Listing.sellerName` is set by `toListing` from the shop, so both backends have it; the fixtures take it from `data/fixtures/sellers.ts` (a fixture test checks every one). The card skeleton gains a matching line.
@@ -1115,7 +1120,16 @@ Lama asked for a bottom bar that changes with the kind of account signed in, so 
 - Seen in the build: on a signed-in home the router's prefetches keep the network busy long enough that Playwright's "networkidle" never arrives, so the new layout-shift test waits for the tabs instead.
 - Committed with Lama's go-ahead (2026-10-26).
 
+## 2026-10-26: Launchpad (decision 93) and the wayfinding fixes (decision 91)
+Two sessions worked beside role bars; their work was checked together on one tree and committed in one commit.
+- **Launchpad:** the Hub page (`/hub`) is now Launchpad, a page for student businesses: an intro saying what it offers (`HubIntro`), coming up and tips as rows (`HubPostRow`), verified shops (`VerifiedShops`, replacing `VerifiedSellers` and `HubStory`), and the name in the header, menu and footer. Spec `docs/superpowers/specs/2026-10-26-launchpad-design.md`, plan `docs/superpowers/plans/2026-10-26-launchpad.md`. Its own checks: the Launchpad tests at 360 and 390, layout shift 0.0005; `/hub` 151,475 B brotli.
+- **Wayfinding fixes:** only Home and sign-in have no trail now (Shop, Saved, Messages, You, Hub, Looking For, Sell, the console's Today and a mentor's tools show "Home / …"); browse with a category or search becomes "Home / Shop / Tech". From the tablet step a trail stops before the crest, wrapping a long last crumb, and the "/" ends each crumb. The visitor's `/sell` layout shift rose from 0.0598 to 0.0622 with the trail line (it already failed).
+- **Checks on the combined tree:** types and lint clean; unit 3,496 passed. Full e2e: device projects 1,435 passed, 2 failed: the visitor's `/sell` layout shift (predates this) and Saved at 1440, where reaching Save now scrolls the page and the header hides (decision 75), so `shopping.spec.ts` scrolls back to the top first (then 2 of 2 passed at 390 and 1440). Write projects, in order on one fresh server with `--no-deps`: 69 passed, 1 skipped.
+- Also committed: docs left uncommitted from earlier sessions (the team brief PDF of 22 October, the photo-to-listing spec of 24 October, the `mvp-cut-c5` plan). `.claude/launch.json`'s local preview change is left out.
+- Committed and pushed with Lama's go-ahead (2026-10-26).
+
 ## Next
+- **Photo-to-listing (AI) is specced, not planned** (2026-10-24): `docs/superpowers/specs/2026-10-24-photo-to-listing-design.md`. A seller's cover photo fills in the listing form's empty fields through one server-side Claude call, with a price hint from real CampusCart listings only; no client JS, off by default. Waiting on Lama's answers to its open questions (section 12: the model, timing, photos leaving South Africa, the daily limit, the textbook Looking For line).
 - **Role views are finished:** N1 (the kit), N2 (the seller home), N3 (the admin's Today), N4 (the mentor's caseload) and N5 (the buyer's You) are built (above). Open: Lama's call on the Next.js upgrade the build's security notice offers, and the signed-out `/sell` pitch's font shift at 390.
 - **Every planned stage (A to M) is built in sample mode** and merged into `main`. The four phone e2e failures that predated stage L are fixed (`d13321b`). The full device suite last ran before stage M: rerun it once before go-live.
 - **The Supabase backend is finished, merged into `main` and pushed** (above), with the CampusCart rename: `main` and `origin/main` are at `88ba438`.
@@ -1130,7 +1144,7 @@ Lama asked for a bottom bar that changes with the kind of account signed in, so 
 - **Lama reviews the positioning and editorial spec.** Its phase 1 (the wording) can be built at any time. Phase 2 (stories) can be planned, since the post editor is built (`components/staff/PostEditor.tsx`, `lib/staff/post-rules.ts`).
 - **Screenshots:** Lama reviews the ones in `docs/progress/` if not yet seen. To retake a set, run `SCREENSHOTS=1 pnpm e2e tests/e2e/screenshots.spec.ts -g "<name> review screenshots"` (for example "community actions", "staff tools", "selling" or "messaging").
 - **For the team:**
-  - `docs/stakeholder/CampusCart-brief.pdf`, a 6-page plain-language brief;
+  - `docs/stakeholder/CampusCart-brief.pdf`, an 8-page plain-language brief (updated 2026-10-22);
   - `docs/stakeholder/CampusCart-stakeholder-report.pdf`, the detailed report.
 
   Regenerate them when the picture changes.

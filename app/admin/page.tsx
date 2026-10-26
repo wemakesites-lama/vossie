@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function AdminPage() {
   return (
     <PageTransition>
-      <Reveal fallback={<StaffSkeleton trail={false} />}>
+      <Reveal fallback={<StaffSkeleton />}>
         <Today />
       </Reveal>
     </PageTransition>

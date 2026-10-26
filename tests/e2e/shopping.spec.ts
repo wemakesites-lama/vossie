@@ -105,6 +105,9 @@ test.describe("Saved (spec 5)", () => {
     if (project() === "phone-390") {
       await page.goBack();
       await expect(page).toHaveURL(/\/browse$/);
+    } else {
+      // Reaching Save can scroll the page, and the header hides on the way down (decision 75): back to the top.
+      await page.evaluate(() => window.scrollTo(0, 0));
     }
     const savedLink = page.locator(".site-header, .tabbar").getByRole("link", { name: /^Saved(, 1 item)?$/ });
     await expect(savedLink).toBeVisible();

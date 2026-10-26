@@ -25,7 +25,8 @@ const sectionTitles = (page: Page, section: string) =>
   page.getByRole("region", { name: section }).getByRole("heading", { level: 3 });
 
 /** The Hub's cards on the page that's showing. */
-const hubCards = (page: Page) => page.locator(".hub-card").filter({ visible: true });
+/** Launchpad's Coming up rows (Launchpad spec 4.2). */
+const hubCards = (page: Page) => page.locator("#hub-coming-up .hub-row").filter({ visible: true });
 
 const TIPS = [
   "How to price your first listing",
@@ -222,24 +223,26 @@ test.describe("a request's page (spec 4.2)", () => {
   });
 });
 
-test.describe("the Hub (spec 5.1)", () => {
-  test("tells the Hub's story and shows its Verified sellers", async ({ page }) => {
+test.describe("Launchpad (Launchpad spec 4)", () => {
+  test("says what it's for, in order: intro, Coming up, Tips, Verified shops", async ({ page }) => {
     await page.goto("/hub");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("The Incubation Hub");
-    await expect(page.getByText("The Hub also runs CampusCart.", { exact: false })).toBeVisible();
-    const verified = page.getByRole("region", { name: "Verified by the Hub" });
-    await expect(verified.getByRole("link")).toHaveCount(9);
-    await expect(verified.getByRole("link").first()).toHaveAttribute("href", "/sellers/code-coach");
-    await expect(page).toHaveTitle("The Incubation Hub · CampusCart");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Launchpad");
+    await expect(page).toHaveTitle("Launchpad · CampusCart");
+    await expect(page.locator("main h2")).toHaveText(["Coming up", "Tips", "Verified shops"]);
+    const verified = page.getByRole("region", { name: "Verified shops" });
+    await expect(verified.locator(".hub-shop-link")).toHaveCount(9);
+    await expect(verified.locator(".hub-shop-link").first()).toHaveAttribute("href", "/sellers/code-coach");
+    await expect(page.getByText("Launchpad is run by the Eduvos Incubation Hub", { exact: false })).toBeVisible();
   });
 
-  test("the Verified sellers scroll sideways on phones and wrap from the tablet step", async ({ page }) => {
+  test("the Verified shops are rows that never scroll sideways: one column, two, then three", async ({ page }) => {
     onlyAt("phone-390", "tablet-768", "desktop-1440");
     await page.goto("/hub");
-    const row = page.locator(".hub-sellers");
-    await expect(row).toBeVisible();
-    const scrolls = await row.evaluate((list) => list.scrollWidth > list.clientWidth);
-    expect(scrolls).toBe(project() === "phone-390");
+    const list = page.locator(".hub-sellers");
+    await expect(list).toBeVisible();
+    expect(await list.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(false);
+    const columns = await list.evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(" ").length);
+    expect(columns).toBe({ "phone-390": 1, "tablet-768": 2, "desktop-1440": 3 }[project()]);
   });
 
   test("lists upcoming events and office hours soonest first, then the tips, newest first", async ({ page }) => {
@@ -261,22 +264,28 @@ test.describe("the Hub (spec 5.1)", () => {
     for (const time of times) expect(sastDateOf(time) >= today, time).toBe(true);
   });
 
-  test("the type tabs narrow the feed and keep it in view", async ({ page }) => {
+  test("the type tabs narrow Coming up and keep it in view; Tips stays", async ({ page }) => {
     onlyAt("phone-390", "desktop-1440");
     await page.goto("/hub");
     const tabs = page.getByRole("navigation", { name: "Post types" });
-    await tabs.getByRole("link", { name: "Tips" }).click();
-    await expect(page).toHaveURL(/\/hub\?type=tips#hub-feed$/);
-    await expect(tabs.getByRole("link", { name: "Tips" })).toHaveAttribute("aria-current", "page");
-    await expect(page.getByRole("list", { name: "Tips" }).getByRole("heading", { level: 3 })).toHaveCount(6);
-    await expect(page.getByRole("list", { name: "Events and office hours" })).toHaveCount(0);
-    await expect(page.getByRole("heading", { level: 2, name: "What’s on and what’s new" })).toBeInViewport();
-
+    await expect(tabs.getByRole("link")).toHaveText(["All", "Events", "Office hours"]);
     await tabs.getByRole("link", { name: "Events" }).click();
-    await expect(page).toHaveURL(/\/hub\?type=events#hub-feed$/);
-    await expect(page.getByRole("list", { name: "Tips" })).toHaveCount(0);
-    // Every card left is an event (or, once the sample events are past, there are none).
-    for (const kind of await hubCards(page).locator(".hub-card-kind").allTextContents()) expect(kind).toBe("Event");
+    await expect(page).toHaveURL(/\/hub\?type=events#hub-coming-up$/);
+    await expect(tabs.getByRole("link", { name: "Events" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("heading", { level: 2, name: "Coming up" })).toBeInViewport();
+    await expect(page.getByRole("list", { name: "Tips" }).getByRole("heading", { level: 3 })).toHaveCount(6);
+    // Every row left is an event (or, once the sample events are past, there are none).
+    for (const kind of await hubCards(page).locator(".hub-row-kind").allTextContents()) expect(kind).toBe("Event");
+  });
+
+  test("Book office hours narrows Coming up to office hours", async ({ page }) => {
+    onlyAt("phone-390", "desktop-1440");
+    await page.goto("/hub");
+    await page.getByRole("link", { name: "Book office hours" }).click();
+    await expect(page).toHaveURL(/\/hub\?type=office-hours#hub-coming-up$/);
+    await expect(
+      page.getByRole("navigation", { name: "Post types" }).getByRole("link", { name: "Office hours" }),
+    ).toHaveAttribute("aria-current", "page");
   });
 });
 
@@ -352,11 +361,11 @@ test.describe("Hub posts (spec 5.2)", () => {
     );
   });
 
-  test("More from the Hub offers up to three other upcoming posts", async ({ page }) => {
+  test("More from Launchpad offers up to three other upcoming posts", async ({ page }) => {
     onlyAt("phone-390", "desktop-1440");
     await page.goto("/hub/h-013");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    const more = page.getByRole("region", { name: "More from the Hub" });
+    const more = page.getByRole("region", { name: "More from Launchpad" });
     // It hides once nothing else is planned, which depends on the date the tests run.
     test.skip((await more.count()) === 0, "No upcoming sample events on the date the tests run");
     const cards = more.locator(".hub-card");

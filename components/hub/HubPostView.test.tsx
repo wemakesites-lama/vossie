@@ -6,7 +6,7 @@ import { HubPostView } from "./HubPostView";
 // The request-time parts are tested on their own; here they stand in (jsdom can't render async components in a tree).
 vi.mock("./PostAction", () => ({ PostAction: () => <p>Action, stood in</p>, PostActionSkeleton: () => null }));
 vi.mock("./UpcomingPosts", () => ({
-  UpcomingPosts: () => <section aria-label="More from the Hub, stood in" />,
+  UpcomingPosts: () => <section aria-label="More from Launchpad, stood in" />,
   UpcomingPostsSkeleton: () => null,
 }));
 
@@ -26,8 +26,8 @@ describe("HubPostView (community spec 5.2)", () => {
   it("leads with the breadcrumb, the cover, the kind and the title", async () => {
     const { container } = await show("h-001");
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
-    expect(within(crumbs).getByRole("link", { name: "Hub" })).toHaveAttribute("href", "/hub");
-    expect(within(crumbs).getByRole("link", { name: "Back to Events" })).toHaveAttribute("href", "/hub?type=events#hub-feed");
+    expect(within(crumbs).getByRole("link", { name: "Launchpad" })).toHaveAttribute("href", "/hub");
+    expect(within(crumbs).getByRole("link", { name: "Back to Events" })).toHaveAttribute("href", "/hub?type=events#hub-coming-up");
     expect(container.querySelector(".hub-post-cover img")).toHaveAttribute("alt", "");
     expect(screen.getByText("Event")).toHaveClass("eyebrow");
     expect(screen.getByRole("heading", { level: 1, name: "Pitch night" })).toBeInTheDocument();
@@ -43,7 +43,7 @@ describe("HubPostView (community spec 5.2)", () => {
     ]);
     expect(screen.getByRole("heading", { level: 2, name: "How the night runs" })).toBeInTheDocument();
     expect(screen.getByText("Action, stood in")).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "More from the Hub, stood in" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "More from Launchpad, stood in" })).toBeInTheDocument();
   });
 
   it("lists office hours' facts without numbers, under their own crumb", async () => {
@@ -51,7 +51,7 @@ describe("HubPostView (community spec 5.2)", () => {
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
     expect(within(crumbs).getByRole("link", { name: "Back to Office hours" })).toHaveAttribute(
       "href",
-      "/hub?type=office-hours#hub-feed",
+      "/hub?type=office-hours#hub-coming-up",
     );
     expect(facts(container)).toEqual(["Thu 15 Oct · 13:00", "The Hub, Block C", "Midrand"]);
   });
@@ -59,7 +59,7 @@ describe("HubPostView (community spec 5.2)", () => {
   it("shows a tip's posted date and its body, with no facts and no action", async () => {
     const { container } = await show("h-013");
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
-    expect(within(crumbs).getByRole("link", { name: "Back to Tips" })).toHaveAttribute("href", "/hub?type=tips#hub-feed");
+    expect(within(crumbs).getByRole("link", { name: "Back to Tips" })).toHaveAttribute("href", "/hub#hub-tips");
     expect(screen.getByText(/^Posted/)).toHaveTextContent("Posted 12 October 2026");
     expect(container.querySelector(".hub-post-facts")).toBeNull();
     expect(screen.queryByText("Action, stood in")).toBeNull();

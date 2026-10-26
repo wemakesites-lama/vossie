@@ -76,7 +76,7 @@ export function SiteHeader({ campuses, account, phoneSaved }: SiteHeaderProps) {
             </button>
           </li>
           <li>
-            <NavLink href="/hub" transitionTypes={TAB}>Hub</NavLink>
+            <NavLink href="/hub" transitionTypes={TAB}>Launchpad</NavLink>
           </li>
           <li>
             <NavLink href="/looking-for" transitionTypes={TAB} prefetch={false}>

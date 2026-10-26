@@ -30,12 +30,12 @@ function renderHeader() {
 }
 
 describe("SiteHeader", () => {
-  it("has Looking For in the quick links, after Hub (role views N5)", () => {
+  it("has Looking For in the quick links, after Launchpad (role views N5)", () => {
     renderHeader();
     const quick = screen.getByRole("navigation", { name: "Quick links" });
     expect(within(quick).getByRole("link", { name: "Looking For" })).toHaveAttribute("href", "/looking-for");
     const names = within(quick).getAllByRole("link").map((item) => item.textContent);
-    expect(names.indexOf("Looking For")).toBe(names.indexOf("Hub") + 1);
+    expect(names.indexOf("Looking For")).toBe(names.indexOf("Launchpad") + 1);
   });
 
   it("starts expanded, with the pennant as the home link", () => {

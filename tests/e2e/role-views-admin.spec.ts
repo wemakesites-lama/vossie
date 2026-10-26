@@ -75,8 +75,6 @@ test.describe("Today (role views spec 7.2)", () => {
       const shortest = today.getBoundingClientRect().height;
       const holder = document.createElement("div");
       holder.innerHTML = skeletonHtml;
-      // Today renders <StaffSkeleton trail={false} />: it has no breadcrumb trail.
-      holder.querySelector(".staff-skeleton-trail")?.remove();
       today.after(holder);
       const skeleton = (holder.firstElementChild as HTMLElement).getBoundingClientRect().height;
       holder.remove();

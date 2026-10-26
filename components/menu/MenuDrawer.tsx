@@ -127,7 +127,7 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
                 </button>
               </li>
               <li>
-                <NavLink href="/hub" transitionTypes={TAB}>Hub</NavLink>
+                <NavLink href="/hub" transitionTypes={TAB}>Launchpad</NavLink>
               </li>
               <li>
                 {/* No prefetch (decision 53): the menu's links come into view together when it opens. */}

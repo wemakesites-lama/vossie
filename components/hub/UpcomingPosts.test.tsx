@@ -37,7 +37,7 @@ async function show(postId: string) {
 }
 
 const hrefs = () =>
-  within(screen.getByRole("region", { name: "More from the Hub" }))
+  within(screen.getByRole("region", { name: "More from Launchpad" }))
     .getAllByRole("link")
     .map((link) => link.getAttribute("href"));
 

@@ -3,6 +3,8 @@ import { PageTransition } from "@/components/kit/PageTransition";
 import { Reveal } from "@/components/kit/Reveal";
 import { SavedSkeleton } from "@/components/saved/SavedSkeleton";
 import { SavedTabs } from "@/components/saved/SavedTabs";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 /** Saved belongs to one device, so search engines leave it out (shopping spec 5.4). */
 export const metadata: Metadata = { title: "Saved", robots: { index: false } };
@@ -15,6 +17,7 @@ export default function SavedPage({ searchParams }: PageProps<"/saved">) {
   return (
     <PageTransition>
       <div className="page saved-page">
+        <Trail crumbs={trailFor("/saved")} />
         <h1 className="saved-title">Saved</h1>
         <Reveal fallback={<SavedSkeleton />}>
           <SavedTabs searchParams={searchParams} />

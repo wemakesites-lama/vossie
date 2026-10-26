@@ -12,7 +12,7 @@ type UpcomingPostsProps = {
 };
 
 /**
- * More from the Hub (community spec 5.2): up to 3 other upcoming events and office hours, as the feed's cards. What
+ * More from Launchpad (community spec 5.2): up to 3 other upcoming events and office hours, as the feed's cards. What
  * counts as upcoming depends on today's date, so this renders per request (plan decision 9). Hidden when nothing else
  * is planned.
  */
@@ -26,7 +26,7 @@ export async function UpcomingPosts({ postId, campusNames }: UpcomingPostsProps)
   return (
     <section id="hub-upcoming" aria-labelledby="hub-upcoming-title" className="hub-upcoming">
       <h2 id="hub-upcoming-title" className="listing-section-title">
-        More from the Hub
+        More from Launchpad
       </h2>
       {others ? (
         <ul className="hub-feed-list">
@@ -37,13 +37,13 @@ export async function UpcomingPosts({ postId, campusNames }: UpcomingPostsProps)
           ))}
         </ul>
       ) : (
-        <SectionError id="hub-upcoming" title="More from the Hub" path={`/hub/${postId}`} />
+        <SectionError id="hub-upcoming" title="More from Launchpad" path={`/hub/${postId}`} />
       )}
     </section>
   );
 }
 
-/** More from the Hub's room while it streams in: the heading and three cards. */
+/** More from Launchpad's room while it streams in: the heading and three cards. */
 export function UpcomingPostsSkeleton() {
   return (
     <div className="hub-upcoming" aria-hidden="true">

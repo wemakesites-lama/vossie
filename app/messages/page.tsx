@@ -4,6 +4,8 @@ import { Reveal } from "@/components/kit/Reveal";
 import { Inbox } from "@/components/messages/Inbox";
 import { InboxSkeleton } from "@/components/messages/InboxSkeleton";
 import { parseInboxTab } from "@/lib/messaging/paths";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 /** A page for one person, so search engines leave it out (plan decision 24). */
 export const metadata: Metadata = { title: "Messages", robots: { index: false } };
@@ -16,6 +18,7 @@ export default function MessagesPage({ searchParams }: PageProps<"/messages">) {
   return (
     <PageTransition>
       <div className="page inbox-page">
+        <Trail crumbs={trailFor("/messages")} />
         <h1 className="inbox-title">Messages</h1>
         <Reveal fallback={<InboxSkeleton />}>
           <InboxForVisitor searchParams={searchParams} />

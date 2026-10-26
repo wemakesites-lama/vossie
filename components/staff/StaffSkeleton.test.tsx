@@ -21,11 +21,6 @@ describe("StaffSkeleton", () => {
     expect(container.querySelector(".staff-skeleton-body")).toBeNull();
   });
 
-  it("leaves out the trail for Today, which has none", () => {
-    const { container } = render(<StaffSkeleton trail={false} />);
-    expect(container.querySelector(".staff-skeleton-trail")).toBeNull();
-  });
-
   it("matches the copy the end-to-end height checks inject (role views N3)", () => {
     expect(renderToStaticMarkup(<StaffSkeleton />)).toBe(STAFF_SKELETON_HTML);
   });

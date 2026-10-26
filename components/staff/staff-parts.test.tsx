@@ -41,13 +41,14 @@ describe("the staff frame (staff tools spec section 3)", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Approved.");
   });
 
-  it("starts a mentor's trail at their own tools: they have no console", () => {
+  it("puts a mentor's own tools straight under Home: they have no console", () => {
     render(
       <StaffFrame account={{ roles: ["mentor"] }} area="Hub tools" title="Posts and office hours" route="/hub/manage" notice={null}>
         <p>The page</p>
       </StaffFrame>,
     );
-    expect(screen.queryByRole("navigation", { name: "Breadcrumb" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Back to Home" })).toHaveAttribute("href", "/");
+    expect(screen.queryByRole("link", { name: /Hub console/ })).toBeNull();
   });
 
   it("is a wordless skeleton in the static shell, saying nothing about the page (plan decision 1)", () => {

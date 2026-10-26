@@ -6,22 +6,21 @@ import type { StaffRole } from "@/lib/types";
 
 export type Crumb = { label: string; href: string | null };
 
-/** The places the tab bars open: no trail, they are where a trail starts. */
-export const TOP_LEVEL: ReadonlySet<string> = new Set([
-  "/",
-  "/browse",
-  "/saved",
-  "/messages",
-  "/account",
-  "/hub",
-  "/looking-for",
-  "/sell",
-  "/admin",
-  "/login",
-]);
+/** Home is where every trail starts, and sign-in keeps its own way back: neither shows a trail. */
+export const TOP_LEVEL: ReadonlySet<string> = new Set(["/", "/login"]);
 
 /** Each route's parent route. `/hub/manage` and `/mentor` are role-aware (ROLE_PARENTS). */
 export const PARENTS: Readonly<Record<string, string>> = {
+  // The places the tab bars open sit under Home, so even a list page has its way back (Lama, 2026-10-26).
+  "/browse": "/",
+  "/saved": "/",
+  "/messages": "/",
+  "/account": "/",
+  "/hub": "/",
+  "/looking-for": "/",
+  "/sell": "/",
+  "/admin": "/",
+
   "/account/details": "/account",
   "/account/privacy": "/account",
   "/account/requests": "/account",
@@ -85,7 +84,7 @@ export const PARENTS: Readonly<Record<string, string>> = {
   "/mentor/[slug]": "/mentor",
 };
 
-/** Under the Hub console for an admin; a mentor has no console, so for them these are where the trail starts. */
+/** Under the Hub console for an admin; a mentor has no console, so for them these sit under Home. */
 const ROLE_PARENTS: Readonly<Record<string, string>> = {
   "/hub/manage": "/admin",
   "/mentor": "/admin",
@@ -101,7 +100,7 @@ export const LABELS: Readonly<Record<string, string>> = {
   "/saved": "Saved",
   "/messages": "Messages",
   "/account": "You",
-  "/hub": "Hub",
+  "/hub": "Launchpad",
   "/looking-for": "Looking For",
   "/sell": "Sell",
   "/login": "Sign in",
@@ -176,14 +175,13 @@ function fill(route: string, params: Readonly<Record<string, string>>): string {
 }
 
 function parentOf(route: string, roles: readonly StaffRole[]): string | null {
-  if (route in ROLE_PARENTS) return roles.includes("admin") ? ROLE_PARENTS[route] : null;
+  if (route in ROLE_PARENTS) return roles.includes("admin") ? ROLE_PARENTS[route] : "/";
   return PARENTS[route] ?? null;
 }
 
 /**
- * The crumbs from Home down to `route`, the last one the page itself (no href). A top-level page, or a role-aware one
- * for a viewer without the admin role, gets an empty trail and shows none. An unknown route throws: the guard test
- * keeps every page in the map, so this only catches a typo.
+ * The crumbs from Home down to `route`, the last one the page itself (no href). Home and sign-in get an empty trail
+ * and show none. An unknown route throws: the guard test keeps every page in the map, so this only catches a typo.
  */
 export function trailFor(route: string, options: TrailOptions = {}): Crumb[] {
   if (!TRAIL_ROUTES.has(route)) throw new Error(`No trail for ${route}: add it to lib/nav/trail.ts`);

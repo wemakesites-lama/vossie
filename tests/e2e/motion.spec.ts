@@ -98,7 +98,7 @@ test.describe("every page moves the same way (layer 3)", () => {
   // animates; which animation each type gets is checked through the probe below.
   for (const [name, from, link, to] of [
     ["a card", "/browse", "a.listing-link", /\/listings\//],
-    ["a Hub post card", "/hub", "a.hub-card-link", /\/hub\/h-/],
+    ["a Launchpad post row", "/hub", "a.hub-row-link", /\/hub\/h-/],
     ["a tab", "/browse", ".tabbar a[href='/saved']", /\/saved/],
   ] as const) {
     test(`${name} moves to its page`, async ({ page }) => {
@@ -123,7 +123,7 @@ test.describe("every page moves the same way (layer 3)", () => {
     test.skip(test.info().project.name !== "phone-390", "The menu drawer is the phone's");
     await page.goto("/browse", { waitUntil: "networkidle" });
     await page.getByRole("button", { name: /menu/i }).first().click();
-    await page.getByRole("dialog").getByRole("link", { name: "Hub", exact: true }).click();
+    await page.getByRole("dialog").getByRole("link", { name: "Launchpad", exact: true }).click();
     await page.waitForURL(/\/hub$/);
     await expect(page.getByRole("dialog")).toBeHidden();
     await expect(page.locator("main h1").first()).toBeVisible();

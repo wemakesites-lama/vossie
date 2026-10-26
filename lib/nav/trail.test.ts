@@ -28,9 +28,14 @@ describe("the trail map (wayfinding spec 3.2)", () => {
     for (const route of TOP_LEVEL) expect(LABELS[route], route).toBeTruthy();
   });
 
-  it("gives a top-level page no trail", () => {
-    expect(trailFor("/browse")).toEqual([]);
-    expect(trailFor("/admin")).toEqual([]);
+  it("gives only Home and sign-in no trail; a list page and Today sit under Home (Lama, 2026-10-26)", () => {
+    expect(trailFor("/")).toEqual([]);
+    expect(trailFor("/login")).toEqual([]);
+    expect(trailFor("/browse")).toEqual([
+      { label: "Home", href: "/" },
+      { label: "Shop", href: null },
+    ]);
+    expect(trailFor("/admin").map((crumb) => crumb.label)).toEqual(["Home", "Hub console"]);
   });
 
   it("walks up from a deep page, filling the segments and the names the page passes", () => {
@@ -68,7 +73,10 @@ describe("the trail map (wayfinding spec 3.2)", () => {
       "Hub console",
       "Posts and office hours",
     ]);
-    expect(trailFor("/hub/manage", { roles: ["mentor"] })).toEqual([]);
+    expect(trailFor("/hub/manage", { roles: ["mentor"] }).map((crumb) => crumb.label)).toEqual([
+      "Home",
+      "Posts and office hours",
+    ]);
     expect(trailFor("/hub/new", { roles: ["mentor"] }).map((crumb) => crumb.label)).toEqual([
       "Home",
       "Posts and office hours",

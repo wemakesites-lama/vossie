@@ -15,22 +15,24 @@ import {
 const byId = (id: string) => hubPosts.find((post) => post.id === id)!;
 const ids = (posts: readonly { id: string }[]) => posts.map((post) => post.id);
 
-describe("the feed's tabs (community spec 5.1)", () => {
-  it("reads ?type=, treating anything it doesn't know as All", () => {
+describe("Coming up's tabs (Launchpad spec 4.2)", () => {
+  it("reads ?type=, treating anything it doesn't know, and an old tips link, as All", () => {
     expect(readHubFeedType("events")).toBe("events");
     expect(readHubFeedType("office-hours")).toBe("office-hours");
-    expect(readHubFeedType(["tips", "events"])).toBe("tips");
+    expect(readHubFeedType(["events", "tips"])).toBe("events");
+    expect(readHubFeedType("tips")).toBe("all");
     expect(readHubFeedType("nope")).toBe("all");
     expect(readHubFeedType(undefined)).toBe("all");
   });
 
-  it("links each tab to the feed, landing on it (plan decision 6)", () => {
-    expect(hubFeedHref("all")).toBe("/hub#hub-feed");
-    expect(hubFeedHref("office-hours")).toBe("/hub?type=office-hours#hub-feed");
+  it("links each tab to Coming up, landing on it, and Tips to its section", () => {
+    expect(hubFeedHref("all")).toBe("/hub#hub-coming-up");
+    expect(hubFeedHref("office-hours")).toBe("/hub?type=office-hours#hub-coming-up");
+    expect(hubFeedHref("tips")).toBe("/hub#hub-tips");
   });
 
   it("knows which kinds each tab shows, and which tab holds each kind", () => {
-    expect(feedKinds("all")).toEqual(["event", "office-hours", "tip"]);
+    expect(feedKinds("all")).toEqual(["event", "office-hours"]);
     expect(feedKinds("events")).toEqual(["event"]);
     expect(feedTypeOf("event")).toBe("events");
     expect(feedTypeOf("office-hours")).toBe("office-hours");

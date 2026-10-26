@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
+import { Trail } from "@/components/ui/Trail";
 import { getCampuses, getCategories, searchListings } from "@/lib/data";
 import { getViewerContext } from "@/lib/data/viewer";
+import { browseHeading } from "@/lib/browse/heading";
 import { browseHref } from "@/lib/browse/href";
 import { knownSlugs, parseBrowseParams, toSearchQuery, type BrowseParams } from "@/lib/browse/query";
+import { LABELS, trailFor } from "@/lib/nav/trail";
 import { isWorthSaving, matchQueryOf } from "@/lib/saved-searches/rules";
 import { ActiveFilters } from "./ActiveFilters";
 import { BrowseEmpty } from "./BrowseEmpty";
@@ -48,6 +51,17 @@ export async function BrowseView({ searchParams }: { searchParams: Promise<Brows
 
   return (
     <>
+      {/* A search or a category is a page under Shop: "Home / Shop / Tech" (wayfinding, Lama 2026-10-26). */}
+      <Trail
+        crumbs={
+          query.q || categoryName
+            ? trailFor("/browse", {
+                names: { "/browse": browseHeading(query.q, categoryName).heading },
+                between: [{ label: LABELS["/browse"], href: "/browse" }],
+              })
+            : trailFor("/browse")
+        }
+      />
       <BrowseHeader query={query} categoryName={categoryName} />
       <CategoryTabs query={query} categories={categories} />
       <BrowseToolbar query={query} campuses={campuses} total={result ? result.items.length : null} />

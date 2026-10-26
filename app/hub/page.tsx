@@ -1,43 +1,37 @@
 import type { Metadata } from "next";
 import { HubFeed } from "@/components/hub/HubFeed";
 import { HubFeedSkeleton } from "@/components/hub/HubFeedSkeleton";
-import { HubStory } from "@/components/hub/HubStory";
-import { VerifiedSellers } from "@/components/hub/VerifiedSellers";
+import { HubIntro } from "@/components/hub/HubIntro";
+import { VerifiedShops } from "@/components/hub/VerifiedShops";
 import { PageTransition } from "@/components/kit/PageTransition";
 import { Reveal } from "@/components/kit/Reveal";
-import { getCampuses, getHubBanner, getVerifiedSellers } from "@/lib/data";
+import { getCampuses, getVerifiedSellers } from "@/lib/data";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
-/** Fixed: `?type=` views share the Hub's title and description, and stay indexed (plan decision 14). */
+/** Fixed: `?type=` views share Launchpad's title and description, and stay indexed (plan decision 14). */
 export const metadata: Metadata = {
-  title: "The Incubation Hub",
+  title: "Launchpad",
   description:
-    "The Eduvos Incubation Hub backs student businesses: its Verified sellers, and its events, office hours and tips.",
+    "Free help for Eduvos student businesses: mentors, office hours, events and tips, and the shops the Incubation Hub has verified.",
 };
 
 /**
- * The Incubation Hub (community spec 5.1). The story and the Verified sellers are prerendered; the feed reads `?type=`
- * and today's date, so it streams in behind a skeleton.
+ * Launchpad (Launchpad spec 4): the intro, then Coming up and Tips, then Verified shops and who runs it. The intro and
+ * the shops are prerendered; Coming up and Tips read `?type=` and today's date, so they stream in behind a skeleton.
  */
 export default async function HubPage({ searchParams }: PageProps<"/hub">) {
-  const [banner, sellers, campuses] = await Promise.all([
-    getHubBanner(),
-    getVerifiedSellers().catch(() => null),
-    getCampuses(),
-  ]);
+  const [sellers, campuses] = await Promise.all([getVerifiedSellers().catch(() => null), getCampuses()]);
   return (
     <PageTransition>
       <div className="page hub-page">
-        <HubStory image={banner.image} />
-        <VerifiedSellers sellers={sellers} campusNames={new Map(campuses.map((campus) => [campus.slug, campus.name]))} />
-        {/* The tabs link to #hub-feed, so a tap keeps the feed in view (plan decision 6). */}
-        <section id="hub-feed" aria-labelledby="hub-feed-title" className="hub-feed">
-          <h2 id="hub-feed-title" className="listing-section-title">
-            What’s on and what’s new
-          </h2>
-          <Reveal fallback={<HubFeedSkeleton />}>
-            <HubFeed searchParams={searchParams} />
-          </Reveal>
-        </section>
+        <Trail crumbs={trailFor("/hub")} />
+        <HubIntro />
+        <Reveal fallback={<HubFeedSkeleton />}>
+          <HubFeed searchParams={searchParams} />
+        </Reveal>
+        <VerifiedShops sellers={sellers} campusNames={new Map(campuses.map((campus) => [campus.slug, campus.name]))} />
+        <p className="hub-credit">Launchpad is run by the Eduvos Incubation Hub, the team behind CampusCart.</p>
       </div>
     </PageTransition>
   );

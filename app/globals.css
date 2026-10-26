@@ -298,10 +298,11 @@
       display: flex;
     }
 
-    /* The separator is decoration: the empty alt text keeps screen readers from reading it. */
-    .trail li + li::before {
+    /* The separator is decoration: the empty alt text keeps screen readers from reading it. It ends each crumb, so a
+       wrapped trail never starts a line with one. */
+    .trail li:not(:last-child)::after {
       content: "/" / "";
-      margin-right: 6px;
+      margin-left: 6px;
       color: var(--color-idle-text);
     }
 
@@ -315,6 +316,18 @@
 
     .trail li:last-child {
       flex: 1 1 12rem;
+    }
+
+    /* The header's crest hangs 28px below the header at the middle of the screen, into the trail's row. Page columns
+       are centred like it, so a trail kept to its column's left half, less the crest's half and a gap, never runs under
+       it; a long last crumb wraps instead. Beside a section's sidebar the column isn't centred, but its pages start
+       lower (24px or more), so the trail's words are already below the crest's tip there. */
+    .trail {
+      max-width: calc(50% - 4rem);
+    }
+
+    .section-main .trail {
+      max-width: none;
     }
   }
 
@@ -6486,28 +6499,34 @@
   }
 }
 
-/* --- Community: the Hub page, Verified sellers and the feed (community plan, Task 6, spec 5.1) --- */
+/* --- Community: Launchpad, the Hub page (Launchpad spec 4) --- */
 @layer components {
-  /* .page and .hub-page sit on one element, so this padding is the whole content edge: 16px, then 40px. On phones the
-     story's photo meets the header, so there's no top padding. */
+  /* .page and .hub-page sit on one element, so this padding is the whole content edge: 16px, then 40px. */
   .hub-page {
-    padding: 0 16px 64px;
+    padding: 8px 16px 64px;
   }
 
-  /* Phones: the photo edge to edge at 7:3, pulled out by the page's 16px. */
-  .hub-story-photo {
-    --photo-ratio: 7 / 3;
-    margin-inline: -16px;
-  }
-
-  .hub-story-text {
+  /* The intro: a pale panel with no photo, so the heading is the first thing painted (spec 4.1). Navy and ink on
+     pale; sky-dark isn't used for its small text (4.0:1 on pale). */
+  .hub-intro {
     display: grid;
+    justify-items: start;
     gap: 12px;
-    max-width: 60ch;
-    margin-top: 20px;
+    margin-top: 8px;
+    padding: 24px 20px;
+    border-radius: var(--radius-panel);
+    background: var(--color-pale);
   }
 
-  .hub-story-title {
+  .hub-intro-eyebrow {
+    color: var(--color-navy);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .hub-intro-title {
     color: var(--color-navy);
     font-family: var(--vos-font-display);
     font-size: var(--text-section);
@@ -6515,75 +6534,211 @@
     text-transform: uppercase;
   }
 
-  .hub-verified,
-  .hub-feed {
+  .hub-intro-lede {
+    max-width: 52ch;
+    color: var(--color-ink);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .hub-intro-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  /* Coming up and Tips read at about 48rem; Verified shops may use the full width (spec 4.4). */
+  .hub-section {
+    max-width: 48rem;
     margin-top: 48px;
   }
 
-  /* One row that scrolls sideways on phones, out to the screen's edges, and wraps from the tablet step (plan decision
-     7). The padding keeps focus rings inside the scroll box. */
-  .hub-sellers {
-    display: flex;
-    gap: 12px;
-    margin: 12px -16px 0;
-    padding: 6px 16px;
-    overflow-x: auto;
-    scrollbar-width: none;
+  #hub-verified {
+    max-width: none;
   }
 
-  .hub-sellers::-webkit-scrollbar {
-    display: none;
+  .hub-section-lede {
+    max-width: 60ch;
+    margin-top: 10px;
+    color: var(--color-muted);
+    font-size: 15px;
   }
 
-  /* The li is as tall as its row (flex stretches it), and as a one-item grid it stretches its card to match, so cards in
-     a wrapped row stay level when one has a two-line campus name. */
-  .hub-sellers > li {
+  .hub-section-link {
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* Rows, not boxes: a rule between them and nothing round them (spec 4.2). */
+  .hub-rows {
+    margin-top: 8px;
+  }
+
+  .hub-rows > li + li {
+    border-top: 1px solid var(--color-line);
+  }
+
+  .hub-row {
+    position: relative;
     display: grid;
-    flex: none;
+    grid-template-columns: 56px minmax(0, 1fr);
+    align-items: start;
+    gap: 16px;
+    padding: 16px 0;
   }
 
-  .hub-seller {
+  .hub-row-tip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Decorative: the row's <time> carries the date. Navy on the grey panel. */
+  .hub-row-date {
     display: grid;
-    justify-items: center;
-    align-content: start;
-    gap: 2px;
-    width: 8.5rem;
-    min-height: 44px;
-    padding: 14px 10px;
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-card);
+    place-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: var(--color-panel);
     color: var(--color-navy);
     text-align: center;
   }
 
-  .hub-seller-photo {
-    width: 56px;
-    margin-bottom: 8px;
+  .hub-row-day {
+    font-family: var(--vos-font-display);
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  .hub-row-month {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .hub-row-body {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .hub-row-kind {
+    color: var(--color-sky-dark);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .hub-row-title {
+    color: var(--color-navy);
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .hub-row-meta,
+  .hub-row-summary {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  .hub-row-meta time {
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  /* The title's link covers the whole row, and the shop's name its whole row. */
+  .hub-row-link::after,
+  .hub-shop-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  /* The ring goes round the whole row. Without :has() (iOS before 15.4) the link keeps its own ring. */
+  @supports selector(:has(*)) {
+    .hub-row-link:focus-visible,
+    .hub-shop-link:focus-visible {
+      outline: none;
+      box-shadow: none;
+    }
+
+    .hub-row:has(.hub-row-link:focus-visible),
+    .hub-shop:has(.hub-shop-link:focus-visible) {
+      outline: 2.5px solid var(--color-navy);
+      outline-offset: 2px;
+      border-radius: 8px;
+    }
+  }
+
+  /* Verified shops (spec 4.4): rows, one column, then two and three. */
+  .hub-sellers {
+    display: grid;
+    column-gap: 32px;
+    margin-top: 12px;
+  }
+
+  .hub-shop {
+    position: relative;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 12px 0;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .hub-shop-photo {
+    width: 40px;
     border-radius: 999px;
   }
 
-  .hub-seller-name {
-    font-size: 14px;
+  .hub-shop-body {
+    display: grid;
+    min-width: 0;
+  }
+
+  .hub-shop-link {
+    color: var(--color-navy);
+    font-size: 15px;
     font-weight: 600;
     line-height: 1.3;
   }
 
-  .hub-seller-campus {
+  .hub-shop-meta {
+    overflow: hidden;
     color: var(--color-muted);
-    font-size: 12px;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
+  .hub-shop-verified {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--color-sky-dark);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .hub-credit {
+    max-width: 48rem;
+    margin-top: 48px;
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  /* A post page's "More from Launchpad" keeps the cards (UpcomingPosts). */
   .hub-feed-list {
     display: grid;
     gap: 14px;
     margin-top: 20px;
-  }
-
-  /* All shows two lists, events and office hours, then tips (plan decision 5), with room between them. */
-  .hub-feed-list + .hub-feed-list,
-  .hub-feed-list + .hub-feed-empty,
-  .hub-feed-empty + .hub-feed-list {
-    margin-top: 32px;
   }
 
   /* The title's link covers the whole card. */
@@ -6650,10 +6805,25 @@
     font-weight: 600;
   }
 
-  /* The skeleton has the real tab row's height (its 4px padding, 44px tabs and 1px line) and an event card's. */
+  /* The skeleton: the heading's line, the real tab row's height (its 4px padding, 44px tabs and 1px line) and two
+     rows, so it stays shorter than nothing planned and no tips. */
+  .hub-feed-skeleton-title {
+    display: block;
+    width: 10rem;
+    height: 24px;
+  }
+
   .hub-feed-skeleton-tabs {
+    display: block;
     height: 49px;
     margin-top: 22px;
+  }
+
+  .hub-row-skeleton {
+    display: block;
+    height: 88px;
+    margin: 8px 0;
+    border-radius: 12px;
   }
 
   .hub-card-skeleton {
@@ -6666,33 +6836,12 @@
       padding: 24px 40px 64px;
     }
 
-    /* The text on the left and the photo on the right, at 4:3. The photo is decorative, so its place in the reading
-       order doesn't matter. */
-    .hub-story {
-      display: grid;
-      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-      grid-template-areas: "text photo";
-      align-items: center;
-      gap: 40px;
-    }
-
-    .hub-story-photo {
-      --photo-ratio: 4 / 3;
-      grid-area: photo;
-      margin-inline: 0;
-      border-radius: var(--radius-panel);
-    }
-
-    .hub-story-text {
-      grid-area: text;
-      margin-top: 0;
+    .hub-intro {
+      padding: 40px;
     }
 
     .hub-sellers {
-      flex-wrap: wrap;
-      margin-inline: 0;
-      padding-inline: 0;
-      overflow-x: visible;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .hub-feed-list {
@@ -6701,15 +6850,12 @@
   }
 
   @media (min-width: 64rem) and (min-height: 30rem) {
-    .hub-feed-list {
+    .hub-sellers {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
-  }
 
-  /* Landscape phones keep the phone layout, with the photo cropped short so it doesn't fill the screen. */
-  @media (orientation: landscape) and (max-height: 29.99rem) {
-    .hub-story-photo {
-      --photo-ratio: 4 / 1;
+    .hub-feed-list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 }

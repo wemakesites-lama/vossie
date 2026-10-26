@@ -306,7 +306,7 @@ test("community review screenshots", async ({ page, context, baseURL }) => {
   await settle();
   await page.screenshot({ path: file("06-hub"), fullPage: true });
 
-  await page.goto("/hub?type=tips#hub-feed");
+  await page.goto("/hub#hub-tips");
   await expect(page.getByRole("list", { name: "Tips" })).toBeVisible();
   await page.screenshot({ path: file("07-hub-tips") });
 

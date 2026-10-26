@@ -4,19 +4,18 @@ import { LinkTabs } from "@/components/ui/LinkTabs";
 import { getCampuses, getHubPosts } from "@/lib/data";
 import {
   HUB_FEED_LABELS,
-  HUB_FEED_TYPES,
+  HUB_FEED_TABS,
   feedKinds,
   hubCampusName,
   hubFeedHref,
   readHubFeedType,
-  type HubFeedType,
+  type HubFeedTab,
 } from "@/lib/hub";
 import { sastToday } from "@/lib/time";
-import type { HubPost } from "@/lib/types";
-import { HubPostCard } from "./HubPostCard";
+import { HubPostRow, HubTipRow } from "./HubPostRow";
 
-/** What screen readers call the events-and-office-hours list on each tab (plan decision 5). */
-const DATED_LABELS: Record<Exclude<HubFeedType, "tips">, string> = {
+/** What screen readers call Coming up's list on each tab (plan decision 5). */
+const DATED_LABELS: Record<HubFeedTab, string> = {
   all: "Events and office hours",
   events: "Events",
   "office-hours": "Office hours",
@@ -25,9 +24,10 @@ const DATED_LABELS: Record<Exclude<HubFeedType, "tips">, string> = {
 type HubFeedProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 /**
- * The Hub's feed (community spec 5.1): the type tabs, then upcoming events and office hours, soonest first, then tips,
- * newest first, from every campus (community spec decision 7). It reads the link and today's date, so it renders per
- * request, inside the page's <Suspense>.
+ * Launchpad's posts (Launchpad spec 4.2 and 4.3): Coming up, with its type tabs and upcoming events and office hours,
+ * soonest first, from every campus (community spec decision 7); then Tips, newest first, under every tab. One read
+ * feeds both, so they share one error. It reads the link and today's date, so it renders per request, inside the
+ * page's <Suspense>.
  */
 export async function HubFeed({ searchParams }: HubFeedProps) {
   const type = readHubFeedType((await searchParams).type);
@@ -35,16 +35,18 @@ export async function HubFeed({ searchParams }: HubFeedProps) {
   // request (decision 26), as What's on does.
   await connection();
   const [posts, campuses] = await Promise.all([
-    getHubPosts({ kinds: feedKinds(type), from: sastToday() }).catch(() => null),
+    getHubPosts({ kinds: [...feedKinds(type), "tip"], from: sastToday() }).catch(() => null),
     getCampuses(),
   ]);
   const campusNames = new Map(campuses.map((campus) => [campus.slug, campus.name]));
+  const tabs = HUB_FEED_TABS.map((key) => ({ key, label: HUB_FEED_LABELS[key], href: hubFeedHref(key) }));
 
-  let body: ReactNode;
+  let comingUp: ReactNode;
+  let tips: ReactNode = null;
   if (posts === null) {
-    body = (
+    comingUp = (
       <div className="section-error">
-        <p>We couldn&apos;t load the Hub&apos;s posts just now.</p>
+        <p>We couldn&apos;t load what&apos;s coming up just now.</p>
         <a href={hubFeedHref(type)} className="btn btn-outline text-navy">
           Try again
         </a>
@@ -52,50 +54,50 @@ export async function HubFeed({ searchParams }: HubFeedProps) {
     );
   } else {
     const dated = posts.filter((post) => post.kind !== "tip");
-    const tips = posts.filter((post) => post.kind === "tip");
-    body = (
-      <>
-        {type !== "tips" && (
-          <FeedList
-            label={DATED_LABELS[type]}
-            posts={dated}
-            empty="Nothing planned right now. Check back soon."
-            campusNames={campusNames}
-          />
+    const tipPosts = posts.filter((post) => post.kind === "tip");
+    comingUp =
+      dated.length === 0 ? (
+        <p className="hub-feed-empty">Nothing planned right now. Check back soon.</p>
+      ) : (
+        <ul aria-label={DATED_LABELS[type]} className="hub-rows">
+          {dated.map((post) => (
+            <li key={post.id}>
+              <HubPostRow post={post} campusName={hubCampusName(post.campusSlug, campusNames)} />
+            </li>
+          ))}
+        </ul>
+      );
+    tips = (
+      <section id="hub-tips" aria-labelledby="hub-tips-title" className="hub-section">
+        <h2 id="hub-tips-title" className="listing-section-title">
+          Tips
+        </h2>
+        {tipPosts.length === 0 ? (
+          <p className="hub-feed-empty">No tips yet.</p>
+        ) : (
+          <ul aria-label="Tips" className="hub-rows">
+            {tipPosts.map((post) => (
+              <li key={post.id}>
+                <HubTipRow post={post} />
+              </li>
+            ))}
+          </ul>
         )}
-        {(type === "all" || type === "tips") && (
-          <FeedList label="Tips" posts={tips} empty="No tips yet." campusNames={campusNames} />
-        )}
-      </>
+      </section>
     );
   }
 
-  const tabs = HUB_FEED_TYPES.map((key) => ({ key, label: HUB_FEED_LABELS[key], href: hubFeedHref(key) }));
   return (
     <>
-      <LinkTabs label="Post types" tabs={tabs} current={type} look="tabs" />
-      {body}
+      {/* The tabs link to #hub-coming-up, so a tap keeps the list in view (plan decision 6). */}
+      <section id="hub-coming-up" aria-labelledby="hub-coming-up-title" className="hub-section">
+        <h2 id="hub-coming-up-title" className="listing-section-title">
+          Coming up
+        </h2>
+        <LinkTabs label="Post types" tabs={tabs} current={type} look="tabs" />
+        {comingUp}
+      </section>
+      {tips}
     </>
-  );
-}
-
-type FeedListProps = {
-  label: string;
-  posts: readonly HubPost[];
-  empty: string;
-  campusNames: ReadonlyMap<string, string>;
-};
-
-/** One of the feed's lists, named for screen readers, or its empty line (plan decision 5). */
-function FeedList({ label, posts, empty, campusNames }: FeedListProps) {
-  if (posts.length === 0) return <p className="hub-feed-empty">{empty}</p>;
-  return (
-    <ul aria-label={label} className="hub-feed-list">
-      {posts.map((post) => (
-        <li key={post.id}>
-          <HubPostCard post={post} campusName={hubCampusName(post.campusSlug, campusNames)} />
-        </li>
-      ))}
-    </ul>
   );
 }

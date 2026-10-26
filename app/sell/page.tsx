@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { SellHome } from "@/components/sell/SellHome";
 import { SellSkeleton } from "@/components/sell/SellSkeleton";
 import { PageTransition } from "@/components/kit/PageTransition";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 export const metadata: Metadata = { title: "Sell on CampusCart", robots: { index: false } };
 
@@ -14,6 +16,7 @@ export default function SellPage() {
   return (
     <PageTransition>
       <div className="page sell-page">
+        <Trail crumbs={trailFor("/sell")} />
         {/* Plain Suspense, not Reveal (calm navigation Task 4): a reveal waits for the fonts, so the pitch and the font
             swap shift together, and the visitor's /sell measured 0.0676 against 0.0598 without it. */}
         <Suspense fallback={<SellSkeleton />}>

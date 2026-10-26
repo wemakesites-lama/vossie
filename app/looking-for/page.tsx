@@ -6,6 +6,8 @@ import { BoardSkeleton } from "@/components/looking-for/BoardSkeleton";
 import { PostRequestLink } from "@/components/looking-for/PostRequestLink";
 import { RequestBoard } from "@/components/looking-for/RequestBoard";
 import { YourRequestsLink } from "@/components/looking-for/YourRequestsLink";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 /** Fixed: `?cat=` views share the board's title and description, and stay indexed (plan decision 14). */
 export const metadata: Metadata = {
@@ -23,6 +25,7 @@ export default function LookingForPage({ searchParams }: PageProps<"/looking-for
   return (
     <PageTransition>
       <div className="page board">
+        <Trail crumbs={trailFor("/looking-for")} />
         <div className="board-head">
           <h1 className="board-title">Looking For</h1>
           <p className="board-lede">Post what you need, and students who can help will offer.</p>

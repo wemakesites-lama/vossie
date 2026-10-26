@@ -7,6 +7,8 @@ import { requireAccount } from "@/lib/auth/session";
 import { getCampuses } from "@/lib/data";
 import { YOU_PATH } from "@/lib/you/paths";
 import { readForYou, readYourStuff } from "@/lib/you/read";
+import { Trail } from "@/components/ui/Trail";
+import { trailFor } from "@/lib/nav/trail";
 
 /** One person's hub, so search engines leave it out (accounts spec 3.3; `/account` is in robots.txt too). */
 export const metadata: Metadata = { title: "You", robots: { index: false } };
@@ -19,6 +21,7 @@ export default function YouPage() {
   return (
     <PageTransition>
       <div className="page account-page you-page">
+        <Trail crumbs={trailFor("/account")} />
         <Reveal fallback={<YouSkeleton />}>
           <YouContent />
         </Reveal>

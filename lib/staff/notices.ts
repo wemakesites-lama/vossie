@@ -21,7 +21,7 @@ const NOTICES: ReadonlyMap<string, string> = new Map([
   ["point-renamed", "Pickup point renamed."],
   ["point-retired", "Retired. Listings that use it keep it, marked no longer used."],
   ["point-restored", "It's in use again."],
-  ["post-published", "Published. It's on the Hub's feed."],
+  ["post-published", "Published. It's on Launchpad."],
   ["post-draft", "Saved as a draft. Only Hub staff can see it."],
   ["booking-accepted", "Accepted. The student has been told."],
   ["booking-declined", "Declined. The student has been told."],

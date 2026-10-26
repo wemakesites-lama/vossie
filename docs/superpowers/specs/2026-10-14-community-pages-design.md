@@ -96,6 +96,8 @@ The sitemap lists every request (closed ones too) and every Hub post (past ones 
 
 ### 5.1 The Hub page (`/hub`)
 
+> Replaced by `2026-10-26-launchpad-design.md` (decision 93): the page is Launchpad, laid out as intro, Coming up, Tips, Verified shops.
+
 1. **The story:** the Hub banner's photo (decorative), an h1 "The Incubation Hub", and two short paragraphs: the Eduvos Incubation Hub supports student businesses with mentors, events and office hours, and runs Vossie; it checks sellers and gives them the Verified badge. Sample wording for the Hub to change.
 2. **Verified by the Hub:** an h2 and the verified sellers, A to Z by name (plan decision 11), as a row of small cards (round photo, name, campus) linking to their storefronts, all at the same height. It scrolls sideways on phones and wraps from the tablet step (plan decision 7), not only on desktop.
 3. **The feed:**

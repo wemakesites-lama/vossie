@@ -39,7 +39,7 @@ const LINK_GROUPS: readonly LinkGroup[] = [
     links: [
       { href: "/sell", label: "List an item" },
       { href: "/how-it-works", label: "How selling works" },
-      { href: "/hub", label: "Incubation Hub" },
+      { href: "/hub", label: "Launchpad" },
       { href: "/seller-guidelines", label: "Seller guidelines" },
     ],
   },
