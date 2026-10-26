@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { Composer } from "@/components/messages/Composer";
 import { ComposerSkeleton } from "@/components/messages/ComposerSkeleton";
 import { getListingIds } from "@/lib/data";
@@ -25,11 +26,13 @@ export async function generateStaticParams() {
 /** The composer for a listing (messaging spec 2.1 and 3.1). Everything after the frame needs the session. */
 export default function ListingComposerPage({ params }: PageProps<"/listings/[id]/message">) {
   return (
-    <div className="page composer-page">
-      <Suspense fallback={<ComposerSkeleton />}>
-        <ListingComposer params={params} />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="page composer-page">
+        <Reveal fallback={<ComposerSkeleton />}>
+          <ListingComposer params={params} />
+        </Reveal>
+      </div>
+    </PageTransition>
   );
 }
 

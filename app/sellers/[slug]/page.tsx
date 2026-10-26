@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { SellerView } from "@/components/seller/SellerView";
 import { PageFallback } from "@/components/ui/PageFallback";
 import { getCampuses, getSeller, getSellerSlugs } from "@/lib/data";
@@ -34,9 +35,11 @@ export default function SellerPage({ params }: PageProps<"/sellers/[slug]">) {
   return (
     // Known sellers are prerendered, but the fallback still shows while the page streams in (see PageFallback), and for
     // an unknown slug until the 404 takes over.
-    <Suspense fallback={<PageFallback />}>
-      <SellerDetails params={params} />
-    </Suspense>
+    <PageTransition>
+      <Reveal fallback={<PageFallback />}>
+        <SellerDetails params={params} />
+      </Reveal>
+    </PageTransition>
   );
 }
 

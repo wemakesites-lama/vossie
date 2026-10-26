@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowRightIcon } from "@/components/icons";
+import { NavPending } from "@/components/ui/NavPending";
 import { budgetLabel, offersLabel } from "@/lib/format";
+import { FORWARD } from "@/lib/motion";
 import { shortSastDate } from "@/lib/time";
 import type { LookingForRequest } from "@/lib/types";
 
@@ -19,8 +21,9 @@ export function RequestRow({ request, campusName, categoryName }: RequestRowProp
     <article className="board-row">
       <h3 className="board-row-title">
         {/* No prefetch: a list of requests, most of which won't be opened (decision 28). */}
-        <Link href={`/looking-for/${request.id}`} prefetch={false} className="board-row-link">
+        <Link href={`/looking-for/${request.id}`} prefetch={false} className="board-row-link" transitionTypes={FORWARD}>
           {request.title}
+          <NavPending />
         </Link>
       </h3>
       <p className="board-row-meta">

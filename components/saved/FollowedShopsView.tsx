@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Photo } from "@/components/listings/Photo";
+import { NavPending } from "@/components/ui/NavPending";
 import { listingsLabel } from "@/lib/format";
 import { unfollowShop } from "@/lib/following/actions";
 import { savedTabPath } from "@/lib/following/rules";
+import { CARD } from "@/lib/motion";
 import { signInHref } from "@/lib/next-path";
 import type { FollowedShop } from "@/lib/types";
 
@@ -73,8 +75,9 @@ export function FollowedShopsView({ shops, campusNames, notice }: FollowedShopsV
             {shops.map((shop) => (
               <li key={shop.slug} className="saved-shop">
                 {shop.storefront ? (
-                  <Link href={`/sellers/${shop.slug}`} prefetch={false} className="hub-seller">
+                  <Link href={`/sellers/${shop.slug}`} prefetch={false} className="hub-seller" transitionTypes={CARD}>
                     <ShopCardFace shop={shop} campusName={campusNames.get(shop.campusSlug)} />
+                    <NavPending />
                   </Link>
                 ) : (
                   <div className="hub-seller">

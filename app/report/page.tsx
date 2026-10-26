@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { Report } from "@/components/messages/Report";
 import { ReportSkeleton } from "@/components/messages/ReportSkeleton";
 import { parseReportTarget } from "@/lib/messaging/paths";
@@ -14,11 +15,13 @@ export const metadata: Metadata = { title: "Report", robots: { index: false } };
  */
 export default function ReportPage({ searchParams }: PageProps<"/report">) {
   return (
-    <div className="page report-page">
-      <Suspense fallback={<ReportSkeleton />}>
-        <ReportForVisitor searchParams={searchParams} />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="page report-page">
+        <Reveal fallback={<ReportSkeleton />}>
+          <ReportForVisitor searchParams={searchParams} />
+        </Reveal>
+      </div>
+    </PageTransition>
   );
 }
 

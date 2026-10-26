@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { AdminFeatured } from "@/components/staff/AdminFeatured";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
@@ -24,9 +24,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function AdminFeaturedPage() {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton />}>
+      <Reveal fallback={<StaffSkeleton />}>
         <Featured />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

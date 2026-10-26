@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { ArrowLeftIcon } from "@/components/icons";
+import { NavPending } from "@/components/ui/NavPending";
 import { offersLabel } from "@/lib/format";
 import { NEW_REQUEST_PATH, requestPath } from "@/lib/looking-for/paths";
 import { requestStateLabel } from "@/lib/looking-for/words";
+import { BACK } from "@/lib/motion";
 import { shortSastDate } from "@/lib/time";
 import type { OwnRequest } from "@/lib/types";
 import { AutoCloseLine } from "./AutoCloseLine";
@@ -22,9 +24,10 @@ type YourRequestsViewProps = {
 export function YourRequestsView({ items, notice }: YourRequestsViewProps) {
   return (
     <div className="requests-column">
-      <Link href="/account" prefetch={false} className="msg-crumb">
+      <Link href="/account" transitionTypes={BACK} prefetch={false} className="msg-crumb">
         <ArrowLeftIcon />
         Back to You
+        <NavPending />
       </Link>
       <div className="requests-head">
         <h1 className="requests-title">Your requests</h1>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ErrorSummary } from "@/components/forms/ErrorSummary";
 import { ArrowLeftIcon } from "@/components/icons";
+import { NavPending } from "@/components/ui/NavPending";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
 import { OFFER_SENT_NOTE, SHOP_CLOSED_NOTE, SHOP_WAITS_NOTE } from "@/lib/looking-for/words";
@@ -8,6 +9,7 @@ import { sendReply } from "@/lib/messaging/actions";
 import { messagingErrors, replyFields } from "@/lib/messaging/errors";
 import { inboxPath, threadPath } from "@/lib/messaging/paths";
 import { parseWarnings, type ScamWarning } from "@/lib/messaging/scam-check";
+import { BACK } from "@/lib/motion";
 import { messageTime } from "@/lib/time";
 import type { SaleToMark, Thread } from "@/lib/types";
 import { MessageField } from "./MessageField";
@@ -69,9 +71,10 @@ export function ThreadView({
     thread.request && thread.role === "buyer" ? SHOP_CLOSED_NOTE : "This person has left CampusCart, so you can't reply.";
   return (
     <div className="thread-column">
-      <Link href={inboxPath(thread.role === "seller" ? "selling" : "buying")} prefetch={false} className="msg-crumb">
+      <Link href={inboxPath(thread.role === "seller" ? "selling" : "buying")} transitionTypes={BACK} prefetch={false} className="msg-crumb">
         <ArrowLeftIcon />
         Back to messages
+        <NavPending />
       </Link>
       <div className="thread-head">
         <h1 className="thread-title">

@@ -1,8 +1,10 @@
 import "server-only";
 import Link from "next/link";
 import type { CSSProperties } from "react";
+import { NavPending } from "@/components/ui/NavPending";
 import { barShare } from "@/lib/charts/scale";
 import { NumbersTable } from "./NumbersTable";
+import { FORWARD } from "@/lib/motion";
 
 export type BarRow = { label: string; value: number | "hidden" | "under5"; href?: string };
 
@@ -53,8 +55,9 @@ export function BarList({ rows, label, summary, rowHeader = "Item", max: sharedM
             .filter((row) => row.href)
             .map((row) => (
               <li key={row.label}>
-                <Link href={row.href!} prefetch={false} transitionTypes={["nav-forward"]}>
+                <Link href={row.href!} prefetch={false} transitionTypes={FORWARD}>
                   {row.label}: {words(row.value)}
+                  <NavPending />
                 </Link>
               </li>
             ))}

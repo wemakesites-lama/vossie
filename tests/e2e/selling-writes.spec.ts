@@ -267,6 +267,9 @@ test("axe finds nothing serious on My listings in every state, with its notices,
   await button(page, "Save as draft").click();
   await expect(page).toHaveURL(/\/sell\/listings\?tab=drafts$/, POST_LANDS);
   await expect(main(page).getByRole("status")).toBeVisible();
+  // The redirect to another page crossfades (calm navigation, decision 90), and the tab title follows a moment after
+  // the page shows; axe needs it.
+  await expect(page).toHaveTitle(/Your listings/);
   expect(await seriousIssues(page), "the drafts tab, with a notice").toEqual([]);
   const draftId = await idOfEditLink(page, draft);
   await page.goto(`/sell/listings/${draftId}/edit`);

@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { NavPending } from "@/components/ui/NavPending";
 import { getViewer } from "@/lib/auth/session";
 import { isFollowing } from "@/lib/data/follows";
 import { followNoteKey } from "@/lib/following/rules";
 import { takeNote } from "@/lib/looking-for/form-state";
 import { shopSlugOf } from "@/lib/messaging/subjects";
+import { BACK } from "@/lib/motion";
 import { SELL_PATH } from "@/lib/selling/paths";
 import { FollowButtons, FollowSignedOut } from "./FollowViews";
 
@@ -19,8 +21,9 @@ export async function ViewerFollow({ slug, name }: { slug: string; name: string 
   // nothing moves when it streams in. A white outline on the stars, as Unfollow.
   if (shopSlugOf(account) === slug) {
     return (
-      <Link href={SELL_PATH} prefetch={false} className="btn seller-unfollow">
+      <Link href={SELL_PATH} transitionTypes={BACK} prefetch={false} className="btn seller-unfollow">
         Back to your shop
+        <NavPending />
       </Link>
     );
   }

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { NavPending } from "@/components/ui/NavPending";
 import { badgeLabel, priceLabel } from "@/lib/format";
+import { CARD } from "@/lib/motion";
 import type { Availability, Listing } from "@/lib/types";
 import { Photo } from "./Photo";
 import { SaveHeart } from "./SaveHeart";
@@ -26,8 +28,9 @@ export function ListingCard({ listing, campusName, saved = false }: ListingCardP
       />
       <h3 className="listing-title">
         {/* No prefetch: a row of cards would fetch every page as it scrolls past (mobile data). */}
-        <Link href={`/listings/${listing.id}`} prefetch={false} className="listing-link">
+        <Link href={`/listings/${listing.id}`} prefetch={false} className="listing-link" transitionTypes={CARD}>
           {listing.title}
+          <NavPending />
         </Link>
       </h3>
       <p className="listing-price">{priceLabel(listing)}</p>

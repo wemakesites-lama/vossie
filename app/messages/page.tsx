@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { Inbox } from "@/components/messages/Inbox";
 import { InboxSkeleton } from "@/components/messages/InboxSkeleton";
 import { parseInboxTab } from "@/lib/messaging/paths";
@@ -13,12 +14,14 @@ export const metadata: Metadata = { title: "Messages", robots: { index: false } 
  */
 export default function MessagesPage({ searchParams }: PageProps<"/messages">) {
   return (
-    <div className="page inbox-page">
-      <h1 className="inbox-title">Messages</h1>
-      <Suspense fallback={<InboxSkeleton />}>
-        <InboxForVisitor searchParams={searchParams} />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="page inbox-page">
+        <h1 className="inbox-title">Messages</h1>
+        <Reveal fallback={<InboxSkeleton />}>
+          <InboxForVisitor searchParams={searchParams} />
+        </Reveal>
+      </div>
+    </PageTransition>
   );
 }
 

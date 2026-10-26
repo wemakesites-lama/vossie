@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 import { ChevronLeftIcon } from "@/components/icons";
+import { Reveal } from "@/components/kit/Reveal";
 import { ListingForm } from "@/components/sell/ListingForm";
 import { SellFormSkeleton } from "@/components/sell/SellSkeleton";
 import { myListingsPath } from "@/lib/selling/paths";
@@ -27,9 +27,9 @@ export default function EditListingPage({ params }: PageProps<"/sell/listings/[i
             </Link>
             <h1 className="sell-title">Edit listing</h1>
           </header>
-          <Suspense fallback={<SellFormSkeleton />}>
+          <Reveal fallback={<SellFormSkeleton />}>
             <ListingForm params={params} />
-          </Suspense>
+          </Reveal>
         </div>
       </div>
     </PageTransition>

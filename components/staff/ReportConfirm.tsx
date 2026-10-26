@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { NavPending } from "@/components/ui/NavPending";
 import type { FormError } from "@/lib/auth/messages";
 import type { ReportView } from "@/lib/data/staff-reports";
+import { BACK } from "@/lib/motion";
 import { hideReportedListing, hideReportedRequest, pauseReportedShop } from "@/lib/staff/admin-actions";
 import { adminReportPath } from "@/lib/staff/paths";
 import { ownReportLine } from "./AdminReport";
@@ -27,8 +29,9 @@ export function ReportConfirm({ kind, report, reason, errors }: ReportConfirmPro
     return (
       <p>
         {ownReportLine(report.own)}{" "}
-        <Link href={back} prefetch={false}>
+        <Link href={back} transitionTypes={BACK} prefetch={false}>
           Back to the report
+          <NavPending />
         </Link>
       </p>
     );
@@ -100,8 +103,9 @@ export function ReportConfirm({ kind, report, reason, errors }: ReportConfirmPro
       {kind === "hide"
         ? "It can't be hidden from this report: it's closed, hidden already, or gone."
         : "The shop can't be paused from this report: it's closed, a sample shop, or paused by the Hub already."}{" "}
-      <Link href={back} prefetch={false}>
+      <Link href={back} transitionTypes={BACK} prefetch={false}>
         Back to the report
+        <NavPending />
       </Link>
     </p>
   );

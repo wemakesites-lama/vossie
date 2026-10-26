@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { NavPending } from "@/components/ui/NavPending";
 import type { FormError } from "@/lib/auth/messages";
 import type { StaffAccount } from "@/lib/data/staff-accounts";
+import { BACK } from "@/lib/motion";
 import { removeStaffRole } from "@/lib/staff/account-actions";
 import { ADMIN_STAFF_PATH } from "@/lib/staff/paths";
 import type { StaffRole } from "@/lib/types";
@@ -70,8 +72,9 @@ export function StaffRoleConfirm({
       <div className="staff-confirm">
         <p className="staff-confirm-lead">You can&apos;t remove your own admin role. Ask another admin.</p>
         <p>
-          <Link href={ADMIN_STAFF_PATH} prefetch={false}>
+          <Link href={ADMIN_STAFF_PATH} transitionTypes={BACK} prefetch={false}>
             Back to staff accounts
+            <NavPending />
           </Link>
         </p>
       </div>
@@ -86,8 +89,9 @@ export function StaffRoleConfirm({
         </p>
         {onlyAdmin && <p>You&apos;re the only admin. Give someone else the Admin role first.</p>}
         <p>
-          <Link href={ADMIN_STAFF_PATH} prefetch={false}>
+          <Link href={ADMIN_STAFF_PATH} transitionTypes={BACK} prefetch={false}>
             Back to staff accounts
+            <NavPending />
           </Link>
         </p>
       </div>

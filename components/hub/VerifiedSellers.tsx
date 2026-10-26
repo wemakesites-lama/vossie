@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { SectionError } from "@/components/home/SectionError";
 import { Photo } from "@/components/listings/Photo";
+import { NavPending } from "@/components/ui/NavPending";
+import { CARD } from "@/lib/motion";
 import type { Seller } from "@/lib/types";
 
 type VerifiedSellersProps = {
@@ -26,7 +28,7 @@ export function VerifiedSellers({ sellers, campusNames }: VerifiedSellersProps) 
           {sellers.map((seller) => (
             <li key={seller.slug}>
               {/* No prefetch: a row of storefronts, most of which won't be opened (decision 28). */}
-              <Link href={`/sellers/${seller.slug}`} prefetch={false} className="hub-seller">
+              <Link href={`/sellers/${seller.slug}`} prefetch={false} className="hub-seller" transitionTypes={CARD}>
                 <Photo
                   image={{ src: seller.image.src, alt: "" }}
                   ratio="1 / 1"
@@ -35,6 +37,7 @@ export function VerifiedSellers({ sellers, campusNames }: VerifiedSellersProps) 
                 />
                 <span className="hub-seller-name">{seller.name}</span>{" "}
                 <span className="hub-seller-campus">{campusNames.get(seller.campusSlug)}</span>
+                <NavPending />
               </Link>
             </li>
           ))}

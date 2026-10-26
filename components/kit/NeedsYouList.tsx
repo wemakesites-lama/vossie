@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { CheckIcon, ChevronRightIcon } from "@/components/icons";
 import type { Tone } from "./Pill";
+import { NavPending } from "@/components/ui/NavPending";
+import { FORWARD } from "@/lib/motion";
 
 export type NeedsYouItem = {
   key: string;
@@ -35,7 +37,7 @@ export function NeedsYouList({ label, items, allClear }: NeedsYouListProps) {
     <ul aria-label={label} className="needs-list">
       {shown.map((item) => (
         <li key={item.key}>
-          <Link href={item.href} prefetch={false} transitionTypes={["nav-forward"]} className="needs-row">
+          <Link href={item.href} prefetch={false} transitionTypes={FORWARD} className="needs-row">
             <span className="needs-count" data-urgent={item.urgent ? "" : undefined}>
               {item.count > 99 ? "99+" : item.count}
             </span>
@@ -51,6 +53,7 @@ export function NeedsYouList({ label, items, allClear }: NeedsYouListProps) {
               </span>
             )}
             <ChevronRightIcon className="needs-chevron" />
+            <NavPending />
           </Link>
         </li>
       ))}

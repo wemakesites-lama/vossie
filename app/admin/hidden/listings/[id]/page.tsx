@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { ShowAgainConfirm } from "@/components/staff/ShowAgainConfirm";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
@@ -23,9 +23,9 @@ export function generateStaticParams() {
 export default function ShowListingPage({ params }: PageProps<"/admin/hidden/listings/[id]">) {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton short />}>
+      <Reveal fallback={<StaffSkeleton short />}>
         <Show params={params} />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

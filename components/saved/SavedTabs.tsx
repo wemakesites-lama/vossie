@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { LinkTabs } from "@/components/ui/LinkTabs";
 import { parseSavedTab, savedTabPath, type SavedTab } from "@/lib/following/rules";
 import { SEARCHES_NOTE } from "@/lib/saved-searches/words";
@@ -21,9 +21,9 @@ type SavedTabsProps = { searchParams: Promise<Record<string, string | string[] |
 export async function SavedTabs({ searchParams }: SavedTabsProps) {
   const tab = parseSavedTab((await searchParams).tab);
   return (
-    <Suspense key={tab} fallback={<SavedSkeleton />}>
+    <Reveal key={tab} fallback={<SavedSkeleton />}>
       <SavedTabContent tab={tab} />
-    </Suspense>
+    </Reveal>
   );
 }
 

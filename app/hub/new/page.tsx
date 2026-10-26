@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { NEW_POST_VALUES, PostEditor } from "@/components/staff/PostEditor";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
@@ -21,9 +21,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function NewPostPage() {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton />}>
+      <Reveal fallback={<StaffSkeleton />}>
         <NewPost />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { DeleteRequest, DeleteRequestSkeleton } from "@/components/looking-for/DeleteRequest";
 
 /** One person's page, so search engines leave it out (plan decision 23). */
@@ -13,11 +14,13 @@ export function generateStaticParams() {
 /** Delete request's confirm page (community actions spec 2.6). It needs the session, so it renders inside <Suspense>. */
 export default function DeleteRequestPage({ params }: PageProps<"/looking-for/[id]/delete">) {
   return (
-    <div className="page request-form-page">
-      <Suspense fallback={<DeleteRequestSkeleton />}>
-        <DeleteForVisitor params={params} />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="page request-form-page">
+        <Reveal fallback={<DeleteRequestSkeleton />}>
+          <DeleteForVisitor params={params} />
+        </Reveal>
+      </div>
+    </PageTransition>
   );
 }
 

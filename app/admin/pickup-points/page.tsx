@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { AdminPickupPoints, type PointForm } from "@/components/staff/AdminPickupPoints";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
@@ -21,9 +21,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function AdminPickupPointsPage() {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton />}>
+      <Reveal fallback={<StaffSkeleton />}>
         <PickupPoints />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

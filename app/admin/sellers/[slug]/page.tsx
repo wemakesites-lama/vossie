@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { AdminSeller } from "@/components/staff/AdminSeller";
 import { NextInQueue } from "@/components/staff/NextInQueue";
 import { StaffFrame } from "@/components/staff/StaffFrame";
@@ -30,9 +30,9 @@ export function generateStaticParams() {
 export default function AdminSellerPage({ params }: PageProps<"/admin/sellers/[slug]">) {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton />}>
+      <Reveal fallback={<StaffSkeleton />}>
         <SellerReview params={params} />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

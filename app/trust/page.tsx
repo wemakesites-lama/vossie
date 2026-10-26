@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export const metadata: Metadata = {
   title: "How trust works",
@@ -138,11 +139,13 @@ const SECTIONS: readonly InfoSection[] = [
 
 export default function TrustPage() {
   return (
-    <InfoPage
-      title="How trust works"
-      lede="No star ratings. Trust here comes from checks by the Hub and from what sellers actually do."
-      updated="2026-10-21"
-      sections={SECTIONS}
-    />
+    <PageTransition>
+      <InfoPage
+        title="How trust works"
+        lede="No star ratings. Trust here comes from checks by the Hub and from what sellers actually do."
+        updated="2026-10-21"
+        sections={SECTIONS}
+      />
+    </PageTransition>
   );
 }

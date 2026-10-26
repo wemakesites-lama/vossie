@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export const metadata: Metadata = {
   title: "Terms of use",
@@ -124,12 +125,14 @@ const SECTIONS: readonly InfoSection[] = [
 
 export default function TermsPage() {
   return (
-    <InfoPage
-      title="Terms of use"
-      lede="The rules for using CampusCart, in plain words."
-      updated="2026-10-14"
-      draft
-      sections={SECTIONS}
-    />
+    <PageTransition>
+      <InfoPage
+        title="Terms of use"
+        lede="The rules for using CampusCart, in plain words."
+        updated="2026-10-14"
+        draft
+        sections={SECTIONS}
+      />
+    </PageTransition>
   );
 }

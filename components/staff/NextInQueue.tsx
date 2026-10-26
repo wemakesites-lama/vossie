@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ChevronRightIcon } from "@/components/icons";
+import { NavPending } from "@/components/ui/NavPending";
+import { FORWARD } from "@/lib/motion";
 
 type NextInQueueProps = {
   /** "Next waiting shop" or "Next open report". */
@@ -17,9 +19,10 @@ export function NextInQueue({ label, next, none }: NextInQueueProps) {
   if (!next) return <p className="staff-next staff-muted">{none}</p>;
   return (
     <p className="staff-next">
-      <Link href={next.href} prefetch={false} transitionTypes={["nav-forward"]} className="staff-next-link">
+      <Link href={next.href} prefetch={false} transitionTypes={FORWARD} className="staff-next-link">
         <span className="staff-next-label">{label}:</span> {next.title}
         <ChevronRightIcon />
+        <NavPending />
       </Link>
     </p>
   );

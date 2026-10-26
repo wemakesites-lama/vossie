@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { YouSkeleton } from "@/components/account/AccountSkeleton";
 import { YouView } from "@/components/account/AccountView";
 import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { requireAccount } from "@/lib/auth/session";
 import { getCampuses } from "@/lib/data";
 import { YOU_PATH } from "@/lib/you/paths";
@@ -19,9 +19,9 @@ export default function YouPage() {
   return (
     <PageTransition>
       <div className="page account-page you-page">
-        <Suspense fallback={<YouSkeleton />}>
+        <Reveal fallback={<YouSkeleton />}>
           <YouContent />
-        </Suspense>
+        </Reveal>
       </div>
     </PageTransition>
   );

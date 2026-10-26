@@ -5,12 +5,14 @@ import { useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { ArrowLeftIcon, ChevronRightIcon, CloseIcon, MapPinIcon } from "@/components/icons";
 import { NavLink } from "@/components/ui/NavLink";
+import { NavPending } from "@/components/ui/NavPending";
 import { useOverlayDialog } from "@/components/ui/useOverlayDialog";
 import { useCampusChoice } from "@/hooks/useCampusChoice";
 import { useLowData } from "@/hooks/useLowData";
 import { campusLabel } from "@/lib/campus";
 import { isPlainClick } from "@/lib/click";
 import { setLowData } from "@/lib/low-data";
+import { TAB } from "@/lib/motion";
 import { openOverlay } from "@/lib/overlays";
 import type { Campus, Category } from "@/lib/types";
 
@@ -99,7 +101,7 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
           <nav aria-label="Main" className="menu-view">
             <ul className="menu-links">
               <li className="menu-row">
-                <NavLink href="/browse">Shop</NavLink>
+                <NavLink href="/browse" transitionTypes={TAB}>Shop</NavLink>
                 <button
                   ref={shopDrillRef}
                   type="button"
@@ -111,7 +113,7 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
                 </button>
               </li>
               <li>
-                <NavLink href="/sell">Sell</NavLink>
+                <NavLink href="/sell" transitionTypes={TAB}>Sell</NavLink>
               </li>
               <li>
                 <button
@@ -125,19 +127,19 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
                 </button>
               </li>
               <li>
-                <NavLink href="/hub">Hub</NavLink>
+                <NavLink href="/hub" transitionTypes={TAB}>Hub</NavLink>
               </li>
               <li>
                 {/* No prefetch (decision 53): the menu's links come into view together when it opens. */}
-                <NavLink href="/looking-for" prefetch={false}>
+                <NavLink href="/looking-for" transitionTypes={TAB} prefetch={false}>
                   Looking For
                 </NavLink>
               </li>
               <li>
-                <NavLink href="/how-it-works">How it works</NavLink>
+                <NavLink href="/how-it-works" transitionTypes={TAB}>How it works</NavLink>
               </li>
               <li>
-                <NavLink href="/safety">Safety</NavLink>
+                <NavLink href="/safety" transitionTypes={TAB}>Safety</NavLink>
               </li>
               {account}
             </ul>
@@ -155,11 +157,11 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
             </h2>
             <ul className="menu-sublinks">
               <li>
-                <Link href="/browse">Everything</Link>
+                <Link href="/browse" transitionTypes={TAB}>Everything<NavPending /></Link>
               </li>
               {categories.map((category) => (
                 <li key={category.slug}>
-                  <Link href={`/browse?cat=${category.slug}`}>{category.name}</Link>
+                  <Link href={`/browse?cat=${category.slug}`} transitionTypes={TAB}>{category.name}<NavPending /></Link>
                 </li>
               ))}
             </ul>
@@ -177,14 +179,15 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
             </h2>
             <ul className="menu-sublinks">
               <li>
-                <Link href="/browse?campus=all">All campuses</Link>
+                <Link href="/browse?campus=all" transitionTypes={TAB}>All campuses<NavPending /></Link>
               </li>
               {campuses.map((campus) => (
                 <li key={campus.slug}>
-                  <Link href={`/browse?campus=${campus.slug}`}>
+                  <Link href={`/browse?campus=${campus.slug}`} transitionTypes={TAB}>
                     {campus.name}
                     <span className="sr-only">,</span>{" "}
                     <span className="menu-sublink-detail">{campus.region}</span>
+                    <NavPending />
                   </Link>
                 </li>
               ))}

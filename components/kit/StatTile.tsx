@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Children, isValidElement, type ReactNode } from "react";
 import { StatDelta, type CountValue } from "@/components/charts/StatDelta";
+import { NavPending } from "@/components/ui/NavPending";
+import { FORWARD } from "@/lib/motion";
 
 type StatTileProps = {
   label: string;
@@ -30,8 +32,9 @@ export function StatTile({ label, value, delta, href, footer }: StatTileProps) {
   return (
     <div className="stat-tile">
       {href ? (
-        <Link href={href} prefetch={false} transitionTypes={["nav-forward"]} className="stat-tile-link">
+        <Link href={href} prefetch={false} transitionTypes={FORWARD} className="stat-tile-link">
           {body}
+          <NavPending />
         </Link>
       ) : (
         body

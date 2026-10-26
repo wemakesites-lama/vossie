@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { OpenThread } from "@/components/messages/OpenThread";
 import { ThreadSkeleton } from "@/components/messages/ThreadSkeleton";
 
@@ -17,11 +18,13 @@ export function generateStaticParams() {
 /** A thread (messaging spec 3.3). Everything needs the session, so it renders per request inside <Suspense>. */
 export default function ThreadPage({ params }: PageProps<"/messages/[id]">) {
   return (
-    <div className="page thread-page">
-      <Suspense fallback={<ThreadSkeleton />}>
-        <ThreadForVisitor params={params} />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="page thread-page">
+        <Reveal fallback={<ThreadSkeleton />}>
+          <ThreadForVisitor params={params} />
+        </Reveal>
+      </div>
+    </PageTransition>
   );
 }
 

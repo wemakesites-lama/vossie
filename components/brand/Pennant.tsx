@@ -38,7 +38,9 @@ export function Pennant({ size = "header", className }: PennantProps) {
           width={36}
           height={60}
           loading="eager"
-          className="pennant-crest"
+          // motion-own: it breathes while a tapped link waits (calm navigation), and keeps that 150 ms delay under
+          // reduced motion and data saver, where it only dims (globals.css).
+          className="pennant-crest motion-own"
         />
       </span>
     </span>

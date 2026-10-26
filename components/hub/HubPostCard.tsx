@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { NavPending } from "@/components/ui/NavPending";
 import { hubKindLabel, placesLabel } from "@/lib/format";
+import { FORWARD } from "@/lib/motion";
 import { sastDateTime, shortSastDate } from "@/lib/time";
 import type { HubPost } from "@/lib/types";
 
@@ -41,8 +43,9 @@ export function HubPostCard({ post, campusName }: { post: HubPost; campusName: s
       <p className="eyebrow hub-card-kind">{hubKindLabel(post.kind)}</p>
       <h3 className="hub-card-title">
         {/* No prefetch: a feed of posts, most of which won't be opened (decision 28). */}
-        <Link href={`/hub/${post.id}`} prefetch={false} className="hub-card-link">
+        <Link href={`/hub/${post.id}`} prefetch={false} className="hub-card-link" transitionTypes={FORWARD}>
           {post.title}
+          <NavPending />
         </Link>
       </h3>
       {details}

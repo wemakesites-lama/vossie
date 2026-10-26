@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { NavPending } from "@/components/ui/NavPending";
 import type { FormError } from "@/lib/auth/messages";
 import type { ShopReview } from "@/lib/data/staff-shops";
+import { BACK } from "@/lib/motion";
 import { declineSeller, pauseSeller } from "@/lib/staff/admin-actions";
 import { adminSellerPath } from "@/lib/staff/paths";
 import { ConfirmAction } from "./ConfirmAction";
@@ -31,8 +33,9 @@ export function SellerConfirm({ kind, review, own, onlyAdmin, reason, errors }: 
       <>
         <OwnShopLine onlyAdmin={onlyAdmin} />
         <p>
-          <Link href={back} prefetch={false}>
+          <Link href={back} transitionTypes={BACK} prefetch={false}>
             Back to {shop.name}
+            <NavPending />
           </Link>
         </p>
       </>
@@ -48,8 +51,9 @@ export function SellerConfirm({ kind, review, own, onlyAdmin, reason, errors }: 
         {kind === "decline"
           ? `${shop.name} isn't waiting for approval, so there's nothing to decline.`
           : `${shop.name} can't be paused now: the Hub has paused it already, it's still waiting, or it's a sample shop.`}{" "}
-        <Link href={back} prefetch={false}>
+        <Link href={back} transitionTypes={BACK} prefetch={false}>
           Back to {shop.name}
+          <NavPending />
         </Link>
       </p>
     );

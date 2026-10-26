@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { NavPending } from "@/components/ui/NavPending";
+import { BACK } from "@/lib/motion";
 
 // The tab reads "Page not found · Vossie": the layout adds the suffix.
 export const metadata: Metadata = { title: "Page not found" };
@@ -13,8 +15,9 @@ export default function NotFound() {
       </h1>
       <p className="mt-4 max-w-[60ch] text-muted">The link may be old, or the page may not exist yet.</p>
       <div className="mt-8 flex flex-wrap gap-3">
-        <Link href="/" className="btn btn-primary">
+        <Link href="/" transitionTypes={BACK} className="btn btn-primary">
           Back to the homepage
+          <NavPending />
         </Link>
         <Link href="/browse" className="btn btn-outline text-navy">
           Browse everything

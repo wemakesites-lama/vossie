@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { SellerConfirm } from "@/components/staff/SellerConfirm";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
@@ -26,9 +26,9 @@ export function generateStaticParams() {
 export default function PauseSellerPage({ params }: PageProps<"/admin/sellers/[slug]/pause">) {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton />}>
+      <Reveal fallback={<StaffSkeleton />}>
         <Pause params={params} />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

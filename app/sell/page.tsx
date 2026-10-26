@@ -14,6 +14,8 @@ export default function SellPage() {
   return (
     <PageTransition>
       <div className="page sell-page">
+        {/* Plain Suspense, not Reveal (calm navigation Task 4): a reveal waits for the fonts, so the pitch and the font
+            swap shift together, and the visitor's /sell measured 0.0676 against 0.0598 without it. */}
         <Suspense fallback={<SellSkeleton />}>
           <SellHome />
         </Suspense>

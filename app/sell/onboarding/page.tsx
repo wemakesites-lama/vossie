@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { Onboarding } from "@/components/sell/Onboarding";
 import { SellFormSkeleton } from "@/components/sell/SellSkeleton";
 import { PageTransition } from "@/components/kit/PageTransition";
@@ -16,9 +16,9 @@ export default function OnboardingPage({ searchParams }: PageProps<"/sell/onboar
       <div className="page sell-page">
         <div className="sell-column">
           <h1 className="sell-title">Set up your shop</h1>
-          <Suspense fallback={<SellFormSkeleton />}>
+          <Reveal fallback={<SellFormSkeleton />}>
             <Onboarding searchParams={searchParams} />
-          </Suspense>
+          </Reveal>
         </div>
       </div>
     </PageTransition>

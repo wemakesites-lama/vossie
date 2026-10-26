@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { NavPending } from "@/components/ui/NavPending";
+import { BACK } from "@/lib/motion";
 
 type ComingSoonProps = {
   title: string;
@@ -15,8 +17,9 @@ export function ComingSoon({ title, children }: ComingSoonProps) {
         {title}
       </h1>
       <div className="mt-4 max-w-[60ch] text-muted">{children ?? "This page arrives in the next build stage."}</div>
-      <Link href="/" className="btn btn-primary mt-8">
+      <Link href="/" transitionTypes={BACK} className="btn btn-primary mt-8">
         Back to the homepage
+        <NavPending />
       </Link>
     </section>
   );

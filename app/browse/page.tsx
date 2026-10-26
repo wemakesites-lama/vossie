@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { BrowseSkeleton } from "@/components/browse/BrowseSkeleton";
 import { BrowseView } from "@/components/browse/BrowseView";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { browseHeading } from "@/lib/browse/heading";
 import { PAGE_SIZE, defaultSort, knownSlugs, parseBrowseParams } from "@/lib/browse/query";
 import { ALL_CAMPUSES } from "@/lib/campus";
@@ -32,10 +33,12 @@ export async function generateMetadata({ searchParams }: PageProps<"/browse">): 
 
 export default function BrowsePage({ searchParams }: PageProps<"/browse">) {
   return (
-    <div className="page browse">
-      <Suspense fallback={<BrowseSkeleton />}>
-        <BrowseView searchParams={searchParams} />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="page browse">
+        <Reveal fallback={<BrowseSkeleton />}>
+          <BrowseView searchParams={searchParams} />
+        </Reveal>
+      </div>
+    </PageTransition>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { AdminSellers } from "@/components/staff/AdminSellers";
 import { CampusFilter } from "@/components/staff/CampusFilter";
 import { StaffFrame } from "@/components/staff/StaffFrame";
@@ -21,9 +21,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function AdminSellersPage({ searchParams }: PageProps<"/admin/sellers">) {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton short />}>
+      <Reveal fallback={<StaffSkeleton short />}>
         <Shops searchParams={searchParams} />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

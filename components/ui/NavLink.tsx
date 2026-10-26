@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense, type ComponentProps } from "react";
+import { NavPending } from "./NavPending";
 
 type NavLinkProps = ComponentProps<typeof Link> & {
   href: string;
@@ -23,7 +24,14 @@ type NavLinkProps = ComponentProps<typeof Link> & {
  */
 export function NavLink({ match, also, ...props }: NavLinkProps) {
   return (
-    <Suspense fallback={<Link {...props} />}>
+    <Suspense
+      fallback={
+        <Link {...props}>
+          {props.children}
+          <NavPending />
+        </Link>
+      }
+    >
       <CurrentAwareLink match={match} also={also} {...props} />
     </Suspense>
   );
@@ -35,5 +43,11 @@ function CurrentAwareLink({ match, also, ...props }: NavLinkProps) {
   const under = (base: string) => pathname === base || pathname.startsWith(`${base}/`);
   const section = (match === "section" && pathname.startsWith(`${href}/`)) || (also?.some(under) ?? false);
   const current = pathname === href ? "page" : section ? "true" : undefined;
-  return <Link {...props} aria-current={current} />;
+  // NavPending marks the page while this link waits for the server, so the header crest breathes (calm navigation).
+  return (
+    <Link {...props} aria-current={current}>
+      {props.children}
+      <NavPending />
+    </Link>
+  );
 }

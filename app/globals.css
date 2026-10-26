@@ -291,11 +291,14 @@
    Transitions are 0s, not a tiny duration. transition-property defaults to "all", so any non-zero
    duration would give every element a transition on every property, and code that measures
    straight after a style change (FitText) would read the old value.
+   .motion-own is left out: an element with its own reduced-motion rules (calm navigation plan decision 1). The crest
+   loader keeps its 1 s delay, so a fast load never shows or announces it, and the header crest its 150 ms delay while a
+   tap waits; both are still for these users. Put it only on an element with no other animation or transition.
    --------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after,
+  *:not(.motion-own, .motion-own *),
+  *:not(.motion-own, .motion-own *)::before,
+  *:not(.motion-own, .motion-own *)::after,
   *::backdrop {
     animation-duration: 1ms !important;
     animation-delay: 0s !important;
@@ -306,9 +309,9 @@
   }
 }
 
-:root[data-low-data] *,
-:root[data-low-data] *::before,
-:root[data-low-data] *::after,
+:root[data-low-data] *:not(.motion-own, .motion-own *),
+:root[data-low-data] *:not(.motion-own, .motion-own *)::before,
+:root[data-low-data] *:not(.motion-own, .motion-own *)::after,
 :root[data-low-data] *::backdrop {
   animation-duration: 1ms !important;
   animation-delay: 0s !important;
@@ -10360,6 +10363,17 @@ body:has(.section-shell:not([style*="display"]) > .section-bar) :is(.footer-gian
 }
 
 /* --- Page transitions (role views spec 4.4): opacity and transform only, no blur, no size animation --- */
+
+/* Calm navigation's timings (calm navigation spec 5). A plain :root, not @theme: Tailwind leaves out theme variables it
+   doesn't see used. */
+:root {
+  --motion-exit: 150ms;
+  --motion-enter: 220ms;
+  --motion-breathe: 3600ms;
+  --motion-loader-delay: 1000ms;
+  --ease-calm: cubic-bezier(0.37, 0, 0.63, 1); /* ease-in-out sine: the crest's breath only */
+}
+
 ::view-transition {
   pointer-events: none;
 }
@@ -10406,6 +10420,17 @@ body:has(.section-shell:not([style*="display"]) > .section-bar) :is(.footer-gian
     animation: 180ms var(--ease-out) 60ms both vt-fade;
   }
 
+  /* A page's outline gives way to its content (Reveal, calm navigation spec 4, layer 2): out fast, then in gently. */
+  :root:not([data-low-data])::view-transition-old(.reveal-out) {
+    animation: var(--motion-exit) var(--ease-out) both vt-fade reverse;
+  }
+
+  :root:not([data-low-data])::view-transition-new(.reveal-in) {
+    animation:
+      var(--motion-enter) var(--ease-out) var(--motion-exit) both vt-fade,
+      var(--motion-enter) var(--ease-out) var(--motion-exit) both vt-rise;
+  }
+
   :root:not([data-low-data])::view-transition-old(.nav-forward) {
     animation:
       140ms ease-in both vt-fade reverse,
@@ -10416,6 +10441,19 @@ body:has(.section-shell:not([style*="display"]) > .section-bar) :is(.footer-gian
     animation:
       200ms var(--ease-out) 60ms both vt-fade,
       200ms var(--ease-out) both vt-slide-in;
+  }
+
+  /* "Back to…" links: the same slide, mirrored (calm navigation spec 4, layer 3). */
+  :root:not([data-low-data])::view-transition-old(.nav-back) {
+    animation:
+      140ms ease-in both vt-fade reverse,
+      200ms ease-in both vt-slide-back-out;
+  }
+
+  :root:not([data-low-data])::view-transition-new(.nav-back) {
+    animation:
+      200ms var(--ease-out) 60ms both vt-fade,
+      200ms var(--ease-out) both vt-slide-back-in;
   }
 }
 
@@ -10440,6 +10478,24 @@ body:has(.section-shell:not([style*="display"]) > .section-bar) :is(.footer-gian
   }
 }
 
+@keyframes vt-slide-back-out {
+  to {
+    transform: translateX(12px);
+  }
+}
+
+@keyframes vt-slide-back-in {
+  from {
+    transform: translateX(-12px);
+  }
+}
+
+@keyframes vt-rise {
+  from {
+    transform: translateY(6px);
+  }
+}
+
 /* And the browser's default group animation (position and size) is off for both too. */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
@@ -10453,6 +10509,75 @@ body:has(.section-shell:not([style*="display"]) > .section-bar) :is(.footer-gian
 :root[data-low-data]::view-transition-old(*),
 :root[data-low-data]::view-transition-new(*) {
   animation: none;
+}
+
+/* --- The crest loader (calm navigation spec 4, layer 1) --------------------------------------------------------------
+   Inside PageFallback's screen-tall space, a third of the way down the first screen. Hidden for --motion-loader-delay
+   so a fast load never shows it; then a 400 ms fade, then a slow breath (motion only when wanted). Left out of the
+   motion off switches (plan decision 1), so reduced motion and data saver keep the delay and the fade, with no breath.
+   The status turns visible with it, so a screen reader hears "Loading…" only on a real wait. */
+.page-fallback {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+}
+
+.crest-loader {
+  display: grid;
+  justify-items: center;
+  margin-top: 30vh;
+  margin-top: 30svh;
+  opacity: 0;
+  animation: crest-in 400ms var(--ease-out) var(--motion-loader-delay) both;
+}
+
+.crest-loader-status {
+  visibility: hidden;
+  animation: crest-announce 1ms linear var(--motion-loader-delay) both;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-low-data]) .crest-loader-mark {
+    animation: crest-breathe var(--motion-breathe) var(--ease-calm) calc(var(--motion-loader-delay) + 400ms) infinite;
+  }
+}
+
+/* The header crest while a tapped link waits for the server (calm navigation spec 4, layer 4; NavPending marks <html>).
+   After 150 ms, so a fast tap shows nothing; the breath is the crest loader's. Reduced motion and data saver dim it
+   instead, still; the crest is .motion-own, so they keep the delay. */
+html[data-nav-pending] .hdr-pennant-slot .pennant-crest {
+  animation: crest-wait-dim 1ms linear 150ms both;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-low-data])[data-nav-pending] .hdr-pennant-slot .pennant-crest {
+    animation: crest-breathe var(--motion-breathe) var(--ease-calm) 150ms infinite;
+  }
+}
+
+@keyframes crest-wait-dim {
+  to {
+    opacity: 0.65;
+  }
+}
+
+@keyframes crest-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes crest-announce {
+  to {
+    visibility: visible;
+  }
+}
+
+@keyframes crest-breathe {
+  50% {
+    opacity: 0.65;
+    scale: 1.04;
+  }
 }
 
 /* --- Press feedback (role views spec 4.5). .btn is left out: it has its own transform transition and :active scale. */

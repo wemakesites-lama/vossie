@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 import { ChevronLeftIcon } from "@/components/icons";
+import { Reveal } from "@/components/kit/Reveal";
 import { DeleteListing } from "@/components/sell/DeleteListing";
 import { SellDeleteSkeleton } from "@/components/sell/SellSkeleton";
 import { PageTransition } from "@/components/kit/PageTransition";
@@ -27,9 +27,9 @@ export default function DeleteListingPage({ params }: PageProps<"/sell/listings/
             </Link>
             <h1 className="sell-title">Delete this listing?</h1>
           </header>
-          <Suspense fallback={<SellDeleteSkeleton />}>
+          <Reveal fallback={<SellDeleteSkeleton />}>
             <DeleteListing params={params} />
-          </Suspense>
+          </Reveal>
         </div>
       </div>
     </PageTransition>

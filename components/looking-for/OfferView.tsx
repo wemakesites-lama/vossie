@@ -5,6 +5,7 @@ import { ArrowLeftIcon } from "@/components/icons";
 import { MessageField } from "@/components/messages/MessageField";
 import { SafetyTips } from "@/components/messages/SafetyTips";
 import { ScamCheck } from "@/components/messages/ScamCheck";
+import { NavPending } from "@/components/ui/NavPending";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
 import { budgetLabel, dayMonth } from "@/lib/format";
@@ -14,6 +15,7 @@ import { offerFieldPrefix, requestPath } from "@/lib/looking-for/paths";
 import type { OfferStatus, OfferSubject } from "@/lib/looking-for/subjects";
 import { threadPath } from "@/lib/messaging/paths";
 import { parseWarnings, type ScamWarning } from "@/lib/messaging/scam-check";
+import { BACK } from "@/lib/motion";
 import type { LookingForRequest } from "@/lib/types";
 
 /** The composer's fields after a post (D decision 3): what was typed, what's wrong, and the scam check's warnings. */
@@ -113,9 +115,10 @@ export function OfferView({ subject, status, form }: OfferViewProps) {
   }
   return (
     <>
-      <Link href={requestPath(request.id)} prefetch={false} className="msg-crumb">
+      <Link href={requestPath(request.id)} transitionTypes={BACK} prefetch={false} className="msg-crumb">
         <ArrowLeftIcon />
         Back to the request
+        <NavPending />
       </Link>
       <h1 className="composer-title">Offer to help</h1>
       <div className="composer-layout">

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { AdminNumbers } from "@/components/staff/AdminNumbers";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
@@ -22,9 +22,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function AdminNumbersPage({ searchParams }: PageProps<"/admin/numbers">) {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton />}>
+      <Reveal fallback={<StaffSkeleton />}>
         <Numbers searchParams={searchParams} />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

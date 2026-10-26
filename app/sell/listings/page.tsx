@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 import { ChevronLeftIcon } from "@/components/icons";
+import { Reveal } from "@/components/kit/Reveal";
 import { MyListings } from "@/components/sell/MyListings";
 import { SellFormSkeleton } from "@/components/sell/SellSkeleton";
 import { SELL_PATH } from "@/lib/selling/paths";
@@ -25,9 +25,9 @@ export default function MyListingsPage({ searchParams }: PageProps<"/sell/listin
             </Link>
             <h1 className="sell-title">Your listings</h1>
           </header>
-          <Suspense fallback={<SellFormSkeleton />}>
+          <Reveal fallback={<SellFormSkeleton />}>
             <MyListings searchParams={searchParams} />
-          </Suspense>
+          </Reveal>
         </div>
       </div>
     </PageTransition>

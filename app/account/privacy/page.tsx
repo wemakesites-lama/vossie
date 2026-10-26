@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 import { AccountSkeleton } from "@/components/account/AccountSkeleton";
 import { PrivacySettingsView } from "@/components/account/PrivacySettingsView";
 import { ArrowLeftIcon } from "@/components/icons";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
+import { NavPending } from "@/components/ui/NavPending";
 import { DELETE_FIELDS, DELETE_FORM, readFormState } from "@/lib/auth/form-state";
 import { formErrors } from "@/lib/auth/messages";
 import { requireAccount } from "@/lib/auth/session";
 import { getLatestConsent } from "@/lib/data/accounts";
 import { listReportsBy } from "@/lib/data/reports";
 import { countAdmins } from "@/lib/data/staff-accounts";
+import { BACK } from "@/lib/motion";
 
 /** Like every account page, kept out of search engines (accounts spec 3.3). */
 export const metadata: Metadata = { title: "Privacy settings", robots: { index: false } };
@@ -20,16 +23,19 @@ export const metadata: Metadata = { title: "Privacy settings", robots: { index: 
  */
 export default function PrivacySettingsPage() {
   return (
-    <div className="page account-page">
-      <Link href="/account" className="account-crumb">
-        <ArrowLeftIcon />
-        Back to You
-      </Link>
-      <h1 className="account-title">Privacy settings</h1>
-      <Suspense fallback={<AccountSkeleton />}>
-        <PrivacySettings />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="page account-page">
+        <Link href="/account" transitionTypes={BACK} className="account-crumb">
+          <ArrowLeftIcon />
+          Back to You
+          <NavPending />
+        </Link>
+        <h1 className="account-title">Privacy settings</h1>
+        <Reveal fallback={<AccountSkeleton />}>
+          <PrivacySettings />
+        </Reveal>
+      </div>
+    </PageTransition>
   );
 }
 

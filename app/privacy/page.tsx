@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export const metadata: Metadata = {
   title: "Privacy policy",
@@ -369,12 +370,14 @@ const SECTIONS: readonly InfoSection[] = [
 
 export default function PrivacyPage() {
   return (
-    <InfoPage
-      title="Privacy policy"
-      lede="How CampusCart handles your personal information, under the Protection of Personal Information Act (POPIA)."
-      updated="2026-10-21"
-      draft
-      sections={SECTIONS}
-    />
+    <PageTransition>
+      <InfoPage
+        title="Privacy policy"
+        lede="How CampusCart handles your personal information, under the Protection of Personal Information Act (POPIA)."
+        updated="2026-10-21"
+        draft
+        sections={SECTIONS}
+      />
+    </PageTransition>
   );
 }

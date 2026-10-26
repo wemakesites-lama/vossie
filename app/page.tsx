@@ -9,6 +9,7 @@ import { JustListed } from "@/components/home/JustListed";
 import { LookingFor } from "@/components/home/LookingFor";
 import { ShopByCampus } from "@/components/home/ShopByCampus";
 import { ShopByCategory } from "@/components/home/ShopByCategory";
+import { PageTransition } from "@/components/kit/PageTransition";
 import { Flash } from "@/components/ui/Flash";
 
 /**
@@ -17,7 +18,7 @@ import { Flash } from "@/components/ui/Flash";
  */
 export default function HomePage() {
   return (
-    <>
+    <PageTransition>
       <div className="home">
         <Hero />
         <ContextStrip />
@@ -34,6 +35,6 @@ export default function HomePage() {
       <HubBanner />
       {/* Signing out and deleting an account land here, with a toast (accounts plan decision 12). */}
       <Flash />
-    </>
+    </PageTransition>
   );
 }

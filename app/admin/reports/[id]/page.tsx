@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { AdminReport } from "@/components/staff/AdminReport";
 import { NextInQueue } from "@/components/staff/NextInQueue";
 import { reportedThing } from "@/components/staff/AdminReports";
@@ -30,9 +30,9 @@ export function generateStaticParams() {
 export default function AdminReportPage({ params }: PageProps<"/admin/reports/[id]">) {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton />}>
+      <Reveal fallback={<StaffSkeleton />}>
         <Report params={params} />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

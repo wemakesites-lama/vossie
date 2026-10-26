@@ -30,6 +30,8 @@ export const nextLinkShowingPrefetch = {
       </a>
     );
   },
+  // NavPending (inside typed links, calm navigation) reads it; no link waits in a unit test.
+  useLinkStatus: () => ({ pending: false }),
 };
 
 /** The links in `container` that would prefetch: Next's default (the attribute says "auto") or `true`. */

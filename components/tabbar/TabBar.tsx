@@ -3,6 +3,7 @@ import { SavedCount } from "@/components/header/SiteHeader";
 import { BagIcon, HeartIcon, HomeIcon, PlusIcon, UserIcon } from "@/components/icons";
 import { NavLink } from "@/components/ui/NavLink";
 import { getViewer } from "@/lib/auth/session";
+import { TAB } from "@/lib/motion";
 import { forYouTotal } from "@/lib/you/model";
 import { readForYou } from "@/lib/you/read";
 
@@ -55,7 +56,14 @@ type TabProps = {
 
 function Tab({ href, icon, label, match, prefetch, className = "tab", describedBy, children }: TabProps) {
   return (
-    <NavLink href={href} match={match} prefetch={prefetch} className={className} aria-describedby={describedBy}>
+    <NavLink
+      href={href}
+      match={match}
+      prefetch={prefetch}
+      className={className}
+      aria-describedby={describedBy}
+      transitionTypes={TAB}
+    >
       <span className="tab-icon">{icon}</span>
       <span className="tab-label">{label}</span>
       {children}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { ListingView } from "@/components/listing/ListingView";
 import { RecordRecentlyViewed } from "@/components/listings/RecordRecentlyViewed";
 import { PageFallback } from "@/components/ui/PageFallback";
@@ -34,9 +35,11 @@ export default function ListingPage({ params }: PageProps<"/listings/[id]">) {
   return (
     // Known listings are prerendered, but the fallback still shows while the page streams in (see PageFallback), and
     // for an unknown id until the 404 takes over.
-    <Suspense fallback={<PageFallback />}>
-      <ListingDetails params={params} />
-    </Suspense>
+    <PageTransition>
+      <Reveal fallback={<PageFallback />}>
+        <ListingDetails params={params} />
+      </Reveal>
+    </PageTransition>
   );
 }
 

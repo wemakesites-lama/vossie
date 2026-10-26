@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 import { ChevronLeftIcon } from "@/components/icons";
+import { Reveal } from "@/components/kit/Reveal";
 import { SellFormSkeleton } from "@/components/sell/SellSkeleton";
 import { ShopProfile } from "@/components/sell/ShopProfile";
 import { SELL_PATH } from "@/lib/selling/paths";
@@ -22,9 +22,9 @@ export default function ShopProfilePage() {
             </Link>
             <h1 className="sell-title">Edit your shop</h1>
           </header>
-          <Suspense fallback={<SellFormSkeleton />}>
+          <Reveal fallback={<SellFormSkeleton />}>
             <ShopProfile />
-          </Suspense>
+          </Reveal>
         </div>
       </div>
     </PageTransition>

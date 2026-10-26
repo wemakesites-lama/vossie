@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export const metadata: Metadata = {
   title: "Seller guidelines",
@@ -117,12 +118,14 @@ const SECTIONS: readonly InfoSection[] = [
 
 export default function SellerGuidelinesPage() {
   return (
-    <InfoPage
-      title="Seller guidelines"
-      lede="How to sell well on CampusCart, and what is not allowed."
-      updated="2026-10-14"
-      draft
-      sections={SECTIONS}
-    />
+    <PageTransition>
+      <InfoPage
+        title="Seller guidelines"
+        lede="How to sell well on CampusCart, and what is not allowed."
+        updated="2026-10-14"
+        draft
+        sections={SECTIONS}
+      />
+    </PageTransition>
   );
 }

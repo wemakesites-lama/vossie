@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { NavLink } from "@/components/ui/NavLink";
+import { TAB } from "@/lib/motion";
 
 export type SectionTab = {
   key: string;
@@ -76,7 +77,7 @@ function SectionLink({ tab }: { tab: SectionTab }) {
       match={tab.match}
       also={tab.also}
       prefetch={tab.prefetch}
-      transitionTypes={tab.exit ? undefined : ["nav-tab"]}
+      transitionTypes={tab.exit ? undefined : TAB}
       className="section-tab"
       aria-describedby={badge ? badgeId : undefined}
     >

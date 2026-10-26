@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 import { CollectionView } from "@/components/collection/CollectionView";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { PageFallback } from "@/components/ui/PageFallback";
 import { getCampuses, getCategories, getCollection, getCollectionListings, getCollections } from "@/lib/data";
 import { atLeastOne, PLACEHOLDER_PARAMS } from "@/lib/static-params";
@@ -29,9 +30,11 @@ export default function CollectionPage({ params }: PageProps<"/collections/[slug
   return (
     // Known collections are prerendered, but the fallback still shows while the page streams in (see PageFallback), and
     // for an unknown slug until the 404 takes over.
-    <Suspense fallback={<PageFallback />}>
-      <CollectionDetails params={params} />
-    </Suspense>
+    <PageTransition>
+      <Reveal fallback={<PageFallback />}>
+        <CollectionDetails params={params} />
+      </Reveal>
+    </PageTransition>
   );
 }
 

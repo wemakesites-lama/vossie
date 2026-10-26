@@ -1054,6 +1054,41 @@ Written here because another session has uncommitted edits in `docs/PROGRESS.md`
 - `Listing.sellerName` is set by `toListing` from the shop, so both backends have it; the fixtures take it from `data/fixtures/sellers.ts` (a fixture test checks every one). The card skeleton gains a matching line.
 - Checks: types and lint clean; the card, fixture and catalog tests pass. At 390 no shop name overflows its 172px card. End to end, `cls`, `browse`, `home` and `performance` at 360, 390 and 1440: 249 passed. The tests that failed under load passed when rerun alone: 9 unit files (63 tests) and 5 homepage tests at 1440, none of them about the card.
 
+## 2026-10-26: Calm navigation (decision 90)
+Spec: `docs/superpowers/specs/2026-10-26-calm-navigation-design.md` (researched: NN/g, Apple's HIG, Material, the React and Next docs). Plan: `docs/superpowers/plans/2026-10-26-calm-navigation.md`.
+
+**What changed**
+- Every page moves the same way (`PageTransition` on all of them, link types from `lib/motion.ts`):
+  - tabs, the header's quick links and the menu crossfade;
+  - cards and rows slide forward, and "Back to…" links slide back;
+  - an untyped page change crossfades;
+  - browser Back doesn't animate (React skips popstate).
+- Page outlines fade into their content through `Reveal` (57 pages and Saved's tabs).
+- While a tapped link waits for the server, the header comes back and its crest breathes after 150 ms (`NavPending`, `useLinkStatus`, in `NavLink` and every typed link).
+- `PageFallback` shows a breathing crest after 1 s (`CrestLoader`).
+- Reduced motion and data saver: nothing moves. The header crest dims, and the loader fades in after its 1 s, both still. That works through `.motion-own`, which the motion off switches leave out.
+
+**Found while building**
+- **On slow data, a tap leaves the old page unchanged until the server answers.** `PageFallback`'s crest is rarely seen live. That's why the header crest cue was added (Lama's choice, mid-build).
+- **Next 16.4 sometimes commits a link's navigation without its transition types.** It's intermittent: seen on listing cards (from browse, home and collections), request rows, and home's link to a Hub post. Hub post cards from `/hub`, Hub's shop cards and the tabs kept theirs. Nothing in the app dispatches router actions there, and blocking the header's event didn't change it. So an untyped page change now crossfades instead of swapping. That also means a redirect to another page crossfades, which reverses the spec's "redirects stay unanimated". Lama kept it (2026-10-26).
+- **The Task 1 spike under-measured the slide.** Its "with motion" runs had no slide, because the types were dropped; the extra settle time was the browser's own root animation. Its commit timings stand: photos added at most 27 ms on slow 3G, and first-visit LCP was unchanged (and again with `Reveal`: 2896, 3852 and 3680 ms against 2896, 3856 and 3680).
+- **The visitor's `/sell` keeps plain `Suspense`.** Its layout-shift test already failed at the last commit (0.0598, confirmed by building `HEAD` from `git archive` in a scratch folder: the "font shift at 390" under Next, below). `Reveal` made it 0.0676.
+
+**Checks**
+- Types and lint clean; unit 3,455 passed (429 files).
+- `motion.spec.ts`: 32 runs per pass across 390 and 1440, repeated 4 times: 128 passed.
+- `cls.spec.ts` at 390 and 1440: 200 passed, and the visitor's `/sell` failure predates this work.
+- JS: every page +269 B brotli (`NavPending`). The listing forms are now at 153,127 of 153,600 B, 473 B of headroom.
+- **Full e2e, device projects:** 1,426 passed. The 1 failure is the visitor's `/sell` layout shift, which predates this work, and it kept the 70 write tests from running.
+- **The write projects, run in order with `--no-deps` on a fresh server:** 69 passed.
+  - One `selling-writes` axe step found no `<title>` straight after "Save as draft". The redirect to another page now crossfades, and React holds the title update until the crossfade ends, about 250 ms.
+  - The test passed on the last commit, so the step now waits for the title, as `you.spec.ts` already does for Your details. If the redirect crossfade is reverted, that wait can stay.
+
+**Open**
+- Lama: try it on a cheap Android on slow data (calm is a feeling no test measures).
+- Lama: check the "Loading…" announcement with VoiceOver. It's revealed by a `visibility` change, which not every screen reader announces.
+- Committed with Lama's go-ahead (2026-10-26).
+
 ## Next
 - **Role views are finished:** N1 (the kit), N2 (the seller home), N3 (the admin's Today), N4 (the mentor's caseload) and N5 (the buyer's You) are built (above). Open: Lama's call on the Next.js upgrade the build's security notice offers, and the signed-out `/sell` pitch's font shift at 390.
 - **Every planned stage (A to M) is built in sample mode** and merged into `main`. The four phone e2e failures that predated stage L are fixed (`d13321b`). The full device suite last ran before stage M: rerun it once before go-live.

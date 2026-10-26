@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { Composer } from "@/components/messages/Composer";
 import { ComposerSkeleton } from "@/components/messages/ComposerSkeleton";
 import { getSellerSlugs } from "@/lib/data";
@@ -25,11 +26,13 @@ export async function generateStaticParams() {
 /** A question to a shop, from its storefront (messaging spec 3.6, plan decision 2). */
 export default function ShopComposerPage({ params }: PageProps<"/sellers/[slug]/message">) {
   return (
-    <div className="page composer-page">
-      <Suspense fallback={<ComposerSkeleton />}>
-        <ShopComposer params={params} />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="page composer-page">
+        <Reveal fallback={<ComposerSkeleton />}>
+          <ShopComposer params={params} />
+        </Reveal>
+      </div>
+    </PageTransition>
   );
 }
 

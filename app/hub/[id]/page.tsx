@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 import { HubPostView } from "@/components/hub/HubPostView";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { PageFallback } from "@/components/ui/PageFallback";
 import { getCampuses, getHubPost, getHubPostIds } from "@/lib/data";
 import { shortDescription } from "@/lib/format";
@@ -36,9 +37,11 @@ export default function HubPostPage({ params }: PageProps<"/hub/[id]">) {
   return (
     // Known posts are prerendered, but the fallback still shows while the page streams in (see PageFallback), and for
     // an unknown id until the 404 takes over.
-    <Suspense fallback={<PageFallback />}>
-      <PostDetails params={params} />
-    </Suspense>
+    <PageTransition>
+      <Reveal fallback={<PageFallback />}>
+        <PostDetails params={params} />
+      </Reveal>
+    </PageTransition>
   );
 }
 

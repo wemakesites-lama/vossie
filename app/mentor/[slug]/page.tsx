@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { MentorShop } from "@/components/staff/MentorShop";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
@@ -33,9 +33,9 @@ export function generateStaticParams() {
 export default function MentorShopPage({ params }: PageProps<"/mentor/[slug]">) {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton />}>
+      <Reveal fallback={<StaffSkeleton />}>
         <Shop params={params} />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

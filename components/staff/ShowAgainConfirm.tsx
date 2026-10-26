@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { NavPending } from "@/components/ui/NavPending";
 import type { HiddenItem } from "@/lib/data/staff-reports";
+import { BACK } from "@/lib/motion";
 import { showListingAgain, showRequestAgain } from "@/lib/staff/admin-actions";
 import { ADMIN_HIDDEN_PATH } from "@/lib/staff/paths";
 import type { ListingState } from "@/lib/types";
@@ -43,8 +45,9 @@ export function ShowAgainConfirm({ item }: { item: HiddenItem }) {
     return (
       <p>
         {`This is your own ${item.kind}, so another admin must show it again.`}{" "}
-        <Link href={ADMIN_HIDDEN_PATH} prefetch={false}>
+        <Link href={ADMIN_HIDDEN_PATH} transitionTypes={BACK} prefetch={false}>
           Back to hidden listings and requests
+          <NavPending />
         </Link>
       </p>
     );

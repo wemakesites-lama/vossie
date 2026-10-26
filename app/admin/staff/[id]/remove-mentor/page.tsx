@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { roleConfirmTitle, StaffRoleConfirm } from "@/components/staff/StaffRoleConfirm";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
@@ -26,9 +26,9 @@ export function generateStaticParams() {
 export default function RemoveMentorPage({ params }: PageProps<"/admin/staff/[id]/remove-mentor">) {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton short />}>
+      <Reveal fallback={<StaffSkeleton short />}>
         <Remove params={params} />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

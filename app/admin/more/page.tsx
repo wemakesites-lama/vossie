@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { AdminMore } from "@/components/staff/AdminMore";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
@@ -16,9 +16,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function AdminMorePage() {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton short />}>
+      <Reveal fallback={<StaffSkeleton short />}>
         <More />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

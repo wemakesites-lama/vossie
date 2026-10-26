@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { HubManage } from "@/components/staff/HubManage";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
@@ -20,9 +20,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function HubManagePage() {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton />}>
+      <Reveal fallback={<StaffSkeleton />}>
         <Manage />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

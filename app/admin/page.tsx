@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
-import { Suspense } from "react";
 import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { AdminToday } from "@/components/staff/AdminToday";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
@@ -28,9 +28,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function AdminPage() {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton />}>
+      <Reveal fallback={<StaffSkeleton />}>
         <Today />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

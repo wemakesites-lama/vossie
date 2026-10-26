@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { RequestView } from "@/components/looking-for/RequestView";
 import { PageFallback } from "@/components/ui/PageFallback";
 import { getCampuses, getCategories, getRequest, getRequestIds } from "@/lib/data";
@@ -31,9 +32,11 @@ export default function RequestPage({ params }: PageProps<"/looking-for/[id]">) 
   return (
     // Known requests are prerendered, but the fallback still shows while the page streams in (see PageFallback), and
     // for an unknown id until the 404 takes over.
-    <Suspense fallback={<PageFallback />}>
-      <RequestDetails params={params} />
-    </Suspense>
+    <PageTransition>
+      <Reveal fallback={<PageFallback />}>
+        <RequestDetails params={params} />
+      </Reveal>
+    </PageTransition>
   );
 }
 

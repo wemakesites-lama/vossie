@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { PostEditor, postValues } from "@/components/staff/PostEditor";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
@@ -28,9 +28,9 @@ export function generateStaticParams() {
 export default function EditPostPage({ params }: PageProps<"/hub/[id]/edit">) {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton />}>
+      <Reveal fallback={<StaffSkeleton />}>
         <EditPost params={params} />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { Offer, OfferSkeleton } from "@/components/looking-for/Offer";
 
 /** One shop's form, so search engines leave it out (plan decision 23). */
@@ -13,11 +14,13 @@ export function generateStaticParams() {
 /** The offer composer (community actions spec 2.9), laid out like E's. It renders per request inside <Suspense>. */
 export default function OfferPage({ params }: PageProps<"/looking-for/[id]/offer">) {
   return (
-    <div className="page composer-page offer-page">
-      <Suspense fallback={<OfferSkeleton />}>
-        <OfferForVisitor params={params} />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="page composer-page offer-page">
+        <Reveal fallback={<OfferSkeleton />}>
+          <OfferForVisitor params={params} />
+        </Reveal>
+      </div>
+    </PageTransition>
   );
 }
 

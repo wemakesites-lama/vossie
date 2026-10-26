@@ -95,7 +95,8 @@ The dashboards are also almost all text: there are no charts, meters or trend ar
 - Every page under the three section layouts, plus `/account`, wraps its content in React's `<ViewTransition>`. It is already in `react-dom`, so it adds about 0 bytes, but N1 measures this (§9).
 - **Tab switches crossfade** (opacity only).
 - **Going deeper slides:** links one level deeper (a queue row, a list row) pass `transitionTypes={['nav-forward']}` for a 12px horizontal slide plus a fade, 200ms.
-- Browser Back has no direction, so it crossfades.
+- ~~Browser Back has no direction, so it crossfades.~~ React never animates browser Back (it skips popstate).
+- Amended by `2026-10-26-calm-navigation-design.md` (decision 90): every page, `nav-back`, an untyped page change crossfades, and Suspense reveals fade through `Reveal`.
 - The header, the main bar and the section bar have their own `view-transition-name` with `animation: none`, so they never move.
 - `::view-transition { pointer-events: none; }` stops a tap from being lost during a transition.
 - Under `prefers-reduced-motion` or `html[data-low-data]`, every view-transition pseudo-element has `animation: none`.

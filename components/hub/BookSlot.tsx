@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { ErrorSummary } from "@/components/forms/ErrorSummary";
 import { describedBy, FieldError } from "@/components/forms/FieldError";
 import { ChevronLeftIcon } from "@/components/icons";
+import { NavPending } from "@/components/ui/NavPending";
 import { readFormState } from "@/lib/auth/form-state";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import { requireAccount } from "@/lib/auth/session";
@@ -12,6 +13,7 @@ import { latestBooking } from "@/lib/data/hub-posts";
 import { hasPassed } from "@/lib/hub";
 import { sendSlotRequest } from "@/lib/hub-actions";
 import { isId } from "@/lib/messaging/paths";
+import { BACK } from "@/lib/motion";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
 import { HUB_NOTICE, slotForm, takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
@@ -43,9 +45,10 @@ export function BookSlotView({ post, passed, latest, values, errors, notice }: B
   const canAsk = !passed && !standing;
   return (
     <div className="hub-book-body">
-      <Link href={`/hub/${post.id}`} prefetch={false} className="account-crumb">
+      <Link href={`/hub/${post.id}`} transitionTypes={BACK} prefetch={false} className="account-crumb">
         <ChevronLeftIcon />
         Back to {post.title}
+        <NavPending />
       </Link>
       <h1 className="hub-book-title">Request a slot</h1>
       <p className="hub-book-post">

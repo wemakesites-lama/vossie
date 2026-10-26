@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { BoardSkeleton } from "@/components/looking-for/BoardSkeleton";
 import { PostRequestLink } from "@/components/looking-for/PostRequestLink";
 import { RequestBoard } from "@/components/looking-for/RequestBoard";
@@ -19,20 +21,22 @@ export const metadata: Metadata = {
  */
 export default function LookingForPage({ searchParams }: PageProps<"/looking-for">) {
   return (
-    <div className="page board">
-      <div className="board-head">
-        <h1 className="board-title">Looking For</h1>
-        <p className="board-lede">Post what you need, and students who can help will offer.</p>
-        <div className="board-actions">
-          <PostRequestLink className="btn btn-primary board-post">Post a request</PostRequestLink>
-          <Suspense fallback={null}>
-            <YourRequestsLink />
-          </Suspense>
+    <PageTransition>
+      <div className="page board">
+        <div className="board-head">
+          <h1 className="board-title">Looking For</h1>
+          <p className="board-lede">Post what you need, and students who can help will offer.</p>
+          <div className="board-actions">
+            <PostRequestLink className="btn btn-primary board-post">Post a request</PostRequestLink>
+            <Suspense fallback={null}>
+              <YourRequestsLink />
+            </Suspense>
+          </div>
         </div>
+        <Reveal fallback={<BoardSkeleton />}>
+          <RequestBoard searchParams={searchParams} />
+        </Reveal>
       </div>
-      <Suspense fallback={<BoardSkeleton />}>
-        <RequestBoard searchParams={searchParams} />
-      </Suspense>
-    </div>
+    </PageTransition>
   );
 }

@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { Suspense } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { Reveal } from "@/components/kit/Reveal";
 import { SavedTabs } from "./SavedTabs";
 
 // The lists are async and tested on their own; here they stand in.
@@ -37,11 +37,11 @@ describe("Saved's tabs (community actions spec 2.17, plan decision 17)", () => {
     expect(screen.getByText("The saved listings")).toBeInTheDocument();
   });
 
-  it("keys its <Suspense> by tab, so a client-side switch shows the skeleton, not the other tab (amendment 14)", async () => {
+  it("keys its <Suspense> (Reveal) by tab, so a client-side switch shows the skeleton, not the other tab (amendment 14)", async () => {
     const listings = await SavedTabs({ searchParams: Promise.resolve({}) });
     const shops = await SavedTabs({ searchParams: Promise.resolve({ tab: "shops" }) });
-    expect(listings.type).toBe(Suspense);
-    expect(shops.type).toBe(Suspense);
+    expect(listings.type).toBe(Reveal);
+    expect(shops.type).toBe(Reveal);
     expect(listings.key).toBe("listings");
     expect(shops.key).toBe("shops");
   });

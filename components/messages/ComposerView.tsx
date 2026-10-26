@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ErrorSummary } from "@/components/forms/ErrorSummary";
 import { ArrowLeftIcon } from "@/components/icons";
+import { NavPending } from "@/components/ui/NavPending";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import type { FormStateRow } from "@/lib/data/rows";
 import { sendFirstMessage } from "@/lib/messaging/actions";
@@ -13,6 +14,7 @@ import { MessageField } from "./MessageField";
 import { MessageSummary } from "./MessageSummary";
 import { SafetyTips } from "./SafetyTips";
 import { ScamCheck } from "./ScamCheck";
+import { BACK } from "@/lib/motion";
 
 /** The composer's fields after a post (D decision 3): what was typed, what's wrong, and the scam check's warnings. */
 export type ComposerForm = { body: string; swapOffer: string; errors: FormError[]; warnings: ScamWarning[] };
@@ -89,9 +91,10 @@ export function ComposerView({ subject, status, form }: ComposerViewProps) {
   }
   return (
     <>
-      <Link href={back.href} prefetch={false} className="msg-crumb">
+      <Link href={back.href} prefetch={false} transitionTypes={BACK} className="msg-crumb">
         <ArrowLeftIcon />
         {back.label}
+        <NavPending />
       </Link>
       <h1 className="composer-title">{`Message ${seller.name}`}</h1>
       <div className="composer-layout">

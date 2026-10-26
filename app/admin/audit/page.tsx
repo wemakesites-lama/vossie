@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { AdminAudit } from "@/components/staff/AdminAudit";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
@@ -19,9 +19,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function AdminAuditPage({ searchParams }: PageProps<"/admin/audit">) {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton />}>
+      <Reveal fallback={<StaffSkeleton />}>
         <Audit searchParams={searchParams} />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

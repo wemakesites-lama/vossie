@@ -8,6 +8,7 @@ import { MenuIcon, SearchIcon } from "@/components/icons";
 import { NavLink } from "@/components/ui/NavLink";
 import { isMotionAllowedNow } from "@/hooks/useMotionAllowed";
 import { isPlainClick } from "@/lib/click";
+import { TAB } from "@/lib/motion";
 import { openOverlay } from "@/lib/overlays";
 import type { Campus } from "@/lib/types";
 import { CampusPill } from "./CampusPill";
@@ -62,10 +63,10 @@ export function SiteHeader({ campuses, account }: SiteHeaderProps) {
       <nav aria-label="Quick links" className="hdr-quick" inert={hidden}>
         <ul>
           <li>
-            <NavLink href="/browse">Shop</NavLink>
+            <NavLink href="/browse" transitionTypes={TAB}>Shop</NavLink>
           </li>
           <li>
-            <NavLink href="/sell">Sell</NavLink>
+            <NavLink href="/sell" transitionTypes={TAB}>Sell</NavLink>
           </li>
           <li>
             <button type="button" aria-haspopup="dialog" onClick={(event) => openOverlay("campus", event.currentTarget)}>
@@ -73,18 +74,18 @@ export function SiteHeader({ campuses, account }: SiteHeaderProps) {
             </button>
           </li>
           <li>
-            <NavLink href="/hub">Hub</NavLink>
+            <NavLink href="/hub" transitionTypes={TAB}>Hub</NavLink>
           </li>
           <li>
-            <NavLink href="/looking-for" prefetch={false}>
+            <NavLink href="/looking-for" transitionTypes={TAB} prefetch={false}>
               Looking For
             </NavLink>
           </li>
           <li>
-            <NavLink href="/how-it-works">How it works</NavLink>
+            <NavLink href="/how-it-works" transitionTypes={TAB}>How it works</NavLink>
           </li>
           <li>
-            <NavLink href="/safety">Safety</NavLink>
+            <NavLink href="/safety" transitionTypes={TAB}>Safety</NavLink>
           </li>
         </ul>
       </nav>

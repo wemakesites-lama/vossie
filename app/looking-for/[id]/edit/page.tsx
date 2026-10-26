@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { RequestForm } from "@/components/looking-for/RequestForm";
 import { RequestFormSkeleton } from "@/components/looking-for/RequestFormSkeleton";
 
@@ -17,11 +18,13 @@ export function generateStaticParams() {
 /** Edit your request (community actions spec 2.6). Everything needs the session, so it renders inside <Suspense>. */
 export default function EditRequestPage({ params }: PageProps<"/looking-for/[id]/edit">) {
   return (
-    <div className="page request-form-page">
-      <Suspense fallback={<RequestFormSkeleton />}>
-        <EditForVisitor params={params} />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="page request-form-page">
+        <Reveal fallback={<RequestFormSkeleton />}>
+          <EditForVisitor params={params} />
+        </Reveal>
+      </div>
+    </PageTransition>
   );
 }
 

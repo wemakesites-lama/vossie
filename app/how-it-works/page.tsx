@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export const metadata: Metadata = {
   title: "How CampusCart works",
@@ -132,11 +133,13 @@ const SECTIONS: readonly InfoSection[] = [
 
 export default function HowItWorksPage() {
   return (
-    <InfoPage
-      title="How CampusCart works"
-      lede="Find it, message the seller, meet on campus, then pay or swap."
-      updated="2026-10-21"
-      sections={SECTIONS}
-    />
+    <PageTransition>
+      <InfoPage
+        title="How CampusCart works"
+        lede="Find it, message the seller, meet on campus, then pay or swap."
+        updated="2026-10-21"
+        sections={SECTIONS}
+      />
+    </PageTransition>
   );
 }

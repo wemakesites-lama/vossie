@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { Reveal } from "@/components/kit/Reveal";
 import { AdminStaff } from "@/components/staff/AdminStaff";
 import { StaffFrame } from "@/components/staff/StaffFrame";
 import { StaffSkeleton } from "@/components/staff/StaffSkeleton";
@@ -22,9 +22,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function AdminStaffPage() {
   return (
     <PageTransition>
-      <Suspense fallback={<StaffSkeleton />}>
+      <Reveal fallback={<StaffSkeleton />}>
         <StaffAccounts />
-      </Suspense>
+      </Reveal>
     </PageTransition>
   );
 }

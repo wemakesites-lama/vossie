@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { useId, type ReactNode } from "react";
 import { ChevronRightIcon } from "@/components/icons";
+import { NavPending } from "@/components/ui/NavPending";
+import { FORWARD } from "@/lib/motion";
 
 type Lead =
   | { kind: "initials"; text: string }
@@ -35,7 +37,7 @@ export function ListRow({ href, lead, title, detail, pill, meta, label, actions 
       <Link
         href={href}
         prefetch={false}
-        transitionTypes={["nav-forward"]}
+        transitionTypes={FORWARD}
         className="list-row"
         aria-label={label}
         aria-describedby={label && detail ? detailId : undefined}
@@ -54,6 +56,7 @@ export function ListRow({ href, lead, title, detail, pill, meta, label, actions 
         {pill}
         {meta && <span className="list-row-meta">{meta}</span>}
         <ChevronRightIcon className="needs-chevron" />
+        <NavPending />
       </Link>
       {actions && <div className="list-row-actions">{actions}</div>}
     </li>

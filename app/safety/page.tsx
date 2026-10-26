@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
+import { PageTransition } from "@/components/kit/PageTransition";
 
 export const metadata: Metadata = {
   title: "Safety",
@@ -113,11 +114,13 @@ const SECTIONS: readonly InfoSection[] = [
 
 export default function SafetyPage() {
   return (
-    <InfoPage
-      title="Safety"
-      lede="Meet in a safe place, check before you pay, and trust your gut."
-      updated="2026-10-20"
-      sections={SECTIONS}
-    />
+    <PageTransition>
+      <InfoPage
+        title="Safety"
+        lede="Meet in a safe place, check before you pay, and trust your gut."
+        updated="2026-10-20"
+        sections={SECTIONS}
+      />
+    </PageTransition>
   );
 }

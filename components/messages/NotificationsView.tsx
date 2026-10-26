@@ -8,6 +8,8 @@ import {
   SearchIcon,
   ShieldIcon,
 } from "@/components/icons";
+import { NavPending } from "@/components/ui/NavPending";
+import { FORWARD } from "@/lib/motion";
 import { inboxTime } from "@/lib/time";
 import type { NotificationItem, NotificationKind } from "@/lib/types";
 
@@ -54,7 +56,7 @@ export function NotificationsView({ items, now }: { items: readonly Notification
     <ul className="notes-list">
       {items.map((item) => (
         <li key={item.id}>
-          <Link href={item.href} prefetch={false} className="notes-row" data-new={item.isNew || undefined}>
+          <Link href={item.href} prefetch={false} className="notes-row" transitionTypes={FORWARD} data-new={item.isNew || undefined}>
             <KindIcon kind={item.kind} />
             <span className="notes-text">
               {item.isNew && <span className="notes-new">New</span>} <span>{item.text}</span>
@@ -62,6 +64,7 @@ export function NotificationsView({ items, now }: { items: readonly Notification
             <time dateTime={item.createdAt} className="notes-time">
               {inboxTime(item.createdAt, now)}
             </time>
+            <NavPending />
           </Link>
         </li>
       ))}

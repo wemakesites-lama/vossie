@@ -2,8 +2,10 @@ import Link from "next/link";
 import { MessageIcon } from "@/components/icons";
 import { EmptyState } from "@/components/kit/EmptyState";
 import { Photo } from "@/components/listings/Photo";
+import { NavPending } from "@/components/ui/NavPending";
 import { offerAbout } from "@/lib/looking-for/words";
 import { inboxPath, threadPath } from "@/lib/messaging/paths";
+import { FORWARD } from "@/lib/motion";
 import { NEW_LISTING_PATH } from "@/lib/selling/paths";
 import { inboxTime } from "@/lib/time";
 import type { ConversationSummary, InboxTab } from "@/lib/types";
@@ -80,7 +82,7 @@ function InboxRow({ conversation, now }: { conversation: ConversationSummary; no
   const { id, role, otherName, listingTitle, requestTitle, image, preview, lastFromViewer, lastMessageAt, status, unread } =
     conversation;
   return (
-    <Link href={threadPath(id)} prefetch={false} className="inbox-row" data-unread={unread || undefined}>
+    <Link href={threadPath(id)} prefetch={false} className="inbox-row" transitionTypes={FORWARD} data-unread={unread || undefined}>
       {image ? (
         <Photo image={{ src: image.src, alt: "" }} ratio="1 / 1" sizes="56px" className="inbox-photo" />
       ) : (
@@ -102,6 +104,7 @@ function InboxRow({ conversation, now }: { conversation: ConversationSummary; no
         <StatusPill status={status} />
         {unread && <span className="inbox-dot" aria-hidden="true" />}
       </span>
+      <NavPending />
     </Link>
   );
 }

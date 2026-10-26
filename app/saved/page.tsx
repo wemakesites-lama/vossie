@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { PageTransition } from "@/components/kit/PageTransition";
+import { Reveal } from "@/components/kit/Reveal";
 import { SavedSkeleton } from "@/components/saved/SavedSkeleton";
 import { SavedTabs } from "@/components/saved/SavedTabs";
 
@@ -12,11 +13,13 @@ export const metadata: Metadata = { title: "Saved", robots: { index: false } };
  */
 export default function SavedPage({ searchParams }: PageProps<"/saved">) {
   return (
-    <div className="page saved-page">
-      <h1 className="saved-title">Saved</h1>
-      <Suspense fallback={<SavedSkeleton />}>
-        <SavedTabs searchParams={searchParams} />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="page saved-page">
+        <h1 className="saved-title">Saved</h1>
+        <Reveal fallback={<SavedSkeleton />}>
+          <SavedTabs searchParams={searchParams} />
+        </Reveal>
+      </div>
+    </PageTransition>
   );
 }
