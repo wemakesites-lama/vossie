@@ -6802,6 +6802,12 @@
     color: var(--color-ink);
   }
 
+  .hub-feed-note ol {
+    margin-top: 8px;
+    padding-left: 1.25rem;
+    list-style: decimal;
+  }
+
   .hub-feed-empty {
     margin-top: 20px;
     padding: 20px;

@@ -113,6 +113,15 @@ describe("HubFeed (Launchpad spec 4.2 and 4.3)", () => {
       "Office hours: your first listing",
     ]);
     expect(screen.getByText(/Office hours are free 20-minute sessions with a Hub mentor/)).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("list", { name: "How booking works" }))
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual([
+      "Choose a session below and tap Request a slot.",
+      "Say what you'd like help with, and a time that suits.",
+      "A mentor accepts your request, and you get a notification.",
+    ]);
     expect(titles("Tips")).toEqual(TIPS);
   });
 
