@@ -1,6 +1,12 @@
 import "server-only";
 import Groq from "groq-sdk";
-import { PROVIDER_TIMEOUT_MS, type ProviderFailure, type ReadPhoto } from "./types";
+import {
+  PROVIDER_TIMEOUT_MS,
+  type ProviderFailure,
+  type ProviderReply,
+  type ProviderRequest,
+  type ReadPhoto,
+} from "./types";
 
 // Groq's qwen/qwen3.8-27b on the free tier (spec decision 9). A preview model Groq may withdraw: a 404 is "model-gone",
 // and the model is changed here. The key is read on first use, never at module scope.
@@ -12,18 +18,36 @@ let client: Groq | null = null;
 const groq = () =>
   (client ??= new Groq({ apiKey: process.env.GROQ_API_KEY, timeout: PROVIDER_TIMEOUT_MS, maxRetries: 0, logLevel: "off" }));
 
+/** What one request gives back when Groq refused the format, so `read` can tell it from every other failure. */
+const REFUSED_FORMAT = Symbol("refused-format");
+
+const replyOf = (reply: ProviderReply | typeof REFUSED_FORMAT): ProviderReply =>
+  reply === REFUSED_FORMAT ? { ok: false, failure: "bad-output" } : reply;
+
+/** Strict mode's own refusal of a reply that didn't fit the schema (Groq's 400 json_validate_failed), with no reply. */
+const refusedFormat = (error: unknown) =>
+  error instanceof Groq.BadRequestError && JSON.stringify(error.error ?? "").includes("json_validate_failed");
+
 function failureOf(error: unknown): ProviderFailure {
   if (error instanceof Groq.APIConnectionTimeoutError) return "timeout";
   if (error instanceof Groq.RateLimitError) return "rate-limited";
   if (error instanceof Groq.NotFoundError) return "model-gone";
-  // Strict mode's own refusal of a reply that doesn't fit the schema: an answer, so no second provider (decision 11).
-  if (error instanceof Groq.BadRequestError && JSON.stringify(error.error ?? "").includes("json_validate_failed")) {
-    return "bad-output";
-  }
+  // An answer, so no second provider (decision 11).
+  if (refusedFormat(error)) return "bad-output";
   return "api-error";
 }
 
-export const read: ReadPhoto = async ({ image, instruction, schema }) => {
+/**
+ * Groq refuses about 1 in 4 strict replies with json_validate_failed (spec section 13), though the same request
+ * usually works when sent again. So that refusal alone gets one more try; every other failure, and a second refusal,
+ * is returned as it is.
+ */
+export const read: ReadPhoto = async (request) => {
+  const first = await ask(request);
+  return first === REFUSED_FORMAT ? replyOf(await ask(request)) : first;
+};
+
+async function ask({ image, instruction, schema }: ProviderRequest): Promise<ProviderReply | typeof REFUSED_FORMAT> {
   // VOSSIE_GROQ_FORMAT=json_object if strict json_schema turns out to refuse an image (plan change 8).
   const strict = process.env.VOSSIE_GROQ_FORMAT !== "json_object";
   try {
@@ -55,6 +79,6 @@ export const read: ReadPhoto = async ({ image, instruction, schema }) => {
     const text = choice?.message?.content;
     return text ? { ok: true, text } : { ok: false, failure: "api-error" };
   } catch (error) {
-    return { ok: false, failure: failureOf(error) };
+    return refusedFormat(error) ? REFUSED_FORMAT : { ok: false, failure: failureOf(error) };
   }
-};
+}
