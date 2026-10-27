@@ -295,9 +295,11 @@ test("fill in from a photo: the fields fill and are tagged, axe passes, and Save
   await page.goto("/sell/listings/new");
   await expect(main(page).getByRole("heading", { name: "Start with a photo" })).toBeVisible();
 
-  // No photo yet: the notice, and axe on that state.
+  // No photo yet: the photo field stops the press in the browser and says so, with focus on the file input; nothing
+  // is posted. Then axe on that state.
   await fill().click();
-  await expect(notice("Add a photo first. Choose one above, then press Fill in from my photo.")).toBeVisible(POST_LANDS);
+  await expect(notice("Add a photo first, then press Fill in from my photo.")).toBeVisible();
+  await expect(field(page, "Add photos")).toBeFocused();
   expect(await seriousIssues(page), "the no-photo notice").toEqual([]);
 
   // A photo, then the fake's textbook fills the empty fields, each tagged "Suggested" inside its label.

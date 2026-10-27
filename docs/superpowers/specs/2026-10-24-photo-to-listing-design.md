@@ -68,7 +68,7 @@ The form always comes back exactly as it was sent, so nothing typed is lost. Eac
 |---|---|---|
 | Couldn't read it: a timeout, a busy service, a reply that failed our check, a refusal or a low-confidence read | "**We couldn't read that photo.** Fill it in yourself below, or try a clearer, closer photo of the item." | The seller can't act on which one, so it doesn't say. |
 | A person is the main subject | "**We don't fill in listings from photos of people.** Fill it in yourself below. If a person is in the photo, make sure they're happy to be in it." | The seller can act on it (photograph the item), and it repeats the consent rule. |
-| No photo yet | "**Add a photo first.** Choose one above, then press Fill in from my photo." | The button never hides (2.1, item 6). |
+| No photo yet | "Add a photo first, then press Fill in from my photo." | The button never hides (2.1, item 6). With JavaScript the photo field stops the press in the browser, says this and moves focus to the file input, so nothing is sent (Lama, 2026-10-27); without it, the server answers with the same words. |
 | Today's limit reached (decision 12) | "**You've used today's photo fills.** Fill it in yourself below, or try again tomorrow." | The button stays (no disabled controls), drawn as a secondary button (white outline on navy), with a line in the card: "You can still add photos. Filling in from them is back tomorrow." Pressing it again repeats the notice. |
 
 Selling is never blocked: Save works in every case.
