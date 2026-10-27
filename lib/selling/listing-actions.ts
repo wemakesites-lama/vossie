@@ -2,8 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { writeFormState } from "@/lib/auth/form-state";
+import { isSampleAccount } from "@/lib/auth/sample-accounts";
 import { getCategories, getPickupPoints } from "@/lib/data";
 import { notifyFollowers } from "@/lib/data/follows";
+import { readCoverPhoto } from "@/lib/data/listing-ai";
 import {
   deleteOwnListing,
   getOwnListing,
@@ -11,13 +13,15 @@ import {
   saveOwnListing,
   setOwnListingState,
 } from "@/lib/data/own-listings";
-import { photoSrcsOf, storePhotos, type Upload } from "@/lib/data/photos";
+import { reservePhotoFill } from "@/lib/data/photo-fills";
+import { photoFor, photoIdOf, photoSrcsOf, storePhotos, type Upload } from "@/lib/data/photos";
 import { notifySavedSearches } from "@/lib/data/saved-searches";
 import { listingsChanged } from "@/lib/data/tags";
 import { isId, threadPath } from "@/lib/messaging/paths";
 import { characterCount, keepTyped } from "@/lib/messaging/rules";
 import { PHOTOS_PER_LISTING } from "@/lib/photos/rules";
 import { done, field, fieldList, fileList } from "./action-helpers";
+import { listingAiOn } from "./ai-config";
 import { listingFieldPrefix } from "./errors";
 import {
   clearForm,
@@ -43,6 +47,7 @@ import {
   type ListingContext,
   type ListingInput,
 } from "./rules";
+import { mergeSuggestion, type SuggestFailure } from "./suggest";
 import { readUploads } from "./uploads";
 
 // The listing Server Actions (selling spec 2.9 and 2.10): the listing form's save and photo buttons, My listings'
@@ -122,6 +127,44 @@ async function sentAgain(sent: ListingSent, now: Date): Promise<never> {
   done(sent.path);
 }
 
+/** Photo-to-listing presses per account in any 24 hours (spec decision 12, Lama's Q4). */
+const PHOTO_FILLS_PER_DAY = 20;
+
+const failureNotice = (failure: SuggestFailure) => (failure === "person" ? "suggest-person" : "suggest-failed");
+
+/**
+ * "Fill in from my photo" (photo-to-listing spec decisions 1 to 6, 12): reads the cover, fills the empty fields, and
+ * comes back to the form with what was typed, the photos, and a notice. No token is taken and no listing is made. The
+ * press is counted only once it's about to reach a provider; the five sample accounts aren't counted in sample mode.
+ */
+async function suggestFromCover(
+  owner: ShopOwner,
+  values: Record<string, string>,
+  order: readonly string[],
+  context: ListingContext,
+  now: Date,
+): Promise<{ values: Record<string, string>; notice: string }> {
+  const cover = order[0] ?? null;
+  const id = cover ? photoIdOf(cover) : null;
+  if (!cover || !id) return { values, notice: "suggest-no-photo" };
+  if (!isSampleAccount(owner.account) && !(await reservePhotoFill(owner.account.id, now, PHOTO_FILLS_PER_DAY))) {
+    return { values, notice: "suggest-limit" };
+  }
+  const photo = await photoFor(id, async () => ({ id: owner.account.id, hubStaff: false }), now);
+  if (!photo) return { values, notice: "suggest-failed" };
+  const reading = await readCoverPhoto({ type: photo.type, bytes: photo.bytes }, context.categorySlugs);
+  if (!reading.ok) return { values, notice: failureNotice(reading.failure) };
+  const merged = mergeSuggestion(values, reading.suggestion, cover);
+  return {
+    values: {
+      ...merged.values,
+      suggested: merged.suggested.join(" "),
+      suggestedModule: reading.suggestion.moduleCode ?? "",
+    },
+    notice: "suggested",
+  };
+}
+
 /**
  * The listing form (selling spec 2.10): Save and publish, Save as draft, and the photo buttons. Photos are checked,
  * stripped and stored first, so a save that fails, or a photo button pressed without the app's JavaScript, keeps
@@ -198,6 +241,17 @@ export async function saveListingForm(formData: FormData): Promise<void> {
     const state = { errors: photoErrors, values: typedValues(formData, moved, alts, context), notice: null };
     await writeFormState(form, state, now);
     done(`${formPath}#${listingFieldPrefix(id)}-photos-title`);
+  }
+
+  // "Fill in from my photo": only while the feature is on (decision 14). A press while it's off saves nothing: it
+  // simply comes back to the form, as a photo button does.
+  if (field(formData, "intent") === "suggest") {
+    const typed = typedValues(formData, order, alts, context);
+    const result = listingAiOn()
+      ? await suggestFromCover(owner, typed, order, context, now)
+      : { values: typed, notice: null };
+    await writeFormState(form, { errors: photoErrors, values: result.values, notice: result.notice }, now);
+    done(formPath);
   }
 
   const check = checkListing(listingInput(formData), context);
