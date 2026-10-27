@@ -13,7 +13,8 @@ type PhotoStartProps = {
  * The navy "Start with a photo" card on a new listing (photo-to-listing spec 2.1 and 2.2). A fieldset named by its
  * heading, so the card is one group. On a phone it reads heading, photos, button; from the tablet step the photos sit
  * on the left and the heading and button on the right (CSS grid areas). The status line is in the markup but hidden
- * until the button is pending (CSS, spec 2.2), so it's announced once.
+ * until the button is pending (CSS, spec 2.2). It's visual text only: the button's own live region announces "Reading
+ * your photo…" once, and a status role on a line shown from display: none, its text already there, wouldn't be heard.
  */
 export function PhotoStart({ prefix, limitReached, children }: PhotoStartProps) {
   return (
@@ -37,7 +38,7 @@ export function PhotoStart({ prefix, limitReached, children }: PhotoStartProps) 
         >
           Fill in from my photo
         </PendingButton>
-        <p role="status" className="photo-start-status">
+        <p className="photo-start-status">
           Looking for a title, category and condition. This takes a few seconds.
         </p>
       </div>

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { readFormState } from "@/lib/auth/form-state";
-import { ALL_CAMPUSES } from "@/lib/campus";
+import { ALL_CAMPUSES, isOnlineCampus } from "@/lib/campus";
 import { getCampuses, getCategories, getOpenRequests, getPickupPoints, searchListings } from "@/lib/data";
 import { getOwnListing } from "@/lib/data/own-listings";
 import type { ListingRow } from "@/lib/data/rows";
@@ -50,7 +50,7 @@ async function afterFill(
   values: Readonly<Record<string, string>>,
   campusSlug: string,
   campusName: string,
-): Promise<[string | null, { count: number; campusName: string; href: string } | null]> {
+): Promise<[string | null, { count: number; campusName: string; online: boolean; href: string } | null]> {
   await connection();
   const { title, category, suggestedModule } = values;
   return Promise.all([
@@ -64,7 +64,10 @@ async function afterFill(
     suggestedModule
       ? getOpenRequests({ category: null, today: sastToday() }).then((requests) => {
           const count = requestsNaming(requests, suggestedModule, campusSlug);
-          return count > 0 ? { count, campusName, href: `/looking-for?cat=${category}` } : null;
+          // The board unfiltered: the count is every category's requests, so a category filter would show a different set.
+          // The rows carry no asker, so the seller's own requests can't be left out here (requests never name one).
+          const online = isOnlineCampus({ slug: campusSlug });
+          return count > 0 ? { count, campusName, online, href: "/looking-for" } : null;
         })
       : null,
   ]);

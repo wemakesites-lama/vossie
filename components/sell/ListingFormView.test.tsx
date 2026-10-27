@@ -187,7 +187,7 @@ describe("photo-to-listing (spec 2.1 to 2.4)", () => {
       },
       notice: "suggested",
       priceHint: "Similar on CampusCart: R180 to R260 (5 listings)",
-      lookingFor: { count: 3, campusName: "Pretoria", href: "/looking-for?cat=textbooks-notes" },
+      lookingFor: { count: 3, campusName: "Pretoria", href: "/looking-for" },
     });
     const notice = screen.getByText(/We filled in 3 fields from your photo\./);
     expect(notice).toHaveAttribute("role", "status");
@@ -201,7 +201,26 @@ describe("photo-to-listing (spec 2.1 to 2.4)", () => {
     );
     expect(screen.getByLabelText("Price in rand")).toHaveValue("");
     expect(screen.getByText(/3 students at Pretoria are Looking For this\./)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "See their requests" })).toHaveAttribute("href", "/looking-for?cat=textbooks-notes");
+    expect(screen.getByRole("link", { name: "See their requests" })).toHaveAttribute("href", "/looking-for");
+  });
+
+  it("says on Eduvos Online, as the board does", () => {
+    show({ photoStart: { on: true, limitReached: false }, notice: "suggested", lookingFor: { count: 2, campusName: "Eduvos Online", online: true, href: "/looking-for" } });
+    expect(screen.getByText(/2 students on Eduvos Online are Looking For this\./)).toBeInTheDocument();
+  });
+
+  it("draws a description a fill wrote into photos already stored, so Save posts it (final review 1)", () => {
+    const { rerender } = render(view({ photoStart: { on: true, limitReached: false }, photos: cover }));
+    expect(screen.getByLabelText(/^Describe photo 1/)).toHaveValue("");
+    rerender(
+      view({
+        photoStart: { on: true, limitReached: false },
+        photos: [{ ...cover[0], alt: "A blue desk fan" }],
+        values: { ...values, suggested: "alt:/placeholders/listing/tech.svg" },
+        notice: "suggested",
+      }),
+    );
+    expect(screen.getByLabelText(/^Describe photo 1/)).toHaveValue("A blue desk fan");
   });
 
   it("says 1 field for one, and tags nothing without a fill", () => {

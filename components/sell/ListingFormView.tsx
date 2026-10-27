@@ -38,7 +38,7 @@ type ListingFormViewProps = {
   /** The price hint (spec 2.3), or null. */
   priceHint?: string | null;
   /** The textbook Looking For line (spec 2.3), or null. */
-  lookingFor?: { count: number; campusName: string; href: string } | null;
+  lookingFor?: { count: number; campusName: string; online?: boolean; href: string } | null;
 };
 
 /**
@@ -66,11 +66,13 @@ export function ListingFormView(props: ListingFormViewProps) {
       : noticeText(notice);
   // The card is only on a new listing; the edit form keeps its photos last (spec 2.1, item 3).
   const withCard = photoStart?.on === true && listingId === null;
-  // Keyed by the server's photos: after a save that failed, the photos just uploaded come back as saved ones, and the
-  // field starts again from them rather than keeping files the form has already sent.
+  // Keyed by the server's photos and their descriptions: after a save that failed, the photos just uploaded come back
+  // as saved ones, and the field starts again from them rather than keeping files the form has already sent. The
+  // descriptions are in the key because PhotoField keeps them in its own state: a fill that writes the cover's
+  // description into photos already stored must draw it, not the empty one it started with.
   const photoField = (
     <PhotoFieldset
-      key={photos.map((photo) => photo.src).join(" ")}
+      key={photos.map((photo) => `${photo.src}\u0000${photo.alt}`).join(" ")}
       prefix={prefix}
       photos={photos}
       error={errorOf("photos")}
@@ -88,7 +90,8 @@ export function ListingFormView(props: ListingFormViewProps) {
       )}
       {lookingFor && (
         <p className="photo-start-looking">
-          {`${lookingFor.count} ${lookingFor.count === 1 ? "student" : "students"} at ${lookingFor.campusName} ${lookingFor.count === 1 ? "is" : "are"} Looking For this. `}
+          {/* "on Eduvos Online", as the board says it (isOnlineCampus); "at" every other campus. */}
+          {`${lookingFor.count} ${lookingFor.count === 1 ? "student" : "students"} ${lookingFor.online ? "on" : "at"} ${lookingFor.campusName} ${lookingFor.count === 1 ? "is" : "are"} Looking For this. `}
           <Link href={lookingFor.href} prefetch={false}>
             See their requests
           </Link>

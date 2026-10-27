@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
 import { PageTransition } from "@/components/kit/PageTransition";
-import { listingAiOn } from "@/lib/selling/ai-config";
+import { listingAiOn, listingAiProviders, providerHasKey } from "@/lib/selling/ai-config";
 
 export const metadata: Metadata = {
   title: "Privacy policy",
@@ -11,6 +11,36 @@ export const metadata: Metadata = {
   // A draft stays out of search results until Eduvos signs it off (controller amendment 1, spec decision 8).
   robots: { index: false },
 };
+
+/**
+ * Photo-to-listing's line (spec section 4): the providers a photo could actually go to, in order, with what each keeps.
+ * Built at module scope like the sections, so it's fixed at build: redeploy after changing the providers or their keys.
+ */
+function photoFillLine() {
+  if (!listingAiOn()) return null;
+  const used = listingAiProviders().filter((name) => name !== "fake" && providerHasKey(name));
+  if (used.length === 0) return null;
+  const words = {
+    groq: {
+      name: "Groq",
+      line: "Groq, an AI provider in the United States, which keeps nothing from it (we've turned on its zero data retention)",
+    },
+    anthropic: {
+      name: "Anthropic",
+      line: "Anthropic, an AI provider in the United States, which doesn't use it to train its models",
+    },
+  } as const;
+  const chain = used.map((name) => words[name as keyof typeof words]);
+  // A later provider sees the photo only when the one before it couldn't answer (spec decision 11).
+  const fallbacks = chain.slice(1).map((next, index) => ` If ${chain[index].name} can't answer, it goes to ${next.line}.`);
+  return (
+    <li>
+      When you press Fill in from my photo on a new listing, your cover photo is sent to {chain[0].line}, to read what the
+      item is.{fallbacks.join("")} Nothing is sent unless you press the button, and you check every suggested field
+      before you publish.
+    </li>
+  );
+}
 
 const SECTIONS: readonly InfoSection[] = [
   {
@@ -117,14 +147,7 @@ const SECTIONS: readonly InfoSection[] = [
             Vercel, which hosts CampusCart, keeps ordinary server logs (page addresses, times and technical details of
             each request) to keep the site running and secure.
           </li>
-          {listingAiOn() && (
-            <li>
-              When you press Fill in from my photo on a new listing, your cover photo is sent to Groq, an AI provider in
-              the United States, to read what the item is. Groq keeps nothing from it (we&apos;ve turned on its zero data
-              retention). Nothing is sent unless you press the button, and you check every suggested field before you
-              publish.
-            </li>
-          )}
+          {photoFillLine()}
           <li>
             The campus updates form in the footer doesn&apos;t send or store your email address yet. When there is a real
             mailing list, it will ask for your consent first, and this policy will say so.

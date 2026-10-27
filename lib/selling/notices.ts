@@ -23,6 +23,7 @@ const NOTICES: ReadonlyMap<string, string> = new Map([
     "We don't fill in listings from photos of people. Fill it in yourself below. If a person is in the photo, make sure they're happy to be in it.",
   ],
   ["suggest-no-photo", "Add a photo first. Choose one above, then press Fill in from my photo."],
+  ["suggest-nothing", "Everything we could fill in from your photo is already filled in."],
   ["suggest-limit", "You've used today's photo fills. Fill it in yourself below, or try again tomorrow."],
 ]);
 

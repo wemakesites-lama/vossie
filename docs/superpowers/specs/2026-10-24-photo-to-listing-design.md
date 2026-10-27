@@ -45,7 +45,7 @@ Chosen with Lama on 2026-10-26 from mockups in the brainstorm companion (kept un
 ### 2.2 While the photo is read
 
 1. **The button is a `PendingButton`** (`components/kit/PendingButton.tsx`): while the post is pending it reads "Reading your photo…" and ignores a second press.
-2. **A status line appears under it,** inside the card: "Looking for a title, category and condition. This takes a few seconds." (`role="status"`, so it's announced once). It's in the markup but hidden until the button is pending.
+2. **A status line appears under it,** inside the card: "Looking for a title, category and condition. This takes a few seconds." It's in the markup but hidden until the button is pending, and it's visual text only: the button's own live region (`aria-live="polite"`) announces "Reading your photo…" once, and that's the one announcement.
 3. **A soft band of light sweeps the cover photo,** up and down, so it's clear which photo is being read (the "image processing" idea from AICSS, rebuilt in CSS).
 4. **The fields that are still empty shimmer** below the card, so the seller sees where the result will land. Fields the seller already filled stay still: text fields through `:placeholder-shown` (each gets `placeholder=" "`), selects through `:has(option[value=""]:checked)`, radio groups through `:not(:has(:checked))`.
 5. **All of it is CSS keyed off the pending button:** `.photo-start:has([aria-disabled="true"])` for the card, and `form:has(.photo-start [aria-disabled="true"])` for the fields. Only `transform` and `opacity` animate (the sweep and shimmer are pseudo-elements moved with `translate`). Under `prefers-reduced-motion` and data saver (`html[data-low-data]`) nothing moves: the status line and the button's words carry it.
@@ -57,7 +57,7 @@ Chosen with Lama on 2026-10-26 from mockups in the brainstorm companion (kept un
 1. **A notice above the form:** "**We filled in {n} fields from your photo.** Check each one before you publish." ({n} is the fields actually filled; "1 field" for one.) Announced, as every selling notice is today.
 2. **A "Suggested" tag on each filled field's label:** a small pill, pale (`#E1F0F7`) with navy text, inside the `<label>` (or `<legend>`), so it's read with the label. It's words, not colour, so it meets WCAG 1.4.1. Only the fields filled by this press get one (decision 5: a typed field is never filled, so never tagged). The tags live in form state with the values, and are gone once the form is saved or reloaded.
 3. **The price hint under the price field,** in the field's hint position and in its `aria-describedby`: "Similar on CampusCart: R180 to R260 (5 listings)." The price box stays empty. No hint with fewer than 3 similar listings (decision 8).
-4. **Textbooks:** the title carries the book's title and edition, and the description starts with the module code when the cover or spine shows one. When open Looking For requests match (decision 15), a line under the notice: "{n} students at {campus} are Looking For this." with "See their requests", a link to the board filtered to it (`prefetch={false}`).
+4. **Textbooks:** the title carries the book's title and edition, and the description starts with the module code when the cover or spine shows one. When open Looking For requests match (decision 15), a line under the notice: "{n} students at {campus} are Looking For this." ("on Eduvos Online" there) with "See their requests", a link to the whole board, since the count is every category's (`prefetch={false}`).
 5. **The photo's description** (the cover's alt text) is filled only when empty, and tagged like the other fields.
 
 ### 2.4 When there's no suggestion
@@ -133,7 +133,7 @@ Selling is never blocked: Save works in every case.
 ## 5. Accessibility
 
 - The button is a real submit button, at least 44px, with a visible label. Nothing is hover-only, and no control is ever disabled (the limit state is a secondary button, 2.4).
-- The notice is announced (`role="status"`), as selling notices are today. While pending, one status line is announced once (2.2); there's no running commentary.
+- The notice is announced (`role="status"`), as selling notices are today. While pending, the button's own live region announces "Reading your photo…" once; the status line under it is visual text only (2.2). There's no running commentary.
 - "Suggested" is a word inside each label, not a colour (WCAG 1.4.1), so a screen reader hears "Title, Suggested".
 - Colour on the navy card: white small text, sky only for the solid button (its navy text on sky passes AA), as the brand rules say.
 - The sweep and shimmer are decoration (pseudo-elements, no text) and still under reduced motion and data saver.
@@ -248,6 +248,20 @@ Risk-guarding only:
 - **Build:** `grep -lE "groq|anthropic" .next/static/chunks/*.js` prints nothing, nor do the `serviceWorker.register` and `supabase` greps.
 - **By eye, with the fake provider:** the card at 390 and 1440, a fill that filled and tagged 5 fields, the notice, the sweep and the shimmer on still-empty fields only, and nothing moving under data saver. No price hint or Looking For line showed: the sample data has fewer than 3 matching listings and no FAC1501 request, as expected.
 - **Not this build's:** the signed-out `/sell` pitch still fails its layout-shift check at 390 (0.0544 against 0.05), as it did before.
+
+### Fixes after the final review (2026-10-27)
+
+1. **The cover's suggested description shows after a retry.** The photo field is keyed by each photo's address and description, so a fill into photos already stored draws the description and Save posts it.
+2. **The Looking For line links to the whole board** (`/looking-for`, `prefetch={false}`), since it counts requests in every category. The request rows carry no asker, so the seller's own requests are still counted.
+3. **A fill that finds every field already filled says so:** "Everything we could fill in from your photo is already filled in." (`suggest-nothing`), not "We filled in 0 fields". The press still counts.
+4. **The privacy line names only the providers a photo could go to,** each with its own words: Groq with zero data retention, Anthropic as not training on it. With only the fake there's no line. It's fixed at build, so a change of providers needs a redeploy.
+5. **Groq is asked for no reasoning** (`reasoning_effort: "none"`, `reasoning_format: "hidden"`), and a reply cut off at the token limit (`finish_reason: "length"`) is `bad-output`.
+6. **An error in the suggest path itself** (a database call, a provider that won't load) comes back as "couldn't read" with the form, not the error page. Only the kind is logged.
+7. **The status line under the button is visual text only.** The button's live region is the one announcement (2.2, section 5).
+8. **A forged fill on an edit form is ignored** (decision 4): it only comes back to the form.
+9. **The photo is read before the press is counted,** so a refused photo uses no press (decision 12).
+10. **Both SDKs' logging is pinned off** (`logLevel: "off"`), so a debug setting can never log a photo.
+11. **The Looking For line says "on Eduvos Online"** where the board does (`isOnlineCampus`).
 
 ### Still to do
 

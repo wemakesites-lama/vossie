@@ -8,7 +8,9 @@ import { PROVIDER_TIMEOUT_MS, type ProviderFailure, type ReadPhoto } from "./typ
 export const GROQ_MODEL = "qwen/qwen3.8-27b";
 
 let client: Groq | null = null;
-const groq = () => (client ??= new Groq({ apiKey: process.env.GROQ_API_KEY, timeout: PROVIDER_TIMEOUT_MS, maxRetries: 0 }));
+// Logging pinned off, so a GROQ_LOG=debug environment can never log a request, and with it a base64 photo.
+const groq = () =>
+  (client ??= new Groq({ apiKey: process.env.GROQ_API_KEY, timeout: PROVIDER_TIMEOUT_MS, maxRetries: 0, logLevel: "off" }));
 
 function failureOf(error: unknown): ProviderFailure {
   if (error instanceof Groq.APIConnectionTimeoutError) return "timeout";
@@ -28,6 +30,10 @@ export const read: ReadPhoto = async ({ image, instruction, schema }) => {
     const completion = await groq().chat.completions.create({
       model: GROQ_MODEL,
       max_completion_tokens: 1024,
+      // No reasoning ("none", which groq-sdk 1.6.0 documents for qwen3 models) and none returned: reasoning tokens
+      // could use up the completion tokens or the 10 seconds before the JSON is written.
+      reasoning_effort: "none",
+      reasoning_format: "hidden",
       messages: [
         {
           role: "user",
@@ -41,7 +47,10 @@ export const read: ReadPhoto = async ({ image, instruction, schema }) => {
         ? { type: "json_schema", json_schema: { name: "listing_suggestion", schema: { ...schema }, strict: true } }
         : { type: "json_object" },
     });
-    const text = completion.choices[0]?.message?.content;
+    const choice = completion.choices[0];
+    // Cut off at the token limit: the JSON is unfinished, so it's an answer that fails the check, not a busy service.
+    if (choice?.finish_reason === "length") return { ok: false, failure: "bad-output" };
+    const text = choice?.message?.content;
     return text ? { ok: true, text } : { ok: false, failure: "api-error" };
   } catch (error) {
     return { ok: false, failure: failureOf(error) };

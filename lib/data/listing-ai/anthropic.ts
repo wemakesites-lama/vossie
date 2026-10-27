@@ -7,8 +7,14 @@ import { PROVIDER_TIMEOUT_MS, type ProviderFailure, type ReadPhoto } from "./typ
 export const HAIKU_MODEL = "claude-haiku-5-5";
 
 let client: Anthropic | null = null;
+// Logging pinned off, so an ANTHROPIC_LOG=debug environment can never log a request, and with it a base64 photo.
 const anthropic = () =>
-  (client ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: PROVIDER_TIMEOUT_MS, maxRetries: 0 }));
+  (client ??= new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
+    timeout: PROVIDER_TIMEOUT_MS,
+    maxRetries: 0,
+    logLevel: "off",
+  }));
 
 function failureOf(error: unknown): ProviderFailure {
   if (error instanceof Anthropic.APIConnectionTimeoutError) return "timeout";

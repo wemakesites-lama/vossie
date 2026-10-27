@@ -135,7 +135,12 @@ const failureNotice = (failure: SuggestFailure) => (failure === "person" ? "sugg
 /**
  * "Fill in from my photo" (photo-to-listing spec decisions 1 to 6, 12): reads the cover, fills the empty fields, and
  * comes back to the form with what was typed, the photos, and a notice. No token is taken and no listing is made. The
- * press is counted only once it's about to reach a provider; the five sample accounts aren't counted in sample mode.
+ * photo is read first, so a refused one uses no press; the press is counted only once it's about to reach a provider,
+ * and the five sample accounts aren't counted in sample mode.
+ *
+ * An infrastructure error (a database call, a provider that won't load) comes back as "couldn't read", with the form,
+ * rather than the action's error page, which would lose what was typed. Nothing inside redirects, so the catch can't
+ * swallow one. Only the kind is logged: the error's message may hold data.
  */
 async function suggestFromCover(
   owner: ShopOwner,
@@ -147,22 +152,29 @@ async function suggestFromCover(
   const cover = order[0] ?? null;
   const id = cover ? photoIdOf(cover) : null;
   if (!cover || !id) return { values, notice: "suggest-no-photo" };
-  if (!isSampleAccount(owner.account) && !(await reservePhotoFill(owner.account.id, now, PHOTO_FILLS_PER_DAY))) {
-    return { values, notice: "suggest-limit" };
+  try {
+    const photo = await photoFor(id, async () => ({ id: owner.account.id, hubStaff: false }), now);
+    if (!photo) return { values, notice: "suggest-failed" };
+    if (!isSampleAccount(owner.account) && !(await reservePhotoFill(owner.account.id, now, PHOTO_FILLS_PER_DAY))) {
+      return { values, notice: "suggest-limit" };
+    }
+    const reading = await readCoverPhoto({ type: photo.type, bytes: photo.bytes }, context.categorySlugs);
+    if (!reading.ok) return { values, notice: failureNotice(reading.failure) };
+    const merged = mergeSuggestion(values, reading.suggestion, cover);
+    // Every field the fill could write already had text: say so, not "We filled in 0 fields". The press still counts.
+    if (merged.suggested.length === 0) return { values, notice: "suggest-nothing" };
+    return {
+      values: {
+        ...merged.values,
+        suggested: merged.suggested.join(" "),
+        suggestedModule: reading.suggestion.moduleCode ?? "",
+      },
+      notice: "suggested",
+    };
+  } catch {
+    console.warn("[vossie] photo-to-listing: suggest error");
+    return { values, notice: "suggest-failed" };
   }
-  const photo = await photoFor(id, async () => ({ id: owner.account.id, hubStaff: false }), now);
-  if (!photo) return { values, notice: "suggest-failed" };
-  const reading = await readCoverPhoto({ type: photo.type, bytes: photo.bytes }, context.categorySlugs);
-  if (!reading.ok) return { values, notice: failureNotice(reading.failure) };
-  const merged = mergeSuggestion(values, reading.suggestion, cover);
-  return {
-    values: {
-      ...merged.values,
-      suggested: merged.suggested.join(" "),
-      suggestedModule: reading.suggestion.moduleCode ?? "",
-    },
-    notice: "suggested",
-  };
 }
 
 /**
@@ -243,11 +255,11 @@ export async function saveListingForm(formData: FormData): Promise<void> {
     done(`${formPath}#${listingFieldPrefix(id)}-photos-title`);
   }
 
-  // "Fill in from my photo": only while the feature is on (decision 14). A press while it's off saves nothing: it
-  // simply comes back to the form, as a photo button does.
+  // "Fill in from my photo": only on a new listing while the feature is on (decisions 4 and 14). A press while it's
+  // off, or one forged on an edit form, saves nothing: it simply comes back to the form, as a photo button does.
   if (field(formData, "intent") === "suggest") {
     const typed = typedValues(formData, order, alts, context);
-    const result = listingAiOn()
+    const result = !existing && listingAiOn()
       ? await suggestFromCover(owner, typed, order, context, now)
       : { values: typed, notice: null };
     await writeFormState(form, { errors: photoErrors, values: result.values, notice: result.notice }, now);

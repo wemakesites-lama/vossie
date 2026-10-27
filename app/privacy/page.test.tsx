@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { AUTH_COOKIE } from "@/lib/auth/cookie-names";
 import { SESSION_COOKIE, SIGN_IN_COOKIE } from "@/lib/auth/cookies";
 import { CAMPUS_COOKIE } from "@/lib/campus";
@@ -447,3 +447,40 @@ function supabaseImports(source: string, file: string): string[] {
     return target !== null && (target === SUPABASE_DIR || target.startsWith(`${SUPABASE_DIR}/`));
   });
 }
+
+describe("photo-to-listing's line (photo-to-listing spec section 4, final review 4)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  /** The page's sections are built when its module loads, so each case loads it afresh under its settings. */
+  async function lineWith(env: Record<string, string>) {
+    vi.stubEnv("VOSSIE_LISTING_AI", "1");
+    for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value);
+    vi.resetModules();
+    const { default: Page } = await import("./page");
+    const { unmount } = render(<Page />);
+    const line = screen.queryByText(/your cover photo is sent to/)?.textContent ?? null;
+    unmount();
+    return line;
+  }
+
+  it("names only the providers a photo could go to, with what each keeps", async () => {
+    const groq = await lineWith({ VOSSIE_LISTING_AI_PROVIDERS: "groq,anthropic", GROQ_API_KEY: "test", ANTHROPIC_API_KEY: "" });
+    expect(groq).toContain("Groq, an AI provider in the United States, which keeps nothing from it");
+    expect(groq).not.toContain("Anthropic");
+    expect(groq).toContain("Nothing is sent unless you press the button, and you check every suggested field");
+
+    const anthropic = await lineWith({ VOSSIE_LISTING_AI_PROVIDERS: "anthropic", ANTHROPIC_API_KEY: "test" });
+    expect(anthropic).toContain("Anthropic, an AI provider in the United States, which doesn't use it to train its models");
+    expect(anthropic).not.toMatch(/Groq|retention/);
+
+    const both = await lineWith({ VOSSIE_LISTING_AI_PROVIDERS: "groq,anthropic", GROQ_API_KEY: "test", ANTHROPIC_API_KEY: "test" });
+    expect(both).toContain("If Groq can't answer, it goes to Anthropic");
+  });
+
+  it("shows no line with only the fake provider", async () => {
+    expect(await lineWith({ VOSSIE_LISTING_AI_PROVIDERS: "fake" })).toBeNull();
+  });
+});

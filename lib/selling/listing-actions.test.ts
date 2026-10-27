@@ -762,6 +762,49 @@ describe("filling in from a photo (photo-to-listing spec 2.3, 2.4 and decisions 
     expect(failed.values.suggested).toBeUndefined();
   });
 
+  it("says everything was filled already, rather than 0 fields, and still counts the press", async () => {
+    await signedInAs("acc-seller");
+    vi.mocked(readCoverPhoto).mockResolvedValueOnce({ ok: true, suggestion });
+    const full = {
+      title: "My calculator",
+      category: "tech",
+      condition: "good",
+      description: "Works well.",
+      photo: "new:0",
+      "alt:new:0": "The calculator from the front",
+    };
+    await redirectOf(async () => saveListingForm(await suggestForm(full)));
+    const state = (await readFormState(listingForm(null)))!;
+    expect(state.notice).toBe("suggest-nothing");
+    expect(state.values).toMatchObject({ title: "My calculator", description: "Works well." });
+    expect(state.values.suggested).toBeUndefined();
+    expect(readCoverPhoto).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the form when the suggest path itself fails, logging only the kind", async () => {
+    await signedInAs("acc-seller");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.mocked(readCoverPhoto).mockRejectedValueOnce(new Error("rpc failed for own-shop@eduvos.com"));
+    expect(await redirectOf(async () => saveListingForm(await suggestForm({ title: "Typed and kept" })))).toBe(
+      "/sell/listings/new",
+    );
+    const state = (await readFormState(listingForm(null)))!;
+    expect(state).toMatchObject({ notice: "suggest-failed", values: { title: "Typed and kept" } });
+    expect(state.values.photos).not.toBe("");
+    expect(warn).toHaveBeenCalledWith("[vossie] photo-to-listing: suggest error");
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("eduvos.com");
+    warn.mockRestore();
+  });
+
+  it("serves no fill on an edit form, even a forged one (decision 4)", async () => {
+    await signedInAs("acc-seller");
+    vi.mocked(readCoverPhoto).mockResolvedValue({ ok: true, suggestion });
+    const forged = await suggestForm({ listing: "l-001", photo: COVER, newPhotos: [] });
+    expect(await redirectOf(async () => saveListingForm(forged))).toBe("/sell/listings/l-001/edit");
+    expect(readCoverPhoto).not.toHaveBeenCalled();
+    expect((await readFormState(listingForm("l-001")))?.notice ?? null).toBeNull();
+  });
+
   it("stops at the day's limit, counting only presses that reach a provider", async () => {
     // The five sample accounts are exempt in sample mode (decision 12), so this one stands in for a student's own.
     sampleStore().accounts.get("acc-pending")!.email = "own-shop@eduvos.com";
