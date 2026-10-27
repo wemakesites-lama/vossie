@@ -34,11 +34,12 @@ const MODULE_CODE = /^[A-Z]{2,5}\d{3,4}[A-Z]?$/;
 export const SUGGESTION_INSTRUCTION = [
   "You help a university student in South Africa list something for sale on CampusCart, a campus marketplace.",
   "Look at the photo and describe the item for its listing, in plain South African English.",
+  "Write plain text only: no markdown, no asterisks, no bullet points. Describe only what you can see; don't guess.",
   "title: what it is, up to 70 characters, brand and model where you can read them. For a textbook, its title and edition.",
   "categorySlug: the one category that fits best.",
   "condition: how worn it looks (new, like-new, good or fair).",
   "description: two or three short sentences a buyer would want, from what you can see. Never guess a price.",
-  "alt: one sentence describing the photo for someone who can't see it.",
+  "alt: one short, complete sentence of at most 120 characters describing the photo for someone who can't see it.",
   "isTextbook and moduleCode: the module code printed on a textbook's cover or spine (such as FAC1501), else null.",
   "personIsSubject: true when a person, not an item, is the main subject. Never describe a person.",
   "confidence: low when you can't tell what the item is.",
@@ -78,7 +79,11 @@ const FIELDS = Object.keys(suggestionSchema([]).properties).sort().join(",");
 
 /** At most `max` characters, as the form counts them. */
 function cutTo(text: string, max: number): string {
-  return characterCount(text) <= max ? text : [...text].slice(0, max).join("").trimEnd();
+  if (characterCount(text) <= max) return text;
+  const cut = [...text].slice(0, max).join("");
+  // Ends at the last whole word (models don't keep to a length they're asked for), unless that loses over half.
+  const space = cut.lastIndexOf(" ");
+  return (space > max / 2 ? cut.slice(0, space) : cut).replace(/[\s,;:–-]+$/, "");
 }
 
 function moduleCodeOf(raw: unknown): string | null {

@@ -50,6 +50,10 @@ describe("checkSuggestion (spec decision 10)", () => {
   it("cuts text to the form's limits, and drops a module code that isn't one", () => {
     const long = checkSuggestion(reply({ title: "a".repeat(90), description: "b".repeat(1200), alt: "c".repeat(200) }), SLUGS);
     expect(long).toMatchObject({ title: "a".repeat(70), description: "b".repeat(1000), alt: "c".repeat(125) });
+    const alt = "A yellow and red cracked-dust style book cover featuring the title 'DUST' and the author 'HUGH HOWEY', shown from multiple angles.";
+    expect(checkSuggestion(reply({ alt }), SLUGS)).toMatchObject({
+      alt: "A yellow and red cracked-dust style book cover featuring the title 'DUST' and the author 'HUGH HOWEY', shown from multiple",
+    });
     expect(checkSuggestion(reply({ moduleCode: "chapter one" }), SLUGS)).toMatchObject({ moduleCode: null });
     expect(checkSuggestion(reply({ isTextbook: false }), SLUGS)).toMatchObject({ moduleCode: null });
   });
