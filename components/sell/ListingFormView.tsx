@@ -4,12 +4,14 @@ import { describedBy, FieldError } from "@/components/forms/FieldError";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import { listingFieldIds, listingFieldPrefix } from "@/lib/selling/errors";
 import { saveListingForm } from "@/lib/selling/listing-actions";
+import { noticeText } from "@/lib/selling/notices";
 import { myListingsPath, tabFor } from "@/lib/selling/paths";
 import { CONDITION_CHOICES, HANDOVER_CHOICES, KIND_CHOICES, PAY_CHOICES } from "@/lib/selling/rules";
 import type { Category, ListingState, PickupPoint } from "@/lib/types";
 import { RadioGroup, SelectField, TextField } from "./fields";
 import type { SavedPhoto } from "./PhotoField";
 import { PhotoFieldset } from "./PhotoFieldset";
+import { PhotoStart } from "./PhotoStart";
 
 type ListingFormViewProps = {
   /** Null for a new listing. */
@@ -28,6 +30,15 @@ type ListingFormViewProps = {
   /** The shop's pickup spots. */
   spots: readonly PickupPoint[];
   campusName: string;
+  // Photo-to-listing's props are optional (none means none), so the forms built elsewhere in tests need no change.
+  /** Photo-to-listing (spec 2.1): null when the feature is off. Only a new listing passes it. */
+  photoStart?: { on: boolean; limitReached: boolean } | null;
+  /** The form's notice code (spec 2.3 and 2.4), or null. */
+  notice?: string | null;
+  /** The price hint (spec 2.3), or null. */
+  priceHint?: string | null;
+  /** The textbook Looking For line (spec 2.3), or null. */
+  lookingFor?: { count: number; campusName: string; href: string } | null;
 };
 
 /**
@@ -38,6 +49,7 @@ type ListingFormViewProps = {
  */
 export function ListingFormView(props: ListingFormViewProps) {
   const { listingId, once, state, waiting, values, photos, errors, categories, spots, campusName } = props;
+  const { photoStart = null, notice = null, priceHint = null, lookingFor = null } = props;
   const prefix = listingFieldPrefix(listingId);
   // The photo marked invalid is the first whose description is too long, where that error links (amendment 11.5).
   const longAlt = photos.findIndex((photo) => photo.invalid);
@@ -45,9 +57,43 @@ export function ListingFormView(props: ListingFormViewProps) {
   const errorOf = (field: keyof typeof ids) => errorFor(errors, ids[field]);
   const priceError = errorOf("price");
   const publishLabel = state === "paused" || state === "sold" ? "Save changes" : "Save and publish";
+  // Photo-to-listing (spec 2.3): the fields the last fill wrote, each tagged in its label, and how many there were.
+  const suggested = new Set((values.suggested ?? "").split(" ").filter(Boolean));
+  const tagOf = (field: string) => (suggested.has(field) ? "Suggested" : undefined);
+  const noticeWords =
+    notice === "suggested"
+      ? `We filled in ${suggested.size} ${suggested.size === 1 ? "field" : "fields"} from your photo. Check each one before you publish.`
+      : noticeText(notice);
+  // The card is only on a new listing; the edit form keeps its photos last (spec 2.1, item 3).
+  const withCard = photoStart?.on === true && listingId === null;
+  // Keyed by the server's photos: after a save that failed, the photos just uploaded come back as saved ones, and the
+  // field starts again from them rather than keeping files the form has already sent.
+  const photoField = (
+    <PhotoFieldset
+      key={photos.map((photo) => photo.src).join(" ")}
+      prefix={prefix}
+      photos={photos}
+      error={errorOf("photos")}
+      altError={longAlt < 0 ? undefined : errorOf("alt")}
+      suggested={suggested}
+    />
+  );
   return (
     <>
       <ErrorSummary id={`${prefix}-summary`} errors={errors} />
+      {noticeWords && (
+        <p role="status" className="form-notice">
+          {noticeWords}
+        </p>
+      )}
+      {lookingFor && (
+        <p className="photo-start-looking">
+          {`${lookingFor.count} ${lookingFor.count === 1 ? "student" : "students"} at ${lookingFor.campusName} ${lookingFor.count === 1 ? "is" : "are"} Looking For this. `}
+          <Link href={lookingFor.href} prefetch={false}>
+            See their requests
+          </Link>
+        </p>
+      )}
       {waiting && (
         <p className="form-notice">
           Your shop is waiting for the Hub. Save your listing as a draft now, and publish it once your shop is
@@ -63,6 +109,14 @@ export function ListingFormView(props: ListingFormViewProps) {
         {listingId && <input type="hidden" name="listing" value={listingId} />}
         {/* A server-drawn field, no script: only the first save that brings a token makes the listing. */}
         {!listingId && once && <input type="hidden" name="once" value={once} />}
+        {withCard && (
+          <>
+            <PhotoStart prefix={prefix} limitReached={photoStart.limitReached}>
+              {photoField}
+            </PhotoStart>
+            <p className="photo-start-or">or fill it in yourself</p>
+          </>
+        )}
         <RadioGroup
           id={ids.kind}
           name="kind"
@@ -80,6 +134,7 @@ export function ListingFormView(props: ListingFormViewProps) {
           defaultValue={values.title ?? ""}
           error={errorOf("title")}
           required
+          tag={tagOf("title")}
         />
         <SelectField
           id={ids.category}
@@ -89,6 +144,7 @@ export function ListingFormView(props: ListingFormViewProps) {
           placeholder="Choose a category"
           defaultValue={values.category ?? ""}
           error={errorOf("category")}
+          tag={tagOf("category")}
         />
         <SelectField
           id={ids.condition}
@@ -100,6 +156,7 @@ export function ListingFormView(props: ListingFormViewProps) {
           defaultValue={values.condition ?? ""}
           error={errorOf("condition")}
           required={false}
+          tag={tagOf("condition")}
         />
         <div className="form-field">
           <label htmlFor={ids.price} className="form-label">
@@ -108,6 +165,11 @@ export function ListingFormView(props: ListingFormViewProps) {
           <p id={`${ids.price}-hint`} className="form-hint">
             Whole rand, such as 250. Leave it empty if you only swap.
           </p>
+          {priceHint && (
+            <p id={`${ids.price}-suggest`} className="form-hint">
+              {priceHint}
+            </p>
+          )}
           <FieldError id={`${ids.price}-error`} message={priceError} />
           <div className="sell-price">
             <span aria-hidden="true">R</span>
@@ -119,7 +181,7 @@ export function ListingFormView(props: ListingFormViewProps) {
               autoComplete="off"
               defaultValue={values.price ?? ""}
               aria-invalid={priceError ? true : undefined}
-              aria-describedby={describedBy(`${ids.price}-hint`, priceError && `${ids.price}-error`)}
+              aria-describedby={describedBy(`${ids.price}-hint`, priceHint && `${ids.price}-suggest`, priceError && `${ids.price}-error`)}
               className="form-input"
             />
           </div>
@@ -172,6 +234,7 @@ export function ListingFormView(props: ListingFormViewProps) {
           error={errorOf("description")}
           required
           multiline
+          tag={tagOf("description")}
         />
         <RadioGroup
           id={ids.handover}
@@ -195,15 +258,7 @@ export function ListingFormView(props: ListingFormViewProps) {
             required={false}
           />
         )}
-        {/* Keyed by the server's photos: after a save that failed, the photos just uploaded come back as saved ones,
-            and the field starts again from them rather than keeping files the form has already sent. */}
-        <PhotoFieldset
-          key={photos.map((photo) => photo.src).join(" ")}
-          prefix={prefix}
-          photos={photos}
-          error={errorOf("photos")}
-          altError={longAlt < 0 ? undefined : errorOf("alt")}
-        />
+        {!withCard && photoField}
         <div className="sell-form-buttons">
           {!waiting && (
             <button type="submit" name="intent" value="publish" className="btn btn-primary form-submit">

@@ -20,6 +20,8 @@ type PhotoFieldsetProps = {
   error: string | undefined;
   /** The server's message about a description that's too long, shown above the photos (amendment 11.5). */
   altError: string | undefined;
+  /** Photo-to-listing (spec 2.3): the fields the last fill filled in; a photo's description is `alt:<its address>`. */
+  suggested?: ReadonlySet<string>;
 };
 
 /** What each photo's button posts without JavaScript: `photoMove`, with its value the photo and the move. */
@@ -80,8 +82,11 @@ function photoParts(prefix: string, altError: string | undefined): PhotoParts {
  * and the status line, so its code stays small (spec section 5). A photo button pressed without JavaScript comes back
  * to the legend (`${prefix}-photos-title`, amendment 11.4).
  */
-export function PhotoFieldset({ prefix, photos, error, altError }: PhotoFieldsetProps) {
+export function PhotoFieldset({ prefix, photos, error, altError, suggested }: PhotoFieldsetProps) {
   const inputId = `${prefix}-photos`;
+  // The photos whose description the fill wrote get the same "Suggested" tag as the other fields, inside their label,
+  // after a space so it's read as its own word.
+  const tagged = photos.filter((photo) => suggested?.has(`alt:${photo.src}`)).map((photo) => photo.src);
   const hintId = `${inputId}-hint`;
   const errorId = `${inputId}-error`;
   return (
@@ -115,6 +120,7 @@ export function PhotoFieldset({ prefix, photos, error, altError }: PhotoFieldset
         buttons={BUTTONS}
         words={WORDS}
         parts={photoParts(prefix, altError)}
+        altTag={tagged.length > 0 ? { srcs: tagged, tag: <> <span className="field-tag">Suggested</span></> } : undefined}
         altHint={
           // The photos' descriptions point here (photoParts). A description that's too long is marked invalid and
           // points to the error too; the error summary links to it, and its message shows here, above the photos.

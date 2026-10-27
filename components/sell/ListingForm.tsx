@@ -1,16 +1,22 @@
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { readFormState } from "@/lib/auth/form-state";
-import { getCampuses, getCategories, getPickupPoints } from "@/lib/data";
+import { ALL_CAMPUSES } from "@/lib/campus";
+import { getCampuses, getCategories, getOpenRequests, getPickupPoints, searchListings } from "@/lib/data";
 import { getOwnListing } from "@/lib/data/own-listings";
 import type { ListingRow } from "@/lib/data/rows";
 import { isId } from "@/lib/messaging/paths";
 import { characterCount } from "@/lib/messaging/rules";
+import { listingAiOn } from "@/lib/selling/ai-config";
 import { listingFieldIds, listingFieldPrefix, sellingErrors } from "@/lib/selling/errors";
 import { issueListingToken, listingForm } from "@/lib/selling/form-state";
+import { requestsNaming } from "@/lib/selling/looking-for-count";
 import { requireShopOwner } from "@/lib/selling/owner";
 import { editListingPath, NEW_LISTING_PATH } from "@/lib/selling/paths";
+import { hintQuery, priceHintText } from "@/lib/selling/price-hint";
 import { ALT_MAX } from "@/lib/selling/rules";
 import { thumbSrc } from "@/lib/selling/thumbs";
+import { sastToday } from "@/lib/time";
 import { ListingFormView } from "./ListingFormView";
 import type { SavedPhoto } from "./PhotoField";
 
@@ -33,6 +39,35 @@ function valuesOf(listing: ListingRow | null, firstSpot: string | null): Record<
     photos: listing.photos.map((photo) => photo.src).join("\n"),
     ...Object.fromEntries(listing.photos.map((photo) => [`alt:${photo.src}`, photo.alt])),
   };
+}
+
+/**
+ * What a fill adds below its fields (spec 2.3): the price hint from browse's own search at the shop's campus, or at
+ * every campus when that finds too few priced listings (decision 8), and, when the cover showed a module code, how many
+ * open Looking For requests at the campus name it (decision 15). Request-time: `connection()` before today's date.
+ */
+async function afterFill(
+  values: Readonly<Record<string, string>>,
+  campusSlug: string,
+  campusName: string,
+): Promise<[string | null, { count: number; campusName: string; href: string } | null]> {
+  await connection();
+  const { title, category, suggestedModule } = values;
+  return Promise.all([
+    title && category
+      ? searchListings(hintQuery(title, category, campusSlug)).then(
+          async (here) =>
+            priceHintText(here.items) ??
+            priceHintText((await searchListings(hintQuery(title, category, ALL_CAMPUSES))).items),
+        )
+      : null,
+    suggestedModule
+      ? getOpenRequests({ category: null, today: sastToday() }).then((requests) => {
+          const count = requestsNaming(requests, suggestedModule, campusSlug);
+          return count > 0 ? { count, campusName, href: `/looking-for?cat=${category}` } : null;
+        })
+      : null,
+  ]);
 }
 
 /**
@@ -66,6 +101,13 @@ export async function ListingForm({ params }: { params?: Promise<{ id: string }>
     ? photos.findIndex((photo) => characterCount(photo.alt) > ALT_MAX)
     : -1;
   if (longAlt >= 0) photos[longAlt].invalid = true;
+  // Photo-to-listing (spec 2.1 and 2.3): the card on a new listing while the feature is on; after a fill, the price
+  // hint and the textbook Looking For line, worked out now from the filled values (never stored).
+  const on = !listing && listingAiOn();
+  const filled = on && state?.notice === "suggested";
+  const campusSlug = owner.shop.campusSlug;
+  const campusName = campuses.find((campus) => campus.slug === campusSlug)?.name ?? "";
+  const [priceHint, lookingFor] = filled ? await afterFill(values, campusSlug, campusName) : [null, null];
   return (
     <ListingFormView
       listingId={listing?.id ?? null}
@@ -77,7 +119,11 @@ export async function ListingForm({ params }: { params?: Promise<{ id: string }>
       errors={sellingErrors(codes, listingFieldIds(listingFieldPrefix(listing?.id ?? null), longAlt))}
       categories={categories}
       spots={spots}
-      campusName={campuses.find((campus) => campus.slug === owner.shop.campusSlug)?.name ?? ""}
+      campusName={campusName}
+      photoStart={on ? { on: true, limitReached: state?.notice === "suggest-limit" } : null}
+      notice={state?.notice ?? null}
+      priceHint={priceHint}
+      lookingFor={lookingFor}
     />
   );
 }

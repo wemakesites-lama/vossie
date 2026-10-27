@@ -35,7 +35,7 @@ export function TextField({ id, name, label, hint, defaultValue, error, required
     <div className="form-field">
       <label htmlFor={id} className="form-label">
         {label}
-        {tag && <span className="field-tag">{tag}</span>}
+        {tag && <> <span className="field-tag">{tag}</span></>}
       </label>
       {hint && (
         <p id={hintId!} className="form-hint">
@@ -84,7 +84,7 @@ export function SelectField({
     <div className="form-field">
       <label htmlFor={id} className="form-label">
         {label}
-        {tag && <span className="field-tag">{tag}</span>}
+        {tag && <> <span className="field-tag">{tag}</span></>}
       </label>
       {hint && (
         <p id={hintId!} className="form-hint">
@@ -132,7 +132,7 @@ function Group({ id, legend, hint, error, row, tag, children }: GroupProps & { c
     <fieldset className="form-field sell-fieldset" aria-describedby={describedBy(hintId, error && `${id}-error`)}>
       <legend className="form-label">
         {legend}
-        {tag && <span className="field-tag">{tag}</span>}
+        {tag && <> <span className="field-tag">{tag}</span></>}
       </legend>
       {hint && (
         <p id={hintId!} className="form-hint">

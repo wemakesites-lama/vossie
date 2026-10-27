@@ -8519,6 +8519,258 @@
   }
 }
 
+/* --- Selling: photo-to-listing, the photo card and the filled form (photo-to-listing spec 2.1 to 2.3) ---
+   The card is navy: small text is white, sky is only the solid button (navy words on it). The photo field inside it
+   uses white-on-navy variants of its labels, hints and buttons; its error sits on the danger tint, since danger red
+   on navy is too faint. */
+@layer components {
+  .photo-start {
+    --photo-start-cover: 96px;
+    --focus-ring: var(--color-sky);
+    --focus-halo: var(--color-navy);
+    display: grid;
+    grid-template-areas: "head" "photos" "act";
+    gap: 16px;
+    min-width: 0;
+    margin: 0;
+    padding: 16px;
+    border: 0;
+    border-radius: var(--radius-panel);
+    background: var(--color-navy);
+    color: var(--color-white);
+  }
+
+  .photo-start-head {
+    grid-area: head;
+  }
+
+  .photo-start-photos {
+    grid-area: photos;
+    min-width: 0;
+  }
+
+  .photo-start-act {
+    grid-area: act;
+    display: grid;
+    gap: 8px;
+    justify-items: start;
+  }
+
+  .photo-start-title {
+    color: var(--color-white);
+    font-family: var(--vos-font-display);
+    font-size: 24px;
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  .photo-start-line {
+    margin-top: 6px;
+    color: var(--color-white);
+    font-size: 14px;
+  }
+
+  .photo-start-act .photo-start-line {
+    margin-top: 0;
+  }
+
+  .photo-start-button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 22px;
+    border: 2px solid var(--color-sky);
+    border-radius: 999px;
+    background: var(--color-sky);
+    color: var(--color-navy);
+    font-weight: 700;
+  }
+
+  /* Today's limit is used (spec 2.4): a secondary button, white outline on navy, never disabled. */
+  .photo-start-button-quiet {
+    border-color: var(--color-white);
+    background: transparent;
+    color: var(--color-white);
+  }
+
+  /* PendingButton dims a busy button; on navy that would take the navy-on-sky words below AA, so the words alone say
+     it here ("Reading your photo…"). */
+  .photo-start .pending-button [aria-disabled="true"] {
+    opacity: 1;
+  }
+
+  .photo-start-status {
+    display: none;
+    color: var(--color-white);
+    font-size: 14px;
+  }
+
+  .photo-start:has(.photo-start-button[aria-disabled="true"]) .photo-start-status {
+    display: block;
+  }
+
+  /* The photo field on navy. */
+  .photo-start :is(.form-label, .form-hint, .sell-photo-title, .sell-photo-status) {
+    color: var(--color-white);
+  }
+
+  .photo-start .form-error {
+    justify-self: start;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--color-danger-tint);
+    color: var(--color-danger);
+  }
+
+  .photo-start .sell-photo {
+    position: relative;
+    border-color: rgb(255 255 255 / 0.3);
+  }
+
+  .photo-start .sell-photo:first-child {
+    grid-template-columns: var(--photo-start-cover) 1fr;
+  }
+
+  .photo-start .sell-photo:first-child .sell-thumb {
+    width: var(--photo-start-cover);
+    height: var(--photo-start-cover);
+  }
+
+  .photo-start .sell-action,
+  .photo-start .sell-action-danger {
+    border: 1.5px solid var(--color-white);
+    background: transparent;
+    color: var(--color-white);
+  }
+
+  /* Add photos: a white dashed outline on navy (spec 2.1, item 4). */
+  .photo-start .sell-file {
+    border: 2px dashed var(--color-white);
+    background: transparent;
+    color: var(--color-white);
+  }
+
+  .photo-start-or {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  .photo-start-or::before,
+  .photo-start-or::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--color-idle);
+  }
+
+  /* The filled form (spec 2.3): a pale pill with navy words inside a field's label or legend. */
+  .field-tag {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--color-pale);
+    color: var(--color-navy);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+    vertical-align: 1px;
+  }
+
+  .photo-start-looking {
+    color: var(--color-ink);
+  }
+
+  .photo-start-looking a {
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* From the tablet step: the photos on the left, the cover larger, and the heading and button on the right. */
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .photo-start {
+      --photo-start-cover: 120px;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      grid-template-rows: auto 1fr;
+      grid-template-areas: "photos head" "photos act";
+      align-content: start;
+      gap: 12px 24px;
+      padding: 20px;
+    }
+  }
+}
+
+/* The reading state (spec 2.2), keyed off the pending button: a band of light moves up and down the cover, and the
+   fields below the card that are still empty shimmer. Only translate moves. The pseudo-elements exist only when motion
+   is welcome, so under reduced motion and data saver nothing is drawn (the blanket switches would stop the animation
+   but leave a band sitting still); the status line and the button's words carry it. */
+@keyframes photo-start-sweep {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 0 calc(var(--photo-start-cover) * 0.6);
+  }
+}
+
+@keyframes photo-start-shimmer {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The band is 40% of the cover's height and travels the other 60%, so it never leaves the picture: no clipping. The
+     cover's top left corner is the photo row's padding (12px). */
+  :root:not([data-low-data]) .photo-start:has(.photo-start-button[aria-disabled="true"]) .sell-photo:first-child::after {
+    content: "";
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: var(--photo-start-cover);
+    height: calc(var(--photo-start-cover) * 0.4);
+    background: linear-gradient(to bottom, transparent, rgb(255 255 255 / 0.65), transparent);
+    pointer-events: none;
+    animation: photo-start-sweep 1.4s ease-in-out infinite alternate;
+  }
+
+  /* Text fields through :placeholder-shown (each has placeholder=" "), selects through their empty option, radio
+     groups with nothing chosen. Only the form's own fields: the card's photo field isn't one of them. */
+  :root:not([data-low-data])
+    form:has(.photo-start-button[aria-disabled="true"])
+    > .form-field:is(
+      :has(> .form-input:placeholder-shown),
+      :has(select option[value=""]:checked),
+      :has(input[type="radio"]):not(:has(:checked))
+    ) {
+    position: relative;
+    overflow: hidden;
+  }
+
+  :root:not([data-low-data])
+    form:has(.photo-start-button[aria-disabled="true"])
+    > .form-field:is(
+      :has(> .form-input:placeholder-shown),
+      :has(select option[value=""]:checked),
+      :has(input[type="radio"]):not(:has(:checked))
+    )::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgb(225 240 247 / 0.75), transparent);
+    pointer-events: none;
+    animation: photo-start-shimmer 1.4s linear infinite;
+  }
+}
+
 /* --- Selling: edit shop's link (selling plan, Task 13, spec 2.11) --- */
 @layer components {
   .sell-slug {

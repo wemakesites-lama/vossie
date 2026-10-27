@@ -87,6 +87,8 @@ type PhotoFieldProps = {
   altHint: ReactNode;
   /** The file input's label. */
   children: ReactNode;
+  /** Photo-to-listing (spec 2.3, item 5): the saved photos whose description was filled in, and the tag their label gets. */
+  altTag?: { srcs: readonly string[]; tag: ReactNode };
 };
 
 /** The words with their {n}, {at} and {max} filled in. */
@@ -105,7 +107,7 @@ const HOLD_MS = 15_000;
  * is picked, shrinks them in the background, one at a time; a save waits for them (amendment 11.1).
  */
 export function PhotoField(props: PhotoFieldProps) {
-  const { prefix, photos, max, shrinkTo, buttons, words, input, parts, altHint, children } = props;
+  const { prefix, photos, max, shrinkTo, buttons, words, input, parts, altHint, children, altTag } = props;
   const [items, setItems] = useState<Item[]>(() => photos.map((photo) => ({ ...photo, key: photo.src })));
   const [status, setStatus] = useState("");
   // The photos as last shown, for the handlers, including the shrinking that finishes after a pick.
@@ -279,6 +281,7 @@ export function PhotoField(props: PhotoFieldProps) {
                     </p>
                     <label htmlFor={altId} {...parts.label}>
                       Describe photo {index + 1}
+                      {item.src && altTag?.srcs.includes(item.src) && altTag.tag}
                     </label>
                     <input
                       {...parts.alt}

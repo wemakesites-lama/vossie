@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { categories } from "@/data/fixtures/categories";
@@ -46,6 +46,10 @@ const view = (overrides: Partial<Props> = {}) => (
     categories={categories}
     spots={spots}
     campusName="Midrand"
+    photoStart={null}
+    notice={null}
+    priceHint={null}
+    lookingFor={null}
     {...overrides}
   />
 );
@@ -139,6 +143,89 @@ describe("the listing form (selling spec 2.10, plan decision 26)", () => {
     expect(screen.getByLabelText("Title")).toHaveValue("Kettle");
     rerender(view({ listingId: "l-001", state: "available", values: one }));
     expect(screen.getByLabelText("Title")).toHaveValue("Desk fan");
+  });
+});
+
+describe("photo-to-listing (spec 2.1 to 2.4)", () => {
+  const cover = [{ src: "/placeholders/listing/tech.svg", alt: "", thumb: "/placeholders/listing/tech.svg" }];
+
+  it("draws the photo card first on a new listing, with the photo field and the button, when the feature is on", () => {
+    show({ photoStart: { on: true, limitReached: false }, photos: cover });
+    const card = screen.getByRole("group", { name: "Start with a photo" });
+    expect(within(card).getByRole("button", { name: "Fill in from my photo" })).toHaveAttribute("value", "suggest");
+    expect(within(card).getByLabelText("Add photos")).toBeInTheDocument();
+    expect(screen.getByText("or fill it in yourself")).toBeInTheDocument();
+    // The card comes before the first field, and the photos aren't drawn a second time below.
+    const kind = screen.getByRole("group", { name: "What are you listing?" });
+    expect(card.compareDocumentPosition(kind) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getAllByLabelText("Add photos")).toHaveLength(1);
+    // Enter still presses the save, not the fill.
+    expect(card.closest("form")!.querySelector('button[type="submit"]')).toHaveAttribute("value", "publish");
+  });
+
+  it("keeps the edit form as it is: no card, no button", () => {
+    show({ listingId: "l-001", state: "available", photoStart: { on: true, limitReached: false } });
+    expect(screen.queryByRole("button", { name: "Fill in from my photo" })).toBeNull();
+    expect(screen.queryByText("or fill it in yourself")).toBeNull();
+  });
+
+  it("draws no card while the feature is off", () => {
+    show({ photoStart: null });
+    expect(screen.queryByRole("group", { name: "Start with a photo" })).toBeNull();
+    expect(screen.getByLabelText("Add photos")).toBeInTheDocument();
+  });
+
+  it("tags only the suggested fields, says how many, and shows the hint and the Looking For line", () => {
+    show({
+      photoStart: { on: true, limitReached: false },
+      photos: cover,
+      values: {
+        ...values,
+        title: "Financial Accounting",
+        category: "textbooks-notes",
+        suggested: "title category alt:/placeholders/listing/tech.svg",
+      },
+      notice: "suggested",
+      priceHint: "Similar on CampusCart: R180 to R260 (5 listings)",
+      lookingFor: { count: 3, campusName: "Pretoria", href: "/looking-for?cat=textbooks-notes" },
+    });
+    const notice = screen.getByText(/We filled in 3 fields from your photo\./);
+    expect(notice).toHaveAttribute("role", "status");
+    expect(notice).toHaveTextContent("Check each one before you publish.");
+    expect(screen.getByLabelText(/^Title/).closest(".form-field")?.querySelector(".field-tag")).toHaveTextContent("Suggested");
+    expect(screen.getByLabelText(/^Category/).closest(".form-field")?.querySelector(".field-tag")).toBeTruthy();
+    expect(screen.getByLabelText(/^Description/).closest(".form-field")?.querySelector(".field-tag")).toBeNull();
+    expect(screen.getByLabelText(/^Describe photo 1/)).toHaveAccessibleName("Describe photo 1 Suggested");
+    expect(screen.getByLabelText("Price in rand")).toHaveAccessibleDescription(
+      "Whole rand, such as 250. Leave it empty if you only swap. Similar on CampusCart: R180 to R260 (5 listings)",
+    );
+    expect(screen.getByLabelText("Price in rand")).toHaveValue("");
+    expect(screen.getByText(/3 students at Pretoria are Looking For this\./)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "See their requests" })).toHaveAttribute("href", "/looking-for?cat=textbooks-notes");
+  });
+
+  it("says 1 field for one, and tags nothing without a fill", () => {
+    const { unmount } = show({ photoStart: { on: true, limitReached: false }, values: { ...values, suggested: "condition" }, notice: "suggested" });
+    expect(screen.getByText(/We filled in 1 field from your photo\./)).toBeInTheDocument();
+    unmount();
+    const { container } = show({ photoStart: { on: true, limitReached: false } });
+    expect(container.querySelector(".field-tag")).toBeNull();
+  });
+
+  it("shows a fallback's notice and leaves the fields as they were sent", () => {
+    show({ photoStart: { on: true, limitReached: false }, values: { ...values, title: "My typed title" }, notice: "suggest-failed" });
+    expect(screen.getByText(/We couldn't read that photo\./)).toHaveAttribute("role", "status");
+    expect(screen.getByLabelText("Title")).toHaveValue("My typed title");
+  });
+
+  it("draws the limit state as a quieter button with its line, never disabled", () => {
+    show({ photoStart: { on: true, limitReached: true }, notice: "suggest-limit" });
+    const button = screen.getByRole("button", { name: "Fill in from my photo" });
+    expect(button).not.toHaveAttribute("disabled");
+    expect(button).not.toHaveAttribute("aria-disabled");
+    expect(button).toHaveClass("photo-start-button-quiet");
+    expect(screen.getByText("You can still add photos. Filling in from them is back tomorrow.")).toBeInTheDocument();
+    expect(screen.getByText(/You've used today's photo fills\./)).toBeInTheDocument();
   });
 });
 
