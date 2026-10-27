@@ -46,9 +46,10 @@ const WORDS: PhotoWords = {
   added: ["1 photo added.", "{n} photos added."],
   refused: ["1 couldn't be added. Use JPG, PNG, WebP or HEIC photos.", "{n} couldn't be added. Use JPG, PNG, WebP or HEIC photos."],
   unopened: [
-    "This browser can't open HEIC photos, so 1 wasn't added. Try Safari, or save it as JPG first.",
-    "This browser can't open HEIC photos, so {n} weren't added. Try Safari, or save them as JPG first.",
+    "We couldn't open 1 HEIC photo, so it wasn't added. Save it as JPG and try again.",
+    "We couldn't open {n} HEIC photos, so they weren't added. Save them as JPG and try again.",
   ],
+  noPhoto: "Add a photo first, then press Fill in from my photo.",
   leftOut: ["Only {max} photos fit, so 1 was left out.", "Only {max} photos fit, so {n} were left out."],
   busy: ["Getting your photo ready…", "Getting your photos ready…"],
   ready: ["Your photo is ready.", "Your photos are ready."],

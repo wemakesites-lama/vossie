@@ -13,7 +13,6 @@ import {
   type ReactNode,
 } from "react";
 import { flushSync } from "react-dom";
-import { isHeic } from "@/lib/photos/rules";
 import type { ShrinkTo } from "@/lib/photos/shrink";
 import { newPhotoToken, type PhotoOp } from "@/lib/selling/photo-order";
 
@@ -66,6 +65,8 @@ export type PhotoWords = {
   refused: Counted;
   /** HEIC photos this browser couldn't open, so they weren't added. */
   unopened: Counted;
+  /** "Fill in from my photo" pressed with no photo. */
+  noPhoto: string;
   leftOut: Counted;
   busy: Counted;
   ready: Counted;
@@ -179,8 +180,9 @@ export function PhotoField(props: PhotoFieldProps) {
       .then(async ([, { shrink }]) => {
         for (const file of taken) {
           const small = await shrink(file, shrinkTo);
-          // A HEIC this browser couldn't open came back as it was: the server can't take it, so it goes now.
-          if (small === file && isHeic(file)) {
+          // An iPhone photo (HEIC) that neither this browser nor libheif could open came back as it was: the server
+          // can't take it, so it goes now.
+          if (small === file && /hei[cf]/i.test(`${file.type} ${file.name.slice(-5)}`)) {
             unopened += 1;
             show(
               latest.current.filter((item) => {
@@ -238,6 +240,14 @@ export function PhotoField(props: PhotoFieldProps) {
     // The newest shrinking's end: a photo picked while a save waits is shrunk after the ones before, so this waits on.
     const shrunk = (): Promise<unknown> | undefined => chain.current?.then(shrunk);
     const hold = (event: SubmitEvent) => {
+      // "Fill in from my photo" with no photo: said here at once, with focus on the file input, and nothing is sent.
+      // Without this code the server says the same (photo-to-listing spec 2.4).
+      if ((event.submitter as HTMLButtonElement | null)?.value === "suggest" && !latest.current.length) {
+        event.preventDefault();
+        say(words.noPhoto);
+        inputRef.current?.focus();
+        return;
+      }
       if (!chain.current) return;
       event.preventDefault();
       const waiting = held.current;

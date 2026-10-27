@@ -1,7 +1,11 @@
 // The browser's part of a photo's way to the server (selling spec 2.3, plan decision 10). Browser code only: the photo
 // field (components/sell/PhotoField.tsx) loads this module with import() the first time a photo is picked, so no
-// page's first load carries it. It imports nothing: the sizes and quality come from lib/photos/rules.ts by way of the
-// server (components/sell/PhotoFieldset.tsx), so no module is shared with the page's own code.
+// page's first load carries it. It imports nothing at first: the sizes and quality come from lib/photos/rules.ts by way
+// of the server (components/sell/PhotoFieldset.tsx), so no module is shared with the page's own code. Only an iPhone
+// photo the browser can't open brings in lib/photos/heic.ts, and libheif with it.
+
+/** An iPhone photo (HEIC or HEIF), by its type or its name's ending (some browsers give HEIC no type). */
+const heic = (file: File) => /hei[cf]/i.test(`${file.type} ${file.name.slice(-5)}`);
 
 /**
  * How to shrink: the longest side in pixels and the WebP (or JPEG) quality (SHRINK_MAX_SIDE and SHRINK_QUALITY), and,
@@ -80,8 +84,24 @@ async function shrinkOnce(file: File, side: number, quality: number): Promise<Fi
  */
 export async function shrink(file: File, to: ShrinkTo): Promise<File> {
   const qualities = to.budget === undefined ? [to.quality] : (to.qualities ?? [to.quality]);
-  const [small] = await shrinkAll([file], to.budget ?? Infinity, qualities, (each, quality) =>
+  const source = heic(file) ? await openableHeic(file) : file;
+  const [small] = await shrinkAll([source], to.budget ?? Infinity, qualities, (each, quality) =>
     shrinkOnce(each, to.side, quality),
   );
   return small;
+}
+
+/**
+ * An iPhone photo this browser can open as it is (Safari), or a JPEG made from it with libheif, loaded only now
+ * (lib/photos/heic.ts), decoded once however many qualities the shrink tries. The original when neither works: the
+ * photo field then drops it and says why, since the server takes only JPEG, PNG and WebP.
+ */
+async function openableHeic(file: File): Promise<File> {
+  try {
+    (await createImageBitmap(file)).close();
+    return file;
+  } catch {
+    const { heicToJpeg } = await import("./heic");
+    return (await heicToJpeg(file)) ?? file;
+  }
 }

@@ -121,6 +121,17 @@ const SECTIONS: readonly InfoSection[] = [
       </>
     ),
   },
+  {
+    id: "terms-software",
+    title: "Software we use",
+    children: (
+      <p>
+        To open iPhone photos (HEIC) in browsers that can&apos;t, CampusCart uses libheif, which is free software under
+        the GNU Lesser General Public License, version 3. Its source code and licence are at{" "}
+        <a href="https://github.com/strukturag/libheif">github.com/strukturag/libheif</a>.
+      </p>
+    ),
+  },
 ];
 
 export default function TermsPage() {

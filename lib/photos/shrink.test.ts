@@ -11,6 +11,10 @@ import {
 } from "./rules";
 import { fitWithin, shrink, shrinkAll } from "./shrink";
 
+// libheif's part, which needs a real browser and WebAssembly: what it makes of a HEIC is up to each test.
+const heicToJpeg = vi.hoisted(() => vi.fn<(file: File) => Promise<File | null>>());
+vi.mock("./heic", () => ({ heicToJpeg }));
+
 const fit = (width: number, height: number) => fitWithin(width, height, SHRINK_MAX_SIDE);
 const to = { side: SHRINK_MAX_SIDE, quality: SHRINK_QUALITY };
 
@@ -26,7 +30,9 @@ afterEach(() => {
 function browser(encodes: (type: string) => string | null, context: "2d" | null = "2d") {
   const calls: string[] = [];
   const close = vi.fn();
-  const createImageBitmap = vi.fn(async () => ({ width: 4000, height: 3000, close }));
+  const createImageBitmap = vi.fn<(source?: Blob) => Promise<{ width: number; height: number; close: () => void }>>(
+    async () => ({ width: 4000, height: 3000, close }),
+  );
   vi.stubGlobal("createImageBitmap", createImageBitmap);
   const drawing = {
     set fillStyle(value: string) {
@@ -63,6 +69,39 @@ describe("shrinking a photo in the browser (selling spec 2.3, plan decision 10)"
     // jsdom has no createImageBitmap, as a browser that can't decode the file would fail.
     const file = new File(["not really a photo"], "desk.jpg", { type: "image/jpeg" });
     expect(await shrink(file, to)).toBe(file);
+  });
+
+  it("opens an iPhone photo the browser can't with libheif, once however many qualities it tries, then re-encodes it", async () => {
+    const { createImageBitmap } = browser((type) => type);
+    // The browser opens the JPEG libheif made, never the HEIC itself (Chrome).
+    createImageBitmap.mockImplementation(async (file?: Blob) => {
+      if (file?.type === "image/heic") throw new DOMException("can't decode", "InvalidStateError");
+      return { width: 4000, height: 3000, close: vi.fn() };
+    });
+    heicToJpeg.mockReset().mockResolvedValue(new File(["jpeg"], "IMG_0421.jpg", { type: "image/jpeg" }));
+    const small = await shrink(new File(["heic"], "IMG_0421.HEIC", { type: "image/heic" }), {
+      ...to,
+      budget: 1,
+      qualities: [0.8, 0.7, 0.6],
+    });
+    expect([small.name, small.type]).toEqual(["IMG_0421.webp", "image/webp"]);
+    expect(heicToJpeg).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives an iPhone photo back as it is when neither the browser nor libheif can open it", async () => {
+    browser((type) => type).createImageBitmap.mockRejectedValue(new DOMException("can't decode", "InvalidStateError"));
+    heicToJpeg.mockReset().mockResolvedValue(null);
+    const file = new File(["heic"], "IMG_0422.heic", { type: "" });
+    expect(await shrink(file, to)).toBe(file);
+    expect(heicToJpeg).toHaveBeenCalledTimes(1);
+  });
+
+  it("never loads libheif for a HEIC the browser opens itself (Safari)", async () => {
+    browser((type) => type);
+    heicToJpeg.mockReset();
+    const small = await shrink(new File(["heic"], "IMG_0423.HEIC", { type: "image/heic" }), to);
+    expect(small.type).toBe("image/webp");
+    expect(heicToJpeg).not.toHaveBeenCalled();
   });
 
   it("re-encodes as WebP, turned the way the photo's Exif says (amendment 11.3)", async () => {

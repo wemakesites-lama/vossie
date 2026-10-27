@@ -8,13 +8,11 @@ export const PHOTO_TYPES: readonly PhotoType[] = ["image/jpeg", "image/png", "im
 export const PHOTO_ACCEPT = PHOTO_TYPES.join(",");
 /**
  * The listing photo field also takes iPhone photos (HEIC and HEIF): its code re-encodes every photo as WebP or JPEG
- * before it's sent, so the server still sees only PHOTO_TYPES. A browser that can't open HEIC (most but Safari's) drops
- * it with a message. Other fields (a shop's photo, a Hub post's) don't re-encode, so they keep PHOTO_ACCEPT.
+ * before it's sent, so the server still sees only PHOTO_TYPES. Where the browser can't open HEIC (most but Safari's),
+ * libheif opens it, loaded only then (lib/photos/heic.ts); a photo neither can read is dropped with a message. Other
+ * fields (a shop's photo, a Hub post's) don't re-encode, so they keep PHOTO_ACCEPT.
  */
 export const LISTING_PHOTO_ACCEPT = [...PHOTO_TYPES, "image/heic", "image/heif", ".heic", ".heif"].join(",");
-/** A HEIC or HEIF photo, by its type or, where the browser names none, its extension. */
-export const isHeic = (file: { type: string; name: string }) =>
-  /^image\/hei[cf]/.test(file.type) || (file.type === "" && /\.hei[cf]$/i.test(file.name));
 /**
  * Each photo, as it arrives: 4 MB (C2/C3 plan decision 16, Lama's go-ahead 2026-10-21). Vercel refuses a request body
  * over 4.5 MB before the action runs, so one post's photos must come to 4 MiB or less, with room for its text (about

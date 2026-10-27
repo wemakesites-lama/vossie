@@ -12,7 +12,7 @@ describe("Terms of use (info and system spec 2.1 and 3)", () => {
     expect(metadata.robots).toEqual({ index: false });
   });
 
-  it("has one h1 and seven sections", () => {
+  it("has one h1 and eight sections", () => {
     render(<TermsPage />);
     expect(screen.getByRole("heading", { level: 1, name: "Terms of use" })).toBeInTheDocument();
     expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
@@ -23,6 +23,7 @@ describe("Terms of use (info and system spec 2.1 and 3)", () => {
       "Moderation and suspension",
       "Our responsibility",
       "Changes and the law",
+      "Software we use",
     ]);
   });
 

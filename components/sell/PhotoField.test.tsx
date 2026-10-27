@@ -71,6 +71,9 @@ function show(photos: SavedPhoto[] = saved, altError?: string) {
       <button type="submit" name="intent" value="draft">
         Save as draft
       </button>
+      <button type="submit" name="intent" value="suggest">
+        Fill in from my photo
+      </button>
     </form>,
   );
   // jsdom's file input takes only a real FileList, which only a real DataTransfer makes.
@@ -257,8 +260,22 @@ describe("the photo field (selling spec 2.3, 2.5 and section 4, plan decisions 9
     await waitFor(() => expect(names(input)).toEqual(["opens.webp", "desk.webp"]));
     expect(tokens()).toEqual(["new:0", "new:1"]);
     expect(screen.getByRole("status")).toHaveTextContent(
-      "This browser can't open HEIC photos, so 1 wasn't added. Try Safari, or save it as JPG first. Your photos are ready.",
+      "We couldn't open 1 HEIC photo, so it wasn't added. Save it as JPG and try again. Your photos are ready.",
     );
+  });
+
+  it("doesn't send Fill in from my photo with no photo: says so at once and puts focus on the file input", () => {
+    const posted = show([]);
+    fireEvent.click(screen.getByRole("button", { name: "Fill in from my photo" }));
+    expect(posted).toEqual([]);
+    expect(screen.getByRole("status")).toHaveTextContent("Add a photo first, then press Fill in from my photo.");
+    expect(document.activeElement).toBe(screen.getByLabelText("Add photos"));
+  });
+
+  it("sends Fill in from my photo once there's a photo", () => {
+    const posted = show(saved.slice(0, 1));
+    fireEvent.click(screen.getByRole("button", { name: "Fill in from my photo" }));
+    expect(posted).toEqual([{ files: [], intent: "suggest" }]);
   });
 
   it("asks for HEIC in the listing photo field only, since only it re-encodes photos", () => {
