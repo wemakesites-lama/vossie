@@ -8553,6 +8553,7 @@
     grid-area: act;
     display: grid;
     gap: 8px;
+    align-content: start;
     justify-items: start;
   }
 
