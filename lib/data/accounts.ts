@@ -349,4 +349,5 @@ export async function deleteAccountData(accountId: string): Promise<void> {
     if (row.to === account.email) store.sampleEmails.delete(key);
   }
   store.codeSends.delete(account.email);
+  store.photoFills.delete(account.id);
 }

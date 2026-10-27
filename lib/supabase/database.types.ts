@@ -1150,6 +1150,9 @@ isOneToOne: false
 "reserve_ip_code_send":
 { Args: { "p_ip_key": string,"p_max_sends"?: number }; Returns: boolean
                            },
+"reserve_photo_fill":
+{ Args: { "p_account_id": string,"p_max_fills": number }; Returns: boolean
+                           },
 "restore_pickup_point":
 { Args: { "p_point": string }; Returns: string
                            },

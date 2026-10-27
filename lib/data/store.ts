@@ -55,6 +55,8 @@ export type SampleStore = {
   signInAttempts: Map<string, SignInAttemptRow>;
   /** Email → when codes were sent to it, for the limit of 5 an hour (spec 5). */
   codeSends: Map<string, string[]>;
+  /** Photo-to-listing presses per account, as ISO times in the last 24 hours (photo-to-listing spec decision 12). */
+  photoFills: Map<string, string[]>;
   /** By attempt key: sample mode's outbox (spec 2.3). */
   sampleEmails: Map<string, SampleEmailRow>;
   /** By `${sessionKey}:${form}`. */
@@ -107,7 +109,7 @@ export type SampleStore = {
  * 13: a report remembers who owned its target (`targetOwnerId`), so deleting the target doesn't free its owner to dismiss it.
  * 14: a Looking For request remembers the closing day its reminder was sent for (`remindedFor`, stage M spec decision 15).
  */
-export const STORE_VERSION = 14;
+export const STORE_VERSION = 15;
 
 type StoreHolder = { __vossieSampleStore?: SampleStore };
 
@@ -139,6 +141,7 @@ function seedStore(): SampleStore {
     sessions: new Map(),
     signInAttempts: new Map(),
     codeSends: new Map(),
+    photoFills: new Map(),
     sampleEmails: new Map(),
     formStates: new Map(),
     // Copies, like the accounts above (messaging plan decision 16).
