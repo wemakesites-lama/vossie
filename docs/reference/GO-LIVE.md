@@ -204,6 +204,17 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] **The rename's second pass (decision 83),** after `backend/phases-b-c` merges: the `vossie_` cookies and storage keys, the `VOSSIE_` settings (renamed in Vercel at the same moment, or the preview loses `NOINDEX` and its sign-in key), code identifiers and comments. The visible part is done on the merge: `20261024120000_campuscart_name.sql` (the staff role notifications and the first admin's audit line), the regenerated seed, and the code email's subject and template in `supabase/config.toml` and `supabase/templates/`.
 - [ ] On the live project, by hand in the dashboard (decision 83): Authentication → Emails → Templates, both templates' subject "Your CampusCart sign-in code" and body from `supabase/templates/sign-in-code.html`; SMTP Settings, sender name `CampusCart` (phase B runbook A4, A5).
 
+### Photo-to-listing (after the submission)
+Built 2026-10-27 and off for the submission (spec `docs/superpowers/specs/2026-10-24-photo-to-listing-design.md`, section 9). Switch it on only when every line here is done.
+- [ ] Push `20261027120000_photo_fills.sql` with the other migrations (dry run first). Not pushed yet.
+- [ ] **The hand check of Groq's strict `json_schema` with an image** (spec decision 9), on 3 real photos with Lama's Groq key. Pending. If strict mode refuses an image, set `VOSSIE_GROQ_FORMAT=json_object`. Record the outcome in the spec's section 13.
+- [ ] Lama: create the Groq key.
+- [ ] Lama: turn on Zero Data Retention in Groq's Data Controls.
+- [ ] Lama: read Groq's Services Agreement (training, consumer use, liability) and note the answer here.
+- [ ] Set `VOSSIE_LISTING_AI=1`, `VOSSIE_LISTING_AI_PROVIDERS=groq` and `GROQ_API_KEY` (and `VOSSIE_GROQ_FORMAT=json_object` if the hand check needed it) in Vercel, then redeploy: the privacy page's Groq line is drawn at build.
+- [ ] Check Groq's deprecations page before switching on, then monthly.
+- [ ] After two weeks, read the `[vossie] photo-to-listing:` log lines' counts (`rate-limited`, `bad-output`, `low-confidence`). List Haiku (spec Q6) if busy minutes are common.
+
 ## 7. Decisions for Lama and Eduvos
 
 - [ ] **Report the kept-redirect behaviour to Next.js, if necessary** (Lama, 2026-10-20). `tests/e2e/sign-in-return.spec.ts` with `SIGN_IN_SPIKE=1` is the reproduction.

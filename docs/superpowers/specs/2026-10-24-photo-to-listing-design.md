@@ -1,7 +1,7 @@
 # CampusCart photo-to-listing: design spec
 
 - **Date:** 2026-10-24
-- **Status:** Draft for Lama. Not planned or built. Revised 2026-10-26: Groq's `qwen/qwen3.8-27b` (free tier) first, behind a provider-neutral module, with Claude Haiku 5.5 as the fallback (decisions 9 to 13); the screens chosen with Lama from mockups (section 2). Lama answered the open questions on 2026-10-27 (section 12): built now, off for the submission.
+- **Status:** Draft for Lama. Not planned or built. Revised 2026-10-26: Groq's `qwen/qwen3.8-27b` (free tier) first, behind a provider-neutral module, with Claude Haiku 5.5 as the fallback (decisions 9 to 13); the screens chosen with Lama from mockups (section 2). Lama answered the open questions on 2026-10-27 (section 12): built now, off for the submission. **Built 2026-10-27** (plan `docs/superpowers/plans/2026-10-27-photo-to-listing.md`), and off until GO-LIVE's photo-to-listing steps are done. What changed while planning and building is in section 13.
 - **Scope:** a seller adds a photo on the new listing form, presses one button, and the form comes back with a suggested title, category, condition, description and photo description, plus a price hint from similar CampusCart listings. Textbooks also get their module code and, where one exists, a line about open Looking For requests. Nothing is published or priced for the seller.
 
 ## Related documents
@@ -54,7 +54,7 @@ Chosen with Lama on 2026-10-26 from mockups in the brainstorm companion (kept un
 
 ### 2.3 The filled form
 
-1. **A notice above the form:** "**We filled in {n} fields from your photo.** Check each one before you publish." ({n} is the fields actually filled; "1 field" for one.) Announced and focused, as every form notice is today.
+1. **A notice above the form:** "**We filled in {n} fields from your photo.** Check each one before you publish." ({n} is the fields actually filled; "1 field" for one.) Announced, as every selling notice is today.
 2. **A "Suggested" tag on each filled field's label:** a small pill, pale (`#E1F0F7`) with navy text, inside the `<label>` (or `<legend>`), so it's read with the label. It's words, not colour, so it meets WCAG 1.4.1. Only the fields filled by this press get one (decision 5: a typed field is never filled, so never tagged). The tags live in form state with the values, and are gone once the form is saved or reloaded.
 3. **The price hint under the price field,** in the field's hint position and in its `aria-describedby`: "Similar on CampusCart: R180 to R260 (5 listings)." The price box stays empty. No hint with fewer than 3 similar listings (decision 8).
 4. **Textbooks:** the title carries the book's title and edition, and the description starts with the module code when the cover or spine shows one. When open Looking For requests match (decision 15), a line under the notice: "{n} students at {campus} are Looking For this." with "See their requests", a link to the board filtered to it (`prefetch={false}`).
@@ -62,7 +62,7 @@ Chosen with Lama on 2026-10-26 from mockups in the brainstorm companion (kept un
 
 ### 2.4 When there's no suggestion
 
-The form always comes back exactly as it was sent, so nothing typed is lost. Each case is a form notice above the form (announced and focused), and the fields are untouched.
+The form always comes back exactly as it was sent, so nothing typed is lost. Each case is a form notice above the form (announced), and the fields are untouched.
 
 | Case | Notice | Why it says what it says |
 |---|---|---|
@@ -79,7 +79,7 @@ Selling is never blocked: Save works in every case.
 
 1. **It's a form post, like the photo buttons.** `saveListingForm` already handles a photo button: it applies the move, keeps everything typed in form state, and redirects back to the form ([listing-actions.ts:184](../../../lib/selling/listing-actions.ts)). The suggest button is one more branch of the same kind: `name="intent" value="suggest"`. No new client component, no Route Handler, no fetch from the browser.
 2. **Where the branch sits.** After photos are checked, stripped and stored (so the cover is a stored, metadata-free photo), and after the photo-move branch; before `checkListing`. No one-time token is taken and no listing is made, so a suggest on a new listing can be followed by Save as usual.
-3. **Only the cover photo is sent**, shrunk on the server to at most 1024px on the long side (enough to read a cover, about a third of the tokens of 1600px). One photo per call keeps cost and transfer to the minimum.
+3. **Only the cover photo is sent**, as it's stored: at most 1600px on the long side (the browser shrinks it) and already stripped. It isn't shrunk again on the server: the repo has no server-side image library, and adding one (`sharp`) for this isn't worth it. Groq counts an image as 2,048 tokens whatever its size, so it costs nothing there; Haiku pays a little more per call. One photo per call keeps cost and transfer to the minimum.
 4. **Edit forms don't offer it** in the first build. A listing being edited already has its words, and a suggestion there would mostly be overwritten fields the seller chose.
 
 ### The merge
@@ -90,17 +90,17 @@ Selling is never blocked: Save works in every case.
 
 ### The price hint
 
-8. **Prices come only from CampusCart.** `lib/selling/price-hint.ts` reads available and sold listings in the suggested category through `lib/data/catalog.ts`, matches them to the suggested title with browse's `listingMatches` (never a copy of browse's rules), and shows the lowest and highest price of the middle half when 3 or more match. "From" prices and free listings are left out. The seller's own campus first; all campuses when the campus has fewer than 3. The hint is computed at render from the values in form state, so it isn't stored.
+8. **Prices come only from CampusCart.** `lib/selling/price-hint.ts` reads available listings only, through `searchListings` (browse's own `listingMatches`, never a copy of browse's rules), queried by the suggested category and the title's first two search words. Sold listings aren't matched. It shows the lowest and highest price of the middle half when 3 or more match. "From" prices and free listings are left out. The seller's own campus first; all campuses whenever the campus gives no hint. The hint is computed at render from the values in form state, so it isn't stored.
 
 ### The model call
 
 9. **One provider-neutral, server-only module.** `lib/data/listing-ai.ts` (`import "server-only"`) is the only thing the selling code calls: `readCoverPhoto(photo, categories): Promise<Suggestion | SuggestFailure>`. It owns the instruction, the JSON schema and the output check (decision 10), and hands the provider only an image, an instruction and a schema. Each provider is one small file under `lib/data/listing-ai/` that turns those into one request and returns the reply's raw JSON text, or a failure kind:
-   - **`groq.ts`, the first choice.** Groq's `qwen/qwen3.8-27b` on the free tier, through Groq's official SDK (`groq-sdk`), key `GROQ_API_KEY`. The image goes as a base64 data URL in `image_url`. The reply is asked for with `response_format: { type: "json_schema", json_schema: { strict: true, … } }`. Groq documents strict mode for this model, but not with an image in the same request, so the plan's first task tries it on a real photo. If it's refused, the provider asks for `json_object` instead and relies on decision 10.
+   - **`groq.ts`, the first choice.** Groq's `qwen/qwen3.8-27b` on the free tier, through Groq's official SDK (`groq-sdk`), key `GROQ_API_KEY`. The image goes as a base64 data URL in `image_url`. The reply is asked for with `response_format: { type: "json_schema", json_schema: { strict: true, … } }`. Groq documents strict mode for this model, but not with an image in the same request, so it's checked by hand on real photos (section 13, still pending). If it's refused, `VOSSIE_GROQ_FORMAT=json_object` makes the provider ask for `json_object` instead, and it relies on decision 10.
    - **`anthropic.ts`, the fallback.** Claude Haiku 5.5 (`claude-haiku-5-5`) through `@anthropic-ai/sdk`, key `ANTHROPIC_API_KEY`, structured outputs (`output_config.format`), effort `low`. `stop_reason` is checked before content is read, and a refusal is a quiet failure. About $0.0004 a suggestion (roughly R7 per 1,000).
    - **`fake.ts`** for tests and the demo (decision 13).
    - **Common to all:** keys are read on first use, never at module scope or in a build. 10-second timeout, no retry within a provider (a second provider is the retry, decision 11), typed SDK errors only.
    - **Why Groq first, and why it's swappable:** it costs nothing for the submission's traffic. But Qwen 3.8 is a Groq preview model, which Groq may withdraw (Llama 4 Scout, the vision model before it, was retired on 2026-07-17), and the free tier's limits (about 30 requests a minute, 1,000 a day and 6,000 to 8,000 tokens a minute; each image counts as 2,048 tokens) allow only about 2 or 3 suggestions a minute across the whole site. Changing a provider or a model is a setting, never a change to the selling code.
-   - **The instruction and schema are the same for every provider:** the cover image (JPEG, at most 1024px), a short fixed instruction, and the category list. The instruction says not to describe people, not to guess a price, and to write in plain South African English. The schema: `{ title, categorySlug, condition, description, alt, isTextbook, moduleCode | null, edition | null, personIsSubject, confidence: "high" | "medium" | "low" }`, every field required and no others allowed.
+   - **The instruction and schema are the same for every provider:** the stored cover image (at most 1600px, decision 3), a short fixed instruction, and the category list. The instruction says not to describe people, not to guess a price, to put a textbook's edition inside its title, and to write in plain South African English. The schema: `{ title, categorySlug, condition, description, alt, isTextbook, moduleCode | null, personIsSubject, confidence: "high" | "medium" | "low" }`, every field required and no others allowed. There's no `edition` field.
 10. **Our own output check, whatever the provider promises.** Constrained output can still fail (a Groq community report has about 10% of strict requests answered with `json_validate_failed`), and `json_object` mode promises only JSON. So `checkSuggestion` (`lib/selling/suggest.ts`, pure and unit-tested) parses the text and accepts it only when:
     - every field is present with the right type, and no others;
     - `categorySlug` is one of `getCategories()`' slugs and `condition` one of the four;
@@ -111,29 +111,29 @@ Selling is never blocked: Save works in every case.
 ### Limits and switches
 
 11. **The fallback.** `VOSSIE_LISTING_AI_PROVIDERS` lists the providers in order, for example `groq,anthropic`. `readCoverPhoto` tries the first, and moves to the next only when the first couldn't answer: `timeout`, `rate-limited` (Groq's 429), `model-gone` (a 404 or a withdrawn model) or `api-error`. A reply that fails the output check, a refusal or a person in the photo is an answer, so it isn't sent to a second provider (that would cost money and send the photo twice for the same result). A provider without its key is skipped. With only `groq` listed, a busy minute is a quiet failure. Launch lists only `groq` (Q6).
-12. **A daily limit per account.** 20 suggestions in any 24 hours (Q4), counted in the store like the message limits (`lib/messaging/limits.ts` is the pattern). The five sample accounts are exempt only in sample mode. Counted once per button press that reaches a provider, whichever answers. It also keeps one account from using up Groq's free daily requests for the whole site.
+12. **A daily limit per account.** 20 suggestions in any 24 hours (Q4), through `reservePhotoFill` (`lib/data/photo-fills.ts`). It's a counter like the sign-in code sends: per account, kept at most 24 hours, deleted with the account (a cascade), and not in the data download. On Supabase it's `private.photo_fills`, reached through `public.reserve_photo_fill` (service role only), counted by UTC hour, so its window is between 23 and 24 hours. The five sample accounts are exempt only in sample mode (`isSampleAccount`, which checks sample mode itself). Counted once per button press that reaches a provider, whichever answers. It also keeps one account from using up Groq's free daily requests for the whole site.
 13. **Tests and the demo never call a provider.** `VOSSIE_LISTING_AI_PROVIDERS=fake` uses `fake.ts` (fixed replies keyed by a fixture photo, including a bad reply and a rate-limited one, so the check and the fallback are tested), so the demo and the e2e tests are deterministic.
 14. **The switch.** The button renders only when `VOSSIE_LISTING_AI=1` and at least one listed provider has its key (or is `fake`). Off by default. Turning it off removes the button; nothing else changes.
 
 ### Textbooks and Looking For
 
-15. **The Looking For line reads open requests** through `lib/data/requests.ts` with today's `requestOpenOn`, matched to the suggested title and module code, and shows only a count and the seller's campus. It never names or links an asker, as the board never does. It shows only when the count is 1 or more.
+15. **The Looking For line reads open requests** through `lib/data/requests.ts` with today's `requestOpenOn`. It shows only when the model read a module code (a title alone is too loose to count students by), and counts open requests at the seller's campus that contain that code, through browse's `matchScore` and `queryWords`. It shows only a count and the seller's campus. It never names or links an asker, as the board never does. It shows only when the count is 1 or more.
 
 ## 4. Privacy (POPIA)
 
 - **Opt-in per photo.** Nothing is sent unless the seller presses the button.
-- **Hidden data is gone first.** The cover sent is the stored photo, already stripped (`lib/photos/strip-metadata.ts`), and re-encoded at 1024px.
+- **Hidden data is gone first.** The cover sent is the stored photo, already stripped (`lib/photos/strip-metadata.ts`) and at most 1600px (decision 3).
 - **People.** The instruction tells the model not to describe people, and a photo whose main subject is a person gets no suggestion (decision 10). Photos of people still need consent, as today.
 - **Cross-border transfer (section 72).** The photo leaves South Africa for every provider: Groq stores what it keeps in Google Cloud in the United States, and Anthropic is in the United States too. That needs a lawful ground (each provider's terms as the operator agreement under section 21) and a line on the privacy page naming each listed provider, the purpose, whether API data is used for training, and how long it's kept. **Open question Q3.**
 - **Groq's retention.** Groq keeps no inputs or outputs by default, but may keep them for up to 30 days for reliability and abuse checks. Turn on Zero Data Retention in Groq's Data Controls before going live (it's self-serve), so nothing is kept. Groq's data page doesn't say whether inputs are used for training: confirm it in Groq's Services Agreement before the privacy line is written.
 - **Groq's terms.** Reported summaries say the terms rule out consumer use and cap Groq's liability at $5,000 for free services. Read the agreement itself before going live (part of Q3).
 - **Only listed providers see a photo.** A photo goes to a second provider only when the first couldn't answer (decision 11), never for a second opinion.
-- **Nothing new is stored** but the daily count (a number and a time per account), which is in the data download and removed with the account.
+- **Nothing new is stored** but the daily count (a number and a time per account), kept at most 24 hours and removed with the account. Like the sign-in code sends, it isn't in the data download (decision 12).
 
 ## 5. Accessibility
 
 - The button is a real submit button, at least 44px, with a visible label. Nothing is hover-only, and no control is ever disabled (the limit state is a secondary button, 2.4).
-- The notice is announced and focused, as form notices are today. While pending, one status line is announced once (2.2); there's no running commentary.
+- The notice is announced (`role="status"`), as selling notices are today. While pending, one status line is announced once (2.2); there's no running commentary.
 - "Suggested" is a word inside each label, not a colour (WCAG 1.4.1), so a screen reader hears "Title, Suggested".
 - Colour on the navy card: white small text, sky only for the solid button (its navy text on sky passes AA), as the brand rules say.
 - The sweep and shimmer are decoration (pseudo-elements, no text) and still under reduced motion and data saver.
@@ -160,7 +160,7 @@ Selling is never blocked: Save works in every case.
 | `lib/data/listing-ai/groq.ts` | New, server-only: Groq's `qwen/qwen3.8-27b` (decision 9) |
 | `lib/data/listing-ai/anthropic.ts` | New, server-only: Claude Haiku 5.5 (decision 9) |
 | `lib/data/listing-ai/fake.ts` | New: fixed replies for tests and the demo (decision 13) |
-| `lib/data/listing-ai-limits.ts` | New: the daily count (decision 12), with a Supabase twin |
+| `lib/data/photo-fills.ts` | New: the daily count (decision 12), with a Supabase twin (`20261027120000_photo_fills.sql`) |
 | `package.json` | `groq-sdk` and `@anthropic-ai/sdk` (server-only) |
 | `lib/selling/notices.ts` | The `suggested` notice (with its count) and the four fallback notices: `suggest-failed`, `suggest-person`, `suggest-no-photo`, `suggest-limit` (2.3, 2.4) |
 | `components/sell/ListingFormView.tsx` | The photo card on a new listing, the divider, the "Suggested" tags, the price hint, the Looking For line (2.1, 2.3) |
@@ -212,3 +212,43 @@ Risk-guarding only:
 - **Q4. The daily limit** ⟶ **20 suggestions per account in any 24 hours** (decision 12).
 - **Q5. The textbook Looking For line** ⟶ **In the first build** (2.3, decision 15).
 - **Q6. Haiku as the fallback from the start?** ⟶ **Groq only at first** (`VOSSIE_LISTING_AI_PROVIDERS=groq`). The Haiku provider is still built and tested, so listing it later is one setting and a key, once the logs show rate-limited presses (section 9). Until then the privacy line names Groq only.
+
+## 13. Changes made while planning and building (2026-10-27)
+
+### While planning
+
+1. **No 1024px resize (decision 3).** The repo has no server-side image library, and adding one (`sharp`) for this isn't worth it. The stored cover is already at most 1600px and stripped. Groq counts an image as 2,048 tokens whatever its size; Haiku pays a little more per call.
+2. **The schema has no `edition` field (decision 9).** The instruction asks for a textbook's edition inside its title instead.
+3. **The price hint reads available listings only (decision 8),** through `searchListings`, by the suggested category and the title's first two search words. Sold listings aren't matched.
+4. **The Looking For line shows only when the model read a module code (decision 15),** and counts open requests at the seller's campus that contain it, through browse's `matchScore` and `queryWords`.
+5. **The daily count is a counter like the sign-in code sends (decision 12):** per account, kept at most 24 hours, deleted with the account (a cascade), not in the data download. The database counts by UTC hour, so its window is between 23 and 24 hours.
+6. **Notices are announced (`role="status"`), not focused** (2.3, 2.4, section 5), as every selling notice is today.
+7. **`PendingButton` gains `name` and `value`,** and is pending only when its own button sent the form (`useFormStatus().data`), so Save never shows "Reading your photo…".
+8. **`VOSSIE_GROQ_FORMAT=json_object`** switches Groq from strict `json_schema` to `json_object`, if the hand check shows strict mode refuses an image.
+
+### While building
+
+- `groq-sdk` is pinned at 1.6.0 and `@anthropic-ai/sdk` at 1.3.0.
+- `PhotoType` is imported from `lib/types.ts`. `photoFor` takes a viewer callback and `now`.
+- The Supabase daily count has a pgTAP test, `supabase/tests/61_photo_fills.test.sql` (13 tests), and `06_account_actions` lists `reserve_photo_fill(uuid,integer)`.
+- The sample-account exemption uses `isSampleAccount` alone, since it already checks sample mode.
+- The cover's "Suggested" tag is keyed by the photo's address, so it moves with the photo.
+- The price hint falls back to all campuses whenever the campus gives no hint.
+- The reading state's sweep and shimmer are drawn only inside `@media (prefers-reduced-motion: no-preference) { :root:not([data-low-data]) … }`. The price field doesn't shimmer. Colours come from the `--color-*` tokens.
+- The new `ListingFormView` props are optional.
+- From the tablet step the card's button keeps to its own height (`align-content: start` on `.photo-start-act`; it stretched to 370px at 1440).
+- The e2e write test deletes its listing afterwards.
+
+### The checks
+
+- **Unit:** the full suite passes (3,531 tests in 440 files).
+- **Database, on the local stack after a fresh reset:** pgTAP 2,601 tests in 45 files; `test:db` 356 tests in 50 files. The migration isn't pushed to the live project: it goes with GO-LIVE's steps, on Lama's say-so.
+- **End-to-end:** `selling-writes` 7 of 7, the new test included. Axe and layout shift pass on the new and edit forms at 390 and 1440 (the new form 0.0019 at 390).
+- **Bytes:** `/sell/listings/new` is 153,382 B brotli, the same as before the card (it adds none), inside 153,600 B.
+- **Build:** `grep -lE "groq|anthropic" .next/static/chunks/*.js` prints nothing, nor do the `serviceWorker.register` and `supabase` greps.
+- **By eye, with the fake provider:** the card at 390 and 1440, a fill that filled and tagged 5 fields, the notice, the sweep and the shimmer on still-empty fields only, and nothing moving under data saver. No price hint or Looking For line showed: the sample data has fewer than 3 matching listings and no FAC1501 request, as expected.
+- **Not this build's:** the signed-out `/sell` pitch still fails its layout-shift check at 390 (0.0544 against 0.05), as it did before.
+
+### Still to do
+
+- **The hand check of Groq's strict `json_schema` with an image (decision 9) is pending.** It needs Lama's Groq key. Its outcome (strict, or `VOSSIE_GROQ_FORMAT=json_object`) is recorded here when it's done. It's in GO-LIVE's photo-to-listing block.
