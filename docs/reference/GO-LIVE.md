@@ -206,7 +206,7 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 
 ### Photo-to-listing (after the submission)
 Built 2026-10-27 and off for the submission (spec `docs/superpowers/specs/2026-10-24-photo-to-listing-design.md`, section 9). Switch it on only when every line here is done.
-- [ ] Push `20261027120000_photo_fills.sql` with the other migrations (dry run first). Not pushed yet.
+- [x] Push `20261027120000_photo_fills.sql` with the other migrations (dry run first). Pushed to Vossie Market on 2026-10-27, on Lama's go-ahead, after a dry run, together with the role views' two (`20261025120000_role_views_seller.sql`, `20261025120100_mentor_caseload.sql`), which hadn't been pushed. The remote is up to date (41 migrations).
 - [x] **The hand check of Groq's strict `json_schema` with an image** (spec decision 9), done 2026-10-27 with Lama's Groq key: strict works with an image and no reasoning, so `VOSSIE_GROQ_FORMAT` stays unset. The outcome is in the spec's section 13. The very first press got a 429 that didn't repeat: watch the `rate-limited` count.
 - [ ] Lama: create the Groq key.
 - [ ] Lama: turn on Zero Data Retention in Groq's Data Controls.
