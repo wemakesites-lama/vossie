@@ -17,9 +17,10 @@ type TextFieldProps = {
   required?: boolean;
   multiline?: boolean;
   inputMode?: "numeric" | "text";
+  tag?: string;
 };
 
-export function TextField({ id, name, label, hint, defaultValue, error, required, multiline, inputMode }: TextFieldProps) {
+export function TextField({ id, name, label, hint, defaultValue, error, required, multiline, inputMode, tag }: TextFieldProps) {
   const hintId = hint ? `${id}-hint` : null;
   const errorId = `${id}-error`;
   const shared = {
@@ -34,6 +35,7 @@ export function TextField({ id, name, label, hint, defaultValue, error, required
     <div className="form-field">
       <label htmlFor={id} className="form-label">
         {label}
+        {tag && <span className="field-tag">{tag}</span>}
       </label>
       {hint && (
         <p id={hintId!} className="form-hint">
@@ -42,9 +44,9 @@ export function TextField({ id, name, label, hint, defaultValue, error, required
       )}
       <FieldError id={errorId} message={error} />
       {multiline ? (
-        <textarea {...shared} rows={5} className="form-input sell-textarea" />
+        <textarea {...shared} placeholder=" " rows={5} className="form-input sell-textarea" />
       ) : (
-        <input {...shared} type="text" inputMode={inputMode} autoComplete="off" className="form-input" />
+        <input {...shared} placeholder=" " type="text" inputMode={inputMode} autoComplete="off" className="form-input" />
       )}
     </div>
   );
@@ -62,6 +64,7 @@ type SelectFieldProps = {
   error?: string;
   /** Announced as required unless it's optional for some answers (a service's condition, say). */
   required?: boolean;
+  tag?: string;
 };
 
 export function SelectField({
@@ -74,12 +77,14 @@ export function SelectField({
   defaultValue,
   error,
   required = true,
+  tag,
 }: SelectFieldProps) {
   const hintId = hint ? `${id}-hint` : null;
   return (
     <div className="form-field">
       <label htmlFor={id} className="form-label">
         {label}
+        {tag && <span className="field-tag">{tag}</span>}
       </label>
       {hint && (
         <p id={hintId!} className="form-hint">
@@ -117,14 +122,18 @@ type GroupProps = {
   error?: string;
   /** Lay the choices out in a row from the tablet step. */
   row?: boolean;
+  tag?: string;
 };
 
 /** A fieldset with its legend, hint and error, around radios or boxes (`name` and `options` are the caller's). */
-function Group({ id, legend, hint, error, row, children }: GroupProps & { children: ReactNode }) {
+function Group({ id, legend, hint, error, row, tag, children }: GroupProps & { children: ReactNode }) {
   const hintId = hint ? `${id}-hint` : null;
   return (
     <fieldset className="form-field sell-fieldset" aria-describedby={describedBy(hintId, error && `${id}-error`)}>
-      <legend className="form-label">{legend}</legend>
+      <legend className="form-label">
+        {legend}
+        {tag && <span className="field-tag">{tag}</span>}
+      </legend>
       {hint && (
         <p id={hintId!} className="form-hint">
           {hint}
