@@ -1,7 +1,6 @@
 import { describedBy, FieldError } from "@/components/forms/FieldError";
 import {
-  PHOTO_ACCEPT,
-  PHOTO_MAX_MB,
+  LISTING_PHOTO_ACCEPT,
   PHOTOS_PER_LISTING,
   POST_PHOTOS_MAX_BYTES,
   SHRINK_MAX_SIDE,
@@ -9,7 +8,6 @@ import {
   SHRINK_QUALITIES,
   SHRINK_QUALITY,
 } from "@/lib/photos/rules";
-import { ALT_MAX } from "@/lib/selling/rules";
 import { PhotoField, type PhotoButton, type PhotoParts, type PhotoWords, type SavedPhoto } from "./PhotoField";
 
 type PhotoFieldsetProps = {
@@ -46,7 +44,11 @@ const WORDS: PhotoWords = {
   removed: "Photo removed. {n} left.",
   held: "Saving once your photos are ready…",
   added: ["1 photo added.", "{n} photos added."],
-  refused: ["1 wasn't a JPG, PNG or WebP.", "{n} weren't JPG, PNG or WebP."],
+  refused: ["1 couldn't be added. Use JPG, PNG, WebP or HEIC photos.", "{n} couldn't be added. Use JPG, PNG, WebP or HEIC photos."],
+  unopened: [
+    "This browser can't open HEIC photos, so 1 wasn't added. Try Safari, or save it as JPG first.",
+    "This browser can't open HEIC photos, so {n} weren't added. Try Safari, or save them as JPG first.",
+  ],
   leftOut: ["Only {max} photos fit, so 1 was left out.", "Only {max} photos fit, so {n} were left out."],
   busy: ["Getting your photo ready…", "Getting your photos ready…"],
   ready: ["Your photo is ready.", "Your photos are ready."],
@@ -94,9 +96,10 @@ export function PhotoFieldset({ prefix, photos, error, altError, suggested }: Ph
       <legend id={`${inputId}-title`} className="form-label">
         Photos
       </legend>
+      {/* Short on purpose (Lama, 2026-10-27): the shrinking and the location stripping still happen, and the privacy
+          page says so; the field says only what a seller needs, and the consent rule. */}
       <p id={hintId} className="form-hint">
-        Up to {PHOTOS_PER_LISTING} JPG, PNG or WebP photos, {PHOTO_MAX_MB} MB each. The first is the cover. We make
-        them smaller and remove hidden data such as your location. If someone else is in a photo, ask them first.
+        Up to {PHOTOS_PER_LISTING} photos. The first is the cover. Ask anyone in a photo first.
       </p>
       {/* Without JavaScript the photos aren't made smaller before they're sent, and a save takes 4 MB of photos at
           most (Vercel's request body; C2/C3 plan decision 16). With it, each photo is shrunk to its share. */}
@@ -126,8 +129,7 @@ export function PhotoFieldset({ prefix, photos, error, altError, suggested }: Ph
           // points to the error too; the error summary links to it, and its message shows here, above the photos.
           <>
             <p id={`${prefix}-alt-hint`} className="form-hint">
-              Describe each photo for people who can&apos;t see it. Leave it empty to use the title. Up to {ALT_MAX}{" "}
-              characters.
+              Optional: describe each photo for people who can&apos;t see it.
             </p>
             <FieldError id={`${prefix}-alt-error`} message={altError} />
           </>
@@ -135,7 +137,7 @@ export function PhotoFieldset({ prefix, photos, error, altError, suggested }: Ph
         input={{
           id: inputId,
           name: "newPhotos",
-          accept: PHOTO_ACCEPT,
+          accept: LISTING_PHOTO_ACCEPT,
           "aria-invalid": error ? true : undefined,
           "aria-describedby": describedBy(hintId, error && errorId),
           className: "form-input sell-file",

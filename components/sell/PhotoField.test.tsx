@@ -141,11 +141,11 @@ describe("the photo field (selling spec 2.3, 2.5 and section 4, plan decisions 9
     expect(screen.getByRole("button", { name: "Make cover (photo 3)" })).toHaveAttribute("value", `${C}:cover`);
     expect(screen.getByRole("button", { name: "Move earlier (photo 2)" })).toHaveAttribute("type", "submit");
     expect(screen.getByRole("group", { name: "Photos" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Add photos")).toHaveAccessibleDescription(/^Up to 6 JPG, PNG or WebP photos, 4 MB each\./);
+    expect(screen.getByLabelText("Add photos")).toHaveAccessibleDescription(/^Up to 6 photos\. The first is the cover\. Ask anyone in a photo first\./);
     // A photo button without JavaScript comes back here, above the photos (amendment 11.4).
     expect(screen.getByText("Photos", { selector: "legend" })).toHaveAttribute("id", "edit-l-001-photos-title");
     expect(screen.getByRole("textbox", { name: "Describe photo 1" })).toHaveAccessibleDescription(
-      "Describe each photo for people who can't see it. Leave it empty to use the title. Up to 125 characters.",
+      "Optional: describe each photo for people who can't see it.",
     );
   });
 
@@ -202,7 +202,7 @@ describe("the photo field (selling spec 2.3, 2.5 and section 4, plan decisions 9
     const user = userEvent.setup();
     const message = "Keep each photo's description to 125 characters.";
     show([saved[0], { ...saved[1], invalid: true }, saved[2]], message);
-    const hint = "Describe each photo for people who can't see it. Leave it empty to use the title. Up to 125 characters.";
+    const hint = "Optional: describe each photo for people who can't see it.";
     expect(screen.getByRole("textbox", { name: "Describe photo 2" })).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByRole("textbox", { name: "Describe photo 2" })).toHaveAccessibleDescription(`${hint} Error: ${message}`);
     expect(screen.getByRole("textbox", { name: "Describe photo 1" })).not.toHaveAttribute("aria-invalid");
@@ -234,12 +234,36 @@ describe("the photo field (selling spec 2.3, 2.5 and section 4, plan decisions 9
     expect(screen.getByText("Photo 3")).toBeInTheDocument();
     expect(tokens()).toEqual([A, "new:0", "new:1"]);
     expect(screen.getByRole("status")).toHaveTextContent(
-      "2 photos added. 1 wasn't a JPG, PNG or WebP. Getting your photos ready…",
+      "2 photos added. 1 couldn't be added. Use JPG, PNG, WebP or HEIC photos. Getting your photos ready…",
     );
     expect(input.files).toEqual([picked[0], picked[2]]);
     await waitFor(() => expect(names(input)).toEqual(["desk.webp", "side.webp"]));
     expect(tokens()).toEqual([A, "new:0", "new:1"]);
     expect(screen.getByRole("status")).toHaveTextContent("Your photos are ready.");
+  });
+
+  it("takes iPhone photos (HEIC), keeping one the browser re-encodes and dropping one it can't open, saying so", async () => {
+    // The stand-in can't open "stuck.HEIC" (as most browsers but Safari), so gives it back as it was.
+    vi.doMock(SHRINK, () => ({
+      shrink: async (file: File) => (file.name.startsWith("stuck") ? file : shrunkCopy(file)),
+    }));
+    show([]);
+    const input = pick([
+      new File(["a"], "opens.heic", { type: "image/heic" }),
+      new File(["b"], "stuck.HEIC", { type: "" }),
+      new File(["c"], "desk.png", { type: "image/png" }),
+    ]);
+    expect(screen.getByRole("status")).toHaveTextContent("3 photos added. Getting your photos ready…");
+    await waitFor(() => expect(names(input)).toEqual(["opens.webp", "desk.webp"]));
+    expect(tokens()).toEqual(["new:0", "new:1"]);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "This browser can't open HEIC photos, so 1 wasn't added. Try Safari, or save it as JPG first. Your photos are ready.",
+    );
+  });
+
+  it("asks for HEIC in the listing photo field only, since only it re-encodes photos", () => {
+    const html = renderToStaticMarkup(<PhotoFieldset prefix="new" photos={[]} error={undefined} altError={undefined} />);
+    expect(html).toContain('accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"');
   });
 
   it("shrinks each photo to its share of a post's 4 MiB, at lower qualities when it must (C2/C3 plan decision 16)", async () => {
@@ -274,7 +298,7 @@ describe("the photo field (selling spec 2.3, 2.5 and section 4, plan decisions 9
     expect(tokens()).toEqual(["new:0", "new:1"]);
     expect(input.files).toEqual(picked.slice(0, 2));
     expect(screen.getByRole("status")).toHaveTextContent(
-      "2 photos added. 1 wasn't a JPG, PNG or WebP. Getting your photos ready…",
+      "2 photos added. 1 couldn't be added. Use JPG, PNG, WebP or HEIC photos. Getting your photos ready…",
     );
     // Let the shrinking finish here, so the next test's first pick loads its own stand-in.
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Your photos are ready."));

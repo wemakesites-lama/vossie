@@ -13,6 +13,7 @@ import {
   type ReactNode,
 } from "react";
 import { flushSync } from "react-dom";
+import { isHeic } from "@/lib/photos/rules";
 import type { ShrinkTo } from "@/lib/photos/shrink";
 import { newPhotoToken, type PhotoOp } from "@/lib/selling/photo-order";
 
@@ -63,6 +64,8 @@ export type PhotoWords = {
   held: string;
   added: Counted;
   refused: Counted;
+  /** HEIC photos this browser couldn't open, so they weren't added. */
+  unopened: Counted;
   leftOut: Counted;
   busy: Counted;
   ready: Counted;
@@ -146,8 +149,9 @@ export function PhotoField(props: PhotoFieldProps) {
     // The browser has swapped the input's files for this pick; show() puts every new photo's file back.
     const picked = [...(event.currentTarget.files ?? [])];
     // Only a file the browser names as something else is left out. One with no type, or an odd name for one of ours
-    // (image/jpg), goes to the server, which knows a photo by its first bytes (amendment 11.7).
-    const fitting = picked.filter((file) => /^$|jpe?g|png|webp/.test(file.type));
+    // (image/jpg), goes to the server, which knows a photo by its first bytes (amendment 11.7). A HEIC is taken too:
+    // it's re-encoded below, and dropped there if this browser can't open it.
+    const fitting = picked.filter((file) => /^$|jpe?g|png|webp|hei[cf]/.test(file.type));
     const taken = fitting.slice(0, Math.max(0, max - latest.current.length));
     // A new photo's preview is an object URL, unique to it, so it is the photo's key too.
     show([
@@ -157,7 +161,7 @@ export function PhotoField(props: PhotoFieldProps) {
         return { key: thumb, file, thumb };
       }),
     ]);
-    // "2 photos added. 1 wasn't a JPG, PNG or WebP. Getting your photos ready…", saying only what happened.
+    // "2 photos added. 1 couldn't be added. Use JPG, PNG, WebP or HEIC photos. Getting your photos ready…", saying only what happened.
     const counts: Array<[Counted, number]> = [
       [words.added, taken.length],
       [words.refused, picked.length - fitting.length],
@@ -166,6 +170,8 @@ export function PhotoField(props: PhotoFieldProps) {
     ];
     say(counts.flatMap(([counted, n]) => (n ? count(counted, n) : [])).join(" "));
     if (taken.length === 0) return;
+    // HEIC photos this browser couldn't open, and so dropped, in this pick.
+    let unopened = 0;
     // One photo at a time, after any picked before, so only one is decoded at once (amendment 11.2). Until its shrunk
     // copy is ready, the original waits in the input. If the code can't load, the originals go as they are, and the
     // server checks and strips them, as it does without JavaScript (plan decisions 10 and 11).
@@ -173,6 +179,18 @@ export function PhotoField(props: PhotoFieldProps) {
       .then(async ([, { shrink }]) => {
         for (const file of taken) {
           const small = await shrink(file, shrinkTo);
+          // A HEIC this browser couldn't open came back as it was: the server can't take it, so it goes now.
+          if (small === file && isHeic(file)) {
+            unopened += 1;
+            show(
+              latest.current.filter((item) => {
+                if (item.file !== file) return true;
+                URL.revokeObjectURL(item.thumb);
+                return false;
+              }),
+            );
+            continue;
+          }
           // The preview shows the shrunk copy, and the original's object URL goes. When the original came back, the
           // preview it has stays (amendment 13.2).
           if (small !== file)
@@ -187,10 +205,20 @@ export function PhotoField(props: PhotoFieldProps) {
       })
       .catch(() => {})
       .then(() => {
-        // Once the last pick's photos are ready, said only when no save is waiting: a held save goes instead.
-        if (chain.current !== run) return;
+        // Once the last pick's photos are ready, said only when no save is waiting: a held save goes instead. A HEIC
+        // this browser couldn't open is said even then, since it isn't going.
+        if (chain.current !== run) {
+          if (unopened) say(count(words.unopened, unopened));
+          return;
+        }
         chain.current = null;
-        if (!held.current) say(count(words.ready, taken.length));
+        const ready = taken.length - unopened;
+        const counts: Array<[Counted, number]> = [
+          [words.unopened, unopened],
+          [words.ready, held.current ? 0 : ready],
+        ];
+        const text = counts.flatMap(([counted, n]) => (n ? count(counted, n) : [])).join(" ");
+        if (text) say(text);
       });
     chain.current = run;
   }
