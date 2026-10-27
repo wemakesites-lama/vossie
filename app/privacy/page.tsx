@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
 import { PageTransition } from "@/components/kit/PageTransition";
+import { listingAiOn } from "@/lib/selling/ai-config";
 
 export const metadata: Metadata = {
   title: "Privacy policy",
@@ -116,6 +117,14 @@ const SECTIONS: readonly InfoSection[] = [
             Vercel, which hosts CampusCart, keeps ordinary server logs (page addresses, times and technical details of
             each request) to keep the site running and secure.
           </li>
+          {listingAiOn() && (
+            <li>
+              When you press Fill in from my photo on a new listing, your cover photo is sent to Groq, an AI provider in
+              the United States, to read what the item is. Groq keeps nothing from it (we&apos;ve turned on its zero data
+              retention). Nothing is sent unless you press the button, and you check every suggested field before you
+              publish.
+            </li>
+          )}
           <li>
             The campus updates form in the footer doesn&apos;t send or store your email address yet. When there is a real
             mailing list, it will ask for your consent first, and this policy will say so.

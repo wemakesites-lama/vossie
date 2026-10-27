@@ -86,6 +86,9 @@ export default defineConfig({
     // E2E_REUSE_SERVER=1 reuses a server you started yourself on port 3200.
     reuseExistingServer: process.env.E2E_REUSE_SERVER === "1",
     timeout: 240_000,
+    // Photo-to-listing on, answered by the fake (a fixed textbook, no network), so every project sees the "Start with a
+    // photo" card on /sell/listings/new as launch will (photo-to-listing plan, Task 11). Never a real key here.
+    env: { ...process.env, VOSSIE_LISTING_AI: "1", VOSSIE_LISTING_AI_PROVIDERS: "fake" } as Record<string, string>,
   },
   projects: [
     { name: "phone-360", use: phone(360, 780), testIgnore: WRITES },

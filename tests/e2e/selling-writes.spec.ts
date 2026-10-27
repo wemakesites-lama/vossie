@@ -284,3 +284,46 @@ test("axe finds nothing serious on My listings in every state, with its notices,
     await expect(main(page).getByRole("status")).toHaveText("Deleted.", POST_LANDS);
   }
 });
+
+test("fill in from a photo: the fields fill and are tagged, axe passes, and Save publishes (photo-to-listing)", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  const fill = () => button(page, "Fill in from my photo");
+  const notice = (text: string) => main(page).getByRole("status").filter({ hasText: text, visible: true });
+  await signInAsSample(page, "Seller, Tech corner", "/sell");
+  await page.goto("/sell/listings/new");
+  await expect(main(page).getByRole("heading", { name: "Start with a photo" })).toBeVisible();
+
+  // No photo yet: the notice, and axe on that state.
+  await fill().click();
+  await expect(notice("Add a photo first. Choose one above, then press Fill in from my photo.")).toBeVisible(POST_LANDS);
+  expect(await seriousIssues(page), "the no-photo notice").toEqual([]);
+
+  // A photo, then the fake's textbook fills the empty fields, each tagged "Suggested" inside its label.
+  await field(page, "Add photos").setInputFiles(photoWithLocation("textbook.png"));
+  await expect(main(page).getByText(/^Your photo is ready\.$/).filter({ visible: true })).toBeVisible();
+  await fill().click();
+  await expect(notice("Check each one before you publish.")).toContainText(
+    /We filled in \d+ fields from your photo\./,
+    POST_LANDS,
+  );
+  const title = page.getByLabel(/^Title/).filter({ visible: true });
+  await expect(title).toHaveValue("Financial Accounting, 3rd edition");
+  await expect(main(page).locator(".field-tag", { hasText: "Suggested" }).first()).toBeVisible();
+  expect(await seriousIssues(page), "the filled form").toEqual([]);
+
+  const word = uniqueWord();
+  const published = `Financial Accounting ${word}`;
+  await title.fill(published);
+  await field(page, "Price in rand").fill("200");
+  await button(page, "Save and publish").click();
+  await expect(page).toHaveURL(/\/sell\/listings$/, POST_LANDS);
+  await expect(main(page).getByRole("status")).toContainText("Published.");
+
+  // It goes again, so nothing is left in the sample seller's shop.
+  const id = await idOfEditLink(page, published);
+  await page.goto(`/sell/listings/${id}/delete`);
+  await button(page, "Delete listing").click();
+  await expect(main(page).getByRole("status")).toHaveText("Deleted.", POST_LANDS);
+});
