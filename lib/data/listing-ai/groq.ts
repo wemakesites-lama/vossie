@@ -29,7 +29,9 @@ export const read: ReadPhoto = async ({ image, instruction, schema }) => {
   try {
     const completion = await groq().chat.completions.create({
       model: GROQ_MODEL,
-      max_completion_tokens: 1024,
+      // A reply is about 150 to 300 tokens. Groq counts this reserve toward the free tier's 8,000 tokens a minute, so
+      // 512 rather than 1,024 lets about twice as many fills through (spec section 13); a reply cut off is bad-output.
+      max_completion_tokens: 512,
       // No reasoning ("none", which groq-sdk 1.6.0 documents for qwen3 models) and none returned: reasoning tokens
       // could use up the completion tokens or the 10 seconds before the JSON is written.
       reasoning_effort: "none",
