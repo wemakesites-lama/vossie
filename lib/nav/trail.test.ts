@@ -62,9 +62,17 @@ describe("the trail map (wayfinding spec 3.2)", () => {
     ]);
   });
 
-  it("takes a crumb's address from hrefs (a selling thread's Messages)", () => {
-    const trail = trailFor("/messages/[id]", { names: { "/messages/[id]": "Tech corner" }, hrefs: { "/messages": "/messages?tab=selling" } });
-    expect(trail[1]).toEqual({ label: "Messages", href: "/messages?tab=selling" });
+  it("takes a crumb's address from hrefs (an open request's form goes back to Your requests)", () => {
+    const trail = trailFor("/looking-for/[id]/edit", { params: { id: "r-001" }, hrefs: { "/looking-for/[id]": "/account/requests" } });
+    expect(trail.at(-2)?.href).toBe("/account/requests");
+  });
+
+  it("puts the selling inbox under Sell", () => {
+    expect(trailFor("/sell/messages")).toEqual([
+      { label: "Home", href: "/" },
+      { label: "Sell", href: "/sell" },
+      { label: "Messages", href: null },
+    ]);
   });
 
   it("puts the Hub's tools and Mentoring under the console for an admin only", () => {

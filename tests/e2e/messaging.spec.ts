@@ -37,7 +37,7 @@ test.describe("messaging a seller (messaging spec 3.1 to 3.3)", () => {
     await expect(statusPill(page, "Asked")).toBeVisible();
 
     const seller = await sellerPage(browser, baseURL!);
-    await seller.goto("/messages?tab=selling");
+    await seller.goto("/sell/messages");
     const row = main(seller).getByRole("link").filter({ hasText: buyer.firstName });
     await expect(row).toContainText("Casio fx-991ZA Plus calculator");
     await expect(row).toContainText("Unread,");
@@ -223,7 +223,7 @@ test.describe("messaging a seller (messaging spec 3.1 to 3.3)", () => {
     await seller.goto("/messages");
     const tabs = main(seller).getByRole("navigation", { name: "Buying and selling" });
     await tabs.getByRole("link", { name: "Selling" }).click();
-    await expect(seller).toHaveURL(/\/messages\?tab=selling$/);
+    await expect(seller).toHaveURL(/\/sell\/messages$/);
     await expect(tabs.getByRole("link", { name: "Selling" })).toHaveAttribute("aria-current", "page");
     await expect(main(seller).getByRole("link").filter({ hasText: "Thandi" }).first()).toBeVisible();
     await seller.context().close();

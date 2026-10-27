@@ -66,7 +66,7 @@ test("a new shop's home: the checklist, a buyer waiting, a sale marked as sold f
     page.getByRole("navigation", { name: "Selling" }).getByRole("link", { name: "Messages" }),
   ).toHaveAccessibleDescription(/1\s+buyer waiting for a reply/);
   await waiting.click();
-  await expect(page).toHaveURL(/\/messages\?tab=selling$/);
+  await expect(page).toHaveURL(/\/sell\/messages$/);
   await expect(main(page).getByRole("link", { name: "Selling" })).toHaveAttribute("aria-current", "page");
 
   // The seller replies and marks it completed; the thread then offers Mark {title} as sold.

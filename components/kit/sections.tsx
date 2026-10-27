@@ -22,6 +22,7 @@ import {
 import { getViewer } from "@/lib/auth/session";
 import { openBookingCount } from "@/lib/data/hub-posts";
 import { getShopOf } from "@/lib/data/shops";
+import { inboxPath } from "@/lib/messaging/paths";
 import { signInHref } from "@/lib/next-path";
 import { onboardingPath } from "@/lib/selling/paths";
 import { openReportCount } from "@/lib/data/staff-reports";
@@ -29,7 +30,7 @@ import { countWaitingShops } from "@/lib/data/staff-shops";
 import { queueFor } from "@/lib/selling/queue";
 import { ADMIN_MORE_PATH, HUB_MANAGE_PATH, MENTOR_EXPORT_PATH, MENTOR_PATH } from "@/lib/staff/paths";
 import { canUse } from "@/lib/staff/roles";
-import { ADMIN_MORE_SECTIONS, STAFF_GROUPS, STAFF_SECTIONS } from "@/lib/staff/sections";
+import { ADMIN_MORE_SECTIONS, HUB_TOOLS_ALSO, STAFF_GROUPS, STAFF_SECTIONS } from "@/lib/staff/sections";
 import { SectionBar, type SectionTab } from "./SectionBar";
 
 // The three sections' bars (role views spec 4.1). Each reads the session itself, inside the layout's <Suspense>, and
@@ -81,7 +82,7 @@ export async function SellBar() {
   const waiting = open ? await queueFor(own.shop.slug).then((queue) => queue.replies.count, () => null) : null;
   const messages: SectionTab = {
     key: "messages",
-    href: "/messages?tab=selling",
+    href: inboxPath("selling"),
     label: "Messages",
     icon: <MessageIcon />,
     prefetch: false,
@@ -137,6 +138,7 @@ export async function AdminBar() {
     icon: SECTION_ICONS[section.key],
     group: groupLabel.get(section.group),
     match: section.match,
+    also: section.also,
     prefetch: false,
     only: section.phone ? undefined : "wide",
     short: section.phone && section.phone !== section.label ? section.phone : undefined,
@@ -175,7 +177,7 @@ export async function MentorBar() {
       prefetch: false,
       badge: badge(slots, "slot request waiting", "slot requests waiting"),
     },
-    { key: "posts", href: HUB_MANAGE_PATH, label: "Posts", icon: <PlusSquareIcon />, prefetch: false },
+    { key: "posts", href: HUB_MANAGE_PATH, label: "Posts", icon: <PlusSquareIcon />, also: HUB_TOOLS_ALSO, prefetch: false },
     { key: "export", href: MENTOR_EXPORT_PATH, label: "Export", icon: <DownloadIcon />, download: true },
     EXIT,
   ];

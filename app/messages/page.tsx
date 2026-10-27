@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { PageTransition } from "@/components/kit/PageTransition";
 import { Reveal } from "@/components/kit/Reveal";
 import { Inbox } from "@/components/messages/Inbox";
 import { InboxSkeleton } from "@/components/messages/InboxSkeleton";
-import { parseInboxTab } from "@/lib/messaging/paths";
+import { inboxPath, parseInboxTab } from "@/lib/messaging/paths";
 import { Trail } from "@/components/ui/Trail";
 import { trailFor } from "@/lib/nav/trail";
 
@@ -28,6 +29,8 @@ export default function MessagesPage({ searchParams }: PageProps<"/messages">) {
   );
 }
 
+/** Buying. Selling lives in the selling section (`/sell/messages`); "?tab=selling" from before goes there. */
 async function InboxForVisitor({ searchParams }: Pick<PageProps<"/messages">, "searchParams">) {
-  return <Inbox tab={parseInboxTab((await searchParams).tab)} />;
+  if (parseInboxTab((await searchParams).tab) === "selling") redirect(inboxPath("selling"));
+  return <Inbox tab="buying" />;
 }

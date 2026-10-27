@@ -30,8 +30,8 @@ describe("the admin's numbers reach a page only through protectCounts (C4/C5 pla
 
   it("reads countByWeek only on the numbers page and Today, whose raw counts go nowhere but protectCounts", () => {
     const callers = sources("app", "lib", "components").filter((path) => /\bcountByWeek\(/.test(readFileSync(path, "utf8")));
-    expect(callers.sort()).toEqual(["app/admin/numbers/page.tsx", "app/admin/page.tsx", "lib/data/numbers.ts"]);
-    for (const file of ["app/admin/numbers/page.tsx", "app/admin/page.tsx"]) {
+    expect(callers.sort()).toEqual(["app/(staff)/admin/numbers/page.tsx", "app/(staff)/admin/page.tsx", "lib/data/numbers.ts"]);
+    for (const file of ["app/(staff)/admin/numbers/page.tsx", "app/(staff)/admin/page.tsx"]) {
       const page = readFileSync(file, "utf8");
       const uses = [...page.matchAll(/\braw\b/g)].map((match) => {
         const lineStart = page.lastIndexOf("\n", match.index) + 1;

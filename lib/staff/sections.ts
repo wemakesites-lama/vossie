@@ -38,7 +38,15 @@ export type StaffSection = {
   phone?: string;
   /** "section": also current on the pages below href (a shop's review under Shops). */
   match?: "section";
+  /** Other paths whose pages also make it current: Posts on Write a post and Edit a post. */
+  also?: readonly string[];
 };
+
+/**
+ * The Hub's staff pages (`/hub/manage`, `/hub/new`, `/hub/[id]/edit`). Only staff pages show a staff bar, so "/hub"
+ * there means these, never Launchpad's own pages.
+ */
+export const HUB_TOOLS_ALSO: readonly string[] = ["/hub"];
 
 export const STAFF_SECTIONS: readonly StaffSection[] = [
   {
@@ -87,6 +95,7 @@ export const STAFF_SECTIONS: readonly StaffSection[] = [
     purpose: "Write tips and events, and answer office-hours requests.",
     area: "hub",
     phone: "Hub",
+    also: HUB_TOOLS_ALSO,
   },
   {
     key: "mentoring",

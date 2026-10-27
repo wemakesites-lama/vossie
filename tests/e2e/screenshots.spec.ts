@@ -427,7 +427,7 @@ test("messaging review screenshots", async ({ page, browser, baseURL }) => {
   const seller = await sellerPage(browser, baseURL!);
   await seller.emulateMedia({ reducedMotion: "reduce" });
   await seller.setViewportSize(page.viewportSize()!);
-  await seller.goto("/messages?tab=selling");
+  await seller.goto("/sell/messages");
   await expect(seller.locator("main .inbox-row").first()).toBeVisible();
   await seller.screenshot({ path: file("04-inbox-selling"), fullPage: true });
   await seller.goto(`/messages/${id}`);

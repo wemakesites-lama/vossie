@@ -15,7 +15,7 @@ import { MarkSoldForm, SaleActions } from "./SaleActions";
 import { ScamCheck } from "./ScamCheck";
 import { StatusPill } from "./StatusPill";
 import { Trail } from "@/components/ui/Trail";
-import { trailFor } from "@/lib/nav/trail";
+import { LABELS, trailFor } from "@/lib/nav/trail";
 
 /** The reply form after a post (D decision 3): what was typed, what's wrong, and the scam check's warnings. */
 export type ReplyForm = { body: string; errors: FormError[]; warnings: ScamWarning[] };
@@ -72,7 +72,10 @@ export function ThreadView({
       <Trail
         crumbs={trailFor("/messages/[id]", {
           names: { "/messages/[id]": thread.otherName },
-          hrefs: { "/messages": inboxPath(thread.role === "seller" ? "selling" : "buying") },
+          ...(thread.role === "seller" && {
+            parent: { label: LABELS["/sell"], href: "/sell" },
+            between: [{ label: LABELS["/sell/messages"], href: inboxPath("selling") }],
+          }),
         })}
       />
       <div className="thread-head">

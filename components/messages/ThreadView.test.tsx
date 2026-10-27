@@ -44,7 +44,7 @@ describe("a thread (messaging spec 3.3)", () => {
 
   it("goes back to Selling for the seller", () => {
     show(makeThread({ role: "seller", otherName: "Ayanda" }));
-    expect(screen.getByRole("link", { name: "Back to Messages" })).toHaveAttribute("href", "/messages?tab=selling");
+    expect(screen.getByRole("link", { name: "Back to Messages" })).toHaveAttribute("href", "/sell/messages");
     expect(screen.getByRole("heading", { level: 1, name: "Messages with Ayanda" })).toBeInTheDocument();
   });
 

@@ -84,7 +84,7 @@ describe("shops (selling spec 2.6 and 2.11, plan decision 16)", () => {
 
   it("reserves every fixed route that sits beside a shop's link, so a new one can't be forgotten (amendment 15.4)", () => {
     // Where a shop's link is a path segment: its storefront, the admin's page for it and its mentor page.
-    const parents = ["app/sellers", "app/admin/sellers", "app/mentor"];
+    const parents = ["app/sellers", "app/(staff)/admin/sellers", "app/(staff)/mentor"];
     const fixed = parents.flatMap((parent) =>
       readdirSync(join(process.cwd(), parent))
         .filter((name) => statSync(join(process.cwd(), parent, name)).isDirectory())

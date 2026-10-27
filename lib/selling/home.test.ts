@@ -50,7 +50,7 @@ describe("sellerNeeds", () => {
       NOW,
     );
     expect(rows.map((row) => [row.key, row.count, row.title, row.href])).toEqual([
-      ["replies", 2, "Buyers waiting for a reply", "/messages?tab=selling"],
+      ["replies", 2, "Buyers waiting for a reply", "/sell/messages"],
       ["sales", 1, "Sale to mark as sold", "/messages/conv-9"],
       ["drafts", 1, "Draft ready to publish", "/sell/listings?tab=drafts"],
       ["hidden", 1, "Hidden by the Hub", "/sell/listings?tab=paused"],
@@ -92,7 +92,7 @@ describe("the setup checklist (role views spec 7.1, N2 plan decision 6)", () => 
       ["Say what you sell", true, "/sell/profile"],
       ["Choose a pickup point", true, "/sell/profile"],
       ["Publish your first listing", false, "/sell/listings/new"],
-      ["Reply to your first buyer", false, "/messages?tab=selling"],
+      ["Reply to your first buyer", false, "/sell/messages"],
     ]);
     expect(setupSteps(shop, QUEUE, false).map((step) => step.label)).not.toContain("Choose a pickup point");
   });

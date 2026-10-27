@@ -24,7 +24,7 @@ export const SLUG_MAX = 40;
  * Words a shop's link can't be, because a fixed route already uses that word beside the shop's own (staff tools plan
  * amendment 15.4): `/mentor/export` is the mentor dashboard's CSV, next to `/mentor/[slug]`, so a shop on the link
  * "export" would never be reached there, and its mentor page would download a file. Every fixed folder beside a shop's
- * `[slug]` in `app/sellers`, `app/admin/sellers` and `app/mentor` belongs here; `rules.test.ts` reads those folders and
+ * `[slug]` in `app/sellers`, `app/(staff)/admin/sellers` and `app/(staff)/mentor` belongs here; `rules.test.ts` reads those folders and
  * fails when one is missing.
  */
 export const RESERVED_SLUGS: ReadonlySet<string> = new Set(["export"]);

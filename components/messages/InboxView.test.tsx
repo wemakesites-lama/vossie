@@ -22,7 +22,7 @@ describe("the inbox (messaging spec 3.2)", () => {
     const selling = within(tabs).getByRole("link", { name: "Selling" });
     expect(buying).toHaveAttribute("href", "/messages");
     expect(buying).not.toHaveAttribute("aria-current");
-    expect(selling).toHaveAttribute("href", "/messages?tab=selling");
+    expect(selling).toHaveAttribute("href", "/sell/messages");
     expect(selling).toHaveAttribute("aria-current", "page");
   });
 
@@ -94,7 +94,7 @@ describe("the inbox (messaging spec 3.2)", () => {
 
   it("has Refresh, a full page load of the same tab (plan decision 19)", () => {
     render(<InboxView tab="selling" hasShop conversations={[makeSummary()]} now={NOW} />);
-    expect(screen.getByRole("link", { name: "Refresh" })).toHaveAttribute("href", "/messages?tab=selling");
+    expect(screen.getByRole("link", { name: "Refresh" })).toHaveAttribute("href", "/sell/messages");
   });
 });
 

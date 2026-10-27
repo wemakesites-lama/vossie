@@ -65,7 +65,7 @@ describe("SellBar", () => {
     render(await SellBar());
     const bar = screen.getByRole("navigation", { name: "Selling" });
     expect(labels(bar)).toEqual(["Overview", "Listings", "Messages", "Shop", "CampusCart"]);
-    expect(within(bar).getByRole("link", { name: "Messages" })).toHaveAttribute("href", "/messages?tab=selling");
+    expect(within(bar).getByRole("link", { name: "Messages" })).toHaveAttribute("href", "/sell/messages");
   });
 
   it("drops the Messages badge when the queue fails, and never reads it for a waiting shop (spec 4.2)", async () => {

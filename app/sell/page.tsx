@@ -16,7 +16,10 @@ export default function SellPage() {
   return (
     <PageTransition>
       <div className="page sell-page">
-        <Trail crumbs={trailFor("/sell")} />
+        {/* In the column, as the other Selling pages' trails are, so it doesn't jump between tabs. */}
+        <div className="sell-trail">
+          <Trail crumbs={trailFor("/sell")} />
+        </div>
         {/* Plain Suspense, not Reveal (calm navigation Task 4): a reveal waits for the fonts, so the pitch and the font
             swap shift together, and the visitor's /sell measured 0.0676 against 0.0598 without it. */}
         <Suspense fallback={<SellSkeleton />}>

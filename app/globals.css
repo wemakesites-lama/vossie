@@ -8192,6 +8192,19 @@
     gap: 12px;
   }
 
+  /* Overview's trail, above whichever state streams in: the column's edges, so it lines up with the other Selling
+     pages' trails. Not a .sell-column, which is the page's content (tests measure the first one). */
+  .sell-trail {
+    max-width: 44rem;
+    margin-inline: auto;
+  }
+
+  /* The column's width, as Overview's trail is: shrunk to fit, the last crumb's flex basis wrapped it onto a line of
+     its own. */
+  .sell-head > .trail {
+    justify-self: stretch;
+  }
+
   .sell-title {
     color: var(--color-navy);
     font-family: var(--vos-font-display);
@@ -10692,8 +10705,10 @@
 
   /* Next keeps pages you've left in the page, hidden with an inline display style (Activity:
      node_modules/next/dist/docs/01-app/02-guides/preserving-ui-state.md), so every page-level rule names only a
-     shell that is showing, as .listing-page:not([style*="display"]) already does. */
-  body:has(.section-shell:not([style*="display"]) > .section-bar) .tabbar {
+     shell that is showing, as .listing-page:not([style*="display"]) already does. The bar must be showing too: going
+     back into a section, Next shows its kept page while the bar's <Suspense> waits again, and React hides the old bar
+     with an inline display. Hiding the main bar then left no bar at all for most of a second on a slow phone. */
+  body:has(.section-shell:not([style*="display"]) > .section-bar:not([style*="display"])) .tabbar {
     display: none;
   }
 

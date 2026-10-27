@@ -114,7 +114,7 @@ test.describe("axe on an offer's pages", () => {
     await shop.goto(`/looking-for/${id}/offer`);
     await expect(main(shop).getByText("You've offered already.").filter({ visible: true })).toBeVisible();
     await expectAccessible(shop);
-    await shop.goto("/messages?tab=selling");
+    await shop.goto("/sell/messages");
     await expect(main(shop).getByRole("link").filter({ hasText: title })).toContainText("The student who asked");
     await expectAccessible(shop);
 
@@ -348,7 +348,7 @@ for (const size of SIZES) {
           [
             ["offer thread (the shop's side)", `/messages/${conversation}`],
             ["offer composer (already offered)", `/looking-for/${id}/offer`],
-            ["inbox (an offer, the shop's side)", "/messages?tab=selling"],
+            ["inbox (an offer, the shop's side)", "/sell/messages"],
           ],
         ],
         [

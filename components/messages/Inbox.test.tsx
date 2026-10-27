@@ -8,6 +8,11 @@ const session = vi.hoisted(() => ({ accountId: "acc-student" }));
 vi.mock("@/lib/auth/session", () => ({
   requireAccount: async () => (await import("@/lib/data/accounts")).getAccount(session.accountId),
 }));
+vi.mock("next/navigation", () => ({
+  redirect: (path: string) => {
+    throw new Error(`redirect ${path}`);
+  },
+}));
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
 
 beforeEach(() => {
@@ -27,10 +32,8 @@ describe("the inbox for this visitor (messaging spec 2.10 and 3.2)", () => {
     expect(screen.queryByRole("navigation", { name: "Buying and selling" })).toBeNull();
   });
 
-  it("shows Buying, not Selling, when an account without a shop asks for Selling (plan decision 22)", async () => {
-    render(await Inbox({ tab: "selling" }));
-    expect(screen.getByRole("region", { name: "Buying" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Refresh" })).toHaveAttribute("href", "/messages");
+  it("sends an account without a shop from Selling to Buying (plan decision 22)", async () => {
+    await expect(Inbox({ tab: "selling" })).rejects.toThrow("redirect /messages");
   });
 
   it("shows a seller's enquiries under Selling", async () => {

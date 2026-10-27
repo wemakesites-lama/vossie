@@ -130,7 +130,7 @@ const SLOW_PAGES: ReadonlyArray<
   // streamed in (0.09 at 390 for the seller's inbox), until the pages were made a screen tall (community actions plan,
   // Task 23, amendment 20.2).
   ["inbox page (buying)", "/messages", "Student, Midrand"],
-  ["inbox page (selling)", "/messages?tab=selling", "Seller, Tech corner"],
+  ["inbox page (selling)", "/sell/messages", "Seller, Tech corner"],
   ["thread page", "/messages/conv-s1", "Seller, Tech corner"],
   // Role views N2: the seller home's cards stream in under a short skeleton, on a screen-tall page (plan decision 15).
   ["seller home", "/sell", "Seller, Tech corner"],

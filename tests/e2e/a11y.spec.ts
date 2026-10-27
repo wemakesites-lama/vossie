@@ -359,7 +359,7 @@ test("the composer, with errors and then the scam check", async ({ page }) => {
 });
 
 test("the inbox, Selling", async ({ page }) => {
-  await signInTo(page, "Seller, Tech corner", "/messages?tab=selling");
+  await signInTo(page, "Seller, Tech corner", "/sell/messages");
   await expect(page.locator("main").getByRole("link", { name: "Selling", exact: true })).toHaveAttribute(
     "aria-current",
     "page",

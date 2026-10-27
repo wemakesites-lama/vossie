@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { hubEyebrow } from "./paths";
 
-// One name for the console (role views spec 7.2; N3 plan decision 7): every staff page in app/admin and app/hub takes
+// One name for the console (role views spec 7.2; N3 plan decision 7): every staff page in app/(staff)/admin and app/(staff)/hub takes
 // its eyebrow from STAFF_EYEBROW, so no page writes "Admin console" or "Hub tools" itself. The Hub's pages say "Hub
 // console" to an admin and "Hub tools" to a mentor, who has no console (Lama, N3 build).
 
@@ -15,10 +15,10 @@ const pagesUnder = (folder: string) =>
 describe("the console's eyebrow", () => {
   it("comes from STAFF_EYEBROW on every admin page, and from hubEyebrow on every Hub staff and Mentoring page", () => {
     for (const [folder, eyebrow] of [
-      ["app/admin", "area={STAFF_EYEBROW.admin}"],
-      ["app/hub", "area={hubEyebrow(account)}"],
+      ["app/(staff)/admin", "area={STAFF_EYEBROW.admin}"],
+      ["app/(staff)/hub", "area={hubEyebrow(account)}"],
       // Mentoring is a console section for an admin (wayfinding spec 3.3), the mentor's own tools otherwise.
-      ["app/mentor", "area={hubEyebrow(account)}"],
+      ["app/(staff)/mentor", "area={hubEyebrow(account)}"],
     ] as const) {
       const staffPages = pagesUnder(folder).filter((file) => readFileSync(file, "utf8").includes("<StaffFrame"));
       expect(staffPages.length, folder).toBeGreaterThan(0);

@@ -229,7 +229,7 @@ test.describe("flows 2 to 11, in order: a seller, a buyer and the first admin", 
     await expect(main(buyer).getByRole("status")).toHaveText("Sent. Sellers usually reply within a day.");
     await expect(statusPill(buyer, "Asked")).toBeVisible();
 
-    await seller.goto("/messages?tab=selling");
+    await seller.goto("/sell/messages");
     const row = main(seller).getByRole("link").filter({ hasText: people.buyer.firstName });
     await expect(row).toContainText(made.listingTitle);
     await expect(row).toContainText("Unread,");
@@ -472,7 +472,7 @@ test.describe("flows 2 to 11, in order: a seller, a buyer and the first admin", 
     await seller.goto("/sell");
     await expect(main(seller).locator(".sell-home-followers")).toHaveText("No followers yet");
     // The seller keeps their side of the conversation; the buyer's name is gone from it.
-    await seller.goto("/messages?tab=selling");
+    await seller.goto("/sell/messages");
     await expect(main(seller).getByRole("link").filter({ hasText: people.buyer.firstName })).toHaveCount(0);
   });
 });

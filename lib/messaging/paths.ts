@@ -21,8 +21,9 @@ export function threadPath(conversationId: string): string {
   return `/messages/${conversationId}`;
 }
 
+/** Selling is the Sell section's own page, so its bar stays beside it; `/messages?tab=selling` redirects there. */
 export function inboxPath(tab: InboxTab): string {
-  return tab === "selling" ? "/messages?tab=selling" : "/messages";
+  return tab === "selling" ? "/sell/messages" : "/messages";
 }
 
 /** "?tab=selling" opens Selling; anything else is Buying (spec 2.10). */
@@ -60,7 +61,7 @@ export function parseReportTarget(params: Readonly<Record<string, string | strin
 }
 
 // Pages that need an account, or a staff role (staff tools plan, Task 15): going back would only come back to sign-in.
-const ACCOUNT_ONLY = ["/account", "/messages", "/notifications", "/admin", "/mentor", "/hub/manage", "/hub/new"];
+const ACCOUNT_ONLY = ["/account", "/messages", "/sell/messages", "/notifications", "/admin", "/mentor", "/hub/manage", "/hub/new"];
 const HUB_EDIT = /^\/hub\/[a-z0-9][a-z0-9-]*\/edit$/;
 const HUB_BOOK = /^\/hub\/([a-z0-9][a-z0-9-]*)\/book$/;
 // Looking For's pages that need an account (community actions plan decision 22).

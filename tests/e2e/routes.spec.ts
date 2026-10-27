@@ -65,7 +65,7 @@ test.describe("routes", () => {
     onlyAtPhoneAndDesktop();
     for (const [path, next] of [
       ["/messages", "%2Fmessages"],
-      ["/messages?tab=selling", "%2Fmessages%3Ftab%3Dselling"],
+      ["/sell/messages", "%2Fsell%2Fmessages"],
       ["/messages/conv-s1", "%2Fmessages%2Fconv-s1"],
       ["/notifications", "%2Fnotifications"],
       ["/listings/l-001/message", "%2Flistings%2Fl-001%2Fmessage"],

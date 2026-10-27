@@ -165,7 +165,7 @@ test.describe("community actions that buyers see (community actions spec section
     await expect(main(shop).getByText("Casio fx-991ZA Plus calculator").filter({ visible: true }).first()).toBeVisible();
 
     // The shop's inbox names the request, and still not the student.
-    await shop.goto("/messages?tab=selling");
+    await shop.goto("/sell/messages");
     const shopRow = main(shop).getByRole("link").filter({ hasText: title });
     await expect(shopRow).toContainText(`Request: ${title}`);
     await expect(shopRow).toContainText("The student who asked");

@@ -22,7 +22,7 @@ describe("messaging addresses (messaging spec 2.1, 2.8 and 3)", () => {
     expect(composerPath({ kind: "shop", sellerSlug: "tech-corner" })).toBe("/sellers/tech-corner/message");
     expect(threadPath("conv-s1")).toBe("/messages/conv-s1");
     expect(inboxPath("buying")).toBe("/messages");
-    expect(inboxPath("selling")).toBe("/messages?tab=selling");
+    expect(inboxPath("selling")).toBe("/sell/messages");
   });
 
   it("reads the inbox's tab, Buying unless it says selling (spec 2.10)", () => {

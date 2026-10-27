@@ -54,6 +54,7 @@ export const PARENTS: Readonly<Record<string, string>> = {
 
   "/sell/listings": "/sell",
   "/sell/profile": "/sell",
+  "/sell/messages": "/sell",
   "/sell/onboarding": "/sell",
   "/sell/listings/new": "/sell/listings",
   "/sell/listings/[id]/edit": "/sell/listings",
@@ -127,6 +128,7 @@ export const LABELS: Readonly<Record<string, string>> = {
   "/sell/listings": "Your listings",
   "/sell/profile": "Edit your shop",
   "/sell/onboarding": "Set up your shop",
+  "/sell/messages": "Messages",
   "/sell/listings/new": "New listing",
   "/sell/listings/[id]/edit": "Edit your listing",
   "/sell/listings/[id]/delete": "Delete your listing",
@@ -160,7 +162,7 @@ export type TrailOptions = {
   params?: Readonly<Record<string, string>>;
   /** Names for routes LABELS can't know, by route: `{ "/listings/[id]": "Casio fx-991ZA Plus calculator" }`. */
   names?: Readonly<Record<string, string>>;
-  /** A different address for a crumb, by route: a selling thread's Messages is `/messages?tab=selling`. */
+  /** A different address for a crumb, by route: an open request's form goes back to Your requests. */
   hrefs?: Readonly<Record<string, string>>;
   /** For the role-aware routes: an admin's are under the Hub console. */
   roles?: readonly StaffRole[];
