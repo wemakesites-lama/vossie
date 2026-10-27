@@ -265,4 +265,10 @@ Risk-guarding only:
 
 ### Still to do
 
-- **The hand check of Groq's strict `json_schema` with an image (decision 9) is pending.** It needs Lama's Groq key. Its outcome (strict, or `VOSSIE_GROQ_FORMAT=json_object`) is recorded here when it's done. It's in GO-LIVE's photo-to-listing block.
+- **The hand check of Groq's strict `json_schema` with an image (decision 9) was done on 2026-10-27** with Lama's free Groq key, on two photos of a paperback (Hugh Howey's *Dust*): its front and its back.
+  - **Strict works.** Groq accepts strict `json_schema` with an image, together with `reasoning_effort: "none"` and `reasoning_format: "hidden"`, so `VOSSIE_GROQ_FORMAT` stays unset.
+  - **The front cover filled 5 fields in 2.8 seconds:** "Dust by Hugh Howey", Textbooks & notes (there's no fiction category), Fair, a fair two-sentence description, and a photo description. The photo description was the weak one ("A photomontage showing multiple angles…", cut at 125 characters).
+  - **The back cover alone was low-confidence** (2.4 seconds), so the seller got "We couldn't read that photo". That's right: it shows a blurb, a price and an ISBN, not the item.
+  - **The first press of all got a 429 (`rate-limited`)** in 3.9 seconds, though a text request straight after showed the account's full allowance (1,000 requests a day, 8,000 tokens a minute; one photo uses about 1,800 prompt tokens). It didn't repeat. Watch the `rate-limited` count after launch (GO-LIVE).
+  - **The retry case from the final review works:** the second press, on the photo stored by the first, filled the cover's description.
+  - **Worth tuning later, not blocking:** the instruction could ask for plain text with no markdown (a raw test without our instruction used bold), and a photo description that ends within 125 characters.
