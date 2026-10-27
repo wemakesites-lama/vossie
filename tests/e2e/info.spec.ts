@@ -57,6 +57,7 @@ const PAGES: readonly InfoCase[] = [
       "Moderation and suspension",
       "Our responsibility",
       "Changes and the law",
+      "Software we use",
     ],
   },
   {
