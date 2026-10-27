@@ -1,7 +1,7 @@
 # CampusCart photo-to-listing: design spec
 
 - **Date:** 2026-10-24
-- **Status:** Draft for Lama. Not planned or built. Revised 2026-10-26: Groq's `qwen/qwen3.8-27b` (free tier) first, behind a provider-neutral module, with Claude Haiku 5.5 as the fallback (decisions 9 to 13); the screens chosen with Lama from mockups (section 2). The open questions (section 12) are Lama's to answer before a plan is written.
+- **Status:** Draft for Lama. Not planned or built. Revised 2026-10-26: Groq's `qwen/qwen3.8-27b` (free tier) first, behind a provider-neutral module, with Claude Haiku 5.5 as the fallback (decisions 9 to 13); the screens chosen with Lama from mockups (section 2). Lama answered the open questions on 2026-10-27 (section 12): built now, off for the submission.
 - **Scope:** a seller adds a photo on the new listing form, presses one button, and the form comes back with a suggested title, category, condition, description and photo description, plus a price hint from similar CampusCart listings. Textbooks also get their module code and, where one exists, a line about open Looking For requests. Nothing is published or priced for the seller.
 
 ## Related documents
@@ -110,8 +110,8 @@ Selling is never blocked: Save works in every case.
 
 ### Limits and switches
 
-11. **The fallback.** `VOSSIE_LISTING_AI_PROVIDERS` lists the providers in order, for example `groq,anthropic`. `readCoverPhoto` tries the first, and moves to the next only when the first couldn't answer: `timeout`, `rate-limited` (Groq's 429), `model-gone` (a 404 or a withdrawn model) or `api-error`. A reply that fails the output check, a refusal or a person in the photo is an answer, so it isn't sent to a second provider (that would cost money and send the photo twice for the same result). A provider without its key is skipped. With only `groq` listed, a busy minute is a quiet failure. **Open question Q6** asks whether Haiku is listed at all.
-12. **A daily limit per account.** 10 suggestions in any 24 hours, counted in the store like the message limits (`lib/messaging/limits.ts` is the pattern). The five sample accounts are exempt only in sample mode. Counted once per button press that reaches a provider, whichever answers. It also keeps one account from using up Groq's free daily requests for the whole site.
+11. **The fallback.** `VOSSIE_LISTING_AI_PROVIDERS` lists the providers in order, for example `groq,anthropic`. `readCoverPhoto` tries the first, and moves to the next only when the first couldn't answer: `timeout`, `rate-limited` (Groq's 429), `model-gone` (a 404 or a withdrawn model) or `api-error`. A reply that fails the output check, a refusal or a person in the photo is an answer, so it isn't sent to a second provider (that would cost money and send the photo twice for the same result). A provider without its key is skipped. With only `groq` listed, a busy minute is a quiet failure. Launch lists only `groq` (Q6).
+12. **A daily limit per account.** 20 suggestions in any 24 hours (Q4), counted in the store like the message limits (`lib/messaging/limits.ts` is the pattern). The five sample accounts are exempt only in sample mode. Counted once per button press that reaches a provider, whichever answers. It also keeps one account from using up Groq's free daily requests for the whole site.
 13. **Tests and the demo never call a provider.** `VOSSIE_LISTING_AI_PROVIDERS=fake` uses `fake.ts` (fixed replies keyed by a fixture photo, including a bad reply and a rate-limited one, so the check and the fallback are tested), so the demo and the e2e tests are deterministic.
 14. **The switch.** The button renders only when `VOSSIE_LISTING_AI=1` and at least one listed provider has its key (or is `fake`). Off by default. Turning it off removes the button; nothing else changes.
 
@@ -178,7 +178,7 @@ Risk-guarding only:
   - `checkSuggestion` refuses bad JSON, a missing or extra field, a category or condition not allowed, low confidence and a person.
   - The fallback moves on only for `timeout`, `rate-limited`, `model-gone` and `api-error`, skips a provider without a key, and never sends a refused or bad reply to a second provider.
   - The price hint needs 3 or more matches and leaves out "from" and free.
-  - Every failure kind leaves the form unchanged. The limit refuses the 11th call in 24 hours.
+  - Every failure kind leaves the form unchanged. The limit refuses the 21st call in 24 hours.
 - **Once, by hand, with real keys (not in CI):** Groq's strict `json_schema` with an image, on 3 photos (decision 9).
   - Tags show only on the fields this press filled, and a later post drops them (decision 6).
 - **End-to-end:** one write test with the fake in `tests/e2e/selling-writes.spec.ts` (photo, suggest, fields filled and tagged, the notice, Save publishes), and axe on the filled form and on the "couldn't read" state.
@@ -187,8 +187,8 @@ Risk-guarding only:
 
 ## 9. Go-live
 
-- Off until Lama has answered Q1 to Q3 and Q6, the privacy line is published, Zero Data Retention is on in Groq's Data Controls, and `VOSSIE_LISTING_AI=1`, `VOSSIE_LISTING_AI_PROVIDERS` and the listed providers' keys (`GROQ_API_KEY`, and `ANTHROPIC_API_KEY` if Haiku is listed) are set in Vercel.
-- Try it on 20 real Eduvos photos (books, calculators, clothes, a service flyer) on both Groq and Haiku before turning it on, and note how often each field was kept as suggested.
+- **Off for the submission** (Q2). Switched on after it, once: Groq's Services Agreement is read (Q3), the privacy line naming Groq is published, Zero Data Retention is on in Groq's Data Controls, and `VOSSIE_LISTING_AI=1`, `VOSSIE_LISTING_AI_PROVIDERS=groq` and `GROQ_API_KEY` are set in Vercel. Listing Haiku later adds `ANTHROPIC_API_KEY` and Anthropic to the privacy line (Q6).
+- No photo test before launch (Q1): the first weeks' use is the test. Read section 10's signals after two weeks, and the logs' `bad-output` and `low-confidence` counts.
 - **Watch Groq.** Check Groq's deprecations page before go-live and then monthly: a withdrawn model fails quietly (or falls back), but it should be swapped in the setting before then. Before real students arrive, read the logs' `rate-limited` count: if busy minutes are common, list Haiku (Q6) or move to Groq's paid tier.
 
 ## 10. How we'll know it works
@@ -204,11 +204,11 @@ Risk-guarding only:
 - Plain-language search and the scam check's second opinion (separate ideas).
 - Any price set by the model.
 
-## 12. Open questions for Lama
+## 12. Lama's answers (2026-10-27)
 
-- **Q1. Is Groq's `qwen/qwen3.8-27b` good enough as the first provider?** ⟶ _Lama to decide after the 20-photo test (section 9)._ Lama chose Groq first on 2026-10-26 for its free tier; the test confirms it reads Eduvos photos well enough. If it doesn't, Haiku becomes the first provider (one setting).
-- **Q2. Before or after the submission?** ⟶ _Lama to decide._ It's off by default, so it can be built before and turned on after.
-- **Q3. Are you happy for photos to leave South Africa** (to Groq in the US, and to Anthropic if Haiku is listed; only when the seller presses the button), and are the providers' terms enough as the operator agreement for the submission, given Groq's reported consumer-use and $5,000 liability clauses? ⟶ _Lama to decide._
-- **Q4. The daily limit:** is 10 suggestions per account per day right? ⟶ _Lama to decide._
-- **Q5. The textbook Looking For line:** ship it in the first build, or after? ⟶ _Lama to decide._
-- **Q6. Is Claude Haiku 5.5 listed as the fallback from the start** (`groq,anthropic`), or only `groq` until busy minutes show up? ⟶ _Lama to decide._ Listing it costs about R7 per 1,000 fallbacks, and only when Groq is busy, down or withdrawn; without it, those presses fail quietly.
+- **Q1. Is Groq's `qwen/qwen3.8-27b` good enough as the first provider?** ⟶ **Groq first, with no photo test before launch:** it's judged from real use (section 10). The one technical check stays (decision 9: does strict `json_schema` work with an image, on 3 photos), since the provider needs it to know which request to send. If Groq disappoints, Haiku becomes the first provider (one setting).
+- **Q2. Before or after the submission?** ⟶ **Built now, off for the submission** (`VOSSIE_LISTING_AI` unset), and switched on after it, once section 9's checks are done.
+- **Q3. Photos leaving South Africa** ⟶ **Yes, disclosed on the privacy page only** (no line at the button). Before switching on: Zero Data Retention on in Groq's Data Controls, Groq's Services Agreement read for training, consumer use and its liability clause, and the privacy page's provider line published (section 4).
+- **Q4. The daily limit** ⟶ **20 suggestions per account in any 24 hours** (decision 12).
+- **Q5. The textbook Looking For line** ⟶ **In the first build** (2.3, decision 15).
+- **Q6. Haiku as the fallback from the start?** ⟶ **Groq only at first** (`VOSSIE_LISTING_AI_PROVIDERS=groq`). The Haiku provider is still built and tested, so listing it later is one setting and a key, once the logs show rate-limited presses (section 9). Until then the privacy line names Groq only.
