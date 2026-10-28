@@ -231,10 +231,7 @@ Revised 2026-10-20 (decision 75). Until then the crest stayed pinned on screen a
 3. The legal row with the small pennant lockup: "An Eduvos Incubation Hub project".
 4. A full-width VOSSIE wordmark sized to fill the footer width exactly, cropped slightly at the bottom.
 
-**Phone:**
-- The giant links stack.
-- Link groups become accordions (native `details`/`summary`).
-- The wordmark still fills the width.
+**Phone:** the slim footer (decision 94, `2026-10-28-phone-footer-design.md`): the sign-up and install button, six info links in two columns, the lockup and the wordmark. No giant links, no accordions.
 
 **Add to home screen:**
 - Uses the browser's install prompt where supported.

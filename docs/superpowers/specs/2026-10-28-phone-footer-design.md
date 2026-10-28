@@ -1,6 +1,6 @@
 # Phone footer: a slim footer that only holds what phones can't reach elsewhere: design
 
-Date: 2026-10-28 · Status: draft for Lama's review (would be decision 94).
+Date: 2026-10-28 · Status: built (decision 94, `2a5ffd8`).
 
 ## 1. What Lama asked for
 
@@ -59,7 +59,7 @@ Top to bottom:
 
 Gone on phones: the two giant links and the Shop, Sell, Help and Campuses accordions.
 
-**Height target:** at most 600px at 375 x 812 with the install button showing, two thirds of today's or less. The build measures it and records the figure.
+**Height:** 654px at 375 x 812 with the install button showing (it adds 60px), 594px without it, against 910px before. The draft's target was 600px. Lama accepted 654px over trimming the top padding, the wordmark's gap, the legal row's padding and the install gap (2026-10-28). The e2e test's limit is 660px.
 
 ### 3.1 How the markup gets there
 
