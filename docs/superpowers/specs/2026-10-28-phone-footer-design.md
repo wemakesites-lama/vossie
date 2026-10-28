@@ -49,9 +49,11 @@ Top to bottom:
    - How it works
    - How trust works
    - Seller guidelines
-   - Safety
    - Privacy (POPIA)
    - Terms of use
+   - Safety
+
+   The last three keep the legal row's order, so desktop doesn't change.
 3. **The lockup.** The pennant and "An Eduvos Incubation Hub project".
 4. **The CAMPUSCART wordmark**, filling the width as today. It keeps the footer bold for the cost of 56px.
 
@@ -62,8 +64,8 @@ Gone on phones: the two giant links and the Shop, Sell, Help and Campuses accord
 ### 3.1 How the markup gets there
 
 - **One copy of each control.** The sign-up and the install button are client components with fixed ids (`footer-updates-title`, `install-help-title`), so they render once at every size. Nothing is drawn twice for phones.
-- **Giants:** hidden below `wide:` (`hidden wide:grid`).
-- **Link groups:** the `<details>` accordions are removed. The columns block that is already `hidden wide:block` stays as it is for tablet and desktop.
+- **Giants:** hidden below `wide:` (`hidden wide:grid`). The grid's 32px top padding, which spaced it from the giants' hairline, goes on phones.
+- **Link groups:** the `<details>` accordions are removed, and each group's wrapper becomes `hidden wide:block`, so phones get no empty grid rows. Tablet and desktop draw the columns as now.
 - **The legal row becomes the phone's info list.** Today it is a `<p>` with Privacy, Terms and Safety joined by " · ". It becomes a `<ul>` of the six links:
   - Below `wide:`: a two-column grid of 44px rows.
   - From `wide:`: How it works, How trust works and Seller guidelines are hidden (the Help and Sell columns hold them), and the other three sit in a row with the dots drawn by CSS (`li + li::before`), so desktop looks as it does now.
