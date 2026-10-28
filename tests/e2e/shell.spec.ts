@@ -293,6 +293,7 @@ test.describe("footer", () => {
   });
 
   test("the giant links' arrows sit at the right edge of their links", async ({ page }) => {
+    test.skip(!isTabletOrWider(page), "Phones have no giant links (phone footer spec 3)");
     await page.goto("/");
     // Wrapped or not, the words must never push an arrow off the edge or leave it short of it. The pointer is parked
     // at the corner: hovering a link nudges its arrow 4px up and right on purpose.
@@ -323,29 +324,37 @@ test.describe("footer", () => {
       // size-5 is 20px. Without flex-shrink: 0 the wrapping label squeezes it to about 18px.
       expect(await icon.evaluate((svg) => svg.getBoundingClientRect().width)).toBeCloseTo(20, 1);
     });
+
+    test("the phone footer holds the sign-up, the info list and the wordmark in at most 660px (phone footer spec 3)", async ({
+      page,
+    }) => {
+      test.skip(isTabletOrWider(page), "Phones only");
+      await page.setViewportSize({ width: 375, height: 812 });
+      await page.goto("/");
+      const footer = page.getByRole("contentinfo");
+      await footer.scrollIntoViewIfNeeded();
+      await page.evaluate(() => document.fonts.ready.then(() => undefined));
+      await expect(footer.locator(".footer-install")).toBeVisible();
+      await expect(footer.locator(".footer-giants")).toBeHidden();
+      await expect(footer.getByRole("textbox", { name: "Email address" })).toBeVisible();
+      for (const name of ["How it works", "How trust works", "Seller guidelines", "Privacy (POPIA)", "Terms of use", "Safety"]) {
+        await expect(footer.getByRole("link", { name, exact: true })).toBeVisible();
+      }
+      const height = await footer.evaluate((element) => element.getBoundingClientRect().height);
+      // 654px with the install button (910px before); Lama accepted it over trimming the spacing (2026-10-28).
+      expect(height, "phone footer height at 375 x 812").toBeLessThanOrEqual(660);
+    });
   });
 
-  test("link groups open as accordions on phones", async ({ page }) => {
-    test.skip(isTabletOrWider(page), "Phones only");
-    await page.goto("/");
-    const shop = page.locator("summary.footer-summary", { hasText: /^Shop$/ });
-    await shop.scrollIntoViewIfNeeded();
-    await shop.click();
-    await expect(page.getByRole("link", { name: "Browse everything" })).toBeVisible();
-  });
-
-  test("assistive technology meets one copy of each footer list", async ({ page }) => {
-    // The phone accordions and the wider columns hold the same links; CSS must hide exactly one of them.
+  test("assistive technology meets one copy of each footer link that has one home", async ({ page }) => {
+    // The info list and the columns share How it works, How trust works and Seller guidelines; CSS must show exactly
+    // one copy at every size. Phones have no campus list in the footer (the menu holds it).
     await page.goto("/");
     const footer = page.getByRole("contentinfo");
-    const online = footer.getByRole("link", { name: "Eduvos Online", exact: true });
-    if (isTabletOrWider(page)) {
-      await expect(online).toHaveCount(1);
-    } else {
-      await expect(online).toHaveCount(0);
-      await footer.locator("summary.footer-summary", { hasText: /^Campuses$/ }).click();
-      await expect(online).toHaveCount(1);
+    for (const name of ["How it works", "How trust works", "Seller guidelines"]) {
+      await expect(footer.getByRole("link", { name, exact: true })).toHaveCount(1);
     }
+    await expect(footer.getByRole("link", { name: "Eduvos Online", exact: true })).toHaveCount(isTabletOrWider(page) ? 1 : 0);
   });
 });
 

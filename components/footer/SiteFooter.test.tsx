@@ -30,7 +30,7 @@ const campuses: Campus[] = [
   { slug: "online", name: "Eduvos Online", region: "Online, anywhere in SA", liveListings: 5, image: { src: "/p.svg", alt: "" } },
 ];
 
-/** The distinct addresses of every footer link with this name. Each group is drawn twice (the accordion and the column). */
+/** The distinct addresses of every footer link with this name. The legal list repeats some of the columns' links. */
 const hrefsOf = (name: string) => [
   ...new Set(screen.getAllByRole("link", { name }).map((link) => link.getAttribute("href"))),
 ];
@@ -65,14 +65,26 @@ describe("SiteFooter", () => {
     expect(screen.queryByRole("link", { name: "Seller safety" })).toBeNull();
   });
 
-  it("keeps privacy, terms and safety in the legal row, which a phone shows even with the groups folded", () => {
+  it("ends with the info list: six links on phones, the three legal ones from the wide step", () => {
     const { container } = render(<SiteFooter campuses={campuses} />);
-    const legal = container.querySelector<HTMLElement>(".footer-legal-links")!;
-    expect(within(legal).getAllByRole("link").map((link) => link.textContent)).toEqual([
+    const list = container.querySelector<HTMLElement>("ul.footer-legal-links")!;
+    expect(within(list).getAllByRole("link").map((link) => link.textContent)).toEqual([
+      "How it works",
+      "How trust works",
+      "Seller guidelines",
       "Privacy (POPIA)",
       "Terms of use",
       "Safety",
     ]);
+    // The Help and Sell columns hold the first three from the wide step, so the list hides them there.
+    const phoneOnly = [...list.querySelectorAll("li")].map((item) => item.classList.contains("wide:hidden"));
+    expect(phoneOnly).toEqual([true, true, true, false, false, false]);
+  });
+
+  it("puts the info list before the lockup, so phones read the links first", () => {
+    const { container } = render(<SiteFooter campuses={campuses} />);
+    const legal = container.querySelector<HTMLElement>(".footer-legal")!;
+    expect([...legal.children].map((child) => child.className)).toEqual(["footer-legal-links", "footer-lock"]);
   });
 
   it("doesn't prefetch Saved, which would download its route chunk on every page once the footer scrolls into view", () => {
@@ -90,11 +102,19 @@ describe("SiteFooter", () => {
     expect(container.querySelector(".footer-wordmark")).toHaveAttribute("aria-hidden", "true");
   });
 
-  it("sets the campuses in two columns on desktop, but not in the phone's accordion (decision 17)", () => {
+  it("sets the campuses in two columns, once (decision 17)", () => {
     const { container } = render(<SiteFooter campuses={campuses} />);
     const columns = container.querySelectorAll<HTMLElement>(".footer-links-columns");
     expect(columns).toHaveLength(1);
-    expect(columns[0].closest("details")).toBeNull();
     expect(within(columns[0]).getAllByRole("link")).toHaveLength(campuses.length);
+  });
+
+  it("has no accordions, and hides the giant links and the link columns below the wide step (phone footer spec 3.1)", () => {
+    const { container } = render(<SiteFooter campuses={campuses} />);
+    expect(container.querySelector("details")).toBeNull();
+    expect(container.querySelector(".footer-giants")).toHaveClass("hidden", "wide:grid");
+    const groups = container.querySelectorAll(".footer-group");
+    expect(groups).toHaveLength(4);
+    for (const group of groups) expect(group).toHaveClass("hidden", "wide:block");
   });
 });

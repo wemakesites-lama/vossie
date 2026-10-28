@@ -1729,8 +1729,8 @@
        sign-up row (the input's own width plus the button): wider than the content of a 360px screen. */
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
-    /* No padding below on phones: the legal row's own hairline is the one that closes the accordions. */
-    padding-block: 32px 0;
+    /* Phones have no giant links above, so nothing to clear (phone footer spec 3.1); the wide step sets 48px. */
+    padding-block: 0;
   }
 
   .footer-updates {
@@ -1771,42 +1771,6 @@
       color: var(--color-white);
       text-decoration: underline;
     }
-  }
-
-  .footer-accordion {
-    border-bottom: 1px solid rgb(255 255 255 / 0.15);
-  }
-
-  /* The legal row's top border sits right under the last accordion, so it supplies that hairline. */
-  .footer-group:last-child .footer-accordion {
-    border-bottom: 0;
-  }
-
-  .footer-summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 52px;
-    font-weight: 600;
-    list-style: none;
-    cursor: pointer;
-  }
-
-  .footer-summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .footer-summary-icon {
-    transition: rotate var(--dur-fast) var(--ease-out);
-  }
-
-  .footer-accordion[open] .footer-summary-icon {
-    rotate: 180deg;
-  }
-
-  /* 8px under the summary: the first link is a separate target, and no hairline divides the two. */
-  .footer-accordion .footer-links {
-    padding-block: 8px 12px;
   }
 
   .footer-label {
@@ -1880,7 +1844,7 @@
     color: var(--color-sky-dark);
   }
 
-  /* Phones, as in the approved mockup: a left-aligned column, the lockup first and the links under it. */
+  /* Phones: a left-aligned column, the info list first and the lockup under it (phone footer spec 3). */
   .footer-legal {
     display: flex;
     flex-direction: column;
@@ -1900,8 +1864,22 @@
     gap: 10px;
   }
 
-  /* The two legal links are standalone targets (the privacy notice link in the consent sentence is inline in text,
-     so it is exempt): 44px tall, as spec section 5 asks. */
+  /* Phones: the info list, two columns of 44px rows across the footer (phone footer spec 3). */
+  .footer-legal-links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
+    align-self: stretch;
+  }
+
+  /* Flex, not block, so a row is the link's 44px with no line box (and its descender space) around it. */
+  .footer-legal-links li {
+    display: flex;
+    align-items: center;
+  }
+
+  /* Standalone targets (the privacy notice link in the consent sentence is inline in text, so it is exempt): 44px
+     tall and wide, as spec section 5 asks. */
   .footer-legal-links a {
     display: inline-flex;
     align-items: center;
@@ -1960,6 +1938,27 @@
       flex-direction: row;
       align-items: center;
       justify-content: space-between;
+    }
+
+    /* The three legal links in a row, as before. The lockup comes after the list in the page (phones read the links
+       first); here it goes back to the left. It holds no link, so focus order is unaffected. */
+    .footer-legal-links {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      align-self: auto;
+      /* The phone grid's 16px gap would widen the dots' spacing. */
+      column-gap: 0;
+    }
+
+    .footer-lock {
+      order: -1;
+    }
+
+    /* The dots between visible links: the phone-only items are hidden here, so the first legal link gets none. */
+    .footer-legal-links li:not(.footer-phone-only) ~ li::before {
+      content: "·";
+      padding-inline: 0.3em;
     }
 
     /* The install help opens from the foot of the page, so from 768px it's centred, not anchored to its button. */

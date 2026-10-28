@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Pennant } from "@/components/brand/Pennant";
-import { ArrowUpRightIcon, ChevronDownIcon } from "@/components/icons";
+import { ArrowUpRightIcon } from "@/components/icons";
 import { cx } from "@/lib/cx";
 import type { Campus } from "@/lib/types";
 import { FitText } from "./FitText";
@@ -56,7 +56,18 @@ const LINK_GROUPS: readonly LinkGroup[] = [
   },
 ];
 
-/** The bold footer (spec section 6.6). */
+/** The info list at the foot (phone footer spec 3): all six on phones; from the wide step the columns hold the first
+    three, so only the legal three show, in the order the legal row always had. */
+const INFO_LINKS: readonly (FooterLink & { phoneOnly?: true })[] = [
+  { href: "/how-it-works", label: "How it works", phoneOnly: true },
+  { href: "/trust", label: "How trust works", phoneOnly: true },
+  { href: "/seller-guidelines", label: "Seller guidelines", phoneOnly: true },
+  { href: "/privacy", label: "Privacy (POPIA)" },
+  { href: "/terms", label: "Terms of use" },
+  { href: "/safety", label: "Safety" },
+];
+
+/** The bold footer (spec section 6.6); on phones the slim one (phone footer spec 3). */
 export function SiteFooter({ campuses }: { campuses: readonly Campus[] }) {
   const groups: readonly LinkGroup[] = [
     ...LINK_GROUPS,
@@ -71,7 +82,8 @@ export function SiteFooter({ campuses }: { campuses: readonly Campus[] }) {
     <footer className="site-footer surface-navy texture-stars">
       <div className="footer-inner">
         <h2 className="sr-only">Site links</h2>
-        <div className="footer-giants">
+        {/* Phones have Shop and Sell in the tab bar (phone footer spec 3). */}
+        <div className="footer-giants hidden wide:grid">
           {/* /browse opens on the chosen campus by itself, so this needs no client code (plan decision 12). */}
           <Link href="/browse" className="footer-giant">
             Shop your campus
@@ -93,32 +105,27 @@ export function SiteFooter({ campuses }: { campuses: readonly Campus[] }) {
             <InstallButton />
           </section>
 
+          {/* Phones reach every one of these links through the tab bar, the menu or the header (phone footer spec 2). */}
           {groups.map((group) => (
-            <div key={group.title} className="footer-group">
-              <details className="footer-accordion wide:hidden">
-                <summary className="footer-summary">
-                  {group.title}
-                  <ChevronDownIcon className="footer-summary-icon" />
-                </summary>
-                <FooterLinks links={group.links} />
-              </details>
-              <div className="hidden wide:block">
-                <h3 className="footer-heading">{group.title}</h3>
-                <FooterLinks links={group.links} columns={group.columns} />
-              </div>
+            <div key={group.title} className="footer-group hidden wide:block">
+              <h3 className="footer-heading">{group.title}</h3>
+              <FooterLinks links={group.links} columns={group.columns} />
             </div>
           ))}
         </div>
 
         <div className="footer-legal">
+          <ul className="footer-legal-links">
+            {INFO_LINKS.map((link) => (
+              <li key={link.href} className={link.phoneOnly ? "footer-phone-only wide:hidden" : undefined}>
+                <Link href={link.href}>{link.label}</Link>
+              </li>
+            ))}
+          </ul>
           <div className="footer-lock">
             <Pennant size="small" />
             <p>An Eduvos Incubation Hub project</p>
           </div>
-          <p className="footer-legal-links">
-            <Link href="/privacy">Privacy (POPIA)</Link> · <Link href="/terms">Terms of use</Link> ·{" "}
-            <Link href="/safety">Safety</Link>
-          </p>
         </div>
       </div>
       <div className="footer-wordmark" aria-hidden="true">

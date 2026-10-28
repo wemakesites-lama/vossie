@@ -146,23 +146,19 @@ test.describe("the info and legal pages (spec 3)", () => {
 });
 
 test.describe("the footer reaches the info and legal pages (spec 2.11)", () => {
-  const LINKS: ReadonlyArray<[name: string, href: string, group: "Sell" | "Help"]> = [
-    ["Seller guidelines", "/seller-guidelines", "Sell"],
-    ["How trust works", "/trust", "Help"],
-    ["Terms of use", "/terms", "Help"],
-    ["Privacy (POPIA)", "/privacy", "Help"],
+  const LINKS: ReadonlyArray<[name: string, href: string]> = [
+    ["Seller guidelines", "/seller-guidelines"],
+    ["How trust works", "/trust"],
+    ["Terms of use", "/terms"],
+    ["Privacy (POPIA)", "/privacy"],
   ];
 
-  for (const [name, href, group] of LINKS) {
+  for (const [name, href] of LINKS) {
     test(`${name} opens ${href}`, async ({ page }) => {
       onlyAt("phone-390", "desktop-1440");
       await page.goto("/");
-      const footer = page.getByRole("contentinfo");
-      // On phones the link groups are folded.
-      if (width(page) < 768) {
-        await footer.locator("summary.footer-summary", { hasText: new RegExp(`^${group}$`) }).click();
-      }
-      await footer.getByRole("link", { name, exact: true }).first().click();
+      // One visible copy at every size: the info list on phones, the columns from the wide step.
+      await page.getByRole("contentinfo").getByRole("link", { name, exact: true }).first().click();
       await expect(page).toHaveURL(new RegExp(`${href}$`));
     });
   }

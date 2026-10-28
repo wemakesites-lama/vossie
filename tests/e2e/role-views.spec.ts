@@ -28,7 +28,8 @@ test.describe("section bars (role views spec 4.1)", () => {
     // The kept /sell page is still in the DOM, hidden (Activity): what matters is that nothing of it shows.
     await expect(bar(page, "Selling")).toBeHidden();
     if (phone()) await expect(mainBar(page)).toBeVisible();
-    await expect(page.locator(".footer-giants")).toBeVisible();
+    // The footer's marketing blocks are back: phones have no giant links (phone footer spec 3), so check the sign-up.
+    await expect(page.locator(phone() ? ".footer-updates" : ".footer-giants")).toBeVisible();
   });
 
   test("a student without a shop keeps the main bar on /sell, with the side panel from the tablet step", async ({
