@@ -8,7 +8,7 @@ export function LookingFor() {
   return (
     <section id="looking-for" aria-labelledby="looking-for-title" className="home-panel looking-for">
       <div className="looking-for-intro">
-        <SectionHeader id="looking-for" eyebrow="Looking For" title="Can’t find it? Ask for it." tone="navy" />
+        <SectionHeader id="looking-for" eyebrow="Looking For" title="Can’t find it? Ask for it." tone="sky" />
         <p className="looking-for-copy">Post what you need and sellers on your campus come to you with offers.</p>
         {/* Inside the intro, so the tab order matches the layout: the button sits under the copy at every size. */}
         {/* Follows the session in its own <Suspense>, with no prefetch: the homepage is prefetched from every page (decision 53). */}

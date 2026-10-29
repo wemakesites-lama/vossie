@@ -8,8 +8,11 @@ type SectionHeaderProps = {
   eyebrow: string;
   /** The large heading. Without it, the eyebrow itself is the section's H2. */
   title?: string;
-  /** "navy" on grey, pale and sky panels, where sky-dark fails contrast. */
-  tone?: "default" | "navy";
+  /**
+   * "navy" on grey and pale panels, where sky-dark fails contrast. "sky" on a sky panel: navy in every theme, since
+   * the navy token turns white in the dark themes and white on sky fails.
+   */
+  tone?: "default" | "navy" | "sky";
   align?: "start" | "center";
   /** `context` is read after the label by screen readers only, e.g. " new listings". */
   link?: { href: string; label: string; context?: string };
@@ -19,7 +22,7 @@ type SectionHeaderProps = {
 
 /** A section's eyebrow, heading and "See all" link (spec section 7). */
 export function SectionHeader({ id, eyebrow, title, tone = "default", align = "start", link, children }: SectionHeaderProps) {
-  const eyebrowClass = cx("eyebrow", tone === "navy" && "text-navy");
+  const eyebrowClass = cx("eyebrow", tone === "navy" && "text-navy", tone === "sky" && "text-on-sky");
   return (
     <div className={cx("section-head", align === "center" && "section-head-center")}>
       <div>

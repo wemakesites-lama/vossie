@@ -40,6 +40,13 @@ CampusCart is the student marketplace for every Eduvos campus. Lama Nkuna is the
   - Small text is white.
   - Sky is only for large text (24px+, or 18.66px+ bold), icons and arrows, solid sky pills, and the wordmark.
   - The reason: a star behind a letter drops small sky text to about 4.0:1.
+- **Themes (decision 95, `docs/superpowers/specs/2026-10-28-dark-themes-design.md`):** Light, Dark (navy, stars) and Night (near-black, warm words, no stars, photos and crest dimmed), plus Match my phone, the default, which stores nothing.
+  - The choice is `vossie_theme` in localStorage, never a cookie (the root layout would lose its static shell). The boot script sets `<html data-theme>` before first paint; `lib/theme.ts` (`setTheme`) and `useTheme` are the only other writers and readers. Night alone adds `<meta id="night-bar" name="theme-color">`.
+  - Colours come only from tokens, each with one job: `white` the surface, `navy` headings, `band`/`on-band` brand surfaces and what sits on them, `action`/`on-action` solid controls and chosen states, `on-sky` anything on sky (always navy), `alert` the deep red badge. Never `#fff`, `white` or `navy` for words on a band or a button: they flip in the dark themes.
+  - Dark styles go in `@variant dark { … }` (a chosen Dark or Night, or the phone in dark mode with nothing chosen) and Night's in `@variant night { … }` after it (`dark:` and `night:` in class names are the same variants; never a bare `prefers-color-scheme` query, which ignores the choice). Only `transform` and `opacity` animate, so a theme change never fades colours.
+  - `lib/theme-contrast.test.ts` checks every token pair in all three themes; a new pairing joins its list.
+  - The menu's Theme and Data saver (`components/menu/MenuSettings.tsx`) load by `lazy` on the menu's first open: in the menu itself they tipped the listing forms over 150 KB.
+  - The offline page has no script, so it follows only the phone's dark mode, in Dark's colours.
 - Fonts only through `font-display`, `font-text` and `font-accent` (or `var(--vos-font-*)` in CSS). Never a font name in a component.
 - The crest comes only from `assets/brand/` until Eduvos sends the official SVG.
 - Icons only from `components/icons.tsx`. No emoji as icons.

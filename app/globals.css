@@ -26,14 +26,45 @@
   }
 }
 
+/* "dark" = either dark theme (Dark and Night themes spec 3.1): chosen in the menu (data-theme on <html>, set before
+   first paint by the boot script), or the phone in dark mode with nothing chosen. Replaces Tailwind's own dark:.
+   In CSS, write `@variant dark { … }` inside a rule; Night's own differences come after it in `@variant night`. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="night"], [data-theme="night"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme]), :root:not([data-theme]) *) {
+      @slot;
+    }
+  }
+}
+
+@custom-variant night {
+  &:where([data-theme="night"], [data-theme="night"] *) {
+    @slot;
+  }
+}
+
 /* ---------------------------------------------------------------------------
    Brand tokens (spec section 4). Each becomes Tailwind utilities,
    e.g. --color-navy gives bg-navy, text-navy, border-navy.
    --------------------------------------------------------------------------- */
 @theme {
   --color-*: initial;
-  --color-white: #ffffff;
-  --color-navy: #15305d;
+  --color-white: #ffffff; /* the page and card surface */
+  --color-navy: #15305d; /* headings and text on the surface */
+  /* Dark and Night themes spec 4.1: "white" and "navy" each had two jobs. The band is the navy brand surface (hero,
+     menu, campus cards, the star panels) and on-band is what sits on it, or on a photo. Action is a solid control or
+     a chosen state (the primary button, a current tab, your own message) and on-action its words. In Light they are
+     today's navy and white; the dark themes give each its own value. */
+  --color-band: #15305d;
+  --color-on-band: #ffffff;
+  --color-action: #15305d;
+  --color-on-action: #ffffff;
+  /* The same in every theme: navy words on a sky fill (4.97:1), and a deep red that carries white words. */
+  --color-on-sky: #15305d;
+  --color-alert: #b42318;
   --color-sky: #29abe2;
   --color-sky-dark: #1e7ba8;
   --color-panel: #f3f3f3;
@@ -76,6 +107,68 @@
 
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Dark (Dark and Night themes spec 4.2). Every pairing a page uses passes AA: lib/theme-contrast.test.ts reads these
+   lines. Sky stays sky; the band stays navy with its stars; links lighten to #45b7e8 (5.0 on pale, 5.7 on panel);
+   an action is sky with navy words. Night overrides some of these in its own block. */
+:root {
+  @variant dark {
+    color-scheme: dark;
+    --color-white: #0d1c38;
+    --color-navy: #ffffff;
+    --color-action: #29abe2;
+    --color-on-action: #15305d;
+    --color-sky-dark: #45b7e8;
+    --color-panel: #15305d;
+    --color-pale: #163a66;
+    --color-ink: #dfe5ee;
+    --color-muted: #a9b4c6;
+    --color-line: rgb(255 255 255 / 0.14);
+    --color-field: #7088ad;
+    --color-idle: #3b5480;
+    --color-idle-text: #8794aa;
+    --color-danger: #ff8a80;
+    --color-success: #5fd08f;
+    --color-success-tint: #123d33;
+    --color-warning: #f2b84b;
+    --color-warning-tint: #3d3018;
+    --color-danger-tint: #4a1f2a;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 0 0 1px rgb(255 255 255 / 0.06);
+    --field-shimmer: rgb(69 183 232 / 0.2);
+  }
+}
+
+/* Night (spec 4.2, Lama 2026-10-28): near-black for reading in bed and OLED phones, warm white words, a soft sky,
+   no star texture, photos a little dimmer. It comes after Dark, whose variant also matches Night, so these win.
+   An action is the soft sky with navy words: a lifted grey was only 1.4:1 against the page. */
+:root {
+  @variant night {
+    --color-white: #07090d;
+    --color-navy: #ece7df;
+    --color-band: #0c1018;
+    --color-on-band: #ece7df;
+    --color-action: #4fa9d1;
+    --color-on-action: #15305d;
+    --color-sky: #4fa9d1;
+    --color-sky-dark: #6fb6d6;
+    --color-panel: #11151c;
+    --color-pale: #16202c;
+    --color-ink: #cfc9bf;
+    --color-muted: #9a958d;
+    --color-line: rgb(236 231 223 / 0.12);
+    --color-field: #6b727e;
+    --color-idle: #2a313c;
+    --color-idle-text: #7b7f86;
+    --color-danger: #f0857a;
+    --color-success: #6cc08f;
+    --color-success-tint: #122a1e;
+    --color-warning: #e0b062;
+    --color-warning-tint: #2b2213;
+    --color-danger-tint: #2e1618;
+    --shadow-card: 0 0 0 1px rgb(236 231 223 / 0.06);
+    --field-shimmer: rgb(111 182 214 / 0.14);
+  }
 }
 
 /* Font families go through switchable variables, so the Eduvos set can replace the interim set. */
@@ -174,7 +267,7 @@
 
   ::selection {
     background: var(--color-sky);
-    color: var(--color-navy);
+    color: var(--color-on-sky);
   }
 
   /* 16px minimum stops iPhones zooming into form fields. */
@@ -192,15 +285,20 @@
 }
 
 @utility surface-navy {
-  background-color: var(--color-navy);
-  color: var(--color-white);
+  background-color: var(--color-band);
+  color: var(--color-on-band);
   --focus-ring: var(--color-sky);
-  --focus-halo: var(--color-navy);
+  --focus-halo: var(--color-band);
 }
 
 @utility texture-stars {
   background-image: var(--stars);
   background-size: 180px 180px;
+
+  /* Night has no star texture (spec 4.3). */
+  @variant night {
+    background-image: none;
+  }
 }
 
 @layer components {
@@ -213,11 +311,11 @@
     translate: 0 calc(-100% - max(12px, env(safe-area-inset-top)) - 4px);
     padding: 12px 18px;
     border-radius: 999px;
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-action);
+    color: var(--color-on-action);
     font-weight: 600;
     --focus-ring: var(--color-sky);
-    --focus-halo: var(--color-navy);
+    --focus-halo: var(--color-band);
   }
 
   .skip-link:focus {
@@ -358,13 +456,13 @@
   }
 
   .btn-primary {
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-action);
+    color: var(--color-on-action);
   }
 
   .btn-sky {
     background: var(--color-sky);
-    color: var(--color-navy);
+    color: var(--color-on-sky);
   }
 
   .btn-outline {
@@ -438,8 +536,8 @@
   .toast {
     padding: 12px 18px;
     border-radius: 999px;
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-band);
+    color: var(--color-on-band);
     font-size: 14px;
     font-weight: 600;
     animation: toast-in var(--dur-base) var(--ease-out);
@@ -495,7 +593,7 @@
     width: 30px;
     height: 37px;
     padding-top: 5px;
-    background: var(--color-white);
+    background: var(--color-on-band);
     clip-path: polygon(0 0, 100% 0, 100% 72%, 50% 100%, 0 72%);
     forced-color-adjust: none;
   }
@@ -522,12 +620,18 @@
     display: flex;
     justify-content: center;
     padding-top: var(--pen-pt);
-    background: var(--color-navy);
+    background: var(--color-band);
   }
 
   .pennant-crest {
     width: auto;
     height: var(--crest-h);
+
+    /* Night: the white crest dimmed towards the warm words (spec 4.3). A filter, not opacity, which the crest's
+       breathing uses. */
+    @variant night {
+      filter: brightness(0.88);
+    }
   }
 
   /* Soft shadow, shown only while the pennant is pinned on its own (header crest-only mode).
@@ -700,7 +804,7 @@
     padding: 0 5px;
     border-radius: 999px;
     background: var(--color-sky);
-    color: var(--color-navy);
+    color: var(--color-on-sky);
     font-size: 11px;
     font-weight: 700;
     line-height: 1;
@@ -723,8 +827,8 @@
   /* A chosen campus fills the pill (the approved mockup's "pill on"). */
   .campus-pill[data-chosen] {
     border-color: var(--color-navy);
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-action);
+    color: var(--color-on-action);
   }
 
   .hdr-pennant-slot {
@@ -743,7 +847,7 @@
     inset: 0 -5px -10px;
     border-radius: 0 0 14px 14px;
     --focus-ring: var(--color-sky);
-    --focus-halo: var(--color-navy);
+    --focus-halo: var(--color-band);
   }
 
   @media (min-width: 48rem) and (min-height: 30rem) {
@@ -810,13 +914,13 @@
     translate: -50% calc(-100% - max(8px, env(safe-area-inset-top)) - 40px);
     padding: 12px 18px;
     border-radius: 999px;
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-action);
+    color: var(--color-on-action);
     font-weight: 600;
     visibility: visible;
     pointer-events: auto;
     --focus-ring: var(--color-sky);
-    --focus-halo: var(--color-navy);
+    --focus-halo: var(--color-band);
   }
 
   .hdr-show:focus {
@@ -966,7 +1070,7 @@
   /* Sell, the one action: always a solid sky pill with a navy plus; navy with a white plus on its own pages. */
   .tab-sell .tab-icon {
     background: var(--color-sky);
-    color: var(--color-navy);
+    color: var(--color-on-sky);
   }
 
   .tab-sell .tab-icon::before {
@@ -974,8 +1078,8 @@
   }
 
   .tab-sell[aria-current] .tab-icon {
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-action);
+    color: var(--color-on-action);
   }
 
   /* Badges sit on the icon's top-right corner, measured from the tab's centre, after the label in the reading order. */
@@ -1235,7 +1339,7 @@
 
   /* White, not sky: small text on the star texture drops to about 4.0:1 where a star sits behind a letter (WCAG 1.4.3). */
   .menu-campus-change {
-    color: var(--color-white);
+    color: var(--color-on-band);
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 3px;
@@ -1327,7 +1431,7 @@
 
   /* 18px semibold is small text, so white (see .menu-campus-change); the 2px underline alone marks the current row. */
   .menu-sublinks [aria-current="page"] {
-    color: var(--color-white);
+    color: var(--color-on-band);
     text-decoration: underline 2px;
     text-underline-offset: 4px;
   }
@@ -1344,6 +1448,11 @@
     margin-top: 32px;
     padding-top: 20px;
     border-top: 1px solid rgb(255 255 255 / 0.15);
+  }
+
+  .menu-low-data {
+    display: grid;
+    gap: 6px;
   }
 
   .menu-switch {
@@ -1375,7 +1484,7 @@
     width: 22px;
     height: 22px;
     border-radius: 999px;
-    background: var(--color-white);
+    background: var(--color-on-band);
     transition: translate var(--dur-fast) var(--ease-out);
   }
 
@@ -1383,17 +1492,96 @@
     translate: 18px 0;
   }
 
+  /* MenuDrawer shows this until Theme and Data saver load on the menu's first open: Theme's 128px (legend 24px, 8px,
+     two rows of 44px and an 8px gap) and its 20px margin, the 6px gap, and Data saver's 68px. */
+  .menu-settings-placeholder {
+    min-height: 222px;
+  }
+
+  /* Theme (Dark and Night themes spec 3.3). */
+  .theme-choice {
+    min-width: 0;
+    margin: 0 0 20px;
+    padding: 0;
+    border: 0;
+  }
+
+  .theme-choice-legend {
+    margin-bottom: 8px;
+    padding: 0;
+    font-weight: 600;
+  }
+
+  .theme-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    max-width: 22rem;
+  }
+
+  .theme-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1.5px solid rgb(255 255 255 / 0.4);
+    border-radius: 999px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  /* Filled, not only coloured: the chosen option is a solid pill, the others outlines. Sky with navy words works on
+     the band in every theme (lib/theme-contrast.test.ts checks on-sky on sky). */
+  .theme-option:has(:checked) {
+    border-color: var(--color-sky);
+    background: var(--color-sky);
+    color: var(--color-on-sky);
+  }
+
+  /* The radio itself is hidden, so its ring goes on the pill. */
+  .theme-option:has(:focus-visible) {
+    outline: 2.5px solid var(--focus-ring, var(--color-navy));
+    outline-offset: 3px;
+    box-shadow: 0 0 0 7.5px var(--focus-halo, transparent);
+  }
+
+  /* Tablet and up: the four sit in a row, beside Data saver. */
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .menu-bottom {
+      grid-template-columns: auto minmax(0, 22rem);
+      justify-content: start;
+      align-items: start;
+      column-gap: 40px;
+    }
+
+    .menu-settings-placeholder {
+      min-height: 76px;
+    }
+
+    .theme-choice {
+      margin: 0;
+    }
+
+    .theme-options {
+      grid-template-columns: repeat(4, auto);
+      max-width: none;
+    }
+  }
+
   /* Tablet and up. The big type takes the height left over, so the main view fits without scrolling
-     down to about 630px of height. The 316px reserved is the menu's other parts (padding, top bar, view
-     padding, data saver: 253px), plus six 8px gaps, 8px because Shop's row is 52px tall (the height of its
-     arrow button) where the other rows are 44px, and 7px of slack. That leaves about 10px to spare at 657px
-     of height. The 7 is the number of link rows. If a row or block is added, the menu scrolls rather than
-     breaks. */
+     down to about 630px of height. The 341px reserved is the menu's other parts (padding, top bar, view
+     padding, Theme beside data saver: 278px, 25px more than data saver alone at 768px wide), plus six 8px
+     gaps, 8px because Shop's row is 52px tall (the height of its arrow button) where the other rows are
+     44px, and 7px of slack. That leaves about 10px to spare at 657px of height. The 7 is the number of link
+     rows. If a row or block is added, the menu scrolls rather than breaks. (Signed out, Sign in is an 8th
+     row, so at 768 x 657 the menu scrolls about 43px: it did before Theme too.) */
   @media (min-width: 48rem) and (min-height: 30rem) {
     .menu-links a,
     .menu-link-button {
       min-height: 44px;
-      font-size: clamp(2.5rem, min(1.6rem + 4.4vw, (100dvh - 316px) / 7), 4.5rem);
+      font-size: clamp(2.5rem, min(1.6rem + 4.4vw, (100dvh - 341px) / 7), 4.5rem);
     }
 
     /* Shop's drill-down arrow sits beside the word, as Campuses' chevron does, not at the far edge. */
@@ -1622,7 +1810,7 @@
     padding: 3px 8px;
     border-radius: 999px;
     background: var(--color-sky);
-    color: var(--color-navy);
+    color: var(--color-on-sky);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.8px;
@@ -1740,7 +1928,7 @@
   /* White, not sky: small text on the star texture (see .menu-campus-change). */
   .footer-heading {
     margin-bottom: 12px;
-    color: var(--color-white);
+    color: var(--color-on-band);
     font-family: var(--vos-font-display);
     font-size: var(--text-eyebrow);
     letter-spacing: 1px;
@@ -1768,7 +1956,7 @@
 
   @media (hover: hover) and (pointer: fine) {
     .footer-links a:hover {
-      color: var(--color-white);
+      color: var(--color-on-band);
       text-decoration: underline;
     }
   }
@@ -1804,7 +1992,7 @@
 
   .footer-consent a,
   .footer-legal-links a {
-    color: var(--color-white);
+    color: var(--color-on-band);
     text-decoration: underline;
     text-underline-offset: 2px;
   }
@@ -2095,6 +2283,11 @@
 
   .photo-img {
     object-fit: cover;
+
+    /* Night: a little dimmer, never recoloured (spec 4.4). A still style, not an animation. */
+    @variant night {
+      filter: brightness(0.9);
+    }
   }
 
   /* Skeletons keep the final size while a section streams in (spec section 9). They don't shimmer: nothing loops
@@ -2367,8 +2560,8 @@
     margin-top: 8px;
     padding: 3px 8px;
     border-radius: 999px;
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-band);
+    color: var(--color-on-band);
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.6px;
@@ -2447,7 +2640,7 @@
     display: grid;
     overflow: hidden;
     border-radius: var(--radius-card);
-    background: var(--color-navy);
+    background: var(--color-band);
   }
 
   .hero-panel {
@@ -2471,7 +2664,7 @@
     padding: 0 14px;
     border: 1.5px solid rgb(255 255 255 / 0.6);
     border-radius: 999px;
-    color: var(--color-white);
+    color: var(--color-on-band);
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 1px;
@@ -2480,7 +2673,7 @@
 
   .hero-title {
     margin-top: 10px;
-    color: var(--color-white);
+    color: var(--color-on-band);
     font-family: var(--vos-font-display);
     /* 44px on phones to 64px on desktop (spec section 4), a little smaller on tablets, where the panel is narrow. */
     font-size: clamp(2.75rem, 1.2rem + 3.4vw, 4rem);
@@ -2549,7 +2742,7 @@
 
   .btn-ghost {
     border: 1.5px solid rgb(255 255 255 / 0.7);
-    color: var(--color-white);
+    color: var(--color-on-band);
   }
 
   /* Phones: the photo sits above the panel, in the grid's first row (spec 7.3). It comes after the panel in the page,
@@ -2577,7 +2770,7 @@
     /* Sideways swipes change the slide; up and down still scroll the page, and pinch-zoom still works. */
     touch-action: pan-y pinch-zoom;
     --focus-ring: var(--color-sky);
-    --focus-halo: var(--color-navy);
+    --focus-halo: var(--color-band);
   }
 
   /* The cross-fade (spec 7.3): the new photo fades in on top while the old one stays put underneath, then drops
@@ -2639,7 +2832,7 @@
     width: 44px;
     height: 44px;
     border-radius: 6px;
-    color: var(--color-white);
+    color: var(--color-on-band);
   }
 
   @media (min-width: 48rem) and (min-height: 30rem) {
@@ -2837,7 +3030,7 @@
   }
 
   .context-signed-in .context-link {
-    color: var(--color-white);
+    color: var(--color-on-band);
   }
 
   @media (min-width: 48rem) and (min-height: 30rem) {
@@ -2919,7 +3112,7 @@
     left: 14px;
     right: 14px;
     z-index: 2;
-    color: var(--color-white);
+    color: var(--color-on-band);
     font-family: var(--vos-font-display);
     font-size: clamp(1.3125rem, 1.15rem + 0.5vw, 1.5rem);
     line-height: 0.95;
@@ -3115,10 +3308,18 @@
       background: #cfe6f3;
       rotate: -6deg;
       translate: -12px 8px;
+
+      @variant dark {
+        background: #1c4377;
+      }
     }
 
     .collections-fan-middle {
       background: #9fd1ec;
+
+      @variant dark {
+        background: #25578f;
+      }
       rotate: 4deg;
       translate: 10px 2px;
     }
@@ -3234,8 +3435,8 @@
     overflow: hidden;
     padding: 0 14px 16px;
     border-radius: var(--radius-card);
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-band);
+    color: var(--color-on-band);
     text-align: left;
     transition: scale var(--dur-fast) var(--ease-out);
   }
@@ -3296,9 +3497,9 @@
     height: 28px;
     padding: 6px;
     border-radius: 999px;
-    background: var(--color-navy);
-    box-shadow: 0 0 0 2px var(--color-white);
-    color: var(--color-white);
+    background: var(--color-band);
+    box-shadow: 0 0 0 2px var(--color-on-band);
+    color: var(--color-on-band);
   }
 
   @media (min-width: 48rem) and (min-height: 30rem) {
@@ -3422,7 +3623,7 @@
       content: "";
       position: absolute;
       inset: 0;
-      background: var(--color-white);
+      background: var(--color-on-band);
       transform-origin: left;
       scale: 0 1;
       animation: campus-progress 4s linear forwards;
@@ -3444,9 +3645,9 @@
       height: 44px;
       border-radius: 999px;
       background: rgb(9 20 42 / 0.72);
-      color: var(--color-white);
+      color: var(--color-on-band);
       --focus-ring: var(--color-sky);
-      --focus-halo: var(--color-navy);
+      --focus-halo: var(--color-band);
     }
 
     .campus-chooser-foot {
@@ -3472,8 +3673,8 @@
     }
 
     .campus-choice-on {
-      background: var(--color-navy);
-      color: var(--color-white);
+      background: var(--color-action);
+      color: var(--color-on-action);
     }
 
     .campus-caption {
@@ -3537,8 +3738,8 @@
   }
 
   .scope-switch [aria-pressed="true"] {
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-action);
+    color: var(--color-on-action);
   }
 
   .just-listed-empty {
@@ -3774,7 +3975,7 @@
     padding: 4px 8px;
     border-radius: 4px;
     background: var(--color-sky);
-    color: var(--color-navy);
+    color: var(--color-on-sky);
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.6px;
@@ -3845,8 +4046,8 @@
     width: 18px;
     height: 18px;
     border-radius: 999px;
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-band);
+    color: var(--color-on-band);
   }
 
   .seller-skeleton-photo {
@@ -3906,10 +4107,11 @@
     gap: 16px;
     padding: 26px 20px;
     background: var(--color-sky);
-    color: var(--color-navy);
+    color: var(--color-on-sky);
   }
 
   .looking-for .section-title {
+    color: var(--color-on-sky);
     font-size: clamp(2.5rem, 1.75rem + 2.6vw, 3.625rem);
     line-height: 0.96;
     /* Even lines on phones, rather than "it." alone on the last one. */
@@ -3947,6 +4149,8 @@
     padding: 12px 14px;
     border-radius: var(--radius-strip);
     background: var(--color-white);
+    /* The surface's own words, not the sky panel's navy, which stays navy in the dark themes. */
+    color: var(--color-navy);
     transition: scale var(--dur-fast) var(--ease-out);
   }
 
@@ -4237,10 +4441,10 @@
     margin-inline: calc(env(safe-area-inset-left) * -1) calc(env(safe-area-inset-right) * -1);
     overflow: clip;
     border-radius: var(--radius-card) var(--radius-card) 0 0;
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-band);
+    color: var(--color-on-band);
     --focus-ring: var(--color-sky);
-    --focus-halo: var(--color-navy);
+    --focus-halo: var(--color-band);
   }
 
   /* The banner sits on the footer (spec 7.13), so the footer drops its usual gap. Only while the homepage shows: the
@@ -4490,7 +4694,7 @@
 }
 
 :root[data-low-data] .category-tile {
-  background: var(--color-navy);
+  background: var(--color-band);
 }
 
 /* --- Browse: frame, header and category tabs (browse and listing plan, Task 9, spec 4.1 to 4.3) --- */
@@ -4654,8 +4858,8 @@
   }
 
   .tool[open] > .tool-button {
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-action);
+    color: var(--color-on-action);
   }
 
   .tool-chevron {
@@ -5508,7 +5712,7 @@
 
   .seller-hero-photo {
     width: 64px;
-    border: 2px solid var(--color-white);
+    border: 2px solid var(--color-on-band);
     border-radius: 999px;
   }
 
@@ -5539,7 +5743,7 @@
     align-items: center;
     gap: 4px;
     padding: 4px 10px;
-    border: 1.5px solid var(--color-white);
+    border: 1.5px solid var(--color-on-band);
     border-radius: 999px;
     font-size: 12px;
     font-weight: 600;
@@ -5551,7 +5755,7 @@
   .seller-verified {
     border-color: var(--color-sky);
     background: var(--color-sky);
-    color: var(--color-navy);
+    color: var(--color-on-sky);
   }
 
   .seller-badge {
@@ -5576,8 +5780,8 @@
 
   .seller-share {
     flex: none;
-    border: 1.5px solid var(--color-white);
-    color: var(--color-white);
+    border: 1.5px solid var(--color-on-band);
+    color: var(--color-on-band);
   }
 
   .seller-layout {
@@ -6246,8 +6450,8 @@
   /* The chosen chip is filled, so it doesn't rely on colour alone. Where the browser supports it, the row starts
      scrolled to it, as browse's tabs do. */
   .link-chip[aria-current="page"] {
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-action);
+    color: var(--color-on-action);
     scroll-initial-target: nearest;
   }
 
@@ -7262,11 +7466,11 @@
 /* --- Accounts: the menu's Sign out row (accounts plan, Task 8, spec 3.4) --- */
 @layer components {
   /* Signed in, the menu has 8 rows, not 7 (plan decision 14), so from the tablet step the big type shares the spare
-     height 8 ways. 324px is the 316px the 7-row rule reserves, plus one more 8px gap. Signed out, nothing changes. */
+     height 8 ways. 349px is the 341px the 7-row rule reserves, plus one more 8px gap. Signed out, nothing changes. */
   @media (min-width: 48rem) and (min-height: 30rem) {
     .menu-links:has(.menu-signout) a,
     .menu-links:has(.menu-signout) .menu-link-button {
-      font-size: clamp(2.5rem, min(1.6rem + 4.4vw, (100dvh - 324px) / 8), 4.5rem);
+      font-size: clamp(2.5rem, min(1.6rem + 4.4vw, (100dvh - 349px) / 8), 4.5rem);
     }
   }
 }
@@ -7614,12 +7818,13 @@
   .status-pill[data-status="done"] {
     border-color: var(--color-sky);
     background: var(--color-sky);
+    color: var(--color-on-sky);
   }
 
   .status-pill[data-status="confirmed"] {
     border-color: var(--color-navy);
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-action);
+    color: var(--color-on-action);
   }
 
   .msg-refresh {
@@ -7683,8 +7888,8 @@
   }
 
   .inbox-tab[aria-current="page"] {
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-action);
+    color: var(--color-on-action);
   }
 
   .inbox-list {
@@ -7860,8 +8065,8 @@
   .thread-message[data-from="you"] {
     justify-self: end;
     border-bottom-right-radius: 4px;
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-action);
+    color: var(--color-on-action);
   }
 
   .thread-message[data-from="them"] {
@@ -8073,8 +8278,8 @@
     margin-right: 6px;
     padding: 0 8px;
     border-radius: 999px;
-    background: var(--color-danger);
-    color: var(--color-white);
+    background: var(--color-alert);
+    color: var(--color-on-band);
     font-size: 12px;
     font-weight: 700;
   }
@@ -8118,8 +8323,8 @@
 @layer components {
   /* New notifications: white on danger red (6.6:1), apart from Saved's sky count beside it. */
   .hdr-badge-alert {
-    background: var(--color-danger);
-    color: var(--color-white);
+    background: var(--color-alert);
+    color: var(--color-on-band);
   }
 }
 
@@ -8539,7 +8744,7 @@
   .photo-start {
     --photo-start-cover: 96px;
     --focus-ring: var(--color-sky);
-    --focus-halo: var(--color-navy);
+    --focus-halo: var(--color-band);
     display: grid;
     grid-template-areas: "head" "photos" "act";
     gap: 16px;
@@ -8548,8 +8753,8 @@
     padding: 16px;
     border: 0;
     border-radius: var(--radius-panel);
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-band);
+    color: var(--color-on-band);
   }
 
   .photo-start-head {
@@ -8570,7 +8775,7 @@
   }
 
   .photo-start-title {
-    color: var(--color-white);
+    color: var(--color-on-band);
     font-family: var(--vos-font-display);
     font-size: 24px;
     line-height: 1.05;
@@ -8579,7 +8784,7 @@
 
   .photo-start-line {
     margin-top: 6px;
-    color: var(--color-white);
+    color: var(--color-on-band);
     font-size: 14px;
   }
 
@@ -8595,15 +8800,15 @@
     border: 2px solid var(--color-sky);
     border-radius: 999px;
     background: var(--color-sky);
-    color: var(--color-navy);
+    color: var(--color-on-sky);
     font-weight: 700;
   }
 
   /* Today's limit is used (spec 2.4): a secondary button, white outline on navy, never disabled. */
   .photo-start-button-quiet {
-    border-color: var(--color-white);
+    border-color: var(--color-on-band);
     background: transparent;
-    color: var(--color-white);
+    color: var(--color-on-band);
   }
 
   /* PendingButton dims a busy button; on navy that would take the navy-on-sky words below AA, so the words alone say
@@ -8614,7 +8819,7 @@
 
   .photo-start-status {
     display: none;
-    color: var(--color-white);
+    color: var(--color-on-band);
     font-size: 14px;
   }
 
@@ -8624,7 +8829,7 @@
 
   /* The photo field on navy. */
   .photo-start :is(.form-label, .form-hint, .sell-photo-title, .sell-photo-status) {
-    color: var(--color-white);
+    color: var(--color-on-band);
   }
 
   .photo-start .form-error {
@@ -8651,16 +8856,16 @@
 
   .photo-start .sell-action,
   .photo-start .sell-action-danger {
-    border: 1.5px solid var(--color-white);
+    border: 1.5px solid var(--color-on-band);
     background: transparent;
-    color: var(--color-white);
+    color: var(--color-on-band);
   }
 
   /* Add photos: a white dashed outline on navy (spec 2.1, item 4). */
   .photo-start .sell-file {
-    border: 2px dashed var(--color-white);
+    border: 2px dashed var(--color-on-band);
     background: transparent;
-    color: var(--color-white);
+    color: var(--color-on-band);
   }
 
   .photo-start-or {
@@ -8778,7 +8983,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, transparent, rgb(225 240 247 / 0.75), transparent);
+    background: linear-gradient(90deg, transparent, var(--field-shimmer, rgb(225 240 247 / 0.75)), transparent);
     pointer-events: none;
     animation: photo-start-shimmer 1.4s linear infinite;
   }
@@ -9845,15 +10050,15 @@
   /* A white outline with white text on the stars (spec section 4). */
   .seller-unfollow {
     min-height: 44px;
-    border: 1.5px solid var(--color-white);
-    color: var(--color-white);
+    border: 1.5px solid var(--color-on-band);
+    color: var(--color-on-band);
   }
 
   /* Small text on the stars is white (CLAUDE.md). */
   .seller-follow-note {
     flex: 1 1 0;
     min-width: 0;
-    color: var(--color-white);
+    color: var(--color-on-band);
     font-size: 14px;
     font-weight: 600;
     line-height: 1.25;
@@ -10092,7 +10297,7 @@
   .kit-pill[data-tone="success"] { background: var(--color-success-tint); color: var(--color-success); }
   .kit-pill[data-tone="warning"] { background: var(--color-warning-tint); color: var(--color-warning); }
   .kit-pill[data-tone="danger"] { background: var(--color-danger-tint); color: var(--color-danger); }
-  .kit-pill[data-tone="live"] { background: var(--color-sky); color: var(--color-navy); }
+  .kit-pill[data-tone="live"] { background: var(--color-sky); color: var(--color-on-sky); }
 
   .kit-banner {
     display: flex;
@@ -10260,8 +10465,8 @@
   }
 
   .needs-count[data-urgent] {
-    background: var(--color-navy);
-    color: var(--color-white);
+    background: var(--color-action);
+    color: var(--color-on-action);
   }
 
   .needs-text {
@@ -11451,7 +11656,7 @@ html[data-nav-pending] .hdr-pennant-slot .pennant-crest {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
-    color: var(--color-white);
+    color: var(--color-on-band);
     text-decoration: underline;
     text-underline-offset: 3px;
   }

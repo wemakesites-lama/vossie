@@ -1154,6 +1154,25 @@ Lama found Launchpad empty on vossie-pi, so Book office hours didn't explain its
 - The dark theme session shares `app/globals.css`; only the footer's hunks were committed, and it switches the footer's white text to `--color-on-band` itself.
 - Not done: the brand line above the footer waits on Eduvos marketing (decision 71).
 
+## 2026-10-29: Dark and Night themes (decision 95)
+- **What Lama asked for:** a dark and a night theme. Two dark themes: Dark (navy, stars) and Night (near-black, warm words, for bed and OLED phones). CampusCart follows the phone's setting, and the menu's Theme choice (Match my phone, Light, Dark, Night) overrides it. Spec `docs/superpowers/specs/2026-10-28-dark-themes-design.md` (approved 2026-10-28; each step's notes are in it).
+- **Built in six steps:**
+  1. Tokens with one job each (`band`/`on-band`, `action`/`on-action`, `on-sky`, `alert`) across `app/globals.css`. Light looks the same.
+  2. `lib/theme.ts`, `hooks/useTheme.ts`, the boot script's theme lines (64 B of HTML per page, no JS) and the privacy page's `vossie_theme`.
+  3. Dark, through a custom `dark` variant: a chosen Dark or Night, or the phone in dark mode with nothing chosen.
+  4. Night: soft sky actions in place of the spec's "lifted grey" (1.4:1 from the page), no stars, photos at 90% and the crest at 88%.
+  5. The menu's Theme choice. It and Data saver load on the menu's first open (`components/menu/MenuSettings.tsx`): in the menu itself they put the listing forms 108 B over.
+  6. `tests/e2e/theme.spec.ts`, the offline page in the phone's dark mode, screenshots in `docs/progress/themes/` (64).
+- **Checks:**
+  - Unit: 3,604 passed (443 files), with `lib/theme-contrast.test.ts` checking every token pair in all three themes.
+  - axe's contrast and link rules on 27 pages at 390 and 1440, signed out and as each sample role: 0 issues in Light, Dark and Night.
+  - e2e `theme.spec.ts` at all five sizes: 64 passed, 66 skipped by design. One run's 5 failures were lost trace files while another run cleared `test-results/`, and one sign-in waiting on the load event; reruns passed.
+  - e2e offline, boot, a11y, shell, motion and layout shift at all five sizes: 735 passed. The first run had 13 failures, 12 of them timeouts under load that passed when rerun with two workers. The signed-out `/sell` layout shift at 390 still fails (0.0622), as before this work; its shifts are the page's own sections.
+  - Bytes (`performance.spec.ts`, phone-390, 46 passed): the listing forms 153,559 B of 153,600 (47 B of room before, 41 now), pages with no selling code 151,518 B.
+  - Lint and types clean.
+- **Left as it was:** signed out at 768 x 657 the tablet menu scrolls about 43px, because its sizing counts 7 link rows and Sign in is an 8th. It scrolled 45px before this work.
+- **Nothing committed yet**: waiting on Lama.
+
 ## Next
 - **Stock photos in place of the placeholder art** (2026-10-29): 79 free Unsplash photos in `public/stock/` (15.7 MB of JPEGs, served as AVIF by `next/image`), credits and licence notes in `docs/reference/stock-photos.md`. Hero 3, categories 10, listing covers 10 (one per category), collections 4, the Hub banner, 29 shops and 22 Hub posts; the fixtures point at them. Campus photos and a listing's second and third photos stay placeholders (stock can't show a real campus). `20261029120000_stock_photos.sql` widens the three placeholder checks to allow `/stock/…jpg` and moves the seed rows over; `supabase/seed.sql` regenerated. `make-placeholders.ts` now skips stock slots (it would have written SVG over the photos). **Pushed to Vossie Market** (2026-10-29, Lama's go-ahead, after a dry run): 29 shops, 38 listing photos and 22 Hub posts now point at `/stock/…jpg`; the 5 extra listing photos and 2 shops with no photo are unchanged, and the remote is up to date. **vossie-pi shows those images broken until a redeploy carries `public/stock/`**: commit, then redeploy. Checks: unit tests pass, apart from timeouts in `AdminSellers` and `PhotoField` under a load of 46 (another session's run), types clean; seen at 1280 in the sample dev server (hero, categories, collections, banner); the store's shops and listings need a server restart to show. e2e (`home.spec.ts` now reads `/_next/image?url=`) not run: another session's e2e build was using `.next`. Faces (hero, some Hub covers) have no model release: swap for consented photos before go-live.
 - **Photo-to-listing (AI) is built, and off for the submission** (2026-10-27): spec `docs/superpowers/specs/2026-10-24-photo-to-listing-design.md` (what changed is in its section 13), plan `docs/superpowers/plans/2026-10-27-photo-to-listing.md`, commits `1aafe54` to `6d5132a` on `main`. A seller's cover photo fills in the new listing form's empty fields through one server-side call (Groq's `qwen/qwen3.8-27b`, Claude Haiku 5.5 built as the fallback), tagged "Suggested", with a price hint from real CampusCart listings and the textbook Looking For line. SDKs pinned: `groq-sdk` 1.6.0, `@anthropic-ai/sdk` 1.3.0.

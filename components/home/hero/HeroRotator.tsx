@@ -116,7 +116,7 @@ export function HeroRotator({ slides, sentence, chip }: HeroRotatorProps) {
     >
       <div className="hero-panel surface-navy texture-stars">
         <div className="hero-chip">{chip}</div>
-        <p className="eyebrow text-white">Eduvos student marketplace</p>
+        <p className="eyebrow text-on-band">Eduvos student marketplace</p>
         <h1 id="hero-title" className="hero-title">
           <span className="sr-only">{sentence}</span>
           {/* What sighted visitors see: the frame stays put, and only the word on its own line changes (plan decision 3). */}

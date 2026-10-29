@@ -1,22 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { lazy, Suspense, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { ArrowLeftIcon, ChevronRightIcon, CloseIcon, MapPinIcon } from "@/components/icons";
 import { NavLink } from "@/components/ui/NavLink";
 import { NavPending } from "@/components/ui/NavPending";
 import { useOverlayDialog } from "@/components/ui/useOverlayDialog";
 import { useCampusChoice } from "@/hooks/useCampusChoice";
-import { useLowData } from "@/hooks/useLowData";
 import { campusLabel } from "@/lib/campus";
 import { isPlainClick } from "@/lib/click";
-import { setLowData } from "@/lib/low-data";
 import { TAB } from "@/lib/motion";
 import { openOverlay } from "@/lib/overlays";
 import type { Campus, Category } from "@/lib/types";
 
 type View = "main" | "categories" | "campuses";
+
+/** Theme and Data saver, loaded when the menu first opens: on every page, they tip the listing forms over 150 KB. */
+const MenuSettings = lazy(() => import("./MenuSettings"));
 
 type MenuDrawerProps = {
   campuses: readonly Campus[];
@@ -36,10 +37,11 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
   const campusesDrillRef = useRef<HTMLButtonElement>(null);
   const openedByRef = useRef<HTMLElement | null>(null);
   const choice = useCampusChoice(campuses);
-  const lowData = useLowData();
+  const [opened, setOpened] = useState(false);
   const { dialogRef, close } = useOverlayDialog("menu", (trigger) => {
     openedByRef.current = trigger;
     setView("main");
+    setOpened(true);
   });
 
   /**
@@ -73,6 +75,9 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
     if (!isPlainClick(event)) return;
     if ((event.target as HTMLElement).closest("a, [type=submit]")) close();
   }
+
+  // Holds the settings' height until they arrive.
+  const settingsPlaceholder = <div className="menu-settings-placeholder" aria-hidden="true" />;
 
   return (
     <dialog
@@ -196,22 +201,7 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
         )}
 
         <div className="menu-bottom">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={lowData}
-            aria-describedby="menu-low-data-note"
-            onClick={() => setLowData(!lowData)}
-            className="menu-switch"
-          >
-            <span>Data saver</span>
-            <span className="menu-switch-track" aria-hidden="true">
-              <span className="menu-switch-thumb" />
-            </span>
-          </button>
-          <p id="menu-low-data-note" className="text-meta text-white/75">
-            Pauses autoplay and animation, and loads lighter photos.
-          </p>
+          <Suspense fallback={settingsPlaceholder}>{opened ? <MenuSettings /> : settingsPlaceholder}</Suspense>
         </div>
       </div>
     </dialog>

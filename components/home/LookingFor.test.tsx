@@ -23,7 +23,8 @@ describe("LookingFor (spec 7.11)", () => {
   it("asks for requests, with a navy eyebrow on the sky band", () => {
     render(<LookingFor />);
     expect(screen.getByRole("region", { name: "Can’t find it? Ask for it." })).toBeInTheDocument();
-    expect(screen.getByText("Looking For")).toHaveClass("text-navy");
+    // on-sky, not navy: navy turns white in the dark themes, and white on sky fails.
+    expect(screen.getByText("Looking For")).toHaveClass("text-on-sky");
     expect(screen.getByRole("list", { name: "Open requests" })).toBeInTheDocument();
     // Signed out: through sign-in, back to the form (community actions spec section 3).
     expect(screen.getByRole("link", { name: "Post a request" })).toHaveAttribute(

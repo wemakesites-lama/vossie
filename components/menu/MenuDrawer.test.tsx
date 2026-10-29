@@ -100,17 +100,35 @@ describe("MenuDrawer", () => {
     const user = userEvent.setup();
     renderMenu();
     const { menu } = openMenu();
-    const toggle = within(menu).getByRole("switch", { name: "Data saver" });
+    const toggle = await within(menu).findByRole("switch", { name: "Data saver" });
     expect(toggle).toHaveAttribute("aria-checked", "false");
     await user.click(toggle);
     expect(toggle).toHaveAttribute("aria-checked", "true");
     expect(document.documentElement).toHaveAttribute("data-low-data");
   });
 
-  it("describes what the data saver switch does", () => {
+  it("loads the Theme choice once opened, and a choice applies and is kept (themes spec 3.3)", async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    expect(screen.queryByRole("radio", { hidden: true })).not.toBeInTheDocument();
+    const { menu } = openMenu();
+    const group = await within(menu).findByRole("group", { name: "Theme" });
+    const names = within(group).getAllByRole("radio").map((radio) => radio.getAttribute("value"));
+    expect(names).toEqual(["system", "light", "dark", "night"]);
+    expect(within(group).getByRole("radio", { name: "Match my phone" })).toBeChecked();
+    await user.click(within(group).getByRole("radio", { name: "Night" }));
+    expect(within(group).getByRole("radio", { name: "Night" })).toBeChecked();
+    expect(document.documentElement).toHaveAttribute("data-theme", "night");
+    expect(localStorage.getItem("vossie_theme")).toBe("night");
+    await user.click(within(group).getByRole("radio", { name: "Match my phone" }));
+    expect(document.documentElement).not.toHaveAttribute("data-theme");
+    expect(localStorage.getItem("vossie_theme")).toBeNull();
+  });
+
+  it("describes what the data saver switch does", async () => {
     renderMenu();
     const { menu } = openMenu();
-    expect(within(menu).getByRole("switch", { name: "Data saver" })).toHaveAccessibleDescription(
+    expect(await within(menu).findByRole("switch", { name: "Data saver" })).toHaveAccessibleDescription(
       "Pauses autoplay and animation, and loads lighter photos.",
     );
   });

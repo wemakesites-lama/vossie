@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { BOOT_SCRIPT, bootScript, WORKER_REGISTRATION } from "./boot-script";
 import { INSTALL_PROMPT_EVENT } from "./install-event";
 import { LOW_DATA_ATTR, LOW_DATA_KEY } from "./low-data";
+import { NIGHT_BAR, NIGHT_BAR_ID, THEME_ATTR, THEME_KEY } from "./theme";
 
 type WindowWithPrompt = Window & { __vossieInstallPrompt?: Event | null };
 
@@ -48,6 +49,42 @@ describe("boot script", () => {
     setSaveData(true);
     runBootScript();
     expect(document.documentElement.hasAttribute(LOW_DATA_ATTR)).toBe(true);
+  });
+
+  describe("the theme (Dark and Night themes spec 3.1)", () => {
+    afterEach(() => {
+      localStorage.removeItem(THEME_KEY);
+      document.documentElement.removeAttribute(THEME_ATTR);
+      document.getElementById(NIGHT_BAR_ID)?.remove();
+      vi.restoreAllMocks();
+    });
+
+    it.each(["light", "dark"])("applies a saved %s theme before first paint", (theme) => {
+      localStorage.setItem(THEME_KEY, theme);
+      runBootScript();
+      expect(document.documentElement.getAttribute(THEME_ATTR)).toBe(theme);
+      expect(document.getElementById(NIGHT_BAR_ID)).toBeNull();
+    });
+
+    it("applies Night with its browser bar colour first in <head>, as setTheme does", () => {
+      document.head.innerHTML = '<meta name="theme-color" content="#15305D">';
+      localStorage.setItem(THEME_KEY, "night");
+      runBootScript();
+      expect(document.documentElement.getAttribute(THEME_ATTR)).toBe("night");
+      const bar = document.head.firstElementChild as HTMLMetaElement;
+      expect([bar.id, bar.name, bar.content]).toEqual([NIGHT_BAR_ID, "theme-color", NIGHT_BAR]);
+    });
+
+    it("leaves the attribute off with nothing saved, an unknown value or blocked storage, so CSS follows the phone", () => {
+      runBootScript();
+      localStorage.setItem(THEME_KEY, "sepia");
+      runBootScript();
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new DOMException("Blocked", "SecurityError");
+      });
+      runBootScript();
+      expect(document.documentElement.hasAttribute(THEME_ATTR)).toBe(false);
+    });
   });
 
   it("keeps the browser's install prompt for the footer button", () => {

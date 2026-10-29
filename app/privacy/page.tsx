@@ -118,7 +118,7 @@ const SECTIONS: readonly InfoSection[] = [
             <code>vossie_flash</code>: a one-off message such as &quot;You&apos;re signed out&quot;, for up to a minute.
           </li>
         </ul>
-        <h3>Four things kept only in your browser</h3>
+        <h3>Five things kept only in your browser</h3>
         <p>These stay in your browser&apos;s own storage. They are never sent to CampusCart.</p>
         <ul>
           <li>
@@ -130,6 +130,10 @@ const SECTIONS: readonly InfoSection[] = [
           </li>
           <li>
             <code>vossie_low_data</code>: whether you turned data saver on.
+          </li>
+          <li>
+            <code>vossie_theme</code>: the theme you picked (Light, Dark or Night). Nothing is kept while CampusCart
+            matches your phone.
           </li>
           <li>
             <code>vossie_offline</code>: a copy of CampusCart&apos;s offline page, kept by CampusCart&apos;s service worker so
@@ -278,7 +282,7 @@ const SECTIONS: readonly InfoSection[] = [
       <ul>
         <li>
           The campus and saved cookies last up to a year, and some browsers clear them sooner. The sign-in cookies last
-          30 days from your last visit (up to 30 days on the preview), 30 minutes and a minute. Your browser keeps the other four things until you clear them.
+          30 days from your last visit (up to 30 days on the preview), 30 minutes and a minute. Your browser keeps the other five things until you clear them.
         </li>
         <li>Your account details stay until you delete your account.</li>
         <li>

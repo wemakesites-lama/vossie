@@ -2,7 +2,8 @@
 // styles, no scripts, no images and no outside files, under 4 KB, so it works when the site's hashed files can't be
 // fetched. "Vossie" is text (the crest PNG is 35 KB), in the system fonts the brand faces fall back to (app/fonts.ts),
 // set once as --vos-font-*. Try again is a link to the same address: the worker shows this page in place of the one
-// asked for, so "" is that page. The words beyond the spec's are samples for Lama to change.
+// asked for, so "" is that page. The words beyond the spec's are samples for Lama to change. With no script it can't
+// read a chosen theme, so it follows the phone's dark mode in Dark's colours (Dark and Night themes spec, step 6).
 // The service worker's source is here too (spec 2.21): it keeps the offline page and nothing else.
 
 export const OFFLINE_PATH = "/offline";
@@ -25,6 +26,7 @@ h1{margin:0;color:var(--navy);font-family:var(--vos-font-display);font-size:40px
 p{margin:16px 0 0;font-size:17px}
 a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin-top:24px;padding:0 28px;border-radius:999px;background:var(--navy);color:#fff;font-weight:600;text-decoration:none}
 a:focus-visible{outline:2.5px solid var(--navy);outline-offset:3px}
+@media(prefers-color-scheme:dark){:root{color-scheme:dark;--navy:#fff;--ink:#dfe5ee}body{background:#0d1c38}a{background:#29abe2;color:#15305d}}
 </style>
 </head>
 <body>
