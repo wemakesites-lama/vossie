@@ -5,7 +5,7 @@ const campus = (slug: string, name: string, region: string, liveListings: number
   name,
   region,
   liveListings,
-  image: { src: `/placeholders/campus/${slug}.svg`, alt: `${name} campus` },
+  image: { src: `/campus/${slug}.jpg`, alt: `${name} campus` },
 });
 
 // The 12 Eduvos campuses in alphabetical order, then Eduvos Online. Listing counts are samples.

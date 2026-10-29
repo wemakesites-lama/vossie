@@ -71,7 +71,7 @@ describe("sample data layer", () => {
       expect(campus.slug).toMatch(/^[a-z0-9-]+$/);
       expect(campus.region.length).toBeGreaterThan(0);
       expect(campus.liveListings).toBeGreaterThan(0);
-      expect(campus.image.src).toBe(`/placeholders/campus/${campus.slug}.svg`);
+      expect(campus.image.src).toBe(`/campus/${campus.slug}.jpg`);
     }
   });
 

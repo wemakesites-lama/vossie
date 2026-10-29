@@ -8,8 +8,8 @@ section 12). They stand in until Eduvos and the sellers supply real ones. Files 
 - **No model releases.** Unsplash doesn't promise one, so photos with faces (the hero, some Hub covers) mustn't present
   a real person as an Eduvos student or a CampusCart seller. Replace them with consented photos before go-live
   (spec section 12, POPIA).
-- **Not stock:** the 13 campus photos stay placeholders until real campus photos arrive, and so do a listing's second
-  and third photos (`public/placeholders/photo/`).
+- **Not stock:** the campus photos (below). A listing's second and third photos stay placeholders
+  (`public/placeholders/photo/`).
 - **Swapping one:** drop a new `.jpg` at the same path and update its row below. A new slot needs its fixture's `src`
   and, for shops, listings and Hub posts on Supabase, the seed (`pnpm db:seed`).
 
@@ -94,3 +94,27 @@ section 12). They stand in until Eduvos and the sellers supply real ones. Files 
 | `seller/cv-clinic.jpg` | [a woman is reading a resume at a table](https://unsplash.com/photos/a-woman-is-reading-a-resume-at-a-table-9si2noVCVH8) | [Resume Genius](https://unsplash.com/@resumegenius) |
 | `seller/logo-lab.jpg` | [handwritten sketches on wooden desk](https://unsplash.com/photos/handwritten-sketches-on-wooden-desk-XbeHYEAgyw0) | [Maria Lupan](https://unsplash.com/@luandmario) |
 | `seller/sports-kit.jpg` | [sneakers and a black bag in a grey tray](https://unsplash.com/photos/sneakers-and-a-black-bag-in-a-grey-tray-ocLSuJnQCU0) | [N1CE](https://unsplash.com/@n1ce) |
+
+## Campus photos
+
+The 12 campus photos are Eduvos's own, from the campus pages on [eduvos.com](https://www.eduvos.com/campuses/),
+downloaded 2026-10-29 and cropped to a centred square (900 to 1,200px; the smaller ones aren't upscaled). They're in
+`public/campus/` and only `data/fixtures/campuses.ts` points at them. Buildings only, no people. **They're Eduvos's
+copyright, not stock:** fine for the Eduvos submission, but ask Eduvos marketing to confirm their use (or send their
+own) before go-live. Eduvos Online has no building, so it's an Unsplash photo under the licence above.
+
+| File | Source |
+|---|---|
+| `campus/bedfordview.jpg` | eduvos.com `/campuses/bedfordview-carousel-02.jpg` |
+| `campus/bloemfontein.jpg` | eduvos.com `/campuses/bloemfontein-carousel-01.jpg` |
+| `campus/cape-town-mowbray.jpg` | eduvos.com `/campuses/mowbraysliertwo.jpg` |
+| `campus/cape-town-tyger-valley.jpg` | eduvos.com `/campuses/tygervalley-carousel-01.jpg` |
+| `campus/durban-umhlanga.jpg` | eduvos.com `/campuses/durban-carousel-01.jpg` |
+| `campus/east-london.jpg` | eduvos.com `/images/el-hero-one.webp` |
+| `campus/mbombela.jpg` | eduvos.com `/campuses/mbombela-carousel01.jpg` |
+| `campus/midrand.jpg` | eduvos.com `/campuses/midrand-carousel01.jpg` |
+| `campus/nelson-mandela-bay.jpg` | eduvos.com `/nmb-campus-page-banner.webp` |
+| `campus/potchefstroom.jpg` | eduvos.com `/campuses/potchefstroom-carousel-01.jpg` |
+| `campus/pretoria.jpg` | eduvos.com `/campuses/pretoria-carousel-01.jpg` |
+| `campus/vanderbijlpark.jpg` | eduvos.com `/campuses/vaal-banner-2025.webp` |
+| `campus/online.jpg` | [woman in black jacket using macbook air](https://unsplash.com/photos/woman-in-black-jacket-using-macbook-air-__b279kVy0c) by [Annie Spratt](https://unsplash.com/@anniespratt) (Unsplash) |
