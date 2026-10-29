@@ -10,7 +10,7 @@ const collection = (
   slug,
   eyebrow,
   title,
-  image: { src: `/placeholders/collection/${slug}.svg`, alt: title },
+  image: { src: `/stock/collection/${slug}.jpg`, alt: title },
   intro,
   rule,
 });

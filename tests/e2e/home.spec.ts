@@ -6,6 +6,12 @@ function onlyAt(...projects: string[]) {
   test.skip(!projects.includes(project()), `Checked at ${projects.join(" and ")}`);
 }
 
+/** The file a request fetches: a stock photo comes through Next's optimiser (/_next/image?url=…), an SVG directly. */
+function photoPath(url: string): string {
+  const { pathname, searchParams } = new URL(url);
+  return pathname === "/_next/image" ? (searchParams.get("url") ?? pathname) : pathname;
+}
+
 /** Cards Just listed shows at each size (plan decision 11). */
 const VISIBLE_CARDS: Record<string, number> = {
   "phone-360": 4,
@@ -93,16 +99,16 @@ test.describe("data saver (plan decision 8)", () => {
     onlyAt("phone-390");
     await page.addInitScript(() => localStorage.setItem("vossie_low_data", "1"));
     const requested: string[] = [];
-    page.on("request", (request) => requested.push(new URL(request.url()).pathname));
+    page.on("request", (request) => requested.push(photoPath(request.url())));
     await page.goto("/", { waitUntil: "networkidle" });
     await expect(page.locator(".hero-photo img")).toHaveCount(1);
     await scrollToTheEnd(page);
     // Absence can't be polled for, and "networkidle" returns at once because the page was idle before the scroll. So
     // give a lazy request two seconds to show up, as the privacy test does for search terms.
     await page
-      .waitForRequest((request) => new URL(request.url()).pathname === "/placeholders/hub/banner.svg", { timeout: 2000 })
+      .waitForRequest((request) => photoPath(request.url()) === "/stock/hub/banner.jpg", { timeout: 2000 })
       .catch(() => undefined);
-    expect(requested).not.toContain("/placeholders/hub/banner.svg");
+    expect(requested).not.toContain("/stock/hub/banner.jpg");
   });
 
   // Spec section 5: below the hero, photos are loaded only when tapped. Hidden lazy images are never requested.
@@ -110,27 +116,27 @@ test.describe("data saver (plan decision 8)", () => {
     onlyAt("phone-390");
     await page.addInitScript(() => localStorage.setItem("vossie_low_data", "1"));
     const requested: string[] = [];
-    page.on("request", (request) => requested.push(new URL(request.url()).pathname));
+    page.on("request", (request) => requested.push(photoPath(request.url())));
     await page.goto("/", { waitUntil: "networkidle" });
     await scrollToTheEnd(page);
     // Absence can't be polled for (see above), so give a lazy request two seconds to show up.
     await page
-      .waitForRequest((request) => new URL(request.url()).pathname.startsWith("/placeholders/listing/"), { timeout: 2000 })
+      .waitForRequest((request) => photoPath(request.url()).startsWith("/stock/listing/"), { timeout: 2000 })
       .catch(() => undefined);
-    expect(requested.filter((path) => path.startsWith("/placeholders/listing/"))).toEqual([]);
+    expect(requested.filter((path) => path.startsWith("/stock/listing/"))).toEqual([]);
     // The requests are being recorded, and the hero's first photo is not held back.
-    expect(requested.some((path) => path.startsWith("/placeholders/hero/"))).toBe(true);
+    expect(requested.some((path) => path.startsWith("/stock/hero/"))).toBe(true);
   });
 
   test("without it, the Hub banner photo loads as it comes near", async ({ page }) => {
     onlyAt("phone-390");
     const requested: string[] = [];
-    page.on("request", (request) => requested.push(new URL(request.url()).pathname));
+    page.on("request", (request) => requested.push(photoPath(request.url())));
     await page.goto("/", { waitUntil: "networkidle" });
     await scrollToTheEnd(page);
     // Poll: the image is natively lazy, so the browser requests it a moment after the scroll, and "networkidle" returns
     // at once because the page was idle before the scroll.
-    await expect.poll(() => requested).toContain("/placeholders/hub/banner.svg");
+    await expect.poll(() => requested).toContain("/stock/hub/banner.jpg");
   });
 });
 

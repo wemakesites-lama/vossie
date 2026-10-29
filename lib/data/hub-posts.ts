@@ -19,7 +19,7 @@ import { sampleStore } from "./store";
 const supabase = () => import("./supabase/hub-posts");
 
 /** A post with no cover shows the Hub's banner art (plan decision 11). */
-export const HUB_BANNER_IMAGE: ImageRef = { src: "/placeholders/hub/banner.svg", alt: "" };
+export const HUB_BANNER_IMAGE: ImageRef = { src: "/stock/hub/banner.jpg", alt: "" };
 
 /** What a sample post's author, or a deleted one, is called. */
 const THE_HUB = "The Hub";

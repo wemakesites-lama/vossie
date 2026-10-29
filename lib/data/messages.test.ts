@@ -292,7 +292,7 @@ describe("the inbox (messaging spec 2.10, 2.11 and 3.2)", () => {
         otherName: "Tech corner",
         listingTitle: "Gaming headset, barely used",
         requestTitle: null,
-        image: { src: "/placeholders/listing/tech.svg", alt: "Gaming headset, barely used" },
+        image: { src: "/stock/listing/tech.jpg", alt: "Gaming headset, barely used" },
         preview: "Hi Thandi, it is. Can I see the speaker first?",
         lastFromViewer: false,
         lastMessageAt: "2026-10-13T09:05:00.000Z",
@@ -305,7 +305,7 @@ describe("the inbox (messaging spec 2.10, 2.11 and 3.2)", () => {
         otherName: "Tech corner",
         listingTitle: "Casio fx-991ZA Plus calculator",
         requestTitle: null,
-        image: { src: "/placeholders/listing/tech.svg", alt: "Casio fx-991ZA Plus calculator" },
+        image: { src: "/stock/listing/tech.jpg", alt: "Casio fx-991ZA Plus calculator" },
         preview: "Perfect, see you there.",
         lastFromViewer: true,
         lastMessageAt: "2026-10-12T16:30:00.000Z",
@@ -338,7 +338,7 @@ describe("the inbox (messaging spec 2.10, 2.11 and 3.2)", () => {
     });
     const [row] = await getInbox(buyer.id, "buying", NOW);
     expect(row).toMatchObject({ listingTitle: null, preview: "Do you fix screens?", lastFromViewer: true });
-    expect(row.image?.src).toBe("/placeholders/seller/tech-corner.svg");
+    expect(row.image?.src).toBe("/stock/seller/tech-corner.jpg");
   });
 });
 

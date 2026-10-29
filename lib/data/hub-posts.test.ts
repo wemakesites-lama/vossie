@@ -96,7 +96,7 @@ describe("staff writing posts (staff tools spec 2.4, plan decisions 11 and 12)",
   it("edits a post, keeping its cover and author unless a new cover comes, and fits `going` to its kind", async () => {
     const tip = { ...event, kind: "tip" as const, campusSlug: "all", startsAt: null, place: null, capacity: null };
     const edited = (await save({ id: "h-001", fields: tip, authorId: "acc-admin" }))!;
-    expect(edited.row).toMatchObject({ kind: "tip", going: null, image: { src: "/placeholders/hub/h-001.svg" }, authorId: null });
+    expect(edited.row).toMatchObject({ kind: "tip", going: null, image: { src: "/stock/hub/h-001.jpg" }, authorId: null });
     const cover = { src: "/photos/ph-00000000-0000-4000-8000-000000000000", alt: "" };
     expect((await save({ id: "h-001", cover }))!.row).toMatchObject({ kind: "event", going: 0, image: cover });
     expect(await save({ id: "h-nope" })).toBeNull();

@@ -7,20 +7,20 @@ export const heroSlides: readonly HeroSlide[] = [
     word: "textbooks",
     body: "Set books and notes from students who aced the module, handed over at a campus pickup point.",
     cta: { label: "Shop textbooks", href: "/browse?cat=textbooks-notes" },
-    image: { src: "/placeholders/hero/textbooks.svg", alt: "A student holding a stack of set books" },
+    image: { src: "/stock/hero/textbooks.jpg", alt: "A student balancing a stack of set books on their head" },
   },
   {
     id: "tech",
     word: "tech",
     body: "Laptops, calculators and chargers from students on your campus, checked when you meet.",
     cta: { label: "Shop tech", href: "/browse?cat=tech" },
-    image: { src: "/placeholders/hero/tech.svg", alt: "A student checking a laptop before buying it" },
+    image: { src: "/stock/hero/tech.jpg", alt: "A student working on a laptop" },
   },
   {
     id: "services",
     word: "services",
     body: "Braids, tutoring, logos and repairs from students who do it well.",
     cta: { label: "Shop services", href: "/browse?cat=services" },
-    image: { src: "/placeholders/hero/services.svg", alt: "A student braiding a classmate's hair" },
+    image: { src: "/stock/hero/services.jpg", alt: "A student having their hair braided" },
   },
 ];

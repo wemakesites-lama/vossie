@@ -58,8 +58,8 @@ const listing = (
   priceIsFrom: from,
   payMode,
   campusSlug,
-  // Sellers will upload their own photos; until then each listing shows its category's placeholder.
-  image: { src: `/placeholders/listing/${categorySlug}.svg`, alt: title },
+  // Sellers will upload their own photos; until then each listing shows its category's stock photo.
+  image: { src: `/stock/listing/${categorySlug}.jpg`, alt: title },
   badge,
   createdAt,
   kind,

@@ -194,7 +194,7 @@ describe("supabase/seed.sql (supabase foundation plan, Task 11; schema catch-up 
     const naledi = seedUuid("account", "acc-mentor");
     sampleHubPostRows.forEach((post, i) => {
       expect(rows[i].startsWith(`(${q(post.id)}, ${q(post.kind)}, ${q(post.title)}, `)).toBe(true);
-      expect(rows[i]).toContain(`, '/placeholders/hub/${post.id}.svg', '', true, ${q(post.publishedAt ?? "")}, `);
+      expect(rows[i]).toContain(`, '/stock/hub/${post.id}.jpg', '', true, ${q(post.publishedAt ?? "")}, `);
       const author = ["h-002", "h-007", "h-012"].includes(post.id) ? q(naledi) : "null";
       expect(rows[i].endsWith(`, ${author}, ${q(post.createdAt)}, ${q(post.updatedAt)})`)).toBe(true);
     });

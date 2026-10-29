@@ -222,9 +222,9 @@ describe("Hub fixtures (community spec 5.3)", () => {
       expect(post.title.length, post.id).toBeLessThanOrEqual(70);
       expect(post.summary.length, post.id).toBeGreaterThan(0);
       expect(post.body.length, post.id).toBeLessThanOrEqual(4000);
-      expect(post.image).toEqual({ src: `/placeholders/hub/${post.id}.svg`, alt: "" });
+      expect(post.image).toEqual({ src: `/stock/hub/${post.id}.jpg`, alt: "" });
     }
-    expect(hubBanner.image.src).toMatch(/^\/placeholders\//);
+    expect(hubBanner.image.src).toBe("/stock/hub/banner.jpg");
   });
 
   it("times events at 18:00 and office hours at 13:00 in South Africa, after they were posted", () => {

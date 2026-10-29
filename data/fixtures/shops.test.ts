@@ -56,7 +56,7 @@ describe("the sample shops (selling plan, Task 1)", () => {
     expect(casio).toMatchObject({ sellerSlug: "tech-corner", state: "available", campusSlug: "midrand" });
     // The cover's alt was the title, so it's kept empty: "the title" (selling spec 2.5).
     expect(casio.photos).toEqual([
-      { src: "/placeholders/listing/tech.svg", alt: "" },
+      { src: "/stock/listing/tech.jpg", alt: "" },
       { src: "/placeholders/photo/2.svg", alt: "The back of the calculator, with the battery cover" },
       { src: "/placeholders/photo/3.svg", alt: "The slide-on cover" },
     ]);

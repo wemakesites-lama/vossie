@@ -41,7 +41,7 @@ const seller = (
   badge,
   about,
   since,
-  image: { src: `/placeholders/seller/${slug}.svg`, alt: `The ${name.toLowerCase()} at work` },
+  image: { src: `/stock/seller/${slug}.jpg`, alt: `The ${name.toLowerCase()} at work` },
 });
 
 // Generic names (spec 13), not the old demo's sellers. Only verified sellers are featured. Each seller's badge is the

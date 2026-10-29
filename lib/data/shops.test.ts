@@ -360,7 +360,7 @@ describe("the data export (plan decision 22)", () => {
       approvedAt: "2026-03-01T08:00:00.000Z",
       category: "Tech",
       campus: "midrand",
-      photo: "/placeholders/seller/tech-corner.svg",
+      photo: "/stock/seller/tech-corner.jpg",
       pickupPoints: ["Library entrance", "Main reception"],
       since: "2026-03",
     });
@@ -370,7 +370,7 @@ describe("the data export (plan decision 22)", () => {
       category: "Tech",
       pickupPoint: "Library entrance",
       photos: [
-        { address: "/placeholders/listing/tech.svg", description: "" },
+        { address: "/stock/listing/tech.jpg", description: "" },
         { address: "/placeholders/photo/2.svg", description: "The back of the calculator, with the battery cover" },
         { address: "/placeholders/photo/3.svg", description: "The slide-on cover" },
       ],

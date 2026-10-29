@@ -43,7 +43,7 @@ describe("the listing form's request-time part (selling spec 2.10 and section 3)
     render(await ListingForm(editing("l-001")));
     expect(screen.getByLabelText("Title")).toHaveValue("Casio fx-991ZA Plus calculator");
     expect(screen.getByLabelText("Price in rand")).toHaveValue("250");
-    expect(tokens()).toEqual(["/placeholders/listing/tech.svg", "/placeholders/photo/2.svg", "/placeholders/photo/3.svg"]);
+    expect(tokens()).toEqual(["/stock/listing/tech.jpg", "/placeholders/photo/2.svg", "/placeholders/photo/3.svg"]);
     expect(screen.getByRole("textbox", { name: "Describe photo 2" })).toHaveValue(
       "The back of the calculator, with the battery cover",
     );

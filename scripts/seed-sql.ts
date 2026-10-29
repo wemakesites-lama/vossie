@@ -115,7 +115,8 @@ export function insert(
   return `insert into ${table} (${columns.join(", ")}) values\n${lines.join(",\n")}${conflict};\n`;
 }
 
-const PLACEHOLDER = /^\/placeholders\/[a-z0-9/-]+\.svg$/;
+// A file the site ships: placeholder art or a stock photo (the checks in 20261029120000_stock_photos.sql).
+const PLACEHOLDER = /^\/(placeholders\/[a-z0-9/-]+\.svg|stock\/[a-z0-9/-]+\.jpg)$/;
 
 export function makeSeedSql(f: SeedFixtures): string {
   const accountId = (id: string) => seedUuid("account", id);

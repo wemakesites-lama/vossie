@@ -35,6 +35,9 @@ const LABELLED = new Set(["hero", "campus", "collection", "seller", "photo", "hu
 const art = new Map<string, Art>();
 
 function add(src: string, label: string | null) {
+  // Slots with a stock photo (/stock/<folder>/<file>.jpg, docs/reference/stock-photos.md) need no art: never write
+  // an SVG over a photo.
+  if (!src.startsWith("/placeholders/")) return;
   const folder = src.split("/")[2]; // "/placeholders/<folder>/<file>.svg"
   const size = SIZES[folder];
   if (!size) throw new Error(`No size for ${src}`);

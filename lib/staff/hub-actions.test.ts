@@ -148,12 +148,12 @@ describe("saving a Hub post (staff tools spec 2.4, plan decision 11)", () => {
 
   it("doesn't keep a cover that isn't one of the Hub's waiting photos", async () => {
     await signedInAs(request, "acc-mentor");
-    await redirectOf(async () => savePost(await fresh({ ...tip, keepCover: "/placeholders/hub/h-001.svg" })));
-    expect(newestPost().image).toEqual({ src: "/placeholders/hub/banner.svg", alt: "" });
+    await redirectOf(async () => savePost(await fresh({ ...tip, keepCover: "/stock/hub/h-001.jpg" })));
+    expect(newestPost().image).toEqual({ src: "/stock/hub/banner.jpg", alt: "" });
     await redirectOf(async () =>
       savePost(await fresh({ ...tip, keepCover: "/photos/ph-00000000-0000-4000-8000-000000000000" })),
     );
-    expect(newestPost().image).toEqual({ src: "/placeholders/hub/banner.svg", alt: "" });
+    expect(newestPost().image).toEqual({ src: "/stock/hub/banner.jpg", alt: "" });
   });
 
   it("says why a cover was refused, and saves nothing", async () => {

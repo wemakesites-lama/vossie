@@ -1,7 +1,7 @@
 import type { HubBanner, HubPost, HubPostKind } from "@/lib/types";
 
 export const hubBanner: HubBanner = {
-  image: { src: "/placeholders/hub/banner.svg", alt: "" },
+  image: { src: "/stock/hub/banner.jpg", alt: "" },
 };
 
 /** A post's body, one line per argument (the markdown subset, community spec decision 9). */
@@ -29,7 +29,7 @@ const post = (
   ...details,
   summary,
   body,
-  image: { src: `/placeholders/hub/${id}.svg`, alt: "" },
+  image: { src: `/stock/hub/${id}.jpg`, alt: "" },
 });
 
 const event = (

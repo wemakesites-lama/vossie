@@ -39,7 +39,7 @@ vi.mock("@/lib/data/listing-ai", () => ({ readCoverPhoto: vi.fn() }));
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
 const IN_30_DAYS = new Date("2026-11-13T08:42:00.000Z");
-const COVER = "/placeholders/listing/tech.svg";
+const COVER = "/stock/listing/tech.jpg";
 const BACK = "/placeholders/photo/2.svg";
 const CASE = "/placeholders/photo/3.svg";
 
@@ -174,7 +174,7 @@ describe("saving a listing (selling spec 2.10, plan decisions 3 and 4)", () => {
   it("drops photos that aren't the seller's own", async () => {
     const [theirs] = await storePhotos("acc-student", [{ type: "image/png", bytes: pngBytes() }], NOW);
     await signedInAs("acc-seller");
-    await redirectOf(async () => saveListingForm(await fanForm({ photo: [theirs, "/placeholders/listing/food.svg"] })));
+    await redirectOf(async () => saveListingForm(await fanForm({ photo: [theirs, "/stock/listing/food.jpg"] })));
     expect((await fan())?.photos).toEqual([]);
   });
 
