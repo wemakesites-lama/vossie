@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { onSupabase } from "@/lib/backend";
 import { reasonLabel } from "@/lib/messaging/rules";
 import type { ReportReason, ReportSummary, ReportTarget } from "@/lib/types";
+import { checkReportDetail, type Concern } from "@/lib/selling/listing-check";
 import type { ReportRow } from "./rows";
 import { sampleStore } from "./store";
 
@@ -50,6 +51,52 @@ export async function createReport({
     targetOwnerId,
   });
   return id;
+}
+
+/**
+ * Publish anyway's report (AI features spec 3.4): about the seller's own listing, live now, with no reporter account
+ * ("The listing check" to the Hub), reason "prohibited". One open at a time per listing. Not in anyone's own reports,
+ * limits or data download, which all read by reporter.
+ */
+export async function fileListingCheckReport({
+  listingId,
+  ownerId,
+  concern,
+  now,
+}: {
+  listingId: string;
+  ownerId: string;
+  concern: Concern;
+  now: Date;
+}): Promise<"filed" | "already-open" | "not-found"> {
+  if (onSupabase()) return (await supabase()).fileListingCheckReport({ listingId, ownerId, concern, now });
+  const store = sampleStore();
+  const listing = store.listings.get(listingId);
+  const shop = listing ? store.sellers.get(listing.sellerSlug) : undefined;
+  if (!listing || shop?.ownerId !== ownerId || listing.state === "draft" || listing.hiddenAt) return "not-found";
+  const open = [...store.reports.values()].some(
+    (row) =>
+      row.reporterId === null &&
+      row.targetKind === "listing" &&
+      row.targetId === listingId &&
+      row.status === "open" &&
+      row.targetGone !== true,
+  );
+  if (open) return "already-open";
+  const id = `rep-${randomUUID()}`;
+  store.reports.set(id, {
+    id,
+    reporterId: null,
+    targetKind: "listing",
+    targetId: listingId,
+    targetTitle: listing.title,
+    reason: "prohibited",
+    detail: checkReportDetail(concern),
+    status: "open",
+    createdAt: now.toISOString(),
+    targetOwnerId: ownerId,
+  });
+  return "filed";
 }
 
 function byReporter(reporterId: string): ReportRow[] {

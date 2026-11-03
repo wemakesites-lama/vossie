@@ -7712,6 +7712,14 @@
     font-size: 14px;
   }
 
+  /* The listing check's "What can't be sold" (AI stage B): a link on white, so sky-dark and underlined. */
+  .msg-check-hint a {
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
   .msg-check .btn {
     justify-self: start;
   }

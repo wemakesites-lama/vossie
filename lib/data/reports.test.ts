@@ -3,6 +3,7 @@ import {
   countReportsSince,
   createReport,
   deleteReportsBy,
+  fileListingCheckReport,
   exportReports,
   hasOpenReport,
   listReportsBy,
@@ -131,5 +132,34 @@ describe("reports (messaging spec 2.8 and 3.4)", () => {
       },
     ]);
     expect(JSON.stringify(data)).not.toMatch(/rep-|acc-/);
+  });
+});
+
+describe("the listing check's reports (AI features spec 3.4)", () => {
+  it("files one open report per listing, with no reporter account, about the seller's own live listing", async () => {
+    expect(await fileListingCheckReport({ listingId: "l-001", ownerId: "acc-seller", concern: "counterfeit", now: NOW })).toBe("filed");
+    expect(await fileListingCheckReport({ listingId: "l-001", ownerId: "acc-seller", concern: "stolen", now: NOW })).toBe("already-open");
+    const rows = [...sampleStore().reports.values()].filter((row) => row.targetId === "l-001");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      reporterId: null,
+      targetKind: "listing",
+      reason: "prohibited",
+      detail: "The listing check thought this may be counterfeit goods. The seller published it anyway.",
+      status: "open",
+      targetOwnerId: "acc-seller",
+    });
+  });
+
+  it("refuses another seller's listing, a draft, a hidden one and one that doesn't exist", async () => {
+    expect(await fileListingCheckReport({ listingId: "l-001", ownerId: "acc-student", concern: "stolen", now: NOW })).toBe("not-found");
+    expect(await fileListingCheckReport({ listingId: "l-nope", ownerId: "acc-seller", concern: "stolen", now: NOW })).toBe("not-found");
+    sampleStore().listings.get("l-001")!.state = "draft";
+    expect(await fileListingCheckReport({ listingId: "l-001", ownerId: "acc-seller", concern: "stolen", now: NOW })).toBe("not-found");
+  });
+
+  it("is in nobody's own reports", async () => {
+    await fileListingCheckReport({ listingId: "l-001", ownerId: "acc-seller", concern: "counterfeit", now: NOW });
+    expect(await listReportsBy("acc-seller")).toEqual([]);
   });
 });

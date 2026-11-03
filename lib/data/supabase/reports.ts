@@ -58,6 +58,19 @@ export const createReport: typeof Sample.createReport = async ({ reporterId, tar
   return id;
 };
 
+/** Publish anyway's report (AI features spec 3.4), through the seller's own client: file_listing_check_report. */
+export const fileListingCheckReport: typeof Sample.fileListingCheckReport = async ({ listingId, ownerId, concern }) => {
+  const { data, error } = await (await forViewerAs(ownerId)).rpc("file_listing_check_report", {
+    p_listing: listingId,
+    p_concern: concern,
+  });
+  if (error) failed("file_listing_check_report", error);
+  if (data !== "filed" && data !== "already-open" && data !== "not-found") {
+    throw new Error(`file_listing_check_report answered ${String(data)}`);
+  }
+  return data;
+};
+
 export const hasOpenReport: typeof Sample.hasOpenReport = async (reporterId, target) =>
   (await openReportId(await forViewerAs(reporterId), reporterId, target)) !== null;
 

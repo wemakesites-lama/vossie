@@ -18,6 +18,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { read } from "./anthropic";
 
 const REQUEST = {
+  task: "photo-to-listing" as const,
   system: "Describe it.",
   images: [
     { type: "image/jpeg" as const, base64: "AQ==" },

@@ -3,7 +3,7 @@ import { SESSION_COOKIE } from "@/lib/auth/cookies";
 import { readFormState } from "@/lib/auth/form-state";
 import { hashToken } from "@/lib/auth/secrets";
 import { addFollow } from "@/lib/data/follows";
-import { readListingPhotos } from "@/lib/data/ai";
+import { checkListingGuidelines, readListingPhotos } from "@/lib/data/ai";
 import { FAKE_REPLY } from "@/lib/data/ai/fake";
 import { getNotifications } from "@/lib/data/notifications";
 import { getOwnListing, listOwnListings, setOwnListingState } from "@/lib/data/own-listings";
@@ -35,7 +35,7 @@ vi.mock("next/headers", async () => (await import("@/tests/helpers/next-request"
 vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
 vi.mock("next/cache", async () => (await import("@/tests/helpers/next-request")).nextCache(request));
-vi.mock("@/lib/data/ai", () => ({ PHOTOS_READ: 3, readListingPhotos: vi.fn() }));
+vi.mock("@/lib/data/ai", () => ({ PHOTOS_READ: 3, readListingPhotos: vi.fn(), checkListingGuidelines: vi.fn() }));
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
 const IN_30_DAYS = new Date("2026-11-13T08:42:00.000Z");
@@ -833,5 +833,112 @@ describe("filling in from a photo (photo-to-listing spec 2.3, 2.4 and decisions 
     await redirectOf(async () => saveListingForm(await suggestForm()));
     expect(readListingPhotos).not.toHaveBeenCalled();
     expect((await readFormState(listingForm(null)))?.notice ?? null).toBeNull();
+  });
+});
+
+describe("the listing check (AI features spec section 3)", () => {
+  beforeEach(() => {
+    vi.stubEnv("VOSSIE_AI_LISTING_CHECK", "1");
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "fake");
+    vi.mocked(checkListingGuidelines).mockReset().mockResolvedValue(null);
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  const checkReports = () => [...sampleStore().reports.values()].filter((row) => row.reporterId === null);
+
+  it("stops a publish it thinks breaks a guideline: back to the form with the concern, nothing made, the token kept", async () => {
+    await signedInAs("acc-seller");
+    vi.mocked(checkListingGuidelines).mockResolvedValue("counterfeit");
+    const data = await fanForm({ title: "Rolex watch" });
+    expect(await redirectOf(() => saveListingForm(data))).toBe("/sell/listings/new");
+    const state = (await readFormState(listingForm(null)))!;
+    expect(state.notice).toBe("listing-check");
+    expect(state.values).toMatchObject({ title: "Rolex watch", checkConcern: "counterfeit" });
+    expect((await listOwnListings("tech-corner")).some((listing) => listing.title === "Rolex watch")).toBe(false);
+    expect(vi.mocked(checkListingGuidelines).mock.calls[0][0]).toMatchObject({
+      title: "Rolex watch",
+      categoryName: "Res & living",
+    });
+    // The same form, sent with Publish anyway, still has its token.
+    data.set("anyway", "counterfeit");
+    expect(await redirectOf(() => saveListingForm(data))).toBe("/sell/listings");
+  });
+
+  it("publishes anyway without asking again, and files one report for the Hub", async () => {
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm({ title: "Rolex watch", anyway: "counterfeit" })));
+    expect(checkListingGuidelines).not.toHaveBeenCalled();
+    const listing = (await listOwnListings("tech-corner")).find((row) => row.title === "Rolex watch")!;
+    expect(listing.state).toBe("available");
+    expect(checkReports()).toMatchObject([{ targetId: listing.id, reason: "prohibited", status: "open" }]);
+  });
+
+  it("publishes without a word when the check finds nothing, and never checks a draft", async () => {
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm()));
+    expect(checkListingGuidelines).toHaveBeenCalledTimes(1);
+    await redirectOf(async () => saveListingForm(await fanForm({ title: "Lamp", intent: "draft" })));
+    expect(checkListingGuidelines).toHaveBeenCalledTimes(1);
+    expect(checkReports()).toEqual([]);
+  });
+
+  it("checks an edit only when the title, description or photos changed", async () => {
+    await signedInAs("acc-seller");
+    const listing = sampleStore().listings.get("l-001")!;
+    const edit = (overrides: Record<string, string>) =>
+      form({
+        listing: "l-001",
+        kind: listing.kind,
+        title: listing.title,
+        category: listing.categorySlug,
+        condition: listing.condition ?? "",
+        price: String(listing.priceZar ?? ""),
+        payMode: listing.payMode,
+        description: listing.description,
+        handover: listing.handover,
+        pickup: listing.pickupPointId ?? "",
+        photo: listing.photos.map((photo) => photo.src),
+        intent: "publish",
+        ...overrides,
+      });
+    await redirectOf(() => saveListingForm(edit({ price: "99" })));
+    expect(checkListingGuidelines).not.toHaveBeenCalled();
+    await redirectOf(() => saveListingForm(edit({ title: `${listing.title} (boxed)` })));
+    expect(checkListingGuidelines).toHaveBeenCalledTimes(1);
+  });
+
+  it("files the report for a paused listing saved anyway, which stays paused, so Resume can't put it live unseen (final review, fix 2)", async () => {
+    await signedInAs("acc-seller");
+    await setOwnListingState("tech-corner", "l-001", "paused", NOW);
+    const listing = sampleStore().listings.get("l-001")!;
+    await redirectOf(() =>
+      saveListingForm(
+        form({
+          listing: "l-001",
+          kind: listing.kind,
+          title: `${listing.title} (copy)`,
+          category: listing.categorySlug,
+          condition: listing.condition ?? "",
+          price: String(listing.priceZar ?? ""),
+          payMode: listing.payMode,
+          description: listing.description,
+          handover: listing.handover,
+          pickup: listing.pickupPointId ?? "",
+          photo: listing.photos.map((photo) => photo.src),
+          intent: "publish",
+          anyway: "counterfeit",
+        }),
+      ),
+    );
+    expect(sampleStore().listings.get("l-001")!.state).toBe("paused");
+    expect(checkReports()).toMatchObject([{ targetId: "l-001", reason: "prohibited", status: "open" }]);
+  });
+
+  it("does nothing while the switch is off, and ignores an anyway that isn't one of the seven", async () => {
+    await signedInAs("acc-seller");
+    vi.stubEnv("VOSSIE_AI_LISTING_CHECK", "");
+    await redirectOf(async () => saveListingForm(await fanForm({ anyway: "yes" })));
+    expect(checkListingGuidelines).not.toHaveBeenCalled();
+    expect(checkReports()).toEqual([]);
   });
 });

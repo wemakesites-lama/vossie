@@ -217,6 +217,15 @@ Built 2026-10-27 and off for the submission (spec `docs/superpowers/specs/2026-1
 - [ ] Check Groq's deprecations page before switching on, then monthly.
 - [ ] After two weeks, read the `[vossie] photo-to-listing:` log lines' counts by provider (`rate-limited`, `bad-output`, `low-confidence`, `refusal`).
 
+### The listing check (after the submission)
+Built 2026-11-04 (AI features spec section 3, stage B; plan `docs/superpowers/plans/2026-11-04-ai-stage-b-listing-check.md`) and off. Haiku only, with photo-to-listing's Anthropic key.
+- [x] On the local stack: `pnpm db:types` (byte-identical to the hand edits), `supabase test db` (2,615 passed) and `pnpm test:db` (357 passed), 2026-11-04.
+- [ ] Push `20261104120000_listing_check.sql` to Vossie Market: a dry run first, then Lama's go-ahead.
+- [ ] Set `VOSSIE_AI_LISTING_CHECK=1` in Vercel, then redeploy: the privacy page's line is drawn at build.
+- [ ] After two weeks, read the `[vossie] listing-check:` log lines, and how many of the Reports queue's "The listing check" reports were dismissed: many dismissals mean the instruction stops honest listings.
+- [ ] Decide whether the check needs a daily cap per account, as photo-to-listing has (`reservePhotoFill`): a stopped publish saves nothing, so each press of Save and publish is another Haiku call. The console's monthly spend limit is the only cap now.
+- [ ] The Hub's "Hidden" notice says everyone who reported a listing has been told, even when the only report was the listing check's (which tells no one). Dismiss has its own "Dismissed." notice; hide could get the same.
+
 ## 7. Decisions for Lama and Eduvos
 
 - [ ] **Report the kept-redirect behaviour to Next.js, if necessary** (Lama, 2026-10-20). `tests/e2e/sign-in-return.spec.ts` with `SIGN_IN_SPIKE=1` is the reproduction.

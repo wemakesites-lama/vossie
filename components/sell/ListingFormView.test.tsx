@@ -307,3 +307,20 @@ describe("the listing form's ids (amendment 3)", () => {
     ]);
   });
 });
+
+describe("the listing check's notice (AI features spec 3)", () => {
+  it("draws the check inside the form, after the hidden Save, in place of a status notice", () => {
+    const { container } = render(view({ notice: "listing-check", values: { ...values, checkConcern: "stolen" } }));
+    const alert = screen.getByRole("alert", { name: "Check this before you publish" });
+    const form = container.querySelector("form")!;
+    expect(form).toContainElement(alert);
+    // Enter in a field presses the form's first submit button: still the hidden Save, never Publish anyway.
+    expect(form.querySelector('button[type="submit"]')).toHaveAttribute("aria-hidden", "true");
+    expect(container.querySelector(".form-notice")).toBeNull();
+  });
+
+  it("draws nothing for a concern that isn't one of the seven", () => {
+    render(view({ notice: "listing-check", values: { ...values, checkConcern: "yes" } }));
+    expect(screen.queryByRole("alert", { name: "Check this before you publish" })).toBeNull();
+  });
+});

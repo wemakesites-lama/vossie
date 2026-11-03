@@ -13,6 +13,7 @@ import {
   publishListing,
   uniqueWord,
 } from "./helpers/selling";
+import { signedInPage, staffNotice } from "./helpers/staff";
 
 // These run in the selling-writes project, after the five device projects (selling plan decision 25). Each uses the
 // sample seller and touches only its own new listing, found by a word in its title that no other test uses.
@@ -328,4 +329,40 @@ test("fill in from a photo: the fields fill and are tagged, axe passes, and Save
   await page.goto(`/sell/listings/${id}/delete`);
   await button(page, "Delete listing").click();
   await expect(main(page).getByRole("status")).toHaveText("Deleted.", POST_LANDS);
+});
+
+test("the listing check stops a listing that may break the guidelines; Publish anyway publishes it and the Hub gets a report (AI stage B)", async ({
+  page,
+  browser,
+  baseURL,
+}) => {
+  test.setTimeout(90_000);
+  const title = `Fake designer watch ${uniqueWord()}`;
+  await signInAsSample(page, "Seller, Tech corner");
+  await page.goto("/sell/listings/new");
+  await fillListing(page, title);
+  await button(page, "Save and publish").click();
+  const check = main(page).getByRole("alert", { name: "Check this before you publish" });
+  await expect(check).toContainText("counterfeit goods", POST_LANDS);
+  await expect(page).toHaveURL(/\/sell\/listings\/new$/);
+  await expect(field(page, "Title")).toHaveValue(title);
+  expect(await seriousIssues(page)).toEqual([]);
+
+  await check.getByRole("button", { name: "Publish anyway" }).click();
+  await expect(page).toHaveURL(/\/sell\/listings$/, POST_LANDS);
+  const word = title.split(" ").at(-1)!;
+  await page.goto(browseFor(word));
+  await expect(cardsFor(page, word)).toHaveCount(1);
+
+  // The Hub's report, from the listing check, which this test dismisses: staff-writes' "Open reports" link goes to
+  // the oldest open report and must find its own (planning decision 9).
+  const admin = await signedInPage(browser, baseURL!, "Admin", "/admin/reports");
+  await main(admin).getByRole("link", { name: `Review the report about ${title}` }).click();
+  await expect(main(admin).getByText("The listing check", { exact: true })).toBeVisible();
+  await expect(main(admin).getByText("Prohibited item", { exact: true })).toBeVisible();
+  await field(admin, "Note").fill("Checked: a real watch, the word was the seller's joke.");
+  await main(admin).getByRole("button", { name: /^Dismiss the report about/ }).click();
+  await expect(admin).toHaveURL(/\/admin\/reports$/, POST_LANDS);
+  await expect(staffNotice(admin)).toHaveText("Dismissed.");
+  await admin.context().close();
 });

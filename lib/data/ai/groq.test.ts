@@ -19,6 +19,7 @@ import Groq from "groq-sdk";
 import { read } from "./groq";
 
 const REQUEST = {
+  task: "photo-to-listing" as const,
   system: "Describe it.",
   images: [
     { type: "image/jpeg" as const, base64: "AQID" },

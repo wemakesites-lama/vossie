@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
 import { PageTransition } from "@/components/kit/PageTransition";
-import { aiFeatureOn, aiProviders, providerHasKey } from "@/lib/ai/config";
+import { aiFeatureOn, aiProviders, featureProviders, providerHasKey } from "@/lib/ai/config";
 
 export const metadata: Metadata = {
   title: "Privacy policy",
@@ -43,6 +43,23 @@ function photoFillLine() {
       When you press Fill in from my photo on a new listing, {chain[0].sent} {chain[0].line}, to read what the item
       is.{fallbacks.join("")} So what&apos;s sent is read outside South Africa. Nothing is sent unless you press the button,
       and you check every suggested field before you publish.
+    </li>
+  );
+}
+
+/**
+ * The listing check's line (AI features spec 7.3): Haiku only, so Anthropic is the one provider named. Fixed at build,
+ * like photoFillLine.
+ */
+function listingCheckLine() {
+  if (!featureProviders("listing-check").includes("anthropic") || !aiFeatureOn("listing-check")) return null;
+  return (
+    <li>
+      When you publish a listing or change its words or photos, its title, description, category and cover photo are
+      sent to Anthropic (never Groq), an AI provider in the United States, which deletes them within 30 days and
+      doesn&apos;t use them to train its models, to check it against what can&apos;t be sold. So what&apos;s sent is read
+      outside South Africa. Your name and your shop aren&apos;t sent. If it may break the guidelines you can still
+      publish it, and the Hub takes a look.
     </li>
   );
 }
@@ -157,6 +174,7 @@ const SECTIONS: readonly InfoSection[] = [
             each request) to keep the site running and secure.
           </li>
           {photoFillLine()}
+          {listingCheckLine()}
           <li>
             The campus updates form in the footer doesn&apos;t send or store your email address yet. When there is a real
             mailing list, it will ask for your consent first, and this policy will say so.

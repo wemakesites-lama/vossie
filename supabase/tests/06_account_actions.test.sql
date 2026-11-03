@@ -78,6 +78,7 @@ select is(
     'delete_request(text)',
     'delete_search(text)',
     'dismiss_report(uuid,text)',
+    'file_listing_check_report(text,text)',
     'follow_shop(uuid)',
     'follower_count(uuid)',
     'follower_counts(uuid,timestamp with time zone)',

@@ -485,3 +485,42 @@ describe("photo-to-listing's line (photo-to-listing spec section 4, final review
     expect(await lineWith({ VOSSIE_AI_PROVIDERS: "fake" })).toBeNull();
   });
 });
+
+describe("the listing check's line (AI features spec 7.3)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  /** As photo-to-listing's lineWith: the page's sections are built when its module loads. */
+  async function checkLineWith(env: Record<string, string>) {
+    for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value);
+    vi.resetModules();
+    const { default: Page } = await import("./page");
+    const { unmount } = render(<Page />);
+    const line = screen.queryByText(/When you publish a listing/)?.textContent ?? null;
+    unmount();
+    return line;
+  }
+
+  it("says what goes to Anthropic on a publish, that it's read outside South Africa, and that you can still publish", async () => {
+    const line = await checkLineWith({
+      VOSSIE_AI_LISTING_CHECK: "1",
+      VOSSIE_AI_PROVIDERS: "anthropic,groq",
+      ANTHROPIC_API_KEY: "test",
+      GROQ_API_KEY: "test",
+    });
+    expect(line).toContain("its title, description, category and cover photo are sent to Anthropic");
+    expect(line).toContain("(never Groq)");
+    expect(line).toContain("read outside South Africa");
+    expect(line).toContain("you can still publish it, and the Hub takes a look");
+  });
+
+  it("isn't there while the check is off, without Anthropic's key, or with only the fake", async () => {
+    expect(await checkLineWith({ VOSSIE_AI_PROVIDERS: "anthropic", ANTHROPIC_API_KEY: "test" })).toBeNull();
+    expect(
+      await checkLineWith({ VOSSIE_AI_LISTING_CHECK: "1", VOSSIE_AI_PROVIDERS: "anthropic,groq", ANTHROPIC_API_KEY: "", GROQ_API_KEY: "test" }),
+    ).toBeNull();
+    expect(await checkLineWith({ VOSSIE_AI_LISTING_CHECK: "1", VOSSIE_AI_PROVIDERS: "fake" })).toBeNull();
+  });
+});
