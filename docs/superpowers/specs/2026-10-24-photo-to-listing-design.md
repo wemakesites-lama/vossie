@@ -1,7 +1,7 @@
 # CampusCart photo-to-listing: design spec
 
 - **Date:** 2026-10-24
-- **Status:** Draft for Lama. Not planned or built. Revised 2026-10-26: Groq's `qwen/qwen3.8-27b` (free tier) first, behind a provider-neutral module, with Claude Haiku 5.5 as the fallback (decisions 9 to 13); the screens chosen with Lama from mockups (section 2). Lama answered the open questions on 2026-10-27 (section 12): built now, off for the submission. **Built 2026-10-27** (plan `docs/superpowers/plans/2026-10-27-photo-to-listing.md`), and off until GO-LIVE's photo-to-listing steps are done. What changed while planning and building is in section 13.
+- **Status:** Draft for Lama. Not planned or built. Revised 2026-10-26: Groq's `qwen/qwen3.8-27b` (free tier) first, behind a provider-neutral module, with Claude Haiku 5.5 as the fallback (decisions 9 to 13); the screens chosen with Lama from mockups (section 2). Lama answered the open questions on 2026-10-27 (section 12): built now, off for the submission. **Built 2026-10-27** (plan `docs/superpowers/plans/2026-10-27-photo-to-listing.md`), and off until GO-LIVE's photo-to-listing steps are done. What changed while planning and building is in section 13. **2026-11-03:** Haiku first, up to three photos and the new door and settings, in the AI features spec (decision 96, stage A).
 - **Scope:** a seller adds a photo on the new listing form, presses one button, and the form comes back with a suggested title, category, condition, description and photo description, plus a price hint from similar CampusCart listings. Textbooks also get their module code and, where one exists, a line about open Looking For requests. Nothing is published or priced for the seller.
 
 ## Related documents

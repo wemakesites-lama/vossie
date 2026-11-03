@@ -9,7 +9,8 @@ import {
 } from "./types";
 
 // Groq's qwen/qwen3.8-27b on the free tier (spec decision 9). A preview model Groq may withdraw: a 404 is "model-gone",
-// and the model is changed here. The key is read on first use, never at module scope.
+// and the model is changed here. It reads the cover photo only: Groq counts every image as 2,048 tokens against the
+// free tier (AI features spec 2.2). The key is read on first use, never at module scope.
 
 export const GROQ_MODEL = "qwen/qwen3.8-27b";
 
@@ -47,9 +48,10 @@ export const read: ReadPhoto = async (request) => {
   return first === REFUSED_FORMAT ? replyOf(await ask(request)) : first;
 };
 
-async function ask({ image, instruction, schema }: ProviderRequest): Promise<ProviderReply | typeof REFUSED_FORMAT> {
+async function ask({ system, images, text, schema }: ProviderRequest): Promise<ProviderReply | typeof REFUSED_FORMAT> {
   // VOSSIE_GROQ_FORMAT=json_object if strict json_schema turns out to refuse an image (plan change 8).
   const strict = process.env.VOSSIE_GROQ_FORMAT !== "json_object";
+  const cover = images[0];
   try {
     const completion = await groq().chat.completions.create({
       model: GROQ_MODEL,
@@ -61,11 +63,12 @@ async function ask({ image, instruction, schema }: ProviderRequest): Promise<Pro
       reasoning_effort: "none",
       reasoning_format: "hidden",
       messages: [
+        { role: "system", content: system },
         {
           role: "user",
           content: [
-            { type: "text", text: strict ? instruction : `${instruction}\nAnswer with JSON only.` },
-            { type: "image_url", image_url: { url: `data:${image.type};base64,${image.base64}` } },
+            { type: "text", text: strict ? text : `${text}\nAnswer with JSON only.` },
+            ...(cover ? [{ type: "image_url" as const, image_url: { url: `data:${cover.type};base64,${cover.base64}` } }] : []),
           ],
         },
       ],
@@ -76,8 +79,8 @@ async function ask({ image, instruction, schema }: ProviderRequest): Promise<Pro
     const choice = completion.choices[0];
     // Cut off at the token limit: the JSON is unfinished, so it's an answer that fails the check, not a busy service.
     if (choice?.finish_reason === "length") return { ok: false, failure: "bad-output" };
-    const text = choice?.message?.content;
-    return text ? { ok: true, text } : { ok: false, failure: "api-error" };
+    const content = choice?.message?.content;
+    return content ? { ok: true, text: content } : { ok: false, failure: "api-error" };
   } catch (error) {
     return refusedFormat(error) ? REFUSED_FORMAT : { ok: false, failure: failureOf(error) };
   }

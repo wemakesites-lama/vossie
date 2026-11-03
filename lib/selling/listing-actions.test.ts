@@ -3,8 +3,8 @@ import { SESSION_COOKIE } from "@/lib/auth/cookies";
 import { readFormState } from "@/lib/auth/form-state";
 import { hashToken } from "@/lib/auth/secrets";
 import { addFollow } from "@/lib/data/follows";
-import { readCoverPhoto } from "@/lib/data/listing-ai";
-import { FAKE_REPLY } from "@/lib/data/listing-ai/fake";
+import { readListingPhotos } from "@/lib/data/ai";
+import { FAKE_REPLY } from "@/lib/data/ai/fake";
 import { getNotifications } from "@/lib/data/notifications";
 import { getOwnListing, listOwnListings, setOwnListingState } from "@/lib/data/own-listings";
 import { attachPhotos, getPhoto, photoIdOf, storePhotos } from "@/lib/data/photos";
@@ -35,7 +35,7 @@ vi.mock("next/headers", async () => (await import("@/tests/helpers/next-request"
 vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
 vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
 vi.mock("next/cache", async () => (await import("@/tests/helpers/next-request")).nextCache(request));
-vi.mock("@/lib/data/listing-ai", () => ({ readCoverPhoto: vi.fn() }));
+vi.mock("@/lib/data/ai", () => ({ PHOTOS_READ: 3, readListingPhotos: vi.fn() }));
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
 const IN_30_DAYS = new Date("2026-11-13T08:42:00.000Z");
@@ -716,8 +716,8 @@ describe("filling in from a photo (photo-to-listing spec 2.3, 2.4 and decisions 
 
   beforeEach(() => {
     vi.stubEnv("VOSSIE_LISTING_AI", "1");
-    vi.stubEnv("VOSSIE_LISTING_AI_PROVIDERS", "fake");
-    vi.mocked(readCoverPhoto).mockReset();
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "fake");
+    vi.mocked(readListingPhotos).mockReset();
   });
 
   afterEach(() => {
@@ -726,7 +726,7 @@ describe("filling in from a photo (photo-to-listing spec 2.3, 2.4 and decisions 
 
   it("fills the empty fields, tags them, keeps the photo, makes no listing and comes back to the form", async () => {
     await signedInAs("acc-seller");
-    vi.mocked(readCoverPhoto).mockResolvedValue({ ok: true, suggestion });
+    vi.mocked(readListingPhotos).mockResolvedValue({ ok: true, suggestion });
     const listingsBefore = (await listOwnListings("tech-corner")).length;
     expect(await redirectOf(async () => saveListingForm(await suggestForm({ title: "My calculator" })))).toBe(
       "/sell/listings/new",
@@ -745,17 +745,27 @@ describe("filling in from a photo (photo-to-listing spec 2.3, 2.4 and decisions 
     expect(await listOwnListings("tech-corner")).toHaveLength(listingsBefore);
   });
 
+  it("sends up to three photos and the categories' names (AI features spec 2.2 and 2.3)", async () => {
+    await signedInAs("acc-seller");
+    vi.mocked(readListingPhotos).mockResolvedValue({ ok: true, suggestion });
+    const files = [1, 2, 3, 4].map((n) => photoFile(pngBytes(), `photo-${n}.png`));
+    await redirectOf(async () => saveListingForm(await suggestForm({ newPhotos: files })));
+    const [photos, categories] = vi.mocked(readListingPhotos).mock.calls[0];
+    expect(photos).toHaveLength(3);
+    expect(categories).toContainEqual(expect.objectContaining({ slug: "tech", name: "Tech" }));
+  });
+
   it("answers without a photo, a person and a failure with their notices, the form unchanged", async () => {
     await signedInAs("acc-seller");
     await redirectOf(async () => saveListingForm(await suggestForm({ newPhotos: [] })));
     expect((await readFormState(listingForm(null)))?.notice).toBe("suggest-no-photo");
-    expect(readCoverPhoto).not.toHaveBeenCalled();
+    expect(readListingPhotos).not.toHaveBeenCalled();
 
-    vi.mocked(readCoverPhoto).mockResolvedValueOnce({ ok: false, failure: "person" });
+    vi.mocked(readListingPhotos).mockResolvedValueOnce({ ok: false, failure: "person" });
     await redirectOf(async () => saveListingForm(await suggestForm({ title: "Kept" })));
     expect(await readFormState(listingForm(null))).toMatchObject({ notice: "suggest-person", values: { title: "Kept" } });
 
-    vi.mocked(readCoverPhoto).mockResolvedValueOnce({ ok: false, failure: "timeout" });
+    vi.mocked(readListingPhotos).mockResolvedValueOnce({ ok: false, failure: "timeout" });
     await redirectOf(async () => saveListingForm(await suggestForm()));
     const failed = (await readFormState(listingForm(null)))!;
     expect(failed.notice).toBe("suggest-failed");
@@ -764,7 +774,7 @@ describe("filling in from a photo (photo-to-listing spec 2.3, 2.4 and decisions 
 
   it("says everything was filled already, rather than 0 fields, and still counts the press", async () => {
     await signedInAs("acc-seller");
-    vi.mocked(readCoverPhoto).mockResolvedValueOnce({ ok: true, suggestion });
+    vi.mocked(readListingPhotos).mockResolvedValueOnce({ ok: true, suggestion });
     const full = {
       title: "My calculator",
       category: "tech",
@@ -778,13 +788,13 @@ describe("filling in from a photo (photo-to-listing spec 2.3, 2.4 and decisions 
     expect(state.notice).toBe("suggest-nothing");
     expect(state.values).toMatchObject({ title: "My calculator", description: "Works well." });
     expect(state.values.suggested).toBeUndefined();
-    expect(readCoverPhoto).toHaveBeenCalledTimes(1);
+    expect(readListingPhotos).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the form when the suggest path itself fails, logging only the kind", async () => {
     await signedInAs("acc-seller");
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    vi.mocked(readCoverPhoto).mockRejectedValueOnce(new Error("rpc failed for own-shop@eduvos.com"));
+    vi.mocked(readListingPhotos).mockRejectedValueOnce(new Error("rpc failed for own-shop@eduvos.com"));
     expect(await redirectOf(async () => saveListingForm(await suggestForm({ title: "Typed and kept" })))).toBe(
       "/sell/listings/new",
     );
@@ -798,10 +808,10 @@ describe("filling in from a photo (photo-to-listing spec 2.3, 2.4 and decisions 
 
   it("serves no fill on an edit form, even a forged one (decision 4)", async () => {
     await signedInAs("acc-seller");
-    vi.mocked(readCoverPhoto).mockResolvedValue({ ok: true, suggestion });
+    vi.mocked(readListingPhotos).mockResolvedValue({ ok: true, suggestion });
     const forged = await suggestForm({ listing: "l-001", photo: COVER, newPhotos: [] });
     expect(await redirectOf(async () => saveListingForm(forged))).toBe("/sell/listings/l-001/edit");
-    expect(readCoverPhoto).not.toHaveBeenCalled();
+    expect(readListingPhotos).not.toHaveBeenCalled();
     expect((await readFormState(listingForm("l-001")))?.notice ?? null).toBeNull();
   });
 
@@ -809,11 +819,11 @@ describe("filling in from a photo (photo-to-listing spec 2.3, 2.4 and decisions 
     // The five sample accounts are exempt in sample mode (decision 12), so this one stands in for a student's own.
     sampleStore().accounts.get("acc-pending")!.email = "own-shop@eduvos.com";
     await signedInAs("acc-pending");
-    vi.mocked(readCoverPhoto).mockResolvedValue({ ok: true, suggestion });
+    vi.mocked(readListingPhotos).mockResolvedValue({ ok: true, suggestion });
     for (let i = 0; i < 20; i += 1) await redirectOf(async () => saveListingForm(await suggestForm({ pickup: "pp-pretoria-library" })));
-    expect(readCoverPhoto).toHaveBeenCalledTimes(20);
+    expect(readListingPhotos).toHaveBeenCalledTimes(20);
     await redirectOf(async () => saveListingForm(await suggestForm({ pickup: "pp-pretoria-library" })));
-    expect(readCoverPhoto).toHaveBeenCalledTimes(20);
+    expect(readListingPhotos).toHaveBeenCalledTimes(20);
     expect((await readFormState(listingForm(null)))?.notice).toBe("suggest-limit");
   });
 
@@ -821,7 +831,7 @@ describe("filling in from a photo (photo-to-listing spec 2.3, 2.4 and decisions 
     vi.stubEnv("VOSSIE_LISTING_AI", "");
     await signedInAs("acc-seller");
     await redirectOf(async () => saveListingForm(await suggestForm()));
-    expect(readCoverPhoto).not.toHaveBeenCalled();
+    expect(readListingPhotos).not.toHaveBeenCalled();
     expect((await readFormState(listingForm(null)))?.notice ?? null).toBeNull();
   });
 });

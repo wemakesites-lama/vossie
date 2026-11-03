@@ -18,7 +18,15 @@ vi.mock("groq-sdk", async (original) => {
 import Groq from "groq-sdk";
 import { read } from "./groq";
 
-const REQUEST = { image: { type: "image/jpeg" as const, base64: "AQID" }, instruction: "Describe it.", schema: {} };
+const REQUEST = {
+  system: "Describe it.",
+  images: [
+    { type: "image/jpeg" as const, base64: "AQID" },
+    { type: "image/jpeg" as const, base64: "BAUG" },
+  ],
+  text: "The photos show one item or service, the cover first.",
+  schema: {},
+};
 const refused = () =>
   new Groq.BadRequestError(400, { error: { code: "json_validate_failed" } }, "Failed to validate JSON", new Headers());
 const answer = (content: string) => ({ choices: [{ finish_reason: "stop", message: { content } }] });
@@ -46,5 +54,14 @@ describe("the Groq provider's one retry (spec section 13)", () => {
     create.mockResolvedValueOnce({ choices: [{ finish_reason: "length", message: { content: '{"title":' } }] });
     expect(await read(REQUEST)).toEqual({ ok: false, failure: "bad-output" });
     expect(create).toHaveBeenCalledTimes(3);
+  });
+
+  it("sends the system prompt as a system message and the cover photo only (AI features spec 2.2)", async () => {
+    create.mockResolvedValueOnce(answer("{}"));
+    await read(REQUEST);
+    const { messages } = create.mock.calls[0][0];
+    expect(messages[0]).toEqual({ role: "system", content: "Describe it." });
+    const images = messages[1].content.filter((part: { type: string }) => part.type === "image_url");
+    expect(images).toEqual([{ type: "image_url", image_url: { url: "data:image/jpeg;base64,AQID" } }]);
   });
 });

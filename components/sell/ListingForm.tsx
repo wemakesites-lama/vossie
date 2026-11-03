@@ -7,7 +7,7 @@ import { getOwnListing } from "@/lib/data/own-listings";
 import type { ListingRow } from "@/lib/data/rows";
 import { isId } from "@/lib/messaging/paths";
 import { characterCount } from "@/lib/messaging/rules";
-import { listingAiOn } from "@/lib/selling/ai-config";
+import { aiFeatureOn } from "@/lib/ai/config";
 import { listingFieldIds, listingFieldPrefix, sellingErrors } from "@/lib/selling/errors";
 import { issueListingToken, listingForm } from "@/lib/selling/form-state";
 import { requestsNaming } from "@/lib/selling/looking-for-count";
@@ -106,7 +106,7 @@ export async function ListingForm({ params }: { params?: Promise<{ id: string }>
   if (longAlt >= 0) photos[longAlt].invalid = true;
   // Photo-to-listing (spec 2.1 and 2.3): the card on a new listing while the feature is on; after a fill, the price
   // hint and the textbook Looking For line, worked out now from the filled values (never stored).
-  const on = !listing && listingAiOn();
+  const on = !listing && aiFeatureOn("listing");
   const filled = on && state?.notice === "suggested";
   const campusSlug = owner.shop.campusSlug;
   const campusName = campuses.find((campus) => campus.slug === campusSlug)?.name ?? "";

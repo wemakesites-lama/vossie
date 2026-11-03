@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { InfoPage, type InfoSection } from "@/components/info/InfoPage";
 import { PageTransition } from "@/components/kit/PageTransition";
-import { listingAiOn, listingAiProviders, providerHasKey } from "@/lib/selling/ai-config";
+import { aiFeatureOn, aiProviders, providerHasKey } from "@/lib/ai/config";
 
 export const metadata: Metadata = {
   title: "Privacy policy",
@@ -13,31 +13,36 @@ export const metadata: Metadata = {
 };
 
 /**
- * Photo-to-listing's line (spec section 4): the providers a photo could actually go to, in order, with what each keeps.
- * Built at module scope like the sections, so it's fixed at build: redeploy after changing the providers or their keys.
+ * Photo-to-listing's line (photo-to-listing spec section 4, AI features spec 7.3): the providers a photo could actually
+ * go to, in order, with what each gets and keeps. Built at module scope like the sections, so it's fixed at build:
+ * redeploy after changing the providers or their keys.
  */
 function photoFillLine() {
-  if (!listingAiOn()) return null;
-  const used = listingAiProviders().filter((name) => name !== "fake" && providerHasKey(name));
+  if (!aiFeatureOn("listing")) return null;
+  const used = aiProviders().filter((name) => name !== "fake" && providerHasKey(name));
   if (used.length === 0) return null;
   const words = {
-    groq: {
-      name: "Groq",
-      line: "Groq, an AI provider in the United States, which keeps nothing from it (we've turned on its zero data retention)",
-    },
     anthropic: {
       name: "Anthropic",
-      line: "Anthropic, an AI provider in the United States, which doesn't use it to train its models",
+      sent: "up to three of your photos (the cover first) are sent to",
+      goes: "up to three of your photos go to",
+      line: "Anthropic, an AI provider in the United States, which deletes them within 30 days and doesn't use them to train its models",
+    },
+    groq: {
+      name: "Groq",
+      sent: "your cover photo is sent to",
+      goes: "your cover photo goes to",
+      line: "Groq, an AI provider in the United States, which keeps nothing from it (we've turned on its zero data retention)",
     },
   } as const;
   const chain = used.map((name) => words[name as keyof typeof words]);
-  // A later provider sees the photo only when the one before it couldn't answer (spec decision 11).
-  const fallbacks = chain.slice(1).map((next, index) => ` If ${chain[index].name} can't answer, it goes to ${next.line}.`);
+  // A later provider sees a photo only when the one before it couldn't answer (photo-to-listing decision 11).
+  const fallbacks = chain.slice(1).map((next, index) => ` If ${chain[index].name} can't answer, ${next.goes} ${next.line}.`);
   return (
     <li>
-      When you press Fill in from my photo on a new listing, your cover photo is sent to {chain[0].line}, to read what the
-      item is.{fallbacks.join("")} Nothing is sent unless you press the button, and you check every suggested field
-      before you publish.
+      When you press Fill in from my photo on a new listing, {chain[0].sent} {chain[0].line}, to read what the item
+      is.{fallbacks.join("")} So what&apos;s sent is read outside South Africa. Nothing is sent unless you press the button,
+      and you check every suggested field before you publish.
     </li>
   );
 }

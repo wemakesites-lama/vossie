@@ -1,6 +1,14 @@
 // lib/selling/suggest.test.ts
 import { describe, expect, it } from "vitest";
-import { checkSuggestion, mergeSuggestion, suggestionSchema, type Suggestion } from "./suggest";
+import { categories } from "@/data/fixtures/categories";
+import {
+  CATEGORY_HINTS,
+  checkSuggestion,
+  mergeSuggestion,
+  suggestionInstruction,
+  suggestionSchema,
+  type Suggestion,
+} from "./suggest";
 
 const SLUGS = ["textbooks-notes", "tech"];
 const reply = (overrides: Record<string, unknown> = {}) =>
@@ -93,5 +101,19 @@ describe("mergeSuggestion (spec decisions 5 and 6)", () => {
     expect(merged.values.condition).toBeUndefined();
     expect(merged.values.description).toBe("A clean copy.");
     expect(merged.suggested).toEqual(["title", "category", "description"]);
+  });
+});
+
+describe("the instruction (AI features spec 2.3 and 2.4)", () => {
+  it("names every category with what belongs in it", () => {
+    for (const { slug } of categories) expect(CATEGORY_HINTS[slug], slug).toBeTruthy();
+    const text = suggestionInstruction(categories);
+    expect(text).toContain("- tech: Tech, such as laptops");
+    expect(text).toContain("- textbooks-notes: Textbooks & notes, such as textbooks");
+    expect(text).toContain("the cover photo first");
+  });
+
+  it("gives a category it has no line for its name only", () => {
+    expect(suggestionInstruction([{ slug: "pets", name: "Pets" }])).toContain("- pets: Pets\n");
   });
 });

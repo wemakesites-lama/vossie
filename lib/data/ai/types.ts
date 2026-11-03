@@ -1,11 +1,19 @@
 import type { PhotoType } from "@/lib/types";
 
-// The one shape every photo-to-listing provider answers (spec decision 9). A provider turns this into one request and
-// hands back the reply's raw text, or why it couldn't answer; lib/data/listing-ai.ts checks the text.
+// The one shape every photo-to-listing provider answers (photo-to-listing spec decision 9; AI features spec 7.1). A
+// provider turns this into one request and hands back the reply's raw text, or why it couldn't answer; lib/data/ai.ts
+// checks the text.
+
+/** One photo as a provider gets it. */
+export type ProviderImage = { type: PhotoType; base64: string };
 
 export type ProviderRequest = {
-  image: { type: PhotoType; base64: string };
-  instruction: string;
+  /** The instruction, sent as the system prompt. */
+  system: string;
+  /** None to three photos in the seller's order, the cover first (AI features spec 2.2). Groq reads only the first. */
+  images: readonly ProviderImage[];
+  /** What's asked of the photos. */
+  text: string;
   schema: Readonly<Record<string, unknown>>;
 };
 

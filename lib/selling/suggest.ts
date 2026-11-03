@@ -31,19 +31,43 @@ const CONDITIONS = CONDITION_CHOICES.map((choice) => choice.value);
 const CONFIDENCE = ["high", "medium", "low"];
 const MODULE_CODE = /^[A-Z]{2,5}\d{3,4}[A-Z]?$/;
 
-export const SUGGESTION_INSTRUCTION = [
-  "You help a university student in South Africa list something for sale on CampusCart, a campus marketplace.",
-  "Look at the photo and describe the item for its listing, in plain South African English.",
-  "Write plain text only: no markdown, no asterisks, no bullet points. Describe only what you can see; don't guess.",
-  "title: what it is, up to 70 characters, brand and model where you can read them. For a textbook, its title and edition.",
-  "categorySlug: the one category that fits best.",
-  "condition: how worn it looks (new, like-new, good or fair).",
-  "description: two or three short sentences a buyer would want, from what you can see. Never guess a price.",
-  "alt: one short, complete sentence of at most 120 characters describing the photo for someone who can't see it.",
-  "isTextbook and moduleCode: the module code printed on a textbook's cover or spine (such as FAC1501), else null.",
-  "personIsSubject: true when a person, not an item, is the main subject. Never describe a person.",
-  "confidence: low when you can't tell what the item is.",
-].join("\n");
+/** A category as the instruction names it. */
+export type CategoryChoice = { slug: string; name: string };
+
+/** What belongs in each category, for the model (AI features spec 2.3). A category without a line gets its name. */
+export const CATEGORY_HINTS: Readonly<Record<string, string>> = {
+  "textbooks-notes": "textbooks, study guides, lecture notes and summaries",
+  tech: "laptops, phones, tablets, calculators, chargers, headphones and other electronics",
+  "res-living": "furniture, bedding, kitchen things, small appliances and anything else for a room or res",
+  "fashion-thrift": "clothes, shoes, bags, jewellery and other fashion, new or second-hand",
+  food: "home-made, baked or packaged food, snacks and drinks",
+  "hair-beauty": "hair products, wigs, make-up, skincare, and hair or beauty services",
+  tutoring: "lessons and help with a module or subject",
+  services: "other services, such as printing, repairs, photography, design or moving",
+  "tickets-events": "tickets to events, shows and parties",
+  stationery: "pens, files, notebooks, art and drawing supplies, lab coats and other things for class",
+};
+
+/** The system prompt every provider gets (spec decisions 5 to 10; AI features spec 2.3 and 2.4). */
+export function suggestionInstruction(categories: readonly CategoryChoice[]): string {
+  const choices = categories.map(({ slug, name }) =>
+    CATEGORY_HINTS[slug] ? `- ${slug}: ${name}, such as ${CATEGORY_HINTS[slug]}` : `- ${slug}: ${name}`,
+  );
+  return [
+    "You help a university student in South Africa list something for sale on CampusCart, the marketplace for Eduvos campuses.",
+    "You get one to three photos of one item or service, the cover photo first. Describe it for its listing, in plain South African English.",
+    "Write plain text only: no markdown, no asterisks, no bullet points. Describe only what you can see; don't guess.",
+    "title: what it is, up to 70 characters, brand and model where you can read them. For a textbook, its title and edition.",
+    "categorySlug: the one category that fits best, from these:",
+    ...choices,
+    "condition: how worn it looks (new, like-new, good or fair).",
+    "description: two or three short sentences a buyer would want, from what you can see. Never guess or mention a price.",
+    "alt: one short, complete sentence of at most 120 characters describing the cover photo for someone who can't see it.",
+    "isTextbook and moduleCode: the module code printed on a textbook's cover or spine (such as FAC1501), else null.",
+    "personIsSubject: true when a person, not an item, is the main subject. Never describe a person.",
+    "confidence: low when you can't tell what the item is.",
+  ].join("\n");
+}
 
 /** The JSON schema every provider is asked for (spec decision 9), with the form's own categories. */
 export function suggestionSchema(categorySlugs: readonly string[]) {

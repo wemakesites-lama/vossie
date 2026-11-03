@@ -1,7 +1,7 @@
 import type { ReadPhoto } from "./types";
 
 // A fixed reply for the e2e tests and the sample demo (spec decision 13): a textbook with a module code, so the tags,
-// the price hint and the Looking For line can all show. listingAiProviders never lists it on Supabase.
+// the price hint and the Looking For line can all show. aiProviders never lists it on Supabase.
 
 export const FAKE_REPLY = {
   title: "Financial Accounting, 3rd edition",

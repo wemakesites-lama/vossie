@@ -5,7 +5,7 @@ import { writeFormState } from "@/lib/auth/form-state";
 import { isSampleAccount } from "@/lib/auth/sample-accounts";
 import { getCategories, getPickupPoints } from "@/lib/data";
 import { notifyFollowers } from "@/lib/data/follows";
-import { readCoverPhoto } from "@/lib/data/listing-ai";
+import { PHOTOS_READ, readListingPhotos } from "@/lib/data/ai";
 import {
   deleteOwnListing,
   getOwnListing,
@@ -21,7 +21,7 @@ import { isId, threadPath } from "@/lib/messaging/paths";
 import { characterCount, keepTyped } from "@/lib/messaging/rules";
 import { PHOTOS_PER_LISTING } from "@/lib/photos/rules";
 import { done, field, fieldList, fileList } from "./action-helpers";
-import { listingAiOn } from "./ai-config";
+import { aiFeatureOn } from "@/lib/ai/config";
 import { listingFieldPrefix } from "./errors";
 import {
   clearForm,
@@ -133,32 +133,41 @@ const PHOTO_FILLS_PER_DAY = 20;
 const failureNotice = (failure: SuggestFailure) => (failure === "person" ? "suggest-person" : "suggest-failed");
 
 /**
- * "Fill in from my photo" (photo-to-listing spec decisions 1 to 6, 12): reads the cover, fills the empty fields, and
- * comes back to the form with what was typed, the photos, and a notice. No token is taken and no listing is made. The
- * photo is read first, so a refused one uses no press; the press is counted only once it's about to reach a provider,
- * and the five sample accounts aren't counted in sample mode.
+ * "Fill in from my photo" (photo-to-listing spec decisions 1 to 6, 12; AI features spec 2.2): reads the cover and up to
+ * two photos after it, fills the empty fields, and comes back to the form with what was typed, the photos, and a
+ * notice. No token is taken and no listing is made. The cover is read first, so a refused one uses no press; the press
+ * is counted only once it's about to reach a provider, and the five sample accounts aren't counted in sample mode.
  *
  * An infrastructure error (a database call, a provider that won't load) comes back as "couldn't read", with the form,
  * rather than the action's error page, which would lose what was typed. Nothing inside redirects, so the catch can't
  * swallow one. Only the kind is logged: the error's message may hold data.
  */
-async function suggestFromCover(
+async function suggestFromPhotos(
   owner: ShopOwner,
   values: Record<string, string>,
   order: readonly string[],
-  context: ListingContext,
   now: Date,
 ): Promise<{ values: Record<string, string>; notice: string }> {
   const cover = order[0] ?? null;
   const id = cover ? photoIdOf(cover) : null;
   if (!cover || !id) return { values, notice: "suggest-no-photo" };
   try {
-    const photo = await photoFor(id, async () => ({ id: owner.account.id, hubStaff: false }), now);
+    const viewer = async () => ({ id: owner.account.id, hubStaff: false });
+    const photo = await photoFor(id, viewer, now);
     if (!photo) return { values, notice: "suggest-failed" };
+    // The photos after the cover go too when they load; one that doesn't (or whose read fails) is left out. They're
+    // read before the press is counted, so a failure here never costs one.
+    const more = await Promise.all(
+      order.slice(1, PHOTOS_READ).map(async (src) => {
+        const other = photoIdOf(src);
+        return other ? photoFor(other, viewer, now).catch(() => null) : null;
+      }),
+    );
     if (!isSampleAccount(owner.account) && !(await reservePhotoFill(owner.account.id, now, PHOTO_FILLS_PER_DAY))) {
       return { values, notice: "suggest-limit" };
     }
-    const reading = await readCoverPhoto({ type: photo.type, bytes: photo.bytes }, context.categorySlugs);
+    const photos = [photo, ...more.filter((each) => each !== null)].map(({ type, bytes }) => ({ type, bytes }));
+    const reading = await readListingPhotos(photos, await getCategories());
     if (!reading.ok) return { values, notice: failureNotice(reading.failure) };
     const merged = mergeSuggestion(values, reading.suggestion, cover);
     // Every field the fill could write already had text: say so, not "We filled in 0 fields". The press still counts.
@@ -259,8 +268,8 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   // off, or one forged on an edit form, saves nothing: it simply comes back to the form, as a photo button does.
   if (field(formData, "intent") === "suggest") {
     const typed = typedValues(formData, order, alts, context);
-    const result = !existing && listingAiOn()
-      ? await suggestFromCover(owner, typed, order, context, now)
+    const result = !existing && aiFeatureOn("listing")
+      ? await suggestFromPhotos(owner, typed, order, now)
       : { values: typed, notice: null };
     await writeFormState(form, { errors: photoErrors, values: result.values, notice: result.notice }, now);
     done(formPath);

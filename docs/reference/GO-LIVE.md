@@ -205,15 +205,17 @@ Written 2026-10-12, after the homepage (Parts 1 and 2). Updated 2026-10-13, afte
 - [ ] On the live project, by hand in the dashboard (decision 83): Authentication → Emails → Templates, both templates' subject "Your CampusCart sign-in code" and body from `supabase/templates/sign-in-code.html`; SMTP Settings, sender name `CampusCart` (phase B runbook A4, A5).
 
 ### Photo-to-listing (after the submission)
-Built 2026-10-27 and off for the submission (spec `docs/superpowers/specs/2026-10-24-photo-to-listing-design.md`, section 9). Switch it on only when every line here is done.
+Built 2026-10-27 and off for the submission (spec `docs/superpowers/specs/2026-10-24-photo-to-listing-design.md`, section 9). Haiku first since stage A of the AI features (spec `docs/superpowers/specs/2026-11-03-ai-features-design.md`, decision 96). Switch it on only when every line here is done.
 - [x] Push `20261027120000_photo_fills.sql` with the other migrations (dry run first). Pushed to Vossie Market on 2026-10-27, on Lama's go-ahead, after a dry run, together with the role views' two (`20261025120000_role_views_seller.sql`, `20261025120100_mentor_caseload.sql`), which hadn't been pushed. The remote is up to date (41 migrations).
 - [x] **The hand check of Groq's strict `json_schema` with an image** (spec decision 9), done 2026-10-27 with Lama's Groq key: strict works with an image and no reasoning, so `VOSSIE_GROQ_FORMAT` stays unset. The outcome is in the spec's section 13. The very first press got a 429 that didn't repeat: watch the `rate-limited` count.
+- [ ] **The photo test** (AI features spec section 8), with Lama's keys: about 30 photos, `VOSSIE_PHOTO_TEST=… pnpm vitest run --config vitest.hand.config.mts`. Set `VOSSIE_HAIKU_EFFORT` from it and note the outcome in the AI features spec's section 12.
+- [ ] Lama: create the Anthropic key in the Anthropic console, and set a monthly spend limit there. Check Anthropic's commercial terms still say API inputs are deleted within 30 days and never used for training: the privacy line says both.
 - [ ] Lama: create the Groq key.
 - [ ] Lama: turn on Zero Data Retention in Groq's Data Controls.
 - [ ] Lama: read Groq's Services Agreement (training, consumer use, liability) and note the answer here.
-- [ ] Set `VOSSIE_LISTING_AI=1`, `VOSSIE_LISTING_AI_PROVIDERS=groq` and `GROQ_API_KEY` (and `VOSSIE_GROQ_FORMAT=json_object` if the hand check needed it) in Vercel, then redeploy: the privacy page's Groq line is drawn at build.
+- [ ] Set `VOSSIE_LISTING_AI=1`, `VOSSIE_AI_PROVIDERS=anthropic,groq`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY` and `VOSSIE_HAIKU_EFFORT` in Vercel (and `VOSSIE_GROQ_FORMAT=json_object` if the hand check needed it), remove `VOSSIE_LISTING_AI_PROVIDERS` if it's there, then redeploy: the privacy page's line is drawn at build.
 - [ ] Check Groq's deprecations page before switching on, then monthly.
-- [ ] After two weeks, read the `[vossie] photo-to-listing:` log lines' counts (`rate-limited`, `bad-output`, `low-confidence`). List Haiku (spec Q6) if busy minutes are common.
+- [ ] After two weeks, read the `[vossie] photo-to-listing:` log lines' counts by provider (`rate-limited`, `bad-output`, `low-confidence`, `refusal`).
 
 ## 7. Decisions for Lama and Eduvos
 
