@@ -11437,6 +11437,19 @@ html[data-nav-pending] .hdr-pennant-slot .pennant-crest {
     max-width: 48rem;
   }
 
+  /* Phones: the week's line ("26 Oct to 1 Nov, against the week before (19 to 25 Oct).") takes two lines in the
+     fallback font and one or two in Geist, by the week's dates, so it keeps two lines' room and the tiles under it
+     don't move up when the font arrives (0.115 at 390 before). */
+  .today-week {
+    min-height: 2lh;
+  }
+
+  @media (min-width: 48rem) and (min-height: 30rem) {
+    .today-week {
+      min-height: 0;
+    }
+  }
+
   .staff-next {
     margin-bottom: 8px;
   }

@@ -29,7 +29,9 @@ const PAGES: ReadonlyArray<[name: string, path: string, saved?: string]> = [
  * The addresses of photos that load only because they are lazy and sit below the first screen: images with
  * `loading="lazy"` whose top is past the bottom of the window, the page being unscrolled. Chrome fetches those within a
  * margin of the window, so how many it fetches before the network goes quiet changes from run to run. An address that
- * an image above the fold or an eager one uses too is not in the set. Spec 11 measures "before below-the-fold photos".
+ * an image above the fold or an eager one uses too is not in the set. An image with no box (inside a `display: none`
+ * block, such as the desktop campus chooser on a phone) counts as neither: its top reads 0, but a lazy one is never
+ * fetched, so the bytes at its address are another image's. Spec 11 measures "before below-the-fold photos".
  */
 async function belowTheFoldPhotos(page: Page): Promise<Set<string>> {
   const urls = await page.evaluate(() => {
@@ -37,6 +39,7 @@ async function belowTheFoldPhotos(page: Page): Promise<Set<string>> {
     const below = new Set<string>();
     for (const image of document.images) {
       if (!image.currentSrc) continue;
+      if (image.loading === "lazy" && image.getClientRects().length === 0) continue;
       const lazyBelow = image.loading === "lazy" && image.getBoundingClientRect().top >= window.innerHeight;
       (lazyBelow ? below : above).add(image.currentSrc);
     }

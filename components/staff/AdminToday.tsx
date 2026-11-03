@@ -46,7 +46,7 @@ export function AdminToday({ waiting, week, badgesChanged }: AdminTodayProps) {
       <Card title="Last week" level={2} action={{ label: "All numbers", href: ADMIN_NUMBERS_PATH }}>
         {week ? (
           <>
-            <p className="chart-summary">
+            <p className="chart-summary today-week">
               {week.label}, against the week before ({week.beforeLabel}).
             </p>
             <StatRow label="Last week's numbers">

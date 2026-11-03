@@ -268,7 +268,9 @@ test.describe("messaging a seller (messaging spec 3.1 to 3.3)", () => {
     await page.goto("/account/privacy");
     await field(page, "I understand this can't be undone").check();
     await button(page, "Delete my account").click();
-    await expect(page.locator(".toast")).toHaveText("Your account has been deleted");
+    // The deletion's post, its 303 and the homepage's full load come before the toast: more than the 5-second default
+    // once in 13 runs under load.
+    await expect(page.locator(".toast")).toHaveText("Your account has been deleted", { timeout: 15_000 });
 
     await seller.reload();
     await expect(main(seller).getByRole("heading", { level: 1, name: "Messages with Deleted account" })).toBeVisible();
