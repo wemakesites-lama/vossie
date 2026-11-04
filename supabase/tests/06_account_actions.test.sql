@@ -160,6 +160,7 @@ select is(
     'reserve_photo_search(uuid,integer)',
     'reserve_words_search(integer)',
     'save_report_first_read(uuid,jsonb)',
+    'save_request_match(text,jsonb,boolean)',
     'save_sign_in_attempt(jsonb)',
     'settle_auto_confirm(timestamp with time zone)',
     'settle_requests(timestamp with time zone)',
