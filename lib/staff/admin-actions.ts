@@ -168,8 +168,12 @@ async function tellOwner(
 /** Where a reporter's notification goes: the heading of "Reports you've made" on privacy settings (amendment 8). */
 const REPORTS_MADE_PATH = "/account/privacy#account-privacy-reports-title";
 
-/** Tells a reporter what happened to their report (spec 2.3), on privacy settings' "Reports you've made". */
+/**
+ * Tells a reporter what happened to their report (spec 2.3), on privacy settings' "Reports you've made"; the listing
+ * check's reports tell no one.
+ */
 async function tellReporter(closed: ClosedReport, outcome: "acted" | "dismissed", now: Date): Promise<void> {
+  if (closed.reporterId === null) return;
   await notify({
     accountId: closed.reporterId,
     kind: "report-handled",
@@ -405,7 +409,7 @@ export async function dismissReport(formData: FormData): Promise<void> {
     await tellReporter(closed, "dismissed", now);
   });
   await clearStaffForm(dismissForm(id));
-  await leaveNotice("dismissed", now);
+  await leaveNotice(closed.reporterId === null ? "dismissed-check" : "dismissed", now);
   done(ADMIN_REPORTS_PATH);
 }
 

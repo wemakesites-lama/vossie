@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { deleteAccountData } from "./accounts";
-import { createReport, hasOpenReport } from "./reports";
+import { createReport, fileListingCheckReport, hasOpenReport } from "./reports";
 import { createRequest, hideRequest } from "./requests";
 import { createShop } from "./shops";
 import { approveShop, hideListing, staffPauseShop } from "./staff-shops";
@@ -36,6 +36,16 @@ beforeEach(() => {
 });
 
 describe("the Hub's reports queue (staff tools spec 2.3, plan decision 5)", () => {
+  it("lists the listing check's report with its own name in place of a student's (AI features spec 3.4)", async () => {
+    await fileListingCheckReport({ listingId: "l-001", ownerId: "acc-seller", concern: "counterfeit", now: NOW });
+    expect((await listReports()).find((view) => view.target.id === "l-001")).toMatchObject({
+      reporterId: null,
+      reporterName: "The listing check",
+      reason: "prohibited",
+      open: true,
+    });
+  });
+
   it("lists open reports first, oldest first, then closed ones, newest closed first", async () => {
     const first = await report("acc-student", { kind: "listing", id: "l-004" }, 8);
     const second = await report("acc-mentor", { kind: "seller", id: "tech-corner" }, 9);

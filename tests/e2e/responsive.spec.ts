@@ -42,7 +42,9 @@ test("the main controls are reachable with the keyboard", async ({ page }) => {
     "Menu",
     "CampusCart home",
     phone ? "You" : "Sign in",
-    "Shop your campus",
+    // The slim phone footer has no giant links: phones reach Shop through the tab bar (phone footer spec 3), and
+    // "Shop" alone, since "Shop textbooks" and the like start with it too.
+    ...(phone ? [] : ["Shop your campus"]),
     "Start selling",
     "Get updates",
     // The homepage's own controls (spec section 15). Not the events' RSVP links: What's on shows only upcoming
@@ -55,4 +57,5 @@ test("the main controls are reachable with the keyboard", async ({ page }) => {
   for (const expected of expectedNames) {
     expect([...reached].some((name) => name.startsWith(expected)), `${expected} should be reachable`).toBe(true);
   }
+  if (phone) expect(reached.has("Shop"), "the tab bar's Shop should be reachable").toBe(true);
 });

@@ -279,7 +279,9 @@ test.describe("no stale pages after signing in or out (plan decision 2)", () => 
       "student@eduvos.com",
     );
     await expect(field(page, "Your Eduvos email address")).toHaveCount(0);
-    // Nor is the header a stale copy.
+    // Nor is the header a stale copy. Back puts the page where it was scrolled to when the sample button was pressed
+    // (about 530px down at 1440), and the header hides while scrolled down, so scroll up to bring it back.
+    await page.evaluate(() => window.scrollTo(0, 0));
     await expect(accountIcon(page)).toHaveAttribute("href", "/account");
   });
 

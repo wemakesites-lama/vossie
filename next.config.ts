@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   images: {
     formats: ["image/avif", "image/webp"],
+    // Every photo at 60, Next's default of 75 coerced to it: about a quarter fewer bytes a photo with no loss that
+    // shows, which brought the homepage and collection first visits back inside spec 11's 350 KB once the real photos
+    // came in. One value, so the image config the browser gets is no bigger (a second value cost every page 60 B).
+    qualities: [60],
     // Resized photos are never kept on the server's disk (selling plan decision 12): a photo deleted with its listing
     // or its account must not be served again. Browsers still keep what they're sent. Only uploaded photos are
     // resized; the SVG placeholders never are.

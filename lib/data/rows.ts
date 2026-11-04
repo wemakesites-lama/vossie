@@ -201,7 +201,8 @@ export type MessageRow = {
 /** A report, for stage G's queue (messaging spec 3.4). */
 export type ReportRow = {
   id: string;
-  reporterId: string;
+  /** The student who sent it; null for the listing check's (AI features spec 3.4). */
+  reporterId: string | null;
   targetKind: ReportTarget["kind"];
   /** A listing's id, a seller's slug or a request's id. */
   targetId: string;

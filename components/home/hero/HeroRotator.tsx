@@ -46,6 +46,8 @@ type HeroRotatorProps = {
  */
 export function HeroRotator({ slides, sentence, chip }: HeroRotatorProps) {
   const [index, setIndex] = useState(0);
+  // The furthest slide shown so far. Every slide up to it stays mounted, so a cross-fade never loses the photo behind.
+  const [furthest, setFurthest] = useState(0);
   const [playChoice, setPlayChoice] = useState<PlayChoice>("auto");
   // Two holds: a mouse over the hero (touch doesn't count), and keyboard focus inside it.
   const [mouseOver, setMouseOver] = useState(false);
@@ -62,13 +64,19 @@ export function HeroRotator({ slides, sentence, chip }: HeroRotatorProps) {
 
   useEffect(() => {
     if (!rotating) return;
-    const timer = window.setInterval(() => setIndex((current) => (current + 1) % count), ROTATE_MS);
+    const timer = window.setInterval(() => {
+      setIndex((current) => (current + 1) % count);
+      // Each turn moves one slide on, so the furthest moves one on too, until every slide has been shown.
+      setFurthest((current) => Math.min(current + 1, count - 1));
+    }, ROTATE_MS);
     return () => window.clearInterval(timer);
   }, [rotating, count]);
 
   /** Someone chose a slide, so autoplay stops (spec 7.3). */
   function show(next: number) {
-    setIndex((next + count) % count);
+    const chosen = (next + count) % count;
+    setIndex(chosen);
+    setFurthest((current) => Math.max(current, chosen));
     setPlayChoice("paused");
   }
 
@@ -102,9 +110,10 @@ export function HeroRotator({ slides, sentence, chip }: HeroRotatorProps) {
     if (Math.abs(dx) > SWIPE_PX && Math.abs(dx) > Math.abs(event.clientY - start.y)) show(index + (dx < 0 ? 1 : -1));
   };
 
-  // The first photo is in the prerendered page. After the load event the others mount, ready for the cross-fade.
-  // With data saver on, only the slide on show loads (plan decision 8).
-  const mountPhoto = (n: number) => n === 0 || n === index || (pageLoaded && !lowData);
+  // The first photo is in the prerendered page. After the load event the next slide's mounts, ready for the cross-fade,
+  // and each one after it as the slides reach it: a visit that leaves before the first turn fetches one photo, not
+  // three (the first visit's 350 KB, spec 11). With data saver on, only the slide on show loads (plan decision 8).
+  const mountPhoto = (n: number) => n === 0 || n === index || (pageLoaded && !lowData && n <= furthest + 1);
 
   return (
     <div

@@ -580,13 +580,13 @@ isOneToOne: false
                   ]
                 },"reports": {
                   Row: {
-                    "closed_at": string | null,"closed_by": string | null,"created_at": string,"detail": string,"id": string,"note": string | null,"outcome": string | null,"reason": string,"reporter_id": string,"status": string,"target_gone": boolean,"target_id": string,"target_kind": string,"target_owner_id": string | null,"target_title": string
+                    "closed_at": string | null,"closed_by": string | null,"created_at": string,"detail": string,"id": string,"note": string | null,"outcome": string | null,"reason": string,"reporter_id": string | null,"status": string,"target_gone": boolean,"target_id": string,"target_kind": string,"target_owner_id": string | null,"target_title": string
                   }
                   Insert: {
-                    "closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"detail"?: string,"id"?: string,"note"?: string | null,"outcome"?: string | null,"reason": string,"reporter_id": string,"status"?: string,"target_gone"?: boolean,"target_id": string,"target_kind": string,"target_owner_id"?: string | null,"target_title": string
+                    "closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"detail"?: string,"id"?: string,"note"?: string | null,"outcome"?: string | null,"reason": string,"reporter_id"?: string | null,"status"?: string,"target_gone"?: boolean,"target_id": string,"target_kind": string,"target_owner_id"?: string | null,"target_title": string
                   }
                   Update: {
-                    "closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"detail"?: string,"id"?: string,"note"?: string | null,"outcome"?: string | null,"reason"?: string,"reporter_id"?: string,"status"?: string,"target_gone"?: boolean,"target_id"?: string,"target_kind"?: string,"target_owner_id"?: string | null,"target_title"?: string
+                    "closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"detail"?: string,"id"?: string,"note"?: string | null,"outcome"?: string | null,"reason"?: string,"reporter_id"?: string | null,"status"?: string,"target_gone"?: boolean,"target_id"?: string,"target_kind"?: string,"target_owner_id"?: string | null,"target_title"?: string
                   }
                   Relationships: [
                     {
@@ -1045,6 +1045,9 @@ isOneToOne: false
                            },
 "dismiss_report":
 { Args: { "p_note": string,"p_report": string }; Returns: string
+                           },
+"file_listing_check_report":
+{ Args: { "p_concern": string,"p_listing": string }; Returns: string
                            },
 "follow_shop":
 { Args: { "p_shop": string }; Returns: string

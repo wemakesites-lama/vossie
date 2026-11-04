@@ -5,7 +5,7 @@ import { writeFormState } from "@/lib/auth/form-state";
 import { isSampleAccount } from "@/lib/auth/sample-accounts";
 import { getCategories, getPickupPoints } from "@/lib/data";
 import { notifyFollowers } from "@/lib/data/follows";
-import { PHOTOS_READ, readListingPhotos } from "@/lib/data/ai";
+import { checkListingGuidelines, PHOTOS_READ, readListingPhotos } from "@/lib/data/ai";
 import {
   deleteOwnListing,
   getOwnListing,
@@ -14,6 +14,7 @@ import {
   setOwnListingState,
 } from "@/lib/data/own-listings";
 import { reservePhotoFill } from "@/lib/data/photo-fills";
+import { fileListingCheckReport } from "@/lib/data/reports";
 import { photoFor, photoIdOf, photoSrcsOf, storePhotos, type Upload } from "@/lib/data/photos";
 import { notifySavedSearches } from "@/lib/data/saved-searches";
 import { listingsChanged } from "@/lib/data/tags";
@@ -47,6 +48,7 @@ import {
   type ListingContext,
   type ListingInput,
 } from "./rules";
+import { checkNeeded, parseConcern, type Concern } from "./listing-check";
 import { mergeSuggestion, type SuggestFailure } from "./suggest";
 import { readUploads } from "./uploads";
 
@@ -187,6 +189,35 @@ async function suggestFromPhotos(
 }
 
 /**
+ * The listing check (AI features spec section 3): reads the listing and its cover against "What can't be sold" and
+ * names the guideline it plainly breaks, or null to publish. The cover goes when it's one of the seller's uploads; a
+ * placeholder or stock cover is left out. It fails open: anything thrown publishes, and only the kind is logged.
+ */
+async function guidelineConcern(
+  owner: ShopOwner,
+  fields: { title: string; description: string; categorySlug: string },
+  order: readonly string[],
+  now: Date,
+): Promise<Concern | null> {
+  try {
+    const id = order[0] ? photoIdOf(order[0]) : null;
+    const viewer = async () => ({ id: owner.account.id, hubStaff: false });
+    const photo = id ? await photoFor(id, viewer, now).catch(() => null) : null;
+    const categoryName =
+      (await getCategories()).find((category) => category.slug === fields.categorySlug)?.name ?? fields.categorySlug;
+    return await checkListingGuidelines({
+      title: fields.title,
+      description: fields.description,
+      categoryName,
+      cover: photo ? { type: photo.type, bytes: photo.bytes } : null,
+    });
+  } catch {
+    console.warn("[vossie] listing-check: check error");
+    return null;
+  }
+}
+
+/**
  * The listing form (selling spec 2.10): Save and publish, Save as draft, and the photo buttons. Photos are checked,
  * stripped and stored first, so a save that fails, or a photo button pressed without the app's JavaScript, keeps
  * them (plan decisions 9 and 11). A shop waiting for approval saves drafts only (plan decision 4).
@@ -194,6 +225,8 @@ async function suggestFromPhotos(
  * A new listing is made once, however many times its form is sent (amendment 14.1): the form carries a one-time token,
  * and only the first save to take it makes a listing. A later one goes where the first went; one with no token, or a
  * made-up or run-out one, is refused with the form's error and what was typed.
+ *
+ * Before a publish, the listing check may stop it with Publish anyway (AI features spec section 3).
  */
 export async function saveListingForm(formData: FormData): Promise<void> {
   const posted = field(formData, "listing");
@@ -283,7 +316,19 @@ export async function saveListingForm(formData: FormData): Promise<void> {
     done(formPath);
   }
 
-  const intent = owner.status !== "pending" && field(formData, "intent") !== "draft" ? "publish" : "draft";
+  // Publish anyway (AI features spec 3) posts the concern the check named; it publishes, so it's never a draft.
+  const anyway = parseConcern(field(formData, "anyway"));
+  const intent = owner.status !== "pending" && (anyway || field(formData, "intent") !== "draft") ? "publish" : "draft";
+  // The listing check, before the token is taken, so a stopped publish keeps the form, its photos and its token
+  // (planning decisions 3 and 4). Publish anyway skips it: its report is filed after the save.
+  if (intent === "publish" && !anyway && aiFeatureOn("listing-check") && checkNeeded(existing, check.value, order)) {
+    const concern = await guidelineConcern(owner, check.value, order, now);
+    if (concern) {
+      const values = { ...typedValues(formData, order, alts, context), checkConcern: concern };
+      await writeFormState(form, { errors: [], values, notice: "listing-check" }, now);
+      done(formPath);
+    }
+  }
   // Only now, with a listing about to be made, is the token taken. Taking it is one step, so of two posts sent together
   // only one makes the listing; the other goes to My listings, or where the first says it went.
   if (!existing) {
@@ -310,6 +355,14 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   if (!saved) redirect(myListingsPath());
   await clearForm(form);
   listingsChanged();
+  // Publish anyway's report for the Hub (spec 3.4), whatever state the save leaves it in but a draft: a paused or sold
+  // listing stays as it is on a save, and Resume or Relist would put it live with no check (final review, fix 2). A
+  // failure to file it doesn't undo the save.
+  if (anyway && saved.state !== "draft" && !saved.hiddenAt) {
+    await fileListingCheckReport({ listingId: saved.id, ownerId: owner.account.id, concern: anyway, now }).catch(() =>
+      console.warn("[vossie] listing-check: report not filed"),
+    );
+  }
   // A first publish (a new listing, or a draft published for the first time) by an open shop tells its followers and
   // the matching saved searches, once a day (community actions plan decision 15 and amendment 1; search alerts plan
   // decision 13). Edits, relists, a shop resuming, and a listing published again after a save back to draft don't.

@@ -4,10 +4,12 @@ import { describedBy, FieldError } from "@/components/forms/FieldError";
 import { errorFor, type FormError } from "@/lib/auth/messages";
 import { listingFieldIds, listingFieldPrefix } from "@/lib/selling/errors";
 import { saveListingForm } from "@/lib/selling/listing-actions";
+import { parseConcern } from "@/lib/selling/listing-check";
 import { noticeText } from "@/lib/selling/notices";
 import { myListingsPath, tabFor } from "@/lib/selling/paths";
 import { CONDITION_CHOICES, HANDOVER_CHOICES, KIND_CHOICES, PAY_CHOICES } from "@/lib/selling/rules";
 import type { Category, ListingState, PickupPoint } from "@/lib/types";
+import { ListingCheck } from "./ListingCheck";
 import { RadioGroup, SelectField, TextField } from "./fields";
 import type { SavedPhoto } from "./PhotoField";
 import { PhotoFieldset } from "./PhotoFieldset";
@@ -64,6 +66,8 @@ export function ListingFormView(props: ListingFormViewProps) {
     notice === "suggested"
       ? `We filled in ${suggested.size} ${suggested.size === 1 ? "field" : "fields"} from your photo. Check each one before you publish.`
       : noticeText(notice);
+  // The listing check (AI features spec 3): the notice's concern, when it is one of the seven.
+  const concern = notice === "listing-check" ? parseConcern(values.checkConcern ?? "") : null;
   // The card is only on a new listing; the edit form keeps its photos last (spec 2.1, item 3).
   const withCard = photoStart?.on === true && listingId === null;
   // Keyed by the server's photos and their descriptions: after a save that failed, the photos just uploaded come back
@@ -112,6 +116,7 @@ export function ListingFormView(props: ListingFormViewProps) {
         {listingId && <input type="hidden" name="listing" value={listingId} />}
         {/* A server-drawn field, no script: only the first save that brings a token makes the listing. */}
         {!listingId && once && <input type="hidden" name="once" value={once} />}
+        {concern && <ListingCheck concern={concern} prefix={prefix} saving={state === "paused" || state === "sold"} />}
         {withCard && (
           <>
             <PhotoStart prefix={prefix} limitReached={photoStart.limitReached}>

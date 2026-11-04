@@ -146,15 +146,34 @@ describe("HeroRotator (spec 7.3)", () => {
     expect(photos(host)).toHaveLength(1);
   });
 
-  it("mounts the other photos once the page has loaded, for the cross-fade", () => {
+  it("mounts the next photo once the page has loaded, and each one after as the slides reach it", () => {
+    vi.useFakeTimers();
     const { container } = render(hero);
+    expect(photos(container)).toHaveLength(2);
+    act(() => {
+      vi.advanceTimersByTime(7000);
+    });
+    expect(photos(container)).toHaveLength(3);
+    // Back at the first slide, every photo stays, so the cross-fade always has the one behind.
+    act(() => {
+      vi.advanceTimersByTime(14000);
+    });
+    expect(activeWord(container)).toBe("textbooks");
     expect(photos(container)).toHaveLength(3);
   });
 
-  it("with reduced motion, still loads the other photos once the page has loaded", () => {
+  it("a thumbnail past the next slide mounts its photo and keeps the ones before", () => {
+    const { container } = render(hero);
+    fireEvent.click(screen.getByRole("button", { name: "Show slide 3 of 3: services" }));
+    expect(photos(container)).toHaveLength(3);
+    fireEvent.click(screen.getByRole("button", { name: "Show slide 1 of 3: textbooks" }));
+    expect(photos(container)).toHaveLength(3);
+  });
+
+  it("with reduced motion, still loads the next photo once the page has loaded", () => {
     mockMatchMedia((query) => query.includes("reduce"));
     const { container } = render(hero);
-    expect(photos(container)).toHaveLength(3);
+    expect(photos(container)).toHaveLength(2);
   });
 
   it("with data saver on, loads only the photo on show", () => {

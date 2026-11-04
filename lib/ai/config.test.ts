@@ -1,6 +1,6 @@
 // lib/ai/config.test.ts
 import { describe, expect, it } from "vitest";
-import { aiFeatureOn, aiProviders, providerHasKey } from "./config";
+import { aiFeatureOn, aiProviders, featureProviders, providerHasKey } from "./config";
 
 describe("the AI settings (AI features spec 7.2)", () => {
   it("lists Haiku then Groq when unset, otherwise in the order given, ignoring unknown and repeated names", () => {
@@ -33,5 +33,21 @@ describe("the AI settings (AI features spec 7.2)", () => {
     expect(providerHasKey("anthropic", { ANTHROPIC_API_KEY: "k" })).toBe(true);
     expect(providerHasKey("groq", { ANTHROPIC_API_KEY: "k" })).toBe(false);
     expect(providerHasKey("fake", {})).toBe(true);
+  });
+
+  it("turns the listing check on by its own switch, with Haiku or the fake, never Groq alone", () => {
+    expect(aiFeatureOn("listing-check", { ANTHROPIC_API_KEY: "k" })).toBe(false);
+    expect(aiFeatureOn("listing-check", { VOSSIE_AI_LISTING_CHECK: "1", ANTHROPIC_API_KEY: "k" })).toBe(true);
+    expect(aiFeatureOn("listing-check", { VOSSIE_AI_LISTING_CHECK: "1", GROQ_API_KEY: "k" })).toBe(false);
+    expect(aiFeatureOn("listing-check", { VOSSIE_AI_LISTING_CHECK: "1", VOSSIE_AI_PROVIDERS: "fake" })).toBe(true);
+    // Photo-to-listing's switch doesn't turn it on.
+    expect(aiFeatureOn("listing-check", { VOSSIE_LISTING_AI: "1", ANTHROPIC_API_KEY: "k" })).toBe(false);
+  });
+
+  it("gives each feature the providers it may use that have their keys, in order", () => {
+    const env = { VOSSIE_AI_PROVIDERS: "groq,anthropic", ANTHROPIC_API_KEY: "k", GROQ_API_KEY: "k" };
+    expect(featureProviders("listing", env)).toEqual(["groq", "anthropic"]);
+    expect(featureProviders("listing-check", env)).toEqual(["anthropic"]);
+    expect(featureProviders("listing", { ANTHROPIC_API_KEY: "k" })).toEqual(["anthropic"]);
   });
 });

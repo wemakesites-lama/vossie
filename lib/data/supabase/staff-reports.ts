@@ -49,7 +49,7 @@ type ReportRecord = {
 function reportRowFrom(row: ReportRecord): ReportRow {
   return {
     id: row.id!,
-    reporterId: row.reporter_id!,
+    reporterId: row.reporter_id,
     targetKind: row.target_kind as ReportTarget["kind"],
     targetId: row.target_id!,
     targetTitle: row.target_title!,
@@ -184,7 +184,7 @@ export const closeReport: typeof Sample.closeReport = async (id, note) => {
   if (data !== "changed") throw new Error(`dismiss_report answered ${data}`);
   const report = await client.from("staff_reports").select("id, reporter_id, target_title").eq("id", id).single();
   if (report.error) failed("staff_reports", report.error);
-  return { id: report.data.id!, reporterId: report.data.reporter_id!, title: report.data.target_title! };
+  return { id: report.data.id!, reporterId: report.data.reporter_id, title: report.data.target_title! };
 };
 
 export const closeReportsOn: typeof Sample.closeReportsOn = async () => {

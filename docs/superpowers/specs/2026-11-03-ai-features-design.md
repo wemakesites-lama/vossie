@@ -1,6 +1,6 @@
 # AI features: Haiku first, search by photo or in your own words, a listing check, and a read of each report: design
 
-Date: 2026-11-03 · Status: **Approved by Lama 2026-11-03 (decision 96).** Not planned or built. Lama's answers are in section 11.
+Date: 2026-11-03 · Status: **Approved by Lama 2026-11-03 (decision 96).** Stages A (Haiku first) and B (the listing check) built; C to E not planned. Lama's answers are in section 11.
 
 ## Related documents
 
@@ -171,3 +171,26 @@ Left out on purpose: AI replies on a seller's behalf (trust matters more on a ca
 2. **The old door's test** (`lib/data/listing-ai.test.ts`) wasn't in the plan. Its five cases (the four failures that move on, the answers that don't, a provider without its key, the log line) moved into `lib/data/ai.test.ts`, with Haiku first.
 3. **Groq's reply variable is `content`,** since the request's `text` now names the prompt.
 4. **Still to do:** the photo test with Lama's keys (plan Task 9), which sets `VOSSIE_HAIKU_EFFORT`.
+
+### While planning stage B (2026-11-04, plan `docs/superpowers/plans/2026-11-04-ai-stage-b-listing-check.md`)
+
+1. **A report with no reporter account is the listing check's.** `reports.reporter_id` is nullable; staff see "The listing check". At most one open listing-check report per listing.
+2. **Publish anyway posts the concern** (`anyway=counterfeit`), so nothing is kept between the two posts. A forged one only files a report against the seller's own listing.
+3. **When it runs:** a publish of a new listing or a draft, and a save of a live, paused or sold listing whose title, description or photos changed. Never Save as draft or a waiting shop.
+4. **After the field checks, before the one-time token is taken,** so a stopped publish keeps the form, its photos and its token.
+5. **The report is filed only for a listing saved as available.** A failure to file it is logged by kind and doesn't undo the save.
+6. **The seller isn't told about the report:** the notice already says the Hub will take a look.
+7. **Dismissing it says "Dismissed."** and tells no one.
+8. **The provider request names its task** (`photo-to-listing` or `listing-check`): the fake answers each, and the log line names it.
+9. **The e2e test dismisses its own report,** so `staff-writes`' "Open reports" link still finds the oldest report it made.
+
+### While building stage B (2026-11-04)
+
+1. **The database types were edited by hand** (`lib/supabase/database.types.ts`: `file_listing_check_report`, a nullable `reports.reporter_id`) while the local stack was down. Regenerated on the stack afterwards: byte-identical.
+2. **The database checks ran once the stack was up** (2026-11-04): the migration applies, pgTAP 2,615 passed (46 files, the new one's 14 included) and `test:db` 357 passed (51 files). `06_account_actions.test.sql` lists the functions signed-in users may run, so `file_listing_check_report(text,text)` joined it, and the new test's hidden listing needed a hide reason (`listings_hidden_with_reason`).
+3. **"What can't be sold" in the notice is sky-dark and underlined** (`.msg-check-hint a`): the hint's grey was the wrong colour for a link on white.
+4. **Focus:** with the app's JavaScript the notice is announced as an alert rather than focused, as the error summary and the composer's scam check are (accounts plan decision 11).
+5. **Planning decision 5 changed (final review):** the report is filed for any listing saved anyway that isn't a draft or hidden, not only an available one. A save leaves a paused or sold listing as it is, so the old rule filed nothing there, and Resume or Relist would then have put it live unchecked. On a paused or sold listing the notice says "Check this before you save" and "Save anyway".
+6. **The instruction says the listing is data:** anything in the title, description or photo that tells the model how to answer is ignored. The check still fails open, so students' reports stay the backstop.
+7. **The privacy line** says "when you publish a listing or change its words or photos", since edits are checked too.
+8. **The pgTAP test closed the report with `'hidden'`,** an outcome `reports.outcome` allows (it had `'acted'`, the notification's wording only), and gained a hidden listing, a paused one and a new report after the open one closes.

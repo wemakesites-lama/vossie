@@ -184,11 +184,12 @@ test.describe("choosing a campus (spec 7.7 and 7.8)", () => {
       .getByRole("region", { name: "Shop by campus" })
       .getByRole("button", { name: /^Midrand\s*,\s*214 live listings$/ })
       .click();
+    // The visible pill: the text also sits in a screen-reader-only live region, so getByText would match two elements.
+    // Checked first: it shows on the press and goes after 4 seconds, and under load the refresh below took longer.
+    await expect(page.locator(".toast")).toHaveText("Showing Midrand first");
     const heading = page.locator("#just-listed-title");
     await expect(heading).toHaveText("New at Midrand");
     await expect(heading).toBeFocused();
-    // The visible pill: the text also sits in a screen-reader-only live region, so getByText would match two elements.
-    await expect(page.locator(".toast")).toHaveText("Showing Midrand first");
     const cookies = await page.context().cookies();
     expect(cookies.find((cookie) => cookie.name === "vossie_campus")?.value).toBe("midrand");
     // The refresh reaches the other campus-aware parts too.

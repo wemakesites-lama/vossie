@@ -16,8 +16,9 @@ import { sampleStore } from "./store";
 /** A report as the queue and its page show it (spec 2.3). */
 export type ReportView = {
   id: string;
-  reporterId: string;
-  /** The reporter's first name only (spec 2.3). */
+  /** Null for the listing check's reports (AI features spec 3.4). */
+  reporterId: string | null;
+  /** The reporter's first name only (spec 2.3); "The listing check" for its reports. */
   reporterName: string;
   target: ReportTarget;
   /** What it was called when it was reported. */
@@ -55,6 +56,9 @@ export type ReportView = {
 };
 
 export const DELETED = "Deleted account";
+
+/** Who the Hub sees as the listing check's reports' reporter. */
+export const LISTING_CHECK_NAME = "The listing check";
 
 /**
  * What a report's view is built from, on either backend (C4/C5 plan decision 11): the listing, shop and request it
@@ -139,7 +143,8 @@ export const reportViewOver = (lookups: ReportLookups) => (row: ReportRow, viewe
   return {
     id: row.id,
     reporterId: row.reporterId,
-    reporterName: lookups.firstName(row.reporterId),
+    // The listing check's reports have no reporter account (AI features spec 3.4).
+    reporterName: row.reporterId === null ? LISTING_CHECK_NAME : lookups.firstName(row.reporterId),
     target: { kind: row.targetKind, id: row.targetId },
     targetTitle: row.targetTitle,
     reason: row.reason,
@@ -197,7 +202,7 @@ function close(row: ReportRow, outcome: ReportOutcome, note: string, staffId: st
 }
 
 /** A closed report, for its reporter's notification: the report, who sent it, and what it was about. */
-export type ClosedReport = { id: string; reporterId: string; title: string };
+export type ClosedReport = { id: string; reporterId: string | null; title: string };
 
 /** Dismiss (spec 2.3): this report closes with its note. Null when it wasn't open. */
 export async function closeReport(id: string, note: string, staffId: string, now: Date): Promise<ClosedReport | null> {

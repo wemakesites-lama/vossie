@@ -4,7 +4,7 @@ import { deleteAccountData, exportAccountData } from "@/lib/data/accounts";
 import { listAudit } from "@/lib/data/audit";
 import { addPin } from "@/lib/data/featured";
 import { getNotifications } from "@/lib/data/notifications";
-import { createReport } from "@/lib/data/reports";
+import { createReport, fileListingCheckReport } from "@/lib/data/reports";
 import { isHiddenFrom } from "@/lib/data/photos";
 import { deleteOwnListing } from "@/lib/data/own-listings";
 import { createRequest, deleteRequest, hideRequest } from "@/lib/data/requests";
@@ -399,6 +399,17 @@ describe("reports (staff tools spec 2.3, plan decision 5)", () => {
       href: "/account/privacy#account-privacy-reports-title",
     });
     expect(await lastAudit()).toMatchObject({ action: "report-dismissed", targetKind: "report", detail: "Looked fine." });
+  });
+
+  it("dismisses the listing check's report saying only Dismissed, and tells no one", async () => {
+    await fileListingCheckReport({ listingId: "l-001", ownerId: "acc-seller", concern: "stolen", now: STAFF_NOW });
+    const id = [...sampleStore().reports.values()].find((row) => row.reporterId === null)!.id;
+    const before = sampleStore().notifications.size;
+    await asAdmin();
+    expect(await redirectOf(() => dismissReport(form({ report: id, note: "A real watch." })))).toBe("/admin/reports");
+    expect(sampleStore().reports.get(id)).toMatchObject({ status: "closed", outcome: "dismissed" });
+    expect(sampleStore().notifications.size).toBe(before);
+    expect((await readFormState(STAFF_NOTICE))?.notice).toBe("dismissed-check");
   });
 
   it("hides a reported listing: every report on it closes, and the seller and each reporter are told", async () => {
