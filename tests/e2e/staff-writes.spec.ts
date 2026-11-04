@@ -410,7 +410,8 @@ test("an admin sees a first read above a student's report, and Read again when t
   const withRead = (await reportBy(first.firstName))!;
   const withoutRead = (await reportBy(secondBuyer.firstName))!;
 
-  // The read is made after the reporter's reply, so reload until it's there.
+  // The read is made after the reporter's reply, so reload until it's there. 30 seconds: late in a full write run the
+  // server is slow enough that 15 timed out once (2026-11-04), then passed on its own.
   const box = main(admin).getByRole("region", { name: "First read (may be wrong)" });
   await expect
     .poll(
@@ -418,7 +419,7 @@ test("an admin sees a first read above a student's report, and Read again when t
         await admin.goto(withRead);
         return box.count();
       },
-      { timeout: 15_000 },
+      { timeout: 30_000 },
     )
     .toBe(1);
   await expect(box).toContainText(`A report about ${title}.`);
