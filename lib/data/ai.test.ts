@@ -6,9 +6,9 @@ const groq = vi.hoisted(() => vi.fn<() => Promise<ProviderReply>>());
 vi.mock("./ai/anthropic", () => ({ read: haiku }));
 vi.mock("./ai/groq", () => ({ read: groq }));
 
-import { checkListingGuidelines, checkRequest, listingRequest, readListingPhotos } from "./ai";
+import { checkListingGuidelines, checkRequest, listingRequest, readListingPhotos, readSearchWords, wordsRequest } from "./ai";
 import { readReport, reportReadRequest, type ReportForRead } from "./ai";
-import { FAKE_REPLY } from "./ai/fake";
+import { FAKE_REPLY, fakeWords } from "./ai/fake";
 
 const CATEGORIES = [
   { slug: "textbooks-notes", name: "Textbooks & notes" },
@@ -221,5 +221,92 @@ describe("the report read through the door (AI features spec 4 and 7.1)", () => 
     expect(await readReport({ ...READ_INPUT, reason: "scam" })).toMatchObject({ concern: "none", agrees: true });
     expect(await readReport(READ_INPUT)).toMatchObject({ concern: "none", agrees: false });
     expect(await readReport({ ...READ_INPUT, detail: "[no read]" })).toBeNull();
+  });
+});
+
+describe("the words search through the door (AI features spec 6 and 7.1)", () => {
+  const TECH = [{ slug: "tech", name: "Tech" }];
+  const MIDRAND = [{ slug: "midrand", name: "Midrand" }];
+  const WORDS = "calculator under r300 at midrand";
+  const PARSED = { q: "calculator", category: null, campus: "midrand", price: "under-500", pay: null, deals: null, sort: null };
+  const reply = (fields: Record<string, unknown> = {}) =>
+    JSON.stringify({
+      q: "calculator",
+      categorySlug: null,
+      campus: "midrand",
+      maxPrice: 300,
+      free: false,
+      pay: null,
+      deals: false,
+      sort: null,
+      ...fields,
+    });
+
+  it("sends the words only, with no photos, under the words search's schema", () => {
+    const request = wordsRequest(WORDS, TECH, MIDRAND);
+    expect(request.task).toBe("words-search");
+    expect(request.images).toEqual([]);
+    expect(request.text).toBe(`Search: ${WORDS}`);
+    expect(request.system).toContain("- midrand: Midrand");
+    expect(request.schema).toMatchObject({ properties: { campus: { enum: ["midrand", "all", null] } } });
+    // Browse waits on it: a short wait, then the exact words (stage E review).
+    expect(request.quick).toEqual({ timeoutMs: 3_000 });
+  });
+
+  it("uses the fake in sample mode", async () => {
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "fake");
+    expect(await readSearchWords(WORDS, TECH, MIDRAND)).toEqual(PARSED);
+  });
+
+  it("asks Haiku only, never Groq, and is null with no provider that may answer", async () => {
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "groq");
+    vi.stubEnv("GROQ_API_KEY", "k");
+    expect(await readSearchWords(WORDS, TECH, MIDRAND)).toBeNull();
+    expect(groq).not.toHaveBeenCalled();
+    expect(haiku).not.toHaveBeenCalled();
+    bothProviders();
+    haiku.mockResolvedValueOnce({ ok: true, text: reply() });
+    expect(await readSearchWords(WORDS, TECH, MIDRAND)).toEqual(PARSED);
+    expect(groq).not.toHaveBeenCalled();
+  });
+
+  it("is null on a bad reply or a throw, logging only the kind, never the words", async () => {
+    bothProviders();
+    const warn = vi.mocked(console.warn);
+    haiku.mockResolvedValueOnce({ ok: true, text: reply({ campus: "mars" }) });
+    expect(await readSearchWords(WORDS, TECH, MIDRAND)).toBeNull();
+    haiku.mockRejectedValueOnce(new Error(WORDS));
+    expect(await readSearchWords(WORDS, TECH, MIDRAND)).toBeNull();
+    haiku.mockResolvedValueOnce({ ok: false, failure: "refusal" });
+    expect(await readSearchWords(WORDS, TECH, MIDRAND)).toBeNull();
+    const lines = warn.mock.calls.map(([line]) => String(line));
+    expect(lines).toEqual([
+      "[vossie] words-search: anthropic bad-output",
+      "[vossie] words-search: anthropic api-error",
+      "[vossie] words-search: anthropic refusal",
+    ]);
+    expect(lines.join(" ")).not.toContain("calculator");
+  });
+
+  it("moves on to the next provider after a timeout", async () => {
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "anthropic,fake");
+    vi.stubEnv("ANTHROPIC_API_KEY", "k");
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    haiku.mockResolvedValueOnce({ ok: false, failure: "timeout" });
+    expect(await readSearchWords(WORDS, TECH, MIDRAND)).toEqual(PARSED);
+    expect(console.warn).toHaveBeenCalledWith("[vossie] words-search: anthropic timeout");
+  });
+
+  it("has a fake that reads a price, free, cheap and a campus, the rest as q", () => {
+    const campuses = ["midrand", "cape-town-mowbray", "all"];
+    expect(fakeWords("Search: free textbooks at cape town mowbray", campuses)).toMatchObject({
+      q: "textbooks",
+      campus: "cape-town-mowbray",
+      free: true,
+      maxPrice: null,
+      sort: null,
+    });
+    expect(fakeWords("Search: cheap kettle", campuses)).toMatchObject({ q: "kettle", campus: null, sort: "price-low" });
+    expect(fakeWords("Search: desk 300 rand", campuses)).toMatchObject({ q: "desk", maxPrice: 300 });
   });
 });

@@ -81,3 +81,12 @@ export function requestsChanged(): void {
 export function requestsChangedNow(): void {
   revalidateTag(REQUESTS_TAG, { expire: 0 });
 }
+
+// The words search's parses (AI stage E plan Task 4): nothing expires the tag today, so a change to the categories or
+// campuses waits out the week, or a deploy.
+export const WORDS_SEARCH_TAG = "words-search";
+
+/** For the cached parse of a search's words. */
+export function tagWordsSearch(): void {
+  cacheTag(WORDS_SEARCH_TAG);
+}

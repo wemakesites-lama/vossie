@@ -81,6 +81,24 @@ function reportReadLine() {
   );
 }
 
+/**
+ * The words search's line (AI features spec 7.3, section 6): Haiku only, so Anthropic is the one provider named. Fixed
+ * at build, like photoFillLine.
+ */
+function wordsSearchLine() {
+  if (!featureProviders("words-search").includes("anthropic") || !aiFeatureOn("words-search")) return null;
+  return (
+    <li>
+      When a search reads like a sentence (&ldquo;calculator under R300 at Midrand&rdquo;), its words are sent to
+      Anthropic (never Groq), an AI provider in the United States, which deletes them within 30 days and doesn&apos;t use
+      them to train its models, to read which filters you meant. So what&apos;s sent is read outside South Africa. Only the
+      words go: not your account, your campus or anything else about you. The words and the filters read from them are
+      kept on our server for a week, so the same search is quicker next time. A search of one to three words isn&apos;t
+      sent, unless it names a price, a campus, &ldquo;cheap&rdquo; or &ldquo;free&rdquo;.
+    </li>
+  );
+}
+
 const SECTIONS: readonly InfoSection[] = [
   {
     id: "privacy-who",
@@ -193,6 +211,7 @@ const SECTIONS: readonly InfoSection[] = [
           {photoFillLine()}
           {listingCheckLine()}
           {reportReadLine()}
+          {wordsSearchLine()}
           <li>
             The campus updates form in the footer doesn&apos;t send or store your email address yet. When there is a real
             mailing list, it will ask for your consent first, and this policy will say so.

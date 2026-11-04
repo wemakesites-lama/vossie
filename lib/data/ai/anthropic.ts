@@ -24,8 +24,9 @@ function failureOf(error: unknown): ProviderFailure {
   return "api-error";
 }
 
-export const read: ReadPhoto = async ({ system, images, text, schema }) => {
-  const level = effort();
+export const read: ReadPhoto = async ({ system, images, text, schema, quick }) => {
+  // A quick request (the words search) is always low effort with its own short wait, whatever VOSSIE_HAIKU_EFFORT says.
+  const level: Effort = quick ? "low" : effort();
   try {
     const message = await anthropic().messages.create(
       {
@@ -47,7 +48,7 @@ export const read: ReadPhoto = async ({ system, images, text, schema }) => {
           },
         ],
       },
-      { timeout: TIMEOUT_MS[level] },
+      { timeout: quick?.timeoutMs ?? TIMEOUT_MS[level] },
     );
     if (message.stop_reason === "refusal") return { ok: false, failure: "refusal" };
     // Cut off: the JSON is unfinished, so it's an answer that fails the check, not a busy service.

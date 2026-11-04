@@ -563,3 +563,42 @@ describe("the report read's line (AI features spec 4 and 7.3, stage C)", () => {
     expect(await readLineWith({ VOSSIE_AI_REPORT_READ: "1", VOSSIE_AI_PROVIDERS: "fake" })).toBeNull();
   });
 });
+
+describe("the words search's line (AI features spec 7.3, AI stage E)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  async function wordsLineWith(env: Record<string, string>) {
+    for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value);
+    vi.resetModules();
+    const { default: Page } = await import("./page");
+    const { unmount } = render(<Page />);
+    const line = screen.queryByText(/When a search reads like a sentence/)?.textContent ?? null;
+    unmount();
+    return line;
+  }
+
+  it("says only the words go to Anthropic, that they're read outside South Africa, and kept a week by the words", async () => {
+    const line = await wordsLineWith({
+      VOSSIE_AI_WORDS_SEARCH: "1",
+      VOSSIE_AI_PROVIDERS: "anthropic,groq",
+      ANTHROPIC_API_KEY: "test",
+      GROQ_API_KEY: "test",
+    });
+    expect(line).toContain("its words are sent to Anthropic (never Groq)");
+    expect(line).toContain("read outside South Africa");
+    expect(line).toContain("not your account, your campus or anything else about you");
+    expect(line).toContain("The words and the filters read from them are kept on our server for a week");
+    expect(line).toContain("A search of one to three words isn't sent, unless it names a price, a campus");
+  });
+
+  it("isn't there while the search is off, without Anthropic's key, or with only the fake", async () => {
+    expect(await wordsLineWith({ VOSSIE_AI_PROVIDERS: "anthropic", ANTHROPIC_API_KEY: "test" })).toBeNull();
+    expect(
+      await wordsLineWith({ VOSSIE_AI_WORDS_SEARCH: "1", VOSSIE_AI_PROVIDERS: "anthropic,groq", ANTHROPIC_API_KEY: "", GROQ_API_KEY: "test" }),
+    ).toBeNull();
+    expect(await wordsLineWith({ VOSSIE_AI_WORDS_SEARCH: "1", VOSSIE_AI_PROVIDERS: "fake" })).toBeNull();
+  });
+});

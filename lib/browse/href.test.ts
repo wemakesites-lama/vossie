@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeBrowseQuery } from "@/tests/helpers/fakes";
-import { browseHref } from "./href";
+import { browseHref, exactHref } from "./href";
 
 describe("browseHref (spec 3.3)", () => {
   it("leaves out every default", () => {
@@ -43,5 +43,21 @@ describe("browseHref (spec 3.3)", () => {
     expect(browseHref(second, { shown: 72 })).toBe("/browse?n=72");
     expect(browseHref(second, { category: "food" })).toBe("/browse?cat=food");
     expect(browseHref(second, { sort: "price-high" })).toBe("/browse?sort=price-high");
+  });
+
+  it("keeps exact=1 last while the words stay the same (AI stage E)", () => {
+    const exact = makeBrowseQuery({ q: "calculator", sort: "match", exact: true });
+    expect(browseHref(exact)).toBe("/browse?q=calculator&exact=1");
+    expect(browseHref({ ...exact, shown: 48 })).toBe("/browse?q=calculator&n=48&exact=1");
+    expect(browseHref(exact, { price: "free" })).toBe("/browse?q=calculator&price=free&exact=1");
+    expect(browseHref(exact, { q: "lamp" })).toBe("/browse?q=lamp");
+    expect(browseHref(makeBrowseQuery({ q: null, exact: true }))).toBe("/browse");
+  });
+});
+
+describe("exactHref (AI stage E)", () => {
+  it("is the typed search with exact=1", () => {
+    const typed = makeBrowseQuery({ q: "calculator under r300 at midrand", sort: "match", campusFromLink: false });
+    expect(exactHref(typed)).toBe("/browse?q=calculator+under+r300+at+midrand&exact=1");
   });
 });

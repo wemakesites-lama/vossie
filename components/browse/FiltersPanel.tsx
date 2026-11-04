@@ -7,8 +7,8 @@ const PAY_OPTIONS: ReadonlyArray<[value: string, label: string]> = [["", "Any"],
 
 /**
  * The Filters panel (spec 4.4): a plain GET form to /browse, so it works without the app's JavaScript. Hidden fields keep the
- * search, category, deals and a chosen sort. There's no live count: that would need JavaScript. Empty values ("Any")
- * are sent as `price=` and ignored when the link is read.
+ * search, category, deals, a chosen sort and an exact search's exact=1. There's no live count: that would need
+ * JavaScript. Empty values ("Any") are sent as `price=` and ignored when the link is read.
  */
 export function FiltersPanel({ query, campuses }: { query: BrowseQuery; campuses: readonly Campus[] }) {
   const kept: ReadonlyArray<[name: string, value: string | null]> = [
@@ -16,6 +16,8 @@ export function FiltersPanel({ query, campuses }: { query: BrowseQuery; campuses
     ["cat", query.category],
     ["deals", query.deals],
     ["sort", query.sort === defaultSort(query.q) ? null : query.sort],
+    // A parsed or exact search stays exact, so changing a filter never reads the words again (AI stage E decision 3).
+    ["exact", query.exact && query.q ? "1" : null],
   ];
   return (
     <form action="/browse" className="filters-panel">

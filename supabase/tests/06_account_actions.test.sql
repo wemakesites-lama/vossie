@@ -157,6 +157,7 @@ select is(
     'reserve_code_send(text,integer)',
     'reserve_ip_code_send(text,integer)',
     'reserve_photo_fill(uuid,integer)',
+    'reserve_words_search(integer)',
     'save_report_first_read(uuid,jsonb)',
     'save_sign_in_attempt(jsonb)',
     'settle_auto_confirm(timestamp with time zone)',

@@ -2,8 +2,9 @@ import type { ReactNode } from "react";
 import { Trail } from "@/components/ui/Trail";
 import { getCampuses, getCategories, searchListings } from "@/lib/data";
 import { getViewerContext } from "@/lib/data/viewer";
+import { wordsSearchFor } from "@/lib/data/words-search";
 import { browseHeading } from "@/lib/browse/heading";
-import { browseHref } from "@/lib/browse/href";
+import { browseHref, exactHref } from "@/lib/browse/href";
 import { knownSlugs, parseBrowseParams, toSearchQuery, type BrowseParams } from "@/lib/browse/query";
 import { LABELS, trailFor } from "@/lib/nav/trail";
 import { isWorthSaving, matchQueryOf } from "@/lib/saved-searches/rules";
@@ -15,12 +16,14 @@ import { BrowseToolbar } from "./BrowseToolbar";
 import { CategoryTabs } from "./CategoryTabs";
 import { ResultsGrid } from "./ResultsGrid";
 import { SaveSearchControl } from "./SaveSearchControl";
+import { WordsLine } from "./WordsLine";
 
 /**
  * The browse page's body (browse and listing spec 4). It reads the link and the viewer's campus, so it renders per
  * request, inside the page's <Suspense>. A failed search shows an error in the results' place; everything above it
  * still works. Save this search sits under the chips for any search worth saving, above the results, the empty state or
- * the error, with the session in its own <Suspense> (search alerts spec 2.5).
+ * the error, with the session in its own <Suspense> (search alerts spec 2.5). A search that reads like a sentence shows
+ * the filters it was read into, with a line saying so above the results (AI features spec 6).
  */
 export async function BrowseView({ searchParams }: { searchParams: Promise<BrowseParams> }) {
   const [params, viewer, campuses, categories] = await Promise.all([
@@ -29,7 +32,9 @@ export async function BrowseView({ searchParams }: { searchParams: Promise<Brows
     getCampuses(),
     getCategories(),
   ]);
-  const query = parseBrowseParams(params, viewer.campus, knownSlugs(campuses, categories));
+  const typed = parseBrowseParams(params, viewer.campus, knownSlugs(campuses, categories));
+  const words = await wordsSearchFor(typed);
+  const query = words.query;
   const result = await searchListings(toSearchQuery(query)).catch(() => null);
 
   const categoryName = categories.find((category) => category.slug === query.category)?.name ?? null;
@@ -66,6 +71,7 @@ export async function BrowseView({ searchParams }: { searchParams: Promise<Brows
       <CategoryTabs query={query} categories={categories} />
       <BrowseToolbar query={query} campuses={campuses} total={result ? result.items.length : null} />
       <ActiveFilters query={query} campusNames={campusNames} />
+      {words.line && <WordsLine line={words.line} exactHref={exactHref(words.typed)} />}
       {isWorthSaving(matchQueryOf(query)) && <SaveSearchControl query={query} />}
       {results}
     </>

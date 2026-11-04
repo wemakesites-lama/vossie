@@ -37,6 +37,16 @@ describe("FiltersPanel (spec 4.4)", () => {
     expect(hiddenFields(container)).toEqual({ q: "lamp" });
   });
 
+  it("keeps an exact search exact, so the words aren't read again (AI stage E plan decision 3)", () => {
+    const words = "lamp under R300 at Midrand";
+    const { container, rerender } = render(
+      <FiltersPanel query={makeBrowseQuery({ q: words, sort: "match", exact: true })} campuses={campuses} />,
+    );
+    expect(hiddenFields(container)).toEqual({ q: words, exact: "1" });
+    rerender(<FiltersPanel query={makeBrowseQuery({ exact: true })} campuses={campuses} />);
+    expect(hiddenFields(container)).toEqual({});
+  });
+
   it("offers every campus, Every campus first, with the current one selected", () => {
     render(<FiltersPanel query={makeBrowseQuery({ campus: "midrand" })} campuses={campuses} />);
     const select = screen.getByRole("combobox", { name: "Campus" });

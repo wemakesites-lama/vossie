@@ -297,10 +297,12 @@ export type BrowseQuery = {
   sort: BrowseSort;
   /** How many results to show: 24, 48 … 240. */
   shown: number;
+  /** Search the words exactly: no parse (AI features spec 6.5). Only ever true. */
+  exact?: true;
 };
 
 /** What a search needs: the query without the paging or where the campus came from (spec 6.3). */
-export type SearchQuery = Omit<BrowseQuery, "shown" | "campusFromLink">;
+export type SearchQuery = Omit<BrowseQuery, "shown" | "campusFromLink" | "exact">;
 
 export type SearchResult = {
   /** Every match, filtered and sorted. */
