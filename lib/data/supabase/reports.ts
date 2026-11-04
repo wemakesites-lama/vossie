@@ -3,6 +3,7 @@ import { reasonLabel } from "@/lib/messaging/rules";
 import type { ReportReason, ReportTarget } from "@/lib/types";
 import { Refused } from "../refused";
 import type * as Sample from "../reports";
+import { forServer } from "./clients";
 import { iso } from "./rows";
 import { forViewerAs } from "./viewer";
 
@@ -10,8 +11,8 @@ import { forViewerAs } from "./viewer";
 // through their own client (forViewerAs: the id is checked against the session, decision 2), never cached (decision
 // 4): the reports policy and column grant let a reporter read their own reports, without the Hub's note or closer.
 // - createReport is create_report, which checks the target is public, keeps one open report per target and allows 10
-//   in any 24 hours, under the reporter's lock. It answers no id, so the open report is read back; no caller uses the
-//   id (sendReport ignores it), the read only keeps the signature. Its 'rate-limited' and 'not-found', which the
+//   in any 24 hours, under the reporter's lock. It answers no id, so the open report is read back: sendReport hands it
+//   to the report read (AI stage C). Its 'rate-limited' and 'not-found', which the
 //   action's own checks normally catch first, throw Refused (decision 3); sendReport catches them.
 // - A report about something gone doesn't count as open (create_report's rule): hasOpenReport and the read-back leave
 //   target_gone out.
@@ -67,6 +68,35 @@ export const fileListingCheckReport: typeof Sample.fileListingCheckReport = asyn
   if (error) failed("file_listing_check_report", error);
   if (data !== "filed" && data !== "already-open" && data !== "not-found") {
     throw new Error(`file_listing_check_report answered ${String(data)}`);
+  }
+  return data;
+};
+
+// The report read (AI stage C, planning decision 6): with the secret key, since the column is staff's and the after()
+// callback runs for the reporter. Nothing read here leaves the server but the model's input.
+export const reportForRead: typeof Sample.reportForRead = async (reportId) => {
+  const { data, error } = await forServer()
+    .from("reports")
+    .select("reporter_id, target_kind, target_id, reason, detail, status, target_gone, first_read")
+    .eq("id", reportId)
+    .maybeSingle();
+  if (error) failed("reports", error);
+  if (!data || data.reporter_id === null) return null;
+  return {
+    target: { kind: data.target_kind as ReportTarget["kind"], id: data.target_id },
+    reason: data.reason as ReportReason,
+    detail: data.detail,
+    open: data.status === "open",
+    gone: data.target_gone,
+    read: data.first_read !== null,
+  };
+};
+
+export const saveFirstRead: typeof Sample.saveFirstRead = async (reportId, read) => {
+  const { data, error } = await forServer().rpc("save_report_first_read", { p_report: reportId, p_read: read });
+  if (error) failed("save_report_first_read", error);
+  if (data !== "saved" && data !== "already" && data !== "not-found") {
+    throw new Error(`save_report_first_read answered ${String(data)}`);
   }
   return data;
 };

@@ -580,13 +580,13 @@ isOneToOne: false
                   ]
                 },"reports": {
                   Row: {
-                    "closed_at": string | null,"closed_by": string | null,"created_at": string,"detail": string,"id": string,"note": string | null,"outcome": string | null,"reason": string,"reporter_id": string | null,"status": string,"target_gone": boolean,"target_id": string,"target_kind": string,"target_owner_id": string | null,"target_title": string
+                    "closed_at": string | null,"closed_by": string | null,"created_at": string,"detail": string,"first_read": Json | null,"id": string,"note": string | null,"outcome": string | null,"reason": string,"reporter_id": string | null,"status": string,"target_gone": boolean,"target_id": string,"target_kind": string,"target_owner_id": string | null,"target_title": string
                   }
                   Insert: {
-                    "closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"detail"?: string,"id"?: string,"note"?: string | null,"outcome"?: string | null,"reason": string,"reporter_id"?: string | null,"status"?: string,"target_gone"?: boolean,"target_id": string,"target_kind": string,"target_owner_id"?: string | null,"target_title": string
+                    "closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"detail"?: string,"first_read"?: Json | null,"id"?: string,"note"?: string | null,"outcome"?: string | null,"reason": string,"reporter_id"?: string | null,"status"?: string,"target_gone"?: boolean,"target_id": string,"target_kind": string,"target_owner_id"?: string | null,"target_title": string
                   }
                   Update: {
-                    "closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"detail"?: string,"id"?: string,"note"?: string | null,"outcome"?: string | null,"reason"?: string,"reporter_id"?: string | null,"status"?: string,"target_gone"?: boolean,"target_id"?: string,"target_kind"?: string,"target_owner_id"?: string | null,"target_title"?: string
+                    "closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"detail"?: string,"first_read"?: Json | null,"id"?: string,"note"?: string | null,"outcome"?: string | null,"reason"?: string,"reporter_id"?: string | null,"status"?: string,"target_gone"?: boolean,"target_id"?: string,"target_kind"?: string,"target_owner_id"?: string | null,"target_title"?: string
                   }
                   Relationships: [
                     {
@@ -951,7 +951,7 @@ isOneToOne: false
                   ]
                 },"staff_reports": {
                   Row: {
-                    "closed_at": string | null,"closed_by": string | null,"created_at": string | null,"detail": string | null,"id": string | null,"note": string | null,"outcome": string | null,"own": string | null,"reason": string | null,"reporter_id": string | null,"status": string | null,"target_gone": boolean | null,"target_id": string | null,"target_kind": string | null,"target_title": string | null
+                    "closed_at": string | null,"closed_by": string | null,"created_at": string | null,"detail": string | null,"first_read": Json | null,"id": string | null,"note": string | null,"outcome": string | null,"own": string | null,"reason": string | null,"reporter_id": string | null,"status": string | null,"target_gone": boolean | null,"target_id": string | null,"target_kind": string | null,"target_title": string | null
                   }
                   Relationships: [
                     
@@ -1173,6 +1173,9 @@ isOneToOne: false
                            },
 "save_onboarding_draft":
 { Args: { "p_about": string,"p_campus_slug": string,"p_category_slug": string,"p_name": string,"p_photo_id": string,"p_pickup_point_ids": (string)[],"p_tagline": string }; Returns: Json
+                           },
+"save_report_first_read":
+{ Args: { "p_read": Json,"p_report": string }; Returns: string
                            },
 "save_request":
 { Args: { "p_budget_zar": number,"p_campus_slug": string,"p_category_slug": string,"p_details": string,"p_id": string,"p_needed_by": string,"p_once_token"?: string,"p_swap_welcome": boolean,"p_title": string }; Returns: Json

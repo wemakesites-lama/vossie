@@ -9,6 +9,7 @@ import type { ReportTarget } from "@/lib/types";
 import { AdminReport, ownReportLine } from "./AdminReport";
 
 vi.mock("@/lib/staff/admin-actions", () => ({ dismissReport: async () => {} }));
+vi.mock("@/lib/staff/report-read-actions", () => ({ readReportAgain: async () => {} }));
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
 
@@ -181,5 +182,25 @@ describe("a report about the admin's own (stage L spec section 3)", () => {
     await closeReportsOn({ kind: "listing", id: "l-001" }, "hidden", "Checking it.", "acc-admin", NOW);
     render(<AdminReport report={(await getReport(id, "acc-seller"))!} note="" errors={[]} />);
     expect(screen.queryByRole("link", { name: "Show it again" })).toBeNull();
+  });
+
+  it("puts the first read above the reporter's words, and Read again only when the page allows it (AI stage C)", async () => {
+    const id = await reportOn({ kind: "listing", id: "l-001" }, "Casio fx-991ZA Plus calculator");
+    const { unmount } = render(<AdminReport report={(await getReport(id))!} note="" errors={[]} />);
+    expect(screen.queryByRole("button", { name: "Read again" })).toBeNull();
+    unmount();
+    render(<AdminReport report={(await getReport(id))!} note="" errors={[]} readAgain />);
+    expect(screen.getByRole("button", { name: "Read again" })).toBeInTheDocument();
+  });
+
+  it("shows a stored read in its own box before The report", async () => {
+    const id = await reportOn({ kind: "listing", id: "l-001" }, "Casio fx-991ZA Plus calculator");
+    sampleStore().reports.get(id)!.firstRead = { summary: "A report about a calculator.", concern: "none", agrees: false };
+    render(<AdminReport report={(await getReport(id))!} note="" errors={[]} readAgain />);
+    const box = screen.getByRole("region", { name: "First read (may be wrong)" });
+    const facts = screen.getByRole("region", { name: "The report" });
+    expect(box.compareDocumentPosition(facts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(box).getByText("No guideline clearly broken")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Read again" })).toBeNull();
   });
 });

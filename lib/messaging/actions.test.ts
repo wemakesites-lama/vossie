@@ -16,7 +16,12 @@ const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new M
 
 vi.mock("next/headers", async () => (await import("@/tests/helpers/next-request")).nextHeaders(request));
 vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
-vi.mock("next/server", async () => (await import("@/tests/helpers/next-request")).nextServer());
+// after() (the report read, AI stage C) keeps its callbacks here, so a test can run them as the response's end would.
+const afterTasks = vi.hoisted((): Array<() => unknown> => []);
+vi.mock("next/server", async () => ({
+  ...(await import("@/tests/helpers/next-request")).nextServer(),
+  after: (task: () => unknown) => afterTasks.push(task),
+}));
 vi.mock("next/cache", async () => (await import("@/tests/helpers/next-request")).nextCache(request));
 
 // The data calls a Supabase twin can refuse after the action's own checks passed (C2/C3 plan decision 3), as spies
@@ -43,6 +48,7 @@ const NOW = new Date("2026-10-14T08:42:00.000Z");
 
 beforeEach(() => {
   samples.exempt = false;
+  afterTasks.length = 0;
   resetSampleStore();
   resetRequest(request);
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -243,6 +249,24 @@ describe("Send report (messaging spec 2.8 and 3.4)", () => {
     expect(await redirectOf(() => sendReport(form({ kind: "request", id: "r-001", reason: "spam" })))).toBe(
       "/report/sent?request=r-001",
     );
+  });
+
+  it("reads the report after the reply when the report read is on (AI features spec 4.3), and not when it's off", async () => {
+    await signedInAs("acc-mentor");
+    await redirectOf(() => sendReport(form({ kind: "listing", id: "l-001", reason: "spam" })));
+    expect(afterTasks).toHaveLength(0);
+    vi.stubEnv("VOSSIE_AI_REPORT_READ", "1");
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "fake");
+    try {
+      await redirectOf(() => sendReport(form({ kind: "listing", id: "l-002", reason: "spam" })));
+      expect(afterTasks).toHaveLength(1);
+      const sent = [...sampleStore().reports.values()].find((row) => row.targetId === "l-002")!;
+      expect(sent.firstRead).toBeUndefined();
+      await afterTasks[0]();
+      expect(sent.firstRead).toMatchObject({ concern: "none" });
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("asks for a reason and keeps the detail under 500 characters, storing nothing", async () => {

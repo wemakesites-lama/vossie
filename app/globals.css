@@ -9431,6 +9431,30 @@
   }
 }
 
+/* --- AI stage C: the report read's box on a report's page (AI features spec section 4) --- */
+@layer components {
+  /* Panel behind navy, ink and muted words: pairs lib/theme-contrast.test.ts checks in every theme. */
+  .staff-first-read {
+    border: 1px solid var(--color-line);
+    border-radius: 12px;
+    background: var(--color-panel);
+    padding: 16px;
+  }
+
+  .staff-first-read-lines {
+    display: grid;
+    gap: 6px;
+    list-style: none;
+    padding: 0;
+  }
+
+  .staff-first-read-again {
+    display: grid;
+    gap: 10px;
+    justify-items: start;
+  }
+}
+
 /* --- Staff tools: the Hub's post editor (staff tools plan, Task 14, spec 2.4) --- */
 @layer components {
   .staff-editor {

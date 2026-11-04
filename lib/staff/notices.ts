@@ -39,6 +39,8 @@ const NOTICES: ReadonlyMap<string, string> = new Map([
   // Stage M (spec decision 5): removing the mentor role of whoever mentors the admin's own shop.
   ["own-shop-mentor", "Nothing changed. They mentor your own shop, so another admin must remove their mentor role."],
   ["nothing", "Nothing changed. It was already done."],
+  // AI stage C (planning decision 4): Read again couldn't make the report's first read.
+  ["first-read-failed", "Couldn't read this report. Try again later."],
   // A student's own, on a Hub post and its slot request page (plan decision 13).
   ["rsvp", "You're going. See you there."],
   ["rsvp-cancelled", "Your RSVP is cancelled."],

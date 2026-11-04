@@ -1,5 +1,6 @@
 import "server-only";
 import type { OwnKind } from "@/lib/staff/own";
+import { asFirstRead } from "@/lib/staff/report-read";
 import type { ListingState, ReportOutcome, ReportReason, ReportTarget, SellerStatus } from "@/lib/types";
 import { Refused } from "../refused";
 import type { ReportRow } from "../rows";
@@ -25,7 +26,7 @@ function failed(what: string, error: { code?: string }): never {
 }
 
 const REPORT_COLUMNS =
-  "id, reporter_id, target_kind, target_id, target_title, reason, detail, status, created_at, outcome, note, closed_at, closed_by, target_gone, own";
+  "id, reporter_id, target_kind, target_id, target_title, reason, detail, status, created_at, outcome, note, closed_at, closed_by, target_gone, own, first_read";
 
 type ReportRecord = {
   id: string | null;
@@ -43,6 +44,7 @@ type ReportRecord = {
   closed_by: string | null;
   target_gone: boolean | null;
   own: string | null;
+  first_read: unknown;
 };
 
 /** A staff_reports row as the store's ReportRow. The recorded owner stays in the database: `own` answers for it. */
@@ -63,6 +65,7 @@ function reportRowFrom(row: ReportRecord): ReportRow {
     closedBy: row.closed_by,
     targetGone: row.target_gone === true,
     targetOwnerId: null,
+    firstRead: asFirstRead(row.first_read),
   };
 }
 

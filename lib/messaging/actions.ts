@@ -2,6 +2,8 @@
 
 import { refresh } from "next/cache";
 import { redirect, RedirectType } from "next/navigation";
+import { after } from "next/server";
+import { aiFeatureOn } from "@/lib/ai/config";
 import { writeFormState } from "@/lib/auth/form-state";
 import { requireAccount } from "@/lib/auth/session";
 import { recalculateBadgeFor } from "@/lib/data/badges";
@@ -9,6 +11,7 @@ import { confirmSale, findConversation, markCompleted, rejectSale, sendMessage, 
 import { refusalOf, type RefusalCode } from "@/lib/data/refused";
 import { countReportsSince, createReport, hasOpenReport } from "@/lib/data/reports";
 import { sellersChanged } from "@/lib/data/tags";
+import { makeFirstRead } from "@/lib/staff/first-read";
 import type { ReportTarget } from "@/lib/types";
 import { clearOwnFormState } from "./form-state";
 import { messageLimitErrors, type MessageLimitError } from "./limits";
@@ -254,6 +257,11 @@ export async function sendReport(formData: FormData): Promise<void> {
     if (sent.refused !== "rate-limited") redirect("/");
     await writeFormState(form, { errors: ["report-rate"], values, notice: null }, now);
     back(path);
+  }
+  // The report read (AI features spec 4.3): made after the reply, so the reporter isn't kept waiting. Never throws.
+  if (aiFeatureOn("report-read")) {
+    const reportId = sent.ok;
+    after(() => makeFirstRead(reportId, new Date()));
   }
   await clearOwnFormState(form);
   done(reportSentPath(target));

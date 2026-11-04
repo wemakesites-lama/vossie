@@ -90,10 +90,12 @@ export default defineConfig({
     // photo" card on /sell/listings/new as launch will (photo-to-listing plan, Task 11). Never a real key here. Both
     // names, since VOSSIE_AI_PROVIDERS wins over the old one and .env.local may set it with real keys (AI stage A).
     // The listing check is on too, answered by the fake: a title with "fake" in it looks counterfeit (AI features stage B).
+    // The report read is on too, answered by the fake: "fake" in a title is counterfeit, "[no read]" in a detail fails (AI stage C).
     env: {
       ...process.env,
       VOSSIE_LISTING_AI: "1",
       VOSSIE_AI_LISTING_CHECK: "1",
+      VOSSIE_AI_REPORT_READ: "1",
       VOSSIE_AI_PROVIDERS: "fake",
       VOSSIE_LISTING_AI_PROVIDERS: "fake",
     } as Record<string, string>,

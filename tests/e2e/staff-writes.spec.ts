@@ -11,6 +11,7 @@ import {
   uniqueWord,
 } from "./helpers/selling";
 import { aMonthFromNow, applyToSell, newShopName, reviewShop, signedInPage, staffNotice } from "./helpers/staff";
+import { seriousIssues } from "./helpers/axe";
 
 // These run in the staff-writes project, after every other test, selling's writes included (staff tools plan decision
 // 21): what they change shows on pages other tests count. Each acts only on what it makes: its own students, shops,
@@ -362,4 +363,83 @@ test("a mentor publishes an event and office hours; a student RSVPs and asks for
   await expect(
     main(page).getByText(`A mentor accepted your slot request for Office hours ${word}.`).filter({ visible: true }),
   ).toBeVisible();
+});
+
+// The report read (AI stage C, AI features spec section 4), answered by the fake: a title without "fake" breaks no
+// guideline, and a detail with "[no read]" fails, so Read again shows. Both reports are dismissed at the end, so the
+// tests that open the oldest open report still find their own.
+test("an admin sees a first read above a student's report, and Read again when there's none (AI stage C)", async ({
+  page,
+  browser,
+  baseURL,
+}) => {
+  test.setTimeout(150_000);
+  const word = uniqueWord();
+  const title = `Desk fan ${word}`;
+  const seller = await signedInPage(browser, baseURL!, "Seller, Tech corner", "/sell");
+  const id = await publishListing(seller, title);
+  await seller.context().close();
+
+  const first = newBuyer();
+  await signUp(page, first);
+  await page.goto(`/report?listing=${id}`);
+  await main(page).getByRole("radio", { name: "Prohibited item" }).check();
+  await field(page, "Tell us more (optional)").fill("Looks off");
+  await button(page, "Send report").click();
+  await expect(page).toHaveURL(new RegExp(`/report/sent\\?listing=${id}$`), POST_LANDS);
+
+  const secondContext = await browser.newContext({ baseURL, serviceWorkers: "block" });
+  const second = await secondContext.newPage();
+  const secondBuyer = newBuyer();
+  await signUp(second, secondBuyer);
+  await second.goto(`/report?listing=${id}`);
+  await main(second).getByRole("radio", { name: "Scam or fraud" }).check();
+  await field(second, "Tell us more (optional)").fill("[no read]");
+  await button(second, "Send report").click();
+  await expect(second).toHaveURL(/\/report\/sent/, POST_LANDS);
+  await secondContext.close();
+
+  const admin = await signedInPage(browser, baseURL!, "Admin", "/admin/reports");
+  const reportBy = async (firstName: string) =>
+    main(admin)
+      .getByRole("table", { name: "Open reports, oldest first" })
+      .getByRole("row")
+      .filter({ hasText: firstName })
+      .getByRole("link", { name: `Review the report about ${title}` })
+      .getAttribute("href");
+  const withRead = (await reportBy(first.firstName))!;
+  const withoutRead = (await reportBy(secondBuyer.firstName))!;
+
+  // The read is made after the reporter's reply, so reload until it's there.
+  const box = main(admin).getByRole("region", { name: "First read (may be wrong)" });
+  await expect
+    .poll(
+      async () => {
+        await admin.goto(withRead);
+        return box.count();
+      },
+      { timeout: 15_000 },
+    )
+    .toBe(1);
+  await expect(box).toContainText(`A report about ${title}.`);
+  await expect(box).toContainText("No guideline clearly broken");
+  await expect(box).toContainText("Doesn't match the reporter's reason (Prohibited item)");
+  await expect(button(admin, "Read again")).toHaveCount(0);
+  expect(await seriousIssues(admin)).toEqual([]);
+
+  // No read: Read again, which fails again with the fake and says so.
+  await admin.goto(withoutRead);
+  await expect(main(admin).getByText("No first read of this report yet.")).toBeVisible();
+  expect(await seriousIssues(admin)).toEqual([]);
+  await button(admin, "Read again").click();
+  await expect(staffNotice(admin)).toHaveText("Couldn't read this report. Try again later.", POST_LANDS);
+  await expect(box).toHaveCount(0);
+
+  for (const href of [withoutRead, withRead]) {
+    await admin.goto(href);
+    await field(admin, "Note").fill("Checked: the fan is fine.");
+    await main(admin).getByRole("button", { name: /^Dismiss the report about/ }).click();
+    await expect(admin).toHaveURL(/\/admin\/reports$/, POST_LANDS);
+  }
+  await admin.context().close();
 });

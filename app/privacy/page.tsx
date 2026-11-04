@@ -64,6 +64,23 @@ function listingCheckLine() {
   );
 }
 
+/**
+ * The report read's line (AI features spec 4 and 7.3, stage C): Haiku only, so Anthropic is the one provider named.
+ * Fixed at build, like listingCheckLine.
+ */
+function reportReadLine() {
+  if (!featureProviders("report-read").includes("anthropic") || !aiFeatureOn("report-read")) return null;
+  return (
+    <li>
+      When you report a listing, a shop or a Looking For request, its words, a listing&apos;s cover photo, and your
+      report&apos;s reason and detail are sent to Anthropic (never Groq), an AI provider in the United States, which
+      deletes them within 30 days and doesn&apos;t use them to train its models, to give the Hub a first read of the
+      report. So what&apos;s sent is read outside South Africa. Your name and your account aren&apos;t sent. Only the
+      Hub&apos;s admins see the read, and it&apos;s removed with the report.
+    </li>
+  );
+}
+
 const SECTIONS: readonly InfoSection[] = [
   {
     id: "privacy-who",
@@ -175,6 +192,7 @@ const SECTIONS: readonly InfoSection[] = [
           </li>
           {photoFillLine()}
           {listingCheckLine()}
+          {reportReadLine()}
           <li>
             The campus updates form in the footer doesn&apos;t send or store your email address yet. When there is a real
             mailing list, it will ask for your consent first, and this policy will say so.

@@ -11,6 +11,7 @@ import { getReport, listReports } from "@/lib/data/staff-reports";
 import { isId } from "@/lib/messaging/paths";
 import { requireStaff, staffMetadata } from "@/lib/staff/access";
 import { staffErrors, staffFieldIds } from "@/lib/staff/errors";
+import { canReadAgain } from "@/lib/staff/first-read";
 import { dismissForm, takeNotice } from "@/lib/staff/form-state";
 import { staffNoticeText } from "@/lib/staff/notices";
 import { adminReportPath, STAFF_EYEBROW } from "@/lib/staff/paths";
@@ -56,6 +57,7 @@ async function Report({ params }: Pick<PageProps<"/admin/reports/[id]">, "params
         report={report}
         note={state?.values.note ?? ""}
         errors={staffErrors(state?.errors ?? [], staffFieldIds(`dismiss-${id}`))}
+        readAgain={canReadAgain(report)}
       />
     </StaffFrame>
   );
