@@ -6430,6 +6430,10 @@
     max-width: 50ch;
   }
 
+  .board-starter-line {
+    display: block;
+  }
+
   /* "Get a starter pack" in the board's line (AI stage H, planning decision 12): sky-dark on white, 44px tall. */
   .board-starter {
     display: inline-block;

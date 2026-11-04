@@ -24,25 +24,25 @@ test("a sentence becomes a pack of real listings within the budget (spec 6)", as
   await expect(lines(page)).toHaveCount(4);
 
   await expect(lines(page).nth(0)).toContainText("Casio fx-991ZA Plus calculator");
-  await expect(lines(page).nth(0).getByRole("link", { name: "See more: Calculator" })).toHaveAttribute(
+  await expect(lines(page).nth(0).getByRole("link", { name: "See more (Calculator)" })).toHaveAttribute(
     "href",
     "/browse?q=casio+calculator&cat=tech&campus=midrand&sort=price-low&exact=1",
   );
   // Found by its name alone (planning decision 4).
   await expect(lines(page).nth(1)).toContainText("Desk lamp with a USB port");
-  await expect(lines(page).nth(1).getByRole("link", { name: "See more: Lamp" })).toHaveAttribute(
+  await expect(lines(page).nth(1).getByRole("link", { name: "See more (Lamp)" })).toHaveAttribute(
     "href",
     "/browse?q=lamp&cat=res-living&campus=midrand&sort=price-low&exact=1",
   );
   await expect(lines(page).nth(2)).toContainText("Nothing within what's left of your budget.");
-  await expect(lines(page).nth(3).getByRole("link", { name: "Ask for it on Looking For: Kettle" })).toHaveAttribute(
+  await expect(lines(page).nth(3).getByRole("link", { name: "Ask for it on Looking For (Kettle)" })).toHaveAttribute(
     "href",
     "/looking-for/new?title=Kettle",
   );
   await expect(main(page).getByText("Total R430 of your R1,000 budget, R570 left")).toBeVisible();
 
   // See more lands on Browse searching exactly, with no "Showing" line.
-  await lines(page).nth(0).getByRole("link", { name: "See more: Calculator" }).click();
+  await lines(page).nth(0).getByRole("link", { name: "See more (Calculator)" }).click();
   await expect(page).toHaveURL(/\/browse\?q=casio\+calculator&cat=tech&campus=midrand&sort=price-low&exact=1$/);
   await expect(main(page).getByRole("link", { name: /Casio fx-991ZA Plus calculator/ }).first()).toBeVisible();
   await expect(main(page).locator(".browse-words")).toHaveCount(0);

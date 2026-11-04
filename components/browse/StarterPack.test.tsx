@@ -101,10 +101,10 @@ describe("StarterView (AI round two spec section 6)", () => {
     expect(within(items[0]).getByRole("heading", { level: 4 })).toHaveTextContent("Casio calculator");
     expect(within(items[0]).getAllByRole("heading", { level: 3 })).toHaveLength(1);
     expect(within(items[1]).getByText(NO_FIT.budget)).toBeInTheDocument();
-    const more = screen.getByRole("link", { name: "See more: Calculator" });
+    const more = screen.getByRole("link", { name: "See more (Calculator)" });
     expect(more).toHaveAttribute("href", "/browse?q=calculator&exact=1");
     expect(more.dataset.prefetch).toBe("false");
-    const ask = screen.getByRole("link", { name: "Ask for it on Looking For: Kettle" });
+    const ask = screen.getByRole("link", { name: "Ask for it on Looking For (Kettle)" });
     expect(ask).toHaveAttribute("href", "/looking-for/new?title=Kettle");
     expect(ask.dataset.prefetch).toBe("false");
     expect(screen.getByText("Total R250 of your R1,000 budget, R750 left")).toBeInTheDocument();

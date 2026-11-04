@@ -33,14 +33,15 @@ export default function LookingForPage({ searchParams }: PageProps<"/looking-for
           <p className="board-lede">
             Post what you need, and students who can help will offer.
             {/* Starter pack (AI round two spec section 6). Inside the line, so the head's grid stays as it is. */}
+            {/* Its own line, so a font swap can't move the 44px link between lines (CLS at 1440). */}
             {aiFeatureOn("starter-pack") && (
-              <>
+              <span className="board-starter-line">
                 {" "}
                 Need a few things at once?{" "}
                 <Link href="/browse/starter" prefetch={false} className="board-starter">
                   Get a starter pack
                 </Link>
-              </>
+              </span>
             )}
           </p>
           <div className="board-actions">

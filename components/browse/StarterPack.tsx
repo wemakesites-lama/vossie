@@ -116,11 +116,11 @@ function StarterLines({
             <p className="starter-links">
               {line.kind === "none" ? (
                 <Link href={line.ask} prefetch={false} className="starter-link">
-                  Ask for it on Looking For<span className="sr-only">: {line.item.name}</span>
+                  Ask for it on Looking For <span className="sr-only">({line.item.name})</span>
                 </Link>
               ) : (
                 <Link href={line.seeMore} prefetch={false} className="starter-link">
-                  See more<span className="sr-only">: {line.item.name}</span>
+                  See more <span className="sr-only">({line.item.name})</span>
                 </Link>
               )}
             </p>
