@@ -1217,6 +1217,35 @@ Each was rerun on its own first (`--workers=2`, one fresh build), then fixed or 
 - **For Lama:** a daily cap per account on checks, and the Hub's "Hidden" notice wording when the only report was the check's (both in GO-LIVE).
 - **Nothing committed yet**: waiting on Lama.
 
+## 2026-11-04: AI stage E, search in your own words (decision 96)
+Built in parallel with stages C and D, each in its own worktree (this one `claude/ai-stage-e-words-search-1ffc8e`, cut from `ea21f43`), sharing port 3200 and the local Supabase stack through lock files.
+- **What it does** (AI features spec section 6; plan `docs/superpowers/plans/2026-11-05-ai-stage-e-words-search.md`):
+  - A search that reads like a sentence (four or more words, a price, a campus's name, "cheap" or "free") gets its filters filled in by Haiku. Browse then shows those results with one line above them: "Showing calculator under R500 at Midrand. Search for exactly what I typed".
+  - Short searches ("calculator", "FAC1501") never reach the model and search exactly as before.
+  - The model only fills in a query, and `listingMatches` still does the matching. "Under R300" becomes under R500, the next filter step. The link's own filters always win.
+  - The parse is cached a week by the words alone, so a repeated search is instant.
+  - A site-wide cap of 2,000 new parses a SAST day applies (`private.words_search_parses` on Supabase). Over the cap, after a 3-second wait, or on any failure, Browse searches the words exactly with no message.
+  - The parsed page's links keep `exact=1`, so they never parse again.
+  - Haiku and the fake only. It's off behind `VOSSIE_AI_WORDS_SEARCH`, and the privacy page names Anthropic for it.
+- **Built** by two implementer runs (plan tasks 1 to 7), then one combined final review (Opus). The review found nothing critical. The fixes made:
+  - a 3-second, low-effort wait so a slow Haiku can't hold Browse;
+  - model codes ("EOS R5") no longer count as prices;
+  - privacy wording;
+  - a comment naming the one `forServer()` call inside `"use cache"`;
+  - the fake's replies as a `switch`, so C and D merge cleanly;
+  - a GO-LIVE note that the cap can run out.
+  Section 12 of the spec has what changed while planning and building.
+- **Checks:**
+  - Lint and types clean.
+  - Unit: 3,730 passed (451 files), after the review fixes.
+  - pgTAP: 2,635 passed (47 files, `65_words_search` included). `test:db`: 359 passed (52 files). `pnpm db:types` was byte-identical to the hand edit.
+  - e2e, on a fresh build: `words-search`, `browse`, `cls`, `performance` and `search-alerts`, 299 passed. One failed: the known signed-out `/sell` layout shift at 390 (0.054).
+  - Browse's first-visit JS is 152,304 B brotli, under 153,600. No client component was added.
+  - Browse's layout shift is 0.0000 to 0.0008, and no chunk names groq or anthropic.
+  - The line wasn't checked by eye. axe passes on it at 390 and 1440, and its colours are the tokens Clear all uses in every theme.
+- **Not pushed to Vossie Market.** For Lama: the hand check with the real key, and the cap's size (both in GO-LIVE).
+- **Nothing committed yet**: waiting on Lama.
+
 ## Next
 - **Campus photos** (2026-10-29): the 12 campuses use Eduvos's own photos from eduvos.com's campus pages (buildings only, cropped square, `public/campus/`), Eduvos Online an Unsplash photo; `data/fixtures/campuses.ts` points at them (no database change). Eduvos's copyright: confirm with Eduvos marketing before go-live. Sources in `docs/reference/stock-photos.md`.
 - **Stock photos in place of the placeholder art** (2026-10-29): 79 free Unsplash photos in `public/stock/` (15.7 MB of JPEGs, served as AVIF by `next/image`), credits and licence notes in `docs/reference/stock-photos.md`. Hero 3, categories 10, listing covers 10 (one per category), collections 4, the Hub banner, 29 shops and 22 Hub posts; the fixtures point at them. Campus photos and a listing's second and third photos stay placeholders (stock can't show a real campus). `20261029120000_stock_photos.sql` widens the three placeholder checks to allow `/stock/…jpg` and moves the seed rows over; `supabase/seed.sql` regenerated. `make-placeholders.ts` now skips stock slots (it would have written SVG over the photos). **Pushed to Vossie Market** (2026-10-29, Lama's go-ahead, after a dry run): 29 shops, 38 listing photos and 22 Hub posts now point at `/stock/…jpg`; the 5 extra listing photos and 2 shops with no photo are unchanged, and the remote is up to date. **vossie-pi shows those images broken until a redeploy carries `public/stock/`**: commit, then redeploy. Checks: unit tests pass, apart from timeouts in `AdminSellers` and `PhotoField` under a load of 46 (another session's run), types clean; seen at 1280 in the sample dev server (hero, categories, collections, banner); the store's shops and listings need a server restart to show. e2e (`home.spec.ts` now reads `/_next/image?url=`) not run: another session's e2e build was using `.next`. Faces (hero, some Hub covers) have no model release: swap for consented photos before go-live.

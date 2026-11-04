@@ -86,6 +86,7 @@ export function parseBrowseParams(params: BrowseParams, viewerCampus: CampusChoi
     deals: first(params.deals) === "free-and-swaps" ? "free-and-swaps" : null,
     sort: sortAllowed ? (sortParam as BrowseSort) : defaultSort(q),
     shown: parseShown(first(params.n)),
+    ...(q && first(params.exact) === "1" ? { exact: true as const } : {}),
   };
 }
 

@@ -8,7 +8,7 @@ import type { PhotoType } from "@/lib/types";
 export type ProviderImage = { type: PhotoType; base64: string };
 
 /** What a request is for: the fake answers each, and a failure's log line names it. */
-export type AiTask = "photo-to-listing" | "listing-check";
+export type AiTask = "photo-to-listing" | "listing-check" | "words-search";
 
 export type ProviderRequest = {
   task: AiTask;
@@ -19,6 +19,11 @@ export type ProviderRequest = {
   /** What's asked of the photos. */
   text: string;
   schema: Readonly<Record<string, unknown>>;
+  /**
+   * A shorter wait and a fixed low effort for a request a page waits on (the words search, AI stage E review): Browse
+   * falls back to the exact words rather than stall. Unset, a provider uses its own timeout and effort.
+   */
+  quick?: { timeoutMs: number };
 };
 
 /** Why a provider couldn't answer. The first four send the photo to the next provider (decision 11). */

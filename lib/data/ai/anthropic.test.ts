@@ -58,6 +58,15 @@ describe("the Haiku provider (AI features spec 2.2 to 2.5)", () => {
     expect(options).toEqual({ timeout: 15_000 });
   });
 
+  it("keeps a quick request (the words search) at low effort with its own wait, whatever the setting", async () => {
+    vi.stubEnv("VOSSIE_HAIKU_EFFORT", "medium");
+    create.mockResolvedValueOnce(answer("{}"));
+    await read({ ...REQUEST, quick: { timeoutMs: 3_000 } });
+    const [body, options] = create.mock.calls[0];
+    expect(body.output_config.effort).toBe("low");
+    expect(options).toEqual({ timeout: 3_000 });
+  });
+
   it("answers a refusal and a cut-off reply as answers, and a busy service as a reason to move on", async () => {
     create.mockResolvedValueOnce(answer("", "refusal"));
     expect(await read(REQUEST)).toEqual({ ok: false, failure: "refusal" });

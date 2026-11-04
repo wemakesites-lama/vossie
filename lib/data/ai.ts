@@ -17,12 +17,13 @@ import {
   type Concern,
 } from "@/lib/selling/listing-check";
 import type { PhotoType } from "@/lib/types";
+import { checkWords, wordsInstruction, wordsSchema, type ParsedWords } from "@/lib/browse/words";
 import type { AiTask, ProviderFailure, ProviderRequest, ReadPhoto } from "./ai/types";
 
 // The only door to the AI providers (AI features spec 7.1; photo-to-listing spec decisions 9 to 11). Each provider file
 // is loaded only when it's tried, so an SDK is never in a page's code. Failures are logged by provider and kind only:
 // never a photo or text. Each feature has its reader here (photo-to-listing's `readListingPhotos`, the listing check's
-// `checkListingGuidelines`).
+// `checkListingGuidelines`, the words search's `readSearchWords`).
 
 const LOAD: Readonly<Record<ProviderName, () => Promise<{ read: ReadPhoto }>>> = {
   anthropic: () => import("./ai/anthropic"),
@@ -122,6 +123,58 @@ export async function checkListingGuidelines(listing: ListingForCheck): Promise<
       return stopsPublish(verdict);
     } catch {
       logFailure("listing-check", name, "api-error");
+      return null;
+    }
+  }
+  return null;
+}
+
+type Named = { slug: string; name: string };
+
+/** The words search's wait (AI stage E review): Browse searches the words exactly after this. */
+export const WORDS_TIMEOUT_MS = 3_000;
+
+/** What the words search asks (spec 6): the normalised words only. Never an account, a campus cookie or a filter. */
+export function wordsRequest(words: string, categories: readonly Named[], campuses: readonly Named[]): ProviderRequest {
+  return {
+    task: "words-search",
+    system: wordsInstruction(categories, campuses),
+    images: [],
+    text: `Search: ${words}`,
+    schema: wordsSchema(
+      categories.map((category) => category.slug),
+      campuses.map((campus) => campus.slug),
+    ),
+    // Browse waits on this inside its <Suspense> (spec 6.6): give up after 3 seconds and search the words exactly.
+    quick: { timeoutMs: WORDS_TIMEOUT_MS },
+  };
+}
+
+/**
+ * The words search (AI features spec section 6): the filters a sentence asks for, or null to search the words exactly.
+ * Haiku only (the fake in sample mode). No provider, a failure, a bad reply or anything thrown is null; only the kind is
+ * logged, never the words.
+ */
+export async function readSearchWords(
+  words: string,
+  categories: readonly Named[],
+  campuses: readonly Named[],
+): Promise<ParsedWords | null> {
+  const request = wordsRequest(words, categories, campuses);
+  const slugs = { categories: categories.map((c) => c.slug), campuses: campuses.map((c) => c.slug) };
+  for (const name of featureProviders("words-search")) {
+    try {
+      const reply = await (await LOAD[name]()).read(request);
+      if (!reply.ok) {
+        logFailure("words-search", name, reply.failure);
+        if (MOVE_ON.has(reply.failure)) continue;
+        return null;
+      }
+      const parsed = checkWords(reply.text, slugs);
+      if (!parsed) logFailure("words-search", name, "bad-output");
+      return parsed;
+    } catch {
+      logFailure("words-search", name, "api-error");
       return null;
     }
   }

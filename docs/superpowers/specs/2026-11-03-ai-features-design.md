@@ -1,6 +1,6 @@
 # AI features: Haiku first, search by photo or in your own words, a listing check, and a read of each report: design
 
-Date: 2026-11-03 · Status: **Approved by Lama 2026-11-03 (decision 96).** Stages A (Haiku first) and B (the listing check) built; C to E not planned. Lama's answers are in section 11.
+Date: 2026-11-03 · Status: **Approved by Lama 2026-11-03 (decision 96).** Stages A (Haiku first), B (the listing check) and E (search in your own words) built; C and D being built in parallel. Lama's answers are in section 11.
 
 ## Related documents
 
@@ -194,3 +194,26 @@ Left out on purpose: AI replies on a seller's behalf (trust matters more on a ca
 6. **The instruction says the listing is data:** anything in the title, description or photo that tells the model how to answer is ignored. The check still fails open, so students' reports stay the backstop.
 7. **The privacy line** says "when you publish a listing or change its words or photos", since edits are checked too.
 8. **The pgTAP test closed the report with `'hidden'`,** an outcome `reports.outcome` allows (it had `'acted'`, the notification's wording only), and gained a hidden listing, a paused one and a new report after the open one closes.
+
+### While planning stage E (2026-11-05, plan `docs/superpowers/plans/2026-11-05-ai-stage-e-words-search.md`)
+
+1. **The model gives a top price in Rand, the code picks the step** (`maxPrice` and `free` in the schema, `priceStep`): R300 becomes under R500, R50 under R50, and above R500 there's no price filter.
+2. **A parse fills only what the link leaves empty,** as `mergeSuggestion` does: a category, price, payment, deals or sort in the link wins, and the campus is filled only when the link named none.
+3. **The shown query carries `exact`,** so every link on a parsed page (chips, sort, Show more, the search box's kept filters) keeps `exact=1` and never parses again; the line shows only on the page the sentence landed on. A new search in the box drops it.
+4. **No line when the parse changes nothing.**
+5. **The cap is counted on a cache miss, per SAST day, before the call** (a failed call still counts): `private.words_search_parses` through `public.reserve_words_search`, service role only; a count per day in the sample store.
+6. **Failures are never cached:** the cached function throws on a failure or a full cap (Next's cache handler doesn't keep an errored entry), and Browse searches the words exactly.
+7. **A sentence** is four or more words, a price (`R300`, `300 rand`, `under 300`), a campus's whole name, or "cheap", "cheaper", "cheapest" or "free".
+8. **The words are normalised** (trimmed, spaces collapsed, lowercased, 100 characters at most): the cache key and the only input.
+9. **The tab title stays the words typed;** the heading, trail, chips and search box show the shown query.
+10. **The fake parses with a few regexes** (a price, "free", "cheap", a campus name, the rest as the words), for the e2e test and the sample demo.
+
+### While building stage E (2026-11-05)
+
+1. **The cache lifetime is `revalidate` 6 days, `expire` 7 days:** Next refuses an `expire` that isn't longer than `revalidate`, and this way no parse is older than a week, as the privacy line says.
+2. **The Filters panel keeps `exact=1`** for an exact or parsed search, so changing a filter after "Search for exactly what I typed" never reads the words again (the plan had only the links).
+3. **The cap's reservation calls `forServer()` inside `"use cache"`,** the one exception to that rule (`lib/data/supabase/clients.ts` says so): a site-wide counter with no request data, which must stay in the miss path so a cache hit never spends the cap.
+4. **A 3-second wait at low effort (final review):** the request is `quick`, so a slow Haiku can't hold Browse for 10 to 15 seconds and `VOSSIE_HAIKU_EFFORT=medium` doesn't slow the search.
+5. **A price needs R and two or more digits, or a "k"** ("R300", "R2k"), so model codes such as "EOS R5" and "Ryzen R7" aren't sentences, and the instruction says a model code belongs in the words (final review).
+6. **The privacy line** says the words are kept with their filters, and which searches aren't sent (one to three words with no price, campus, "cheap" or "free").
+7. **The database checks** (2026-11-04, local stack): pgTAP 2,635 passed (47 files, `65_words_search` included), `test:db` 359 passed (52 files), and `pnpm db:types` was byte-identical to the hand edit. `06_account_actions.test.sql` lists `reserve_words_search(integer)` among the service-role-only functions.

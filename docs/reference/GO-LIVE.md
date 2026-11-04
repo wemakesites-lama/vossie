@@ -226,6 +226,15 @@ Built 2026-11-04 (AI features spec section 3, stage B; plan `docs/superpowers/pl
 - [ ] Decide whether the check needs a daily cap per account, as photo-to-listing has (`reservePhotoFill`): a stopped publish saves nothing, so each press of Save and publish is another Haiku call. The console's monthly spend limit is the only cap now.
 - [ ] The Hub's "Hidden" notice says everyone who reported a listing has been told, even when the only report was the listing check's (which tells no one). Dismiss has its own "Dismissed." notice; hide could get the same.
 
+### Search in your own words (after the submission)
+Built 2026-11-05 (AI features spec section 6, stage E; plan `docs/superpowers/plans/2026-11-05-ai-stage-e-words-search.md`) and off. Haiku only, with photo-to-listing's Anthropic key. Open to everyone, so the site-wide cap (2,000 new parses a SAST day, `WORDS_SEARCH_DAILY_CAP` in `lib/browse/words.ts`) and the console's spend limit are the only brakes.
+- [ ] Push `20261105140000_words_search.sql` to Vossie Market: a dry run first, then Lama's go-ahead.
+- [ ] A hand check with the real key: ten sentences students would type ("cheap kettle at Midrand", "FAC1501 textbook under R200", "free stuff Pretoria", "laptop charger hp under 300") and the line each gives. Note the outcome in the AI features spec's section 12.
+- [ ] Set `VOSSIE_AI_WORDS_SEARCH=1` in Vercel, then redeploy: the privacy page's line is drawn at build.
+- [ ] After two weeks, read the `[vossie] words-search:` log lines and how often the cap was reached (the `private.words_search_parses` rows): raise or lower the cap.
+- [ ] Know that the cap can run out: a Haiku outage (a failed call still counts) or anyone sending 2,000 different sentences in a day turns the words search off silently until SAST midnight, and Browse searches the words exactly. A dead feature with a full `words_search_parses` row for today is the cap, not a bug.
+- [ ] The parse cache is per server instance (Next's in-memory cache handler), so on Vercel a repeated search can cost a new parse on a cold instance. Fine at launch traffic; a shared cache handler would fix it if the cap is reached.
+
 ## 7. Decisions for Lama and Eduvos
 
 - [ ] **Report the kept-redirect behaviour to Next.js, if necessary** (Lama, 2026-10-20). `tests/e2e/sign-in-return.spec.ts` with `SIGN_IN_SPIKE=1` is the reproduction.

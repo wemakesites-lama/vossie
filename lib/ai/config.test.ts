@@ -50,4 +50,15 @@ describe("the AI settings (AI features spec 7.2)", () => {
     expect(featureProviders("listing-check", env)).toEqual(["anthropic"]);
     expect(featureProviders("listing", { ANTHROPIC_API_KEY: "k" })).toEqual(["anthropic"]);
   });
+
+  it("turns the words search on only with its switch and Haiku or the fake (AI stage E)", () => {
+    const env = { VOSSIE_AI_PROVIDERS: "groq", GROQ_API_KEY: "g", VOSSIE_AI_WORDS_SEARCH: "1" };
+    expect(featureProviders("words-search", env)).toEqual([]);
+    expect(aiFeatureOn("words-search", env)).toBe(false);
+    const haiku = { VOSSIE_AI_PROVIDERS: "groq,anthropic", GROQ_API_KEY: "g", ANTHROPIC_API_KEY: "a" };
+    expect(featureProviders("words-search", haiku)).toEqual(["anthropic"]);
+    expect(aiFeatureOn("words-search", haiku)).toBe(false);
+    expect(aiFeatureOn("words-search", { ...haiku, VOSSIE_AI_WORDS_SEARCH: "1" })).toBe(true);
+    expect(aiFeatureOn("words-search", { VOSSIE_AI_PROVIDERS: "fake", VOSSIE_AI_WORDS_SEARCH: "1" })).toBe(true);
+  });
 });

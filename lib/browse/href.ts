@@ -25,7 +25,14 @@ export function browseHref(query: BrowseQuery, changes: BrowseChanges = {}): str
   if (next.deals) params.set("deals", next.deals);
   if (sort !== defaultSort(next.q)) params.set("sort", sort);
   if (keepShown && next.shown !== PAGE_SIZE) params.set("n", String(next.shown));
+  // A parsed or exact search's links keep exact=1 while the words stay the same (AI stage E plan decision 3).
+  if (next.exact && next.q && next.q === query.q) params.set("exact", "1");
 
   const search = params.toString();
   return search ? `/browse?${search}` : "/browse";
+}
+
+/** "Search for exactly what I typed" (AI features spec 6.5): the typed query with exact=1. */
+export function exactHref(query: BrowseQuery): string {
+  return browseHref({ ...query, exact: true });
 }

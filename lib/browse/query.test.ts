@@ -111,4 +111,15 @@ describe("knownSlugs and toSearchQuery", () => {
       sort: "new",
     });
   });
+
+  it("reads exact=1 only with a search, and leaves the key out otherwise (AI stage E)", () => {
+    expect(parse({ q: "x y z w", exact: "1" })).toEqual(makeBrowseQuery({ q: "x y z w", sort: "match", exact: true }));
+    expect(parse({ q: "x y z w", exact: "0" })).toEqual(makeBrowseQuery({ q: "x y z w", sort: "match" }));
+    expect(parse({ q: "x y z w", exact: "yes" })).not.toHaveProperty("exact");
+    expect(parse({ exact: "1" })).not.toHaveProperty("exact");
+  });
+
+  it("never passes exact to a search", () => {
+    expect(toSearchQuery(makeBrowseQuery({ q: "lamp", exact: true }))).not.toHaveProperty("exact");
+  });
 });

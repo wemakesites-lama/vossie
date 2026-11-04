@@ -1,9 +1,18 @@
 import { render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { WordsSearch } from "@/lib/data/words-search";
+import type { BrowseQuery } from "@/lib/types";
 import { BrowseView } from "./BrowseView";
 
 const viewer = vi.hoisted(() => ({ campus: "all" }));
 const search = vi.hoisted(() => ({ failing: false }));
+// The words search (AI stage E): the words as typed unless a test reads them into filters.
+const words = vi.hoisted(() => ({ read: null as null | ((typed: BrowseQuery) => WordsSearch) }));
+
+vi.mock("@/lib/data/words-search", () => ({
+  wordsSearchFor: async (typed: BrowseQuery): Promise<WordsSearch> =>
+    words.read ? words.read(typed) : { query: typed, line: null, typed },
+}));
 
 vi.mock("@/lib/data/viewer", () => ({
   getViewerContext: async () => ({ campus: viewer.campus, signedIn: false, activity: null }),
@@ -30,6 +39,7 @@ vi.mock("@/lib/saved-searches/actions", () => ({ saveThisSearch: async () => {} 
 afterEach(() => {
   viewer.campus = "all";
   search.failing = false;
+  words.read = null;
 });
 
 const view = async (params: Record<string, string> = {}) =>
@@ -103,5 +113,37 @@ describe("BrowseView (spec 4.1 to 4.7)", () => {
     const save = screen.getByRole("link", { name: "Save this search" });
     const empty = screen.getByRole("heading", { level: 2, name: "Nothing here yet" });
     expect(save.compareDocumentPosition(empty) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+describe("BrowseView's words search (AI features spec 6)", () => {
+  const parsed = (typed: BrowseQuery): WordsSearch => ({
+    query: { ...typed, q: "calculator", price: "under-500", campus: "midrand", campusFromLink: true, exact: true },
+    line: "Showing calculator under R500 at Midrand.",
+    typed,
+  });
+
+  it("shows the filters a sentence asked for, the line above the results and a link to the exact words", async () => {
+    words.read = parsed;
+    await view({ q: "calculator under R300 at Midrand" });
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("“calculator”");
+    const line = screen.getByText(/^Showing calculator under R500 at Midrand\./);
+    expect(screen.getByRole("link", { name: "Search for exactly what I typed" })).toHaveAttribute(
+      "href",
+      "/browse?q=calculator+under+R300+at+Midrand&exact=1",
+    );
+    const card = screen.getAllByRole("article")[0];
+    expect(line.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The chips keep exact=1, so following one never reads the words again.
+    expect(screen.getByRole("link", { name: "Remove filter: Under R500" })).toHaveAttribute(
+      "href",
+      "/browse?q=calculator&campus=midrand&exact=1",
+    );
+  });
+
+  it("shows no line when the words are searched as typed", async () => {
+    const { container } = await view({ q: "calculator" });
+    expect(container.querySelector(".browse-words")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Search for exactly what I typed" })).toBeNull();
   });
 });
