@@ -603,6 +603,44 @@ describe("the words search's line (AI features spec 7.3, AI stage E)", () => {
   });
 });
 
+describe("the starter pack's line (AI round two spec section 6, AI stage H)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  async function starterLineWith(env: Record<string, string>) {
+    for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value);
+    vi.resetModules();
+    const { default: Page } = await import("./page");
+    const { unmount } = render(<Page />);
+    const line = screen.queryByText(/When you ask for a starter pack/)?.textContent ?? null;
+    unmount();
+    return line;
+  }
+
+  it("says only the sentence goes to Anthropic, that it's read outside South Africa, and kept a week by the sentence", async () => {
+    const line = await starterLineWith({
+      VOSSIE_AI_STARTER_PACK: "1",
+      VOSSIE_AI_PROVIDERS: "anthropic,groq",
+      ANTHROPIC_API_KEY: "test",
+      GROQ_API_KEY: "test",
+    });
+    expect(line).toContain("your sentence is sent to Anthropic (never Groq)");
+    expect(line).toContain("read outside South Africa");
+    expect(line).toContain("not your account or your campus");
+    expect(line).toContain("kept on our server for a week");
+  });
+
+  it("isn't there while the starter pack is off, without Anthropic's key, or with only the fake", async () => {
+    expect(await starterLineWith({ VOSSIE_AI_PROVIDERS: "anthropic", ANTHROPIC_API_KEY: "test" })).toBeNull();
+    expect(
+      await starterLineWith({ VOSSIE_AI_STARTER_PACK: "1", VOSSIE_AI_PROVIDERS: "anthropic,groq", ANTHROPIC_API_KEY: "", GROQ_API_KEY: "test" }),
+    ).toBeNull();
+    expect(await starterLineWith({ VOSSIE_AI_STARTER_PACK: "1", VOSSIE_AI_PROVIDERS: "fake" })).toBeNull();
+  });
+});
+
 describe("Snap to search's line (AI features spec 5.1 and 7.3)", () => {
   afterEach(() => {
     vi.unstubAllEnvs();

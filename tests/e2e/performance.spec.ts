@@ -7,6 +7,8 @@ const PAGES: ReadonlyArray<[name: string, path: string, saved?: string]> = [
   ["homepage", "/"],
   ["browse page", "/browse"],
   ["browse page, a search", "/browse?q=calculator"],
+  ["starter pack page", "/browse/starter"],
+  ["starter pack page (a pack)", "/browse/starter?q=Starting%20at%20Midrand%2C%20need%20stuff%20for%20res%20under%20R1000"],
   ["listing page", "/listings/l-001"],
   ["info page", "/how-it-works"],
   ["sign-in page", "/login"],

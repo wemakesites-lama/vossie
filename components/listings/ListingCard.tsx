@@ -13,10 +13,12 @@ type ListingCardProps = {
   campusName: string;
   /** On the Saved page: the heart starts pressed, and a "Removed" tag shows once it's unpressed (shopping spec 5.3). */
   saved?: boolean;
+  /** The title's heading level: h4 where the card sits under its own h3 (a starter pack's line). */
+  titleTag?: "h3" | "h4";
 };
 
 /** A listing in a grid (spec 7.8). The title's link covers the whole card, and the heart sits on top of it. */
-export function ListingCard({ listing, campusName, saved = false }: ListingCardProps) {
+export function ListingCard({ listing, campusName, saved = false, titleTag: TitleTag = "h3" }: ListingCardProps) {
   const stateTag = STATE_TAGS[listing.availability];
   return (
     <article className="listing-card">
@@ -26,13 +28,13 @@ export function ListingCard({ listing, campusName, saved = false }: ListingCardP
         sizes="(orientation: landscape) and (max-height: 29.99rem) 23vw, (min-width: 64rem) and (min-height: 30rem) 220px, (min-width: 48rem) and (min-height: 30rem) 30vw, 46vw"
         className="listing-photo"
       />
-      <h3 className="listing-title">
+      <TitleTag className="listing-title">
         {/* No prefetch: a row of cards would fetch every page as it scrolls past (mobile data). */}
         <Link href={`/listings/${listing.id}`} prefetch={false} className="listing-link" transitionTypes={CARD}>
           {listing.title}
           <NavPending />
         </Link>
-      </h3>
+      </TitleTag>
       <p className="listing-price">{priceLabel(listing)}</p>
       <p className="listing-shop">{listing.sellerName}</p>
       <p className="listing-meta">{campusName}</p>

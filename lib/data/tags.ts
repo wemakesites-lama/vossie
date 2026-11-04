@@ -90,3 +90,11 @@ export const WORDS_SEARCH_TAG = "words-search";
 export function tagWordsSearch(): void {
   cacheTag(WORDS_SEARCH_TAG);
 }
+
+// The starter pack's reads (AI stage H plan Task 4).
+export const STARTER_PACK_TAG = "starter-pack";
+
+/** For the cached read of a starter pack's sentence. Nothing expires it: a category or campus change waits out the week. */
+export function tagStarterPack(): void {
+  cacheTag(STARTER_PACK_TAG);
+}

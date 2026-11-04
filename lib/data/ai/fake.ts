@@ -2,8 +2,8 @@ import type { ReadPhoto } from "./types";
 
 // Fixed replies for the e2e tests and the sample demo (spec decision 13). Photo-to-listing: a textbook with a module
 // code, so the tags, the price hint and the Looking For line can all show; with two photos or more, a better cover
-// (FAKE_COVER_TIP). The listing check: see fakeVerdict. The words
-// search: see fakeWords. Snap to search: see FAKE_SEARCH_REPLY.
+// (FAKE_COVER_TIP). The listing check: see fakeVerdict. The words search: see fakeWords. Snap to search: see
+// FAKE_SEARCH_REPLY. The starter pack: see fakeStarter.
 // aiProviders never lists it on Supabase.
 
 export const FAKE_REPLY = {
@@ -99,6 +99,29 @@ export const FAKE_SEARCH_REPLY = {
   confidence: "high",
 } as const;
 
+/**
+ * The starter pack's fake (AI stage H planning decision 15): a campus from the schema's list and a budget from the
+ * sentence, and four fixed items picked against the fixtures (at Midrand with R1,000: the Casio at R250, a lamp found
+ * only by its name at R180, the bar fridge over what's left, a kettle with no match). "[no pack]" gets a reply that
+ * isn't JSON. The sentence is the request text after "Sentence: ".
+ */
+export function fakeStarter(text: string, campusSlugs: readonly string[]): string {
+  if (text.includes("[no pack]")) return "not a pack";
+  const words = ` ${text.replace(/^Sentence:\s*/, "").toLowerCase().replace(/[^\p{L}\p{N}\s-]+/gu, " ").replace(/\s+/g, " ")} `;
+  const price = /\br\s?(\d{2,})\b/.exec(words) ?? /\b(\d+)\s?rand\b/.exec(words);
+  const campus = campusSlugs.find((slug) => words.includes(` ${slug.replace(/-/g, " ")} `)) ?? null;
+  return JSON.stringify({
+    campus,
+    budget: price ? Number(price[1]) : null,
+    items: [
+      { name: "Calculator", words: "casio calculator", categorySlug: "tech" },
+      { name: "Lamp", words: "clip-on reading lamp", categorySlug: "res-living" },
+      { name: "Bar fridge", words: "bar fridge", categorySlug: "res-living" },
+      { name: "Kettle", words: "electric kettle", categorySlug: "res-living" },
+    ],
+  });
+}
+
 /** One reply per task: a stage adds its own line here. */
 function fakeReply(request: Parameters<ReadPhoto>[0]): unknown {
   switch (request.task) {
@@ -117,6 +140,11 @@ function fakeReply(request: Parameters<ReadPhoto>[0]): unknown {
 
 export const read: ReadPhoto = async (request) => ({
   ok: true,
-  // The report read's fake gives its reply text as is, so it can give a bad one (fakeFirstRead).
-  text: request.task === "report-read" ? fakeFirstRead(request.text) : JSON.stringify(fakeReply(request)),
+  // The report read's and the starter pack's fakes give their reply text as is, so they can give a bad one.
+  text:
+    request.task === "report-read"
+      ? fakeFirstRead(request.text)
+      : request.task === "starter-pack"
+        ? fakeStarter(request.text, schemaCampuses(request.schema))
+        : JSON.stringify(fakeReply(request)),
 });

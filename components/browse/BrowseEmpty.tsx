@@ -36,6 +36,14 @@ export function BrowseEmpty({ query, elsewhere }: { query: BrowseQuery; elsewher
           </Link>
         </p>
       )}
+      {/* Starter pack (AI round two spec section 6): several things at once. Never prefetched. */}
+      {aiFeatureOn("starter-pack") && (
+        <p>
+          <Link href="/browse/starter" prefetch={false}>
+            Get a starter pack
+          </Link>
+        </p>
+      )}
       <p>
         Can&apos;t find it?{" "}
         {/* With search words, the request form starts with them as its title (stage D planning decision 3). */}
