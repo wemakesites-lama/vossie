@@ -1271,6 +1271,24 @@ Built on `claude/ai-stage-d-photo-search-f59696`, in parallel with stages C and 
 - **First-visit JS at 390 (brotli):** `/browse/photo` 152,323 B; the listing forms 153,567 B; home 151,526 B; browse 152,272 B; a listing 152,680 B; all inside 153,600 B. The chunk greps (`groq|anthropic`, `serviceWorker.register`) print nothing.
 - **Left:** GO-LIVE's Snap to search block (the photo test with real keys first checks the schema against Haiku and Groq).
 
+## 2026-11-04: AI stage F: photo tips (decision 97)
+Built on `claude/ecstatic-lamport-1c46d3`, in parallel with stages G and H, and off behind `VOSSIE_LISTING_AI` with photo-to-listing (plan `docs/superpowers/plans/2026-11-04-ai-stage-f-photo-tips.md`, round two spec section 7).
+- **The reply's tip and its check:** photo-to-listing's reply gains `photoTip`, null or one photo's `{ photo, kind, text }`. The schema's `photoTip` is an `anyOf` with no enum beside a type array. `checkSuggestion` checks the tip against the photos the provider saw. A bad tip is dropped and the suggestion kept. Long words are clipped at 100 characters.
+- **The door's Groq rule:** Groq reads only the cover (`COVER_ONLY` in `lib/data/ai.ts`), so its tip must be about photo 1 and is never `better-cover`.
+- **Photo labels:** Haiku now gets a "Photo n" text block before each image, and the instruction says so, so a tip's number names the right photo. This is beyond the plan, at the parent session's request after the first review. The other Haiku features get one "Photo 1" label before the cover, or none.
+- **The fake:** with two photos or more it says photo 2 is the better cover (`FAKE_COVER_TIP`); with one photo it gives no tip.
+- **The form:** after a fill, `PhotoTipHint` (a Server Component in the Photos fieldset) shows "Tip for photo n: …". For a better cover it adds "Make it the cover", which posts the photo field's own move. The move keeps the fill's "Suggested" tags (`keepSuggestedTags`). The tip lives only in the fill's form state and goes with the next post. `PhotoField` and every client file are untouched.
+- **The hand test:** it gains a Tip column, and tips the check dropped show as "dropped: …".
+- **Checks:** lint and types clean. Unit tests: 3,842 passed (461 files). `pnpm build` is clean, and both chunk greps (`groq|anthropic`, `serviceWorker.register`) print nothing.
+- **Not run in the worktree** (shared port and Supabase stack; the parent runs them after merging F, G and H):
+  - the new e2e test ("photo tips: …" in `selling-writes.spec.ts`), with axe and layout shift at 390;
+  - the `/sell/listings/new` byte count (expected unchanged, since no client code changed);
+  - the real-key hand test (plan Task 8).
+- **Left:**
+  - plan Task 8 on `main` with real keys: the schema against Haiku and Groq, since Groq's strict mode may refuse the `anyOf`;
+  - the better-cover wording: the instruction asks for "how to fix it", which doesn't fit a better cover, so watch its text in the run;
+  - GO-LIVE's photo-to-listing block, which now covers photo tips.
+
 ## Next
 - **Campus photos** (2026-10-29): the 12 campuses use Eduvos's own photos from eduvos.com's campus pages (buildings only, cropped square, `public/campus/`), Eduvos Online an Unsplash photo; `data/fixtures/campuses.ts` points at them (no database change). Eduvos's copyright: confirm with Eduvos marketing before go-live. Sources in `docs/reference/stock-photos.md`.
 - **Stock photos in place of the placeholder art** (2026-10-29): 79 free Unsplash photos in `public/stock/` (15.7 MB of JPEGs, served as AVIF by `next/image`), credits and licence notes in `docs/reference/stock-photos.md`. Hero 3, categories 10, listing covers 10 (one per category), collections 4, the Hub banner, 29 shops and 22 Hub posts; the fixtures point at them. Campus photos and a listing's second and third photos stay placeholders (stock can't show a real campus). `20261029120000_stock_photos.sql` widens the three placeholder checks to allow `/stock/…jpg` and moves the seed rows over; `supabase/seed.sql` regenerated. `make-placeholders.ts` now skips stock slots (it would have written SVG over the photos). **Pushed to Vossie Market** (2026-10-29, Lama's go-ahead, after a dry run): 29 shops, 38 listing photos and 22 Hub posts now point at `/stock/…jpg`; the 5 extra listing photos and 2 shops with no photo are unchanged, and the remote is up to date. **vossie-pi shows those images broken until a redeploy carries `public/stock/`**: commit, then redeploy. Checks: unit tests pass, apart from timeouts in `AdminSellers` and `PhotoField` under a load of 46 (another session's run), types clean; seen at 1280 in the sample dev server (hero, categories, collections, banner); the store's shops and listings need a server restart to show. e2e (`home.spec.ts` now reads `/_next/image?url=`) not run: another session's e2e build was using `.next`. Faces (hero, some Hub covers) have no model release: swap for consented photos before go-live.

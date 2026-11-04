@@ -44,8 +44,15 @@ describe("the Haiku provider (AI features spec 2.2 to 2.5)", () => {
       system: "Describe it.",
       output_config: { effort: "low", format: { type: "json_schema", schema: { type: "object" } } },
     });
-    expect(body.messages[0].content.map((block: { type: string }) => block.type)).toEqual(["image", "image", "text"]);
-    expect(body.messages[0].content[1].source).toEqual({ type: "base64", media_type: "image/png", data: "Ag==" });
+    // Each photo follows its label, so a photo tip's number names the right photo (AI stage F).
+    expect(body.messages[0].content.map((block: { type: string; text?: string }) => block.text ?? block.type)).toEqual([
+      "Photo 1",
+      "image",
+      "Photo 2",
+      "image",
+      REQUEST.text,
+    ]);
+    expect(body.messages[0].content[3].source).toEqual({ type: "base64", media_type: "image/png", data: "Ag==" });
     expect(options).toEqual({ timeout: 10_000 });
   });
 

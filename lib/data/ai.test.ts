@@ -17,7 +17,7 @@ import {
   wordsRequest,
 } from "./ai";
 import { readReport, reportReadRequest, type ReportForRead } from "./ai";
-import { FAKE_REPLY, FAKE_SEARCH_REPLY, fakeWords } from "./ai/fake";
+import { FAKE_COVER_TIP, FAKE_REPLY, FAKE_SEARCH_REPLY, fakeWords } from "./ai/fake";
 // Stage D: Snap to search.
 import { photoSearchSchema } from "@/lib/search/photo";
 
@@ -375,5 +375,45 @@ describe("Snap to search through the door (AI features spec 5 and 7.1)", () => {
     haiku.mockResolvedValueOnce({ ok: false, failure: "timeout" });
     groq.mockResolvedValueOnce({ ok: false, failure: "rate-limited" });
     expect(await readSearchPhoto(photo(1), CATEGORIES)).toEqual({ ok: false, failure: "rate-limited" });
+  });
+});
+
+describe("photo tips through the door (AI round two spec 7)", () => {
+  const withTip = (photoTip: unknown) => JSON.stringify({ ...FAKE_REPLY, photoTip });
+  const better = { photo: 2, kind: "better-cover", text: "This one shows the whole cover." };
+
+  it("keeps Haiku's better-cover tip about a photo it was sent, and drops one about a photo it wasn't", async () => {
+    bothProviders();
+    haiku.mockResolvedValueOnce({ ok: true, text: withTip(better) });
+    expect(await readListingPhotos([photo(1), photo(2)], CATEGORIES)).toMatchObject({ ok: true, suggestion: { photoTip: better } });
+    haiku.mockResolvedValueOnce({ ok: true, text: withTip({ photo: 3, kind: "dark", text: "Too dark." }) });
+    expect(await readListingPhotos([photo(1), photo(2)], CATEGORIES)).toMatchObject({ ok: true, suggestion: { photoTip: null } });
+  });
+
+  it("holds Groq to the cover: a tip about photo 2 or a better cover is dropped, the suggestion kept", async () => {
+    bothProviders();
+    for (const tip of [better, { photo: 2, kind: "dark", text: "Too dark." }]) {
+      haiku.mockResolvedValueOnce({ ok: false, failure: "timeout" });
+      groq.mockResolvedValueOnce({ ok: true, text: withTip(tip) });
+      expect(await readListingPhotos([photo(1), photo(2)], CATEGORIES)).toMatchObject({
+        ok: true,
+        suggestion: { moduleCode: "FAC1501", photoTip: null },
+      });
+    }
+    haiku.mockResolvedValueOnce({ ok: false, failure: "timeout" });
+    groq.mockResolvedValueOnce({ ok: true, text: withTip({ photo: 1, kind: "dark", text: "Take it near a window." }) });
+    expect(await readListingPhotos([photo(1), photo(2)], CATEGORIES)).toMatchObject({
+      ok: true,
+      suggestion: { photoTip: { photo: 1, kind: "dark", text: "Take it near a window." } },
+    });
+  });
+
+  it("uses the fake's better cover only with two photos or more", async () => {
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "fake");
+    expect(await readListingPhotos([photo(1)], CATEGORIES)).toMatchObject({ ok: true, suggestion: { photoTip: null } });
+    expect(await readListingPhotos([photo(1), photo(2)], CATEGORIES)).toMatchObject({
+      ok: true,
+      suggestion: { photoTip: FAKE_COVER_TIP },
+    });
   });
 });

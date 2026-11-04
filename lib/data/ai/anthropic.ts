@@ -39,10 +39,15 @@ export const read: ReadPhoto = async ({ system, images, text, schema, quick }) =
           {
             role: "user",
             content: [
-              ...images.map((image) => ({
-                type: "image" as const,
-                source: { type: "base64" as const, media_type: image.type, data: image.base64 },
-              })),
+              // Each photo follows its label ("Photo 1" is the cover), so a photo tip's number names the right one
+              // (AI stage F).
+              ...images.flatMap((image, at) => [
+                { type: "text" as const, text: `Photo ${at + 1}` },
+                {
+                  type: "image" as const,
+                  source: { type: "base64" as const, media_type: image.type, data: image.base64 },
+                },
+              ]),
               { type: "text" as const, text },
             ],
           },

@@ -7,6 +7,7 @@ import { saveListingForm } from "@/lib/selling/listing-actions";
 import { parseConcern } from "@/lib/selling/listing-check";
 import { noticeText } from "@/lib/selling/notices";
 import { myListingsPath, tabFor } from "@/lib/selling/paths";
+import type { ShownPhotoTip } from "@/lib/selling/suggest";
 import { CONDITION_CHOICES, HANDOVER_CHOICES, KIND_CHOICES, PAY_CHOICES } from "@/lib/selling/rules";
 import type { Category, ListingState, PickupPoint } from "@/lib/types";
 import { ListingCheck } from "./ListingCheck";
@@ -41,6 +42,8 @@ type ListingFormViewProps = {
   priceHint?: string | null;
   /** The textbook Looking For line (spec 2.3), or null. */
   lookingFor?: { count: number; campusName: string; online?: boolean; href: string } | null;
+  /** A photo tip after a fill (AI round two spec 7), or null. */
+  photoTip?: ShownPhotoTip | null;
 };
 
 /**
@@ -51,7 +54,7 @@ type ListingFormViewProps = {
  */
 export function ListingFormView(props: ListingFormViewProps) {
   const { listingId, once, state, waiting, values, photos, errors, categories, spots, campusName } = props;
-  const { photoStart = null, notice = null, priceHint = null, lookingFor = null } = props;
+  const { photoStart = null, notice = null, priceHint = null, lookingFor = null, photoTip = null } = props;
   const prefix = listingFieldPrefix(listingId);
   // The photo marked invalid is the first whose description is too long, where that error links (amendment 11.5).
   const longAlt = photos.findIndex((photo) => photo.invalid);
@@ -82,6 +85,7 @@ export function ListingFormView(props: ListingFormViewProps) {
       error={errorOf("photos")}
       altError={longAlt < 0 ? undefined : errorOf("alt")}
       suggested={suggested}
+      tip={photoTip}
     />
   );
   return (
@@ -116,6 +120,8 @@ export function ListingFormView(props: ListingFormViewProps) {
         {listingId && <input type="hidden" name="listing" value={listingId} />}
         {/* A server-drawn field, no script: only the first save that brings a token makes the listing. */}
         {!listingId && once && <input type="hidden" name="once" value={once} />}
+        {/* A fill's tags go back with a photo move (Make it the cover), so they stay on the form (AI stage F). */}
+        {values.suggested && <input type="hidden" name="suggested" value={values.suggested} />}
         {concern && <ListingCheck concern={concern} prefix={prefix} saving={state === "paused" || state === "sold"} />}
         {withCard && (
           <>

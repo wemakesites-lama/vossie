@@ -246,6 +246,39 @@ describe("photo-to-listing (spec 2.1 to 2.4)", () => {
     expect(screen.getByText("You can still add photos. Filling in from them is back tomorrow.")).toBeInTheDocument();
     expect(screen.getByText(/You've used today's photo fills\./)).toBeInTheDocument();
   });
+
+  it("shows a photo tip in the Photos group, with Make it the cover only for a better cover (AI stage F)", () => {
+    const two = ["/placeholders/photo/2.svg", "/placeholders/photo/3.svg"].map((src) => ({ src, alt: "", thumb: src }));
+    const { unmount } = show({
+      photoStart: { on: true, limitReached: false },
+      photos: two,
+      values: { ...values, suggested: "title" },
+      notice: "suggested",
+      photoTip: { place: 2, src: two[1].src, kind: "better-cover", text: "This one shows the whole cover." },
+    });
+    expect(document.getElementById("new-photo-tip")).toHaveTextContent("Tip for photo 2: This one shows the whole cover.");
+    const make = within(screen.getByRole("group", { name: "Photos" })).getByRole("button", { name: "Make it the cover" });
+    expect(make).toHaveAttribute("type", "submit");
+    expect(make).toHaveAttribute("name", "photoMove");
+    expect(make).toHaveAttribute("value", "/placeholders/photo/3.svg:cover");
+    expect(make).toHaveAccessibleDescription("Tip for photo 2: This one shows the whole cover.");
+    expect(document.querySelector('input[type="hidden"][name="suggested"]')).toHaveValue("title");
+    unmount();
+
+    show({
+      photoStart: { on: true, limitReached: false },
+      photos: two,
+      photoTip: { place: 1, src: two[0].src, kind: "dark", text: "Take it again near a window." },
+    });
+    expect(document.getElementById("new-photo-tip")).toHaveTextContent("Tip for photo 1: Take it again near a window.");
+    expect(screen.queryByRole("button", { name: "Make it the cover" })).toBeNull();
+    expect(document.querySelector('input[name="suggested"]')).toBeNull();
+  });
+
+  it("shows no tip without one", () => {
+    show({ photoStart: { on: true, limitReached: false } });
+    expect(document.querySelector(".photo-tip")).toBeNull();
+  });
 });
 
 // Amendment 3. Next keeps the last pages hidden in the DOM, so two edit forms (for two listings) can be there at once.

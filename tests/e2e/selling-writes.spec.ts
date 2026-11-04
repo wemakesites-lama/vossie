@@ -13,6 +13,7 @@ import {
   publishListing,
   uniqueWord,
 } from "./helpers/selling";
+import { expectStill, recordShifts } from "./helpers/shifts";
 import { signedInPage, staffNotice } from "./helpers/staff";
 
 // These run in the selling-writes project, after the five device projects (selling plan decision 25). Each uses the
@@ -329,6 +330,36 @@ test("fill in from a photo: the fields fill and are tagged, axe passes, and Save
   await page.goto(`/sell/listings/${id}/delete`);
   await button(page, "Delete listing").click();
   await expect(main(page).getByRole("status")).toHaveText("Deleted.", POST_LANDS);
+});
+
+test("photo tips: a better cover is offered after Fill in, and Make it the cover moves it (AI stage F)", async ({ page }) => {
+  test.setTimeout(120_000);
+  await signInAsSample(page, "Seller, Tech corner", "/sell");
+  await page.goto("/sell/listings/new");
+  // Two photos, so the fake says photo 2 is the better cover (FAKE_COVER_TIP).
+  await field(page, "Add photos").setInputFiles([
+    photoWithLocation("textbook-front.png"),
+    photoWithLocation("textbook-back.png"),
+  ]);
+  await expect(main(page).getByText(/^Your photos are ready\.$/).filter({ visible: true })).toBeVisible();
+  await button(page, "Fill in from my photo").click();
+  const tip = main(page).locator(".photo-tip");
+  await expect(tip).toContainText("Tip for photo 2: This one shows the whole cover, so buyers see more.", POST_LANDS);
+  const before = await photoAddresses(page);
+  expect(before).toHaveLength(2);
+  expect(await seriousIssues(page), "the photo tip").toEqual([]);
+
+  // The filled form stays in form state for 10 minutes, so loading it again draws the same tip: its layout shift.
+  await recordShifts(page);
+  await expectStill(page, "the new listing with a photo tip (390px)", "/sell/listings/new");
+  await expect(tip).toBeVisible();
+
+  await tip.getByRole("button", { name: "Make it the cover" }).click();
+  await expect.poll(() => photoAddresses(page), POST_LANDS).toEqual([before[1], before[0]]);
+  await expect(main(page).locator(".photo-tip")).toHaveCount(0);
+  // The fill's tags stay through the move.
+  await expect(main(page).locator(".field-tag", { hasText: "Suggested" }).first()).toBeVisible();
+  // No listing was made, so nothing is left to delete.
 });
 
 test("the listing check stops a listing that may break the guidelines; Publish anyway publishes it and the Hub gets a report (AI stage B)", async ({
