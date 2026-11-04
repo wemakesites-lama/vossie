@@ -45,6 +45,12 @@ const LOAD: Readonly<Record<ProviderName, () => Promise<{ read: ReadPhoto }>>> =
 /** These mean the provider couldn't answer, so the next one is tried (photo-to-listing decision 11). */
 const MOVE_ON: ReadonlySet<ProviderFailure> = new Set(["timeout", "rate-limited", "model-gone", "api-error"]);
 
+/**
+ * Providers that read only the cover, however many photos are sent (Groq: AI features spec 2.2). A photo tip from one
+ * must be about photo 1 and is never better-cover (AI round two spec 7).
+ */
+const COVER_ONLY: ReadonlySet<ProviderName> = new Set(["groq"]);
+
 /** Photo-to-listing reads at most this many photos, the cover first (AI features spec 2.2). */
 export const PHOTOS_READ = 3;
 
@@ -87,7 +93,8 @@ export async function readListingPhotos(
       }
       return { ok: false, failure: reply.failure };
     }
-    const checked = checkSuggestion(reply.text, slugs);
+    const seen = COVER_ONLY.has(name) ? Math.min(1, request.images.length) : request.images.length;
+    const checked = checkSuggestion(reply.text, slugs, seen);
     if (typeof checked === "string") {
       logFailure("photo-to-listing", name, checked);
       return { ok: false, failure: checked };

@@ -4,6 +4,8 @@
 // Each item in that folder ("calculator.jpg", or "calculator-1.jpg", "calculator-2.jpg" … with -1 the cover) is read by
 // Groq (the cover only) and by Haiku at low and at medium effort. The results go to results.md in the same folder. An
 // optional expected.json ({ "calculator": { "categorySlug": "tech", "moduleCode": null } }) adds a column to compare.
+// A Tip column shows each run's photo tip (AI stage F); one the check dropped shows as "dropped: …". expected.json may
+// give `tip` (a kind, or null for none).
 // Keys come from .env.local. It costs a few cents. Photos of people need their consent.
 
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -28,7 +30,7 @@ const TYPES: Readonly<Record<string, PhotoType>> = {
 /** Groq's free tier allows about 3 photo reads a minute (photo-to-listing spec section 13). */
 const GROQ_PAUSE_MS = 20_000;
 
-type Expected = Record<string, { categorySlug?: string; moduleCode?: string | null }>;
+type Expected = Record<string, { categorySlug?: string; moduleCode?: string | null; tip?: string | null }>;
 
 /** The folder's photos by item, in name order, so "-1" is each item's cover. */
 function items(dir: string): Map<string, string[]> {
@@ -39,6 +41,20 @@ function items(dir: string): Map<string, string[]> {
     groups.set(item, [...(groups.get(item) ?? []), file]);
   }
   return groups;
+}
+
+/** A tip as a table cell, with any pipe made safe. */
+const tipCell = (tip: { photo: number; kind: string; text: string } | null | undefined) =>
+  tip ? `${tip.photo} ${tip.kind}: ${tip.text.replaceAll("|", "/")}` : "";
+
+/** The tip the model gave, before the check: so a tip the check dropped still shows. */
+function rawTip(text: string) {
+  try {
+    const tip = (JSON.parse(text) as { photoTip?: unknown }).photoTip;
+    return tip && typeof tip === "object" ? (tip as { photo: number; kind: string; text: string }) : null;
+  } catch {
+    return null;
+  }
 }
 
 describe("the photo test (by hand)", () => {
@@ -55,8 +71,8 @@ describe("the photo test (by hand)", () => {
       { name: "haiku medium", read: readHaiku, effort: "medium" },
     ] as const;
     const rows = [
-      "| Item | Run | ms | Result | Title | Category | Condition | Module | Expected |",
-      "|---|---|---|---|---|---|---|---|---|",
+      "| Item | Run | ms | Result | Title | Category | Condition | Module | Tip | Expected |",
+      "|---|---|---|---|---|---|---|---|---|---|",
     ];
     for (const [item, files] of items(dir)) {
       const photos = files.map((file) => ({
@@ -69,13 +85,20 @@ describe("the photo test (by hand)", () => {
         const started = performance.now();
         const reply = await run.read(request);
         const ms = Math.round(performance.now() - started);
-        const checked = reply.ok ? checkSuggestion(reply.text, slugs) : reply.failure;
+        // Groq reads only the cover (groq.ts), so its tip is checked against one photo, as the door does.
+        const seen = run.name === "groq" ? 1 : request.images.length;
+        const checked = reply.ok ? checkSuggestion(reply.text, slugs, seen) : reply.failure;
+        const given = reply.ok ? rawTip(reply.text) : null;
+        const tip =
+          typeof checked === "string" ? "" : checked.photoTip ? tipCell(checked.photoTip) : given ? `dropped: ${tipCell(given)}` : "";
         const cells =
           typeof checked === "string"
-            ? [checked, "", "", "", ""]
-            : ["ok", checked.title, checked.categorySlug, checked.condition, checked.moduleCode ?? ""];
+            ? [checked, "", "", "", "", ""]
+            : ["ok", checked.title, checked.categorySlug, checked.condition, checked.moduleCode ?? "", tip];
         const want = expected[item];
-        const wanted = want ? `${want.categorySlug ?? ""} ${want.moduleCode ?? ""}`.trim() : "";
+        const wanted = want
+          ? `${want.categorySlug ?? ""} ${want.moduleCode ?? ""} ${want.tip === undefined ? "" : `tip ${want.tip ?? "none"}`}`.trim()
+          : "";
         rows.push(`| ${item} | ${run.name} | ${ms} | ${cells.join(" | ")} | ${wanted} |`);
         if (run.name === "groq") await new Promise((resolve) => setTimeout(resolve, GROQ_PAUSE_MS));
       }

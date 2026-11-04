@@ -8935,6 +8935,15 @@
     text-underline-offset: 3px;
   }
 
+  /* A photo tip after a fill (AI stage F): the hint, then Make it the cover under it. The hint and the button use the
+     card's own .form-hint and .sell-action colours. */
+  .photo-tip {
+    display: grid;
+    gap: 8px;
+    justify-items: start;
+    margin-block: 8px 12px;
+  }
+
   /* From the tablet step: the photos on the left, the cover larger, and the heading and button on the right. */
   @media (min-width: 48rem) and (min-height: 30rem) {
     .photo-start {

@@ -216,6 +216,7 @@ Built 2026-10-27 and off for the submission (spec `docs/superpowers/specs/2026-1
 - [ ] Set `VOSSIE_LISTING_AI=1`, `VOSSIE_AI_PROVIDERS=anthropic,groq`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY` and `VOSSIE_HAIKU_EFFORT` in Vercel (and `VOSSIE_GROQ_FORMAT=json_object` if the hand check needed it), remove `VOSSIE_LISTING_AI_PROVIDERS` if it's there, then redeploy: the privacy page's line is drawn at build.
 - [ ] Check Groq's deprecations page before switching on, then monthly.
 - [ ] After two weeks, read the `[vossie] photo-to-listing:` log lines' counts by provider (`rate-limited`, `bad-output`, `low-confidence`, `refusal`).
+- [ ] Photo tips (stage F) ride on this switch: read the hand test's Tip column (round two spec section 10) before switching on.
 
 ### The listing check (after the submission)
 Built 2026-11-04 (AI features spec section 3, stage B; plan `docs/superpowers/plans/2026-11-04-ai-stage-b-listing-check.md`) and off. Haiku only, with photo-to-listing's Anthropic key.

@@ -15,6 +15,7 @@ import { requireShopOwner } from "@/lib/selling/owner";
 import { editListingPath, NEW_LISTING_PATH } from "@/lib/selling/paths";
 import { hintQuery, priceHintText } from "@/lib/selling/price-hint";
 import { ALT_MAX } from "@/lib/selling/rules";
+import { shownPhotoTip } from "@/lib/selling/suggest";
 import { thumbSrc } from "@/lib/selling/thumbs";
 import { sastToday } from "@/lib/time";
 import { ListingFormView } from "./ListingFormView";
@@ -111,6 +112,9 @@ export async function ListingForm({ params }: { params?: Promise<{ id: string }>
   const campusSlug = owner.shop.campusSlug;
   const campusName = campuses.find((campus) => campus.slug === campusSlug)?.name ?? "";
   const [priceHint, lookingFor] = filled ? await afterFill(values, campusSlug, campusName) : [null, null];
+  // Photo tips (AI round two spec 7): after a fill that read the photos, for a photo still on the form (never stored).
+  const read = on && (state?.notice === "suggested" || state?.notice === "suggest-nothing");
+  const photoTip = read ? shownPhotoTip(values, photos.map((photo) => photo.src)) : null;
   return (
     <ListingFormView
       listingId={listing?.id ?? null}
@@ -127,6 +131,7 @@ export async function ListingForm({ params }: { params?: Promise<{ id: string }>
       notice={state?.notice ?? null}
       priceHint={priceHint}
       lookingFor={lookingFor}
+      photoTip={photoTip}
     />
   );
 }

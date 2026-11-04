@@ -29,6 +29,7 @@ beforeEach(() => {
   resetSampleStore();
   viewer.id = "acc-seller";
   viewer.sessionKey = null;
+  vi.unstubAllEnvs();
 });
 
 describe("the listing form's request-time part (selling spec 2.10 and section 3)", () => {
@@ -130,5 +131,38 @@ describe("the listing form's request-time part (selling spec 2.10 and section 3)
 
   it("is a 404 for another shop's listing", async () => {
     await expect(ListingForm(editing("l-004"))).rejects.toThrow("notFound");
+  });
+
+  it("shows a fill's photo tip for a photo still on the form, and none for one that's gone (AI stage F)", async () => {
+    vi.stubEnv("VOSSIE_LISTING_AI", "1");
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "fake");
+    viewer.sessionKey = "session-1";
+    const filled = (tipPhoto: string) =>
+      saveFormState(
+        {
+          sessionKey: "session-1",
+          form: "listing:new",
+          errors: [],
+          values: {
+            kind: "item",
+            title: "Financial Accounting",
+            photos: "/placeholders/photo/2.svg\n/placeholders/photo/3.svg",
+            suggested: "title",
+            tipPhoto,
+            tipKind: "better-cover",
+            tipText: "This one shows the whole cover.",
+          },
+          notice: "suggested",
+          expiresAt: "2099-01-01T00:00:00.000Z",
+        },
+        new Date(),
+      );
+    await filled("/placeholders/photo/3.svg");
+    const { unmount } = render(await ListingForm({}));
+    expect(screen.getByRole("button", { name: "Make it the cover" })).toHaveAttribute("value", "/placeholders/photo/3.svg:cover");
+    unmount();
+    await filled("/placeholders/photo/9.svg");
+    render(await ListingForm({}));
+    expect(screen.queryByRole("button", { name: "Make it the cover" })).toBeNull();
   });
 });

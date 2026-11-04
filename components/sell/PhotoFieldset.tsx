@@ -8,7 +8,9 @@ import {
   SHRINK_QUALITIES,
   SHRINK_QUALITY,
 } from "@/lib/photos/rules";
+import type { ShownPhotoTip } from "@/lib/selling/suggest";
 import { PhotoField, type PhotoButton, type PhotoParts, type PhotoWords, type SavedPhoto } from "./PhotoField";
+import { PhotoTipHint } from "./PhotoTipHint";
 
 type PhotoFieldsetProps = {
   /** The form's id prefix (plan decision 23): "new" or "edit-<id>". */
@@ -20,6 +22,8 @@ type PhotoFieldsetProps = {
   altError: string | undefined;
   /** Photo-to-listing (spec 2.3): the fields the last fill filled in; a photo's description is `alt:<its address>`. */
   suggested?: ReadonlySet<string>;
+  /** A photo tip after a fill (AI round two spec 7), or null. */
+  tip?: ShownPhotoTip | null;
 };
 
 /** What each photo's button posts without JavaScript: `photoMove`, with its value the photo and the move. */
@@ -83,9 +87,10 @@ function photoParts(prefix: string, altError: string | undefined): PhotoParts {
  * its attributes, the buttons' words and attributes, every other part's attributes (photoParts), the status line's
  * words, and how photos are shrunk. The photo field, the one client component, draws only the photos, the file input
  * and the status line, so its code stays small (spec section 5). A photo button pressed without JavaScript comes back
- * to the legend (`${prefix}-photos-title`, amendment 11.4).
+ * to the legend (`${prefix}-photos-title`, amendment 11.4). A photo tip after a fill is drawn here too, under the hint
+ * (AI stage F).
  */
-export function PhotoFieldset({ prefix, photos, error, altError, suggested }: PhotoFieldsetProps) {
+export function PhotoFieldset({ prefix, photos, error, altError, suggested, tip }: PhotoFieldsetProps) {
   const inputId = `${prefix}-photos`;
   // The photos whose description the fill wrote get the same "Suggested" tag as the other fields, inside their label,
   // after a space so it's read as its own word.
@@ -111,6 +116,7 @@ export function PhotoFieldset({ prefix, photos, error, altError, suggested }: Ph
         </p>
       </noscript>
       <FieldError id={errorId} message={error} />
+      {tip && <PhotoTipHint prefix={prefix} tip={tip} />}
       <PhotoField
         prefix={prefix}
         photos={photos}

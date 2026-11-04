@@ -1,7 +1,8 @@
 import type { ReadPhoto } from "./types";
 
 // Fixed replies for the e2e tests and the sample demo (spec decision 13). Photo-to-listing: a textbook with a module
-// code, so the tags, the price hint and the Looking For line can all show. The listing check: see fakeVerdict. The words
+// code, so the tags, the price hint and the Looking For line can all show; with two photos or more, a better cover
+// (FAKE_COVER_TIP). The listing check: see fakeVerdict. The words
 // search: see fakeWords. Snap to search: see FAKE_SEARCH_REPLY.
 // aiProviders never lists it on Supabase.
 
@@ -15,6 +16,14 @@ export const FAKE_REPLY = {
   moduleCode: "FAC1501",
   personIsSubject: false,
   confidence: "high",
+  photoTip: null,
+} as const;
+
+/** Photo tips' fake (AI stage F): with two photos or more, photo 2 is the better cover, so the e2e test can move it. */
+export const FAKE_COVER_TIP = {
+  photo: 2,
+  kind: "better-cover",
+  text: "This one shows the whole cover, so buyers see more.",
 } as const;
 
 /**
@@ -99,6 +108,8 @@ function fakeReply(request: Parameters<ReadPhoto>[0]): unknown {
       return fakeWords(request.text, schemaCampuses(request.schema));
     case "photo-search":
       return FAKE_SEARCH_REPLY;
+    case "photo-to-listing":
+      return request.images.length > 1 ? { ...FAKE_REPLY, photoTip: FAKE_COVER_TIP } : FAKE_REPLY;
     default:
       return FAKE_REPLY;
   }

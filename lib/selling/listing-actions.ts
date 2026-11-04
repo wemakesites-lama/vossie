@@ -49,7 +49,7 @@ import {
   type ListingInput,
 } from "./rules";
 import { checkNeeded, parseConcern, type Concern } from "./listing-check";
-import { mergeSuggestion, type SuggestFailure } from "./suggest";
+import { keepSuggestedTags, mergeSuggestion, photoTipValues, type SuggestFailure } from "./suggest";
 import { readUploads } from "./uploads";
 
 // The listing Server Actions (selling spec 2.9 and 2.10): the listing form's save and photo buttons, My listings'
@@ -143,6 +143,8 @@ const failureNotice = (failure: SuggestFailure) => (failure === "person" ? "sugg
  * An infrastructure error (a database call, a provider that won't load) comes back as "couldn't read", with the form,
  * rather than the action's error page, which would lose what was typed. Nothing inside redirects, so the catch can't
  * swallow one. Only the kind is logged: the error's message may hold data.
+ *
+ * A photo tip, when the reply has one, comes back with the fill (AI round two spec 7).
  */
 async function suggestFromPhotos(
   owner: ShopOwner,
@@ -158,27 +160,33 @@ async function suggestFromPhotos(
     const photo = await photoFor(id, viewer, now);
     if (!photo) return { values, notice: "suggest-failed" };
     // The photos after the cover go too when they load; one that doesn't (or whose read fails) is left out. They're
-    // read before the press is counted, so a failure here never costs one.
+    // read before the press is counted, so a failure here never costs one. Each keeps its address, so a photo tip
+    // names the photo sent in its place (AI stage F planning decision 4).
     const more = await Promise.all(
       order.slice(1, PHOTOS_READ).map(async (src) => {
         const other = photoIdOf(src);
-        return other ? photoFor(other, viewer, now).catch(() => null) : null;
+        const read = other ? await photoFor(other, viewer, now).catch(() => null) : null;
+        return read ? { src, read } : null;
       }),
     );
     if (!isSampleAccount(owner.account) && !(await reservePhotoFill(owner.account.id, now, PHOTO_FILLS_PER_DAY))) {
       return { values, notice: "suggest-limit" };
     }
-    const photos = [photo, ...more.filter((each) => each !== null)].map(({ type, bytes }) => ({ type, bytes }));
+    const sent = [{ src: cover, read: photo }, ...more.filter((each) => each !== null)];
+    const photos = sent.map(({ read: { type, bytes } }) => ({ type, bytes }));
     const reading = await readListingPhotos(photos, await getCategories());
     if (!reading.ok) return { values, notice: failureNotice(reading.failure) };
+    // The photo tip (AI round two spec 7) goes to the form with the fill, never with the listing.
+    const tip = photoTipValues(reading.suggestion.photoTip, sent.map((each) => each.src));
     const merged = mergeSuggestion(values, reading.suggestion, cover);
     // Every field the fill could write already had text: say so, not "We filled in 0 fields". The press still counts.
-    if (merged.suggested.length === 0) return { values, notice: "suggest-nothing" };
+    if (merged.suggested.length === 0) return { values: { ...values, ...tip }, notice: "suggest-nothing" };
     return {
       values: {
         ...merged.values,
         suggested: merged.suggested.join(" "),
         suggestedModule: reading.suggestion.moduleCode ?? "",
+        ...tip,
       },
       notice: "suggested",
     };
@@ -292,7 +300,11 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   if (move) {
     const token = resolveToken(move.token, stored);
     const moved = token ? applyPhotoMove(order, { token, op: move.op }) : order;
-    const state = { errors: photoErrors, values: typedValues(formData, moved, alts, context), notice: null };
+    const values = typedValues(formData, moved, alts, context);
+    // A fill's "Suggested" tags stay through a move (Make it the cover, AI stage F); a photo tip goes with any post.
+    const tags = keepSuggestedTags(field(formData, "suggested"), moved);
+    if (tags) values.suggested = tags;
+    const state = { errors: photoErrors, values, notice: null };
     await writeFormState(form, state, now);
     done(`${formPath}#${listingFieldPrefix(id)}-photos-title`);
   }

@@ -1,6 +1,6 @@
 # AI round two: Shop coach in the Launchpad, "Someone's looking for this", Starter pack and photo tips: design
 
-Date: 2026-11-04 · Status: **Design approved by Lama 2026-11-04 (decision 97), section by section; the written spec is waiting for Lama's review.** Builds on decision 96 (`2026-11-03-ai-features-design.md`), whose section 9 listed these as deferred.
+Date: 2026-11-04 · Status: **Design approved by Lama 2026-11-04 (decision 97), section by section; the written spec is waiting for Lama's review.** Builds on decision 96 (`2026-11-03-ai-features-design.md`), whose section 9 listed these as deferred. Stage F (photo tips) planned 2026-11-04 (`docs/superpowers/plans/2026-11-04-ai-stage-f-photo-tips.md`) and built 2026-11-04, off behind `VOSSIE_LISTING_AI` with photo-to-listing.
 
 ## Related documents
 
@@ -210,3 +210,25 @@ F, G and H can run at the same time, each in its own session and worktree. I1 st
 - No view counts and no saved-search counts, here or anywhere (CLAUDE.md privacy rules).
 - No coaching from mentors' notes or check-in text.
 - Suggested questions for buyers stays deferred.
+
+## 10. While planning and building
+
+### While planning stage F
+
+1. A tip is checked against the photos its provider saw: `checkSuggestion(text, slugs, seen)`; Groq reads only the cover, so the door passes 1 (`COVER_ONLY`). `photo` must be 1 to `seen`, and `better-cover` never names photo 1.
+2. A broken or missing tip loses only the tip, never the suggestion. The schema lists `photoTip` as required, but the check accepts a reply without it (Groq's `json_object` fallback).
+3. The schema has no enum beside a type array and no length or number limits: `photoTip` is `anyOf: [null, object]`, and `text` is clipped to 100 characters at a word, never refused. A unit test walks the schema for an enum beside a type array.
+4. The tip travels to the form by the photo's address, not its number (`photoTipValues`); `shownPhotoTip` shows it only for a photo still on the form, numbered by its place now, and never `better-cover` for the cover.
+5. Nothing is stored beyond the redirect: the tip rides in the fill's form state (10 minutes, this session) and the next post drops it.
+6. The tip shows after a fill that read the photos (`suggested` and `suggest-nothing`), never after a failure, a person, no photo or the daily limit.
+7. Drawn on the server inside the Photos fieldset, under its hint (`PhotoTipHint`); the only CSS is `.photo-tip`. `PhotoField` gets no new code (`/sell/listings/new` sits near the 150 KB budget).
+8. "Make it the cover" is a submit button posting `photoMove=<address>:cover`, the photo field's own move. The move keeps the fill's "Suggested" tags through a hidden `suggested` field, filtered by `keepSuggestedTags` to the form's own keys.
+9. The fake gives photo 2 as the better cover with two photos or more (`FAKE_COVER_TIP`), and no tip with one.
+10. No privacy page change and no Supabase change: nothing new is sent or kept.
+11. Words: "Tip for photo {n}: {text}" and "Make it the cover".
+
+### While building stage F
+
+- Built in a parallel worktree beside stages G and H. The real-key hand test (plan Task 8) and the e2e and database runs are left to the merge on `main`; record the Tip column's counts here then. Open risk: Groq's strict mode may refuse the `anyOf` (plan Task 8 has the fallback, only with Lama's go-ahead).
+- Haiku gets a "Photo n" text block before each image (`lib/data/ai/anthropic.ts`), and the instruction says the photos are labelled that way, so a tip's number names the right photo. The first review found the photos had no labels, and the parent session asked for this fix. The other Haiku features now get one "Photo 1" label before the cover, or none; Groq is unchanged.
+- To watch in the real-key run: the instruction asks for text "saying how to fix it", which doesn't fit `better-cover`.

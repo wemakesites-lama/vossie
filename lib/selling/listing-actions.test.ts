@@ -28,6 +28,7 @@ import {
 } from "./form-state";
 import { changeListingState, deleteListingForm, saveListingForm } from "./listing-actions";
 import { resumeShop } from "./shop-actions";
+import type { PhotoTip } from "./suggest";
 
 const request = vi.hoisted((): FakeRequest => ({ cookies: new Map(), sent: new Map(), proto: "http" }));
 
@@ -697,6 +698,7 @@ describe("filling in from a photo (photo-to-listing spec 2.3, 2.4 and decisions 
     description: FAKE_REPLY.description,
     alt: FAKE_REPLY.alt,
     moduleCode: FAKE_REPLY.moduleCode,
+    photoTip: null as PhotoTip | null,
   };
   const suggestForm = async (overrides: Record<string, string | string[] | File | File[]> = {}) =>
     form({
@@ -833,6 +835,69 @@ describe("filling in from a photo (photo-to-listing spec 2.3, 2.4 and decisions 
     await redirectOf(async () => saveListingForm(await suggestForm()));
     expect(readListingPhotos).not.toHaveBeenCalled();
     expect((await readFormState(listingForm(null)))?.notice ?? null).toBeNull();
+  });
+
+  it("carries a tip to the form by the photo's address, and keeps it when every field was typed (AI stage F)", async () => {
+    await signedInAs("acc-seller");
+    const tip = { photo: 2, kind: "better-cover" as const, text: "This one shows the whole cover." };
+    vi.mocked(readListingPhotos).mockResolvedValue({ ok: true, suggestion: { ...suggestion, photoTip: tip } });
+    const files = [1, 2].map((n) => photoFile(pngBytes(), `photo-${n}.png`));
+    await redirectOf(async () => saveListingForm(await suggestForm({ newPhotos: files })));
+    const state = (await readFormState(listingForm(null)))!;
+    const [first, second] = state.values.photos.split("\n");
+    expect(state.notice).toBe("suggested");
+    expect(state.values).toMatchObject({ tipPhoto: second, tipKind: "better-cover", tipText: tip.text });
+    expect(state.values.tipPhoto).not.toBe(first);
+
+    await signedInAs("acc-seller");
+    const full = {
+      title: "My calculator",
+      category: "tech",
+      condition: "good",
+      description: "Works well.",
+      photo: ["new:0", "new:1"],
+      "alt:new:0": "The calculator from the front",
+      "alt:new:1": "The calculator from the back",
+    };
+    await redirectOf(async () => saveListingForm(await suggestForm({ ...full, newPhotos: files })));
+    const typed = (await readFormState(listingForm(null)))!;
+    expect(typed.notice).toBe("suggest-nothing");
+    expect(typed.values).toMatchObject({ tipKind: "better-cover", tipText: tip.text });
+  });
+
+  it("gives no tip values when the reply has none", async () => {
+    await signedInAs("acc-seller");
+    vi.mocked(readListingPhotos).mockResolvedValue({ ok: true, suggestion });
+    await redirectOf(async () => saveListingForm(await suggestForm()));
+    const state = (await readFormState(listingForm(null)))!;
+    expect(state.values.tipPhoto).toBeUndefined();
+    expect(state.values.tipKind).toBeUndefined();
+  });
+
+  it("Make it the cover: the photo move puts it first, keeps the fill's own tags and drops the tip (AI stage F)", async () => {
+    await signedInAs("acc-seller");
+    vi.mocked(readListingPhotos).mockResolvedValue({
+      ok: true,
+      suggestion: { ...suggestion, photoTip: { photo: 2, kind: "better-cover", text: "This one shows the whole cover." } },
+    });
+    const files = [1, 2].map((n) => photoFile(pngBytes(), `photo-${n}.png`));
+    await redirectOf(async () => saveListingForm(await suggestForm({ newPhotos: files })));
+    const [first, second] = (await readFormState(listingForm(null)))!.values.photos.split("\n");
+
+    await signedInAs("acc-seller");
+    const moved = await suggestForm({
+      newPhotos: [],
+      photo: [first, second],
+      photoMove: `${second}:cover`,
+      suggested: `title category alt:${first} alt:/photos/ph-gone made-up`,
+    });
+    expect(await redirectOf(async () => saveListingForm(moved))).toBe("/sell/listings/new#new-photos-title");
+    const state = (await readFormState(listingForm(null)))!;
+    expect(state.values.photos).toBe(`${second}\n${first}`);
+    expect(state.values.suggested).toBe(`title category alt:${first}`);
+    expect(state.values.tipPhoto).toBeUndefined();
+    expect(state.notice).toBeNull();
+    expect(readListingPhotos).toHaveBeenCalledTimes(1);
   });
 });
 
