@@ -74,6 +74,19 @@ describe("searching with a photo (AI features spec section 5)", () => {
     expect(readSearchPhoto).not.toHaveBeenCalled();
   });
 
+  it("falls back to the plain name when every word together finds nothing", async () => {
+    vi.mocked(readSearchPhoto).mockResolvedValue({ ok: true, answer: { ...ANSWER, words: ["calculator", "12", "digit"] } });
+    await signedInAs("acc-student");
+    expect(await redirectOf(() => searchByPhoto(photoForm(jpeg())))).toBe("/browse?q=calculator&cat=tech");
+  });
+
+  it("keeps every word when they find something together, and a single word as it is", async () => {
+    await signedInAs("acc-student");
+    expect(await redirectOf(() => searchByPhoto(photoForm(jpeg())))).toBe("/browse?q=casio+calculator&cat=tech");
+    vi.mocked(readSearchPhoto).mockResolvedValue({ ok: true, answer: { ...ANSWER, words: ["theodolite"] } });
+    expect(await redirectOf(() => searchByPhoto(photoForm(jpeg())))).toBe("/browse?q=theodolite&cat=tech");
+  });
+
   it("lands on Browse with the model's words, writing no form state (spec 5.3)", async () => {
     await signedInAs("acc-student");
     expect(await redirectOf(() => searchByPhoto(photoForm(jpeg())))).toBe("/browse?q=casio+calculator&cat=tech");

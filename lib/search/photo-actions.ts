@@ -6,7 +6,7 @@ import { writeFormState } from "@/lib/auth/form-state";
 import { isSampleAccount } from "@/lib/auth/sample-accounts";
 import { requireAccount } from "@/lib/auth/session";
 import { browseHref } from "@/lib/browse/href";
-import { getCategories } from "@/lib/data";
+import { getCategories, searchListings } from "@/lib/data";
 import { readSearchPhoto } from "@/lib/data/ai";
 import { reservePhotoSearch } from "@/lib/data/photo-searches";
 import { readUploads } from "@/lib/selling/uploads";
@@ -16,6 +16,7 @@ import {
   PHOTO_SEARCH_FORM,
   PHOTO_SEARCH_PATH,
   PHOTO_SEARCHES_PER_DAY,
+  photoSearchFallback,
   photoSearchQuery,
   type PhotoSearchNotice,
 } from "./photo";
@@ -43,7 +44,14 @@ async function search(formData: FormData, account: Account, now: Date): Promise<
       return { notice: "limit" };
     }
     const reading = await readSearchPhoto(photo, await getCategories());
-    return reading.ok ? { href: browseHref(photoSearchQuery(reading.answer)) } : { notice: noticeFor(reading.failure) };
+    if (!reading.ok) return { notice: noticeFor(reading.failure) };
+    const query = photoSearchQuery(reading.answer);
+    const fallback = photoSearchFallback(reading.answer);
+    if (!fallback) return { href: browseHref(query) };
+    // Browse's own reader decides whether every word finds something (never a copy of its rules); a failed count
+    // keeps every word, as Browse would show them.
+    const found = await searchListings(query).then((result) => result.items.length > 0, () => true);
+    return { href: browseHref(found ? query : fallback) };
   } catch {
     // Only the kind: never the photo or the words.
     console.warn("[vossie] photo-search: search error");

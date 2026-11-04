@@ -131,7 +131,17 @@ export function photoSearchQuery(answer: PhotoSearchAnswer): BrowseQuery {
   };
 }
 
-// --- The notices (spec 5.2, 5.4) --------------------------------------------------------------------------------
+/**
+ * The search to fall back on when every word together finds nothing (Lama, 2026-11-04): the plain name alone, which
+ * the instruction puts first ("calculator" from "calculator 12 digit"), with the same category rule. Browse needs every
+ * word, so one extra word from the model would otherwise empty the results. Null when there's nothing shorter to try.
+ */
+export function photoSearchFallback(answer: PhotoSearchAnswer): BrowseQuery | null {
+  if (answer.words.length < 2) return null;
+  return photoSearchQuery({ ...answer, words: answer.words.slice(0, 1) });
+}
+
+// --- The notices (spec 5.2, 5.4)--------------------------------------------------------------------------------
 
 export type PhotoSearchNotice =
   | "no-photo"
