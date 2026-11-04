@@ -13,6 +13,7 @@ describe("icons", () => {
       "ArrowUpRightIcon",
       "BagIcon",
       "CalendarIcon",
+      "CameraIcon",
       "ChartIcon",
       "CheckIcon",
       "ChevronDownIcon",

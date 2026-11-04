@@ -350,4 +350,5 @@ export async function deleteAccountData(accountId: string): Promise<void> {
   }
   store.codeSends.delete(account.email);
   store.photoFills.delete(account.id);
+  store.photoSearches.delete(account.id);
 }

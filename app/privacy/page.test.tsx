@@ -524,3 +524,48 @@ describe("the listing check's line (AI features spec 7.3)", () => {
     expect(await checkLineWith({ VOSSIE_AI_LISTING_CHECK: "1", VOSSIE_AI_PROVIDERS: "fake" })).toBeNull();
   });
 });
+
+describe("Snap to search's line (AI features spec 5.1 and 7.3)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  /** As photo-to-listing's lineWith: the page's sections are built when its module loads. */
+  async function searchLineWith(env: Record<string, string>) {
+    for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value);
+    vi.resetModules();
+    const { default: Page } = await import("./page");
+    const { unmount } = render(<Page />);
+    const line = screen.queryByText(/When you search with a photo/)?.textContent ?? null;
+    unmount();
+    return line;
+  }
+
+  it("names only the providers the photo could go to, that it isn't stored, and that it leaves South Africa", async () => {
+    const both = await searchLineWith({
+      VOSSIE_AI_PHOTO_SEARCH: "1",
+      VOSSIE_AI_PROVIDERS: "anthropic,groq",
+      ANTHROPIC_API_KEY: "test",
+      GROQ_API_KEY: "test",
+    });
+    expect(both).toContain("your photo is sent to Anthropic, an AI provider in the United States, which deletes it within 30 days");
+    expect(both).toContain("If Anthropic can't answer, it goes to Groq, an AI provider in the United States");
+    expect(both).toContain("never stored on CampusCart");
+    expect(both).toContain("read outside South Africa");
+
+    const groq = await searchLineWith({
+      VOSSIE_AI_PHOTO_SEARCH: "1",
+      VOSSIE_AI_PROVIDERS: "anthropic,groq",
+      ANTHROPIC_API_KEY: "",
+      GROQ_API_KEY: "test",
+    });
+    expect(groq).toContain("your photo is sent to Groq, an AI provider in the United States, which keeps nothing from it");
+    expect(groq).not.toContain("Anthropic");
+  });
+
+  it("isn't there while Snap to search is off, or with only the fake", async () => {
+    expect(await searchLineWith({ VOSSIE_AI_PROVIDERS: "anthropic", ANTHROPIC_API_KEY: "test" })).toBeNull();
+    expect(await searchLineWith({ VOSSIE_AI_PHOTO_SEARCH: "1", VOSSIE_AI_PROVIDERS: "fake" })).toBeNull();
+  });
+});

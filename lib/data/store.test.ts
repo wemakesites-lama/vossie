@@ -20,6 +20,7 @@ describe("the sample store (accounts spec 2.1)", () => {
     expect(store.signInAttempts.size).toBe(0);
     expect(store.codeSends.size).toBe(0);
     expect(store.photoFills.size).toBe(0);
+    expect(store.photoSearches.size).toBe(0);
     expect(store.sampleEmails.size).toBe(0);
     expect(store.formStates.size).toBe(0);
     expect([...store.conversations.keys()]).toEqual(["conv-s1", "conv-s2"]);

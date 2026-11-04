@@ -94,6 +94,8 @@ export default defineConfig({
       ...process.env,
       VOSSIE_LISTING_AI: "1",
       VOSSIE_AI_LISTING_CHECK: "1",
+      // Snap to search on, answered by the fake ("casio calculator" in Tech; AI stage D).
+      VOSSIE_AI_PHOTO_SEARCH: "1",
       VOSSIE_AI_PROVIDERS: "fake",
       VOSSIE_LISTING_AI_PROVIDERS: "fake",
     } as Record<string, string>,

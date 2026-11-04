@@ -226,6 +226,14 @@ Built 2026-11-04 (AI features spec section 3, stage B; plan `docs/superpowers/pl
 - [ ] Decide whether the check needs a daily cap per account, as photo-to-listing has (`reservePhotoFill`): a stopped publish saves nothing, so each press of Save and publish is another Haiku call. The console's monthly spend limit is the only cap now.
 - [ ] The Hub's "Hidden" notice says everyone who reported a listing has been told, even when the only report was the listing check's (which tells no one). Dismiss has its own "Dismissed." notice; hide could get the same.
 
+### Snap to search (after the submission)
+Built 2026-11-04 (AI features spec section 5, stage D; plan `docs/superpowers/plans/2026-11-05-ai-stage-d-photo-search.md`) and off. Haiku first, Groq behind it, with photo-to-listing's keys.
+- [x] On the local stack: `pnpm db:types` (byte-identical to the hand edit), `supabase test db` (2,628 passed, 47 files) and `pnpm test:db` (357 passed), 2026-11-04.
+- [ ] The photo test's photos (spec section 8) tried on Snap to search with the real keys: the words, the category, time taken, and that the person photo says "Couldn't tell". This is the first real check of `photoSearchSchema` against Haiku's structured outputs and Groq's strict mode.
+- [ ] Push `20261105130000_photo_search.sql` to Vossie Market: a dry run first, then Lama's go-ahead.
+- [ ] Set `VOSSIE_AI_PHOTO_SEARCH=1` in Vercel, then redeploy: the switch is read at build (the page, the overlay's link and the privacy line).
+- [ ] After two weeks, read the `[vossie] photo-search:` log lines' counts by provider and kind (`person`, `low-confidence`, `bad-output`), and decide whether 30 searches a day is right.
+
 ## 7. Decisions for Lama and Eduvos
 
 - [ ] **Report the kept-redirect behaviour to Next.js, if necessary** (Lama, 2026-10-20). `tests/e2e/sign-in-return.spec.ts` with `SIGN_IN_SPIKE=1` is the reproduction.

@@ -8,7 +8,7 @@ import type { PhotoType } from "@/lib/types";
 export type ProviderImage = { type: PhotoType; base64: string };
 
 /** What a request is for: the fake answers each, and a failure's log line names it. */
-export type AiTask = "photo-to-listing" | "listing-check";
+export type AiTask = "photo-to-listing" | "listing-check" | "photo-search";
 
 export type ProviderRequest = {
   task: AiTask;

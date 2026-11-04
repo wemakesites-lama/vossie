@@ -27,7 +27,22 @@ export function fakeVerdict(text: string) {
     : { concern: "none", confidence: "high" };
 }
 
+/** Snap to search's fake (AI features spec 5.2): words that find the sample Casio calculator (l-001). */
+export const FAKE_SEARCH_REPLY = {
+  words: ["casio", "calculator"],
+  categorySlug: "tech",
+  moduleCode: null,
+  personIsSubject: false,
+  confidence: "high",
+} as const;
+
+/** The fixed reply for each photo task. Stages C and E add theirs here, one entry per line. */
+const FAKE_BY_TASK = {
+  "photo-to-listing": () => FAKE_REPLY,
+  "photo-search": () => FAKE_SEARCH_REPLY,
+} as const;
+
 export const read: ReadPhoto = async (request) => ({
   ok: true,
-  text: JSON.stringify(request.task === "listing-check" ? fakeVerdict(request.text) : FAKE_REPLY),
+  text: JSON.stringify(request.task === "listing-check" ? fakeVerdict(request.text) : FAKE_BY_TASK[request.task]()),
 });

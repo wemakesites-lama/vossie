@@ -8,9 +8,12 @@ import { PhoneSaved } from "@/components/header/PhoneSaved";
 import { SiteHeader } from "@/components/header/SiteHeader";
 import { MenuAccount, MenuAccountLinks } from "@/components/menu/MenuAccount";
 import { MenuDrawer } from "@/components/menu/MenuDrawer";
+import { PhotoSearchLink } from "@/components/search/PhotoSearchLink";
+import { SearchCategories } from "@/components/search/SearchCategories";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { RoleTabs, StudentTail, TabBar } from "@/components/tabbar/TabBar";
 import { ToastRegion } from "@/components/ui/ToastRegion";
+import { aiFeatureOn } from "@/lib/ai/config";
 import { BOOT_SCRIPT } from "@/lib/boot-script";
 import { getAnnouncements, getCampuses, getCategories, getTrendingSearches } from "@/lib/data";
 import { siteUrl } from "@/lib/site-url";
@@ -96,7 +99,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             </Suspense>
           }
         />
-        <SearchOverlay campuses={campuses} categories={categories} trending={trending} />
+        <SearchOverlay
+          campuses={campuses}
+          categoryLinks={<SearchCategories categories={categories} />}
+          trending={trending}
+          photoLink={aiFeatureOn("photo-search") ? <PhotoSearchLink /> : null}
+        />
         <CampusPicker campuses={campuses} />
         <ToastRegion />
       </body>

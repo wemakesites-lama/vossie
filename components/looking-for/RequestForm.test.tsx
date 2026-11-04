@@ -114,6 +114,16 @@ describe("the request form for this visitor (community actions spec 2.3 and 2.6)
     expect(screen.queryByRole("button", { name: "Save changes" })).toBeNull();
   });
 
+  it("starts a new request with the link's title, and the sign-in bounce keeps it (stage D planning decision 3)", async () => {
+    const searchParams = Promise.resolve({ title: "casio calculator" });
+    await expect(RequestForm({ requestId: null, searchParams })).rejects.toThrow(
+      "sign in, then /looking-for/new?title=casio%20calculator",
+    );
+    viewer.account = { id: "acc-student", campusSlug: "midrand" };
+    render(await RequestForm({ requestId: null, searchParams }));
+    expect(screen.getByLabelText("What you need")).toHaveValue("casio calculator");
+  });
+
   it("sends a signed-out visitor to sign in, coming back to the form", async () => {
     await expect(RequestForm({ requestId: null })).rejects.toThrow("sign in, then /looking-for/new");
     await expect(RequestForm({ requestId: "r-abc" })).rejects.toThrow("sign in, then /looking-for/r-abc/edit");
