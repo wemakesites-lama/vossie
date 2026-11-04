@@ -1,6 +1,6 @@
 # AI round two: Shop coach in the Launchpad, "Someone's looking for this", Starter pack and photo tips: design
 
-Date: 2026-11-04 · Status: **Design approved by Lama 2026-11-04 (decision 97), section by section; the written spec is waiting for Lama's review.** Builds on decision 96 (`2026-11-03-ai-features-design.md`), whose section 9 listed these as deferred.
+Date: 2026-11-04 · Status: **Design approved by Lama 2026-11-04 (decision 97), section by section; the written spec is waiting for Lama's review.** Stage G planned (2026-11-04, `docs/superpowers/plans/2026-11-04-ai-stage-g-looking-match.md`) and built (2026-11-04, not merged). Builds on decision 96 (`2026-11-03-ai-features-design.md`), whose section 9 listed these as deferred.
 
 ## Related documents
 
@@ -210,3 +210,33 @@ F, G and H can run at the same time, each in its own session and worktree. I1 st
 - No view counts and no saved-search counts, here or anywhere (CLAUDE.md privacy rules).
 - No coaching from mentors' notes or check-in text.
 - Suggested questions for buyers stays deferred.
+
+## 10. Planning and building notes
+
+### While planning stage G
+1. The stored search is a `MatchQuery` (browse's `SearchQuery` without its order); its `q` is the model's, its category and campus are the request's own, and it has no price, pay or deals. A `q` with no search words stores no search.
+2. What's read is "{title}. {details}", normalised like the words search and cut at 300 characters at a word; it must pass `looksLikeSentence`, and it is `parseSearchWords`' only input.
+3. The read runs in `saveMyRequest` after the save, in the action (not `after()`), through the cached `parseSearchWords`; `readRequestMatch` never throws, so a request is always posted. No tag, since no cached reader reads `match_query`.
+4. `match_read_at` marks a request as read, with or without a search; a request that couldn't be read is never matched and the backfill never retries it.
+5. An edit (`matchStep`): same words means nothing, or a move of category and campus; changed words read again; with the switch off, changed words clear the search and the read.
+6. Sample requests (no asker) are never read or matched.
+7. The count is of students (distinct askers); links go to up to three requests, one per student, best match first then newest; the seller's own requests and ones the shop already offered on are left out.
+8. The notice carries the count and the ids, not the titles; `MyListings` reads each through `getRequest` and keeps the open ones.
+9. The line sits outside the `role="status"` paragraph, with plain `prefetch={false}` links and a hidden " on {title}" on "Make an offer".
+10. The backfill is `GET /api/cron/request-matches` behind `CRON_SECRET`, by hand, 15 requests a call, calling `reserveWordsSearch` and `readSearchWords` directly so a full cap stops it without marking anything.
+11. Supabase: `match_query` and `match_read_at` are in no grant to `anon` or `authenticated`; the one writer is `save_request_match`, service role only, which never touches `updated_at`.
+12. The data download includes it as `matchedAs`, a label; the privacy page says what is sent to Anthropic.
+13. End-to-end tests go in `community-writes.spec.ts` with axe in the same test; no new layout-shift test, and no new client code.
+14. No word-dropping fallback: matching needs every `q` word, and the hand test measures how often that finds nothing.
+15. Each read takes one of the words search's 2,000 daily parses on a cache miss; the model is never asked to count characters.
+
+### While building stage G
+- Built 2026-11-04 in its own worktree as a parallel stage beside F and H, committed on its branch by the controller, not merged, not pushed.
+- The hand test (plan Task 10) wasn't run: this worktree has no keys. `scripts/looking-match.hand.ts` is written and the parent runs it on main after merging. Its result is still owed, so the switch stays off.
+- The database tests (pgTAP `66_looking_match.test.sql` with plan(31), `request-match.db.test.ts`, the download contract on Supabase), `pnpm db:types` and Playwright weren't run here (shared local stack and port); they run once after F, G and H are merged. `lib/supabase/database.types.ts` is hand-edited.
+- The plan's e2e used `toHaveText` on the status line, which also holds "See it as buyers do"; it is `toContainText`, as selling-writes does.
+- The listing-actions test's request is in Res & living, since `fanForm` publishes there (the plan said Tech).
+- The "Make an offer" link's hidden " on {title}" puts the space outside the sr-only span, so the accessible name reads correctly.
+- `saveRequestMatch`'s "a search needs a read" check runs on both backends. Sample sorts break ties on id, as Supabase orders by created_at then id.
+- The `.wanted-notice` CSS sits in `app/globals.css`'s "Selling: my listings" section beside `.sell-column .form-notice a`, and reuses the notice's link colour (no new tokens).
+- Stage I's matcher API, free of the AI door, from `lib/data/request-match.ts`: `requestMatchCandidates(campusSlug, today)`, `requestsWantingListing({ listingId, sellerSlug, ownerId, now })`, `saveRequestMatch(id, query, read, now)`, `requestMatchOf(askerId, id)`, `unreadRequests(today, limit)`. The pure ones are in `lib/looking-for/match.ts`: `matchRequests`, `wantedFrom`, `wantedLine`, `requestWords`, `requestMatchQuery`, `asMatchQuery`, `matchStep`, `withPlace`.

@@ -4,11 +4,13 @@ import {
   NEW_REQUEST_URL,
   offersPanel,
   postRequest,
+  REQUEST_DETAILS,
   requestIdOf,
   statusLine,
 } from "./helpers/community";
+import { seriousIssues } from "./helpers/axe";
 import { button, field, main, newBuyer, reply, sellerPage, signUp, statusPill } from "./helpers/messaging";
-import { notFoundHeading, POST_LANDS, publishListing, uniqueWord } from "./helpers/selling";
+import { fillListing, notFoundHeading, POST_LANDS, publishListing, uniqueWord } from "./helpers/selling";
 import { signedInPage, staffNotice } from "./helpers/staff";
 
 // These run in the community-writes project, after every other test (community actions plan decision 27): new
@@ -212,6 +214,43 @@ test.describe("community actions that buyers see (community actions spec section
       .getByRole("button", { name: "Confirm the sale" })
       .click();
     await expect(statusPill(page, "Confirmed")).toBeVisible();
+  });
+
+  test("a shop publishes something a student asked for: the Published notice says so and links to the request (AI stage G)", async ({
+    page,
+    browser,
+    baseURL,
+  }) => {
+    test.setTimeout(120_000);
+    await signUp(page, newBuyer());
+    const title = `Zorbitron lamp ${uniqueWord()}`;
+    const id = await postRequest(page, title);
+
+    // The fake keeps almost every word of the request as its q, so the listing says them all: the request's own words.
+    const shop = await sellerPage(browser, baseURL!);
+    await shop.goto("/sell/listings/new");
+    await fillListing(shop, title);
+    await field(shop, "Description").fill(`${title}. ${REQUEST_DETAILS}`);
+    await button(shop, "Save and publish").click();
+    await expect(shop).toHaveURL(/\/sell\/listings$/, POST_LANDS);
+    await expect(statusLine(shop)).toContainText("Published. Buyers can find it now.", POST_LANDS);
+    // The line arrives with the notice, in the same render (planning decision 13).
+    const wanted = main(shop).locator(".wanted-notice");
+    await expect(wanted).toContainText("1 student is looking for something like this.");
+    await expect(wanted.getByRole("link", { name: title, exact: true })).toHaveAttribute("href", `/looking-for/${id}`);
+    const offer = wanted.getByRole("link", { name: `Make an offer on ${title}` });
+    await expect(offer).toHaveAttribute("href", `/looking-for/${id}/offer`);
+    await expect(shop).toHaveTitle(/\S/);
+    expect(await seriousIssues(shop)).toEqual([]);
+    await offer.click();
+    await expect(shop).toHaveURL(new RegExp(`/looking-for/${id}/offer$`));
+    await expect(field(shop, "Your offer")).toBeVisible();
+    await shop.context().close();
+
+    // The asker hears nothing until an offer is made (spec 5).
+    await page.goto("/notifications");
+    await expect(main(page).getByRole("heading", { level: 1 })).toBeVisible();
+    expect(await main(page).getByRole("link", { name: new RegExp(title) }).count()).toBe(0);
   });
 
   test("a reported request is hidden by the Hub: it leaves the board and its page, and the asker is told", async ({

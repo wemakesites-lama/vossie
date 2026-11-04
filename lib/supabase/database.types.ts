@@ -611,13 +611,13 @@ isOneToOne: false
                   ]
                 },"requests": {
                   Row: {
-                    "asker_id": string | null,"budget_zar": number | null,"campus_slug": string,"category_slug": string,"closed_at": string | null,"closed_by": string | null,"closes_on": string | null,"created_at": string,"details": string,"hidden_at": string | null,"hidden_reason": string | null,"id": string,"needed_by": string | null,"reminded_for": string | null,"seed_offers": number,"status": string,"swap_welcome": boolean,"title": string,"updated_at": string
+                    "asker_id": string | null,"budget_zar": number | null,"campus_slug": string,"category_slug": string,"closed_at": string | null,"closed_by": string | null,"closes_on": string | null,"created_at": string,"details": string,"hidden_at": string | null,"hidden_reason": string | null,"id": string,"match_query": Json | null,"match_read_at": string | null,"needed_by": string | null,"reminded_for": string | null,"seed_offers": number,"status": string,"swap_welcome": boolean,"title": string,"updated_at": string
                   }
                   Insert: {
-                    "asker_id"?: string | null,"budget_zar"?: number | null,"campus_slug": string,"category_slug": string,"closed_at"?: string | null,"closed_by"?: string | null,"closes_on"?: never,"created_at"?: string,"details": string,"hidden_at"?: string | null,"hidden_reason"?: string | null,"id"?: string,"needed_by"?: string | null,"reminded_for"?: string | null,"seed_offers"?: number,"status"?: string,"swap_welcome"?: boolean,"title": string,"updated_at"?: string
+                    "asker_id"?: string | null,"budget_zar"?: number | null,"campus_slug": string,"category_slug": string,"closed_at"?: string | null,"closed_by"?: string | null,"closes_on"?: never,"created_at"?: string,"details": string,"hidden_at"?: string | null,"hidden_reason"?: string | null,"id"?: string,"match_query"?: Json | null,"match_read_at"?: string | null,"needed_by"?: string | null,"reminded_for"?: string | null,"seed_offers"?: number,"status"?: string,"swap_welcome"?: boolean,"title": string,"updated_at"?: string
                   }
                   Update: {
-                    "asker_id"?: string | null,"budget_zar"?: number | null,"campus_slug"?: string,"category_slug"?: string,"closed_at"?: string | null,"closed_by"?: string | null,"closes_on"?: never,"created_at"?: string,"details"?: string,"hidden_at"?: string | null,"hidden_reason"?: string | null,"id"?: string,"needed_by"?: string | null,"reminded_for"?: string | null,"seed_offers"?: number,"status"?: string,"swap_welcome"?: boolean,"title"?: string,"updated_at"?: string
+                    "asker_id"?: string | null,"budget_zar"?: number | null,"campus_slug"?: string,"category_slug"?: string,"closed_at"?: string | null,"closed_by"?: string | null,"closes_on"?: never,"created_at"?: string,"details"?: string,"hidden_at"?: string | null,"hidden_reason"?: string | null,"id"?: string,"match_query"?: Json | null,"match_read_at"?: string | null,"needed_by"?: string | null,"reminded_for"?: string | null,"seed_offers"?: number,"status"?: string,"swap_welcome"?: boolean,"title"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -1185,6 +1185,9 @@ isOneToOne: false
                            },
 "save_request":
 { Args: { "p_budget_zar": number,"p_campus_slug": string,"p_category_slug": string,"p_details": string,"p_id": string,"p_needed_by": string,"p_once_token"?: string,"p_swap_welcome": boolean,"p_title": string }; Returns: Json
+                           },
+"save_request_match":
+{ Args: { "p_query": Json,"p_read": boolean,"p_request": string }; Returns: boolean
                            },
 "save_search":
 { Args: { "p_campus_slug": string,"p_category": string,"p_deals": string,"p_pay": string,"p_price": string,"p_q": string,"p_search_key": string }; Returns: string

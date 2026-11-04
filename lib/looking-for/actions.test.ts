@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readFormState } from "@/lib/auth/form-state";
 import type { RequestFields } from "@/lib/looking-for/rules";
 import { startOffer } from "@/lib/data/messages";
@@ -274,6 +274,52 @@ describe("Save changes (spec 2.6, plan decision 6)", () => {
     );
     expect((await getOwnRequest("acc-mentor", theirs.id, STAFF_NOW))?.request.title).toBe("Desk lamp for res");
     expect((await getOwnRequest("acc-student", mine.id, STAFF_NOW))?.request.title).toBe("Desk lamp for res");
+  });
+});
+
+describe("the looking match when a request is posted or edited (AI stage G, planning decisions 3 to 5)", () => {
+  beforeEach(() => {
+    vi.stubEnv("VOSSIE_BACKEND", "");
+    vi.stubEnv("VOSSIE_AI_LOOKING_MATCH", "1");
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "fake");
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+  const idOf = (url: string) => url.split("/").at(-1)!;
+
+  it("reads a posted request into a search at its own campus", async () => {
+    await asStudent();
+    const row = sampleStore().requests.get(idOf((await send({ campus: "pretoria" })).url))!;
+    expect(row.matchQuery).toMatchObject({ category: "res-living", campus: "pretoria" });
+    expect(row.matchQuery?.q).toContain("lamp");
+    expect(row.matchReadAt).toBe(STAFF_NOW.toISOString());
+  });
+
+  it("reads nothing with the switch off", async () => {
+    vi.stubEnv("VOSSIE_AI_LOOKING_MATCH", "");
+    await asStudent();
+    const row = sampleStore().requests.get(idOf((await send()).url))!;
+    expect(row).toMatchObject({ matchQuery: null, matchReadAt: null });
+  });
+
+  it("leaves the read alone on an edit that changes only the budget", async () => {
+    await asStudent();
+    const id = idOf((await send()).url);
+    const read = sampleStore().requests.get(id)!;
+    const before = { query: read.matchQuery, readAt: read.matchReadAt };
+    vi.setSystemTime(new Date(STAFF_NOW.getTime() + 60_000));
+    expect(await redirectOf(() => saveMyRequest(form({ ...FORM, request: id, budget: "R200" })))).toBe(`/looking-for/${id}`);
+    const after = sampleStore().requests.get(id)!;
+    expect(after.budgetZar).toBe(200);
+    expect({ query: after.matchQuery, readAt: after.matchReadAt }).toEqual(before);
+  });
+
+  it("stores nothing for a refused post", async () => {
+    await asStudent();
+    await send({ title: "Lamp" });
+    expect(sampleStore().requests.size).toBe(16);
+    expect([...sampleStore().requests.values()].every((row) => row.matchReadAt === null)).toBe(true);
   });
 });
 

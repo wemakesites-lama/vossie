@@ -251,6 +251,15 @@ Built 2026-11-05 (AI features spec section 6, stage E; plan `docs/superpowers/pl
 - [ ] Know that the cap can run out: a Haiku outage (a failed call still counts) or anyone sending 2,000 different sentences in a day turns the words search off silently until SAST midnight, and Browse searches the words exactly. A dead feature with a full `words_search_parses` row for today is the cap, not a bug.
 - [ ] The parse cache is per server instance (Next's in-memory cache handler), so on Vercel a repeated search can cost a new parse on a cold instance. Fine at launch traffic; a shared cache handler would fix it if the cap is reached.
 
+### Someone's looking for this (AI stage G, after the submission)
+Built 2026-11-04 (AI round two spec section 5, stage G; plan `docs/superpowers/plans/2026-11-04-ai-stage-g-looking-match.md`) and off. Haiku only, with photo-to-listing's Anthropic key. Each post or worded edit takes one of the words search's 2,000 daily parses on a cache miss.
+- [ ] Push `20261106120000_looking_match.sql` to Vossie Market: a dry run first, then Lama's go-ahead.
+- [ ] The hand test (plan Task 10) passed with the workspace key, and its summary is in the spec's section 10.
+- [ ] Set `VOSSIE_AI_LOOKING_MATCH=1` in Vercel, then redeploy: the privacy page's line is drawn at build.
+- [ ] Run the backfill once: `curl -H "Authorization: Bearer $CRON_SECRET" https://vossie-pi.vercel.app/api/cron/request-matches` until it answers `"more":false`. `"capped":true` means the day's parses are used up: carry on after SAST midnight.
+- [ ] Check it on vossie-pi: a student posts a request; another account's shop at that campus publishes a matching listing and sees the line; "Make an offer" opens the composer; the asker has no notification until the offer.
+- [ ] After two weeks, read the `[vossie] looking-match:` and `words-search:` log lines.
+
 ## 7. Decisions for Lama and Eduvos
 
 - [ ] **Report the kept-redirect behaviour to Next.js, if necessary** (Lama, 2026-10-20). `tests/e2e/sign-in-return.spec.ts` with `SIGN_IN_SPIKE=1` is the reproduction.

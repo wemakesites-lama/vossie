@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { RequestFields } from "@/lib/looking-for/rules";
+import { savedSearchLabel } from "@/lib/saved-searches/rules";
 import { getNotifications, notify } from "./notifications";
 import {
   countOpenRequests,
@@ -20,6 +21,7 @@ import {
   showRequest,
   updateRequest,
 } from "./requests";
+import { NAMES } from "./saved-searches";
 import { resetSampleStore, sampleStore } from "./store";
 
 const NOW = new Date("2026-10-14T08:42:00.000Z");
@@ -196,9 +198,19 @@ describe("deleting an account, and its data export (spec 2.23, plan decision 21)
         closedAt: later(1).toISOString(),
         closedAutomatically: false,
         offers: 0,
+        matchedAs: null,
       },
     ]);
     expect(await exportRequests("acc-mentor")).toEqual([]);
+  });
+
+  it("exports the search its words were read into as a label (AI stage G decision 12)", async () => {
+    const { id } = await post("acc-student");
+    const query = { q: "desk lamp", category: "tech", campus: "pretoria", price: null, pay: null, deals: null };
+    sampleStore().requests.get(id)!.matchQuery = query;
+    const [row] = await exportRequests("acc-student");
+    expect(row.matchedAs).toBe(savedSearchLabel(query, NAMES));
+    expect(row.matchedAs).toContain("“desk lamp” in Tech");
   });
 });
 

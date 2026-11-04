@@ -100,6 +100,8 @@ export default defineConfig({
       VOSSIE_AI_WORDS_SEARCH: "1",
       // Snap to search on, answered by the fake ("casio calculator" in Tech; AI stage D).
       VOSSIE_AI_PHOTO_SEARCH: "1",
+      // Someone's looking for this is on too, read by the fake, which keeps a request's words as its q (AI stage G).
+      VOSSIE_AI_LOOKING_MATCH: "1",
       VOSSIE_AI_PROVIDERS: "fake",
       VOSSIE_LISTING_AI_PROVIDERS: "fake",
     } as Record<string, string>,

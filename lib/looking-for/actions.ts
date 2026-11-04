@@ -7,6 +7,7 @@ import { getCampuses, getCategories } from "@/lib/data";
 import { startOffer } from "@/lib/data/messages";
 import { isRefused, type RefusalCode } from "@/lib/data/refused";
 import { countOffersSince } from "@/lib/data/offers";
+import { readRequestMatch } from "@/lib/data/request-reading";
 import {
   countOpenRequests,
   countRequestsSince,
@@ -45,6 +46,7 @@ import {
   REQUESTS_PER_DAY,
   type RequestContext,
   type RequestError,
+  type RequestFields,
   type RequestInput,
 } from "./rules";
 import { offerStatus, offerSubject } from "./subjects";
@@ -134,6 +136,9 @@ function typedValues(input: RequestInput, choices: Choices): Record<string, stri
  * one goes where the first went, even when the first took the account to a limit; one with no token, or a made-up or
  * run-out one, is refused with the form's error and what was typed. The token is taken only when a request is about
  * to be made, so a post that fails its checks keeps it.
+ *
+ * With the looking match on, the request's words are read into the search a first publish is matched against (AI
+ * stage G).
  */
 export async function saveMyRequest(formData: FormData): Promise<void> {
   const editing = idFrom(formData, "request");
@@ -143,12 +148,15 @@ export async function saveMyRequest(formData: FormData): Promise<void> {
   await settle(now);
   // The date an edited request holds already may have passed; only a changed date must be today or later (amendment 19.6).
   let keptNeededBy: string | null = null;
+  let before: RequestFields | null = null;
   if (editing) {
     const own = await getOwnRequest(account.id, editing, now);
     if (!own) redirect(YOUR_REQUESTS_PATH);
     // The edit page says why a closed or hidden request can't be changed.
     if (own.state !== "open") back(path);
     keptNeededBy = own.request.neededBy;
+    const { title, categorySlug, campusSlug, details, budgetZar, swapWelcome, neededBy } = own.request;
+    before = { title, categorySlug, campusSlug, details, budgetZar, swapWelcome, neededBy };
   }
   // A token that has made its request already: go where that post went, before any limit can turn this one away.
   const once = editing ? "" : field(formData, "once");
@@ -199,6 +207,9 @@ export async function saveMyRequest(formData: FormData): Promise<void> {
     throw error;
   }
   if (!saved) redirect(YOUR_REQUESTS_PATH);
+  // "Someone's looking for this" (AI round two spec 5): the request's words read into its stored search, after the
+  // save and before requestsChanged(). It never throws, and no cached reader reads the search, so it has no tag.
+  await readRequestMatch({ id: saved.id, askerId: account.id, before, after: fields, now });
   await clearOwnFormState(form);
   await leaveNote(requestNoteKey(saved.id), editing ? "saved" : "posted", now);
   requestsChanged();

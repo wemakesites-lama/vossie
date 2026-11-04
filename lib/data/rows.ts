@@ -10,6 +10,7 @@ import type {
   ImageRef,
   ListingKind,
   ListingState,
+  MatchQuery,
   NotificationKind,
   PayFilter,
   PayMode,
@@ -505,6 +506,13 @@ export type RequestRow = {
    * the samples.
    */
   remindedFor: string | null;
+  /**
+   * The search its own words were read into ("Someone's looking for this", AI stage G): the model's q with its own
+   * category and campus. Null until read, when it couldn't be read, and on the samples. Never shown to anyone.
+   */
+  matchQuery: MatchQuery | null;
+  /** When it was read, with or without a search (stage G planning decision 4). Null until then, and on the samples. */
+  matchReadAt: string | null;
   /** The fixture's offers number, kept only on the samples, which have no offer threads (spec 2.11). 0 otherwise. */
   seedOffers: number;
   /** When and why the Hub hid it (spec 2.14), as G's hidden listings. Null while it isn't hidden. */

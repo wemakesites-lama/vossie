@@ -100,6 +100,24 @@ function wordsSearchLine() {
 }
 
 /**
+ * The Looking For match's line (AI stage G, planning decision 12): Anthropic only, so it's the one provider named.
+ * Fixed at build, like wordsSearchLine.
+ */
+function lookingMatchLine() {
+  if (!featureProviders("looking-match").includes("anthropic") || !aiFeatureOn("looking-match")) return null;
+  return (
+    <li>
+      When you post a Looking For request, or change its words, its title and details are sent to Anthropic (never Groq),
+      an AI provider in the United States, which deletes them within 30 days and doesn&apos;t use them to train its models,
+      to read what you&apos;re looking for. So what&apos;s sent is read outside South Africa. Only those words go: not your
+      account, your name or your budget. What it reads is kept with your request, so that when a shop at your campus lists
+      something like it, the shop sees your request (never who asked) and can make an offer. It goes when your request
+      does, and it&apos;s in your data download.
+    </li>
+  );
+}
+
+/**
  * Snap to search's line (AI features spec 5.1 and 7.3): the providers a photo could actually go to, in order, as
  * photoFillLine. One photo, the same one to each. Fixed at build, like photoFillLine.
  */
@@ -243,6 +261,7 @@ const SECTIONS: readonly InfoSection[] = [
           {listingCheckLine()}
           {reportReadLine()}
           {wordsSearchLine()}
+          {lookingMatchLine()}
           {photoSearchLine()}
           <li>
             The campus updates form in the footer doesn&apos;t send or store your email address yet. When there is a real
