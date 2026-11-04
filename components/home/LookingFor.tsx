@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { PostRequestLink } from "@/components/looking-for/PostRequestLink";
+import { aiFeatureOn } from "@/lib/ai/config";
 import { LookingForRequests, RequestsSkeleton } from "./LookingForRequests";
 import { SectionHeader } from "./SectionHeader";
 
@@ -13,6 +15,14 @@ export function LookingFor() {
         {/* Inside the intro, so the tab order matches the layout: the button sits under the copy at every size. */}
         {/* Follows the session in its own <Suspense>, with no prefetch: the homepage is prefetched from every page (decision 53). */}
         <PostRequestLink className="btn btn-primary looking-for-action">Post a request</PostRequestLink>
+        {/* Starter pack (AI round two spec section 6). No prefetch: the homepage is prefetched from every page. */}
+        {aiFeatureOn("starter-pack") && (
+          <p className="looking-for-starter">
+            <Link href="/browse/starter" prefetch={false}>
+              New on campus? Get a starter pack
+            </Link>
+          </p>
+        )}
       </div>
       <div className="looking-for-requests">
         <Suspense fallback={<RequestsSkeleton />}>

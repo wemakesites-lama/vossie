@@ -73,6 +73,9 @@ const PAGES: ReadonlyArray<
   ["browse page, a search (signed in)", "/browse?q=calculator", undefined, "Student, Midrand"],
   ["Saved page, Searches tab", "/saved?tab=searches"],
   ["Saved page, Searches tab (signed in)", "/saved?tab=searches", undefined, "Student, Midrand"],
+  // Starter pack (AI stage H plan, Task 8): the empty form and a pack.
+  ["starter pack page", "/browse/starter"],
+  ["starter pack page (a pack)", "/browse/starter?q=Starting%20at%20Midrand%2C%20need%20stuff%20for%20res%20under%20R1000"],
   // Role views N4: the mentor's caseload (Needs you is in staff-checks.spec.ts) and a shop's page.
   ["mentor caseload (all)", "/mentor?view=all", undefined, "Mentor"],
   ["mentor shop page", "/mentor/tech-corner", undefined, "Mentor"],
@@ -162,6 +165,9 @@ const SLOW_PAGES: ReadonlyArray<
   ["browse page, a search", "/browse?q=calculator", "Student, Midrand"],
   ["Saved page's Searches tab (none saved)", "/saved?tab=searches", "Student, Midrand"],
   ["Saved page's Searches tab (signed out)", "/saved?tab=searches"],
+  // Starter pack (AI stage H plan, Task 8): a pack is far taller than the skeleton; the page's min-height keeps the
+  // footer below the first screen.
+  ["starter pack page (a pack)", "/browse/starter?q=Starting%20at%20Midrand%2C%20need%20stuff%20for%20res%20under%20R1000"],
 ];
 
 for (const [name, path, signIn, cookies] of SLOW_PAGES) {

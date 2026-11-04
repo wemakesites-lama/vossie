@@ -59,3 +59,24 @@ describe("BrowseEmpty's Snap to search links (AI features spec section 5, stage 
     expect(link.dataset.prefetch).toBe("false");
   });
 });
+
+describe("BrowseEmpty's starter pack link (AI round two spec section 6, stage H planning decision 12)", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("offers a starter pack only while the feature is on, between the photo search and Looking For, never prefetched", () => {
+    vi.stubEnv("VOSSIE_AI_STARTER_PACK", "1");
+    vi.stubEnv("VOSSIE_AI_PHOTO_SEARCH", "1");
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "fake");
+    const { unmount } = render(<BrowseEmpty query={makeBrowseQuery()} elsewhere={0} />);
+    const link = screen.getByRole("link", { name: "Get a starter pack" });
+    expect(link).toHaveAttribute("href", "/browse/starter");
+    expect(link.dataset.prefetch).toBe("false");
+    const names = screen.getAllByRole("link").map((l) => l.textContent);
+    expect(names.indexOf("Search with a photo")).toBeLessThan(names.indexOf("Get a starter pack"));
+    expect(names.indexOf("Get a starter pack")).toBeLessThan(names.indexOf("Ask for it on Looking For"));
+    unmount();
+    vi.stubEnv("VOSSIE_AI_STARTER_PACK", "");
+    render(<BrowseEmpty query={makeBrowseQuery()} elsewhere={0} />);
+    expect(screen.queryByRole("link", { name: "Get a starter pack" })).not.toBeInTheDocument();
+  });
+});

@@ -251,6 +251,13 @@ Built 2026-11-05 (AI features spec section 6, stage E; plan `docs/superpowers/pl
 - [ ] Know that the cap can run out: a Haiku outage (a failed call still counts) or anyone sending 2,000 different sentences in a day turns the words search off silently until SAST midnight, and Browse searches the words exactly. A dead feature with a full `words_search_parses` row for today is the cap, not a bug.
 - [ ] The parse cache is per server instance (Next's in-memory cache handler), so on Vercel a repeated search can cost a new parse on a cold instance. Fine at launch traffic; a shared cache handler would fix it if the cap is reached.
 
+### Starter pack (AI stage H, after the submission)
+Built 2026-11-04 (AI round two spec section 6; plan `docs/superpowers/plans/2026-11-04-ai-stage-h-starter-pack.md`) and off. Haiku only, with the words search's Anthropic key. No migration: it shares the words search's site-wide cap (2,000 new reads a SAST day, `WORDS_SEARCH_DAILY_CAP`), which stage G's request reading uses too.
+- [ ] The hand check with the real key (plan Task 9) passed, its outcome in the spec's section 10.
+- [ ] Set `VOSSIE_AI_STARTER_PACK=1` in Vercel, then redeploy: the privacy line and the three links in are drawn at build.
+- [ ] Check it on vossie-pi: a sentence naming a campus with listings, its pack and a See more; the links on Browse's empty state, the Looking For board and the home page.
+- [ ] After two weeks, read the `[vossie] starter-pack:` log lines and the cap's daily rows (`private.words_search_parses`): three features now share it.
+
 ## 7. Decisions for Lama and Eduvos
 
 - [ ] **Report the kept-redirect behaviour to Next.js, if necessary** (Lama, 2026-10-20). `tests/e2e/sign-in-return.spec.ts` with `SIGN_IN_SPIKE=1` is the reproduction.

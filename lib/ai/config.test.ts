@@ -79,4 +79,18 @@ describe("Snap to search's settings (AI features spec 5.4, 7.2)", () => {
     expect(aiFeatureOn("photo-search", env)).toBe(true);
     expect(aiFeatureOn("photo-search", { ...env, VOSSIE_AI_PHOTO_SEARCH: undefined })).toBe(false);
   });
+
+  it("turns the starter pack on only with its switch and Haiku or the fake (AI stage H)", () => {
+    const env = { VOSSIE_AI_PROVIDERS: "groq", GROQ_API_KEY: "g", VOSSIE_AI_STARTER_PACK: "1" };
+    expect(featureProviders("starter-pack", env)).toEqual([]);
+    expect(aiFeatureOn("starter-pack", env)).toBe(false);
+    const haiku = { VOSSIE_AI_PROVIDERS: "groq,anthropic", GROQ_API_KEY: "g", ANTHROPIC_API_KEY: "a" };
+    expect(featureProviders("starter-pack", haiku)).toEqual(["anthropic"]);
+    expect(aiFeatureOn("starter-pack", haiku)).toBe(false);
+    expect(aiFeatureOn("starter-pack", { ...haiku, VOSSIE_AI_STARTER_PACK: "1" })).toBe(true);
+    expect(aiFeatureOn("starter-pack", { VOSSIE_AI_PROVIDERS: "fake", VOSSIE_AI_STARTER_PACK: "1" })).toBe(true);
+    expect(
+      aiFeatureOn("starter-pack", { VOSSIE_BACKEND: "supabase", VOSSIE_AI_PROVIDERS: "fake", VOSSIE_AI_STARTER_PACK: "1" }),
+    ).toBe(false);
+  });
 });

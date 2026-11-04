@@ -4108,6 +4108,8 @@
     padding: 26px 20px;
     background: var(--color-sky);
     color: var(--color-on-sky);
+    /* Focus on the sky band is navy in every theme (the default flips to white in Dark, about 2.6:1 on sky). */
+    --focus-ring: var(--color-on-sky);
   }
 
   .looking-for .section-title {
@@ -4128,6 +4130,18 @@
   /* Under the copy, inside the intro. .btn is inline-flex, so it stays at the left edge. */
   .looking-for-action {
     margin-top: 18px;
+  }
+
+  /* "New on campus? Get a starter pack" under Post a request (AI stage H): on-sky words on the sky band, 44px tall. */
+  .looking-for-starter a {
+    display: inline-block;
+    min-block-size: 44px;
+    margin-top: 10px;
+    padding-block: 0.625rem;
+    color: var(--color-on-sky);
+    font-weight: 600;
+    text-decoration: underline 1.5px;
+    text-underline-offset: 4px;
   }
 
   .request-list {
@@ -6414,6 +6428,17 @@
 
   .board-lede {
     max-width: 50ch;
+  }
+
+  /* "Get a starter pack" in the board's line (AI stage H, planning decision 12): sky-dark on white, 44px tall. */
+  .board-starter {
+    display: inline-block;
+    min-block-size: 44px;
+    padding-block: 0.625rem;
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline 1.5px;
+    text-underline-offset: 4px;
   }
 
   /* Post a request, and Your requests once the session says there are some (role views N5). The button sets the row's
@@ -11786,6 +11811,132 @@ html[data-nav-pending] .hdr-pennant-slot .pennant-crest {
     height: 4.5rem;
   }
 
+  /* Starter pack (AI stage H, AI round two spec section 6). A screen tall less the header, like the photo search page,
+     so the footer stays below the first screen while the pack streams in, whatever its length. */
+  .starter-page {
+    --screen-header: 64px;
+    min-height: calc(100vh - var(--screen-header));
+    min-height: calc(100svh - var(--screen-header));
+    padding: 24px 16px 64px;
+  }
+
+  .starter-column {
+    display: grid;
+    gap: 20px;
+    max-width: 40rem;
+  }
+
+  .starter-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .starter-lede {
+    max-width: 60ch;
+    color: var(--color-muted);
+  }
+
+  .starter-form {
+    display: grid;
+    gap: 16px;
+  }
+
+  /* .btn is already 44px tall (spec 5.6); this keeps a wide enough target. */
+  .starter-button {
+    justify-self: start;
+    min-width: 10rem;
+  }
+
+  .starter-pack,
+  .starter-failed {
+    display: grid;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .starter-pack-title {
+    color: var(--color-navy);
+    font-family: var(--vos-font-display);
+    font-size: 1.5rem;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
+  .starter-place,
+  .starter-note {
+    color: var(--color-muted);
+  }
+
+  .starter-lines {
+    display: grid;
+    gap: 24px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .starter-line {
+    display: grid;
+    justify-items: start;
+    gap: 8px;
+  }
+
+  .starter-item {
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  .starter-line .listing-card {
+    width: 100%;
+    max-width: 14rem;
+  }
+
+  .starter-total {
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+
+  /* Sky-dark on white, underlined, 44px tall (Browse's links). */
+  .starter-link {
+    display: inline-block;
+    min-block-size: 44px;
+    padding-block: 0.625rem;
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline 1.5px;
+    text-underline-offset: 4px;
+  }
+
+  /* The skeleton's blocks: the label, the hint, the field and the button, each no taller than the real one, so the
+     whole is shorter than the empty form at 360, 390 and 1440 (the form's shortest state). */
+  .starter-skeleton {
+    display: grid;
+    gap: 6px;
+  }
+
+  .starter-skeleton-label {
+    width: 9rem;
+    height: 1.25rem;
+  }
+
+  .starter-skeleton-hint {
+    height: 1.25rem;
+  }
+
+  .starter-skeleton-field {
+    height: 3rem;
+    border-radius: 10px;
+  }
+
+  .starter-skeleton-button {
+    width: 10rem;
+    height: 2.75rem;
+    margin-top: 10px;
+    border-radius: 999px;
+  }
+
   /* The search overlay's link, under the search box: sky-dark on white, underlined, 44px tall. */
   .search-photo {
     margin-top: 12px;
@@ -11807,14 +11958,16 @@ html[data-nav-pending] .hdr-pennant-slot .pennant-crest {
   }
 
   @media (min-width: 48rem) and (min-height: 30rem) {
-    .photo-search-page {
+    .photo-search-page,
+    .starter-page {
       --screen-header: 78px;
       padding-inline: 40px;
     }
   }
 
   @media (min-width: 64rem) and (min-height: 30rem) {
-    .photo-search-page {
+    .photo-search-page,
+    .starter-page {
       --screen-header: 122px;
     }
   }

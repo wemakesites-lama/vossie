@@ -210,3 +210,37 @@ F, G and H can run at the same time, each in its own session and worktree. I1 st
 - No view counts and no saved-search counts, here or anywhere (CLAUDE.md privacy rules).
 - No coaching from mentors' notes or check-in text.
 - Suggested questions for buyers stays deferred.
+
+## 10. While planning and building
+
+### Stage H: Starter pack
+
+Stage H built (2026-11-04, plan `docs/superpowers/plans/2026-11-04-ai-stage-h-starter-pack.md`), off behind `VOSSIE_AI_STARTER_PACK`.
+
+Planning decisions:
+
+1. **The sentence** is the `q` parameter, at most 200 characters (`STARTER_SENTENCE_MAX`; Browse's 100 is too short for a list). The field shows it as typed (trimmed, spaces collapsed); the cache key and the only thing sent is `normaliseSentence` (also lowercased).
+2. **No sentence gate.** Unlike Browse, the page is an explicit "Make my pack" press, so any non-empty sentence is read. The shared cap is the brake.
+3. **The reply check** (`checkStarter`) refuses only a reply of the wrong shape (not JSON, missing or extra fields, wrong types). Text is clipped, never refused: a name to 40 characters at a word, words cleaned as Snap to search cleans them and kept to 4, the first 8 items kept, duplicates (same words and category) dropped, an item with no usable words dropped. An unknown category slug becomes null on that item and an unknown campus becomes null (structured outputs shouldn't send either; the fake and a schema slip might). A budget of 0 or less is no budget. No items left is a failure. The schema has no `maxItems` (structured outputs refuses it, `lib/search/photo.ts`) and its enum fields have no `type` (Anthropic rejects an enum beside `type: ["string", "null"]`, `lib/browse/words.ts`).
+4. **The fallback search** is the item's name alone, cleaned the same way, with the same category and campus (spec: "as Snap to search does"). It runs only when the words found nothing and the name's words differ from them.
+5. **Picks:** only listings with a price (`priceZar !== null`); swap-only listings are never picked. A "From" price counts at its from amount (as Browse's price filters do), and the pack says "Prices marked From can cost more." when a pick has one. A listing is picked at most once. `searchListings` is asked for cheapest first (`sort: "price-low"`), so the first unpicked priced match is the cheapest; it's picked when it fits what's left of the budget. With no pick, the line says why: over what's left of the budget, only swaps, or its only match is already in the pack. Every line with matches has "See more".
+6. **"See more"** is Browse with the words that were searched (the item's or its name's), its category, the pack's campus (`campusFromLink: true`), cheapest first and `exact=1`, so Browse never reads those words again (stage E decision 3).
+7. **"Ask for it on Looking For"** is `/looking-for/new?title=<the item's name>`, as Browse's empty state does with search words (stage D decision 3).
+8. **The campus:** the one the sentence names, else the viewer's campus cookie (`getViewerContext().campus`, which may be every campus). The campus is never sent to the model.
+9. **Failure** (no read, a full cap, a reply with no usable items, or any item's search throwing) shows one message, keeps the form with the sentence, and offers Browse with the sentence as an ordinary search: `/browse?q=<sentence cut to 100>` with no `exact`, so it behaves exactly as if typed into Browse's search box (Browse's own words search may read it).
+10. **Switch off: a static page with no form** ("Starter packs aren't on right now." and a link to Shop), and no link anywhere points to it. A deviation from the spec's "offers Browse with the sentence" for the off case only: reading the sentence would need `searchParams` and a Suspense boundary whose shortest state (one line) is shorter than the form's skeleton. Only an old link can reach it with a sentence.
+11. **The total** shows only when the pack has a pick: "Total R430 of your R1,000 budget, R570 left", or "Total R1,630" with no budget.
+12. **Links in**, each `prefetch={false}` and shown only while `aiFeatureOn("starter-pack")`: Browse's empty state (under "Search with a photo"), the Looking For board (a second sentence in its line), and the home page's Looking For band (under Post a request). All three are static, so they shift nothing.
+13. **Metadata:** "Get a starter pack"; a page with a sentence is `noindex` (`generateMetadata` reads `searchParams`, allowed because the page's content is request-time inside `<Suspense>`). Not in the sitemap.
+14. **The e2e test is a device spec** (`tests/e2e/starter-pack.spec.ts`), not a write project: it reads only, and the cap's count lives in server memory, which no buyer sees (as `words-search.spec.ts`).
+15. **The fake** (`fakeStarter`) reads a campus from the schema's list and a budget ("R1000", "1000 rand") from the sentence, and always answers four fixed items chosen against the fixtures: one that matches (the Casio calculator, R250), one found only by its name (a lamp, R180), one over a R1,000 budget once those two are picked (the bar fridge, R1,200), and one with no match at Midrand (a kettle). A sentence with "[no pack]" in it gets a reply that isn't JSON, so the e2e test sees the failure.
+
+While building:
+
+- `checkStarter`: a name with no letters or digits ("!!") falls back to the searched words, capitalised, so a line's heading, its Looking For title and the name search never use punctuation alone. A budget must be a safe integer (`1e20` refuses the reply, as a budget of the wrong type does).
+- `pickPack`: when an item's priced matches are all already in the pack and only swaps are left, the line says "Its only match is already in your pack." ("taken"), not "Only swaps so far."; "swaps" is only for an item none of whose matches has a price.
+- The home band's link has a 10px top margin, not `.looking-for-action`'s 18px, which read too loose under the button. `.looking-for` sets `--focus-ring: var(--color-on-sky)` so focus on the band is navy in every theme (white on sky was about 2.6:1 in Dark).
+- The off page's `generateMetadata` checks the switch before it reads `searchParams`, so with the switch off the page never reads the request.
+- A picked line's card title is an h4 under the item's h3 (`ListingCard` takes `titleTag`), so heading navigation reads each item once with its listing under it.
+- The failure link's words are the sentence cut to Browse's 100 characters, the same words its link searches.
+- The real-key hand check (`scripts/starter-pack.hand.ts`, plan Task 9) was not run while building: the stage's worktree had no keys. It runs on `main` after the merge, before the switch goes on anywhere; its outcome goes here.

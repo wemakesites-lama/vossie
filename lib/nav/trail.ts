@@ -38,6 +38,8 @@ export const PARENTS: Readonly<Record<string, string>> = {
 
   // Snap to search (AI features spec section 5): under Shop, like a search.
   "/browse/photo": "/browse",
+  // Starter pack (AI round two spec section 6): under Shop, like a search.
+  "/browse/starter": "/browse",
 
   "/listings/[id]": "/browse",
   "/listings/[id]/message": "/listings/[id]",
@@ -122,6 +124,7 @@ export const LABELS: Readonly<Record<string, string>> = {
   "/report": "Report",
   "/report/sent": "Report sent",
   "/browse/photo": "Search with a photo",
+  "/browse/starter": "Get a starter pack",
   "/listings/[id]/message": "Message the seller",
   "/sellers/[slug]/message": "Message the shop",
   "/hub/[id]/book": "Request a slot",

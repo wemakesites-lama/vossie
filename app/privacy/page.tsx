@@ -130,6 +130,23 @@ function photoSearchLine() {
   );
 }
 
+/**
+ * Starter pack's line (AI round two spec section 6): Haiku only, so Anthropic is the one provider named. Fixed at
+ * build, like photoFillLine.
+ */
+function starterPackLine() {
+  if (!featureProviders("starter-pack").includes("anthropic") || !aiFeatureOn("starter-pack")) return null;
+  return (
+    <li>
+      When you ask for a starter pack, your sentence is sent to Anthropic (never Groq), an AI provider in the United
+      States, which deletes it within 30 days and doesn&apos;t use it to train its models, to read the campus, budget and
+      things you named. So what&apos;s sent is read outside South Africa. Only the sentence goes: not your account or your
+      campus (your campus choice is used on our server to find listings). The sentence and what was read from it are kept
+      on our server for a week, so the same sentence is quicker next time.
+    </li>
+  );
+}
+
 const SECTIONS: readonly InfoSection[] = [
   {
     id: "privacy-who",
@@ -244,6 +261,7 @@ const SECTIONS: readonly InfoSection[] = [
           {reportReadLine()}
           {wordsSearchLine()}
           {photoSearchLine()}
+          {starterPackLine()}
           <li>
             The campus updates form in the footer doesn&apos;t send or store your email address yet. When there is a real
             mailing list, it will ask for your consent first, and this policy will say so.

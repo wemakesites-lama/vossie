@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { PageTransition } from "@/components/kit/PageTransition";
 import { Reveal } from "@/components/kit/Reveal";
@@ -7,6 +8,7 @@ import { PostRequestLink } from "@/components/looking-for/PostRequestLink";
 import { RequestBoard } from "@/components/looking-for/RequestBoard";
 import { YourRequestsLink } from "@/components/looking-for/YourRequestsLink";
 import { Trail } from "@/components/ui/Trail";
+import { aiFeatureOn } from "@/lib/ai/config";
 import { trailFor } from "@/lib/nav/trail";
 
 /** Fixed: `?cat=` views share the board's title and description, and stay indexed (plan decision 14). */
@@ -28,7 +30,19 @@ export default function LookingForPage({ searchParams }: PageProps<"/looking-for
         <Trail crumbs={trailFor("/looking-for")} />
         <div className="board-head">
           <h1 className="board-title">Looking For</h1>
-          <p className="board-lede">Post what you need, and students who can help will offer.</p>
+          <p className="board-lede">
+            Post what you need, and students who can help will offer.
+            {/* Starter pack (AI round two spec section 6). Inside the line, so the head's grid stays as it is. */}
+            {aiFeatureOn("starter-pack") && (
+              <>
+                {" "}
+                Need a few things at once?{" "}
+                <Link href="/browse/starter" prefetch={false} className="board-starter">
+                  Get a starter pack
+                </Link>
+              </>
+            )}
+          </p>
           <div className="board-actions">
             <PostRequestLink className="btn btn-primary board-post">Post a request</PostRequestLink>
             <Suspense fallback={null}>

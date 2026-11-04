@@ -20,6 +20,9 @@ import { readReport, reportReadRequest, type ReportForRead } from "./ai";
 import { FAKE_REPLY, FAKE_SEARCH_REPLY, fakeWords } from "./ai/fake";
 // Stage D: Snap to search.
 import { photoSearchSchema } from "@/lib/search/photo";
+// Stage H: Starter pack.
+import { readStarterPack, STARTER_TIMEOUT_MS, starterRequest } from "./ai";
+import { starterSchema } from "@/lib/browse/starter";
 
 const CATEGORIES = [
   { slug: "textbooks-notes", name: "Textbooks & notes" },
@@ -319,6 +322,79 @@ describe("the words search through the door (AI features spec 6 and 7.1)", () =>
     });
     expect(fakeWords("Search: cheap kettle", campuses)).toMatchObject({ q: "kettle", campus: null, sort: "price-low" });
     expect(fakeWords("Search: desk 300 rand", campuses)).toMatchObject({ q: "desk", maxPrice: 300 });
+  });
+});
+
+// Stage H: Starter pack.
+describe("readStarterPack (AI stage H)", () => {
+  const MIDRAND = [{ slug: "midrand", name: "Midrand" }];
+  const WITH_RES = [
+    { slug: "tech", name: "Tech" },
+    { slug: "res-living", name: "Res living" },
+  ];
+  const SENTENCE = "starting at midrand, need stuff for res under r1000";
+  const reply = JSON.stringify({
+    campus: "midrand",
+    budget: 1000,
+    items: [{ name: "Lamp", words: "desk lamp", categorySlug: "res-living" }],
+  });
+
+  it("sends the sentence only, with no photos, under the starter schema and a 5-second wait", () => {
+    const request = starterRequest("need a lamp", CATEGORIES, MIDRAND);
+    expect(request.task).toBe("starter-pack");
+    expect(request.images).toEqual([]);
+    expect(request.text).toBe("Sentence: need a lamp");
+    expect(request.quick).toEqual({ timeoutMs: 5_000 });
+    expect(STARTER_TIMEOUT_MS).toBe(5_000);
+    expect(request.schema).toEqual(starterSchema(["textbooks-notes", "tech"], ["midrand"]));
+  });
+
+  it("uses the fake in sample mode: the sentence's campus and budget, four fixed items", async () => {
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "fake");
+    const read = await readStarterPack(SENTENCE, WITH_RES, MIDRAND);
+    expect(read).toMatchObject({ campus: "midrand", budget: 1000 });
+    expect(read?.items).toHaveLength(4);
+    expect(read?.items[0]).toEqual({ name: "Calculator", words: "casio calculator", category: "tech" });
+  });
+
+  it("the fake gives a bad reply for [no pack], logged by kind", async () => {
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "fake");
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(await readStarterPack(`${SENTENCE} [no pack]`, WITH_RES, MIDRAND)).toBeNull();
+    expect(console.warn).toHaveBeenCalledWith("[vossie] starter-pack: fake bad-output");
+  });
+
+  it("asks Haiku only, never Groq", async () => {
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "groq");
+    vi.stubEnv("GROQ_API_KEY", "k");
+    expect(await readStarterPack(SENTENCE, WITH_RES, MIDRAND)).toBeNull();
+    expect(groq).not.toHaveBeenCalled();
+    expect(haiku).not.toHaveBeenCalled();
+  });
+
+  it("moves on after a timeout, stops at a refusal or a throw, and never logs the sentence", async () => {
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "anthropic,fake");
+    vi.stubEnv("ANTHROPIC_API_KEY", "k");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    haiku.mockResolvedValueOnce({ ok: false, failure: "timeout" });
+    expect(await readStarterPack(SENTENCE, WITH_RES, MIDRAND)).toMatchObject({ campus: "midrand", budget: 1000 });
+    haiku.mockResolvedValueOnce({ ok: false, failure: "refusal" });
+    expect(await readStarterPack(SENTENCE, WITH_RES, MIDRAND)).toBeNull();
+    haiku.mockRejectedValueOnce(new Error(SENTENCE));
+    expect(await readStarterPack(SENTENCE, WITH_RES, MIDRAND)).toBeNull();
+    haiku.mockResolvedValueOnce({ ok: true, text: reply });
+    expect(await readStarterPack(SENTENCE, WITH_RES, MIDRAND)).toEqual({
+      campus: "midrand",
+      budget: 1000,
+      items: [{ name: "Lamp", words: "desk lamp", category: "res-living" }],
+    });
+    const lines = warn.mock.calls.map((call) => call.map(String).join(" "));
+    expect(lines).toEqual([
+      "[vossie] starter-pack: anthropic timeout",
+      "[vossie] starter-pack: anthropic refusal",
+      "[vossie] starter-pack: anthropic api-error",
+    ]);
+    for (const line of lines) expect(line).not.toContain("res under");
   });
 });
 

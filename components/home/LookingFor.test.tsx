@@ -9,6 +9,8 @@ vi.mock("@/components/looking-for/ViewerPostRequestLink", async () =>
   (await import("@/tests/helpers/viewer-post-request")).viewerPostRequestLink(() => viewer.signedIn),
 );
 
+vi.mock("next/link", async () => (await import("@/tests/helpers/next-link")).nextLinkShowingPrefetch);
+
 // The requests read the cookie on the server; LookingForRequests.test.tsx covers them.
 vi.mock("./LookingForRequests", () => ({
   LookingForRequests: () => <ul aria-label="Open requests" />,
@@ -17,6 +19,7 @@ vi.mock("./LookingForRequests", () => ({
 
 afterEach(() => {
   viewer.signedIn = false;
+  vi.unstubAllEnvs();
 });
 
 describe("LookingFor (spec 7.11)", () => {
@@ -37,5 +40,20 @@ describe("LookingFor (spec 7.11)", () => {
     viewer.signedIn = true;
     render(<LookingFor />);
     expect(screen.getByRole("link", { name: "Post a request" })).toHaveAttribute("href", "/looking-for/new");
+  });
+});
+
+describe("LookingFor's starter pack link (AI round two spec section 6, stage H planning decision 12)", () => {
+  it("offers a starter pack only while the feature is on, never prefetched", () => {
+    vi.stubEnv("VOSSIE_AI_STARTER_PACK", "1");
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "fake");
+    const { unmount } = render(<LookingFor />);
+    const link = screen.getByRole("link", { name: "New on campus? Get a starter pack" });
+    expect(link).toHaveAttribute("href", "/browse/starter");
+    expect(link.dataset.prefetch).toBe("false");
+    unmount();
+    vi.stubEnv("VOSSIE_AI_STARTER_PACK", "");
+    render(<LookingFor />);
+    expect(screen.queryByRole("link", { name: /starter pack/ })).not.toBeInTheDocument();
   });
 });

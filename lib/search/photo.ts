@@ -73,7 +73,7 @@ export function photoSearchSchema(categorySlugs: readonly string[]) {
 }
 
 /** A word as Browse searches it: lower case, letters, digits and inner hyphens only. */
-function cleanWord(raw: string): string {
+export function cleanWord(raw: string): string {
   return raw
     .normalize("NFKC")
     .toLowerCase()

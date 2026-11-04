@@ -30,11 +30,13 @@ import {
   type PhotoSearchAnswer,
   type PhotoSearchFailure,
 } from "@/lib/search/photo";
+// Stage H: Starter pack.
+import { checkStarter, starterInstruction, starterSchema, type StarterRead } from "@/lib/browse/starter";
 
 // The only door to the AI providers (AI features spec 7.1; photo-to-listing spec decisions 9 to 11). Each provider file
 // is loaded only when it's tried, so an SDK is never in a page's code. Failures are logged by provider and kind only:
 // never a photo or text. Each feature has its reader here (photo-to-listing's `readListingPhotos`, the listing check's
-// `checkListingGuidelines`, the words search's `readSearchWords`).
+// `checkListingGuidelines`, the words search's `readSearchWords`, the starter pack's `readStarterPack`).
 
 const LOAD: Readonly<Record<ProviderName, () => Promise<{ read: ReadPhoto }>>> = {
   anthropic: () => import("./ai/anthropic"),
@@ -244,6 +246,62 @@ export async function readSearchWords(
       return parsed;
     } catch {
       logFailure("words-search", name, "api-error");
+      return null;
+    }
+  }
+  return null;
+}
+
+// --- Stage H: Starter pack (AI round two spec section 6) ---------------------------------------------------------
+
+/** The starter pack's wait (spec 6): the page offers Browse after this. */
+export const STARTER_TIMEOUT_MS = 5_000;
+
+/** What the starter pack asks (spec 6): the normalised sentence only. Never an account, a campus cookie or a filter. */
+export function starterRequest(
+  sentence: string,
+  categories: readonly CategoryChoice[],
+  campuses: readonly Named[],
+): ProviderRequest {
+  return {
+    task: "starter-pack",
+    system: starterInstruction(categories, campuses),
+    images: [],
+    text: `Sentence: ${sentence}`,
+    schema: starterSchema(
+      categories.map((category) => category.slug),
+      campuses.map((campus) => campus.slug),
+    ),
+    // The page waits on this inside its <Suspense>: give up after 5 seconds and offer Browse.
+    quick: { timeoutMs: STARTER_TIMEOUT_MS },
+  };
+}
+
+/**
+ * The starter pack's read (spec 6): the campus, budget and items a sentence names, or null. Haiku only (the fake in
+ * sample mode). No provider, a failure, a bad reply or anything thrown is null; only the kind is logged, never the
+ * sentence.
+ */
+export async function readStarterPack(
+  sentence: string,
+  categories: readonly CategoryChoice[],
+  campuses: readonly Named[],
+): Promise<StarterRead | null> {
+  const request = starterRequest(sentence, categories, campuses);
+  const slugs = { categories: categories.map((c) => c.slug), campuses: campuses.map((c) => c.slug) };
+  for (const name of featureProviders("starter-pack")) {
+    try {
+      const reply = await (await LOAD[name]()).read(request);
+      if (!reply.ok) {
+        logFailure("starter-pack", name, reply.failure);
+        if (MOVE_ON.has(reply.failure)) continue;
+        return null;
+      }
+      const read = checkStarter(reply.text, slugs);
+      if (!read) logFailure("starter-pack", name, "bad-output");
+      return read;
+    } catch {
+      logFailure("starter-pack", name, "api-error");
       return null;
     }
   }
