@@ -21,6 +21,8 @@ export const sampleRequestRows: readonly RequestRow[] = requests.map((request) =
   closedAt: null,
   closedBy: null,
   remindedFor: null,
+  matchQuery: null,
+  matchReadAt: null,
   seedOffers: request.offers,
   hiddenAt: null,
   hiddenReason: null,

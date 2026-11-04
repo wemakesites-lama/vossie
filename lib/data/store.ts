@@ -114,8 +114,9 @@ export type SampleStore = {
  * 14: a Looking For request remembers the closing day its reminder was sent for (`remindedFor`, stage M spec decision 15).
  * 16: the words search's daily count (`wordsSearchParses`, AI stage E plan decision 5).
  * 17: Snap to search's daily count (`photoSearches`, AI features spec 5.4, stage D).
+ * 18: a Looking For request keeps the search its words were read into (`matchQuery`, `matchReadAt`, AI stage G).
  */
-export const STORE_VERSION = 17;
+export const STORE_VERSION = 18;
 
 type StoreHolder = { __vossieSampleStore?: SampleStore };
 

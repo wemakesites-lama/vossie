@@ -47,6 +47,7 @@ vi.mock("@/lib/data/requests", () => ({
   setRequestOpen: mocks.setRequestOpen,
   deleteRequest: vi.fn(),
 }));
+vi.mock("@/lib/data/request-reading", () => ({ readRequestMatch: vi.fn(async () => {}) }));
 vi.mock("@/lib/staff/once", async (original) => ({
   ...(await original<typeof import("@/lib/staff/once")>()),
   takeOnceToken: mocks.takeOnceToken,

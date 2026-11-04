@@ -3,6 +3,9 @@ import { SESSION_COOKIE } from "@/lib/auth/cookies";
 import { readFormState } from "@/lib/auth/form-state";
 import { hashToken } from "@/lib/auth/secrets";
 import { addFollow } from "@/lib/data/follows";
+import * as requestMatch from "@/lib/data/request-match";
+import { saveRequestMatch } from "@/lib/data/request-match";
+import { createRequest } from "@/lib/data/requests";
 import { checkListingGuidelines, readListingPhotos } from "@/lib/data/ai";
 import { FAKE_REPLY } from "@/lib/data/ai/fake";
 import { getNotifications } from "@/lib/data/notifications";
@@ -676,6 +679,89 @@ describe("saved-search alerts (search alerts spec 2.9 and 2.10, plan decision 13
     await redirectOf(async () => saveListingForm(await fanForm()));
     expect(await matches("acc-seller")).toEqual([]);
     expect(await matches()).toEqual([]);
+  });
+});
+
+describe("someone's looking for this (AI round two spec 5, stage G)", () => {
+  const FAN_QUERY: MatchQuery = { q: "fan", category: "res-living", campus: "midrand", price: null, pay: null, deals: null };
+  /** An open request of `askerId`'s in the store, with a stored search. */
+  async function wantedBy(askerId: string, query: MatchQuery = FAN_QUERY) {
+    const { id } = await createRequest({
+      askerId,
+      fields: {
+        title: "A desk fan for res",
+        categorySlug: query.category ?? "res-living",
+        campusSlug: query.campus,
+        details: "A small desk fan for my room, please.",
+        budgetZar: null,
+        swapWelcome: false,
+        neededBy: null,
+      },
+      now: NOW,
+    });
+    await saveRequestMatch(id, query, true, NOW);
+    return id;
+  }
+
+  beforeEach(() => {
+    vi.stubEnv("VOSSIE_AI_LOOKING_MATCH", "1");
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "fake");
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("adds the students looking, and up to three of their requests, to the Published notice", async () => {
+    const id = await wantedBy("acc-student");
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm()));
+    expect(await readFormState(MY_LISTINGS_FORM)).toMatchObject({
+      notice: "published",
+      values: { wanted: "1", wantedIds: id },
+    });
+  });
+
+  it("leaves out the seller's own request and says nothing without a match", async () => {
+    await wantedBy("acc-seller");
+    await wantedBy("acc-student", { ...FAN_QUERY, q: "kettle" });
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm()));
+    const state = await readFormState(MY_LISTINGS_FORM);
+    expect(state?.values.wanted).toBeUndefined();
+  });
+
+  it("says nothing on an edit, on a draft, or with the switch off", async () => {
+    await wantedBy("acc-student");
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm({ intent: "draft" })));
+    expect((await readFormState(MY_LISTINGS_FORM))?.values.wanted).toBeUndefined();
+    const row = (await fan())!;
+    vi.stubEnv("VOSSIE_AI_LOOKING_MATCH", "");
+    await redirectOf(async () => saveListingForm(await fanForm({ listing: row.id })));
+    expect((await readFormState(MY_LISTINGS_FORM))?.values.wanted).toBeUndefined();
+  });
+
+  it("says nothing when a published listing is saved again", async () => {
+    await wantedBy("acc-student");
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm()));
+    const row = (await fan())!;
+    expect((await readFormState(MY_LISTINGS_FORM))?.values.wanted).toBe("1");
+    await redirectOf(async () => saveListingForm(await fanForm({ listing: row.id, title: "Desk fan, quiet" })));
+    const state = await readFormState(MY_LISTINGS_FORM);
+    expect(state?.notice).toBe("saved");
+    expect(state?.values.wanted).toBeUndefined();
+  });
+
+  it("publishes anyway when matching fails", async () => {
+    await wantedBy("acc-student");
+    const spy = vi.spyOn(requestMatch, "requestsWantingListing").mockRejectedValueOnce(new Error("db down"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await signedInAs("acc-seller");
+    await redirectOf(async () => saveListingForm(await fanForm()));
+    expect((await readFormState(MY_LISTINGS_FORM))?.notice).toBe("published");
+    expect(spy).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith("[vossie] looking-match: match error");
+    spy.mockRestore();
+    warn.mockRestore();
   });
 });
 

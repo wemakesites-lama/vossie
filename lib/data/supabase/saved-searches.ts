@@ -122,7 +122,7 @@ export const deleteSavedSearch: typeof Sample.deleteSavedSearch = async (account
 };
 
 /** The listing as buyers see it now, read through the cookieless client, never a cache the save has just expired. */
-async function listedListing(listingId: string) {
+export async function listedListing(listingId: string) {
   const listing = await forPublic().from("listings").select(LISTING_COLUMNS).eq("id", listingId).maybeSingle();
   if (listing.error) failed("listings", listing.error);
   if (!listing.data) return null;

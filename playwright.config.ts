@@ -102,6 +102,8 @@ export default defineConfig({
       VOSSIE_AI_PHOTO_SEARCH: "1",
       // Starter pack on, answered by the fake: four fixed items, a campus and a budget from the sentence (AI stage H).
       VOSSIE_AI_STARTER_PACK: "1",
+      // Someone's looking for this is on too, read by the fake, which keeps a request's words as its q (AI stage G).
+      VOSSIE_AI_LOOKING_MATCH: "1",
       VOSSIE_AI_PROVIDERS: "fake",
       VOSSIE_LISTING_AI_PROVIDERS: "fake",
     } as Record<string, string>,

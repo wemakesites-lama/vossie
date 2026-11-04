@@ -129,6 +129,8 @@ export function sampleWorld(): World {
         closedAt: null,
         closedBy: null,
         remindedFor: null,
+        matchQuery: null,
+        matchReadAt: null,
         seedOffers: 0,
         hiddenAt: null,
         hiddenReason: null,

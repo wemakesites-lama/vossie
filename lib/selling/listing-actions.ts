@@ -16,8 +16,10 @@ import {
 import { reservePhotoFill } from "@/lib/data/photo-fills";
 import { fileListingCheckReport } from "@/lib/data/reports";
 import { photoFor, photoIdOf, photoSrcsOf, storePhotos, type Upload } from "@/lib/data/photos";
+import { requestsWantingListing } from "@/lib/data/request-match";
 import { notifySavedSearches } from "@/lib/data/saved-searches";
 import { listingsChanged } from "@/lib/data/tags";
+import type { Wanted } from "@/lib/looking-for/match";
 import { isId, threadPath } from "@/lib/messaging/paths";
 import { characterCount, keepTyped } from "@/lib/messaging/rules";
 import { PHOTOS_PER_LISTING } from "@/lib/photos/rules";
@@ -49,6 +51,7 @@ import {
   type ListingInput,
 } from "./rules";
 import { checkNeeded, parseConcern, type Concern } from "./listing-check";
+import { wantedValues } from "./wanted";
 import { keepSuggestedTags, mergeSuggestion, photoTipValues, type SuggestFailure } from "./suggest";
 import { readUploads } from "./uploads";
 
@@ -378,7 +381,8 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   // A first publish (a new listing, or a draft published for the first time) by an open shop tells its followers and
   // the matching saved searches, once a day (community actions plan decision 15 and amendment 1; search alerts plan
   // decision 13). Edits, relists, a shop resuming, and a listing published again after a save back to draft don't.
-  // `existing` is the row as it was before this save.
+  // `existing` is the row as it was before this save. The looking match (AI round two spec 5) is read here too.
+  let wanted: Wanted | null = null;
   if (isFirstPublish(existing, saved.state) && owner.status === "approved" && !saved.hiddenAt) {
     await notifyFollowers({
       sellerSlug: owner.shop.slug,
@@ -389,6 +393,19 @@ export async function saveListingForm(formData: FormData): Promise<void> {
     // …and the students whose saved searches match it, once a day per search, under the same condition, so the two
     // can't disagree about what's new (search alerts spec 2.9 to 2.11). Matching reads saved searches, never listings.
     await notifySavedSearches({ listingId: saved.id, now });
+    // …and the open Looking For requests at its campus whose stored search it matches (AI round two spec 5), under the
+    // same condition, with no model call. The asker hears nothing: only an offer tells them. A failure publishes anyway.
+    if (aiFeatureOn("looking-match")) {
+      wanted = await requestsWantingListing({
+        listingId: saved.id,
+        sellerSlug: owner.shop.slug,
+        ownerId: owner.account.id,
+        now,
+      }).catch(() => {
+        console.warn("[vossie] looking-match: match error");
+        return null;
+      });
+    }
   }
   let notice = "published";
   if (saved.state === "draft") notice = "drafted";
@@ -397,7 +414,11 @@ export async function saveListingForm(formData: FormData): Promise<void> {
   else notice = pausedShopNotice(owner) ?? notice;
   const path = myListingsPath(tabFor(saved.state));
   if (!existing) await leaveListingToken(once, { path, listing: saved.id, notice }, now);
-  await writeFormState(MY_LISTINGS_FORM, { errors: [], values: { listing: saved.id }, notice }, now);
+  await writeFormState(
+    MY_LISTINGS_FORM,
+    { errors: [], values: { listing: saved.id, ...(notice === "published" ? wantedValues(wanted) : {}) }, notice },
+    now,
+  );
   done(path);
 }
 

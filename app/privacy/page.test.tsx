@@ -641,6 +641,44 @@ describe("the starter pack's line (AI round two spec section 6, AI stage H)", ()
   });
 });
 
+describe("the Looking For match's line (AI stage G, planning decision 12)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  async function matchLineWith(env: Record<string, string>) {
+    for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value);
+    vi.resetModules();
+    const { default: Page } = await import("./page");
+    const { unmount } = render(<Page />);
+    const line = screen.queryByText(/When you post a Looking For request, or change its words/)?.textContent ?? null;
+    unmount();
+    return line;
+  }
+
+  it("says the words go to Anthropic only, are read outside South Africa, show no asker, and are in the download", async () => {
+    const line = await matchLineWith({
+      VOSSIE_AI_LOOKING_MATCH: "1",
+      VOSSIE_AI_PROVIDERS: "anthropic,groq",
+      ANTHROPIC_API_KEY: "test",
+      GROQ_API_KEY: "test",
+    });
+    expect(line).toContain("its title and details are sent to Anthropic (never Groq)");
+    expect(line).toContain("read outside South Africa");
+    expect(line).toContain("never who asked");
+    expect(line).toContain("in your data download");
+  });
+
+  it("isn't there while the match is off, without Anthropic's key, or with only the fake", async () => {
+    expect(await matchLineWith({ VOSSIE_AI_PROVIDERS: "anthropic", ANTHROPIC_API_KEY: "test" })).toBeNull();
+    expect(
+      await matchLineWith({ VOSSIE_AI_LOOKING_MATCH: "1", VOSSIE_AI_PROVIDERS: "anthropic,groq", ANTHROPIC_API_KEY: "", GROQ_API_KEY: "test" }),
+    ).toBeNull();
+    expect(await matchLineWith({ VOSSIE_AI_LOOKING_MATCH: "1", VOSSIE_AI_PROVIDERS: "fake" })).toBeNull();
+  });
+});
+
 describe("Snap to search's line (AI features spec 5.1 and 7.3)", () => {
   afterEach(() => {
     vi.unstubAllEnvs();

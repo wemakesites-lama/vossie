@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { asMatchQuery } from "@/lib/looking-for/match";
 import type { RequestFields } from "@/lib/looking-for/rules";
 import { sastClock, sastDate } from "@/lib/time";
 import type { LookingForRequest, RequestStatus } from "@/lib/types";
@@ -336,6 +337,10 @@ export const forgetRequestsOf: typeof Sample.forgetRequestsOf = async () => {
 /** The asker's requests for the download, newest first, with no ids. The caller settles first (exportAccountData). */
 export const exportRequests: typeof Sample.exportRequests = async (accountId) => {
   const rows = await ownRows(await forViewerAs(accountId));
+  // The stored search is closed to the asker's own session, so my_requests doesn't carry it: read it with the admin client.
+  const { data: stored, error } = await forServer().from("requests").select("id, match_query").eq("asker_id", accountId);
+  if (error) failed("requests", error);
+  const searches = new Map((stored ?? []).map((row) => [row.id, asMatchQuery(row.match_query)]));
   return rows
     .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? "") || (b.id ?? "").localeCompare(a.id ?? ""))
     .flatMap((row) => {
@@ -350,6 +355,7 @@ export const exportRequests: typeof Sample.exportRequests = async (accountId) =>
             budgetZar: row.budget_zar,
             swapWelcome: row.swap_welcome ?? false,
             createdAt: iso(row.created_at),
+            matchQuery: (row.id && searches.get(row.id)) || null,
             ...partsOf(row),
           },
           row.offers ?? 0,

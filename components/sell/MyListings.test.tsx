@@ -9,6 +9,7 @@ import { redirectOf } from "@/tests/helpers/next-request";
 import { DeleteListing } from "./DeleteListing";
 import { MyListings } from "./MyListings";
 
+const requestReader = vi.hoisted(() => vi.fn());
 const viewer = vi.hoisted(() => ({ id: null as string | null, sessionKey: null as string | null }));
 
 vi.mock("next/navigation", async () => (await import("@/tests/helpers/next-request")).nextNavigation());
@@ -24,9 +25,11 @@ vi.mock("@/lib/auth/session", async () => {
     requireAccount: async (next: string) => (await getViewer()) ?? redirect(signInHref(next)),
   };
 });
+vi.mock("@/lib/data", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/data")>()), getRequest: requestReader }));
 vi.mock("@/lib/selling/listing-actions", () => ({ changeListingState: async () => {}, deleteListingForm: async () => {} }));
 
 beforeEach(() => {
+  requestReader.mockReset();
   resetSampleStore();
   viewer.id = null;
   viewer.sessionKey = null;
@@ -60,6 +63,51 @@ describe("My listings' and Delete listing's request-time parts (selling spec 2.9
     first.unmount();
     render(await MyListings({ searchParams: Promise.resolve({}) }));
     expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  describe("the students-looking line (AI stage G decision 8)", () => {
+    const publish = (wantedIds: string) =>
+      saveFormState(
+        {
+          sessionKey: "s",
+          form: MY_LISTINGS_FORM,
+          errors: [],
+          values: { listing: "l-001", wanted: "2", wantedIds },
+          notice: "published",
+          expiresAt: "2099-01-01T00:00:00.000Z",
+        },
+        new Date("2026-10-14T08:00:00.000Z"),
+      );
+    const request = (id: string, status: "open" | "closed") => ({
+      id,
+      title: `Title ${id}`,
+      status,
+      closesOn: null,
+    });
+
+    it("keeps only the requests still open, with their current titles", async () => {
+      viewer.id = "acc-seller";
+      viewer.sessionKey = "s";
+      await publish("r-open r-closed r-gone");
+      requestReader.mockImplementation(async (id: string) =>
+        id === "r-open" ? request(id, "open") : id === "r-closed" ? request(id, "closed") : null,
+      );
+      render(await MyListings({ searchParams: Promise.resolve({}) }));
+      expect(screen.getByText("2 students are looking for something like this.")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Title r-open" })).toHaveAttribute("href", "/looking-for/r-open");
+      expect(screen.queryByText("Title r-closed")).toBeNull();
+      expect(screen.getAllByRole("listitem").filter((item) => item.textContent?.includes("Title r-"))).toHaveLength(1);
+    });
+
+    it("shows no line when every request has closed or gone", async () => {
+      viewer.id = "acc-seller";
+      viewer.sessionKey = "s";
+      await publish("r-closed r-gone");
+      requestReader.mockImplementation(async (id: string) => (id === "r-closed" ? request(id, "closed") : null));
+      render(await MyListings({ searchParams: Promise.resolve({}) }));
+      expect(screen.getByRole("status")).toBeInTheDocument();
+      expect(screen.queryByText(/looking for something like this/)).toBeNull();
+    });
   });
 
   it("tells the owner of a paused shop that buyers can't see its listings (amendment 11.6)", async () => {

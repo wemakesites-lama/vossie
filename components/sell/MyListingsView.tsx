@@ -7,6 +7,8 @@ import { Pill } from "@/components/kit/Pill";
 import { LinkTabs } from "@/components/ui/LinkTabs";
 import type { ListingRow } from "@/lib/data/rows";
 import { priceLabel } from "@/lib/format";
+import { wantedLine, type Wanted } from "@/lib/looking-for/match";
+import { offerPath, requestPath } from "@/lib/looking-for/paths";
 import { changeListingState } from "@/lib/selling/listing-actions";
 import { deleteListingPath, editListingPath, LISTINGS_TABS, myListingsPath, NEW_LISTING_PATH } from "@/lib/selling/paths";
 import { shortSastDate } from "@/lib/time";
@@ -26,6 +28,8 @@ type MyListingsViewProps = {
   notice: string | null;
   /** The listing the notice is about, for its link. */
   noticeListing: string | null;
+  /** Students looking for something like a just-published listing (AI stage G). */
+  wanted?: Wanted | null;
 };
 
 const EMPTY: Readonly<Record<ListingsTab, { title: string; line: string }>> = {
@@ -40,26 +44,56 @@ const EMPTY: Readonly<Record<ListingsTab, { title: string; line: string }>> = {
  * their counts, and the open state's listings as rows. Each row opens the listing's form ("Edit {title}"); its Pause,
  * Resume, Relist and Mark sold sit under it, and Delete is a text link set apart at the far end, never beside Mark
  * sold. An empty state offers New listing. While the shop is paused, buyers can't see the listing, so the notice offers
- * no look as a buyer; a shop the Hub paused says so, with the Hub's reason (staff tools plan decision 3).
+ * no look as a buyer; a shop the Hub paused says so, with the Hub's reason (staff tools plan decision 3). After a first
+ * publish the notice is followed by the open requests it matched (AI stage G), outside the status paragraph.
  */
-export function MyListingsView({ tab, rows, waiting, paused, hubPause = null, notice, noticeListing }: MyListingsViewProps) {
+export function MyListingsView({
+  tab,
+  rows,
+  waiting,
+  paused,
+  hubPause = null,
+  notice,
+  noticeListing,
+  wanted = null,
+}: MyListingsViewProps) {
   const open = LISTINGS_TABS.find((item) => item.tab === tab)!;
   const shown = rows.filter((row) => row.state === open.state);
   const linkable = !paused && rows.some((row) => row.id === noticeListing && row.state !== "draft");
   return (
     <>
       {notice && (
-        <p role="status" className="form-notice">
-          {notice}
-          {linkable && (
-            <>
-              {" "}
-              <Link href={`/listings/${noticeListing}`} prefetch={false}>
-                See it as buyers do
-              </Link>
-            </>
+        <>
+          <p role="status" className="form-notice">
+            {notice}
+            {linkable && (
+              <>
+                {" "}
+                <Link href={`/listings/${noticeListing}`} prefetch={false}>
+                  See it as buyers do
+                </Link>
+              </>
+            )}
+          </p>
+          {wanted && (
+            <div className="form-notice wanted-notice">
+              <p>{wantedLine(wanted.students)}</p>
+              <ul>
+                {wanted.requests.map((request) => (
+                  <li key={request.id}>
+                    <Link href={requestPath(request.id)} prefetch={false}>
+                      {request.title}
+                    </Link>{" "}
+                    <Link href={offerPath(request.id)} prefetch={false}>
+                      Make an offer{" "}
+                      <span className="sr-only">on {request.title}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
-        </p>
+        </>
       )}
       {waiting && (
         <p className="form-notice">

@@ -13,11 +13,13 @@ import {
   type RequestFields,
 } from "@/lib/looking-for/rules";
 import { requestAutoClosedText, requestCloseReminderText } from "@/lib/looking-for/words";
+import { savedSearchLabel } from "@/lib/saved-searches/rules";
 import { sastDate } from "@/lib/time";
 import type { LookingForRequest, OwnRequest, RequestState } from "@/lib/types";
 import { deleteNotificationsAbout, notify } from "./notifications";
 import { offerThreadCount } from "./offers";
 import type { RequestRow } from "./rows";
+import { NAMES } from "./saved-searches";
 import { sampleStore } from "./store";
 
 // Looking For requests in the sample store (community actions spec 2.1, 2.6, 2.11, 2.14 and 2.23; plan decisions 1,
@@ -236,6 +238,8 @@ export async function createRequest(request: {
     closedAt: null,
     closedBy: null,
     remindedFor: null,
+    matchQuery: null,
+    matchReadAt: null,
     seedOffers: 0,
     hiddenAt: null,
     hiddenReason: null,
@@ -356,6 +360,11 @@ export type RequestExport = {
   /** It closed by itself rather than by its asker (stage L spec decision 14). */
   closedAutomatically: boolean;
   offers: number;
+  /**
+   * The search its words were read into, as a label ("“calculator” in Tech at Midrand"), or null (AI stage G planning
+   * decision 12): derived from the student's own words, so it's theirs to see.
+   */
+  matchedAs: string | null;
 };
 
 const categoryName = (slug: string) => categories.find((category) => category.slug === slug)?.name ?? slug;
@@ -363,7 +372,7 @@ const campusName = (slug: string) => campuses.find((campus) => campus.slug === s
 
 /** What the download says about one request, from its row's fields and its offers (shared with the Supabase twin). */
 export function requestExport(
-  row: Omit<RequestRow, "id" | "askerId" | "updatedAt" | "remindedFor" | "seedOffers">,
+  row: Omit<RequestRow, "id" | "askerId" | "updatedAt" | "remindedFor" | "seedOffers" | "matchReadAt">,
   offers: number,
 ): RequestExport {
   return {
@@ -380,6 +389,7 @@ export function requestExport(
     closedAt: row.closedAt,
     closedAutomatically: row.closedBy === "auto",
     offers,
+    matchedAs: row.matchQuery ? savedSearchLabel(row.matchQuery, NAMES) : null,
   };
 }
 

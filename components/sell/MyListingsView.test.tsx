@@ -133,4 +133,32 @@ describe("Your listings (selling spec 2.9, role views spec 7.1)", () => {
     expect(screen.queryByText("Desk fan")).toBeNull();
     expect(itemFor("Kettle").querySelector('input[name="tab"]')).toHaveValue("paused");
   });
+
+  it("adds the students-looking line after the notice, outside the status paragraph (AI stage G decision 9)", () => {
+    const notice = "Published. Buyers can find it now.";
+    const wanted = { students: 2, requests: [{ id: "r-a", title: "A desk fan" }, { id: "r-b", title: "A fan for res" }] };
+    show("available", { notice, wanted });
+    expect(screen.getByRole("status")).toHaveTextContent(/^Published\. Buyers can find it now\.$/);
+    const block = screen.getByText("2 students are looking for something like this.").parentElement!;
+    expect(screen.getByRole("status")).not.toContainElement(block);
+    expect(within(block).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(block).getByRole("link", { name: "A desk fan" })).toHaveAttribute("href", "/looking-for/r-a");
+    expect(within(block).getByRole("link", { name: "Make an offer on A desk fan" })).toHaveAttribute(
+      "href",
+      "/looking-for/r-a/offer",
+    );
+    expect(within(block).getByRole("link", { name: "Make an offer on A fan for res" })).toHaveAttribute(
+      "href",
+      "/looking-for/r-b/offer",
+    );
+  });
+
+  it("shows no such line without wanted, or without a notice", () => {
+    const wanted = { students: 1, requests: [{ id: "r-a", title: "A desk fan" }] };
+    const first = show("available", { notice: "Published. Buyers can find it now.", wanted: null });
+    expect(screen.queryByText(/looking for something like this/)).toBeNull();
+    first.unmount();
+    show("available", { notice: null, wanted });
+    expect(screen.queryByText(/looking for something like this/)).toBeNull();
+  });
 });

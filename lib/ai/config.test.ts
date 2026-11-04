@@ -94,3 +94,19 @@ describe("Snap to search's settings (AI features spec 5.4, 7.2)", () => {
     ).toBe(false);
   });
 });
+
+// Stage G: Someone's looking for this.
+describe("the looking match's settings (AI round two spec 5)", () => {
+  it("turns the looking match on only with its switch and Haiku or the fake (AI stage G)", () => {
+    const groq = { VOSSIE_AI_PROVIDERS: "groq", GROQ_API_KEY: "g", VOSSIE_AI_LOOKING_MATCH: "1" };
+    expect(featureProviders("looking-match", groq)).toEqual([]);
+    expect(aiFeatureOn("looking-match", groq)).toBe(false);
+    const haiku = { VOSSIE_AI_PROVIDERS: "groq,anthropic", GROQ_API_KEY: "g", ANTHROPIC_API_KEY: "a" };
+    expect(featureProviders("looking-match", haiku)).toEqual(["anthropic"]);
+    expect(aiFeatureOn("looking-match", haiku)).toBe(false);
+    expect(aiFeatureOn("looking-match", { ...haiku, VOSSIE_AI_LOOKING_MATCH: "1" })).toBe(true);
+    expect(aiFeatureOn("looking-match", { VOSSIE_AI_PROVIDERS: "fake", VOSSIE_AI_LOOKING_MATCH: "1" })).toBe(true);
+    // Its own switch: the words search's switch doesn't turn it on.
+    expect(aiFeatureOn("looking-match", { VOSSIE_AI_PROVIDERS: "fake", VOSSIE_AI_WORDS_SEARCH: "1" })).toBe(false);
+  });
+});

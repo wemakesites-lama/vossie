@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { getRequest } from "@/lib/data";
+import { saveRequestMatch } from "@/lib/data/request-match";
 import { isRefused } from "@/lib/data/refused";
 import {
   countOpenRequests,
@@ -17,6 +18,8 @@ import {
   updateRequest,
 } from "@/lib/data/requests";
 import { addDays, type RequestFields } from "@/lib/looking-for/rules";
+import { savedSearchLabel } from "@/lib/saved-searches/rules";
+import { NAMES } from "@/lib/data/saved-searches";
 import { requestAutoClosedText } from "@/lib/looking-for/words";
 import { sastDate } from "@/lib/time";
 import type { World } from "@/tests/contract/world";
@@ -281,8 +284,23 @@ export function requestsOwnContract(makeWorld: () => World): void {
       closedAt: null,
       closedAutomatically: false,
       offers: 0,
+      matchedAs: null,
     });
     expect(JSON.stringify(download)).not.toContain(auto);
     expect(JSON.stringify(download)).not.toContain(hidden);
+  });
+
+  it("puts the search a request's words were read into in the download as a label, and null when there is none", async () => {
+    const read = await world.addRequest({ asker: "asker", title: "A contract read lamp", neededBy: null });
+    await tick();
+    await world.addRequest({ asker: "asker", title: "A contract unread lamp", neededBy: null });
+    const query = { q: "contract lamp", category: "tech", campus: "pretoria", price: null, pay: null, deals: null };
+    expect(await saveRequestMatch(read, query, true, new Date())).toBe(true);
+    const download = await world.asViewer("asker", () => exportRequests(asker));
+    expect(download.map((row) => [row.title, row.matchedAs])).toEqual([
+      ["A contract unread lamp", null],
+      ["A contract read lamp", savedSearchLabel(query, NAMES)],
+    ]);
+    expect(JSON.stringify(download)).not.toContain(read);
   });
 }
