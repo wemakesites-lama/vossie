@@ -524,3 +524,42 @@ describe("the listing check's line (AI features spec 7.3)", () => {
     expect(await checkLineWith({ VOSSIE_AI_LISTING_CHECK: "1", VOSSIE_AI_PROVIDERS: "fake" })).toBeNull();
   });
 });
+
+describe("the report read's line (AI features spec 4 and 7.3, stage C)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  /** As the listing check's checkLineWith: the page's sections are built when its module loads. */
+  async function readLineWith(env: Record<string, string>) {
+    for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value);
+    vi.resetModules();
+    const { default: Page } = await import("./page");
+    const { unmount } = render(<Page />);
+    const line = screen.queryByText(/When you report a listing/)?.textContent ?? null;
+    unmount();
+    return line;
+  }
+
+  it("says what goes to Anthropic on a report, that it leaves South Africa, and who sees the read", async () => {
+    const line = await readLineWith({
+      VOSSIE_AI_REPORT_READ: "1",
+      VOSSIE_AI_PROVIDERS: "anthropic,groq",
+      ANTHROPIC_API_KEY: "test",
+      GROQ_API_KEY: "test",
+    });
+    expect(line).toContain("a listing's cover photo, and your report's reason and detail are sent to Anthropic (never Groq)");
+    expect(line).toContain("read outside South Africa");
+    expect(line).toContain("Your name and your account aren't sent");
+    expect(line).toContain("Only the Hub's admins see the read, and it's removed with the report");
+  });
+
+  it("isn't there while the read is off, without Anthropic's key, or with only the fake", async () => {
+    expect(await readLineWith({ VOSSIE_AI_PROVIDERS: "anthropic", ANTHROPIC_API_KEY: "test" })).toBeNull();
+    expect(
+      await readLineWith({ VOSSIE_AI_REPORT_READ: "1", VOSSIE_AI_PROVIDERS: "anthropic,groq", ANTHROPIC_API_KEY: "", GROQ_API_KEY: "test" }),
+    ).toBeNull();
+    expect(await readLineWith({ VOSSIE_AI_REPORT_READ: "1", VOSSIE_AI_PROVIDERS: "fake" })).toBeNull();
+  });
+});

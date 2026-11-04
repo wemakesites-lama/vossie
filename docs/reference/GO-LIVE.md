@@ -226,6 +226,14 @@ Built 2026-11-04 (AI features spec section 3, stage B; plan `docs/superpowers/pl
 - [ ] Decide whether the check needs a daily cap per account, as photo-to-listing has (`reservePhotoFill`): a stopped publish saves nothing, so each press of Save and publish is another Haiku call. The console's monthly spend limit is the only cap now.
 - [ ] The Hub's "Hidden" notice says everyone who reported a listing has been told, even when the only report was the listing check's (which tells no one). Dismiss has its own "Dismissed." notice; hide could get the same.
 
+### Report read (AI stage C, after the submission)
+Built 2026-11-05 (AI features spec section 4, stage C; plan `docs/superpowers/plans/2026-11-05-ai-stage-c-report-read.md`) and off. Haiku only, with photo-to-listing's Anthropic key.
+- [x] On the local stack: `supabase test db` (2,632 passed, `63_report_read`'s 17 included) and `pnpm test:db` (360 passed), 2026-11-04/05.
+- [ ] The Anthropic key (`ANTHROPIC_API_KEY`) is set in Vercel (the same key as photo-to-listing and the listing check).
+- [ ] Apply `20261105120000_report_read.sql` to Vossie Market (by Lama): a dry run first, then Lama's go-ahead.
+- [ ] Set `VOSSIE_AI_REPORT_READ=1` in Vercel, then redeploy: the privacy page's report read line is drawn at build, so check it's live.
+- [ ] File one real report on a test listing and check its "First read (may be wrong)" box on `/admin/reports/[id]` in the console.
+
 ## 7. Decisions for Lama and Eduvos
 
 - [ ] **Report the kept-redirect behaviour to Next.js, if necessary** (Lama, 2026-10-20). `tests/e2e/sign-in-return.spec.ts` with `SIGN_IN_SPIKE=1` is the reproduction.

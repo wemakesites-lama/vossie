@@ -16,7 +16,10 @@ import {
   stopsPublish,
   type Concern,
 } from "@/lib/selling/listing-check";
+import { reasonLabel } from "@/lib/messaging/rules";
+import { parseFirstRead, readInstruction, readSchema, type FirstRead } from "@/lib/staff/report-read";
 import type { PhotoType } from "@/lib/types";
+import type { ReportReason } from "@/lib/types";
 import type { AiTask, ProviderFailure, ProviderRequest, ReadPhoto } from "./ai/types";
 
 // The only door to the AI providers (AI features spec 7.1; photo-to-listing spec decisions 9 to 11). Each provider file
@@ -122,6 +125,64 @@ export async function checkListingGuidelines(listing: ListingForCheck): Promise<
       return stopsPublish(verdict);
     } catch {
       logFailure("listing-check", name, "api-error");
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * What the report read reads (spec 4.2): the reported thing's own words, a listing's cover, and the reporter's reason
+ * and detail. Never a name or account; reports never cover messages.
+ */
+export type ReportForRead = {
+  kind: "listing" | "seller" | "request";
+  /** The listing's or request's title, or the shop's name. */
+  title: string;
+  /** The listing's description, the request's details, or the shop's about text. */
+  words: string;
+  categoryName: string | null;
+  cover: Photo | null;
+  reason: ReportReason;
+  detail: string;
+};
+
+const KIND_WORDS = { listing: "a listing", seller: "a shop", request: "a Looking For request" } as const;
+
+/** What the report read asks. The title comes first: the fake reads it there. */
+export function reportReadRequest(input: ReportForRead): ProviderRequest {
+  return {
+    task: "report-read",
+    system: readInstruction(),
+    images: input.cover ? [{ type: input.cover.type, base64: Buffer.from(input.cover.bytes).toString("base64") }] : [],
+    text: [
+      `Title: ${input.title}`,
+      `Reported: ${KIND_WORDS[input.kind]}`,
+      ...(input.categoryName ? [`Category: ${input.categoryName}`] : []),
+      `Words: ${input.words}`,
+      `Reporter's reason: ${reasonLabel(input.reason)}`,
+      `Reporter's detail: ${input.detail || "None given"}`,
+    ].join("\n"),
+    schema: readSchema(),
+  };
+}
+
+/** The report read (spec section 4): Haiku only (the fake in sample mode). Null on anything else; only the kind is logged. */
+export async function readReport(input: ReportForRead): Promise<FirstRead | null> {
+  const request = reportReadRequest(input);
+  for (const name of featureProviders("report-read")) {
+    try {
+      const reply = await (await LOAD[name]()).read(request);
+      if (!reply.ok) {
+        logFailure("report-read", name, reply.failure);
+        if (MOVE_ON.has(reply.failure)) continue;
+        return null;
+      }
+      const read = parseFirstRead(reply.text);
+      if (!read) logFailure("report-read", name, "bad-output");
+      return read;
+    } catch {
+      logFailure("report-read", name, "api-error");
       return null;
     }
   }

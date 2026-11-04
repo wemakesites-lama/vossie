@@ -27,7 +27,22 @@ export function fakeVerdict(text: string) {
     : { concern: "none", confidence: "high" };
 }
 
+/**
+ * The report read's fake (AI stage C, planning decision 9): "fake" in the title is counterfeit, else none; it agrees when
+ * that matches a "Prohibited item" reason. A detail with "[no read]" in it is a bad reply, so the e2e test sees Read again.
+ */
+export function fakeFirstRead(text: string): string {
+  if (text.includes("[no read]")) return "not a read";
+  const title = (text.split("\n")[0] ?? "").replace(/^Title: /, "");
+  const concern = /\bfake\b/i.test(title) ? "counterfeit" : "none";
+  const prohibited = /^Reporter's reason: Prohibited item$/m.test(text);
+  return JSON.stringify({ summary: `A report about ${title}.`.slice(0, 140), concern, agrees: (concern !== "none") === prohibited });
+}
+
 export const read: ReadPhoto = async (request) => ({
   ok: true,
-  text: JSON.stringify(request.task === "listing-check" ? fakeVerdict(request.text) : FAKE_REPLY),
+  text:
+    request.task === "report-read"
+      ? fakeFirstRead(request.text)
+      : JSON.stringify(request.task === "listing-check" ? fakeVerdict(request.text) : FAKE_REPLY),
 });

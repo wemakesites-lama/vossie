@@ -1,5 +1,6 @@
 import { onSupabase } from "@/lib/backend";
 import type { OwnKind } from "@/lib/staff/own";
+import type { FirstRead } from "@/lib/staff/report-read";
 import type { ListingState, ReportOutcome, ReportReason, ReportTarget, SellerStatus } from "@/lib/types";
 import type { ReportRow } from "./rows";
 import { isOwnListing, isOwnRequest, ownKindOf } from "./staff-shops";
@@ -53,6 +54,8 @@ export type ReportView = {
    * when no viewer is given (the queue, tests).
    */
   own: OwnKind | null;
+  /** The report read (AI features spec 4, stage C): the model's first read, which may be wrong. Null when none. */
+  firstRead: FirstRead | null;
 };
 
 export const DELETED = "Deleted account";
@@ -164,6 +167,7 @@ export const reportViewOver = (lookups: ReportLookups) => (row: ReportRow, viewe
       pause: own === null && open && shopRow !== undefined && pausable(lookups, shopRow.slug),
     },
     own,
+    firstRead: row.firstRead ?? null,
   };
 };
 

@@ -14,8 +14,9 @@ import { tokenClient } from "@/lib/supabase/viewer";
  *   the outcome leave the server: settleRequests, featuredFor, shopStats, badges (decision 21); C4's
  *   notifySavedSearches (every active saved search, matched in TypeScript, then record_search_matches, which only the
  *   service role runs) and requestAskerId (one request's asker, compared with the viewer's id, never shown); later
- *   C5's countByWeek (admin_weekly_counts) and the jobs (C4/C5 plan decision 9). A twin never trusts an account id
- *   it's given over the session (decision 20).
+ *   C5's countByWeek (admin_weekly_counts) and the jobs (C4/C5 plan decision 9). AI stage C's report read
+ *   (reportForRead, save_report_first_read: the model's input and the stored read, never shown to the reporter). A
+ *   twin never trusts an account id it's given over the session (decision 20).
  * - forViewer(): the signed-in person's own client, so the access rules know who is asking (phase B). It carries the
  *   access token currentClaims() verified (auth-session.ts) as a bearer, with nothing kept or refreshed
  *   (lib/supabase/viewer.ts's tokenClient), so a read in a Server Component can never refresh the session: only

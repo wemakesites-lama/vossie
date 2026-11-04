@@ -44,6 +44,14 @@ describe("the AI settings (AI features spec 7.2)", () => {
     expect(aiFeatureOn("listing-check", { VOSSIE_LISTING_AI: "1", ANTHROPIC_API_KEY: "k" })).toBe(false);
   });
 
+  it("turns the report read on by its own switch, with Haiku or the fake, never Groq alone", () => {
+    expect(aiFeatureOn("report-read", { ANTHROPIC_API_KEY: "k" })).toBe(false);
+    expect(aiFeatureOn("report-read", { VOSSIE_AI_REPORT_READ: "1", ANTHROPIC_API_KEY: "k" })).toBe(true);
+    expect(aiFeatureOn("report-read", { VOSSIE_AI_REPORT_READ: "1", GROQ_API_KEY: "k" })).toBe(false);
+    expect(aiFeatureOn("report-read", { VOSSIE_AI_REPORT_READ: "1", VOSSIE_AI_PROVIDERS: "fake" })).toBe(true);
+    expect(aiFeatureOn("report-read", { VOSSIE_AI_LISTING_CHECK: "1", ANTHROPIC_API_KEY: "k" })).toBe(false);
+  });
+
   it("gives each feature the providers it may use that have their keys, in order", () => {
     const env = { VOSSIE_AI_PROVIDERS: "groq,anthropic", ANTHROPIC_API_KEY: "k", GROQ_API_KEY: "k" };
     expect(featureProviders("listing", env)).toEqual(["groq", "anthropic"]);

@@ -3,6 +3,7 @@ import { onSupabase } from "@/lib/backend";
 import { reasonLabel } from "@/lib/messaging/rules";
 import type { ReportReason, ReportSummary, ReportTarget } from "@/lib/types";
 import { checkReportDetail, type Concern } from "@/lib/selling/listing-check";
+import type { FirstRead } from "@/lib/staff/report-read";
 import type { ReportRow } from "./rows";
 import { sampleStore } from "./store";
 
@@ -99,6 +100,41 @@ export async function fileListingCheckReport({
   return "filed";
 }
 
+/** What the report read needs of a report (AI stage C): a student's report only, never its reporter. */
+export type ReportToRead = {
+  target: ReportTarget;
+  reason: ReportReason;
+  detail: string;
+  open: boolean;
+  gone: boolean;
+  read: boolean;
+};
+
+/** A student's report for the read, or null (none, or the listing check's). Server code only: it reads past the reporter. */
+export async function reportForRead(reportId: string): Promise<ReportToRead | null> {
+  if (onSupabase()) return (await supabase()).reportForRead(reportId);
+  const row = sampleStore().reports.get(reportId);
+  if (!row || row.reporterId === null) return null;
+  return {
+    target: { kind: row.targetKind, id: row.targetId },
+    reason: row.reason,
+    detail: row.detail,
+    open: row.status === "open",
+    gone: row.targetGone === true,
+    read: Boolean(row.firstRead),
+  };
+}
+
+/** Stores the read on a student's report that has none (AI stage C plan, planning decision 6). */
+export async function saveFirstRead(reportId: string, read: FirstRead): Promise<"saved" | "already" | "not-found"> {
+  if (onSupabase()) return (await supabase()).saveFirstRead(reportId, read);
+  const row = sampleStore().reports.get(reportId);
+  if (!row || row.reporterId === null) return "not-found";
+  if (row.firstRead) return "already";
+  row.firstRead = read;
+  return "saved";
+}
+
 function byReporter(reporterId: string): ReportRow[] {
   return [...sampleStore().reports.values()]
     .filter((row) => row.reporterId === reporterId)
@@ -144,11 +180,17 @@ export async function deleteReportsBy(reporterId: string): Promise<void> {
   }
 }
 
-/** Deleting an account takes its id off the reports about its things; the reports stay for the Hub (stage L review). */
+/**
+ * Deleting an account takes its id off the reports about its things; the reports stay for the Hub (stage L review).
+ * The report read goes with it (AI stage C, spec 4.4): it's about the deleted owner's thing.
+ */
 export async function forgetReportOwner(accountId: string): Promise<void> {
   if (onSupabase()) return (await supabase()).forgetReportOwner(accountId);
   for (const row of sampleStore().reports.values()) {
-    if (row.targetOwnerId === accountId) row.targetOwnerId = null;
+    if (row.targetOwnerId === accountId) {
+      row.targetOwnerId = null;
+      row.firstRead = null;
+    }
   }
 }
 

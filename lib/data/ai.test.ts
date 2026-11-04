@@ -7,6 +7,7 @@ vi.mock("./ai/anthropic", () => ({ read: haiku }));
 vi.mock("./ai/groq", () => ({ read: groq }));
 
 import { checkListingGuidelines, checkRequest, listingRequest, readListingPhotos } from "./ai";
+import { readReport, reportReadRequest, type ReportForRead } from "./ai";
 import { FAKE_REPLY } from "./ai/fake";
 
 const CATEGORIES = [
@@ -163,5 +164,62 @@ describe("the listing check through the door (AI features spec 3 and 7.1)", () =
     vi.stubEnv("VOSSIE_AI_PROVIDERS", "fake");
     expect(await checkListingGuidelines({ ...LISTING, title: "Fake designer watch" })).toBe("counterfeit");
     expect(await checkListingGuidelines(LISTING)).toBeNull();
+  });
+});
+
+describe("the report read through the door (AI features spec 4 and 7.1)", () => {
+  const READ_INPUT: ReportForRead = {
+    kind: "listing",
+    title: "Rolex watch",
+    words: "Real Rolex, R300.",
+    categoryName: "Fashion",
+    cover: null,
+    reason: "prohibited",
+    detail: "Looks fake",
+  };
+
+  it("builds the report read's request without any name or account", () => {
+    const request = reportReadRequest(READ_INPUT);
+    expect(request.task).toBe("report-read");
+    expect(request.text.split("\n")[0]).toBe("Title: Rolex watch");
+    expect(request.text).toContain("Reported: a listing");
+    expect(request.text).toContain("Reporter's reason: Prohibited item");
+    expect(request.text).toContain("Reporter's detail: Looks fake");
+    expect(request.images).toHaveLength(0);
+    expect(reportReadRequest({ ...READ_INPUT, cover: photo(7) }).images.map((image) => image.base64)).toEqual(["Bw=="]);
+    expect(request.schema).toMatchObject({ required: ["summary", "concern", "agrees"] });
+  });
+
+  it("reads a report with Haiku, never Groq, and gives null on any failure", async () => {
+    bothProviders();
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "groq,anthropic");
+    const warn = vi.mocked(console.warn);
+    haiku.mockResolvedValueOnce({ ok: true, text: JSON.stringify({ summary: "A watch.", concern: "none", agrees: false }) });
+    expect(await readReport(READ_INPUT)).toEqual({ summary: "A watch.", concern: "none", agrees: false });
+    haiku.mockResolvedValueOnce({ ok: true, text: "{}" });
+    expect(await readReport(READ_INPUT)).toBeNull();
+    haiku.mockRejectedValueOnce(new Error("Rolex watch"));
+    expect(await readReport(READ_INPUT)).toBeNull();
+    haiku.mockResolvedValueOnce({ ok: false, failure: "timeout" });
+    expect(await readReport(READ_INPUT)).toBeNull();
+    expect(groq).not.toHaveBeenCalled();
+    expect(warn.mock.calls.map(([line]) => line)).toEqual([
+      "[vossie] report-read: anthropic bad-output",
+      "[vossie] report-read: anthropic api-error",
+      "[vossie] report-read: anthropic timeout",
+    ]);
+  });
+
+  it("uses the fake in sample mode: 'fake' in the title is counterfeit, and [no read] is a bad reply", async () => {
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "fake");
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(await readReport({ ...READ_INPUT, title: "Fake designer watch" })).toEqual({
+      summary: "A report about Fake designer watch.",
+      concern: "counterfeit",
+      agrees: true,
+    });
+    expect(await readReport({ ...READ_INPUT, reason: "scam" })).toMatchObject({ concern: "none", agrees: true });
+    expect(await readReport(READ_INPUT)).toMatchObject({ concern: "none", agrees: false });
+    expect(await readReport({ ...READ_INPUT, detail: "[no read]" })).toBeNull();
   });
 });

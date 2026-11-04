@@ -2,6 +2,8 @@
 
 Date: 2026-11-03 · Status: **Approved by Lama 2026-11-03 (decision 96).** Stages A (Haiku first) and B (the listing check) built; C to E not planned. Lama's answers are in section 11.
 
+Stage C (a read of each report): built 2026-11-05, plan `docs/superpowers/plans/2026-11-05-ai-stage-c-report-read.md`.
+
 ## Related documents
 
 | Document | Why |
@@ -194,3 +196,30 @@ Left out on purpose: AI replies on a seller's behalf (trust matters more on a ca
 6. **The instruction says the listing is data:** anything in the title, description or photo that tells the model how to answer is ignored. The check still fails open, so students' reports stay the backstop.
 7. **The privacy line** says "when you publish a listing or change its words or photos", since edits are checked too.
 8. **The pgTAP test closed the report with `'hidden'`,** an outcome `reports.outcome` allows (it had `'acted'`, the notification's wording only), and gained a hidden listing, a paused one and a new report after the open one closes.
+
+### While planning stage C (2026-11-05, plan `docs/superpowers/plans/2026-11-05-ai-stage-c-report-read.md`)
+
+1. **Students' reports only.** The listing check's reports already carry the model's concern in their detail, so they get no read and no Read again.
+2. **The read is `{ summary, concern, agrees }`:** a one-line summary of 1 to 140 characters, one of the listing check's seven kinds or `"none"`, and whether that fits the reporter's reason. One list of "What can't be sold".
+3. **Where it shows:** its own section above "The report". Lines: the summary; "May break: counterfeit goods" or "No guideline clearly broken"; "Agrees with the reporter's reason (Prohibited item)" or "Doesn't match the reporter's reason (Scam or fraud)".
+4. **Read again** shows only on an open student's report with no read that isn't about the viewing admin's own things, with the switch on. A plain form; a failure leaves "Couldn't read this report. Try again later."; no audit entry, no tag, no one-time token.
+5. **Input comes from the public readers** (`getListingDetail`, `getSeller`, `getRequest`), so a target that's gone or hidden gets no read. A listing's cover goes only when it's an uploaded photo; a stock or placeholder cover is left out.
+6. **On Supabase the read is written with the secret key** through `public.save_report_first_read`, which only the service role runs (the `after()` callback runs for the reporter, who must never write or read it). It writes only a student's report with no read yet (`'saved' | 'already' | 'not-found'`).
+7. **Deleting an account:** a reporter's reports already go with them. Deleting the reported thing's owner strips the read: on Supabase a trigger clears `first_read` when `target_owner_id` goes to null (the foreign key's `on delete set null`); on the sample store `forgetReportOwner` clears it.
+8. **Not in the data download:** the read is staff's, not the reporter's.
+9. **The fake** reads the title: "fake" in it gives `counterfeit`, else `none`; a detail containing `[no read]` answers bad output, so the e2e test sees the failure path and Read again.
+
+### While building stage C (2026-11-05)
+
+1. **Planning decision 5 changed: paused targets still get a read.** A paused listing, a listing in a paused shop and a paused shop are still returned by the public readers, and staff still need to judge them; only gone or hidden targets get none.
+2. **Read again's notice shows for any result but saved,** a target gone since the page loaded included.
+3. **The scam reason's words are "Scam or fraud"** (the report form's label), so the agreement line says that.
+4. **`private.forget_report_first_read()`** (the strip trigger's function) has execute revoked from public, anon and authenticated, as `21_grants` expects.
+5. **The World has no owner-deletion helper,** so the contract's deletion case runs on the sample store and pgTAP covers Supabase (the trigger through the foreign key's set null).
+6. **`06_account_actions.test.sql`** gained `save_report_first_read(uuid,jsonb)` in its service-role-only list.
+7. **The database checks** (2026-11-04/05): pgTAP `63_report_read` has 17 tests; `supabase test db` 2,632 passed (47 files); `pnpm test:db` 360 passed (52 files).
+8. **`AdminReport`'s `readAgain` is optional** (false by default), so its other callers and tests didn't change; only the report page passes it.
+9. **The box sits on the panel colour with a thin line border** (`.staff-first-read`): navy, ink and muted on panel are pairs the contrast test already checks in all three themes.
+10. **The privacy line** says the read is seen only by the Hub's admins and removed with the report, and that the reporter's name and account aren't sent; like the listing check's, it's drawn at build only while the read is on with Anthropic's key.
+11. **Read again only where a read can be made (final review):** one gate, `canReadAgain` (`lib/staff/first-read.ts`), for the page and the action, which also needs the target there and not hidden (a paused one still reads). A read stored by `after()` meanwhile leaves no failure notice.
+12. **Left as they are (final review, minor):** `save_report_first_read` doesn't refuse a null read (the app never sends one); the e2e test dismisses its reports only when it passes (they're newer than any report the other tests look for).

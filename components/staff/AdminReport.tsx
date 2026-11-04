@@ -11,12 +11,15 @@ import { hideReportedPath, pauseReportedPath, showListingPath, showRequestPath }
 import { REASON_MAX } from "@/lib/staff/rules";
 import { longSastDate } from "@/lib/time";
 import { kindWords, outcomeWords } from "./AdminReports";
+import { FirstRead } from "./FirstRead";
 
 type AdminReportProps = {
   report: ReportView;
   /** Dismiss's note as typed before a failed post. */
   note: string;
   errors: readonly FormError[];
+  /** Read again's button when the report has no first read (AI stage C); the page decides. */
+  readAgain?: boolean;
 };
 
 /** What the admin reads about a report on their own shop, listing or request (stage L spec section 3; sample words). */
@@ -29,11 +32,13 @@ export function ownReportLine(kind: OwnKind): string {
  * the reporter's first name and when. Open: Hide the listing or request and Pause the account through their confirm
  * pages, where the report allows them, and Dismiss with a note. Closed: what was done, by whom and when.
  */
-export function AdminReport({ report, note, errors }: AdminReportProps) {
+export function AdminReport({ report, note, errors, readAgain = false }: AdminReportProps) {
   const noteId = `dismiss-${report.id}-note`;
   const noteError = errorFor(errors, noteId);
   return (
     <>
+      {/* The report read (AI features spec section 4): above the reporter's words. */}
+      <FirstRead reportId={report.id} read={report.firstRead} reason={report.reason} readAgain={readAgain} />
       <section aria-labelledby="admin-report-title" className="staff-section">
         <h2 id="admin-report-title" className="staff-section-title">
           The report

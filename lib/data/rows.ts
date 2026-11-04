@@ -23,6 +23,7 @@ import type {
   StaffRole,
   TrustBadge,
 } from "@/lib/types";
+import type { FirstRead } from "@/lib/staff/report-read";
 
 // The sample store's rows (accounts spec section 4), shaped like the Supabase tables that will replace them: ids are
 // text, times are ISO 8601 strings in UTC, and rows point at each other by id. Only lib/data reads or writes them.
@@ -229,6 +230,8 @@ export type ReportRow = {
    * can't dismiss the reports about it (stage L review).
    */
   targetOwnerId: string | null;
+  /** The report read (AI features spec 4), staff's only; null when none was made. */
+  firstRead?: FirstRead | null;
 };
 
 /** A notification (messaging spec 2.9 and 3.5; plan decisions 12 and 13). */
