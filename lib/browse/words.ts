@@ -53,7 +53,11 @@ export function priceStep(rand: number): PriceFilter | null {
   return null;
 }
 
-/** The structured-output schema: every field from its own enum (spec 6.1). */
+/**
+ * The structured-output schema: every field from its own enum (spec 6.1). An enum field has no `type`: Anthropic
+ * rejects an enum beside `type: ["string", "null"]` ("Enum value … does not match declared type"), and the enum's null
+ * already allows no value.
+ */
 export function wordsSchema(categorySlugs: readonly string[], campusSlugs: readonly string[]) {
   return {
     type: "object",
@@ -61,13 +65,13 @@ export function wordsSchema(categorySlugs: readonly string[], campusSlugs: reado
     required: ["q", "categorySlug", "campus", "maxPrice", "free", "pay", "deals", "sort"],
     properties: {
       q: { type: ["string", "null"] },
-      categorySlug: { type: ["string", "null"], enum: [...categorySlugs, null] },
-      campus: { type: ["string", "null"], enum: [...campusSlugs, "all", null] },
+      categorySlug: { enum: [...categorySlugs, null] },
+      campus: { enum: [...campusSlugs, "all", null] },
       maxPrice: { type: ["integer", "null"] },
       free: { type: "boolean" },
-      pay: { type: ["string", "null"], enum: [...PAYS, null] },
+      pay: { enum: [...PAYS, null] },
       deals: { type: "boolean" },
-      sort: { type: ["string", "null"], enum: [...SORTS, null] },
+      sort: { enum: [...SORTS, null] },
     },
   } as const;
 }
