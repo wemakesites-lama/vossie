@@ -61,9 +61,25 @@ export function asFirstRead(value: unknown): FirstRead | null {
   return { summary: line, concern: concern as FirstRead["concern"], agrees };
 }
 
+/**
+ * A summary cut to SUMMARY_MAX at a word, with "…". The model is asked for 140 characters but can't count them: on
+ * vossie-pi Haiku's summaries ran about 150 and every read was thrown away (2026-11-04). The stored value stays strict.
+ */
+export function clipSummary(summary: string): string {
+  const line = summary.replace(/\s+/g, " ").trim();
+  if (line.length <= SUMMARY_MAX) return line;
+  const room = line.slice(0, SUMMARY_MAX - 1);
+  const cut = room.lastIndexOf(" ");
+  return `${(cut > SUMMARY_MAX / 2 ? room.slice(0, cut) : room).replace(/[\s,;:.-]+$/, "")}…`;
+}
+
+/** The model's reply: its summary clipped (clipSummary), then checked like a stored value. */
 export function parseFirstRead(text: string): FirstRead | null {
   try {
-    return asFirstRead(JSON.parse(text));
+    const value: unknown = JSON.parse(text);
+    if (typeof value !== "object" || value === null) return null;
+    const { summary } = value as Record<string, unknown>;
+    return asFirstRead(typeof summary === "string" ? { ...value, summary: clipSummary(summary) } : value);
   } catch {
     return null;
   }

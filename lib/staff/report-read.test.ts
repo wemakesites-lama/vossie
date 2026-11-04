@@ -14,12 +14,25 @@ describe("the report read (AI features spec section 4)", () => {
       "not json",
       "null",
       JSON.stringify({ ...good, summary: "" }),
-      JSON.stringify({ ...good, summary: "x".repeat(SUMMARY_MAX + 1) }),
       JSON.stringify({ ...good, concern: "rude" }),
       JSON.stringify({ ...good, agrees: "yes" }),
     ]) {
       expect(parseFirstRead(bad)).toBeNull();
     }
+  });
+
+  it("clips a summary that runs long at a word, so the read isn't thrown away", () => {
+    const long =
+      "Listing for a used Casio fx-991ZA Plus calculator, reported as a scam because the seller asked for payment by EFT before the buyer sees the item.";
+    const read = parseFirstRead(JSON.stringify({ ...good, summary: long }))!;
+    expect(read.summary.length).toBeLessThanOrEqual(SUMMARY_MAX);
+    expect(read.summary).toMatch(/ the…$|[a-z]…$/);
+    expect(long.startsWith(read.summary.slice(0, -1))).toBe(true);
+    expect(parseFirstRead(JSON.stringify({ ...good, summary: "x".repeat(SUMMARY_MAX + 20) }))!.summary).toHaveLength(SUMMARY_MAX);
+  });
+
+  it("keeps a stored value strict: too long is null", () => {
+    expect(asFirstRead({ ...good, summary: "x".repeat(SUMMARY_MAX + 1) })).toBeNull();
   });
 
   it("reads a stored value back, or null", () => {
