@@ -6,9 +6,20 @@ const groq = vi.hoisted(() => vi.fn<() => Promise<ProviderReply>>());
 vi.mock("./ai/anthropic", () => ({ read: haiku }));
 vi.mock("./ai/groq", () => ({ read: groq }));
 
-import { checkListingGuidelines, checkRequest, listingRequest, readListingPhotos, readSearchWords, wordsRequest } from "./ai";
+import {
+  checkListingGuidelines,
+  checkRequest,
+  listingRequest,
+  readListingPhotos,
+  readSearchPhoto,
+  readSearchWords,
+  searchRequest,
+  wordsRequest,
+} from "./ai";
 import { readReport, reportReadRequest, type ReportForRead } from "./ai";
-import { FAKE_REPLY, fakeWords } from "./ai/fake";
+import { FAKE_REPLY, FAKE_SEARCH_REPLY, fakeWords } from "./ai/fake";
+// Stage D: Snap to search.
+import { photoSearchSchema } from "@/lib/search/photo";
 
 const CATEGORIES = [
   { slug: "textbooks-notes", name: "Textbooks & notes" },
@@ -308,5 +319,61 @@ describe("the words search through the door (AI features spec 6 and 7.1)", () =>
     });
     expect(fakeWords("Search: cheap kettle", campuses)).toMatchObject({ q: "kettle", campus: null, sort: "price-low" });
     expect(fakeWords("Search: desk 300 rand", campuses)).toMatchObject({ q: "desk", maxPrice: 300 });
+  });
+});
+
+// Stage D: Snap to search.
+describe("Snap to search through the door (AI features spec 5 and 7.1)", () => {
+  const SEARCH_REPLY = JSON.stringify(FAKE_SEARCH_REPLY);
+
+  it("sends one photo with the search instruction and schema, named photo-search", () => {
+    const request = searchRequest(photo(9), CATEGORIES);
+    expect(request.task).toBe("photo-search");
+    expect(request.images).toEqual([{ type: "image/jpeg", base64: "CQ==" }]);
+    expect(request.schema).toEqual(photoSearchSchema(["textbooks-notes", "tech"]));
+    expect(request.system).toContain("search CampusCart");
+  });
+
+  it("uses the fake in sample mode: words that find the sample calculator", async () => {
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "fake");
+    expect(await readSearchPhoto(photo(1), CATEGORIES)).toEqual({
+      ok: true,
+      answer: { words: ["casio", "calculator"], categorySlug: "tech", moduleCode: null, confidence: "high" },
+    });
+  });
+
+  it("asks Haiku first, and Groq only when Haiku couldn't answer", async () => {
+    bothProviders();
+    haiku.mockResolvedValueOnce({ ok: false, failure: "timeout" });
+    groq.mockResolvedValueOnce({ ok: true, text: SEARCH_REPLY });
+    expect(await readSearchPhoto(photo(1), CATEGORIES)).toMatchObject({ ok: true, answer: { words: ["casio", "calculator"] } });
+    expect(haiku).toHaveBeenCalledWith(expect.objectContaining({ task: "photo-search" }));
+    expect(vi.mocked(console.warn)).toHaveBeenCalledWith("[vossie] photo-search: anthropic timeout");
+  });
+
+  it("a person comes back as its failure, logging only the provider and kind, never the photo or words", async () => {
+    bothProviders();
+    const warn = vi.mocked(console.warn);
+    haiku.mockResolvedValueOnce({ ok: true, text: JSON.stringify({ ...FAKE_SEARCH_REPLY, personIsSubject: true }) });
+    expect(await readSearchPhoto(photo(1), CATEGORIES)).toEqual({ ok: false, failure: "person" });
+    expect(warn.mock.calls).toEqual([["[vossie] photo-search: anthropic person"]]);
+    expect(groq).not.toHaveBeenCalled();
+  });
+
+  it("stops at a refusal, so the photo goes to one provider", async () => {
+    bothProviders();
+    haiku.mockResolvedValueOnce({ ok: false, failure: "refusal" });
+    expect(await readSearchPhoto(photo(1), CATEGORIES)).toEqual({ ok: false, failure: "refusal" });
+    expect(groq).not.toHaveBeenCalled();
+  });
+
+  it("with no provider to ask, or none that could answer, it's an API error or the last failure", async () => {
+    vi.stubEnv("VOSSIE_AI_PROVIDERS", "anthropic");
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+    expect(await readSearchPhoto(photo(1), CATEGORIES)).toEqual({ ok: false, failure: "api-error" });
+    bothProviders();
+    haiku.mockResolvedValueOnce({ ok: false, failure: "timeout" });
+    groq.mockResolvedValueOnce({ ok: false, failure: "rate-limited" });
+    expect(await readSearchPhoto(photo(1), CATEGORIES)).toEqual({ ok: false, failure: "rate-limited" });
   });
 });

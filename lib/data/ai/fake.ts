@@ -2,7 +2,7 @@ import type { ReadPhoto } from "./types";
 
 // Fixed replies for the e2e tests and the sample demo (spec decision 13). Photo-to-listing: a textbook with a module
 // code, so the tags, the price hint and the Looking For line can all show. The listing check: see fakeVerdict. The words
-// search: see fakeWords.
+// search: see fakeWords. Snap to search: see FAKE_SEARCH_REPLY.
 // aiProviders never lists it on Supabase.
 
 export const FAKE_REPLY = {
@@ -81,6 +81,15 @@ function schemaCampuses(schema: Readonly<Record<string, unknown>>): string[] {
   return campus.filter((slug): slug is string => typeof slug === "string");
 }
 
+/** Snap to search's fake (AI features spec 5.2): words that find the sample Casio calculator (l-001). */
+export const FAKE_SEARCH_REPLY = {
+  words: ["casio", "calculator"],
+  categorySlug: "tech",
+  moduleCode: null,
+  personIsSubject: false,
+  confidence: "high",
+} as const;
+
 /** One reply per task: a stage adds its own line here. */
 function fakeReply(request: Parameters<ReadPhoto>[0]): unknown {
   switch (request.task) {
@@ -88,6 +97,8 @@ function fakeReply(request: Parameters<ReadPhoto>[0]): unknown {
       return fakeVerdict(request.text);
     case "words-search":
       return fakeWords(request.text, schemaCampuses(request.schema));
+    case "photo-search":
+      return FAKE_SEARCH_REPLY;
     default:
       return FAKE_REPLY;
   }

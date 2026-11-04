@@ -2,25 +2,31 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useRef, useState, type FormEvent, type MouseEvent } from "react";
+import { useId, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from "react";
 import { ClockIcon, CloseIcon, SearchIcon, TrendingIcon } from "@/components/icons";
 import { useOverlayDialog } from "@/components/ui/useOverlayDialog";
 import { useCampusChoice } from "@/hooks/useCampusChoice";
 import { ALL_CAMPUSES } from "@/lib/campus";
 import { isPlainClick } from "@/lib/click";
 import { addRecentSearch, clearRecentSearches, getRecentSearches } from "@/lib/recent-searches";
-import type { Campus, Category, TrendingSearches } from "@/lib/types";
+import type { Campus, TrendingSearches } from "@/lib/types";
 
 type SearchOverlayProps = {
   campuses: readonly Campus[];
-  categories: readonly Category[];
+  /** The Categories section (SearchCategories), rendered by the layout on the server so its code isn't in this one's. */
+  categoryLinks: ReactNode;
   trending: TrendingSearches;
+  /**
+   * "Search with a photo" (PhotoSearchLink) while Snap to search is on (AI features spec section 5), rendered by the
+   * layout on the server so its code isn't in this component's; shown under the box.
+   */
+  photoLink?: ReactNode;
 };
 
 const browseHref = (term: string) => `/browse?q=${encodeURIComponent(term)}`;
 
 /** Full-screen search (spec section 6.5). Submitting goes to /browse?q=… */
-export function SearchOverlay({ campuses, categories, trending }: SearchOverlayProps) {
+export function SearchOverlay({ campuses, categoryLinks, trending, photoLink }: SearchOverlayProps) {
   const id = useId();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -83,6 +89,8 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
           </button>
         </form>
 
+        {photoLink}
+
         {recent.length > 0 && (
           <section aria-labelledby={`${id}-recent`} className="search-section">
             <div className="flex items-center justify-between gap-4">
@@ -132,20 +140,7 @@ export function SearchOverlay({ campuses, categories, trending }: SearchOverlayP
           </ul>
         </section>
 
-        <section aria-labelledby={`${id}-categories`} className="search-section">
-          <h2 id={`${id}-categories`} className="search-heading">
-            Categories
-          </h2>
-          <ul className="search-categories">
-            {categories.map((category) => (
-              <li key={category.slug}>
-                <Link href={`/browse?cat=${category.slug}`} className="search-category">
-                  {category.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
+        {categoryLinks}
       </div>
     </dialog>
   );

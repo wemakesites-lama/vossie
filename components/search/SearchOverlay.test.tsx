@@ -5,6 +5,8 @@ import { setCampusChoice } from "@/lib/campus";
 import { openOverlay } from "@/lib/overlays";
 import { addRecentSearch, getRecentSearches } from "@/lib/recent-searches";
 import type { Campus, Category, TrendingSearches } from "@/lib/types";
+import { PhotoSearchLink } from "./PhotoSearchLink";
+import { SearchCategories } from "./SearchCategories";
 import { SearchOverlay } from "./SearchOverlay";
 
 // The shared setup's router mock can't be asserted on, so this file has its own.
@@ -16,6 +18,9 @@ const router = vi.hoisted(() => ({
   back: vi.fn(),
   forward: vi.fn(),
 }));
+
+// Shows each link's prefetch as data-prefetch, for Snap to search's link (AI features spec 5.5).
+vi.mock("next/link", async () => (await import("@/tests/helpers/next-link")).nextLinkShowingPrefetch);
 
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
@@ -37,11 +42,11 @@ const trending: TrendingSearches = {
   midrand: ["Braids", "Desk lamp", "Gaming headset"],
 };
 
-function openSearch() {
+function openSearch({ photoSearch }: { photoSearch?: boolean } = {}) {
   render(
     <>
       <button type="button">Search trigger</button>
-      <SearchOverlay campuses={campuses} categories={categories} trending={trending} />
+      <SearchOverlay campuses={campuses} categoryLinks={<SearchCategories categories={categories} />} trending={trending} photoLink={photoSearch ? <PhotoSearchLink /> : null} />
     </>,
   );
   const trigger = screen.getByRole("button", { name: "Search trigger" });
@@ -84,7 +89,7 @@ describe("SearchOverlay", () => {
     render(
       <>
         <button type="button">Search trigger</button>
-        <SearchOverlay campuses={campuses} categories={categories} trending={{ ...trending, pretoria: [] }} />
+        <SearchOverlay campuses={campuses} categoryLinks={<SearchCategories categories={categories} />} trending={{ ...trending, pretoria: [] }} />
       </>,
     );
     act(() => openOverlay("search", screen.getByRole("button", { name: "Search trigger" })));
@@ -181,5 +186,21 @@ describe("SearchOverlay", () => {
     const box = within(dialog).getByRole<HTMLInputElement>("searchbox", { name: "Search CampusCart" });
     await user.paste("x".repeat(120));
     expect(box.value).toHaveLength(100);
+  });
+
+  it("offers Search with a photo under the box only while Snap to search is on, never prefetched (AI features spec 5)", () => {
+    const dialog = openSearch({ photoSearch: true });
+    const link = within(dialog).getByRole("link", { name: "Search with a photo" });
+    expect(link).toHaveAttribute("href", "/browse/photo");
+    expect(link.dataset.prefetch).toBe("false");
+    swallowNavigation();
+    fireEvent.click(link);
+    expect(dialog).not.toHaveAttribute("open");
+    expect(getRecentSearches()).toEqual([]);
+  });
+
+  it("has no photo link while Snap to search is off", () => {
+    const dialog = openSearch();
+    expect(within(dialog).queryByRole("link", { name: "Search with a photo" })).not.toBeInTheDocument();
   });
 });

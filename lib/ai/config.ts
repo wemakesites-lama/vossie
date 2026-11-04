@@ -10,7 +10,7 @@ type Env = Readonly<Record<string, string | undefined>>;
 export type ProviderName = "anthropic" | "groq" | "fake";
 
 /** The features, each with its own switch. Stages C to E add theirs here (AI features spec 7.2). */
-export type AiFeature = "listing" | "listing-check" | "report-read" | "words-search";
+export type AiFeature = "listing" | "listing-check" | "report-read" | "words-search" | "photo-search";
 
 const KNOWN: readonly ProviderName[] = ["anthropic", "groq", "fake"];
 const KEYS: Readonly<Record<Exclude<ProviderName, "fake">, string>> = {
@@ -22,6 +22,7 @@ const SWITCHES: Readonly<Record<AiFeature, string>> = {
   "listing-check": "VOSSIE_AI_LISTING_CHECK",
   "report-read": "VOSSIE_AI_REPORT_READ",
   "words-search": "VOSSIE_AI_WORDS_SEARCH",
+  "photo-search": "VOSSIE_AI_PHOTO_SEARCH",
 };
 
 /** Groq's free tier is for the photo features only (AI features spec 7.1): the rest are Haiku's. */

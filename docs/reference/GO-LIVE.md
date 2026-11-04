@@ -234,6 +234,14 @@ Built 2026-11-05 (AI features spec section 4, stage C; plan `docs/superpowers/pl
 - [ ] Set `VOSSIE_AI_REPORT_READ=1` in Vercel, then redeploy: the privacy page's report read line is drawn at build, so check it's live.
 - [ ] File one real report on a test listing and check its "First read (may be wrong)" box on `/admin/reports/[id]` in the console.
 
+### Snap to search (after the submission)
+Built 2026-11-04 (AI features spec section 5, stage D; plan `docs/superpowers/plans/2026-11-05-ai-stage-d-photo-search.md`) and off. Haiku first, Groq behind it, with photo-to-listing's keys.
+- [x] On the local stack: `pnpm db:types` (byte-identical to the hand edit), `supabase test db` (2,628 passed, 47 files) and `pnpm test:db` (357 passed), 2026-11-04.
+- [ ] The photo test's photos (spec section 8) tried on Snap to search with the real keys: the words, the category, time taken, and that the person photo says "Couldn't tell". This is the first real check of `photoSearchSchema` against Haiku's structured outputs and Groq's strict mode.
+- [ ] Push `20261105130000_photo_search.sql` to Vossie Market: a dry run first, then Lama's go-ahead.
+- [ ] Set `VOSSIE_AI_PHOTO_SEARCH=1` in Vercel, then redeploy: the switch is read at build (the page, the overlay's link and the privacy line).
+- [ ] After two weeks, read the `[vossie] photo-search:` log lines' counts by provider and kind (`person`, `low-confidence`, `bad-output`), and decide whether 30 searches a day is right.
+
 ### Search in your own words (after the submission)
 Built 2026-11-05 (AI features spec section 6, stage E; plan `docs/superpowers/plans/2026-11-05-ai-stage-e-words-search.md`) and off. Haiku only, with photo-to-listing's Anthropic key. Open to everyone, so the site-wide cap (2,000 new parses a SAST day, `WORDS_SEARCH_DAILY_CAP` in `lib/browse/words.ts`) and the console's spend limit are the only brakes.
 - [ ] Push `20261105140000_words_search.sql` to Vossie Market: a dry run first, then Lama's go-ahead.

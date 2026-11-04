@@ -9,6 +9,7 @@ import { requestErrors, requestFieldIds } from "@/lib/looking-for/errors";
 import { requestFieldPrefix, requestPath, YOUR_REQUESTS_PATH } from "@/lib/looking-for/paths";
 import { addDays, DETAILS_MAX, DETAILS_MIN, NEEDED_BY_DAYS, TITLE_MAX, TITLE_MIN } from "@/lib/looking-for/rules";
 import { CLOSES_BY_ITSELF_HINT, REOPEN_CLEARS_DATE_HINT } from "@/lib/looking-for/words";
+import { cleanLine } from "@/lib/selling/rules";
 import type { Campus, Category, LookingForRequest } from "@/lib/types";
 import { Trail } from "@/components/ui/Trail";
 import { trailFor } from "@/lib/nav/trail";
@@ -26,9 +27,22 @@ export type RequestFormValues = {
 
 export type RequestFormState = { values: RequestFormValues; errors: FormError[] };
 
-/** A new request starts on the account's campus (spec 2.3); an edit starts from the request. */
-export function startValues(request: LookingForRequest | null, campusSlug: string): RequestFormValues {
-  if (!request) return { title: "", category: "", campus: campusSlug, details: "", budget: "", swap: false, neededBy: "" };
+/**
+ * A new request's title from the link (`/looking-for/new?title=…`, stage D planning decision 3): Browse's empty state
+ * passes the search words. One clean line, cut to TITLE_MAX characters; "" when there's none.
+ */
+export function titleFromLink(raw: string | string[] | undefined): string {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof value !== "string") return "";
+  return [...cleanLine(value)].slice(0, TITLE_MAX).join("").trim();
+}
+
+/**
+ * A new request starts on the account's campus (spec 2.3), with the link's title if it came with one; an edit starts
+ * from the request.
+ */
+export function startValues(request: LookingForRequest | null, campusSlug: string, title = ""): RequestFormValues {
+  if (!request) return { title, category: "", campus: campusSlug, details: "", budget: "", swap: false, neededBy: "" };
   return {
     title: request.title,
     category: request.categorySlug,

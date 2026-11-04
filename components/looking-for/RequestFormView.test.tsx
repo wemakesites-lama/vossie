@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { campuses } from "@/data/fixtures/campuses";
 import { categories } from "@/data/fixtures/categories";
-import { RequestLocked, RequestFormView, requestForm, startValues } from "./RequestFormView";
+import { RequestLocked, RequestFormView, requestForm, startValues, titleFromLink } from "./RequestFormView";
 
 vi.mock("@/lib/looking-for/actions", () => ({ saveMyRequest: async () => {}, reopenMyRequest: async () => {} }));
 
@@ -234,5 +234,20 @@ describe("the request form (community actions spec 2.3 and section 4)", () => {
     unmount();
     render(<RequestLocked requestId="r-abc" title="Kettle for res" state="closed" />);
     expect(screen.getByRole("button", { name: "Reopen Kettle for res" })).not.toHaveAccessibleDescription();
+  });
+});
+
+describe("a title from the link (stage D planning decision 3)", () => {
+  it("starts a new request with it, cleaned to one line and cut to 70 characters", () => {
+    expect(startValues(null, "midrand", "casio calculator").title).toBe("casio calculator");
+    expect(titleFromLink("  casio\n  calculator ")).toBe("casio calculator");
+    expect(titleFromLink(["first words", "second"])).toBe("first words");
+    expect(titleFromLink("a".repeat(90))).toHaveLength(70);
+    expect(titleFromLink(undefined)).toBe("");
+  });
+
+  it("gives way to what was typed after a failed post", () => {
+    const state = { key: "k", sessionKey: "s", form: "request-new", errors: ["title-length"], values: { title: "Hi" }, notice: null, expiresAt: "" };
+    expect(requestForm(state, startValues(null, "midrand", "casio calculator"), "request-new").values.title).toBe("Hi");
   });
 });

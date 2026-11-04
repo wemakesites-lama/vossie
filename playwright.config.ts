@@ -98,6 +98,8 @@ export default defineConfig({
       VOSSIE_AI_REPORT_READ: "1",
       // Search in your own words, answered by the fake: a sentence reads into filters (AI stage E).
       VOSSIE_AI_WORDS_SEARCH: "1",
+      // Snap to search on, answered by the fake ("casio calculator" in Tech; AI stage D).
+      VOSSIE_AI_PHOTO_SEARCH: "1",
       VOSSIE_AI_PROVIDERS: "fake",
       VOSSIE_LISTING_AI_PROVIDERS: "fake",
     } as Record<string, string>,

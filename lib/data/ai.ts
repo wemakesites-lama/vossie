@@ -22,6 +22,14 @@ import type { PhotoType } from "@/lib/types";
 import type { ReportReason } from "@/lib/types";
 import { checkWords, wordsInstruction, wordsSchema, type ParsedWords } from "@/lib/browse/words";
 import type { AiTask, ProviderFailure, ProviderRequest, ReadPhoto } from "./ai/types";
+// Stage D: Snap to search.
+import {
+  checkPhotoSearch,
+  photoSearchInstruction,
+  photoSearchSchema,
+  type PhotoSearchAnswer,
+  type PhotoSearchFailure,
+} from "@/lib/search/photo";
 
 // The only door to the AI providers (AI features spec 7.1; photo-to-listing spec decisions 9 to 11). Each provider file
 // is loaded only when it's tried, so an SDK is never in a page's code. Failures are logged by provider and kind only:
@@ -240,4 +248,47 @@ export async function readSearchWords(
     }
   }
   return null;
+}
+
+// --- Stage D: Snap to search (AI features spec section 5) --------------------------------------------------------
+
+export type SearchPhotoReading = { ok: true; answer: PhotoSearchAnswer } | { ok: false; failure: PhotoSearchFailure };
+
+/** What Snap to search asks (spec 5.2): one photo, already re-encoded and stripped. Never anything about the buyer. */
+export function searchRequest(photo: Photo, categories: readonly CategoryChoice[]): ProviderRequest {
+  return {
+    task: "photo-search",
+    system: photoSearchInstruction(categories),
+    images: [{ type: photo.type, base64: Buffer.from(photo.bytes).toString("base64") }],
+    text: "The photo shows something a student wants to buy.",
+    schema: photoSearchSchema(categories.map((category) => category.slug)),
+  };
+}
+
+/**
+ * Snap to search (spec section 5): Haiku, then Groq when Haiku couldn't answer, the fake in sample mode. The photo is
+ * sent once and dropped; only the provider and the failure's kind are logged.
+ */
+export async function readSearchPhoto(photo: Photo, categories: readonly CategoryChoice[]): Promise<SearchPhotoReading> {
+  const request = searchRequest(photo, categories);
+  const slugs = categories.map((category) => category.slug);
+  let last: PhotoSearchFailure = "api-error";
+  for (const name of featureProviders("photo-search")) {
+    const reply = await (await LOAD[name]()).read(request);
+    if (!reply.ok) {
+      logFailure("photo-search", name, reply.failure);
+      if (MOVE_ON.has(reply.failure)) {
+        last = reply.failure;
+        continue;
+      }
+      return { ok: false, failure: reply.failure };
+    }
+    const checked = checkPhotoSearch(reply.text, slugs);
+    if (typeof checked === "string") {
+      logFailure("photo-search", name, checked);
+      return { ok: false, failure: checked };
+    }
+    return { ok: true, answer: checked };
+  }
+  return { ok: false, failure: last };
 }

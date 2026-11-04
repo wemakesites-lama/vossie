@@ -1,6 +1,6 @@
 # AI features: Haiku first, search by photo or in your own words, a listing check, and a read of each report: design
 
-Date: 2026-11-03 · Status: **Approved by Lama 2026-11-03 (decision 96).** Stages A (Haiku first), B (the listing check) and E (search in your own words) built; C and D being built in parallel. Lama's answers are in section 11.
+Date: 2026-11-03 · Status: **Approved by Lama 2026-11-03 (decision 96).** Stages A (Haiku first), B (the listing check), C (a read of each report), D (Snap to search) and E (search in your own words) built. Lama's answers are in section 11.
 
 Stage C (a read of each report): built 2026-11-05, plan `docs/superpowers/plans/2026-11-05-ai-stage-c-report-read.md`.
 
@@ -246,3 +246,21 @@ Left out on purpose: AI replies on a seller's behalf (trust matters more on a ca
 5. **A price needs R and two or more digits, or a "k"** ("R300", "R2k"), so model codes such as "EOS R5" and "Ryzen R7" aren't sentences, and the instruction says a model code belongs in the words (final review).
 6. **The privacy line** says the words are kept with their filters, and which searches aren't sent (one to three words with no price, campus, "cheap" or "free").
 7. **The database checks** (2026-11-04, local stack): pgTAP 2,635 passed (47 files, `65_words_search` included), `test:db` 359 passed (52 files), and `pnpm db:types` was byte-identical to the hand edit. `06_account_actions.test.sql` lists `reserve_words_search(integer)` among the service-role-only functions.
+
+### While planning stage D (2026-11-04, plan `docs/superpowers/plans/2026-11-05-ai-stage-d-photo-search.md`)
+
+1. **"Searching for" is Browse's own heading.** A search already shows "Search" over the words in quotes, editable in Browse's search box. A literal "Searching for:" line would need a marker in the URL (which holds only the words) and a change to Browse, stage E's page. So a photo search lands on the normal search page.
+2. **The query:** `q` is the model's words (at most 6). Browse needs every word to match, so the instruction asks for 1 to 4, the item's plain name first, then brand and model. The category goes in only at high confidence; a module code becomes `q` only when there are no words; the campus is the viewer's own, as for any search.
+3. **Looking For's title:** `/looking-for/new?title=…` fills the title (cleaned, at most 70 characters), and the sign-in bounce keeps it.
+4. **Switch off:** `/browse/photo` is the 404 and no link shows. **Signed out:** the page shows a sign-in link back to it.
+5. **The count is reserved after the photo passes its checks,** before the provider, as photo-to-listing's is.
+
+### While building stage D (2026-11-04)
+
+1. **No `maxItems` in the schema** (final review): structured outputs doesn't take it, so every real Haiku call would have failed over to Groq. The instruction says "at most 6" and the check keeps the first 6; a test keeps array and string limits out.
+2. **The overlay's link is a Server Component** (`PhotoSearchLink`) handed to `SearchOverlay` as a node: in the overlay's own code it put the listing forms 94 B over the 150 KB budget.
+3. **Search says "Searching…" and ignores a second press** (`PendingButton`): a second press would count a second search and send the photo again.
+4. **A model's "Casio fx-991" is split into words** before cleaning, so Browse matches each.
+5. **The notice is taken as it's shown** (`takeNotice`), so it isn't back for form state's 10 minutes.
+6. **`STORE_VERSION` went to 16** for the sample store's `photoSearches` (17 once merged with stage E, which also took 16).
+

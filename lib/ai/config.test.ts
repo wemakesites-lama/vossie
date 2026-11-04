@@ -70,3 +70,13 @@ describe("the AI settings (AI features spec 7.2)", () => {
     expect(aiFeatureOn("words-search", { VOSSIE_AI_PROVIDERS: "fake", VOSSIE_AI_WORDS_SEARCH: "1" })).toBe(true);
   });
 });
+
+// Stage D: Snap to search.
+describe("Snap to search's settings (AI features spec 5.4, 7.2)", () => {
+  it("photo search has its own switch and may fall back to Groq", () => {
+    const env = { VOSSIE_AI_PHOTO_SEARCH: "1", ANTHROPIC_API_KEY: "a", GROQ_API_KEY: "g" };
+    expect(featureProviders("photo-search", env)).toEqual(["anthropic", "groq"]);
+    expect(aiFeatureOn("photo-search", env)).toBe(true);
+    expect(aiFeatureOn("photo-search", { ...env, VOSSIE_AI_PHOTO_SEARCH: undefined })).toBe(false);
+  });
+});

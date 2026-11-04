@@ -99,6 +99,37 @@ function wordsSearchLine() {
   );
 }
 
+/**
+ * Snap to search's line (AI features spec 5.1 and 7.3): the providers a photo could actually go to, in order, as
+ * photoFillLine. One photo, the same one to each. Fixed at build, like photoFillLine.
+ */
+function photoSearchLine() {
+  if (!aiFeatureOn("photo-search")) return null;
+  const used = featureProviders("photo-search").filter((name) => name !== "fake");
+  if (used.length === 0) return null;
+  const words = {
+    anthropic: {
+      name: "Anthropic",
+      line: "Anthropic, an AI provider in the United States, which deletes it within 30 days and doesn't use it to train its models",
+    },
+    groq: {
+      name: "Groq",
+      line: "Groq, an AI provider in the United States, which keeps nothing from it (we've turned on its zero data retention)",
+    },
+  } as const;
+  const chain = used.map((name) => words[name as keyof typeof words]);
+  // A later provider sees the photo only when the one before it couldn't answer (AI features spec 5.4).
+  const fallbacks = chain.slice(1).map((next, index) => ` If ${chain[index].name} can't answer, it goes to ${next.line}.`);
+  return (
+    <li>
+      When you search with a photo, your photo is sent to {chain[0].line}, to find search words for it.
+      {fallbacks.join("")} Your browser makes it smaller first where it can, its hidden data (location included) is removed, and it&apos;s never
+      stored on CampusCart: only the search words come back, in the page address. So what&apos;s sent is read outside
+      South Africa. Nothing is sent unless you press Search.
+    </li>
+  );
+}
+
 const SECTIONS: readonly InfoSection[] = [
   {
     id: "privacy-who",
@@ -212,6 +243,7 @@ const SECTIONS: readonly InfoSection[] = [
           {listingCheckLine()}
           {reportReadLine()}
           {wordsSearchLine()}
+          {photoSearchLine()}
           <li>
             The campus updates form in the footer doesn&apos;t send or store your email address yet. When there is a real
             mailing list, it will ask for your consent first, and this policy will say so.

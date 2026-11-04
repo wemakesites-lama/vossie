@@ -1156,6 +1156,9 @@ isOneToOne: false
 "reserve_photo_fill":
 { Args: { "p_account_id": string,"p_max_fills": number }; Returns: boolean
                            },
+"reserve_photo_search":
+{ Args: { "p_account_id": string,"p_max_searches": number }; Returns: boolean
+                           },
 "reserve_words_search":
 { Args: { "p_max_parses": number }; Returns: boolean
                            },

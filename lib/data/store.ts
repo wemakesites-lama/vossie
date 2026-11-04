@@ -59,6 +59,8 @@ export type SampleStore = {
   photoFills: Map<string, string[]>;
   /** The words search's new parses, by SAST day (YYYY-MM-DD); only today's is kept (AI stage E plan decision 5). */
   wordsSearchParses: Map<string, number>;
+  /** Snap to search's searches per account, as ISO times in the last 24 hours (AI features spec 5.4). */
+  photoSearches: Map<string, string[]>;
   /** By attempt key: sample mode's outbox (spec 2.3). */
   sampleEmails: Map<string, SampleEmailRow>;
   /** By `${sessionKey}:${form}`. */
@@ -111,8 +113,9 @@ export type SampleStore = {
  * 13: a report remembers who owned its target (`targetOwnerId`), so deleting the target doesn't free its owner to dismiss it.
  * 14: a Looking For request remembers the closing day its reminder was sent for (`remindedFor`, stage M spec decision 15).
  * 16: the words search's daily count (`wordsSearchParses`, AI stage E plan decision 5).
+ * 17: Snap to search's daily count (`photoSearches`, AI features spec 5.4, stage D).
  */
-export const STORE_VERSION = 16;
+export const STORE_VERSION = 17;
 
 type StoreHolder = { __vossieSampleStore?: SampleStore };
 
@@ -146,6 +149,7 @@ function seedStore(): SampleStore {
     codeSends: new Map(),
     photoFills: new Map(),
     wordsSearchParses: new Map(),
+    photoSearches: new Map(),
     sampleEmails: new Map(),
     formStates: new Map(),
     // Copies, like the accounts above (messaging plan decision 16).

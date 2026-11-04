@@ -325,3 +325,13 @@ export function GridIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/** A camera: Snap to search's "Search with a photo" link. */
+export function CameraIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 8h3l2-3h6l2 3h3v11H4Z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </Svg>
+  );
+}
