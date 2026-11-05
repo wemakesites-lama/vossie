@@ -101,7 +101,7 @@ So the Eduvos crest is still on every page (in the footer) and on every shared l
 
 - New: `lib/brand/cart-mark.ts`, the only drawing of the mark (both cuts), which the component and the script both read.
 - New: `components/brand/CartMark.tsx`, the Server Component for the inline mark, used by `Pennant` and `CrestLoader`.
-- New: `scripts/make-icons.ts` (`pnpm icons`), with `lib/brand/icons.ts` (which files, what sizes) and `lib/brand/ico.ts` (the favicon file). It uses the sharp that comes with Next, so no new dependency. It replaces `scripts/make-icons.py`, which draws the old crest icons (Lama decides whether to delete it).
+- New: `scripts/make-icons.ts` (`pnpm icons`), with `lib/brand/icons.ts` (which files, what sizes) and `lib/brand/ico.ts` (the favicon file). It uses the sharp that comes with Next, so no new dependency. It replaces `scripts/make-icons.py`, which drew the old crest icons and was deleted (Lama, 2026-11-05).
 - Generated: four masters in `assets/brand/`, `campuscart-mark-navy.svg` and `-white.svg` (full) and `campuscart-mark-small-navy.svg` and `-small-white.svg`. Navy is for white surfaces with all stars navy; white has the sky star, for navy surfaces.
 - Changed: `Pennant.tsx` (header size only), `SiteHeader.tsx` (the `pennant` slot), `app/layout.tsx`, `CrestLoader.tsx`, `app/globals.css` (the pennant and loader mark sizes, Night's filter dropped for the mark), `lib/theme-contrast.test.ts`, the six icon files.
 - Decision 98 in `docs/reference/LANDING-DECISIONS.md`; `docs/PROGRESS.md`.

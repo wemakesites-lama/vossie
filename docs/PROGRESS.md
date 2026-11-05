@@ -1332,7 +1332,8 @@ Merged into `main` from their worktrees (`683ccec` F, `fee7d47` H, `337372f` G).
   - e2e (performance, motion, shell, a11y, cls): 773 passed, 1 failed: `/sell`'s font-swap layout shift at phone-390, 0.0544 (its sections and button, not the header), which predates this work;
   - the mark is in no JS chunk;
   - JS is lighter: the listing forms are 152,753 B brotli, 847 B under 150 KB, because the header no longer imports `next/image`.
-- Not done: `scripts/make-icons.py`, which would redraw the old crest icons, is still there (Lama to decide); tell Eduvos before go-live (GO-LIVE list).
+- `scripts/make-icons.py`, which would have redrawn the old crest icons, deleted on Lama's go-ahead (2026-11-05).
+- Not done: tell Eduvos before go-live (GO-LIVE list); push and redeploy for vossie-pi.
 
 ## Next
 - **Campus photos** (2026-10-29): the 12 campuses use Eduvos's own photos from eduvos.com's campus pages (buildings only, cropped square, `public/campus/`), Eduvos Online an Unsplash photo; `data/fixtures/campuses.ts` points at them (no database change). Eduvos's copyright: confirm with Eduvos marketing before go-live. Sources in `docs/reference/stock-photos.md`.

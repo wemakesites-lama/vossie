@@ -110,7 +110,7 @@ The approved mockup screens are in `docs/reference/mockups/` (`home-v2.html` is 
 ## Still open
 
 - Eduvos's font files and licence confirmation, then the final font choice after comparing (decision 8).
-- The official crest SVG (decision 10). When it arrives, don't run `scripts/make-icons.py`: it would put crest icons back. The icons are the CampusCart mark, made by `pnpm icons` (decision 98).
+- The official crest SVG (decision 10). It changes the crest's own files only: the icons are the CampusCart mark, made by `pnpm icons` (decision 98; the old crest icon script is gone).
 - Show Eduvos the CampusCart mark, which replaces the crest in the header pennant (decision 98; decision 10 approved the crest there).
 - The photos (decision 11).
 - Safari's 7-day limit on cookies written by the page (decision 58): on iPhones the campus choice and saves may expire a week after they were last set. Fix before launch, by refreshing them from the server or by moving saves into accounts.
