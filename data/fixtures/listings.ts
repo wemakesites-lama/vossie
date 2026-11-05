@@ -30,6 +30,16 @@ const sellerNames = new Map(sellers.map((seller) => [seller.slug, seller.name]))
 /** A labelled placeholder for the second or third photo (plan decision 15). */
 const photo = (n: 2 | 3, alt: string): ImageRef => ({ src: `/placeholders/photo/${n}.svg`, alt });
 
+/**
+ * The listings with a stock photo of their own, `/stock/listing/<id>.jpg` (2026-11-05, docs/reference/stock-photos.md),
+ * so no two listings share a cover. The rest keep their category's photo, each used by that one listing only.
+ */
+const OWN_PHOTO: ReadonlySet<string> = new Set([
+  "l-003", "l-006", "l-007", "l-008", "l-010", "l-011", "l-013", "l-014", "l-015", "l-016", "l-017", "l-018", "l-019",
+  "l-020", "l-021", "l-022", "l-023", "l-024", "l-025", "l-026", "l-027", "l-028", "l-029", "l-030", "l-031",
+  "fs-001", "fs-002", "fs-003", "fs-004", "fs-005", "fs-006", "fs-007",
+]);
+
 const listing = (
   id: string,
   title: string,
@@ -58,8 +68,8 @@ const listing = (
   priceIsFrom: from,
   payMode,
   campusSlug,
-  // Sellers will upload their own photos; until then each listing shows its category's stock photo.
-  image: { src: `/stock/listing/${categorySlug}.jpg`, alt: title },
+  // Sellers will upload their own photos; until then each listing shows a stock photo.
+  image: { src: `/stock/listing/${OWN_PHOTO.has(id) ? id : categorySlug}.jpg`, alt: title },
   badge,
   createdAt,
   kind,

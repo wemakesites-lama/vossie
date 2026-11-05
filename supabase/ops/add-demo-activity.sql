@@ -6,8 +6,8 @@
 -- What it adds, all removed by the clear-out (clear-sample-data.sql) with the rest of the sample data:
 -- - three buyer accounts at @vossie.test (Ayanda, Kagiso, Zanele). They can't sign in: the demo sign-in knows only the
 --   five fixture addresses, and a .test address can't receive a code.
--- - 15 Midrand listings (dm-001 to dm-015) on existing Midrand shops, 5 of them Tech corner's. Their photos are
---   stock photos the site already ships (docs/reference/stock-photos.md), so nothing needs deploying.
+-- - 15 Midrand listings (dm-001 to dm-015) on existing Midrand shops, 5 of them Tech corner's, each with its own stock
+--   photo (/stock/listing/<id>.jpg, docs/reference/stock-photos.md).
 -- - the 16 sample Looking For requests (r-001 to r-016, from supabase/seed.sql), if they aren't there.
 -- - Sipho's week: five conversations with the new buyers (one sale waiting to be marked sold, one confirmed sale, one
 --   buyer waiting for a first reply), Thandi's headset thread from the seed, their notifications, Naledi's two notes
@@ -176,21 +176,21 @@ on conflict do nothing;
 insert into public.listing_photos (listing_id, placeholder_src, position, alt)
 select v.id, v.src, 0, ''
 from (values
-  ('dm-001', '/stock/hub/banner.jpg'),
-  ('dm-002', '/stock/category/tech.jpg'),
-  ('dm-003', '/stock/hub/h-006.jpg'),
-  ('dm-004', '/stock/hub/h-004.jpg'),
-  ('dm-005', '/stock/seller/tech-corner.jpg'),
-  ('dm-006', '/stock/seller/study-desk.jpg'),
-  ('dm-007', '/stock/seller/accounting-tutor.jpg'),
-  ('dm-008', '/stock/seller/bookshelf.jpg'),
-  ('dm-009', '/stock/seller/moving-out-sale.jpg'),
-  ('dm-010', '/stock/category/food.jpg'),
-  ('dm-011', '/stock/category/hair-beauty.jpg'),
-  ('dm-012', '/stock/seller/logo-lab.jpg'),
-  ('dm-013', '/stock/hub/h-012.jpg'),
-  ('dm-014', '/stock/seller/sports-kit.jpg'),
-  ('dm-015', '/stock/category/tickets-events.jpg')
+  ('dm-001', '/stock/listing/dm-001.jpg'),
+  ('dm-002', '/stock/listing/dm-002.jpg'),
+  ('dm-003', '/stock/listing/dm-003.jpg'),
+  ('dm-004', '/stock/listing/dm-004.jpg'),
+  ('dm-005', '/stock/listing/dm-005.jpg'),
+  ('dm-006', '/stock/listing/dm-006.jpg'),
+  ('dm-007', '/stock/listing/dm-007.jpg'),
+  ('dm-008', '/stock/listing/dm-008.jpg'),
+  ('dm-009', '/stock/listing/dm-009.jpg'),
+  ('dm-010', '/stock/listing/dm-010.jpg'),
+  ('dm-011', '/stock/listing/dm-011.jpg'),
+  ('dm-012', '/stock/listing/dm-012.jpg'),
+  ('dm-013', '/stock/listing/dm-013.jpg'),
+  ('dm-014', '/stock/listing/dm-014.jpg'),
+  ('dm-015', '/stock/listing/dm-015.jpg')
 ) as v (id, src)
 where exists (select 1 from public.listings l where l.id = v.id)
 on conflict do nothing;

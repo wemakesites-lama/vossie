@@ -1,7 +1,8 @@
 # Stock photos
 
 Free photos from [Unsplash](https://unsplash.com), downloaded 2026-10-29 and cropped to each slot's ratio (homepage spec
-section 12). They stand in until Eduvos and the sellers supply real ones. Files live in `public/stock/<folder>/`.
+section 12). On 2026-11-05, 47 listings got a cover of their own (`listing/<id>.jpg`, 1200 by 1200, chosen so no photo
+appears twice anywhere on the site); the six others keep their category's cover, which no other listing uses. They stand in until Eduvos and the sellers supply real ones. Files live in `public/stock/<folder>/`.
 
 - **Licence:** the [Unsplash Licence](https://unsplash.com/license): free for commercial use, no permission or credit
   required (credit is given here anyway). Photos may not be sold unchanged or used to build a competing photo service.
@@ -38,6 +39,53 @@ section 12). They stand in until Eduvos and the sellers supply real ones. Files 
 | `listing/tickets-events.jpg` | [person performing heart hand gesture](https://unsplash.com/photos/person-performing-heart-hand-gesture-hzgs56Ze49s) | [Anthony Delanoix](https://unsplash.com/@anthonydelanoix) |
 | `category/stationery.jpg` | [a blue notebook and a pen on a blue surface](https://unsplash.com/photos/a-blue-notebook-and-a-pen-on-a-blue-surface-ReYnnUhN0DA) | [Cinthya González](https://unsplash.com/@cinthyagonzalez) |
 | `listing/stationery.jpg` | [fountain pen on spiral book](https://unsplash.com/photos/fountain-pen-on-spiral-book-xG8IQMqMITM) | [Aaron Burden](https://unsplash.com/@aaronburden) |
+| `listing/l-003.jpg` | [For Bar fridge, 90 litres](https://unsplash.com/photos/Rjnzt2wvMQE) | Alexander Mass |
+| `listing/l-006.jpg` | [For Desk lamp with a USB port](https://unsplash.com/photos/3A4XZUopCJA) | Andrej Lišakov |
+| `listing/l-007.jpg` | [For Gaming headset, barely used](https://unsplash.com/photos/w5m3PIGvkqI) | Fausto Sandoval |
+| `listing/l-008.jpg` | [For Business Management 1 summary notes](https://unsplash.com/photos/HNjWq8WPyoY) | Yen Vu |
+| `listing/l-010.jpg` | [For Denim jacket, size M](https://unsplash.com/photos/QRN47la37gw) | Caio Coelho |
+| `listing/l-011.jpg` | [For Logo design for your hustle](https://unsplash.com/photos/pivAQkvM2v0) | Sunil kumar |
+| `listing/l-013.jpg` | [For Python tutoring for beginners, one hour](https://unsplash.com/photos/QkYZsgJt9Rg) | Daniil Komov |
+| `listing/l-014.jpg` | [For Electric kettle, 1.7 litres](https://unsplash.com/photos/pVD5AIpHNhU) | engin akyurt |
+| `listing/l-015.jpg` | [For Thrifted puffer jacket](https://unsplash.com/photos/92_tCTr9rtw) | CGXL MEDIA |
+| `listing/l-016.jpg` | [For Lash extensions, classic set](https://unsplash.com/photos/GEct9d7zgos) | Milky Way Lashes |
+| `listing/l-017.jpg` | [For Graph paper and highlighter bundle](https://unsplash.com/photos/DL75KgoK1S8) | andrew davies |
+| `listing/l-018.jpg` | [For HP laptop charger, 65W](https://unsplash.com/photos/k10a3PdimMg) | Andrey Matveev |
+| `listing/l-019.jpg` | [For Economics 1 textbook](https://unsplash.com/photos/MGFSDF4o1nE) | Aziz Jus |
+| `listing/l-020.jpg` | [For Mini oven for res](https://unsplash.com/photos/wnqJcgJXHXk) | Marcos Ramírez |
+| `listing/l-021.jpg` | [For Bicycle, 21 gears](https://unsplash.com/photos/1ow9zrlldJU) | Patrick Hendry |
+| `listing/l-022.jpg` | [For Film camera, working](https://unsplash.com/photos/_T4w3JDm6ug) | Yoann Siloine |
+| `listing/l-023.jpg` | [For Gel nails, full set](https://unsplash.com/photos/mciNDxIq4J0) | Julia Schuwer |
+| `listing/l-024.jpg` | [For Bunny chow lunch special](https://unsplash.com/photos/eEWlcfydzQ4) | Sanket Shah |
+| `listing/l-025.jpg` | [For Accounting 2 tutor, two hours](https://unsplash.com/photos/0oZpRxG5Hkk) | Kelly Sikkema |
+| `listing/l-026.jpg` | [For Sharp scientific calculator](https://unsplash.com/photos/aqB6_P5Z_Lg) | Teuku Fadhil |
+| `listing/l-027.jpg` | [For Res curtains, two panels](https://unsplash.com/photos/SlpsgiZsSNk) | Jon Tyson |
+| `listing/l-028.jpg` | [For Rugby jersey, size L](https://unsplash.com/photos/0CZbu1JNgII) | Wilson Stratton |
+| `listing/l-029.jpg` | [For Engineering drawing set](https://unsplash.com/photos/aAoIy--0ZCk) | Andrey Soldatov |
+| `listing/l-030.jpg` | [For CV and LinkedIn makeover](https://unsplash.com/photos/7iSEHWsxPLw) | Markus Winkler |
+| `listing/l-031.jpg` | [For Spreadsheet tutoring over video](https://unsplash.com/photos/9fZuqBYlV1w) | Gorilla ROI Data Connector |
+| `listing/fs-001.jpg` | [For Business Management 1 notes](https://unsplash.com/photos/zwEwkE63ePg) | Tim Wildsmith |
+| `listing/fs-002.jpg` | [For Desk lamp, swap for a kettle](https://unsplash.com/photos/at5-1nW3UCY) | Oscar Ivan Esquivel Arte |
+| `listing/fs-003.jpg` | [For Res curtains, two panels](https://unsplash.com/photos/0zEfS8Ar4es) | EZcurtain Life |
+| `listing/fs-004.jpg` | [For Logo design for a photo shoot](https://unsplash.com/photos/eVpZxkNY3bw) | Onkar Mehta |
+| `listing/fs-005.jpg` | [For Hangers, bag of 20](https://unsplash.com/photos/O0j9EivTKfI) | Andrej Lišakov |
+| `listing/fs-006.jpg` | [For Calculator for a textbook](https://unsplash.com/photos/wBKWM-DLhzg) | Behnam Norouzi |
+| `listing/fs-007.jpg` | [For Highlighters, half used](https://unsplash.com/photos/7r7-7RLdwCU) | Clayton Robbins |
+| `listing/dm-001.jpg` | [For Lenovo ThinkPad T480, 8 GB RAM](https://unsplash.com/photos/Tiy7aJwWPvc) | Eddie Sennov |
+| `listing/dm-002.jpg` | [For Wireless keyboard and mouse](https://unsplash.com/photos/16GqbwZPULU) | Tubagus Andri Maulana |
+| `listing/dm-003.jpg` | [For Phone tripod with a Bluetooth remote](https://unsplash.com/photos/FWfbFYx55lc) | M Sohaib |
+| `listing/dm-004.jpg` | [For Canon camera with a tripod](https://unsplash.com/photos/4M4qd2Qq8Ww) | iMattSmart |
+| `listing/dm-005.jpg` | [For Sony headphones and a phone case](https://unsplash.com/photos/dJt4lxWy5nk) | Michael Soledad |
+| `listing/dm-006.jpg` | [For Casio fx-82ZA Plus calculator](https://unsplash.com/photos/sUU5rv3n9sw) | Gavin Allanwood |
+| `listing/dm-007.jpg` | [For Accounting 1A past papers and memos](https://unsplash.com/photos/cbEvoHbJnIE) | Nguyen Dang Hoang Nhu |
+| `listing/dm-008.jpg` | [For Statistics 1 textbook, 3rd edition](https://unsplash.com/photos/oB2aEeE8s4A) | Lewis Keegan |
+| `listing/dm-009.jpg` | [For Moving boxes, bundle of 10](https://unsplash.com/photos/DevJkLB3hWE) | Kadarius Seegars |
+| `listing/dm-010.jpg` | [For Pink velvet cupcakes, box of six](https://unsplash.com/photos/txdFwKqb4a4) | Esra Afşar |
+| `listing/dm-011.jpg` | [For Wash day and deep treatment](https://unsplash.com/photos/v3MpM7n2iOE) | Ela De Pure |
+| `listing/dm-012.jpg` | [For Event posters and social posts](https://unsplash.com/photos/gFD3BQ-aoyI) | Jonathan Slater |
+| `listing/dm-013.jpg` | [For Maths 1 crash course, two hours](https://unsplash.com/photos/gYrYa37fAKI) | Artturi Jalli |
+| `listing/dm-014.jpg` | [For White sneakers, size 7](https://unsplash.com/photos/x5aavOm7PFc) | Brian Hall |
+| `listing/dm-015.jpg` | [For Comedy night tickets, a pair](https://unsplash.com/photos/imlD5dbcLM4) | Tim Mossholder |
 | `collection/start-of-semester.jpg` | [a group of people walking on a road](https://unsplash.com/photos/a-group-of-people-walking-on-a-road-YzXF_ZxH8MM) | [Meredith Spencer](https://unsplash.com/@meredithspencer22) |
 | `collection/exam-season.jpg` | [a person writing on a notebook with colored pens](https://unsplash.com/photos/a-person-writing-on-a-notebook-with-colored-pens-OEvLi8LM7cc) | [American Jael](https://unsplash.com/@americanjael) |
 | `collection/moving-in.jpg` | [a woman moving boxes in a living room](https://unsplash.com/photos/a-woman-moving-boxes-in-a-living-room-wS40ELZROLE) | [Vitaly Gariev](https://unsplash.com/@silverkblack) |

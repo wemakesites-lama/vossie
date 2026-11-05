@@ -292,7 +292,7 @@ describe("the inbox (messaging spec 2.10, 2.11 and 3.2)", () => {
         otherName: "Tech corner",
         listingTitle: "Gaming headset, barely used",
         requestTitle: null,
-        image: { src: "/stock/listing/tech.jpg", alt: "Gaming headset, barely used" },
+        image: { src: "/stock/listing/l-007.jpg", alt: "Gaming headset, barely used" },
         preview: "Hi Thandi, it is. Can I see the speaker first?",
         lastFromViewer: false,
         lastMessageAt: "2026-10-13T09:05:00.000Z",
