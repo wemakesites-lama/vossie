@@ -24,10 +24,10 @@ type InboxViewProps = {
 export function InboxView({ tab, hasShop, conversations, now }: InboxViewProps) {
   const title = tab === "buying" ? "Buying" : "Selling";
   return (
-    <div className="inbox-body">
+    <div className="inbox-body" data-tour-page="messages">
       <div className="inbox-bar">
         {hasShop && (
-          <nav aria-label="Buying and selling" className="inbox-tabs">
+          <nav aria-label="Buying and selling" className="inbox-tabs" data-tour="inbox-tabs">
             <ul>
               <li>
                 <Link
@@ -53,11 +53,11 @@ export function InboxView({ tab, hasShop, conversations, now }: InboxViewProps) 
           </nav>
         )}
         {/* A full page load: the one way to be sure the server is asked again (plan decision 19). */}
-        <a href={inboxPath(tab)} className="msg-refresh">
+        <a href={inboxPath(tab)} className="msg-refresh" data-tour="inbox-refresh">
           Refresh
         </a>
       </div>
-      <section aria-labelledby="inbox-list-title">
+      <section aria-labelledby="inbox-list-title" data-tour="inbox-list">
         <h2 id="inbox-list-title" className="sr-only">
           {title}
         </h2>

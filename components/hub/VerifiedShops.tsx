@@ -20,7 +20,7 @@ type VerifiedShopsProps = {
 export function VerifiedShops({ sellers, campusNames }: VerifiedShopsProps) {
   if (sellers && sellers.length === 0) return null;
   return (
-    <section id="hub-verified" aria-labelledby="hub-verified-title" className="hub-section">
+    <section id="hub-verified" aria-labelledby="hub-verified-title" className="hub-section" data-tour="hub-verified">
       <h2 id="hub-verified-title" className="listing-section-title">
         Verified shops
       </h2>

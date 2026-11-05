@@ -185,7 +185,7 @@ export function ListingFormView(props: ListingFormViewProps) {
             </p>
           )}
           <FieldError id={`${ids.price}-error`} message={priceError} />
-          <div className="sell-price">
+          <div className="sell-price" data-tour="form-price">
             <span aria-hidden="true">R</span>
             <input
               id={ids.price}
@@ -273,7 +273,7 @@ export function ListingFormView(props: ListingFormViewProps) {
           />
         )}
         {!withCard && photoField}
-        <div className="sell-form-buttons">
+        <div className="sell-form-buttons" data-tour="form-publish">
           {!waiting && (
             <button type="submit" name="intent" value="publish" className="btn btn-primary form-submit">
               {publishLabel}

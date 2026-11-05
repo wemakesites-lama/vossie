@@ -18,7 +18,7 @@ type PhotoStartProps = {
  */
 export function PhotoStart({ prefix, limitReached, children }: PhotoStartProps) {
   return (
-    <fieldset className="photo-start" aria-labelledby={`${prefix}-photo-start-title`}>
+    <fieldset className="photo-start" aria-labelledby={`${prefix}-photo-start-title`} data-tour="form-photo-start">
       <div className="photo-start-head">
         <h2 id={`${prefix}-photo-start-title`} className="photo-start-title">
           Start with a photo

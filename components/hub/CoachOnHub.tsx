@@ -22,7 +22,7 @@ export async function CoachOnHub() {
   if (!view) return null;
   // .hub-section gives it the feed's spacing and column, like Coming up.
   return (
-    <div id="hub-coach" className="hub-section">
+    <div id="hub-coach" className="hub-section" data-tour="hub-coach">
       <CoachWeek view={view} from="hub" />
     </div>
   );

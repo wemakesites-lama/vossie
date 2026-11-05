@@ -98,7 +98,7 @@ export function PhotoFieldset({ prefix, photos, error, altError, suggested, tip 
   const hintId = `${inputId}-hint`;
   const errorId = `${inputId}-error`;
   return (
-    <fieldset className="form-field sell-fieldset">
+    <fieldset className="form-field sell-fieldset" data-tour="form-photos">
       <legend id={`${inputId}-title`} className="form-label">
         Photos
       </legend>

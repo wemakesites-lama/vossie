@@ -1349,7 +1349,13 @@ Spec `docs/superpowers/specs/2026-11-05-guided-tour-design.md`, plan `docs/super
 - **Built in three stages:** `e7f00e8` (`lib/tour/`: names, finder, card placing, the words), `7a3314c` (the engine `components/tour/Tour.tsx`, loaded on the first tap by `TourHost`; the dim, ring and card in Light, Dark and Night), `007a21b` (`data-tour` markup on the shared chrome and the five pages, the menu row, `TourNudge`, the boot script's `vossie_tour_seen` read, the privacy page). The stage B review found four engine bugs, all fixed before its commit.
 - **Checks:** `tour.spec.ts` 10 passed (phone-390, desktop-1440), layout shift 0 after Not now; `performance.spec.ts` 49 passed at phone-390; unit 4,118 of 4,119 (PhotoField's HEIC test timed out under load and passes alone); types clean; lint clean in the main tree (its errors are all inside `.claude/worktrees/`). Seen working in the dev server at 375: seven Home steps, the card clear of the tab bar, Done hides the invitation.
 - **JS:** every page about +740 B brotli; the listing forms 153,496 B, now only 104 B under 150 KB. The next feature that adds code to every page will need to make room first (the menu's `findTourPage` import can become an inline `checkVisibility()` check, plan Task 10 Step 3).
-- **Not done:** phase 2's six tours (spec 4.2); Lama to edit the step words in `lib/tour/tours.ts` if wanted.
+- **Not done:** Lama to edit the step words in `lib/tour/tours.ts` if wanted.
+
+## 2026-11-05: Guided tour, phase 2 (decision 99)
+Plan `docs/superpowers/plans/2026-11-05-guided-tour-phase-2.md`; steps in spec section 13.
+- **Six more tours:** Looking For, Launchpad, Messages (both inboxes), the new-listing form, the admin's Today and Mentoring. Markup and words only; the engine is unchanged.
+- **Room first:** the menu checks for a visible toured page inline instead of importing `lib/tour/resolve.ts`: every page 268 B lighter. The listing forms 153,228 B brotli, 372 B under 150 KB (104 B after phase 1).
+- **Checks:** unit 658 targeted (`markup.test.ts` covers every new part); types and lint clean; `tour.spec.ts` 8 passed at phone-390 alone (three phase 1 tests timed out when run beside the 49 budget tests, and pass alone), desktop-1440 passed; `performance.spec.ts` 49 passed.
 
 ## Next
 - **Campus photos** (2026-10-29): the 12 campuses use Eduvos's own photos from eduvos.com's campus pages (buildings only, cropped square, `public/campus/`), Eduvos Online an Unsplash photo; `data/fixtures/campuses.ts` points at them (no database change). Eduvos's copyright: confirm with Eduvos marketing before go-live. Sources in `docs/reference/stock-photos.md`.

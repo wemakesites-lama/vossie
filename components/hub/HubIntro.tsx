@@ -15,7 +15,7 @@ export function HubIntro() {
       <p className="hub-intro-lede">
         Free help to start and grow your business on campus: mentors, office hours, pitch nights and workshops.
       </p>
-      <p className="hub-intro-actions">
+      <p className="hub-intro-actions" data-tour="hub-start">
         {/* No prefetch: the same page with Coming up narrowed to office hours. */}
         <Link href={hubFeedHref("office-hours")} prefetch={false} className="btn btn-primary">
           Book office hours

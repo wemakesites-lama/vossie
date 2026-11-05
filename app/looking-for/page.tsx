@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 export default function LookingForPage({ searchParams }: PageProps<"/looking-for">) {
   return (
     <PageTransition>
-      <div className="page board">
+      <div className="page board" data-tour-page="looking-for">
         <Trail crumbs={trailFor("/looking-for")} />
         <div className="board-head">
           <h1 className="board-title">Looking For</h1>
@@ -44,7 +44,7 @@ export default function LookingForPage({ searchParams }: PageProps<"/looking-for
               </span>
             )}
           </p>
-          <div className="board-actions">
+          <div className="board-actions" data-tour="lf-post">
             <PostRequestLink className="btn btn-primary board-post">Post a request</PostRequestLink>
             <Suspense fallback={null}>
               <YourRequestsLink />

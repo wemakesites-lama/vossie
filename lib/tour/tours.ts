@@ -92,4 +92,74 @@ export const TOURS: Record<TourId, readonly TourStep[]> = {
       body: "Your details, privacy (download your data or delete your account) and signing out.",
     },
   ],
+  "looking-for": [
+    {
+      target: "lf-post",
+      title: "Post a request",
+      body: "Say what you need and by when. Students who can help will offer.",
+    },
+    { target: "lf-categories", title: "Categories", body: "Show only one kind of request." },
+    {
+      target: "lf-requests",
+      title: "Open requests",
+      body: "What students are looking for, your campus first. Open one to offer.",
+    },
+  ],
+  hub: [
+    {
+      target: "hub-start",
+      title: "Get started",
+      body: "Book a slot with a mentor, or open your shop and start selling.",
+    },
+    {
+      target: "hub-coach",
+      title: "Your week",
+      body: "Up to three small steps for your shop this week, the same as on your shop's home.",
+    },
+    { target: "hub-coming-up", title: "Coming up", body: "Events and office hours. Pick a tab to see just one kind." },
+    { target: "hub-tips", title: "Tips", body: "Short, practical tips from the Hub for running a student business." },
+    { target: "hub-verified", title: "Verified shops", body: "Student businesses the Hub has checked." },
+  ],
+  messages: [
+    {
+      target: "inbox-list",
+      title: "Your conversations",
+      body: "Every conversation with a buyer or seller. Open one to reply.",
+    },
+    { target: "inbox-tabs", title: "Buying and selling", body: "With a shop, your buyers' messages are under Selling." },
+    { target: "inbox-refresh", title: "Refresh", body: "New messages show when you refresh or open the page again." },
+  ],
+  "listing-form": [
+    { target: "form-photos", title: "Photos", body: "Up to 6 photos. The first is the cover. Ask anyone in a photo first." },
+    {
+      target: "form-photo-start",
+      title: "Fill in from my photo",
+      body: "We'll fill in what we can see from your photo. You check it before anything goes live.",
+    },
+    { target: "form-price", title: "Price", body: "What buyers pay, in rand." },
+    { target: "form-publish", title: "Publish or save", body: "Publish when it's ready, or save a draft and finish later." },
+  ],
+  "admin-today": [
+    {
+      target: "today-waiting",
+      title: "Waiting",
+      body: "Everything waiting for the Hub: new shops, reports and booking requests.",
+    },
+    {
+      target: "today-week",
+      title: "Last week",
+      body: "Last week's numbers. Small counts show as Hidden or Under 5, to protect students' privacy.",
+    },
+    { target: "today-campuses", title: "Listings by campus", body: "How many listings each campus has." },
+    { target: "staff-bar", title: "The console", body: "Every section of the Hub console. On phones, the rest are under More." },
+  ],
+  mentor: [
+    {
+      target: "mentor-shops",
+      title: "Your shops",
+      body: "The shops you mentor, most flags first, then the longest since a check-in.",
+    },
+    { target: "mentor-enquiries", title: "Enquiries", body: "Each shop's enquiries over the last 14 days." },
+    { target: "staff-bar", title: "Mentoring", body: "Mentoring's sections. Export downloads your caseload as a CSV file." },
+  ],
 };

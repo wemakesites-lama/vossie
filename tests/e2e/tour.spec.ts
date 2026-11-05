@@ -108,3 +108,25 @@ test("the menu offers no tour on a page without one", async ({ page }) => {
   await expect(page.getByRole("dialog", { name: "Menu" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Show me around this page" })).toHaveCount(0);
 });
+
+test("Looking For, Launchpad, Messages, the listing form, Today and Mentoring each have a tour", async ({ page }) => {
+  onlyAt("phone-390");
+  async function hasTour(path: string) {
+    await page.goto(path);
+    await openTour(page);
+    await page.keyboard.press("Escape");
+    await expect(tour(page)).toBeHidden();
+  }
+  await hasTour("/looking-for");
+  await hasTour("/hub");
+  await signInAsSample(page, "Seller, Tech corner", "/messages");
+  await hasTour("/messages");
+  await hasTour("/sell/listings/new");
+  // Signed in, the sign-in page has no sample buttons: drop the session before the next account.
+  await page.context().clearCookies();
+  await signInAsSample(page, "Admin", "/admin");
+  await hasTour("/admin");
+  await page.context().clearCookies();
+  await signInAsSample(page, "Mentor", "/mentor");
+  await hasTour("/mentor");
+});

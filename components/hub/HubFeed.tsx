@@ -68,7 +68,7 @@ export async function HubFeed({ searchParams }: HubFeedProps) {
         </ul>
       );
     tips = (
-      <section id="hub-tips" aria-labelledby="hub-tips-title" className="hub-section">
+      <section id="hub-tips" aria-labelledby="hub-tips-title" className="hub-section" data-tour="hub-tips">
         <h2 id="hub-tips-title" className="listing-section-title">
           Tips
         </h2>
@@ -90,7 +90,7 @@ export async function HubFeed({ searchParams }: HubFeedProps) {
   return (
     <>
       {/* The tabs link to #hub-coming-up, so a tap keeps the list in view (plan decision 6). */}
-      <section id="hub-coming-up" aria-labelledby="hub-coming-up-title" className="hub-section">
+      <section id="hub-coming-up" aria-labelledby="hub-coming-up-title" className="hub-section" data-tour="hub-coming-up">
         <h2 id="hub-coming-up-title" className="listing-section-title">
           Coming up
         </h2>

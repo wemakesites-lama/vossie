@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import type { ReactNode } from "react";
+import type { TourTarget } from "@/lib/tour/targets";
 import { LinkTabs } from "@/components/ui/LinkTabs";
 import { getCampuses, getCategories, getOpenRequests } from "@/lib/data";
 import { isOnlineCampus } from "@/lib/campus";
@@ -68,7 +69,7 @@ export async function RequestBoard({ searchParams }: RequestBoardProps) {
 
   return (
     <>
-      <LinkTabs label="Categories" tabs={chips} current={category ?? "all"} look="chips" />
+      <LinkTabs label="Categories" tabs={chips} current={category ?? "all"} look="chips" tour="lf-categories" />
       {body}
     </>
   );
@@ -81,7 +82,7 @@ function BoardLists({ requests, campus, names }: BoardListsProps) {
   const split = splitByCampus(requests, campus);
   if (split === null) {
     return (
-      <BoardSection id="board-all" title="Open requests">
+      <BoardSection id="board-all" title="Open requests" tour="lf-requests">
         <RequestList requests={requests} names={names} />
       </BoardSection>
     );
@@ -92,7 +93,7 @@ function BoardLists({ requests, campus, names }: BoardListsProps) {
   const online = isOnlineCampus({ slug: campus });
   return (
     <>
-      <BoardSection id="board-own" title={`${online ? "On" : "At"} ${campusName}`}>
+      <BoardSection id="board-own" title={`${online ? "On" : "At"} ${campusName}`} tour="lf-requests">
         {split.own.length > 0 ? (
           <RequestList requests={split.own} names={names} />
         ) : (
@@ -110,9 +111,19 @@ function BoardLists({ requests, campus, names }: BoardListsProps) {
   );
 }
 
-function BoardSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+function BoardSection({
+  id,
+  title,
+  tour,
+  children,
+}: {
+  id: string;
+  title: string;
+  tour?: TourTarget;
+  children: ReactNode;
+}) {
   return (
-    <section aria-labelledby={`${id}-title`} className="board-section">
+    <section aria-labelledby={`${id}-title`} className="board-section" data-tour={tour}>
       <h2 id={`${id}-title`} className="listing-section-title">
         {title}
       </h2>

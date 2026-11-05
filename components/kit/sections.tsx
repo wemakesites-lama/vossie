@@ -153,7 +153,7 @@ export async function AdminBar() {
     also: ADMIN_MORE_SECTIONS,
     only: "phone",
   };
-  return <SectionBar label="Hub console" tabs={[...tabs, more, { ...EXIT, only: "wide" }]} />;
+  return <SectionBar label="Hub console" tabs={[...tabs, more, { ...EXIT, only: "wide" }]} tour="staff-bar" />;
 }
 
 /** The staff pages outside /admin (the Hub's tools, Mentoring): the console's bar for an admin, else Mentoring's. */
@@ -181,5 +181,5 @@ export async function MentorBar() {
     { key: "export", href: MENTOR_EXPORT_PATH, label: "Export", icon: <DownloadIcon />, download: true },
     EXIT,
   ];
-  return <SectionBar label="Mentoring" tabs={tabs} />;
+  return <SectionBar label="Mentoring" tabs={tabs} tour="staff-bar" />;
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { TourTarget } from "@/lib/tour/targets";
 
 /** `count`: drawn under the label in the segmented look (role views N2 plan decision 12). */
 export type LinkTab = { key: string; label: string; href: string; count?: number };
@@ -12,6 +13,8 @@ type LinkTabsProps = {
   /** "chips": pills, the board's (plan decision 7). "tabs": browse's underlined tabs, the Hub's. "segmented": 2 to 4
    * views as one control (role views spec 5.2). */
   look: "chips" | "tabs" | "segmented";
+  /** A guided tour's part (data-tour). */
+  tour?: TourTarget;
 };
 
 /**
@@ -19,11 +22,11 @@ type LinkTabsProps = {
  * sideways on phones when it doesn't fit, like browse's category tabs. No prefetching: each link is a different page
  * of results (decision 28).
  */
-export function LinkTabs({ label, tabs, current, look }: LinkTabsProps) {
+export function LinkTabs({ label, tabs, current, look, tour }: LinkTabsProps) {
   const navClass = { chips: "link-chips", tabs: "category-tabs", segmented: "link-segments" }[look];
   const linkClass = { chips: "link-chip", tabs: "category-tab", segmented: "link-segment" }[look];
   return (
-    <nav aria-label={label} className={navClass}>
+    <nav aria-label={label} className={navClass} data-tour={tour}>
       <ul>
         {tabs.map((tab) => (
           <li key={tab.key}>

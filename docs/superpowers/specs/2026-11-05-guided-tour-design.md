@@ -1,6 +1,6 @@
 # Guided tour: "Show me around this page": design
 
-Date: 2026-11-05 · Status: phase 1 built (decision 99, `e7f00e8`, `7a3314c`, `007a21b`); phase 2 not started.
+Date: 2026-11-05 · Status: phases 1 and 2 built (decision 99; phase 1 `e7f00e8`, `7a3314c`, `007a21b`; phase 2 in section 13).
 
 ## 1. What Lama asked for
 
@@ -255,3 +255,16 @@ The plan (`docs/superpowers/plans/2026-11-05-guided-tour.md`) builds to this sec
 8. **The ring** has its own token, `--color-tour-ring` (Light white, Dark sky, Night soft sky), not `action`: Light's navy action on the navy dim is under 3:1. The scrim is one alpha, 70%, in all three themes. The ring stands at 5.2:1 (Light), 7.1:1 (Dark) and 7.8:1 (Night) against the dim. The window's corners are a fixed 12px.
 9. **Motion and the ring's offset** (stage B review): the ring sits 2px off the window, not 4px (the window's own 6px padding already clears the part). The card rises over the site's `--motion-enter` (220 ms) with `ease-out`, and the dialog has no fade of its own: the card's rise is the opening, so the dim simply appears with it.
 10. **Engine details from the stage B review:** the dialog opens in a layout effect before the first step is placed, so the card is measured on screen. A step in the header asks the header back and skips scrolling (the header is sticky), and the window is placed again when the header's slide ends. Closing focuses the trigger after asking a hidden header back, falling back to `<main>`. A re-check after a part leaves the screen starts from the current step. If the tour's code can't load, the tour closes quietly.
+
+## 13. Phase 2 tours (2026-11-05)
+
+Plan `docs/superpowers/plans/2026-11-05-guided-tour-phase-2.md`. Words in `lib/tour/tours.ts`.
+
+- **Looking For** (`looking-for`): Post a request, Categories, Open requests (the first board section shown, your campus's when you've chosen one).
+- **Launchpad** (`hub`): Get started (Book office hours and Start selling), Your week (an approved shop, with Shop coach on), Coming up, Tips, Verified shops.
+- **Messages** (`messages`, on both `/messages` and `/sell/messages`, through `InboxView`): Your conversations, Buying and selling (only with a shop), Refresh.
+- **The new-listing form** (`listing-form`; the edit form has none): Photos, Fill in from my photo (only while photo-to-listing is on), Price, Publish or save.
+- **Today** (`admin-today`): Waiting, Last week, Listings by campus, The console (the section bar).
+- **Mentoring** (`mentor`): Your shops, Enquiries, Mentoring's section bar (where Export is).
+
+Changes from section 4.2: Messages has no safety step (the safety tips are on the composer, not the inbox); Today's and Mentoring's last step lights their section bar (`staff-bar`, one target for both). The menu now checks for a visible `[data-tour-page]` inline rather than importing `lib/tour/resolve.ts`, so the tour ids stay out of every page's first load (`markup.test.ts` keeps every page id a real tour); that saved 268 B on every page.

@@ -12,7 +12,6 @@ import { campusLabel } from "@/lib/campus";
 import { isPlainClick } from "@/lib/click";
 import { TAB } from "@/lib/motion";
 import { openOverlay } from "@/lib/overlays";
-import { findTourPage } from "@/lib/tour/resolve";
 import type { Campus, Category } from "@/lib/types";
 
 type View = "main" | "categories" | "campuses";
@@ -46,7 +45,9 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
     setOpened(true);
     // Offered only on a page with a tour (guided tour spec 3.1). The menu is open, but the page underneath is still
     // laid out, so the check sees what's on screen.
-    setTourHere(findTourPage(document) !== null);
+    // Inline rather than lib/tour/resolve.ts, so the tour ids stay out of every page's first load (guided tour
+    // phase 2). markup.test.ts makes sure every data-tour-page names a real tour.
+    setTourHere([...document.querySelectorAll("[data-tour-page]")].some((page) => page.checkVisibility()));
   });
 
   /**

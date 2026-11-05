@@ -61,91 +61,95 @@ export function MentorDashboard({
   const scale = daily ? sharedMax(daily.values()) : 0;
   const labels = days.map((day) => dayMonth(day));
   return (
-    <div className="mentor-home">
-      <Card title={showMentor ? "Every mentored shop" : "Your shops"} level={2}>
-        <p className="mentor-summary">{caseloadSummary(needing.length, rows.length, slotRequests)}</p>
-        {rows.length === 0 ? (
-          <EmptyState
-            icon={<StoreIcon />}
-            title="No shops yet"
-            line="An admin assigns shops to mentors on each shop's page. Meanwhile, students' slot requests wait in office hours."
-            action={{ label: "Office hours", href: `${HUB_MANAGE_PATH}#hub-queue` }}
-          />
-        ) : (
-          <>
-            <LinkTabs
-              label="Which shops"
-              look="segmented"
-              current={view}
-              tabs={[
-                { key: "needs", label: `Needs you (${needing.length})`, href: MENTOR_PATH },
-                { key: "all", label: `All (${rows.length})`, href: ALL_PATH },
-              ]}
+    <div className="mentor-home" data-tour-page="mentor">
+      <div data-tour="mentor-shops">
+        <Card title={showMentor ? "Every mentored shop" : "Your shops"} level={2}>
+          <p className="mentor-summary">{caseloadSummary(needing.length, rows.length, slotRequests)}</p>
+          {rows.length === 0 ? (
+            <EmptyState
+              icon={<StoreIcon />}
+              title="No shops yet"
+              line="An admin assigns shops to mentors on each shop's page. Meanwhile, students' slot requests wait in office hours."
+              action={{ label: "Office hours", href: `${HUB_MANAGE_PATH}#hub-queue` }}
             />
-            {shown.length === 0 ? (
-              <div>
-                <p className="mentor-all-clear">
-                  <CheckIcon /> All clear: no shop needs you today.
-                </p>
-                <Link href={ALL_PATH} prefetch={false} className="mentor-all-link">
-                  See all {rows.length} {rows.length === 1 ? "shop" : "shops"}
-                </Link>
+          ) : (
+            <>
+              <LinkTabs
+                label="Which shops"
+                look="segmented"
+                current={view}
+                tabs={[
+                  { key: "needs", label: `Needs you (${needing.length})`, href: MENTOR_PATH },
+                  { key: "all", label: `All (${rows.length})`, href: ALL_PATH },
+                ]}
+              />
+              {shown.length === 0 ? (
+                <div>
+                  <p className="mentor-all-clear">
+                    <CheckIcon /> All clear: no shop needs you today.
+                  </p>
+                  <Link href={ALL_PATH} prefetch={false} className="mentor-all-link">
+                    See all {rows.length} {rows.length === 1 ? "shop" : "shops"}
+                  </Link>
+                </div>
+              ) : (
+                <ul className="mentor-rows" aria-label={view === "all" ? "All shops" : "Shops that need you"}>
+                  {shown.map((row) => (
+                    <ListRow
+                      key={row.slug}
+                      href={mentorShopPath(row.slug)}
+                      lead={{ kind: "initials", text: row.name }}
+                      title={row.name}
+                      detail={caseloadDetail(row, showMentor)}
+                      pill={
+                        <Pill tone={checkInDue(row.lastCheckInOn, today) ? "warning" : "neutral"}>
+                          <span className="sr-only">Check-in: </span>
+                          {checkInWords(row.lastCheckInOn, today)}
+                        </Pill>
+                      }
+                      meta={campusNames.get(row.campusSlug) ?? row.campusSlug}
+                    />
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+        </Card>
+      </div>
+      {shown.length > 0 && (
+        <div data-tour="mentor-enquiries">
+          <Card title="Enquiries, 14 days" level={2}>
+            {daily === null ? (
+              <div className="section-error">
+                <p>The enquiries chart didn&apos;t load.</p>
+                <a href={view === "all" ? ALL_PATH : MENTOR_PATH} className="btn btn-outline text-navy">
+                  Try again
+                </a>
               </div>
             ) : (
-              <ul className="mentor-rows" aria-label={view === "all" ? "All shops" : "Shops that need you"}>
-                {shown.map((row) => (
-                  <ListRow
-                    key={row.slug}
-                    href={mentorShopPath(row.slug)}
-                    lead={{ kind: "initials", text: row.name }}
-                    title={row.name}
-                    detail={caseloadDetail(row, showMentor)}
-                    pill={
-                      <Pill tone={checkInDue(row.lastCheckInOn, today) ? "warning" : "neutral"}>
-                        <span className="sr-only">Check-in: </span>
-                        {checkInWords(row.lastCheckInOn, today)}
-                      </Pill>
-                    }
-                    meta={campusNames.get(row.campusSlug) ?? row.campusSlug}
-                  />
-                ))}
+              <ul className="mentor-sparks">
+                {shown.map((row) => {
+                  const points = daily.get(row.slug) ?? days.map(() => null);
+                  return (
+                    <li key={row.slug}>
+                      <h3 className="mentor-spark-name">{row.name}</h3>
+                      <Sparkline
+                        points={points}
+                        labels={labels}
+                        label={`Enquiries a day, ${row.name}`}
+                        summary={sparkSummary(row.name, points)}
+                        max={scale}
+                      />
+                    </li>
+                  );
+                })}
               </ul>
             )}
-          </>
-        )}
-      </Card>
-      {shown.length > 0 && (
-        <Card title="Enquiries, 14 days" level={2}>
-          {daily === null ? (
-            <div className="section-error">
-              <p>The enquiries chart didn&apos;t load.</p>
-              <a href={view === "all" ? ALL_PATH : MENTOR_PATH} className="btn btn-outline text-navy">
-                Try again
-              </a>
-            </div>
-          ) : (
-            <ul className="mentor-sparks">
-              {shown.map((row) => {
-                const points = daily.get(row.slug) ?? days.map(() => null);
-                return (
-                  <li key={row.slug}>
-                    <h3 className="mentor-spark-name">{row.name}</h3>
-                    <Sparkline
-                      points={points}
-                      labels={labels}
-                      label={`Enquiries a day, ${row.name}`}
-                      summary={sparkSummary(row.name, points)}
-                      max={scale}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          <p className="staff-muted">
-            One scale for every shop, so a taller line means more enquiries. Mentors see numbers, never messages.
-          </p>
-        </Card>
+            <p className="staff-muted">
+              One scale for every shop, so a taller line means more enquiries. Mentors see numbers, never messages.
+            </p>
+          </Card>
+        </div>
       )}
     </div>
   );

@@ -25,7 +25,7 @@ export default async function HubPage({ searchParams }: PageProps<"/hub">) {
   const [sellers, campuses] = await Promise.all([getVerifiedSellers().catch(() => null), getCampuses()]);
   return (
     <PageTransition>
-      <div className="page hub-page">
+      <div className="page hub-page" data-tour-page="hub">
         <Trail crumbs={trailFor("/hub")} />
         <HubIntro />
         <Reveal fallback={<HubFeedSkeleton />}>

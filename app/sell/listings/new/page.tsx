@@ -13,7 +13,7 @@ export default function NewListingPage() {
   return (
     <PageTransition>
       <div className="page sell-page">
-        <div className="sell-column">
+        <div className="sell-column" data-tour-page="listing-form">
           <header className="sell-head">
             <Trail crumbs={trailFor("/sell/listings/new")} />
             <h1 className="sell-title">New listing</h1>
