@@ -240,3 +240,16 @@ Only tests that guard a real risk (Lama's efficient testing).
 - Tours starting by themselves. Only the Home nudge invites, and only until it's seen.
 - Counting who takes the tour. There are no analytics, and none are added.
 - Interactive steps ("now tap Save"): the page is inert while a tour is open.
+
+## 12. Changes from reading the code (planning, 2026-11-05)
+
+The plan (`docs/superpowers/plans/2026-11-05-guided-tour.md`) builds to this section where it differs from the sections above.
+
+1. **The menu row** sits at the top of the menu's settings area (`.menu-bottom`), sized like Data saver, with no icon. Among the menu's main links it would be set in their big display type, and no route icon exists.
+2. **The menu's check** is section 5's fallback: the row shows when a visible `[data-tour-page]` exists. `TOUR_TARGETS` and `tourAttrs` are dropped; markup writes `data-tour="…"` (or a typed `tour` prop) directly. Every toured page always has its first part on screen, so "Nothing to show here right now" stays a safety net.
+3. **Browse:** no "Search with a photo" step. Browse shows that link only in its empty state, and the search overlay isn't part of the page. Sort's words follow its real choices (best match, newest, price).
+4. **A listing:** Message seller, Save and Share are one step (`listing-actions`), the one dock phones show. Four steps: photos, the seller, the actions, Report.
+5. **Sell:** "New listing" lights the New listing and Messages buttons (`sell-add`), and its words don't mention filling in from a photo, which is off until go-live. A "Your listings" step (`sell-listings`) joins.
+6. **You:** Your details and Privacy are one step, the Settings card (`you-settings`). Three steps.
+7. **Home:** the phone's Sell tab and the header's Sell link share one step with neutral words, because a seller's wide header still shows Sell. The campus step lights the phone hero's campus chip (`hero-campus`) or the header's campus pill (`hdr-campus`).
+8. **The ring** has its own token, `--color-tour-ring` (Light white, Dark sky, Night soft sky), not `action`: Light's navy action on the navy dim is under 3:1. The scrim is one alpha, 70%, in all three themes. The ring stands at 5.2:1 (Light), 7.1:1 (Dark) and 7.8:1 (Night) against the dim. The window's corners are a fixed 12px.
