@@ -83,13 +83,13 @@ isOneToOne: false
                   ]
                 },"coach_weeks": {
                   Row: {
-                    "actions": Json,"created_at": string,"done_ids": (string)[] | null,"gone_ids": (string)[] | null,"mentor_questions": Json | null,"settled_at": string | null,"shop_id": string,"week": string,"written_by": string
+                    "actions": NonNullable<Json>,"created_at": string,"done_ids": (string)[] | null,"gone_ids": (string)[] | null,"mentor_questions": Json | null,"settled_at": string | null,"shop_id": string,"week": string,"written_by": string
                   }
                   Insert: {
-                    "actions": Json,"created_at"?: string,"done_ids"?: (string)[] | null,"gone_ids"?: (string)[] | null,"mentor_questions"?: Json | null,"settled_at"?: string | null,"shop_id": string,"week": string,"written_by": string
+                    "actions": NonNullable<Json>,"created_at"?: string,"done_ids"?: (string)[] | null,"gone_ids"?: (string)[] | null,"mentor_questions"?: Json | null,"settled_at"?: string | null,"shop_id": string,"week": string,"written_by": string
                   }
                   Update: {
-                    "actions"?: Json,"created_at"?: string,"done_ids"?: (string)[] | null,"gone_ids"?: (string)[] | null,"mentor_questions"?: Json | null,"settled_at"?: string | null,"shop_id"?: string,"week"?: string,"written_by"?: string
+                    "actions"?: NonNullable<Json>,"created_at"?: string,"done_ids"?: (string)[] | null,"gone_ids"?: (string)[] | null,"mentor_questions"?: Json | null,"settled_at"?: string | null,"shop_id"?: string,"week"?: string,"written_by"?: string
                   }
                   Relationships: [
                     {

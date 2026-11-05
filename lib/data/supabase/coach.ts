@@ -59,7 +59,8 @@ export const saveCoachWeek: typeof Sample.saveCoachWeek = async (sellerSlug, wee
       {
         shop_id: shopId,
         week: week.week,
-        actions: week.actions as unknown as Json,
+        // A week's actions are always an array (possibly empty), never null: the column is `not null`.
+        actions: week.actions as unknown as NonNullable<Json>,
         mentor_questions: week.mentorQuestions as unknown as Json,
         written_by: week.writtenBy,
       },
