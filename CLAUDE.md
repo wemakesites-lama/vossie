@@ -40,7 +40,7 @@ CampusCart is the student marketplace for every Eduvos campus. Lama Nkuna is the
   - Small text is white.
   - Sky is only for large text (24px+, or 18.66px+ bold), icons and arrows, solid sky pills, and the wordmark.
   - The reason: a star behind a letter drops small sky text to about 4.0:1.
-- **Themes (decision 95, `docs/superpowers/specs/2026-10-28-dark-themes-design.md`):** Light, Dark (navy, stars) and Night (near-black, warm words, no stars, photos and crest dimmed), plus Match my phone, the default, which stores nothing.
+- **Themes (decision 95, `docs/superpowers/specs/2026-10-28-dark-themes-design.md`):** Light, Dark (navy, stars) and Night (near-black, warm words, no stars, photos dimmed, the pennant's mark in Night's warm tokens), plus Match my phone, the default, which stores nothing.
   - The choice is `vossie_theme` in localStorage, never a cookie (the root layout would lose its static shell). The boot script sets `<html data-theme>` before first paint; `lib/theme.ts` (`setTheme`) and `useTheme` are the only other writers and readers. Night alone adds `<meta id="night-bar" name="theme-color">`.
   - Colours come only from tokens, each with one job: `white` the surface, `navy` headings, `band`/`on-band` brand surfaces and what sits on them, `action`/`on-action` solid controls and chosen states, `on-sky` anything on sky (always navy), `alert` the deep red badge. Never `#fff`, `white` or `navy` for words on a band or a button: they flip in the dark themes.
   - Dark styles go in `@variant dark { … }` (a chosen Dark or Night, or the phone in dark mode with nothing chosen) and Night's in `@variant night { … }` after it (`dark:` and `night:` in class names are the same variants; never a bare `prefers-color-scheme` query, which ignores the choice). Only `transform` and `opacity` animate, so a theme change never fades colours.
@@ -49,6 +49,7 @@ CampusCart is the student marketplace for every Eduvos campus. Lama Nkuna is the
   - The offline page has no script, so it follows only the phone's dark mode, in Dark's colours.
 - Fonts only through `font-display`, `font-text` and `font-accent` (or `var(--vos-font-*)` in CSS). Never a font name in a component.
 - The crest comes only from `assets/brand/` until Eduvos sends the official SVG.
+- The CampusCart mark (decision 98, `docs/superpowers/specs/2026-11-04-campuscart-logo-design.md`) is drawn only from `lib/brand/cart-mark.ts`: in pages by `CartMark` (`components/brand/CartMark.tsx`, a Server Component; `sky` only on a band, never on white), and as the icons, the favicon and `assets/brand/campuscart-mark-*.svg` by `pnpm icons` (`scripts/make-icons.ts`). Change the mark there and run `pnpm icons`. The header pennant is a slot (`SiteHeader`'s `pennant`, filled by the layout), so the mark stays out of client JavaScript. The footer lockup and the share cards keep the crest.
 - Icons only from `components/icons.tsx`. No emoji as icons.
 
 ## Code rules
@@ -105,9 +106,9 @@ CampusCart is the student marketplace for every Eduvos campus. Lama Nkuna is the
     - `BACK` for "Back to…" links (a test checks).
   - **Untyped page changes crossfade.** That covers redirects, and Next 16.4 sometimes drops a link's types. Browser Back never animates.
   - **A page's main Suspense boundary is `Reveal`** (`components/kit/Reveal.tsx`). Not the visitor's `/sell`: it raised that page's layout shift (0.0598 to 0.0676, a failure that predates this work). Not the home sections, which have scroll reveals. Not `fallback={null}` boundaries.
-  - **Every typed plain `<Link>` renders `<NavPending />`** as its last child (`NavLink` has its own; a test checks). While a tapped link waits for the server, it marks `<html data-nav-pending>` and brings the header back, and the header crest breathes after 150 ms.
-  - **The breathing crest loader (`CrestLoader`) is only in `PageFallback`,** after `--motion-loader-delay` (1 s).
-  - **`.motion-own` elements are left out of the motion off switches,** so they keep their delays. Under reduced motion and data saver they're still (the loader fades in, the header crest dims). Use it only on an element with no other animation or transition.
+  - **Every typed plain `<Link>` renders `<NavPending />`** as its last child (`NavLink` has its own; a test checks). While a tapped link waits for the server, it marks `<html data-nav-pending>` and brings the header back, and the header's mark breathes after 150 ms.
+  - **The breathing mark loader (`CrestLoader`, its name kept until the internal-names pass) is only in `PageFallback`,** after `--motion-loader-delay` (1 s).
+  - **`.motion-own` elements are left out of the motion off switches,** so they keep their delays. Under reduced motion and data saver they're still (the loader fades in, the header's mark dims). Use it only on an element with no other animation or transition.
   - Never give two elements one `view-transition-name`. All of it is off for reduced motion and data saver.
 - The seller's queue (`sellerQueue`, `lib/data/seller-queue.ts`; on Supabase the owner-only `public.seller_queue`) is read through `queueFor` (`lib/selling/queue.ts`, React `cache`, once per request), never cached across requests: the seller bar's Messages badge, the `/sell` home's Needs you and a selling thread's "Mark {title} as sold" all read it, so they always agree. A sale waits to be marked sold while its listing is an available item, not hidden, unchanged since the sale was marked completed (a Hub hide or Show again counts as a change on both backends).
 - "Mark {title} as sold" posts `thread` to `changeListingState`, which goes back to `threadPath(thread)` only for an id that passes `isId`, and leaves its notice under `threadSoldForm(id)`. No one-time token: marking sold twice changes nothing.

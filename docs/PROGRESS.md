@@ -1319,6 +1319,21 @@ Merged into `main` from their worktrees (`683ccec` F, `fee7d47` H, `337372f` G).
 - **In the browser:** the home band's "New on campus? Get a starter pack" sits 10px under Post a request and is 44px tall. It looks right.
 - **Left (Lama's go-ahead for each):** push to GitHub; dry-run and push G's migration to Vossie Market; set `VOSSIE_AI_LOOKING_MATCH=1` and `VOSSIE_AI_STARTER_PACK=1` in Vercel and redeploy; run G's backfill (`/api/cron/request-matches`); test on vossie-pi. Then Shop coach I1, then I2.
 
+## 2026-11-04: the CampusCart logo (decision 98)
+- Brainstormed with Lama, who chose a line-drawn cart whose rim is the Eduvos crest's top edge, holding the crest's three stars (direction C, the line cart C1, the crest rim C1b). Spec `docs/superpowers/specs/2026-11-04-campuscart-logo-design.md`, plan `docs/superpowers/plans/2026-11-04-campuscart-logo.md`.
+- Built subagent-driven in two batches, each reviewed:
+  - `lib/brand/cart-mark.ts` is the mark's only drawing, with a full mark and a small cut.
+  - `CartMark` draws it inline in the header pennant (sky star) and the loading screen (navy). The pennant now comes from a server slot (`SiteHeader`'s `pennant`).
+  - `pnpm icons` (`scripts/make-icons.ts`, through the sharp that comes with Next) drew the six icon files and four masters in `assets/brand/`.
+  - The footer lockup and the share cards keep the crest.
+- Checks:
+  - the full unit suite passed (3,981 tests, before the icon tests were added); typecheck clean; eslint clean on every changed file;
+  - in the browser, the pennant at rest in Light, Dark and Night at 375 and 1440 (50 × 44 and 68.6 × 60 px, centred, Night's own warm white and soft sky), no console errors. The revealed-on-scroll header wasn't shot separately: the pennant only ever scales as a whole slot, so the mark keeps its place (final review);
+  - e2e (performance, motion, shell, a11y, cls): 773 passed, 1 failed: `/sell`'s font-swap layout shift at phone-390, 0.0544 (its sections and button, not the header), which predates this work;
+  - the mark is in no JS chunk;
+  - JS is lighter: the listing forms are 152,753 B brotli, 847 B under 150 KB, because the header no longer imports `next/image`.
+- Not done: `scripts/make-icons.py`, which would redraw the old crest icons, is still there (Lama to decide); tell Eduvos before go-live (GO-LIVE list).
+
 ## Next
 - **Campus photos** (2026-10-29): the 12 campuses use Eduvos's own photos from eduvos.com's campus pages (buildings only, cropped square, `public/campus/`), Eduvos Online an Unsplash photo; `data/fixtures/campuses.ts` points at them (no database change). Eduvos's copyright: confirm with Eduvos marketing before go-live. Sources in `docs/reference/stock-photos.md`.
 - **Stock photos in place of the placeholder art** (2026-10-29): 79 free Unsplash photos in `public/stock/` (15.7 MB of JPEGs, served as AVIF by `next/image`), credits and licence notes in `docs/reference/stock-photos.md`. Hero 3, categories 10, listing covers 10 (one per category), collections 4, the Hub banner, 29 shops and 22 Hub posts; the fixtures point at them. Campus photos and a listing's second and third photos stay placeholders (stock can't show a real campus). `20261029120000_stock_photos.sql` widens the three placeholder checks to allow `/stock/…jpg` and moves the seed rows over; `supabase/seed.sql` regenerated. `make-placeholders.ts` now skips stock slots (it would have written SVG over the photos). **Pushed to Vossie Market** (2026-10-29, Lama's go-ahead, after a dry run): 29 shops, 38 listing photos and 22 Hub posts now point at `/stock/…jpg`; the 5 extra listing photos and 2 shops with no photo are unchanged, and the remote is up to date. **vossie-pi shows those images broken until a redeploy carries `public/stock/`**: commit, then redeploy. Checks: unit tests pass, apart from timeouts in `AdminSellers` and `PhotoField` under a load of 46 (another session's run), types clean; seen at 1280 in the sample dev server (hero, categories, collections, banner); the store's shops and listings need a server restart to show. e2e (`home.spec.ts` now reads `/_next/image?url=`) not run: another session's e2e build was using `.next`. Faces (hero, some Hub covers) have no model release: swap for consented photos before go-live.
