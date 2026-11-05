@@ -21,6 +21,11 @@ export function threadPath(conversationId: string): string {
   return `/messages/${conversationId}`;
 }
 
+/** A thread's mock call (`lib/messaging/mock-call.ts`). */
+export function callPath(conversationId: string): string {
+  return `${threadPath(conversationId)}/call`;
+}
+
 /** Selling is the Sell section's own page, so its bar stays beside it; `/messages?tab=selling` redirects there. */
 export function inboxPath(tab: InboxTab): string {
   return tab === "selling" ? "/sell/messages" : "/messages";

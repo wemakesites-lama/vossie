@@ -49,6 +49,12 @@ describe("a thread (messaging spec 3.3)", () => {
     expect(screen.queryByRole("link", { name: /call/i })).toBeNull();
   });
 
+  it("offers the demo's Call in the sign's place", () => {
+    render(<ThreadView thread={makeThread()} now={NOW} reply={EMPTY} sent={false} campusName="Midrand" mockCall />);
+    expect(screen.getByRole("link", { name: "Call" })).toHaveAttribute("href", "/messages/conv-test/call");
+    expect(screen.queryByText("Calls coming soon")).toBeNull();
+  });
+
   it("goes back to Selling for the seller", () => {
     show(makeThread({ role: "seller", otherName: "Ayanda" }));
     expect(screen.getByRole("link", { name: "Back to Messages" })).toHaveAttribute("href", "/sell/messages");

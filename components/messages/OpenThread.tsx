@@ -5,6 +5,7 @@ import { requireAccount } from "@/lib/auth/session";
 import { getCampuses } from "@/lib/data";
 import { getThread, markThreadRead } from "@/lib/data/messages";
 import { takeSentNote } from "@/lib/messaging/form-state";
+import { mockCallOn } from "@/lib/messaging/mock-call";
 import { replyFormKey, threadPath } from "@/lib/messaging/paths";
 import { shopSlugOf } from "@/lib/messaging/subjects";
 import { takeNotice, threadSoldForm } from "@/lib/selling/form-state";
@@ -47,6 +48,7 @@ export async function OpenThread({ id }: { id: string }) {
       campusName={campusName}
       markSold={markSold}
       soldNotice={noticeText(sold?.notice)}
+      mockCall={mockCallOn() && thread.otherPresent}
     />
   );
 }

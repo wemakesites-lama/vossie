@@ -58,6 +58,7 @@ export const PARENTS: Readonly<Record<string, string>> = {
   "/looking-for/[id]/delete": "/looking-for/[id]",
 
   "/messages/[id]": "/messages",
+  "/messages/[id]/call": "/messages/[id]",
 
   "/sell/listings": "/sell",
   "/sell/profile": "/sell",
@@ -130,6 +131,7 @@ export const LABELS: Readonly<Record<string, string>> = {
   "/browse/starter": "Get a starter pack",
   "/listings/[id]/message": "Message the seller",
   "/sellers/[slug]/message": "Message the shop",
+  "/messages/[id]/call": "Call",
   "/hub/[id]/book": "Request a slot",
   "/looking-for/new": "Post a request",
   "/looking-for/[id]/edit": "Edit your request",

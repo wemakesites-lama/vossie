@@ -8127,6 +8127,147 @@
     white-space: nowrap;
   }
 
+  /* The demo's Call (lib/messaging/mock-call.ts): a solid control in the sign's place. */
+  .thread-call {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 999px;
+    background: var(--color-action);
+    color: var(--color-on-action);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* The mock call screen: rings for 3.2 seconds, then "Connected". Motion off shows "Connected" at once. */
+  .call-screen {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 14px;
+    min-height: min(70svh, 40rem);
+    padding: 32px 20px 40px;
+    border-radius: var(--radius-panel);
+    background-color: var(--color-band);
+    color: var(--color-on-band);
+    text-align: center;
+  }
+
+  .call-demo {
+    padding: 4px 12px;
+    border: 1px solid color-mix(in srgb, var(--color-on-band) 45%, transparent);
+    border-radius: 999px;
+    font-size: var(--text-meta);
+    font-weight: 600;
+  }
+
+  .call-avatar {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 7.5rem;
+    height: 7.5rem;
+    margin-block: 20px 8px;
+  }
+
+  .call-initials {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--color-sky);
+    color: var(--color-on-sky);
+    font-family: var(--vos-font-display);
+    font-size: 2.75rem;
+    line-height: 1;
+  }
+
+  .call-ring {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--color-sky);
+    border-radius: 50%;
+    opacity: 0;
+    animation: call-ring 1.6s var(--ease-out) 2;
+  }
+
+  .call-ring-late {
+    animation-delay: 0.8s;
+  }
+
+  .call-name {
+    font-family: var(--vos-font-display);
+    font-size: var(--text-section);
+    line-height: 1;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .call-about {
+    max-width: 30ch;
+  }
+
+  .call-state {
+    display: grid;
+    font-weight: 600;
+  }
+
+  .call-state > span {
+    grid-area: 1 / 1;
+  }
+
+  .call-ringing {
+    animation: call-fade-out 1ms 3.2s forwards;
+  }
+
+  .call-connected {
+    opacity: 0;
+    animation: call-fade-in 300ms 3.2s forwards;
+  }
+
+  .call-end {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 56px;
+    margin-top: 20px;
+    padding: 0 28px;
+    border-radius: 999px;
+    background: var(--color-alert);
+    color: var(--color-on-band);
+    font-weight: 700;
+  }
+
+  .call-end-icon {
+    rotate: 135deg;
+  }
+
+  @keyframes call-ring {
+    from {
+      scale: 1;
+      opacity: 0.8;
+    }
+    to {
+      scale: 1.6;
+      opacity: 0;
+    }
+  }
+
+  @keyframes call-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes call-fade-in {
+    to {
+      opacity: 1;
+    }
+  }
+
   .thread-title {
     color: var(--color-navy);
     font-family: var(--vos-font-display);

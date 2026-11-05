@@ -4,7 +4,8 @@ import type { FormStateRow } from "@/lib/data/rows";
 import { OFFER_SENT_NOTE, SHOP_CLOSED_NOTE, SHOP_WAITS_NOTE } from "@/lib/looking-for/words";
 import { sendReply } from "@/lib/messaging/actions";
 import { messagingErrors, replyFields } from "@/lib/messaging/errors";
-import { inboxPath, threadPath } from "@/lib/messaging/paths";
+import Link from "next/link";
+import { callPath, inboxPath, threadPath } from "@/lib/messaging/paths";
 import { parseWarnings, type ScamWarning } from "@/lib/messaging/scam-check";
 import { messageTime } from "@/lib/time";
 import type { SaleToMark, Thread } from "@/lib/types";
@@ -43,6 +44,8 @@ type ThreadViewProps = {
   markSold?: SaleToMark | null;
   /** "Marked as sold…", once, after the form above. */
   soldNotice?: string | null;
+  /** The demo's Call in place of "Calls coming soon" (`mockCallOn`). */
+  mockCall?: boolean;
 };
 
 /**
@@ -59,6 +62,7 @@ export function ThreadView({
   campusName,
   markSold = null,
   soldNotice = null,
+  mockCall = false,
 }: ThreadViewProps) {
   // The shop that offered waits for the asker's reply before writing again (community actions spec 2.9).
   const waiting = thread.request !== null && thread.role === "seller" && thread.status === "offered";
@@ -85,11 +89,19 @@ export function ThreadView({
           <span className="sr-only">Messages with</span> {thread.otherName}
         </h1>
         <div className="thread-tools">
-          {/* Shows the intention only: no button and no link until calls exist (decision 57 still stands). */}
-          <span className="thread-call-soon">
-            <PhoneIcon className="size-4" />
-            Calls coming soon
-          </span>
+          {mockCall ? (
+            // The demo's mock call (lib/messaging/mock-call.ts): it calls nobody.
+            <Link href={callPath(thread.id)} prefetch={false} className="thread-call">
+              <PhoneIcon className="size-5" />
+              Call
+            </Link>
+          ) : (
+            // Shows the intention only: no button and no link until calls exist (decision 57 still stands).
+            <span className="thread-call-soon">
+              <PhoneIcon className="size-4" />
+              Calls coming soon
+            </span>
+          )}
           {/* A full page load: the one way to be sure the other side's new messages show (plan decision 19). */}
           <a href={threadPath(thread.id)} className="msg-refresh">
             Refresh
