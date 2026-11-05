@@ -26,7 +26,10 @@ export function placeCard({
   bottomInset?: number;
 }): { x: number; y: number } {
   if (!wide) {
-    const low = target !== null && target.y + target.height / 2 > viewport.height / 2;
+    // A part taller than half the screen starts near the top (the engine scrolls it there), so the card stays at the
+    // bottom and its heading stays in view.
+    const tall = target !== null && target.height > viewport.height / 2;
+    const low = target !== null && !tall && target.y + target.height / 2 > viewport.height / 2;
     return { x: EDGE, y: low ? EDGE : viewport.height - bottomInset - card.height - EDGE };
   }
   if (!target) return { x: (viewport.width - card.width) / 2, y: (viewport.height - card.height) / 2 };

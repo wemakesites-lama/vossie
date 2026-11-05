@@ -13,6 +13,17 @@ import { NOTHING_HERE, TOURS, type TourStep } from "@/lib/tour/tours";
 /** Room round the lit part, so its edge isn't cut by the dim. */
 const PAD = 6;
 const WIDE = "(min-width: 48rem) and (min-height: 30rem)";
+/** The longest the tour waits for a page still streaming in before it reads what's there. */
+const WAIT_FOR_PAGE = 4000;
+
+/**
+ * A page still streaming in shows skeletons (`.skeleton`) or the blank page fallback, and the parts behind them aren't
+ * in the page yet: a tour read then would quietly skip them (seen on Launchpad, whose feed streams in).
+ */
+function pageLoading(): boolean {
+  const main = document.getElementById("main");
+  return main !== null && [...main.querySelectorAll(".skeleton, .page-fallback")].some(isShown);
+}
 
 type Run = { id: TourId | null; steps: { step: TourStep; element: HTMLElement }[] };
 
@@ -41,15 +52,17 @@ export default function Tour({ trigger, onClose }: { trigger: HTMLElement | null
   const windowRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const [run, setRun] = useState(startRun);
+  // Null while the page is still streaming in: the tour waits for its parts before reading them.
+  const [run, setRun] = useState<Run | null>(() => (pageLoading() ? null : startRun()));
   const [index, setIndex] = useState(0);
-  const current = run.steps[index] ?? null;
-  const count = run.steps.length;
+  const ready = run !== null;
+  const current = run?.steps[index] ?? null;
+  const count = run?.steps.length ?? 0;
   const last = index === count - 1;
 
   function finish(done: boolean) {
     // Only a finished Home tour answers Home's invitation (spec 3.5); closing early doesn't.
-    if (done && run.id === "home") markTourSeen();
+    if (done && run?.id === "home") markTourSeen();
     dialogRef.current?.close();
     onClose();
     // Back to what opened it, or to the page when that's gone (the invitation hides once answered). A trigger in the
@@ -65,9 +78,29 @@ export default function Tour({ trigger, onClose }: { trigger: HTMLElement | null
   // Open before the first step is placed (the layout effect below runs after this one): a closed dialog is
   // display: none, so the card would measure 0x0 and the title couldn't take focus.
   useLayoutEffect(() => {
+    if (!ready) return;
     const dialog = dialogRef.current;
     if (dialog && !dialog.open) dialog.showModal();
-  }, []);
+  }, [ready]);
+
+  // A page still streaming in: read it once its skeletons have gone, or after WAIT_FOR_PAGE at the most.
+  useEffect(() => {
+    if (ready) return;
+    const read = () => {
+      observer.disconnect();
+      clearTimeout(timer);
+      setRun(startRun());
+    };
+    const observer = new MutationObserver(() => {
+      if (!pageLoading()) read();
+    });
+    observer.observe(document.getElementById("main") ?? document.body, { childList: true, subtree: true });
+    const timer = setTimeout(read, WAIT_FOR_PAGE);
+    return () => {
+      observer.disconnect();
+      clearTimeout(timer);
+    };
+  }, [ready]);
 
   // Browser Back closes the tour (spec 6.4).
   const onLeave = useEffectEvent(() => finish(false));
@@ -78,6 +111,7 @@ export default function Tour({ trigger, onClose }: { trigger: HTMLElement | null
 
   // The part left the screen (a phone turned past the tablet step): go on to the next step that can show (spec 6.3).
   const onGone = useEffectEvent(() => {
+    if (!run) return;
     const found = findTourPage(document);
     const rest = found
       ? resolveSteps(
@@ -95,7 +129,12 @@ export default function Tour({ trigger, onClose }: { trigger: HTMLElement | null
       // The header hides on scroll: ask it back, as a tapped link does (calm navigation), when the part is in it.
       // It's sticky, so scrolling can't reach a hidden part; the transitionend below re-places once it slides in.
       if (element.closest(".site-header")) dispatchEvent(new Event(NAV_PENDING_EVENT));
-      else element.scrollIntoView({ block: "center", behavior: still() ? "instant" : "smooth" });
+      // A part taller than most of the screen (a long list) shows from its top, heading first; anything else centres.
+      else
+        element.scrollIntoView({
+          block: element.getBoundingClientRect().height > innerHeight * 0.6 ? "start" : "center",
+          behavior: still() ? "instant" : "smooth",
+        });
     }
 
     let frame = 0;
@@ -145,6 +184,8 @@ export default function Tour({ trigger, onClose }: { trigger: HTMLElement | null
       observer?.disconnect();
     };
   }, [current]);
+
+  if (!run) return null;
 
   return (
     <dialog

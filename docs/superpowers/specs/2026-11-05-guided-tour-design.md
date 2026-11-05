@@ -268,3 +268,12 @@ Plan `docs/superpowers/plans/2026-11-05-guided-tour-phase-2.md`. Words in `lib/t
 - **Mentoring** (`mentor`): Your shops, Enquiries, Mentoring's section bar (where Export is).
 
 Changes from section 4.2: Messages has no safety step (the safety tips are on the composer, not the inbox); Today's and Mentoring's last step lights their section bar (`staff-bar`, one target for both). The menu now checks for a visible `[data-tour-page]` inline rather than importing `lib/tour/resolve.ts`, so the tour ids stay out of every page's first load (`markup.test.ts` keeps every page id a real tour); that saved 268 B on every page.
+
+## 14. Visual check (2026-11-05)
+
+Seen in the dev server at 360 (Light, Dark, Night), 768 and 1440 (Light), and on Launchpad. Four changes:
+
+1. **The card in the dark themes** steps up to the `panel` colour (the page's own colour was nearly the dim's, so its edge vanished), and has a `line` hairline in every theme.
+2. **Tablet** has no tab bar and no quick links, so Home's Shop and Sell steps skip themselves there; the menu step names them ("Shop by category, Sell, Launchpad, Looking For…").
+3. **A page still streaming in** (its `.skeleton` or `.page-fallback` showing in `<main>`) makes the engine wait for its parts, up to 4 seconds, before reading the steps: Launchpad opened mid-load had found 2 of its 4.
+4. **A part taller than most of the screen** scrolls to its top, not its middle, and on phones the card stays at the bottom for a part taller than half the screen, so its heading shows.

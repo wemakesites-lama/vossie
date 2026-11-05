@@ -12122,10 +12122,16 @@ html[data-nav-pending] .hdr-pennant-slot .pennant-crest {
   left: 0;
   width: calc(100% - 32px);
   padding: 16px;
+  border: 1px solid var(--color-line);
   border-radius: 16px;
   background: var(--color-white);
   color: var(--color-ink);
   animation: tour-card-in var(--motion-enter) ease-out both;
+
+  /* The dark themes' page colour is nearly the dim's, so the card steps up to the panel to stand off it. */
+  @variant dark {
+    background: var(--color-panel);
+  }
 }
 
 @media (min-width: 48rem) and (min-height: 30rem) {

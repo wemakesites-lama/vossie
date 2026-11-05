@@ -50,7 +50,11 @@ export const TOURS: Record<TourId, readonly TourStep[]> = {
       title: "You",
       body: "Notifications, your requests and your details, in one place.",
     },
-    { target: "menu", title: "The menu", body: "Categories, Launchpad, Looking For, and your theme and data saver." },
+    {
+      target: "menu",
+      title: "The menu",
+      body: "Shop by category, Sell, Launchpad, Looking For, and your theme and data saver.",
+    },
   ],
   browse: [
     { target: "browse-categories", title: "Categories", body: "Jump to one kind of thing. All shows everything." },

@@ -19,6 +19,11 @@ describe("placeCard on phones (guided tour spec 3.2)", () => {
     expect(placeCard({ target, viewport: phone, card, wide: false, bottomInset: 64 })).toEqual({ x: 16, y: 16 });
   });
 
+  it("stays at the bottom for a part taller than half the screen, so its heading shows", () => {
+    const target = { x: 10, y: 10, width: 340, height: 1040 };
+    expect(placeCard({ target, viewport: phone, card, wide: false, bottomInset: 64 }).y).toBe(844 - 64 - 180 - 16);
+  });
+
   it("sits at the bottom when there's no part to show", () => {
     expect(placeCard({ target: null, viewport: phone, card, wide: false }).y).toBe(844 - 180 - 16);
   });
