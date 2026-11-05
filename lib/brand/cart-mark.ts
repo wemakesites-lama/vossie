@@ -30,6 +30,15 @@ const MARK_WIDTH = 200;
 const MARK_HEIGHT = 175;
 export const MARK_VIEWBOX = `0 0 ${MARK_WIDTH} ${MARK_HEIGHT}`;
 
+/**
+ * Where the mark's weight sits across: the ink's centre (measured at 112.1 in both cuts), not its box's (101). The
+ * handle reaches out left, so a mark centred on its box looks pushed right; it's centred on this instead.
+ */
+export const MARK_CENTRE_X = 112;
+
+/** The grid moved so its middle is the ink's centre: CartMark's viewBox (with overflow visible, the handle still shows). */
+export const MARK_CENTRED_VIEWBOX = `${MARK_CENTRE_X - MARK_WIDTH / 2} 0 ${MARK_WIDTH} ${MARK_HEIGHT}`;
+
 /** The brand's hexes, for generated files only (icons, masters). Pages colour the mark with tokens (CartMark). */
 export const NAVY = "#15305d";
 export const SKY = "#29abe2";

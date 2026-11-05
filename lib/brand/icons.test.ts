@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MARK } from "./cart-mark";
+import { MARK, MARK_CENTRE_X } from "./cart-mark";
 import { FAVICON, ICON_FILES } from "./icons";
 
 describe("ICON_FILES", () => {
@@ -23,8 +23,10 @@ describe("ICON_FILES", () => {
   it("keeps the maskable icon's mark inside the safe circle, 40% of the size from the centre", () => {
     const maskable = ICON_FILES.find((icon) => icon.file.includes("maskable"))!;
     const { box } = MARK[maskable.cut];
-    const halfWidth = (maskable.size * maskable.markWidth) / 2;
-    const halfHeight = (halfWidth * box.height) / box.width;
-    expect(Math.hypot(halfWidth, halfHeight)).toBeLessThanOrEqual(maskable.size * 0.4);
+    const scale = (maskable.size * maskable.markWidth) / box.width;
+    // Centred on the ink, so the handle's top-left corner is the farthest point from the centre.
+    const left = (MARK_CENTRE_X - box.x) * scale;
+    const up = (box.height / 2) * scale;
+    expect(Math.hypot(left, up)).toBeLessThanOrEqual(maskable.size * 0.4);
   });
 });

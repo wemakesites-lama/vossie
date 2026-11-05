@@ -1,4 +1,4 @@
-import { MARK, MARK_VIEWBOX, starPath, type MarkCut } from "@/lib/brand/cart-mark";
+import { MARK, MARK_CENTRED_VIEWBOX, starPath, type MarkCut } from "@/lib/brand/cart-mark";
 import { cx } from "@/lib/cx";
 
 type CartMarkProps = {
@@ -20,7 +20,8 @@ export function CartMark({ cut = "full", sky = false, className }: CartMarkProps
     <svg
       aria-hidden="true"
       focusable="false"
-      viewBox={MARK_VIEWBOX}
+      // Centred on the cart's weight, not its box, so it sits in the middle of the pennant to the eye.
+      viewBox={MARK_CENTRED_VIEWBOX}
       overflow="visible"
       className={cx("cart-mark", sky && "cart-mark--sky", className)}
     >

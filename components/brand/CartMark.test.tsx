@@ -9,7 +9,9 @@ describe("CartMark", () => {
     const svg = container.querySelector("svg")!;
     expect(svg).toHaveAttribute("aria-hidden", "true");
     expect(svg).toHaveAttribute("focusable", "false");
-    expect(svg).toHaveAttribute("viewBox", "0 0 200 175");
+    // Centred on the ink (x 112), not the grid: the handle reaches left (overflow visible keeps it showing).
+    expect(svg).toHaveAttribute("viewBox", "12 0 200 175");
+    expect(svg).toHaveAttribute("overflow", "visible");
     expect(svg).toHaveClass("cart-mark", "extra");
     expect(svg).not.toHaveClass("cart-mark--sky");
     const paths = [...svg.querySelectorAll("path")].map((path) => path.getAttribute("d"));
