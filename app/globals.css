@@ -621,17 +621,14 @@
     justify-content: center;
     padding-top: var(--pen-pt);
     background: var(--color-band);
+    color: var(--color-on-band);
   }
 
+  /* The CampusCart mark (logo spec 3.1): as tall as the crest was (44px on phones, 60px from the tablet step) and as
+     wide as its 200 × 175 grid makes that. Night needs no filter: its own on-band and sky tokens soften it. */
   .pennant-crest {
-    width: auto;
+    width: calc(var(--crest-h) * 200 / 175);
     height: var(--crest-h);
-
-    /* Night: the white crest dimmed towards the warm words (spec 4.3). A filter, not opacity, which the crest's
-       breathing uses. */
-    @variant night {
-      filter: brightness(0.88);
-    }
   }
 
   /* Soft shadow, shown only while the pennant is pinned on its own (header crest-only mode).
@@ -646,6 +643,12 @@
 
   .pennant-shadow > .pennant-shape {
     background: var(--color-white);
+  }
+
+  /* The CampusCart mark's big star (logo spec 2.3): sky only where CartMark is told `sky` (on a band), so the mark on
+     white keeps all three stars in the text colour. */
+  .cart-mark--sky .cart-mark-star {
+    fill: var(--color-sky);
   }
 }
 
@@ -11308,6 +11311,14 @@ body:has(.section-shell:not([style*="display"]) > .section-bar) :is(.footer-gian
   animation: crest-in 400ms var(--ease-out) var(--motion-loader-delay) both;
 }
 
+/* The CampusCart mark at the crest's height (56px, so 64px wide), in the heading colour (navy in Light) with no sky star
+   (logo spec 3.2). */
+.crest-loader-mark {
+  width: 64px;
+  height: 56px;
+  color: var(--color-navy);
+}
+
 .crest-loader-status {
   visibility: hidden;
   animation: crest-announce 1ms linear var(--motion-loader-delay) both;
@@ -11319,9 +11330,9 @@ body:has(.section-shell:not([style*="display"]) > .section-bar) :is(.footer-gian
   }
 }
 
-/* The header crest while a tapped link waits for the server (calm navigation spec 4, layer 4; NavPending marks <html>).
-   After 150 ms, so a fast tap shows nothing; the breath is the crest loader's. Reduced motion and data saver dim it
-   instead, still; the crest is .motion-own, so they keep the delay. */
+/* The header's mark while a tapped link waits for the server (calm navigation spec 4, layer 4; NavPending marks <html>).
+   After 150 ms, so a fast tap shows nothing; the breath is the loader's. Reduced motion and data saver dim it
+   instead, still; the mark is .motion-own, so they keep the delay. */
 html[data-nav-pending] .hdr-pennant-slot .pennant-crest {
   animation: crest-wait-dim 1ms linear 150ms both;
 }

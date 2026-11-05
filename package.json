@@ -14,7 +14,8 @@
     "e2e": "playwright test",
     "e2e:supabase": "playwright test --config playwright.supabase.config.ts",
     "db:seed": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/make-seed.ts",
-    "db:types": "supabase gen types typescript --local > lib/supabase/database.types.ts"
+    "db:types": "supabase gen types typescript --local > lib/supabase/database.types.ts",
+    "icons": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/make-icons.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",

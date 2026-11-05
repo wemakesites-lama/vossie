@@ -11,8 +11,8 @@ export const NAV_PENDING_EVENT = "vossie:navpending";
 let pending = 0;
 
 /**
- * Renders nothing. Inside a <Link>, it marks <html data-nav-pending> while that link waits for the server, so the header
- * crest breathes (calm navigation spec 4, layer 4), and asks the header back if scrolling hid it. Only links that
+ * Renders nothing. Inside a <Link>, it marks <html data-nav-pending> while that link waits for the server, so the header's
+ * mark breathes (calm navigation spec 4, layer 4), and asks the header back if scrolling hid it. Only links that
  * weren't prefetched are ever pending.
  */
 export function NavPending() {

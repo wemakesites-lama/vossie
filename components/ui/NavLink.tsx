@@ -43,7 +43,7 @@ function CurrentAwareLink({ match, also, ...props }: NavLinkProps) {
   const under = (base: string) => pathname === base || pathname.startsWith(`${base}/`);
   const section = (match === "section" && pathname.startsWith(`${href}/`)) || (also?.some(under) ?? false);
   const current = pathname === href ? "page" : section ? "true" : undefined;
-  // NavPending marks the page while this link waits for the server, so the header crest breathes (calm navigation).
+  // NavPending marks the page while this link waits for the server, so the header's mark breathes (calm navigation).
   return (
     <Link {...props} aria-current={current}>
       {props.children}

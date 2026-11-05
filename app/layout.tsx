@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { AnnouncementBar } from "@/components/announcement/AnnouncementBar";
+import { Pennant } from "@/components/brand/Pennant";
 import { CampusPicker } from "@/components/campus/CampusPicker";
 import { SiteFooter } from "@/components/footer/SiteFooter";
 import { AccountLink, HeaderAccount } from "@/components/header/AccountLink";
@@ -76,6 +77,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <PhoneSaved />
             </Suspense>
           }
+          pennant={<Pennant />}
         />
         <main id="main" tabIndex={-1} className="flex-1">
           {children}

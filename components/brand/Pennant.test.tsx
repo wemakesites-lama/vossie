@@ -3,14 +3,15 @@ import { describe, expect, it } from "vitest";
 import { Pennant } from "./Pennant";
 
 describe("Pennant", () => {
-  it("is decorative and draws the crest", () => {
+  it("is decorative and draws the CampusCart mark with its sky star", () => {
     const { container } = render(<Pennant />);
     const pennant = container.firstElementChild!;
     expect(pennant).toHaveAttribute("aria-hidden", "true");
     expect(pennant).toHaveClass("pennant");
-    expect(pennant.querySelector("img")).toHaveAttribute("alt", "");
     expect(pennant).not.toHaveClass("pennant-mini");
-    expect(pennant.querySelector("img")).toHaveAttribute("loading", "eager");
+    expect(pennant.querySelector("img")).toBeNull();
+    // pennant-crest and motion-own keep calm navigation's breathing and its off switches (decision 90).
+    expect(pennant.querySelector("svg.cart-mark")).toHaveClass("cart-mark--sky", "pennant-crest", "motion-own");
   });
 
   it("has the footer lockup from the mockup: a white pennant with the navy crest", () => {

@@ -202,7 +202,7 @@ test.describe("the crest loader (layer 1)", () => {
       await page.evaluate(() => {
         const main = document.querySelector("main")!;
         main.innerHTML =
-          '<div class="page-fallback"><div class="crest-loader motion-own"><img class="crest-loader-mark" alt="" src="/favicon.ico" width="33" height="56"><p role="status" class="crest-loader-status"><span class="sr-only">Loading…</span></p></div></div>';
+          '<div class="page-fallback"><div class="crest-loader motion-own"><svg class="crest-loader-mark" aria-hidden="true" viewBox="0 0 200 175"></svg><p role="status" class="crest-loader-status"><span class="sr-only">Loading…</span></p></div></div>';
       });
       const read = () =>
         page.evaluate(() => {
@@ -228,7 +228,7 @@ test.describe("the crest loader (layer 1)", () => {
     await page.goto("/how-it-works", { waitUntil: "networkidle" });
     await page.evaluate(() => {
       document.querySelector("main")!.innerHTML =
-        '<div class="page-fallback"><div class="crest-loader motion-own"><img class="crest-loader-mark" alt="" src="/favicon.ico" width="33" height="56"><p role="status" class="crest-loader-status"><span class="sr-only">Loading…</span></p></div></div>';
+        '<div class="page-fallback"><div class="crest-loader motion-own"><svg class="crest-loader-mark" aria-hidden="true" viewBox="0 0 200 175"></svg><p role="status" class="crest-loader-status"><span class="sr-only">Loading…</span></p></div></div>';
     });
     await page.waitForTimeout(1600);
     expect(await seriousIssues(page)).toEqual([]);

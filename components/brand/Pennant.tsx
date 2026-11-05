@@ -1,7 +1,7 @@
 import Image from "next/image";
 import crestNavy from "@/assets/brand/crest-navy.png";
-import crestWhite from "@/assets/brand/crest-white.png";
 import { cx } from "@/lib/cx";
+import { CartMark } from "./CartMark";
 
 type PennantProps = {
   /** "header" hangs from the header bar; "small" is the footer lockup (a white pennant with the navy crest). */
@@ -10,8 +10,9 @@ type PennantProps = {
 };
 
 /**
- * The Eduvos crest in a navy varsity pennant with a white edge (spec section 4).
- * Decorative: the link or button around it carries the accessible name.
+ * The header's navy varsity pennant with a white edge (spec section 4), holding the CampusCart mark (logo spec 3.1),
+ * and the footer's small white pennant with the navy Eduvos crest (logo spec 3.4). A Server Component: the header takes
+ * it as a slot from the layout. Decorative: the link or button around it carries the accessible name.
  */
 export function Pennant({ size = "header", className }: PennantProps) {
   if (size === "small") {
@@ -30,18 +31,9 @@ export function Pennant({ size = "header", className }: PennantProps) {
       </span>
       <span className="pennant-shape pennant-back" />
       <span className="pennant-shape pennant-pen">
-        {/* 36 × 60 is the largest display size (the desktop crest is 60px tall), not the file's
-            intrinsic 362 × 609. It keeps the srcset to small 1x/2x files, so don't "correct" it. */}
-        <Image
-          src={crestWhite}
-          alt=""
-          width={36}
-          height={60}
-          loading="eager"
-          // motion-own: it breathes while a tapped link waits (calm navigation), and keeps that 150 ms delay under
-          // reduced motion and data saver, where it only dims (globals.css).
-          className="pennant-crest motion-own"
-        />
+        {/* motion-own: it breathes while a tapped link waits (calm navigation), and keeps that 150 ms delay under
+            reduced motion and data saver, where it only dims (globals.css). Sized in CSS (.pennant-crest). */}
+        <CartMark sky className="pennant-crest motion-own" />
       </span>
     </span>
   );

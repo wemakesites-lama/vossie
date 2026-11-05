@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRef, type MouseEvent, type ReactNode } from "react";
 import { flushSync } from "react-dom";
-import { Pennant } from "@/components/brand/Pennant";
 import { MenuIcon, SearchIcon } from "@/components/icons";
 import { NavLink } from "@/components/ui/NavLink";
 import { isMotionAllowedNow } from "@/hooks/useMotionAllowed";
@@ -31,9 +30,14 @@ type SiteHeaderProps = {
   account: ReactNode;
   /** Saved's heart on phones for sellers and staff (components/header/PhoneSaved.tsx), streamed like the account icon. */
   phoneSaved: ReactNode;
+  /**
+   * The pennant (components/brand/Pennant.tsx), rendered on the server by the layout, so the CampusCart mark inside it
+   * is HTML, not JavaScript (logo spec 5).
+   */
+  pennant: ReactNode;
 };
 
-export function SiteHeader({ campuses, account, phoneSaved }: SiteHeaderProps) {
+export function SiteHeader({ campuses, account, phoneSaved, pennant }: SiteHeaderProps) {
   const headerRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const { mode, show } = useHeaderMode(headerRef);
@@ -111,7 +115,7 @@ export function SiteHeader({ campuses, account, phoneSaved }: SiteHeaderProps) {
 
           <div className="hdr-pennant-slot">
             {/* The link on top carries the name and the focus ring, sized to cover the pennant's white edge. */}
-            <Pennant />
+            {pennant}
             <Link href="/" aria-label="CampusCart home" onClick={goHome} className="hdr-pennant" />
           </div>
 

@@ -58,6 +58,8 @@ const PAIRS: [string, string[], number][] = [
   ["on-action", ["action"], 4.5],
   ["on-sky", ["sky"], 4.5],
   ["on-band", ["alert"], 4.5],
+  // The CampusCart mark's big star in the pennant (logo spec 2.3): a graphical object, 3:1 (WCAG 1.4.11).
+  ["sky", ["band"], 3],
 ];
 
 describe.each(Object.keys(themes))("the %s theme's colours", (theme) => {

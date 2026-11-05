@@ -24,7 +24,7 @@ export function useHeaderMode(headerRef: RefObject<HTMLElement | null>) {
     store.setHold(() => hasKeyboardFocusWithin(headerRef.current));
   }, [store, headerRef]);
 
-  // A tapped link still waiting for the server brings the header back, so its breathing crest can be seen (calm
+  // A tapped link still waiting for the server brings the header back, so its breathing mark can be seen (calm
   // navigation spec 4, layer 4). The new page opens at the top with the header showing anyway.
   useEffect(() => {
     window.addEventListener(NAV_PENDING_EVENT, store.show);

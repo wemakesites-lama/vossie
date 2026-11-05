@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { Pennant } from "@/components/brand/Pennant";
 import { ALL_CAMPUSES, setCampusChoice } from "@/lib/campus";
 import { onOverlayOpen } from "@/lib/overlays";
 import { savedCookieString } from "@/lib/saved";
@@ -25,7 +26,7 @@ const campus = (slug: string, name: string): Campus => ({
 const campuses = [campus("midrand", "Midrand"), campus("pretoria", "Pretoria")];
 
 function renderHeader() {
-  render(<SiteHeader campuses={campuses} account={signedOut} phoneSaved={null} />);
+  render(<SiteHeader campuses={campuses} account={signedOut} phoneSaved={null} pennant={<Pennant />} />);
   return screen.getByRole("banner");
 }
 
@@ -141,11 +142,11 @@ describe("SiteHeader", () => {
   });
 
   it("leaves the campus pill plain with no choice, or with All campuses", () => {
-    const { unmount } = render(<SiteHeader campuses={campuses} account={signedOut} phoneSaved={null} />);
+    const { unmount } = render(<SiteHeader campuses={campuses} account={signedOut} phoneSaved={null} pennant={<Pennant />} />);
     expect(screen.getByRole("button", { name: /^Shopping at/ })).not.toHaveAttribute("data-chosen");
     unmount();
     setCampusChoice(ALL_CAMPUSES);
-    render(<SiteHeader campuses={campuses} account={signedOut} phoneSaved={null} />);
+    render(<SiteHeader campuses={campuses} account={signedOut} phoneSaved={null} pennant={<Pennant />} />);
     expect(screen.getByRole("button", { name: "Shopping at All campuses" })).not.toHaveAttribute("data-chosen");
   });
 
@@ -157,9 +158,9 @@ describe("SiteHeader", () => {
 
   it("keeps the pennant mounted when the header changes mode", () => {
     const header = renderHeader();
-    const crest = header.querySelector(".pennant img");
+    const mark = header.querySelector(".pennant svg");
     act(() => setScrollY(400));
-    expect(header.querySelector(".pennant img")).toBe(crest);
+    expect(header.querySelector(".pennant svg")).toBe(mark);
   });
 
   it("says 1 item in the singular and caps the badge at 99+", () => {
@@ -174,7 +175,7 @@ describe("SiteHeader", () => {
   });
 
   it("shows the account icon it's given, among the items that go inert when hidden (accounts spec 3.4)", () => {
-    render(<SiteHeader campuses={campuses} account={<AccountLink signedIn />} phoneSaved={null} />);
+    render(<SiteHeader campuses={campuses} account={<AccountLink signedIn />} phoneSaved={null} pennant={<Pennant />} />);
     const link = screen.getByRole("link", { name: "Your account" });
     expect(link).toHaveAttribute("href", "/account");
     act(() => setScrollY(400));
