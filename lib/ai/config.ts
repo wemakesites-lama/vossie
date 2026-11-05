@@ -9,7 +9,7 @@ type Env = Readonly<Record<string, string | undefined>>;
 
 export type ProviderName = "anthropic" | "groq" | "fake";
 
-/** The features, each with its own switch. Stages C to E, G and H add theirs here (AI features spec 7.2). */
+/** The features, each with its own switch. Stages C to I add theirs here (AI features spec 7.2). */
 export type AiFeature =
   | "listing"
   | "listing-check"
@@ -17,7 +17,8 @@ export type AiFeature =
   | "words-search"
   | "photo-search"
   | "looking-match"
-  | "starter-pack";
+  | "starter-pack"
+  | "shop-coach";
 
 const KNOWN: readonly ProviderName[] = ["anthropic", "groq", "fake"];
 const KEYS: Readonly<Record<Exclude<ProviderName, "fake">, string>> = {
@@ -32,6 +33,7 @@ const SWITCHES: Readonly<Record<AiFeature, string>> = {
   "photo-search": "VOSSIE_AI_PHOTO_SEARCH",
   "starter-pack": "VOSSIE_AI_STARTER_PACK",
   "looking-match": "VOSSIE_AI_LOOKING_MATCH",
+  "shop-coach": "VOSSIE_AI_SHOP_COACH",
 };
 
 /** Groq's free tier is for the photo features only (AI features spec 7.1): the rest are Haiku's. */
@@ -41,6 +43,7 @@ const ONLY: Partial<Record<AiFeature, readonly ProviderName[]>> = {
   "words-search": ["anthropic", "fake"],
   "starter-pack": ["anthropic", "fake"],
   "looking-match": ["anthropic", "fake"],
+  "shop-coach": ["anthropic", "fake"],
 };
 
 /** Haiku first, Groq's free tier behind it (AI features spec decision 1, Lama's Q1). */

@@ -110,3 +110,17 @@ describe("the looking match's settings (AI round two spec 5)", () => {
     expect(aiFeatureOn("looking-match", { VOSSIE_AI_PROVIDERS: "fake", VOSSIE_AI_WORDS_SEARCH: "1" })).toBe(false);
   });
 });
+
+// Stage I1: Shop coach.
+describe("Shop coach's settings (AI round two spec 2)", () => {
+  it("turns Shop coach on only with its switch and Haiku or the fake (AI stage I1)", () => {
+    const groq = { VOSSIE_AI_PROVIDERS: "groq", GROQ_API_KEY: "g", VOSSIE_AI_SHOP_COACH: "1" };
+    expect(featureProviders("shop-coach", groq)).toEqual([]);
+    expect(aiFeatureOn("shop-coach", groq)).toBe(false);
+    const haiku = { VOSSIE_AI_PROVIDERS: "anthropic,groq", ANTHROPIC_API_KEY: "a", GROQ_API_KEY: "g" };
+    expect(featureProviders("shop-coach", haiku)).toEqual(["anthropic"]);
+    expect(aiFeatureOn("shop-coach", haiku)).toBe(false);
+    expect(aiFeatureOn("shop-coach", { ...haiku, VOSSIE_AI_SHOP_COACH: "1" })).toBe(true);
+    expect(aiFeatureOn("shop-coach", { VOSSIE_AI_PROVIDERS: "fake", VOSSIE_AI_SHOP_COACH: "1" })).toBe(true);
+  });
+});

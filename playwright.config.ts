@@ -50,6 +50,9 @@ const HOUSEKEEPING_WRITES = /housekeeping-writes\.spec\.ts$/;
 // Role views' writes (a new shop approved, a buyer's first message, a listing marked sold from its thread) run after
 // every other test, so no count another test reads moves under them (role views spec 9; N2 plan, Task 14).
 const ROLE_VIEWS_WRITES = /role-views-writes\.spec\.ts$/;
+// Shop coach's ticks and new shops' weeks run after every other test, so no card another test reads changes under it
+// (AI stage I1).
+const COACH_WRITES = /coach-writes\.spec\.ts$/;
 // Every write project's files: the device projects leave them all out.
 const WRITES = [
   SELLING_WRITES,
@@ -60,6 +63,7 @@ const WRITES = [
   HARDENING_WRITES,
   HOUSEKEEPING_WRITES,
   ROLE_VIEWS_WRITES,
+  COACH_WRITES,
 ];
 
 export default defineConfig({
@@ -104,6 +108,8 @@ export default defineConfig({
       VOSSIE_AI_STARTER_PACK: "1",
       // Someone's looking for this is on too, read by the fake, which keeps a request's words as its q (AI stage G).
       VOSSIE_AI_LOOKING_MATCH: "1",
+      // Shop coach on, in fixed wording, its weeks made on first read (AI stage I1).
+      VOSSIE_AI_SHOP_COACH: "1",
       VOSSIE_AI_PROVIDERS: "fake",
       VOSSIE_LISTING_AI_PROVIDERS: "fake",
     } as Record<string, string>,
@@ -184,6 +190,23 @@ export default defineConfig({
         "staff-accounts-writes",
         "hardening-writes",
         "housekeeping-writes",
+      ],
+    },
+    // After everything else (AI stage I1). Run it alone with --project=coach-writes --no-deps.
+    {
+      name: "coach-writes",
+      use: phone(390, 844),
+      testMatch: COACH_WRITES,
+      dependencies: [
+        ...DEVICE_PROJECTS,
+        "selling-writes",
+        "staff-writes",
+        "community-writes",
+        "alerts-writes",
+        "staff-accounts-writes",
+        "hardening-writes",
+        "housekeeping-writes",
+        "role-views-writes",
       ],
     },
   ],

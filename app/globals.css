@@ -11419,6 +11419,66 @@ html[data-nav-pending] .hdr-pennant-slot .pennant-crest {
     font-size: 14px;
   }
 
+  /* Shop coach's week (AI stage I1): "This week" on /sell, "Your week" on the Launchpad. Tokens only, no animation. */
+  .coach-items {
+    display: grid;
+    gap: 12px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .coach-item {
+    display: grid;
+    justify-items: start;
+    gap: 4px;
+  }
+
+  .coach-item + .coach-item {
+    border-top: 1px solid var(--color-line);
+    padding-top: 12px;
+  }
+
+  .coach-title {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-sky-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .coach-progress,
+  .coach-last {
+    color: var(--color-muted);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .coach-why,
+  .coach-empty {
+    color: var(--color-ink);
+    font-size: 14px;
+  }
+
+  .coach-state {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-ink);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .coach-gone {
+    color: var(--color-muted);
+  }
+
+  .coach-tick .btn {
+    min-height: 44px;
+  }
+
   /* Links on white are sky-dark (4.7:1), underlined. */
   .sell-home-link {
     display: inline-flex;

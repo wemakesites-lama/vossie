@@ -72,7 +72,7 @@ function sastMidnight(day: string): string {
 }
 
 /** The Monday of the South African week a SAST date is in. */
-function mondayOf(day: string): string {
+export function mondayOf(day: string): string {
   const [year, month, date] = day.split("-").map(Number);
   // 0 is Sunday. Worked out in UTC from the South African date, so the server's timezone can't move it.
   const weekday = new Date(Date.UTC(year, month - 1, date)).getUTCDay();

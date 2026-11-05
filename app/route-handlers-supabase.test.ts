@@ -56,6 +56,7 @@ vi.mock("@/lib/data/supabase/form-states", async () => ({
 // export reads the account's requests, follows and saved searches (C4/C5 plan Tasks 4, 7 and 8's twins); none here.
 vi.mock("@/lib/data/supabase/requests", () => ({ settleRequests: async () => 0, exportRequests: async () => [] }));
 vi.mock("@/lib/data/supabase/follows", () => ({ exportFollowing: async () => [] }));
+vi.mock("@/lib/data/supabase/coach", () => ({ everyOwnWeek: async () => [] }));
 vi.mock("@/lib/data/supabase/saved-searches", () => ({ exportSavedSearches: async () => [] }));
 // The staff tools' export reads the account's RSVPs and slot requests on Supabase (C4/C5 plan Task 21's twin); none here.
 vi.mock("@/lib/data/supabase/staff-privacy", () => ({ exportStaffToolsData: async () => ({ hubRsvps: [], slotRequests: [] }) }));

@@ -1,3 +1,4 @@
+import type { CoachAction } from "@/lib/coach/types";
 import type {
   AuditAction,
   AuditTargetKind,
@@ -550,3 +551,24 @@ export type SavedSearchRow = {
   /** When its alerts were paused; null while they're on. */
   pausedAt: string | null;
 };
+
+// --- Shop coach (AI stage I1) ---------------------------------------------------------------------------------------
+
+/** One shop's week (AI round two spec 4), keyed `${ownerId}:${week}` in the sample store (I1 planning decision 14). */
+export type CoachWeekRow = {
+  ownerId: string;
+  /** The SAST Monday, YYYY-MM-DD. */
+  week: string;
+  actions: CoachAction[];
+  /** Two questions for the shop's mentor (stage I2), or null. Staff only: never in the download. */
+  mentorQuestions: [string, string] | null;
+  writtenBy: "model" | "fixed";
+  /** Set together when the week is settled (planning decision 10). */
+  doneIds: string[] | null;
+  goneIds: string[] | null;
+  settledAt: string | null;
+  createdAt: string;
+};
+
+/** A seller's tick (spec 4), keyed `${ownerId}:${week}:${actionId}`. */
+export type CoachTickRow = { ownerId: string; week: string; actionId: string; createdAt: string };

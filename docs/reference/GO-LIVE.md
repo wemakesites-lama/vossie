@@ -268,6 +268,12 @@ Built 2026-11-04 (AI round two spec section 5, stage G; plan `docs/superpowers/p
 - [ ] Check it on vossie-pi: a student posts a request; another account's shop at that campus publishes a matching listing and sees the line; "Make an offer" opens the composer; the asker has no notification until the offer.
 - [ ] After two weeks, read the `[vossie] looking-match:` and `words-search:` log lines.
 
+### Shop coach, without the model (AI stage I1, after the submission)
+Built 2026-11-05 (AI round two spec sections 2 to 4; plan `docs/superpowers/plans/2026-11-04-ai-stage-i1-shop-coach-core.md`) and off. It needs stage G live for `answer-request` (without G it simply has none).
+- [ ] Push `20261107120000_shop_coach.sql` to Vossie Market (a dry run first, then Lama's go-ahead) before this code is deployed, not only before the switch: the data download reads `own_coach_weeks` whatever the switch says.
+- [ ] Either wait for I2, or set `VOSSIE_AI_SHOP_COACH=1` alone for fixed wording (weeks made on a seller's first visit from Monday 06:00 SAST). Then redeploy.
+- [ ] On vossie-pi: an approved seller sees "This week" on `/sell` and "Your week" on `/hub`; a tip's Mark done ticks; a signed-out visitor's `/hub` is unchanged.
+
 ## 7. Decisions for Lama and Eduvos
 
 - [ ] **Report the kept-redirect behaviour to Next.js, if necessary** (Lama, 2026-10-20). `tests/e2e/sign-in-return.spec.ts` with `SIGN_IN_SPIKE=1` is the reproduction.

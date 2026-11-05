@@ -63,6 +63,8 @@ begin
   delete from public.listings;
   delete from public.shop_pickup_points;
   delete from public.shop_previous_slugs;
+  delete from public.coach_ticks;
+  delete from public.coach_weeks;
   delete from public.shops;
   delete from public.onboarding_drafts;
   delete from public.seller_profiles;
