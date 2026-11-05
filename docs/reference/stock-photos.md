@@ -9,8 +9,8 @@ appears twice anywhere on the site); the six others keep their category's cover,
 - **No model releases.** Unsplash doesn't promise one, so photos with faces (the hero, some Hub covers) mustn't present
   a real person as an Eduvos student or a CampusCart seller. Replace them with consented photos before go-live
   (spec section 12, POPIA).
-- **Not stock:** the campus photos (below). A listing's second and third photos stay placeholders
-  (`public/placeholders/photo/`).
+- **Not stock:** the campus photos (below). The sample listings' second and third photos are stock photos too
+  (2026-11-05), named for what they show (`listing/casio-notes.jpg`), never by the listing's id.
 - **Swapping one:** drop a new `.jpg` at the same path and update its row below. A new slot needs its fixture's `src`
   and, for shops, listings and Hub posts on Supabase, the seed (`pnpm db:seed`).
 
@@ -86,6 +86,12 @@ appears twice anywhere on the site); the six others keep their category's cover,
 | `listing/dm-013.jpg` | [For Maths 1 crash course, two hours](https://unsplash.com/photos/gYrYa37fAKI) | Artturi Jalli |
 | `listing/dm-014.jpg` | [For White sneakers, size 7](https://unsplash.com/photos/x5aavOm7PFc) | Brian Hall |
 | `listing/dm-015.jpg` | [For Comedy night tickets, a pair](https://unsplash.com/photos/imlD5dbcLM4) | Tim Mossholder |
+| `listing/casio-notes.jpg` | [The Casio's second photo](https://unsplash.com/photos/f1YfrZ1o2r8) | Anoushka Puri |
+| `listing/casio-keys.jpg` | [The Casio's third photo](https://unsplash.com/photos/Hlbfm6J7VR8) | dostonxd |
+| `listing/fridge-inside.jpg` | [The bar fridge's second photo](https://unsplash.com/photos/ZUhM8LE_HGc) | Darrien Staton |
+| `listing/bike-gears.jpg` | [The bicycle's second photo](https://unsplash.com/photos/ZKB9Bo4zCqQ) | Andrew Seaman |
+| `listing/bike-lock.jpg` | [The bicycle's third photo](https://unsplash.com/photos/sOhGD0wIEEI) | Claudio Schwarz |
+| `seller/crochet-corner.jpg` | [Crochet corner's shop photo (live only; the fixture keeps no photo for the tests)](https://unsplash.com/photos/EdZMHCmKQZA) | Nicole Almendrada |
 | `collection/start-of-semester.jpg` | [a group of people walking on a road](https://unsplash.com/photos/a-group-of-people-walking-on-a-road-YzXF_ZxH8MM) | [Meredith Spencer](https://unsplash.com/@meredithspencer22) |
 | `collection/exam-season.jpg` | [a person writing on a notebook with colored pens](https://unsplash.com/photos/a-person-writing-on-a-notebook-with-colored-pens-OEvLi8LM7cc) | [American Jael](https://unsplash.com/@americanjael) |
 | `collection/moving-in.jpg` | [a woman moving boxes in a living room](https://unsplash.com/photos/a-woman-moving-boxes-in-a-living-room-wS40ELZROLE) | [Vitaly Gariev](https://unsplash.com/@silverkblack) |

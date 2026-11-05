@@ -124,7 +124,8 @@ test("with data saver on, only the cover photo loads", async ({ page }) => {
   onlyAt("phone-390");
   const extraPhotos: string[] = [];
   page.on("request", (request) => {
-    if (request.url().includes("/placeholders/photo/")) extraPhotos.push(request.url());
+    const extra = /\/stock\/listing\/casio-(notes|keys)\.jpg/;
+    if (extra.test(decodeURIComponent(request.url()))) extraPhotos.push(request.url());
   });
   await page.addInitScript(() => localStorage.setItem("vossie_low_data", "1"));
   await page.goto("/listings/l-001", { waitUntil: "networkidle" });

@@ -57,8 +57,8 @@ describe("the sample shops (selling plan, Task 1)", () => {
     // The cover's alt was the title, so it's kept empty: "the title" (selling spec 2.5).
     expect(casio.photos).toEqual([
       { src: "/stock/listing/tech.jpg", alt: "" },
-      { src: "/placeholders/photo/2.svg", alt: "The back of the calculator, with the battery cover" },
-      { src: "/placeholders/photo/3.svg", alt: "The slide-on cover" },
+      { src: "/stock/listing/casio-notes.jpg", alt: "The calculator beside a page of exam notes" },
+      { src: "/stock/listing/casio-keys.jpg", alt: "The keys and the screen" },
     ]);
     // Every sample listing was published when it was listed (selling plan amendment 9.2).
     for (const row of sampleListingRows) expect(row.firstPublishedAt, row.id).toBe(row.createdAt);

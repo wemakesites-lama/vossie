@@ -27,8 +27,8 @@ type Options = {
 
 const sellerNames = new Map(sellers.map((seller) => [seller.slug, seller.name]));
 
-/** A labelled placeholder for the second or third photo (plan decision 15). */
-const photo = (n: 2 | 3, alt: string): ImageRef => ({ src: `/placeholders/photo/${n}.svg`, alt });
+/** A second or third photo: a stock photo of its own, `/stock/listing/<file>.jpg` (2026-11-05). */
+const photo = (file: string, alt: string): ImageRef => ({ src: `/stock/listing/${file}.jpg`, alt });
 
 /**
  * The listings with a stock photo of their own, `/stock/listing/<id>.jpg` (2026-11-05, docs/reference/stock-photos.md),
@@ -96,7 +96,10 @@ export const listings: readonly Listing[] = [
     "Approved for Eduvos maths and stats exams. Works perfectly, with a new battery fitted in September.\nComes with the slide-on cover.",
     {
       condition: "like-new",
-      morePhotos: [photo(2, "The back of the calculator, with the battery cover"), photo(3, "The slide-on cover")],
+      morePhotos: [
+        photo("casio-notes", "The calculator beside a page of exam notes"),
+        photo("casio-keys", "The keys and the screen"),
+      ],
     },
   ),
   listing(
@@ -123,7 +126,7 @@ export const listings: readonly Listing[] = [
   listing(
     "l-003", "Bar fridge, 90 litres", 1200, "midrand", "res-living", "res-deals", "trusted", "2026-10-12T06:10:00Z",
     "Moving out of res, so the fridge has to go. Quiet, cold and clean, with a small freezer box.\nBring a friend to help carry it.",
-    { pickup: "reception", morePhotos: [photo(2, "Inside the fridge, with the freezer box")] },
+    { pickup: "reception", morePhotos: [photo("fridge-inside", "Inside the fridge")] },
   ),
   listing(
     "l-021", "Bicycle, 21 gears", 1500, "cape-town-mowbray", "res-living", "weekend-market", "new-seller",
@@ -131,7 +134,7 @@ export const listings: readonly Listing[] = [
     "A mountain bike with 21 gears, serviced last month. The lock is included.",
     {
       pickup: "reception",
-      morePhotos: [photo(2, "The gears and the back wheel"), photo(3, "The lock that comes with it")],
+      morePhotos: [photo("bike-gears", "The gears and the back wheel"), photo("bike-lock", "The lock that comes with it")],
     },
   ),
   listing(

@@ -44,8 +44,8 @@ vi.mock("@/lib/data/ai", () => ({ PHOTOS_READ: 3, readListingPhotos: vi.fn(), ch
 const NOW = new Date("2026-10-14T08:42:00.000Z");
 const IN_30_DAYS = new Date("2026-11-13T08:42:00.000Z");
 const COVER = "/stock/listing/tech.jpg";
-const BACK = "/placeholders/photo/2.svg";
-const CASE = "/placeholders/photo/3.svg";
+const BACK = "/stock/listing/casio-notes.jpg";
+const CASE = "/stock/listing/casio-keys.jpg";
 
 beforeEach(() => {
   resetSampleStore();

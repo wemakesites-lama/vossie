@@ -371,8 +371,8 @@ describe("the data export (plan decision 22)", () => {
       pickupPoint: "Library entrance",
       photos: [
         { address: "/stock/listing/tech.jpg", description: "" },
-        { address: "/placeholders/photo/2.svg", description: "The back of the calculator, with the battery cover" },
-        { address: "/placeholders/photo/3.svg", description: "The slide-on cover" },
+        { address: "/stock/listing/casio-notes.jpg", description: "The calculator beside a page of exam notes" },
+        { address: "/stock/listing/casio-keys.jpg", description: "The keys and the screen" },
       ],
     });
     expect(JSON.stringify(data)).not.toMatch(/acc-seller|l-001|pp-midrand/);
