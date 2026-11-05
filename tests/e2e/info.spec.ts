@@ -74,6 +74,20 @@ const PAGES: readonly InfoCase[] = [
       "After a report",
     ],
   },
+  {
+    // The shop plans (decision 100): the info frame, words only.
+    path: "/plans",
+    title: "Plans for shops",
+    draft: false,
+    sections: [
+      "Right now: free for every shop",
+      "Buying is always free",
+      "Starter: free",
+      "Plus: R29 a month",
+      "What's never for sale",
+      "How paying will work",
+    ],
+  },
 ];
 
 test.describe("the info and legal pages (spec 3)", () => {

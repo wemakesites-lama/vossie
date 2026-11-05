@@ -21,6 +21,7 @@ describe("sitemapEntries (info and system spec 2.8)", () => {
       "https://vossie.example/how-it-works",
       "https://vossie.example/safety",
       "https://vossie.example/trust",
+      "https://vossie.example/plans",
     ]);
   });
 

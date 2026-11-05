@@ -35,6 +35,8 @@ export const PARENTS: Readonly<Record<string, string>> = {
   "/trust": "/",
   "/report": "/",
   "/report/sent": "/",
+  // The shop plans (decision 100): an info page, but it's about selling, so it sits under Sell.
+  "/plans": "/sell",
 
   // Snap to search (AI features spec section 5): under Shop, like a search.
   "/browse/photo": "/browse",
@@ -123,6 +125,7 @@ export const LABELS: Readonly<Record<string, string>> = {
   "/trust": "How trust works",
   "/report": "Report",
   "/report/sent": "Report sent",
+  "/plans": "Plans for shops",
   "/browse/photo": "Search with a photo",
   "/browse/starter": "Get a starter pack",
   "/listings/[id]/message": "Message the seller",

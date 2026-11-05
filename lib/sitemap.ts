@@ -6,7 +6,7 @@ import type { MetadataRoute } from "next";
  * Privacy, Terms and Seller guidelines: they are drafts marked `noindex` until Eduvos signs them off (plan amendment 1),
  * and a sitemap shouldn't ask search engines to index them. Add them here when the `noindex` comes off.
  */
-export const STATIC_PATHS = ["/", "/browse", "/looking-for", "/hub", "/how-it-works", "/safety", "/trust"] as const;
+export const STATIC_PATHS = ["/", "/browse", "/looking-for", "/hub", "/how-it-works", "/safety", "/trust", "/plans"] as const;
 
 type SitemapSources = {
   listingIds: readonly string[];

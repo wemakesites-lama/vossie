@@ -2,6 +2,7 @@ import { render } from "@testing-library/react";
 import type { ComponentType } from "react";
 import { beforeAll, describe, expect, it } from "vitest";
 import HowItWorksPage from "./how-it-works/page";
+import PlansPage from "./plans/page";
 import PrivacyPage from "./privacy/page";
 import SafetyPage from "./safety/page";
 import SellerGuidelinesPage from "./seller-guidelines/page";
@@ -15,9 +16,11 @@ const PAGES: ReadonlyArray<[path: string, Page: ComponentType]> = [
   ["/privacy", PrivacyPage],
   ["/terms", TermsPage],
   ["/seller-guidelines", SellerGuidelinesPage],
+  // The shop plans (decision 100) use the same frame, so the same rules hold.
+  ["/plans", PlansPage],
 ];
 
-/** Every route a link on these pages may point at: the six pages, and the rest of the site. */
+/** Every route a link on these pages may point at: the pages above, and the rest of the site. */
 const ROUTES = new Set([...PAGES.map(([path]) => path), "/", "/browse", "/hub", "/looking-for", "/sell", "/login", "/account", "/account/privacy"]);
 
 type Inspected = { path: string; h1s: number; sectionIds: string[]; contents: string[]; links: string[] };
@@ -35,7 +38,7 @@ function inspect(path: string, Page: ComponentType): Inspected {
   return inspected;
 }
 
-describe("the six info pages together (info and system spec 3 and 6)", () => {
+describe("the info pages together (info and system spec 3 and 6)", () => {
   let pages: Inspected[] = [];
 
   beforeAll(() => {

@@ -13,5 +13,7 @@ describe("the pitch (selling spec section 3)", () => {
     expect(screen.getByRole("region", { name: "Three steps" }).querySelectorAll("li")).toHaveLength(3);
     expect(screen.getByText(/CampusCart takes no cut/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "seller guidelines" })).toHaveAttribute("href", "/seller-guidelines");
+    // The fees stay none today; the paid plan to come is one link away (decision 100).
+    expect(screen.getByRole("link", { name: "see the plans" })).toHaveAttribute("href", "/plans");
   });
 });

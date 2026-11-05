@@ -58,7 +58,14 @@ export function SellPitch({ startHref, resuming }: SellPitchProps) {
         <h2 id="sell-fees-title" className="sell-section-title">
           Fees
         </h2>
-        <p>None. CampusCart takes no cut and sells no places. Buyers pay you when you meet.</p>
+        <p>
+          None. CampusCart takes no cut and sells no places. Buyers pay you when you meet. A paid plan for growing
+          shops comes after the pilot:{" "}
+          <Link href="/plans" prefetch={false}>
+            see the plans
+          </Link>
+          .
+        </p>
       </section>
 
       <p className="sell-note">
