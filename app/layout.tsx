@@ -13,6 +13,7 @@ import { PhotoSearchLink } from "@/components/search/PhotoSearchLink";
 import { SearchCategories } from "@/components/search/SearchCategories";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { RoleTabs, StudentTail, TabBar } from "@/components/tabbar/TabBar";
+import { TourHost } from "@/components/tour/TourHost";
 import { ToastRegion } from "@/components/ui/ToastRegion";
 import { aiFeatureOn } from "@/lib/ai/config";
 import { BOOT_SCRIPT } from "@/lib/boot-script";
@@ -108,6 +109,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           photoLink={aiFeatureOn("photo-search") ? <PhotoSearchLink /> : null}
         />
         <CampusPicker campuses={campuses} />
+        <TourHost />
         <ToastRegion />
       </body>
     </html>

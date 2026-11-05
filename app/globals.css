@@ -66,6 +66,8 @@
   --color-on-sky: #15305d;
   --color-alert: #b42318;
   --color-sky: #29abe2;
+  --color-scrim: #15305d; /* the guided tour's dim, at 70% (guided tour spec 7.2) */
+  --color-tour-ring: #ffffff; /* the ring round the tour's lit part: 3:1 against the dim */
   --color-sky-dark: #1e7ba8;
   --color-panel: #f3f3f3;
   --color-pale: #e1f0f7;
@@ -118,6 +120,8 @@
     --color-white: #0d1c38;
     --color-navy: #ffffff;
     --color-action: #29abe2;
+    --color-scrim: #050e1e;
+    --color-tour-ring: #29abe2;
     --color-on-action: #15305d;
     --color-sky-dark: #45b7e8;
     --color-panel: #15305d;
@@ -149,6 +153,8 @@
     --color-band: #0c1018;
     --color-on-band: #ece7df;
     --color-action: #4fa9d1;
+    --color-scrim: #000000;
+    --color-tour-ring: #4fa9d1;
     --color-on-action: #15305d;
     --color-sky: #4fa9d1;
     --color-sky-dark: #6fb6d6;
@@ -12072,4 +12078,149 @@ html[data-nav-pending] .hdr-pennant-slot .pennant-crest {
       --screen-header: 122px;
     }
   }
+}
+
+/* --- Guided tour (guided tour spec 7): the dim, the lit window and the card. Only transform and opacity animate,
+   and the motion switches at the top of this file stop the card's rise for reduced motion and data saver. --- */
+.tour {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+.tour::backdrop {
+  background: transparent;
+}
+
+/* Sized with width and height (never animated) and moved with translate; its spread shadow is the dim. */
+.tour-window {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--color-scrim) 70%, transparent);
+  outline: 2px solid var(--color-tour-ring);
+  outline-offset: 2px;
+}
+
+.tour-window[data-empty] {
+  outline: none;
+}
+
+.tour-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% - 32px);
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--color-white);
+  color: var(--color-ink);
+  animation: tour-card-in var(--motion-enter) ease-out both;
+}
+
+@media (min-width: 48rem) and (min-height: 30rem) {
+  .tour-card {
+    width: 22rem;
+  }
+}
+
+.tour-title {
+  padding-right: 40px;
+  font-family: var(--vos-font-display);
+  font-size: 1.25rem;
+  line-height: 1.2;
+  color: var(--color-navy);
+}
+
+.tour-title:focus {
+  outline: none;
+}
+
+.tour-count {
+  display: block;
+  margin-bottom: 2px;
+  font-family: var(--vos-font-text);
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.tour-body {
+  margin-top: 6px;
+}
+
+.tour-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.tour-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--color-navy);
+}
+
+@keyframes tour-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Home's invitation (spec 3.1 and 8): in the static HTML for everyone, hidden before first paint once answered. */
+.tour-nudge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: var(--color-pale);
+}
+
+html[data-toured] .tour-nudge {
+  display: none;
+}
+
+.tour-nudge-title {
+  font-family: var(--vos-font-display);
+  font-size: 1.25rem;
+  color: var(--color-navy);
+}
+
+.tour-nudge-actions {
+  display: flex;
+  gap: 8px;
+}
+
+@media (min-width: 48rem) and (min-height: 30rem) {
+  .tour-nudge {
+    margin-top: 16px;
+  }
+}
+
+/* The menu's row (spec 3.1): with the settings, sized like them, not like the menu's big links. */
+.menu-tour {
+  justify-self: start;
+  min-height: 44px;
+  font-weight: 600;
+  text-align: start;
 }

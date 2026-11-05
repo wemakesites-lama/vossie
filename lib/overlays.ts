@@ -1,4 +1,4 @@
-export type OverlayName = "menu" | "search" | "campus" | "install-help";
+export type OverlayName = "menu" | "search" | "campus" | "install-help" | "tour";
 
 type OpenListener = (trigger: HTMLElement | null) => void;
 
@@ -7,6 +7,7 @@ const listeners: Record<OverlayName, Set<OpenListener>> = {
   search: new Set(),
   campus: new Set(),
   "install-help": new Set(),
+  tour: new Set(),
 };
 
 /** Ask an overlay to open. `trigger` gets focus back when it closes. */

@@ -41,6 +41,16 @@ function contrast(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
+/** `fg` at `alpha` laid over `bg`, as the browser paints a translucent colour. */
+function over(fg: string, bg: string, alpha: number): string {
+  const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const [f, b] = [rgb(fg), rgb(bg)];
+  return `#${f.map((c, i) => Math.round(c * alpha + b[i] * (1 - alpha)).toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** The tour's dim (guided tour spec 7.2): the scrim at 70% over the page. The CSS test below keeps the two in step. */
+const SCRIM_ALPHA = 0.7;
+
 const SURFACES = ["white", "panel", "pale"];
 /** [foreground, backgrounds, ratio]. */
 const PAIRS: [string, string[], number][] = [
@@ -75,8 +85,16 @@ describe.each(Object.keys(themes))("the %s theme's colours", (theme) => {
   it("an action stands apart from the page (3:1, WCAG 1.4.11)", () => {
     expect(contrast(t.action, t.white)).toBeGreaterThanOrEqual(3);
   });
+
+  it("the tour's ring stands apart from the dim around it (3:1, WCAG 1.4.11)", () => {
+    expect(contrast(t["tour-ring"], over(t.scrim, t.white, SCRIM_ALPHA))).toBeGreaterThanOrEqual(3);
+  });
 });
 
 it("reads each theme's own block, so a theme can't silently fall back to another", () => {
   expect(new Set(Object.values(themes).map((t) => t.white)).size).toBe(Object.keys(themes).length);
+});
+
+it("dims with the scrim at the alpha the ring check uses", () => {
+  expect(css).toContain(`var(--color-scrim) ${SCRIM_ALPHA * 100}%`);
 });
