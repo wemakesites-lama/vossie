@@ -10,6 +10,7 @@ import { NEW_LISTING_PATH } from "@/lib/selling/paths";
 import { inboxTime } from "@/lib/time";
 import type { ConversationSummary, InboxTab } from "@/lib/types";
 import { StatusPill } from "./StatusPill";
+import { TourNudge } from "@/components/home/TourNudge";
 
 type InboxViewProps = {
   tab: InboxTab;
@@ -25,6 +26,7 @@ export function InboxView({ tab, hasShop, conversations, now }: InboxViewProps) 
   const title = tab === "buying" ? "Buying" : "Selling";
   return (
     <div className="inbox-body" data-tour-page="messages">
+      <TourNudge />
       <div className="inbox-bar">
         {hasShop && (
           <nav aria-label="Buying and selling" className="inbox-tabs" data-tour="inbox-tabs">

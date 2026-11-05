@@ -61,8 +61,8 @@ export default function Tour({ trigger, onClose }: { trigger: HTMLElement | null
   const last = index === count - 1;
 
   function finish(done: boolean) {
-    // Only a finished Home tour answers Home's invitation (spec 3.5); closing early doesn't.
-    if (done && run?.id === "home") markTourSeen();
+    // A finished tour answers the invitation, wherever it was taken (spec 15); closing early doesn't.
+    if (done) markTourSeen();
     dialogRef.current?.close();
     onClose();
     // Back to what opened it, or to the page when that's gone (the invitation hides once answered). A trigger in the

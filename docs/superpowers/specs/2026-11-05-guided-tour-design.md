@@ -277,3 +277,11 @@ Seen in the dev server at 360 (Light, Dark, Night), 768 and 1440 (Light), and on
 2. **Tablet** has no tab bar and no quick links, so Home's Shop and Sell steps skip themselves there; the menu step names them ("Shop by category, Sell, Launchpad, Looking For…").
 3. **A page still streaming in** (its `.skeleton` or `.page-fallback` showing in `<main>`) makes the engine wait for its parts, up to 4 seconds, before reading the steps: Launchpad opened mid-load had found 2 of its 4.
 4. **A part taller than most of the screen** scrolls to its top, not its middle, and on phones the card stays at the bottom for a part taller than half the screen, so its heading shows.
+
+## 15. Making the tour findable (2026-11-05)
+
+Lama ran the dev build and couldn't find the tour: the menu row sat under the menu's big links, and Home's "New here?" row was below the first screen on phones. Lama chose:
+
+1. **The menu's way in is the first thing in the menu:** "Show me around this page" as a solid sky pill (navy words) with an info icon, under Close and the campus, above Shop.
+2. **A one-time invitation in the corner** replaces Home's row: "New here?" with Take the tour and a close button, bottom right, on the first toured page a visitor sees (a listing from a shared link as much as Home). On phones it sits above the one bar at the bottom (the tab bar, a section's bar or a listing's dock); from the tablet step 24px from the corner. Every toured page renders it inside its `data-tour-page` element, so it goes with its page and never shows where there's no tour. Either button answers it for good (`vossie_tour_seen`, hidden before first paint by the boot script); so does finishing any tour. It is plain server markup: `TourHost` answers its buttons with one document listener, because a client component on eleven pages put about 700 B on every page.
+3. **No pop-up on idling or "stuck":** a page can't tell stuck from reading, an interruption mid-read is nagging, and watching for idleness would cost code on every page.

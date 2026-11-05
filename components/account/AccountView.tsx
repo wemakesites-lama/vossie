@@ -36,6 +36,7 @@ import {
   type YourStuff,
 } from "@/lib/you/model";
 import { DETAILS_PATH, YOU_PATH } from "@/lib/you/paths";
+import { TourNudge } from "@/components/home/TourNudge";
 
 const icon = (node: ReactNode) => ({ kind: "icon" as const, icon: node });
 
@@ -55,6 +56,7 @@ type YouViewProps = {
 export function YouView({ account, campusName, forYou, stuff }: YouViewProps) {
   return (
     <div className="you-body" data-tour-page="you">
+      <TourNudge />
       <header className="you-head">
         {/* One text node, so "Hi, Thandi" is one string in the document (plan decision 13). */}
         <h1 className="account-title">{`Hi, ${account.firstName}`}</h1>

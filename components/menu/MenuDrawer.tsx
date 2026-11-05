@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { lazy, Suspense, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { flushSync } from "react-dom";
-import { ArrowLeftIcon, ChevronRightIcon, CloseIcon, MapPinIcon } from "@/components/icons";
+import { ArrowLeftIcon, ChevronRightIcon, CloseIcon, InfoIcon, MapPinIcon } from "@/components/icons";
 import { NavLink } from "@/components/ui/NavLink";
 import { NavPending } from "@/components/ui/NavPending";
 import { useOverlayDialog } from "@/components/ui/useOverlayDialog";
@@ -115,6 +115,14 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
           </button>
         </div>
 
+        {/* The first thing in the menu, so the tour is easy to find (guided tour spec 15). */}
+        {view === "main" && tourHere && (
+          <button type="button" onClick={startTour} className="menu-tour">
+            <InfoIcon className="size-5 shrink-0" />
+            Show me around this page
+          </button>
+        )}
+
         {view === "main" && (
           <nav aria-label="Main" className="menu-view">
             <ul className="menu-links">
@@ -214,11 +222,6 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
         )}
 
         <div className="menu-bottom">
-          {tourHere && (
-            <button type="button" onClick={startTour} className="menu-tour">
-              Show me around this page
-            </button>
-          )}
           <Suspense fallback={settingsPlaceholder}>{opened ? <MenuSettings /> : settingsPlaceholder}</Suspense>
         </div>
       </div>

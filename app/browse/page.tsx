@@ -7,6 +7,7 @@ import { browseHeading } from "@/lib/browse/heading";
 import { PAGE_SIZE, defaultSort, knownSlugs, parseBrowseParams } from "@/lib/browse/query";
 import { ALL_CAMPUSES } from "@/lib/campus";
 import { getCampuses, getCategories } from "@/lib/data";
+import { TourNudge } from "@/components/home/TourNudge";
 
 /**
  * The tab title follows the page: "Tech · Vossie", "“calculator” · Vossie" (spec 4.10). It reads searchParams, so it
@@ -35,6 +36,7 @@ export default function BrowsePage({ searchParams }: PageProps<"/browse">) {
   return (
     <PageTransition>
       <div className="page browse" data-tour-page="browse">
+        <TourNudge />
         <Reveal fallback={<BrowseSkeleton />}>
           <BrowseView searchParams={searchParams} />
         </Reveal>

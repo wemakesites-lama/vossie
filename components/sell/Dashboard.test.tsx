@@ -51,7 +51,8 @@ describe("the seller home (role views spec 7.1)", () => {
     show({ paused: true, hubPause: "Selling exam answers." });
     expect(within(screen.getByRole("banner")).getByText("Paused by the Hub")).toHaveAttribute("data-tone", "danger");
     expect(screen.getByRole("region", { name: "Why the Hub paused it" })).toHaveTextContent("Selling exam answers.");
-    expect(screen.queryByRole("button")).toBeNull();
+    // No Resume or Pause: only the Hub can resume it (the tour's invitation has buttons of its own).
+    expect(screen.queryByRole("button", { name: /resume|pause/i })).toBeNull();
     expect(screen.queryByRole("link", { name: "View your shop" })).toBeNull();
   });
 

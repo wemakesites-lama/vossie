@@ -22,8 +22,9 @@ export default function HomePage() {
     <PageTransition>
       <div className="home" data-tour-page="home">
         <Hero />
-        <ContextStrip />
+        {/* Fixed in the corner, so its place here only sets its turn in the keyboard order: after the hero. */}
         <TourNudge />
+        <ContextStrip />
         <ShopByCategory />
         <Collections />
         <ShopByCampus />

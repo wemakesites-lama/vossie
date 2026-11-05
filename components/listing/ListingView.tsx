@@ -14,6 +14,7 @@ import { SafetyNote } from "./SafetyNote";
 import { SellerCard } from "./SellerCard";
 import { Trail } from "@/components/ui/Trail";
 import { trailFor } from "@/lib/nav/trail";
+import { TourNudge } from "@/components/home/TourNudge";
 
 /**
  * The listing page (spec 5). On phones everything runs in one column, in reading order, with the actions docked at
@@ -26,6 +27,7 @@ export function ListingView({ detail, campusNames }: { detail: ListingDetail; ca
 
   return (
     <div className="page listing-page" data-tour-page="listing">
+      <TourNudge />
       <Trail
         crumbs={trailFor("/listings/[id]", {
           names: { "/listings/[id]": listing.title },

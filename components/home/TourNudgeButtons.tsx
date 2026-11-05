@@ -1,26 +1,20 @@
-"use client";
+import { CloseIcon } from "@/components/icons";
 
-import { openOverlay } from "@/lib/overlays";
-import { markTourSeen } from "@/lib/tour/seen";
-
-/** The invitation's two buttons (guided tour spec 3.1): the only client code it has. */
+/**
+ * The invitation's two buttons (guided tour spec 15). Plain server markup: TourHost, already on every page, answers
+ * clicks on `[data-tour-nudge]` (components/tour/TourHost.tsx), because a client component on eleven pages cost every
+ * page about 700 B. Either button answers the invitation for good; after that, the menu's "Show me around this page" is
+ * the way in.
+ */
 export function TourNudgeButtons() {
   return (
-    <div className="tour-nudge-actions">
-      <button type="button" className="btn btn-primary" onClick={(event) => openOverlay("tour", event.currentTarget)}>
+    <>
+      <button type="button" data-tour-nudge="start" className="btn btn-primary">
         Take the tour
       </button>
-      <button
-        type="button"
-        className="btn btn-outline text-navy"
-        onClick={() => {
-          markTourSeen();
-          // The invitation is gone, and focus with it: start again from the page.
-          document.getElementById("main")?.focus();
-        }}
-      >
-        Not now
+      <button type="button" data-tour-nudge="close" aria-label="Close the invitation" className="tour-nudge-close">
+        <CloseIcon />
       </button>
-    </div>
+    </>
   );
 }

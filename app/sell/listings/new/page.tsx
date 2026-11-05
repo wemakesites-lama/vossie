@@ -5,6 +5,7 @@ import { SellFormSkeleton } from "@/components/sell/SellSkeleton";
 import { PageTransition } from "@/components/kit/PageTransition";
 import { Trail } from "@/components/ui/Trail";
 import { trailFor } from "@/lib/nav/trail";
+import { TourNudge } from "@/components/home/TourNudge";
 
 export const metadata: Metadata = { title: "New listing", robots: { index: false } };
 
@@ -14,6 +15,7 @@ export default function NewListingPage() {
     <PageTransition>
       <div className="page sell-page">
         <div className="sell-column" data-tour-page="listing-form">
+          <TourNudge />
           <header className="sell-head">
             <Trail crumbs={trailFor("/sell/listings/new")} />
             <h1 className="sell-title">New listing</h1>

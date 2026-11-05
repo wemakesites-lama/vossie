@@ -26,6 +26,7 @@ import {
 import { myListingsPath, NEW_LISTING_PATH, SELL_PATH } from "@/lib/selling/paths";
 import { pauseShop, resumeShop } from "@/lib/selling/shop-actions";
 import type { EnquiryCounts, FollowerCounts, RecentCounts, SellerQueue } from "@/lib/types";
+import { TourNudge } from "@/components/home/TourNudge";
 
 type DashboardProps = {
   shop: Pick<SellerRow, "name" | "slug" | "badge" | "image" | "about" | "pickupPointIds">;
@@ -67,6 +68,7 @@ export function Dashboard(props: DashboardProps) {
   const newShop = queue !== null && isNewShop(queue);
   return (
     <div className="sell-column sell-home" data-tour-page="sell">
+      <TourNudge />
       <Card>
         <header className="sell-home-head">
           <p className="eyebrow">Your shop</p>

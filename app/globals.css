@@ -12189,17 +12189,30 @@ html[data-nav-pending] .hdr-pennant-slot .pennant-crest {
   }
 }
 
-/* Home's invitation (spec 3.1 and 8): in the static HTML for everyone, hidden before first paint once answered. */
+/* The one-time invitation (spec 15): a card in the bottom corner of the first toured page a visitor sees. On phones it
+   sits above the one bar at the bottom (the tab bar, a section's bar or a listing's dock, each about 64 to 72px). In the
+   static HTML for everyone, hidden before first paint once answered. Out of flow, so it moves nothing. */
 .tour-nudge {
+  position: fixed;
+  right: 16px;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  z-index: 35;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 12px;
-  padding: 12px 16px;
+  gap: 10px;
+  max-width: calc(100% - 32px);
+  padding: 6px 4px 6px 16px;
+  border: 1px solid var(--color-line);
   border-radius: 16px;
   background: var(--color-pale);
+  animation: tour-card-in var(--motion-enter) ease-out 600ms both;
+}
+
+@media (min-width: 48rem) and (min-height: 30rem) {
+  .tour-nudge {
+    right: 24px;
+    bottom: 24px;
+  }
 }
 
 html[data-toured] .tour-nudge {
@@ -12208,25 +12221,30 @@ html[data-toured] .tour-nudge {
 
 .tour-nudge-title {
   font-family: var(--vos-font-display);
-  font-size: 1.25rem;
+  font-size: 1.125rem;
+  color: var(--color-navy);
+  white-space: nowrap;
+}
+
+.tour-nudge-close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
   color: var(--color-navy);
 }
 
-.tour-nudge-actions {
-  display: flex;
-  gap: 8px;
-}
-
-@media (min-width: 48rem) and (min-height: 30rem) {
-  .tour-nudge {
-    margin-top: 16px;
-  }
-}
-
-/* The menu's row (spec 3.1): with the settings, sized like them, not like the menu's big links. */
+/* The menu's way in (spec 15): the first thing under Close and the campus, a solid sky pill (navy words on sky). */
 .menu-tour {
-  justify-self: start;
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 10px;
   min-height: 44px;
+  margin-top: 16px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--color-sky);
+  color: var(--color-on-sky);
   font-weight: 600;
-  text-align: start;
 }

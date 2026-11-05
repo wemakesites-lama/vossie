@@ -259,7 +259,7 @@ const SECTIONS: readonly InfoSection[] = [
             matches your phone.
           </li>
           <li>
-            <code>vossie_tour_seen</code>: that you took or turned down the tour of the homepage, so we don&apos;t offer
+            <code>vossie_tour_seen</code>: that you took a tour or closed the invitation to one, so we don&apos;t offer
             it again.
           </li>
           <li>

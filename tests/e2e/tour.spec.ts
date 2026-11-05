@@ -73,17 +73,36 @@ test("Home's tour fits the bar: a student's Sell, a seller's My shop and Message
   expect(seller).not.toContain("Sell");
 });
 
-test("Not now hides Home's invitation for good, without moving the page", async ({ page }) => {
-  onlyAt("phone-390");
-  await page.goto("/");
-  const invitation = page.getByRole("complementary", { name: "New here?" });
-  await expect(invitation).toBeVisible();
-  await invitation.getByRole("button", { name: "Not now" }).click();
-  await expect(invitation).toBeHidden();
+const invitation = (page: Page) => page.getByRole("complementary", { name: "Tour invitation" });
+
+test("the invitation waits in the corner of the first toured page, and closing it hides it everywhere", async ({
+  page,
+}) => {
+  onlyAt("phone-390", "desktop-1440");
+  // A listing, not Home: many students arrive on a shared link.
+  await page.goto("/listings/l-001");
+  await expect(invitation(page)).toBeVisible();
+  const box = (await invitation(page).boundingBox())!;
+  const viewport = page.viewportSize()!;
+  expect(box.x + box.width, "in the right-hand corner").toBeGreaterThan(viewport.width - 40);
+  expect(box.y, "in the bottom half").toBeGreaterThan(viewport.height / 2);
+
+  await invitation(page).getByRole("button", { name: "Close the invitation" }).click();
+  await expect(invitation(page)).toBeHidden();
 
   await recordShifts(page);
-  await expectStill(page, "homepage after Not now", "/");
-  await expect(invitation).toBeHidden();
+  await expectStill(page, "homepage after closing the invitation", "/");
+  await expect(invitation(page)).toBeHidden();
+});
+
+test("the invitation's Take the tour starts the page's tour", async ({ page }) => {
+  onlyAt("phone-390");
+  await page.goto("/");
+  await invitation(page).getByRole("button", { name: "Take the tour" }).click();
+  await expect(tour(page)).toBeVisible();
+  await expect(tour(page).getByRole("heading")).toContainText("Search");
+  await page.keyboard.press("Escape");
+  await expect(invitation(page), "answered once taken").toBeHidden();
 });
 
 test("Shop, a listing, Sell and You each have a tour", async ({ page }) => {

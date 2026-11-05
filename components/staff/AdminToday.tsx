@@ -5,6 +5,7 @@ import { NeedsYouList, type NeedsYouItem } from "@/components/kit/NeedsYouList";
 import { StatRow, StatTile } from "@/components/kit/StatTile";
 import { ADMIN_NUMBERS_PATH, ADMIN_PATH } from "@/lib/staff/paths";
 import type { CampusBars, LastWeekTile } from "@/lib/staff/today-numbers";
+import { TourNudge } from "@/components/home/TourNudge";
 
 type Week = { label: string; beforeLabel: string; tiles: readonly LastWeekTile[]; campuses: CampusBars };
 
@@ -34,6 +35,7 @@ function badgesLine(changed: number | null): string {
 export function AdminToday({ waiting, week, badgesChanged }: AdminTodayProps) {
   return (
     <div className="today" data-tour-page="admin-today">
+      <TourNudge />
       <div data-tour="today-waiting">
         <Card title="Waiting" level={2}>
           {waiting ? (

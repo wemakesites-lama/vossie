@@ -10,6 +10,7 @@ import { YourRequestsLink } from "@/components/looking-for/YourRequestsLink";
 import { Trail } from "@/components/ui/Trail";
 import { aiFeatureOn } from "@/lib/ai/config";
 import { trailFor } from "@/lib/nav/trail";
+import { TourNudge } from "@/components/home/TourNudge";
 
 /** Fixed: `?cat=` views share the board's title and description, and stay indexed (plan decision 14). */
 export const metadata: Metadata = {
@@ -27,6 +28,7 @@ export default function LookingForPage({ searchParams }: PageProps<"/looking-for
   return (
     <PageTransition>
       <div className="page board" data-tour-page="looking-for">
+        <TourNudge />
         <Trail crumbs={trailFor("/looking-for")} />
         <div className="board-head">
           <h1 className="board-title">Looking For</h1>

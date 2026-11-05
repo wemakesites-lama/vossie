@@ -9,6 +9,7 @@ import { Reveal } from "@/components/kit/Reveal";
 import { getCampuses, getVerifiedSellers } from "@/lib/data";
 import { Trail } from "@/components/ui/Trail";
 import { trailFor } from "@/lib/nav/trail";
+import { TourNudge } from "@/components/home/TourNudge";
 
 /** Fixed: `?type=` views share Launchpad's title and description, and stay indexed (plan decision 14). */
 export const metadata: Metadata = {
@@ -26,6 +27,7 @@ export default async function HubPage({ searchParams }: PageProps<"/hub">) {
   return (
     <PageTransition>
       <div className="page hub-page" data-tour-page="hub">
+        <TourNudge />
         <Trail crumbs={trailFor("/hub")} />
         <HubIntro />
         <Reveal fallback={<HubFeedSkeleton />}>

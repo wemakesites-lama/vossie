@@ -18,6 +18,7 @@ import {
 } from "@/lib/staff/mentor";
 import { HUB_MANAGE_PATH, MENTOR_PATH, mentorShopPath } from "@/lib/staff/paths";
 import type { MentoredShop } from "@/lib/types";
+import { TourNudge } from "@/components/home/TourNudge";
 
 export type CaseloadView = "needs" | "all";
 
@@ -62,6 +63,7 @@ export function MentorDashboard({
   const labels = days.map((day) => dayMonth(day));
   return (
     <div className="mentor-home" data-tour-page="mentor">
+      <TourNudge />
       <div data-tour="mentor-shops">
         <Card title={showMentor ? "Every mentored shop" : "Your shops"} level={2}>
           <p className="mentor-summary">{caseloadSummary(needing.length, rows.length, slotRequests)}</p>
