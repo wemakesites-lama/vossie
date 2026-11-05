@@ -20,7 +20,7 @@ export function Gallery({ listing }: { listing: Pick<Listing, "image" | "morePho
   const alt = (index: number) => (many ? `${photos[index].alt}. Photo ${index + 1} of ${count}` : photos[index].alt);
 
   return (
-    <div className="gallery">
+    <div className="gallery" data-tour="listing-gallery">
       {/* A scrolling region must be reachable from the keyboard (axe: scrollable-region-focusable). */}
       <div
         className={cx("gallery-strip", many && "gallery-strip-many")}

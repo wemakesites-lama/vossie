@@ -17,7 +17,7 @@ export function SaveSearchControl({ query }: { query: BrowseQuery }) {
   const search = matchQueryOf(query);
   const from = browseHref(query);
   return (
-    <div className="save-search">
+    <div className="save-search" data-tour="browse-save-search">
       <Suspense key={searchKey(search)} fallback={<SaveSearchSignedOut from={from} />}>
         <ViewerSaveSearch search={search} from={from} />
       </Suspense>

@@ -9,7 +9,7 @@ import type { BrowseQuery, Category } from "@/lib/types";
 export function CategoryTabs({ query, categories }: { query: BrowseQuery; categories: readonly Category[] }) {
   const tabs = [{ slug: null, name: "All" }, ...categories.map(({ slug, name }) => ({ slug, name }))];
   return (
-    <nav aria-label="Categories" className="category-tabs">
+    <nav aria-label="Categories" className="category-tabs" data-tour="browse-categories">
       <ul>
         {tabs.map((tab) => (
           <li key={tab.slug ?? "all"}>

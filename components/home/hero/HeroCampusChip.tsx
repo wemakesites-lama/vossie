@@ -21,7 +21,7 @@ export function HeroCampusChipFallback() {
 
 function ChipButton({ label }: { label: string }) {
   return (
-    <CampusPickerButton className="hero-campus-chip">
+    <CampusPickerButton className="hero-campus-chip" tour="hero-campus">
       <MapPinIcon className="size-4 shrink-0" />
       <span className="truncate">{label}</span>
       <ChevronDownIcon className="size-4 shrink-0" />

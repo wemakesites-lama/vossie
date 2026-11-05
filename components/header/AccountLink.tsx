@@ -20,6 +20,7 @@ export function AccountLink({ signedIn, forYou = 0 }: { signedIn: boolean; forYo
     <Link
       href={signedIn ? "/account" : "/login"}
       prefetch={false}
+      data-tour="hdr-account"
       aria-label={signedIn ? "Your account" : "Sign in"}
       aria-describedby={badge ? "hdr-account-new" : undefined}
       className="hdr-item icon-btn relative hidden wide:inline-grid"

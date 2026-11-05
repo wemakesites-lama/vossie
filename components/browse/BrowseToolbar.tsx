@@ -26,7 +26,7 @@ export function BrowseToolbar({ query, campuses, total }: BrowseToolbarProps) {
   const counted = total !== null && total > 0;
   return (
     <div className="browse-tools">
-      <details key={`filters ${key}`} name="browse-tools" className="tool tool-filters">
+      <details key={`filters ${key}`} name="browse-tools" className="tool tool-filters" data-tour="browse-filters">
         {/* aria-label, not hidden spans: Chromium puts spaces between a summary's flex children (plan decision 2). */}
         <summary aria-label={active > 0 ? `Filters, ${active} active` : "Filters"} className="tool-button">
           {active > 0 ? `Filters (${active})` : "Filters"}
@@ -34,7 +34,7 @@ export function BrowseToolbar({ query, campuses, total }: BrowseToolbarProps) {
         </summary>
         <FiltersPanel query={query} campuses={campuses} />
       </details>
-      <details key={`sort ${key}`} name="browse-tools" className="tool tool-sort">
+      <details key={`sort ${key}`} name="browse-tools" className="tool tool-sort" data-tour="browse-sort">
         <summary className="tool-button">
           Sort: {SORT_LABELS[query.sort]}
           <ChevronDownIcon className="tool-chevron size-4" />

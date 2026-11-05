@@ -34,7 +34,7 @@ export async function generateMetadata({ searchParams }: PageProps<"/browse">): 
 export default function BrowsePage({ searchParams }: PageProps<"/browse">) {
   return (
     <PageTransition>
-      <div className="page browse">
+      <div className="page browse" data-tour-page="browse">
         <Reveal fallback={<BrowseSkeleton />}>
           <BrowseView searchParams={searchParams} />
         </Reveal>

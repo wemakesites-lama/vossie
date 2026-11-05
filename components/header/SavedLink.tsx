@@ -4,6 +4,7 @@ import Link from "next/link";
 import { HeartIcon } from "@/components/icons";
 import { useSavedCount } from "@/hooks/useSavedCount";
 import { cx } from "@/lib/cx";
+import type { TourTarget } from "@/lib/tour/targets";
 
 /** "2 items": the count in words, for the header link's name and the tab's description. */
 const inWords = (count: number) => `${count} ${count === 1 ? "item" : "items"}`;
@@ -16,7 +17,7 @@ const badge = (count: number) =>
     </span>
   );
 
-export function SavedLink({ className }: { className?: string }) {
+export function SavedLink({ className, tour }: { className?: string; tour?: TourTarget }) {
   const count = useSavedCount();
   const label = count === 0 ? "Saved" : `Saved, ${inWords(count)}`;
   return (
@@ -25,6 +26,7 @@ export function SavedLink({ className }: { className?: string }) {
     <Link
       href="/saved"
       prefetch={false}
+      data-tour={tour}
       aria-label={label}
       className={cx("icon-btn relative", className)}
     >

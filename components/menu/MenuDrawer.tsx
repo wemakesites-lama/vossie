@@ -12,6 +12,7 @@ import { campusLabel } from "@/lib/campus";
 import { isPlainClick } from "@/lib/click";
 import { TAB } from "@/lib/motion";
 import { openOverlay } from "@/lib/overlays";
+import { findTourPage } from "@/lib/tour/resolve";
 import type { Campus, Category } from "@/lib/types";
 
 type View = "main" | "categories" | "campuses";
@@ -38,10 +39,14 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
   const openedByRef = useRef<HTMLElement | null>(null);
   const choice = useCampusChoice(campuses);
   const [opened, setOpened] = useState(false);
+  const [tourHere, setTourHere] = useState(false);
   const { dialogRef, close } = useOverlayDialog("menu", (trigger) => {
     openedByRef.current = trigger;
     setView("main");
     setOpened(true);
+    // Offered only on a page with a tour (guided tour spec 3.1). The menu is open, but the page underneath is still
+    // laid out, so the check sees what's on screen.
+    setTourHere(findTourPage(document) !== null);
   });
 
   /**
@@ -53,6 +58,13 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
     const openedBy = openedByRef.current;
     close();
     openOverlay("campus", openedBy);
+  }
+
+  /** Close the menu first, then start the tour, as Change campus does; focus goes back to the menu's opener after. */
+  function startTour() {
+    const openedBy = openedByRef.current;
+    close();
+    openOverlay("tour", openedBy);
   }
 
   function drillInto(next: Exclude<View, "main">) {
@@ -201,6 +213,11 @@ export function MenuDrawer({ campuses, categories, account }: MenuDrawerProps) {
         )}
 
         <div className="menu-bottom">
+          {tourHere && (
+            <button type="button" onClick={startTour} className="menu-tour">
+              Show me around this page
+            </button>
+          )}
           <Suspense fallback={settingsPlaceholder}>{opened ? <MenuSettings /> : settingsPlaceholder}</Suspense>
         </div>
       </div>

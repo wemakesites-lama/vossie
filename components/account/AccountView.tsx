@@ -54,7 +54,7 @@ type YouViewProps = {
  */
 export function YouView({ account, campusName, forYou, stuff }: YouViewProps) {
   return (
-    <div className="you-body">
+    <div className="you-body" data-tour-page="you">
       <header className="you-head">
         {/* One text node, so "Hi, Thandi" is one string in the document (plan decision 13). */}
         <h1 className="account-title">{`Hi, ${account.firstName}`}</h1>
@@ -63,7 +63,7 @@ export function YouView({ account, campusName, forYou, stuff }: YouViewProps) {
         </p>
       </header>
 
-      <div id="you-for-you">
+      <div id="you-for-you" data-tour="you-for-you">
         <Card title="For you">
           {forYou ? (
             <NeedsYouList label="For you" items={forYou.items} allClear={ALL_CLEAR} />
@@ -79,7 +79,7 @@ export function YouView({ account, campusName, forYou, stuff }: YouViewProps) {
         </Banner>
       )}
 
-      <div id="you-stuff">
+      <div id="you-stuff" data-tour="you-stuff">
         <Card title="Your stuff">
           <ul className="you-rows">
             <ListRow
@@ -111,22 +111,24 @@ export function YouView({ account, campusName, forYou, stuff }: YouViewProps) {
         </Card>
       </div>
 
-      <Card title="Settings">
-        <ul className="you-rows">
-          <ListRow href={DETAILS_PATH} lead={icon(<UserIcon />)} title="Your details" detail="Your name and campus" />
-          <ListRow
-            href="/account/privacy"
-            lead={icon(<ShieldIcon />)}
-            title="Privacy"
-            detail="Your data, and deleting your account"
-          />
-        </ul>
-        <form action={SIGN_OUT_PATH} method="post" className="you-signout">
-          <button type="submit" className="btn btn-outline text-navy">
-            Sign out
-          </button>
-        </form>
-      </Card>
+      <div data-tour="you-settings">
+        <Card title="Settings">
+          <ul className="you-rows">
+            <ListRow href={DETAILS_PATH} lead={icon(<UserIcon />)} title="Your details" detail="Your name and campus" />
+            <ListRow
+              href="/account/privacy"
+              lead={icon(<ShieldIcon />)}
+              title="Privacy"
+              detail="Your data, and deleting your account"
+            />
+          </ul>
+          <form action={SIGN_OUT_PATH} method="post" className="you-signout">
+            <button type="submit" className="btn btn-outline text-navy">
+              Sign out
+            </button>
+          </form>
+        </Card>
+      </div>
     </div>
   );
 }

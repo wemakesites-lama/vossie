@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { NavLink } from "@/components/ui/NavLink";
 import { TAB } from "@/lib/motion";
+import type { TourTarget } from "@/lib/tour/targets";
 
 export type SectionTab = {
   key: string;
@@ -48,16 +49,18 @@ export function SectionBar({
   label,
   tabs,
   side = false,
+  tour,
 }: {
   label: string;
   tabs: readonly SectionTab[];
   /** A desktop-only side panel in the reserved column (`section-side`): never fixed to the bottom, never in place of
    * the main bar, and none of the phone rules that key on `.section-bar` apply. */
   side?: boolean;
+  tour?: TourTarget;
 }) {
   const phoneTabs = tabs.filter((tab) => tab.only !== "wide").length;
   return (
-    <nav aria-label={label} className={side ? "section-side" : "section-bar"} style={{ "--tabs": phoneTabs } as CSSProperties}>
+    <nav aria-label={label} className={side ? "section-side" : "section-bar"} data-tour={tour} style={{ "--tabs": phoneTabs } as CSSProperties}>
       {grouped(tabs).map((group, index) => (
         <div key={group.label ?? `group-${index}`} className="section-group">
           {group.label && <h2 className="section-group-label">{group.label}</h2>}

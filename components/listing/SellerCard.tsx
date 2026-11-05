@@ -13,7 +13,7 @@ type SellerCardProps = {
 /** Who's selling (spec 5.1): photo, name, Verified, trust badge, campus and their shop. */
 export function SellerCard({ seller, badge, campusName }: SellerCardProps) {
   return (
-    <section aria-labelledby="seller-title" className="listing-seller">
+    <section aria-labelledby="seller-title" className="listing-seller" data-tour="listing-seller">
       <Photo image={{ src: seller.image.src, alt: "" }} ratio="1 / 1" sizes="56px" className="listing-seller-photo" />
       <div className="listing-seller-body">
         <p className="listing-seller-eyebrow">Listed by</p>

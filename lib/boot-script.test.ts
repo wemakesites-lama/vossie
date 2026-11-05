@@ -6,6 +6,7 @@ import { BOOT_SCRIPT, bootScript, WORKER_REGISTRATION } from "./boot-script";
 import { INSTALL_PROMPT_EVENT } from "./install-event";
 import { LOW_DATA_ATTR, LOW_DATA_KEY } from "./low-data";
 import { NIGHT_BAR, NIGHT_BAR_ID, THEME_ATTR, THEME_KEY } from "./theme";
+import { TOUR_SEEN_ATTR, TOUR_SEEN_KEY } from "./tour/seen";
 
 type WindowWithPrompt = Window & { __vossieInstallPrompt?: Event | null };
 
@@ -23,6 +24,33 @@ afterEach(() => {
 });
 
 describe("boot script", () => {
+  describe("Home's tour invitation (guided tour spec 8)", () => {
+    afterEach(() => {
+      localStorage.removeItem(TOUR_SEEN_KEY);
+      document.documentElement.removeAttribute(TOUR_SEEN_ATTR);
+      vi.restoreAllMocks();
+    });
+
+    it("marks <html> before first paint once the invitation was answered", () => {
+      localStorage.setItem(TOUR_SEEN_KEY, "1");
+      runBootScript();
+      expect(document.documentElement.hasAttribute(TOUR_SEEN_ATTR)).toBe(true);
+    });
+
+    it("leaves the invitation for a first visit", () => {
+      runBootScript();
+      expect(document.documentElement.hasAttribute(TOUR_SEEN_ATTR)).toBe(false);
+    });
+
+    it("never throws when storage is blocked", () => {
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new DOMException("Blocked", "SecurityError");
+      });
+      expect(() => runBootScript()).not.toThrow();
+      expect(document.documentElement.hasAttribute(TOUR_SEEN_ATTR)).toBe(false);
+    });
+  });
+
   it("turns data saver on when it was saved on", () => {
     localStorage.setItem(LOW_DATA_KEY, "1");
     runBootScript();

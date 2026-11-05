@@ -241,7 +241,7 @@ const SECTIONS: readonly InfoSection[] = [
             <code>vossie_flash</code>: a one-off message such as &quot;You&apos;re signed out&quot;, for up to a minute.
           </li>
         </ul>
-        <h3>Five things kept only in your browser</h3>
+        <h3>Six things kept only in your browser</h3>
         <p>These stay in your browser&apos;s own storage. They are never sent to CampusCart.</p>
         <ul>
           <li>
@@ -257,6 +257,10 @@ const SECTIONS: readonly InfoSection[] = [
           <li>
             <code>vossie_theme</code>: the theme you picked (Light, Dark or Night). Nothing is kept while CampusCart
             matches your phone.
+          </li>
+          <li>
+            <code>vossie_tour_seen</code>: that you took or turned down the tour of the homepage, so we don&apos;t offer
+            it again.
           </li>
           <li>
             <code>vossie_offline</code>: a copy of CampusCart&apos;s offline page, kept by CampusCart&apos;s service worker so

@@ -69,10 +69,10 @@ export function SiteHeader({ campuses, account, phoneSaved, pennant }: SiteHeade
       <nav aria-label="Quick links" className="hdr-quick" inert={hidden}>
         <ul>
           <li>
-            <NavLink href="/browse" transitionTypes={TAB}>Shop</NavLink>
+            <NavLink href="/browse" transitionTypes={TAB} data-tour="hdr-shop">Shop</NavLink>
           </li>
           <li>
-            <NavLink href="/sell" transitionTypes={TAB}>Sell</NavLink>
+            <NavLink href="/sell" transitionTypes={TAB} data-tour="hdr-sell">Sell</NavLink>
           </li>
           <li>
             <button type="button" aria-haspopup="dialog" onClick={(event) => openOverlay("campus", event.currentTarget)}>
@@ -106,11 +106,12 @@ export function SiteHeader({ campuses, account, phoneSaved, pennant }: SiteHeade
               aria-haspopup="dialog"
               onClick={(event) => openOverlay("menu", event.currentTarget)}
               className="hdr-item hdr-menu-btn"
+              data-tour="menu"
             >
               <MenuIcon />
               <span className="sr-only wide:not-sr-only">Menu</span>
             </button>
-            <CampusPill campuses={campuses} className="hdr-item hidden wide:inline-flex" />
+            <CampusPill campuses={campuses} className="hdr-item hidden wide:inline-flex" tour="hdr-campus" />
           </div>
 
           <div className="hdr-pennant-slot">
@@ -128,13 +129,14 @@ export function SiteHeader({ campuses, account, phoneSaved, pennant }: SiteHeade
               aria-haspopup="dialog"
               onClick={(event) => openOverlay("search", event.currentTarget)}
               className="hdr-item icon-btn"
+              data-tour="search"
             >
               <SearchIcon />
             </button>
             {/* Phones have Account in the tab bar (components/tabbar/TabBar.tsx), and Saved too unless the bar is a
                 seller's or staff's (role bars spec 6), so the header keeps Menu, the pennant and Search there. */}
             {account}
-            <SavedLink className="hdr-item hidden wide:inline-grid" />
+            <SavedLink className="hdr-item hidden wide:inline-grid" tour="hdr-saved" />
           </div>
         </div>
       </div>

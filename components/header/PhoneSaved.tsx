@@ -10,5 +10,6 @@ import { SavedLink } from "./SiteHeader";
 export async function PhoneSaved() {
   const account = await getViewer().catch(() => null);
   if (barFor(account) === "student") return null;
-  return <SavedLink className="hdr-item wide:hidden" />;
+  // Home's Saved step lights this heart on these phones, where there's no Saved tab (guided tour spec 4.1).
+  return <SavedLink className="hdr-item wide:hidden" tour="hdr-saved" />;
 }

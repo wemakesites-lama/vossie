@@ -16,7 +16,7 @@ export function ListingActions({
   listing: Pick<Listing, "id" | "title" | "categorySlug" | "availability">;
 }) {
   return (
-    <div className="listing-actions">
+    <div className="listing-actions" data-tour="listing-actions">
       {listing.availability === "available" ? (
         <MessageSellerLink target={{ kind: "listing", listingId: listing.id }} className="btn btn-primary listing-message">
           Message seller

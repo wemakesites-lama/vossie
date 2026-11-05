@@ -95,7 +95,7 @@ export async function SellBar() {
     { key: "shop", href: "/sell/profile", label: "Shop", icon: <StoreIcon />, prefetch: false },
     EXIT,
   ];
-  return <SectionBar label="Selling" tabs={tabs} />;
+  return <SectionBar label="Selling" tabs={tabs} tour="sell-bar" />;
 }
 
 const SECTION_ICONS: Readonly<Record<string, ReactNode>> = {

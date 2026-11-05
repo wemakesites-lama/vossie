@@ -20,6 +20,7 @@ import { TAB } from "@/lib/motion";
 import { barFor, ROLE_PILLS, type BarKind } from "@/lib/nav/bar";
 import { sellerNeeds } from "@/lib/selling/home";
 import { queueFor } from "@/lib/selling/queue";
+import type { TourTarget } from "@/lib/tour/targets";
 import { forYouTotal, messagesTotal, othersTotal } from "@/lib/you/model";
 import { readForYou } from "@/lib/you/read";
 
@@ -44,7 +45,7 @@ export function TabBar({ tail }: { tail: ReactNode }) {
           <Tab href="/" icon={<HomeIcon />} label="Home" />
         </li>
         <li>
-          <Tab href="/browse" icon={<BagIcon />} label="Shop" match="section" prefetch={false} />
+          <Tab href="/browse" icon={<BagIcon />} label="Shop" match="section" prefetch={false} tour="tab-shop" />
         </li>
         {tail}
       </ul>
@@ -60,10 +61,11 @@ type TabProps = {
   prefetch?: false;
   className?: string;
   describedBy?: string;
+  tour?: TourTarget;
   children?: ReactNode;
 };
 
-function Tab({ href, icon, label, match, prefetch, className = "tab", describedBy, children }: TabProps) {
+function Tab({ href, icon, label, match, prefetch, className = "tab", describedBy, tour, children }: TabProps) {
   return (
     <NavLink
       href={href}
@@ -71,6 +73,7 @@ function Tab({ href, icon, label, match, prefetch, className = "tab", describedB
       prefetch={prefetch}
       className={className}
       aria-describedby={describedBy}
+      data-tour={tour}
       transitionTypes={TAB}
     >
       <span className="tab-icon">{icon}</span>
@@ -118,6 +121,7 @@ export function AccountTab({
       match="section"
       prefetch={false}
       describedBy={badge ? "tab-account-new" : undefined}
+      tour="tab-you"
     >
       {badge && (
         <TabBadge
@@ -135,10 +139,10 @@ export function StudentTail({ account = <AccountTab signedIn={false} /> }: { acc
   return (
     <>
       <li>
-        <Tab href="/sell" icon={<PlusIcon />} label="Sell" match="section" className="tab tab-sell" />
+        <Tab href="/sell" icon={<PlusIcon />} label="Sell" match="section" className="tab tab-sell" tour="tab-sell" />
       </li>
       <li>
-        <Tab href="/saved" icon={<HeartIcon />} label="Saved" prefetch={false} describedBy={SAVED_COUNT_ID}>
+        <Tab href="/saved" icon={<HeartIcon />} label="Saved" prefetch={false} describedBy={SAVED_COUNT_ID} tour="tab-saved">
           <SavedCount id={SAVED_COUNT_ID} />
         </Tab>
       </li>
@@ -151,6 +155,13 @@ const PILL_ICONS: Record<Exclude<BarKind, "student">, ReactNode> = {
   seller: <StoreIcon />,
   mentor: <UserIcon />,
   admin: <GridIcon />,
+};
+
+/** The pill's part in Home's tour (guided tour spec 4.1). */
+const PILL_TOURS: Record<Exclude<BarKind, "student">, TourTarget> = {
+  seller: "tab-myshop",
+  mentor: "tab-mentoring",
+  admin: "tab-today",
 };
 
 const orNull = (count: Promise<number>) => count.catch(() => null);
@@ -221,6 +232,7 @@ export async function RoleTabs() {
           prefetch={false}
           className="tab tab-sell"
           describedBy={pillShows ? "tab-pill-count" : undefined}
+          tour={PILL_TOURS[kind]}
         >
           {pillShows && <TabBadge id="tab-pill-count" count={badge.count} words={badge.words} />}
         </Tab>
@@ -233,6 +245,7 @@ export async function RoleTabs() {
           match="section"
           prefetch={false}
           describedBy={messages > 0 ? "tab-messages-new" : undefined}
+          tour="tab-messages"
         >
           {messages > 0 && (
             <TabBadge id="tab-messages-new" count={messages} words={plural(messages, "new message", "new messages")} />

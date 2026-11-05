@@ -9,6 +9,7 @@ import { JustListed } from "@/components/home/JustListed";
 import { LookingFor } from "@/components/home/LookingFor";
 import { ShopByCampus } from "@/components/home/ShopByCampus";
 import { ShopByCategory } from "@/components/home/ShopByCategory";
+import { TourNudge } from "@/components/home/TourNudge";
 import { PageTransition } from "@/components/kit/PageTransition";
 import { Flash } from "@/components/ui/Flash";
 
@@ -19,9 +20,10 @@ import { Flash } from "@/components/ui/Flash";
 export default function HomePage() {
   return (
     <PageTransition>
-      <div className="home">
+      <div className="home" data-tour-page="home">
         <Hero />
         <ContextStrip />
+        <TourNudge />
         <ShopByCategory />
         <Collections />
         <ShopByCampus />

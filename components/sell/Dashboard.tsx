@@ -66,7 +66,7 @@ export function Dashboard(props: DashboardProps) {
   const byHub = hubPause !== null;
   const newShop = queue !== null && isNewShop(queue);
   return (
-    <div className="sell-column sell-home">
+    <div className="sell-column sell-home" data-tour-page="sell">
       <Card>
         <header className="sell-home-head">
           <p className="eyebrow">Your shop</p>
@@ -115,23 +115,31 @@ export function Dashboard(props: DashboardProps) {
         </Card>
       )}
 
-      <Card title="Needs you">
-        {queue ? (
-          <NeedsYouList label="Needs you" items={sellerNeeds(queue, now)} allClear="All clear: nothing is waiting for you." />
-        ) : (
-          <SectionError id="sell-needs" title="What needs you" path={SELL_PATH} />
-        )}
-      </Card>
+      <div data-tour="sell-needs-you">
+        <Card title="Needs you">
+          {queue ? (
+            <NeedsYouList label="Needs you" items={sellerNeeds(queue, now)} allClear="All clear: nothing is waiting for you." />
+          ) : (
+            <SectionError id="sell-needs" title="What needs you" path={SELL_PATH} />
+          )}
+        </Card>
+      </div>
 
       {coach === "error" ? (
-        <Card title="This week">
-          <SectionError id="sell-coach" title="This week" path={SELL_PATH} />
-        </Card>
+        <div data-tour="sell-coach">
+          <Card title="This week">
+            <SectionError id="sell-coach" title="This week" path={SELL_PATH} />
+          </Card>
+        </div>
       ) : (
-        coach && <CoachWeek view={coach} from="sell" />
+        coach && (
+          <div data-tour="sell-coach">
+            <CoachWeek view={coach} from="sell" />
+          </div>
+        )
       )}
 
-      <div className="sell-home-buttons">
+      <div className="sell-home-buttons" data-tour="sell-add">
         <Link href={NEW_LISTING_PATH} prefetch={false} className="btn btn-primary">
           New listing
         </Link>
@@ -203,21 +211,23 @@ export function Dashboard(props: DashboardProps) {
         </>
       )}
 
-      <Card title="Your listings" action={{ label: "Manage listings", href: myListingsPath() }}>
-        {queue ? (
-          <SplitBar
-            label="Your listings"
-            parts={[
-              { label: "available", value: queue.listings.available, tone: "navy" },
-              { label: "paused", value: queue.listings.paused, tone: "sky-dark" },
-              { label: "sold", value: queue.listings.sold, tone: "muted" },
-              { label: "drafts", value: queue.listings.drafts, tone: "idle" },
-            ]}
-          />
-        ) : (
-          <SectionError id="sell-listings" title="Your listings" path={SELL_PATH} />
-        )}
-      </Card>
+      <div data-tour="sell-listings">
+        <Card title="Your listings" action={{ label: "Manage listings", href: myListingsPath() }}>
+          {queue ? (
+            <SplitBar
+              label="Your listings"
+              parts={[
+                { label: "available", value: queue.listings.available, tone: "navy" },
+                { label: "paused", value: queue.listings.paused, tone: "sky-dark" },
+                { label: "sold", value: queue.listings.sold, tone: "muted" },
+                { label: "drafts", value: queue.listings.drafts, tone: "idle" },
+              ]}
+            />
+          ) : (
+            <SectionError id="sell-listings" title="Your listings" path={SELL_PATH} />
+          )}
+        </Card>
+      </div>
 
       {!byHub && (
         <form action={paused ? resumeShop : pauseShop} className="sell-pause">

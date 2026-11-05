@@ -12,6 +12,7 @@ import { RECENT_KEY } from "@/lib/recent-searches";
 import { RECENTLY_VIEWED_KEY } from "@/lib/recently-viewed";
 import { SAVED_COOKIE } from "@/lib/saved";
 import { THEME_KEY } from "@/lib/theme";
+import { TOUR_SEEN_KEY } from "@/lib/tour/seen";
 import PrivacyPage, { metadata } from "./page";
 
 /** The `code` words in the first list after a heading. */
@@ -70,7 +71,7 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
     expect(within(who).getByText(/Eduvos is the responsible party/)).toBeInTheDocument();
   });
 
-  it("lists the two cookies and the five browser-only stores by their real names (spec 2.2)", () => {
+  it("lists the two cookies and the six browser-only stores by their real names (spec 2.2)", () => {
     render(<PrivacyPage />);
     const today = screen.getByRole("region", { name: "What this site stores today" });
     expect(within(today).getByText(/in its memory only/)).toBeInTheDocument();
@@ -79,8 +80,8 @@ describe("Privacy policy (info and system spec 2.1, 2.2 and 3)", () => {
       SAVED_COOKIE,
     ]);
     expect(
-      codesAfter(within(today).getByRole("heading", { level: 3, name: "Five things kept only in your browser" })),
-    ).toEqual([RECENTLY_VIEWED_KEY, RECENT_KEY, LOW_DATA_KEY, THEME_KEY, OFFLINE_CACHE]);
+      codesAfter(within(today).getByRole("heading", { level: 3, name: "Six things kept only in your browser" })),
+    ).toEqual([RECENTLY_VIEWED_KEY, RECENT_KEY, LOW_DATA_KEY, THEME_KEY, TOUR_SEEN_KEY, OFFLINE_CACHE]);
   });
 
   it("names the four sign-in cookies by their real names (accounts spec 2.2 and 2.5; Supabase phase B, Task 9)", () => {

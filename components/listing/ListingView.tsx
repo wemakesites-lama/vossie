@@ -25,7 +25,7 @@ export function ListingView({ detail, campusNames }: { detail: ListingDetail; ca
   const pointName = pickupPoint ? `${pickupPoint.name}${pickupPoint.retired ? " (no longer used)" : ""}` : null;
 
   return (
-    <div className="page listing-page">
+    <div className="page listing-page" data-tour-page="listing">
       <Trail
         crumbs={trailFor("/listings/[id]", {
           names: { "/listings/[id]": listing.title },
@@ -68,7 +68,7 @@ export function ListingView({ detail, campusNames }: { detail: ListingDetail; ca
 
       <MoreFrom listing={listing} sellerName={seller.name} categoryName={category.name} campusNames={campusNames} />
 
-      <p className="listing-report">
+      <p className="listing-report" data-tour="listing-report">
         <ReportLink target={{ kind: "listing", id: listing.id }}>
           <FlagIcon className="size-4" />
           Report this listing
