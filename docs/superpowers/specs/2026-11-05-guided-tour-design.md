@@ -1,6 +1,6 @@
 # Guided tour: "Show me around this page": design
 
-Date: 2026-11-05 · Status: approved design, not built (decision 99).
+Date: 2026-11-05 · Status: phase 1 built (decision 99, `e7f00e8`, `7a3314c`, `007a21b`); phase 2 not started.
 
 ## 1. What Lama asked for
 
