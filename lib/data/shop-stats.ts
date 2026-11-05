@@ -106,6 +106,12 @@ function rowsOf(sellerSlug: string): ConversationRow[] {
   return [...sampleStore().conversations.values()].filter((row) => row.sellerSlug === sellerSlug && !row.sellerGone);
 }
 
+/** The shop's conversations as the counting reads them (Shop coach's quiet listings read them; AI stage I1). */
+export async function shopConversations(sellerSlug: string): Promise<CountedConversation[]> {
+  if (onSupabase()) return (await import("./supabase/shop-stats")).shopConversations(sellerSlug);
+  return rowsOf(sellerSlug);
+}
+
 /** A shop's last 7 days, and its record for the badges: 90 days of enquiries, and every sale. */
 export async function shopStats(sellerSlug: string, now: Date): Promise<ShopStats> {
   if (onSupabase()) return (await import("./supabase/shop-stats")).shopStats(sellerSlug, now);

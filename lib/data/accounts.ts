@@ -4,6 +4,7 @@ import { onSupabase } from "@/lib/backend";
 import { mentorShopPath } from "@/lib/staff/paths";
 import type { Account, Consent, SellerStatus, StaffRole, ViewerActivity } from "@/lib/types";
 import type { SessionClaims } from "./auth-session";
+import { exportCoach, forgetCoachOf, type CoachExport } from "./coach";
 import { exportFollowing, forgetFollowsOf } from "./follows";
 import type { AccountRow } from "./rows";
 import { exportSavedSearches, forgetSavedSearchesOf, type SavedSearchExport } from "./saved-searches";
@@ -230,6 +231,8 @@ export type AccountExport = {
   following: string[];
   /** The account's saved searches by name, newest first, with no ids (search alerts spec 2.15, plan decision 15). */
   savedSearches: SavedSearchExport[];
+  /** Shop coach's weeks for the account's shop (AI stage I1, planning decision 17): what's stored, never mentor questions. */
+  coach: CoachExport[];
 };
 
 /** The account's data, as the export gives it. Null when the account has gone. */
@@ -265,6 +268,7 @@ export async function assembleExport(
   const hub = await exportStaffToolsData(accountId);
   const [requests, following] = await Promise.all([exportRequests(accountId), exportFollowing(accountId)]);
   const savedSearches = await exportSavedSearches(accountId);
+  const coach = await exportCoach(accountId);
   return {
     exportedAt: now.toISOString(),
     account: {
@@ -288,6 +292,7 @@ export async function assembleExport(
     requests,
     following,
     savedSearches,
+    coach,
   };
 }
 
@@ -322,6 +327,8 @@ export async function deleteAccountData(accountId: string): Promise<void> {
   }
   // And its saved searches (search alerts spec 2.15). Their search-match notifications go with them.
   await forgetSavedSearchesOf(accountId);
+  // Its shop's coach weeks and ticks (AI stage I1). On Supabase the shops cascade does it.
+  forgetCoachOf(accountId);
   // Then its shop, the shop's listings, every photo it uploaded and its wizard draft (selling plan decision 22).
   await forgetShopOf(accountId);
   // Then the staff tools: notes about it, its RSVPs and slot requests go; the audit log forgets it (staff tools plan, Task 8).

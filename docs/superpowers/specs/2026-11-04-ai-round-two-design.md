@@ -2,7 +2,7 @@
 
 Date: 2026-11-04 · Status: **Design approved by Lama 2026-11-04 (decision 97), section by section; the written spec is waiting for Lama's review.** Builds on decision 96 (`2026-11-03-ai-features-design.md`), whose section 9 listed these as deferred. Stage F (photo tips) planned 2026-11-04 (`docs/superpowers/plans/2026-11-04-ai-stage-f-photo-tips.md`) and built 2026-11-04, off behind `VOSSIE_LISTING_AI` with photo-to-listing.
 
-Date: 2026-11-04 · Status: **Design approved by Lama 2026-11-04 (decision 97), section by section; the written spec is waiting for Lama's review.** Stage G planned (2026-11-04, `docs/superpowers/plans/2026-11-04-ai-stage-g-looking-match.md`) and built (2026-11-04, not merged). Builds on decision 96 (`2026-11-03-ai-features-design.md`), whose section 9 listed these as deferred.
+Date: 2026-11-04 · Status: **Design approved by Lama 2026-11-04 (decision 97), section by section; the written spec is waiting for Lama's review.** Stage G planned (2026-11-04, `docs/superpowers/plans/2026-11-04-ai-stage-g-looking-match.md`) and built (2026-11-04, not merged). Stage I1 planned (2026-11-04, `docs/superpowers/plans/2026-11-04-ai-stage-i1-shop-coach-core.md`) and built (2026-11-05, not merged). Builds on decision 96 (`2026-11-03-ai-features-design.md`), whose section 9 listed these as deferred.
 
 ## Related documents
 
@@ -308,3 +308,41 @@ Real-key hand tests on `main`, with the workspace key:
   - The Starter pack's hidden item name came after a colon inside an inline-block link, so Chrome named it "See more : Calculator". It is now "See more (Calculator)".
   - The board's starter sentence now has a line of its own. Before, a font swap could move its 44px link between lines: the shift at 1440 was 0.062 and is now 0.002.
   - Test 06 now lists `save_request_match` among the service-role functions.
+
+### While planning stage I1
+1. Candidates have stable ids, `"{kind}:{target}"` (`add-photos:l-123`, `list-more:shop`), so a tick is per action and per week and I2's `checkCoaching` can check the model's ids against the ids it was sent.
+2. At most two candidates per kind, the most in need first; the fixed week (`planWeek`) takes the first of each kind in the catalogue's order and keeps three.
+3. An action has three states: done, open and gone ("No longer needed"). A gone action is left out of "N of M".
+4. Done checks use the time the facts were read (`asOf`): `reply-waiting`, `mark-sold` and `refresh-quiet` read the same queue as the `/sell` home (`queueFor`), so the coach never disagrees with Needs you.
+5. Thresholds are constants in `kinds.ts`: fewer than two photos, a description under 80 characters, 21 days quiet, 24 hours waiting, fewer than 3 available, the next 14 days.
+6. `check-price` uses Browse's `searchListings` (title as `q`, the listing's category, every campus), leaves out the listing, the shop's own, swap-only, free and "From" prices, needs 3 or more left, and fires at 1.5 times their median; the middle is kept in the evidence.
+7. `answer-request` uses stage G's matcher in two passes (the shop's campus, then the shop's category), leaving out the seller's own requests and ones the shop has offered on; with G's switch off it has no candidates.
+8. `go-to-launchpad` takes published events and office hours from today to 14 days ahead at the shop's campus, `online` or `all`; done by any RSVP or slot request, even once the post has passed; gone when it passes unbooked or is unpublished.
+9. `read-tip` is the newest published tip not ticked in the last 12 weeks; done only by the seller's tick.
+10. A week is settled when the next one is made (`done_ids`, `gone_ids`, `settled_at`); "Last week" and I2's flag and "What shops need" read the settled ids, and an unsettled last week is worked out live where shown.
+11. No cron needed in sample mode or the e2e server: the first read makes the week with fixed wording (request-time only); on Supabase that starts Monday 06:00 SAST, an hour after I2's 05:00 collect; shops in between get theirs on first visit.
+12. Only approved shops (not pending, not paused by anyone) get a week, a card or a candidate; sample shops no account owns get nothing.
+13. The seller ticks through the owner-gated `public.tick_coach_action` with their own session; only this week's `read-tip` and `check-price`; no undo, no token, no notice, no tag.
+14. The sample store keys weeks by the owner's account (`${ownerId}:${week}`), since a shop's link can change once; Supabase keys by `shop_id`, and the foreign key's cascade does account deletion.
+15. The Launchpad card renders inside the feed's `Reveal`, above Coming up, not in a `<Suspense fallback={null}>` of its own, so a tall card never shifts Coming up. This deviates from the spec's wording; a `<Suspense fallback={null}>` above `<Reveal>` is a one-line change if Lama prefers it.
+16. The card shows only while `aiFeatureOn("shop-coach")`; I1 itself never calls the model.
+17. The data download gives each week's actions (kind, title, why), whether the seller ticked, whether done when the week ended (`null` while unsettled) and `writtenBy`; never the mentor questions.
+18. The card's links are plain `next/link`s with `prefetch={false}`; "Mark done" buttons carry a hidden ": {title}" so every button has a distinct name starting with its visible text.
+19. The fixed wording is a sample for Lama to change (`wording.ts`); titles are cut to 70 characters and "why" lines to 140, at a word (`clipAtWord`).
+20. A new write project, `coach-writes`, runs last and joins `WRITES`; with the switch on, the sample seller's `/sell` shows the card on the device projects too (no existing locator collides, see below).
+
+### While building stage I1
+- Built 2026-11-05 in its own worktree, left uncommitted for the controller. Playwright, the database tests and `pnpm db:types` weren't run here; `lib/supabase/database.types.ts` is hand-edited.
+- Stage G's names matched the plan (`requestMatchCandidates`, `matchRequests`, `requestsWantingListing`, `findOffer`): no naming differences.
+- `go-to-launchpad` counts whole SAST calendar days (`sastDaysUntil`), not milliseconds rounded up; the 14-day window is 0 to 14 SAST days inclusive and the `date` evidence is the SAST day of the month.
+- `refresh-quiet` sorts by days quiet (the later of the last change and the newest enquiry, compared as times, not ISO strings); `check-price` leaves out a zero middle before sorting.
+- Similar prices use Browse's `sort: "match"` (the plan's `"relevance"` isn't a sort).
+- `tick_coach_action` finds the shop through `seller_profiles.shop_id` (unique per account), and `own_coach_weeks` filters on the viewer's `seller_profiles.shop_id` (primary key served) instead of calling `private.owns_shop` per row.
+- pgTAP works out the week as postgres into a temp table (API roles have no USAGE on `private`), and tests anon with `set local role anon`.
+- The sample store's `saveCoachWeek` doesn't enforce the database's checks (3 actions, Monday, mentor question length); I2's `checkCoaching` must keep model rows inside them.
+- `app/route-handlers-supabase.test.ts` mocks `everyOwnWeek`, since the export now reads coach weeks; `c4-download.db.test.ts` doesn't yet compare `coach`.
+- `CoachView` has no `empty` field: the card reads an empty week from `items.length === 0`.
+- The Launchpad card sits in a `.hub-section` (`#hub-coach`), so it takes the feed's spacing and column; anyone else still gets nothing.
+- `supabase/ops/clear-sample-data.sql` deletes `coach_ticks` and `coach_weeks` before `shops` (its test wants every content table named).
+- The Supabase twin reads the owner's weeks through `forViewerAs(accountId)` (a twin never trusts an id over the session); the tick stays on `forViewer()`, gated by `tick_coach_action`. `CoachOnHub` checks the switch before any session or shop read.
+- No existing end-to-end locator collides with the card's words (searched for "This week", "Your week", "Last week", "Mark done", "Done", "N of M done"): the only matches are the admin's "Last week" region (staff pages), the thread pages' `.status-pill` "Done", and the checklist's "2 of 5 done" (scoped to its region).

@@ -62,6 +62,50 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"coach_ticks": {
+                  Row: {
+                    "action_id": string,"created_at": string,"shop_id": string,"week": string
+                  }
+                  Insert: {
+                    "action_id": string,"created_at"?: string,"shop_id": string,"week": string
+                  }
+                  Update: {
+                    "action_id"?: string,"created_at"?: string,"shop_id"?: string,"week"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "coach_ticks_shop_id_week_fkey"
+      columns: ["shop_id","week"]
+isOneToOne: false
+      referencedRelation: "coach_weeks"
+      referencedColumns: ["shop_id","week"]
+    }
+                  ]
+                },"coach_weeks": {
+                  Row: {
+                    "actions": Json,"created_at": string,"done_ids": (string)[] | null,"gone_ids": (string)[] | null,"mentor_questions": Json | null,"settled_at": string | null,"shop_id": string,"week": string,"written_by": string
+                  }
+                  Insert: {
+                    "actions": Json,"created_at"?: string,"done_ids"?: (string)[] | null,"gone_ids"?: (string)[] | null,"mentor_questions"?: Json | null,"settled_at"?: string | null,"shop_id": string,"week": string,"written_by": string
+                  }
+                  Update: {
+                    "actions"?: Json,"created_at"?: string,"done_ids"?: (string)[] | null,"gone_ids"?: (string)[] | null,"mentor_questions"?: Json | null,"settled_at"?: string | null,"shop_id"?: string,"week"?: string,"written_by"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "coach_weeks_shop_id_fkey"
+      columns: ["shop_id"]
+isOneToOne: false
+      referencedRelation: "shops"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "coach_weeks_shop_id_fkey"
+      columns: ["shop_id"]
+isOneToOne: false
+      referencedRelation: "storefronts"
+      referencedColumns: ["shop_id"]
+    }
+                  ]
                 },"consents": {
                   Row: {
                     "account_id": string,"agreed_at": string,"id": string,"version": string
@@ -1112,6 +1156,11 @@ isOneToOne: false
 "orphan_photo_paths":
 { Args: { "p_limit"?: number }; Returns: (string)[]
                            },
+"own_coach_weeks":
+{ Args: { "p_since": string }; Returns: {
+              "actions": Json,"created_at": string,"done_ids": (string)[],"gone_ids": (string)[],"settled_at": string,"ticks": (string)[],"week": string,"written_by": string
+            }[]
+                           },
 "photo_file":
 { Args: { "p_photo": string }; Returns: {
               "hub_only": boolean,"owner_only": string,"path": string,"type": string
@@ -1240,6 +1289,11 @@ isOneToOne: false
 "show_request":
 { Args: { "p_request": string }; Returns: string
                            },
+"staff_coach_weeks":
+{ Args: { "p_shop": string,"p_since": string }; Returns: {
+              "actions": Json,"created_at": string,"done_ids": (string)[],"gone_ids": (string)[],"mentor_questions": Json,"settled_at": string,"ticks": (string)[],"week": string,"written_by": string
+            }[]
+                           },
 "staff_find_account":
 { Args: { "p_email": string }; Returns: {
               "first_name": string,"id": string,"roles": (string)[]
@@ -1262,6 +1316,9 @@ isOneToOne: false
                            },
 "take_form_state":
 { Args: { "p_key": string }; Returns: string
+                           },
+"tick_coach_action":
+{ Args: { "p_action": string }; Returns: string
                            },
 "unfollow_shop":
 { Args: { "p_shop": string }; Returns: string

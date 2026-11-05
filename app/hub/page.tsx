@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CoachOnHub } from "@/components/hub/CoachOnHub";
 import { HubFeed } from "@/components/hub/HubFeed";
 import { HubFeedSkeleton } from "@/components/hub/HubFeedSkeleton";
 import { HubIntro } from "@/components/hub/HubIntro";
@@ -28,6 +29,7 @@ export default async function HubPage({ searchParams }: PageProps<"/hub">) {
         <Trail crumbs={trailFor("/hub")} />
         <HubIntro />
         <Reveal fallback={<HubFeedSkeleton />}>
+          <CoachOnHub />
           <HubFeed searchParams={searchParams} />
         </Reveal>
         <VerifiedShops sellers={sellers} campusNames={new Map(campuses.map((campus) => [campus.slug, campus.name]))} />

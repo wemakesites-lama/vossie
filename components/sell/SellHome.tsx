@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { getViewer } from "@/lib/auth/session";
+import { readThisWeek } from "@/lib/coach/this-week";
 import { getPickupPoints } from "@/lib/data";
 import { followerCounts } from "@/lib/data/follows";
 import type { OnboardingDraftRow } from "@/lib/data/rows";
@@ -61,12 +62,13 @@ export async function SellHome() {
   const slug = own.shop.slug;
   // Each card stands on its own reader: a failure is null, and only that card shows its error box (spec 8). The
   // notice is taken as it is shown, so a second visit says nothing (amendment 10.6).
-  const [queue, stats, week, daily, followers, state, points] = await Promise.all([
+  const [queue, stats, week, daily, followers, coach, state, points] = await Promise.all([
     queueFor(slug).catch(() => null),
     shopStats(slug, now).catch(() => null),
     recentCounts(slug, 7, now).catch(() => null),
     dailyEnquiries(slug, 7, now).catch(() => null),
     followerCounts(slug, new Date(now.getTime() - 7 * DAY_MS)).catch(() => null),
+    readThisWeek(account, own, now).catch(() => "error" as const),
     takeNotice(DASHBOARD_FORM),
     getPickupPoints().catch(() => [] as PickupPoint[]),
   ]);
@@ -83,6 +85,7 @@ export async function SellHome() {
       week={week}
       daily={daily}
       followers={followers}
+      coach={coach}
       campusHasPoints={points.some((point) => point.campusSlug === own.shop.campusSlug)}
     />
   );

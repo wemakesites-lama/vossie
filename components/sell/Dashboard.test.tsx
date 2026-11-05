@@ -5,6 +5,7 @@ import { prefetchingLinks } from "@/tests/helpers/next-link";
 import { Dashboard } from "./Dashboard";
 
 // The form only needs something to post to; the actions have their own tests.
+vi.mock("@/lib/coach/actions", () => ({ tickCoachAction: async () => {} }));
 vi.mock("@/lib/selling/shop-actions", () => ({ pauseShop: async () => {}, resumeShop: async () => {} }));
 vi.mock("next/link", async () => (await import("@/tests/helpers/next-link")).nextLinkShowingPrefetch);
 
@@ -41,6 +42,7 @@ const BASE: Props = {
   daily: [0, 1, 0, 2, 0, 1, 1],
   followers: { total: 38, recent: 3 },
   campusHasPoints: true,
+  coach: null,
 };
 const show = (extra: Partial<Props> = {}) => render(<Dashboard {...BASE} {...extra} />);
 
@@ -65,5 +67,25 @@ describe("the seller home (role views spec 7.1)", () => {
     const { container } = show({ queue: { ...QUIET, everReplied: false } });
     expect(container.querySelectorAll("a[data-prefetch]").length).toBeGreaterThan(0);
     expect(prefetchingLinks(container)).toEqual([]);
+  });
+
+  it("shows Shop coach's This week after Needs you, an error box when its reader failed, and nothing without a card", () => {
+    const view = {
+      week: "2026-10-12",
+      items: [],
+      progress: { done: 0, total: 0 },
+      lastWeek: null,
+    } as unknown as Props["coach"];
+    const first = show({ coach: view });
+    const needs = screen.getByRole("region", { name: "Needs you" });
+    const coach = screen.getByRole("region", { name: "This week" });
+    expect(needs.compareDocumentPosition(coach) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    first.unmount();
+    const second = show({ coach: "error" });
+    expect(screen.getByText("This week didn't load.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Try again" })).toHaveAttribute("href", "/sell?retry=sell-coach#sell-coach");
+    second.unmount();
+    show({ coach: null });
+    expect(screen.queryByRole("region", { name: "This week" })).toBeNull();
   });
 });

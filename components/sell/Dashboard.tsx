@@ -2,12 +2,14 @@ import Link from "next/link";
 import { RatioBar } from "@/components/charts/RatioBar";
 import { Sparkline } from "@/components/charts/Sparkline";
 import { SplitBar } from "@/components/charts/SplitBar";
+import { CoachWeek } from "@/components/coach/CoachWeek";
 import { SectionError } from "@/components/home/SectionError";
 import { Card } from "@/components/kit/Card";
 import { NeedsYouList } from "@/components/kit/NeedsYouList";
 import { Pill } from "@/components/kit/Pill";
 import { SetupChecklist } from "@/components/kit/SetupChecklist";
 import { StatRow, StatTile } from "@/components/kit/StatTile";
+import type { CoachView } from "@/lib/coach/this-week";
 import type { SellerRow } from "@/lib/data/rows";
 import { badgeLabel } from "@/lib/format";
 import { inboxPath } from "@/lib/messaging/paths";
@@ -46,6 +48,8 @@ type DashboardProps = {
   followers: FollowerCounts | null;
   /** The shop's campus has pickup points to choose (the checklist's third step). */
   campusHasPoints: boolean;
+  /** Shop coach's week (AI stage I1): null for no card, "error" when its reader failed. */
+  coach: CoachView | null | "error";
 };
 
 const PERIOD = "the week before";
@@ -57,7 +61,7 @@ const PERIOD = "the week before";
  * its own reader: one failing shows its error box and leaves the rest (spec 8).
  */
 export function Dashboard(props: DashboardProps) {
-  const { shop, paused, hubPause = null, notice, now, queue, record, badgeLine, week, daily, followers, campusHasPoints } =
+  const { shop, paused, hubPause = null, notice, now, queue, record, badgeLine, week, daily, followers, campusHasPoints, coach } =
     props;
   const byHub = hubPause !== null;
   const newShop = queue !== null && isNewShop(queue);
@@ -118,6 +122,14 @@ export function Dashboard(props: DashboardProps) {
           <SectionError id="sell-needs" title="What needs you" path={SELL_PATH} />
         )}
       </Card>
+
+      {coach === "error" ? (
+        <Card title="This week">
+          <SectionError id="sell-coach" title="This week" path={SELL_PATH} />
+        </Card>
+      ) : (
+        coach && <CoachWeek view={coach} from="sell" />
+      )}
 
       <div className="sell-home-buttons">
         <Link href={NEW_LISTING_PATH} prefetch={false} className="btn btn-primary">

@@ -6,6 +6,8 @@ import { sampleHubBookings, sampleHubPostRows, sampleMentorNotes, samplePickupPo
 import type {
   AccountRow,
   AuditRow,
+  CoachTickRow,
+  CoachWeekRow,
   ConsentRow,
   ConversationRow,
   FeaturedDrawRow,
@@ -103,6 +105,10 @@ export type SampleStore = {
   follows: Map<string, FollowRow>;
   /** By id: saved searches (search alerts spec 2.1). */
   savedSearches: Map<string, SavedSearchRow>;
+  /** By `${ownerId}:${week}`: Shop coach's weeks (AI stage I1 plan decision 14). */
+  coachWeeks: Map<string, CoachWeekRow>;
+  /** By `${ownerId}:${week}:${actionId}`: the seller's ticks (AI stage I1). */
+  coachTicks: Map<string, CoachTickRow>;
 };
 
 /**
@@ -115,8 +121,9 @@ export type SampleStore = {
  * 16: the words search's daily count (`wordsSearchParses`, AI stage E plan decision 5).
  * 17: Snap to search's daily count (`photoSearches`, AI features spec 5.4, stage D).
  * 18: a Looking For request keeps the search its words were read into (`matchQuery`, `matchReadAt`, AI stage G).
+ * 19: Shop coach's weeks and ticks (`coachWeeks`, `coachTicks`, AI stage I1).
  */
-export const STORE_VERSION = 18;
+export const STORE_VERSION = 19;
 
 type StoreHolder = { __vossieSampleStore?: SampleStore };
 
@@ -176,5 +183,7 @@ function seedStore(): SampleStore {
     requests: new Map(structuredClone(sampleRequestRows).map((row) => [row.id, row])),
     follows: new Map(),
     savedSearches: new Map(),
+    coachWeeks: new Map(),
+    coachTicks: new Map(),
   };
 }

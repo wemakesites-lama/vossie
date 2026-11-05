@@ -60,6 +60,9 @@ const conversationsOfSlug = cache(async (slug: string): Promise<CountedConversat
   return shop === null ? [] : conversationsOf(shop.id);
 });
 
+/** The shop's counted conversations (Shop coach's quiet listings; AI stage I1). */
+export const shopConversations: typeof Sample.shopConversations = (slug) => conversationsOfSlug(slug);
+
 /** A shop's last 7 days, and its record for the badges: 90 days of enquiries, and every sale. */
 export const shopStats: typeof Sample.shopStats = async (sellerSlug, now) =>
   statsOver(await conversationsOfSlug(sellerSlug), now);

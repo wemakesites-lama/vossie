@@ -15,6 +15,8 @@ import {
   restoreSampleAccount,
   updateAccountDetails,
 } from "./accounts";
+import { coachWeekOf } from "@/lib/coach/week";
+import { saveCoachWeek, tickCoachAction } from "./coach";
 import { addFollow } from "./follows";
 import { saveFormState } from "./form-states";
 import { getThread, startOffer } from "./messages";
@@ -162,6 +164,7 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
       requests,
       following,
       savedSearches,
+      coach,
       ...rest
     } = data!;
     expect(rest).toEqual({
@@ -194,6 +197,7 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
       "requests",
       "following",
       "savedSearches",
+      "coach",
     ]);
     expect(conversations.map((row) => [row.with, row.about])).toEqual([
       ["Thandi", "Casio fx-991ZA Plus calculator"],
@@ -215,6 +219,7 @@ describe("the data export (accounts spec 3.3, plan decision 20)", () => {
     expect(requests).toEqual([]);
     expect(following).toEqual([]);
     expect(savedSearches).toEqual([]);
+    expect(coach).toEqual([]);
     const text = JSON.stringify(data);
     expect(text).not.toContain("session-key-1");
     expect(text).not.toContain("acc-seller");
@@ -532,5 +537,47 @@ describe("saved searches in the export and in deletion (search alerts spec 2.15,
     expect(hrefs()).toEqual(["/listings/l-other"]);
     await deleteAccountData("acc-seller");
     expect(hrefs()).toEqual(["/listings/l-other"]);
+  });
+});
+
+describe("the shop coach in the export and in deletion (AI stage I1, planning decision 17)", () => {
+  const seed = async () => {
+    const week = coachWeekOf(NOW);
+    const action = {
+      id: "read-tip:hp-1",
+      kind: "read-tip" as const,
+      target: { type: "post" as const, id: "hp-1" },
+      name: "A tip",
+      evidence: {},
+      href: "/hub/hp-1",
+      title: "Read: A tip",
+      why: "A short tip.",
+      asOf: NOW.toISOString(),
+    };
+    await saveCoachWeek("tech-corner", { week, actions: [action], writtenBy: "fixed", mentorQuestions: ["Why?", "Secret mentor question"] }, NOW);
+    await tickCoachAction("acc-seller", "tech-corner", action.id, NOW);
+    return week;
+  };
+
+  it("exports the weeks as stored, with the tick, and never a mentor question", async () => {
+    const week = await seed();
+    const data = await exportAccountData("acc-seller", NOW);
+    expect(data?.coach).toEqual([
+      {
+        week,
+        writtenBy: "fixed",
+        actions: [{ kind: "read-tip", title: "Read: A tip", why: "A short tip.", ticked: true, doneWhenWeekEnded: null }],
+      },
+    ]);
+    expect(JSON.stringify(data)).not.toContain("Secret mentor question");
+  });
+
+  it("deletes the account's weeks and ticks with it", async () => {
+    await seed();
+    expect(sampleStore().coachWeeks.size).toBe(1);
+    expect(sampleStore().coachTicks.size).toBe(1);
+    await deleteAccountData("acc-seller");
+    expect([...sampleStore().coachWeeks.values()].filter((row) => row.ownerId === "acc-seller")).toEqual([]);
+    expect([...sampleStore().coachTicks.values()].filter((row) => row.ownerId === "acc-seller")).toEqual([]);
   });
 });
