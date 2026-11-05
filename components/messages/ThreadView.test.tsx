@@ -42,6 +42,13 @@ describe("a thread (messaging spec 3.3)", () => {
     expect(screen.getByText("Asked")).toHaveClass("status-pill");
   });
 
+  it("says calls are coming soon, as a sign and not a control (decision 57 still stands)", () => {
+    show();
+    expect(screen.getByText("Calls coming soon")).toHaveClass("thread-call-soon");
+    expect(screen.queryByRole("button", { name: /call/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /call/i })).toBeNull();
+  });
+
   it("goes back to Selling for the seller", () => {
     show(makeThread({ role: "seller", otherName: "Ayanda" }));
     expect(screen.getByRole("link", { name: "Back to Messages" })).toHaveAttribute("href", "/sell/messages");

@@ -8100,9 +8100,31 @@
 
   .thread-head {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
+    gap: 8px 12px;
+  }
+
+  .thread-tools {
+    display: flex;
+    align-items: center;
     gap: 12px;
+    margin-left: auto;
+  }
+
+  /* A sign, not a control: calls aren't built yet, so it has no hover, focus or press state. */
+  .thread-call-soon {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--color-panel);
+    color: var(--color-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    white-space: nowrap;
   }
 
   .thread-title {

@@ -15,6 +15,7 @@ import { MarkSoldForm, SaleActions } from "./SaleActions";
 import { ScamCheck } from "./ScamCheck";
 import { StatusPill } from "./StatusPill";
 import { Trail } from "@/components/ui/Trail";
+import { PhoneIcon } from "@/components/icons";
 import { LABELS, trailFor } from "@/lib/nav/trail";
 
 /** The reply form after a post (D decision 3): what was typed, what's wrong, and the scam check's warnings. */
@@ -83,10 +84,17 @@ export function ThreadView({
           {/* The space sits outside the sr-only span: name computation trims each element's own text. */}
           <span className="sr-only">Messages with</span> {thread.otherName}
         </h1>
-        {/* A full page load: the one way to be sure the other side's new messages show (plan decision 19). */}
-        <a href={threadPath(thread.id)} className="msg-refresh">
-          Refresh
-        </a>
+        <div className="thread-tools">
+          {/* Shows the intention only: no button and no link until calls exist (decision 57 still stands). */}
+          <span className="thread-call-soon">
+            <PhoneIcon className="size-4" />
+            Calls coming soon
+          </span>
+          {/* A full page load: the one way to be sure the other side's new messages show (plan decision 19). */}
+          <a href={threadPath(thread.id)} className="msg-refresh">
+            Refresh
+          </a>
+        </div>
       </div>
       {thread.request ? (
         <OfferAbout thread={thread} request={thread.request} campusName={campusName}>

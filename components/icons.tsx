@@ -72,6 +72,15 @@ export function MessageIcon(props: IconProps) {
   );
 }
 
+/** A phone handset: a thread's "Calls coming soon" sign. */
+export function PhoneIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M8.5 4.5 6 4.6a1.5 1.5 0 0 0-1.4 1.6 14 14 0 0 0 13.2 13.2 1.5 1.5 0 0 0 1.6-1.4l.1-2.5-3.6-1.6-1.8 1.8a10 10 0 0 1-4.8-4.8l1.8-1.8Z" />
+    </Svg>
+  );
+}
+
 export function CloseIcon(props: IconProps) {
   return (
     <Svg {...props}>
